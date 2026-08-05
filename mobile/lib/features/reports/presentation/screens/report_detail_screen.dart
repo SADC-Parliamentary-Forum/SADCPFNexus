@@ -100,6 +100,94 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
         '-';
   }
 
+  /// Maps a report item to its module detail route, if one exists.
+  String? _detailRoute(Map<String, dynamic> item) {
+    final id = item['id'];
+    if (id == null) return null;
+    switch (widget.reportType) {
+      case 'travel':
+        return '/requests/travel/detail?id=$id';
+      case 'leave':
+        return '/requests/leave/detail?id=$id';
+      case 'imprest':
+        return '/requests/imprest/detail?id=$id';
+      case 'procurement':
+        return '/procurement/detail?id=$id';
+      case 'finance':
+        return '/salary/advances/$id';
+      default:
+        return null;
+    }
+  }
+
+  void _openItem(Map<String, dynamic> item) {
+    final route = _detailRoute(item);
+    if (route != null) {
+      context.push(route);
+      return;
+    }
+    // No dedicated detail screen for this report type — show a summary sheet.
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _itemTitle(item),
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...item.entries
+                  .where((e) => e.value != null && e.value.toString().isNotEmpty)
+                  .map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 120,
+                            child: Text(
+                              e.key.replaceAll('_', ' '),
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              e.value.toString(),
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   String _itemSubtitle(Map<String, dynamic> item) {
     final parts = <String>[];
     if (item['purpose'] != null) {
@@ -209,36 +297,48 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
                           final item = _items[index];
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(14),
+                            clipBehavior: Clip.antiAlias,
                             decoration: BoxDecoration(
                               color: AppColors.bgSurface,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: AppColors.border),
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _itemTitle(item),
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
+                            child: Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                onTap: () => _openItem(item),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(14),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _itemTitle(item),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      if (_itemSubtitle(item).isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          _itemSubtitle(item),
+                                          style: const TextStyle(
+                                            color: AppColors.textSecondary,
+                                            fontSize: 12,
+                                          ),
+                                          maxLines: 3,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
-                                if (_itemSubtitle(item).isNotEmpty) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _itemSubtitle(item),
-                                    style: const TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: 12,
-                                    ),
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ],
+                              ),
                             ),
                           );
                         },

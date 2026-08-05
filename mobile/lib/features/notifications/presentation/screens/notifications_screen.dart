@@ -1,9 +1,50 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/notifications/notification_poller.dart';
+
+/// Maps a notification's trigger module + related record to an in-app route.
+/// Falls back to the module hub when no per-record detail screen exists, and
+/// to null (no navigation) when the module is unrecognised.
+String? _routeForNotification(AppNotification item) {
+  final module =
+      item.meta?['module']?.toString() ?? item.triggerKey?.split('.').first;
+  final recordId = item.meta?['record_id'];
+  switch (module) {
+    case 'travel':
+      return recordId != null ? '/requests/travel/detail?id=$recordId' : null;
+    case 'leave':
+      return recordId != null ? '/requests/leave/detail?id=$recordId' : null;
+    case 'imprest':
+      return recordId != null
+          ? '/requests/imprest/detail?id=$recordId'
+          : null;
+    case 'procurement':
+      return recordId != null ? '/procurement/detail?id=$recordId' : null;
+    case 'assignment':
+    case 'assignments':
+      return recordId != null ? '/assignments/$recordId' : '/assignments';
+    case 'risk':
+      return recordId != null ? '/risk/$recordId' : '/risk';
+    case 'correspondence':
+      return recordId != null
+          ? '/correspondence/$recordId'
+          : '/correspondence';
+    case 'hr':
+    case 'timesheet':
+    case 'overtime':
+      return '/hr/dashboard';
+    case 'finance':
+    case 'budget':
+    case 'bcre':
+      return '/finance/command-center';
+    default:
+      return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Data & Provider
@@ -129,6 +170,16 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
               style: TextStyle(color: theme.colorScheme.error)),
         ),
         data: (notifications) {
+          // Partition once per build instead of filtering twice independently.
+          final unread = <AppNotification>[];
+          final read = <AppNotification>[];
+          for (final n in notifications) {
+            (n.isRead ? read : unread).add(n);
+          }
+          Future<void> refresh() async {
+            ref.invalidate(_notificationsProvider);
+            await ref.read(_notificationsProvider.future);
+          }
           return TabBarView(
             controller: _tabs,
             children: [
@@ -136,18 +187,21 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                 items: notifications,
                 onMarkRead: _markRead,
                 onDelete: _delete,
+                onRefresh: refresh,
                 emptyMessage: 'No notifications yet',
               ),
               _NotificationList(
-                items: notifications.where((n) => !n.isRead).toList(),
+                items: unread,
                 onMarkRead: _markRead,
                 onDelete: _delete,
+                onRefresh: refresh,
                 emptyMessage: 'No unread notifications',
               ),
               _NotificationList(
-                items: notifications.where((n) => n.isRead).toList(),
+                items: read,
                 onMarkRead: _markRead,
                 onDelete: _delete,
+                onRefresh: refresh,
                 emptyMessage: 'No read notifications',
               ),
             ],
@@ -164,39 +218,56 @@ class _NotificationList extends StatelessWidget {
   final List<AppNotification> items;
   final Future<void> Function(String id) onMarkRead;
   final Future<void> Function(String id) onDelete;
+  final Future<void> Function() onRefresh;
   final String emptyMessage;
 
   const _NotificationList({
     required this.items,
     required this.onMarkRead,
     required this.onDelete,
+    required this.onRefresh,
     required this.emptyMessage,
   });
 
   @override
   Widget build(BuildContext context) {
     if (items.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            const Icon(Icons.notifications_none_rounded,
-                size: 48, color: Color(0xFF7BB89A)),
-            const SizedBox(height: 12),
-            Text(emptyMessage,
-                style: const TextStyle(
-                    color: Color(0xFF7BB89A), fontSize: 14)),
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.6,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.notifications_none_rounded,
+                        size: 48, color: Color(0xFF7BB89A)),
+                    const SizedBox(height: 12),
+                    Text(emptyMessage,
+                        style: const TextStyle(
+                            color: Color(0xFF7BB89A), fontSize: 14)),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       );
     }
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-      itemCount: items.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemBuilder: (context, index) =>
-          _NotificationCard(item: items[index], onMarkRead: onMarkRead, onDelete: onDelete),
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (context, index) => _NotificationCard(
+            item: items[index], onMarkRead: onMarkRead, onDelete: onDelete),
+      ),
     );
   }
 }
@@ -270,9 +341,35 @@ class _NotificationCard extends StatelessWidget {
         child: const Icon(Icons.delete_outline_rounded,
             color: Color(0xFFEF4444), size: 22),
       ),
+      confirmDismiss: (_) async {
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Delete notification?'),
+            content: const Text(
+                'This notification will be permanently removed.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Delete',
+                    style: TextStyle(color: Color(0xFFEF4444))),
+              ),
+            ],
+          ),
+        );
+        return confirmed ?? false;
+      },
       onDismissed: (_) => onDelete(item.id),
       child: GestureDetector(
-        onTap: item.isRead ? null : () => onMarkRead(item.id),
+        onTap: () {
+          if (!item.isRead) onMarkRead(item.id);
+          final route = _routeForNotification(item);
+          if (route != null) context.push(route);
+        },
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(

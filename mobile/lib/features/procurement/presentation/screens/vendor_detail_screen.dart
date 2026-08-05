@@ -1,6 +1,11 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
@@ -67,6 +72,44 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() { _error = 'Failed to load vendor details.'; _loading = false; });
+    }
+  }
+
+  Future<void> _openDocument(Map<String, dynamic> doc) async {
+    final id = doc['id'];
+    if (id == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No file is attached to this document.')));
+      return;
+    }
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<List<int>>(
+        '/procurement/vendors/${widget.vendorId}/attachments/$id/download',
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (res.data == null || res.data!.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('No file available for this document.')));
+        }
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final fileName = (doc['original_filename'] as String?) ??
+          'vendor_document_$id';
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(res.data!);
+      final openResult = await OpenFile.open(file.path);
+      if (mounted && openResult.type != ResultType.done) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Document saved. Open with a compatible viewer.')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open document.')));
+      }
     }
   }
 
@@ -444,7 +487,12 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                 }
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () => _openDocument(doc),
+                      child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Icon(Icons.insert_drive_file_outlined,
@@ -483,7 +531,12 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700)),
                       ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.download_outlined,
+                          size: 16, color: AppColors.textMuted),
                     ],
+                      ),
+                    ),
                   ),
                 );
               }),

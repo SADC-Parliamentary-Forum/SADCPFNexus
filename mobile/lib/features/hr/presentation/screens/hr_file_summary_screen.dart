@@ -1,6 +1,11 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 
@@ -248,6 +253,8 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
               children: [
                 Text(
                   name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -587,6 +594,7 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     String selectedType = 'general';
+    bool submitting = false;
 
     final types = [
       'general',
@@ -664,38 +672,44 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: submitting ? null : () => Navigator.pop(ctx),
               child: const Text('Cancel',
                   style: TextStyle(color: AppColors.textMuted)),
             ),
             TextButton(
-              onPressed: () async {
-                if (titleCtrl.text.isEmpty) return;
-                try {
-                  await ref.read(apiClientProvider).dio.post<dynamic>(
-                    '/hr/files/${widget.fileId}/timeline',
-                    data: {
-                      'title': titleCtrl.text,
-                      'event_type': selectedType,
-                      'description': descCtrl.text,
-                      'event_date':
-                          DateTime.now().toIso8601String().split('T').first,
+              onPressed: submitting
+                  ? null
+                  : () async {
+                      if (titleCtrl.text.isEmpty) return;
+                      setDialogState(() => submitting = true);
+                      try {
+                        await ref.read(apiClientProvider).dio.post<dynamic>(
+                          '/hr/files/${widget.fileId}/timeline',
+                          data: {
+                            'title': titleCtrl.text,
+                            'event_type': selectedType,
+                            'description': descCtrl.text,
+                            'event_date': DateTime.now()
+                                .toIso8601String()
+                                .split('T')
+                                .first,
+                          },
+                        );
+                        if (mounted) {
+                          Navigator.pop(ctx);
+                          _loadData();
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed: $e')),
+                          );
+                        }
+                        setDialogState(() => submitting = false);
+                      }
                     },
-                  );
-                  if (mounted) {
-                    Navigator.pop(ctx);
-                    _loadData();
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed: $e')),
-                    );
-                  }
-                }
-              },
               style: TextButton.styleFrom(foregroundColor: AppColors.primary),
-              child: const Text('Add Event'),
+              child: Text(submitting ? 'Adding…' : 'Add Event'),
             ),
           ],
         ),
@@ -1044,10 +1058,50 @@ class _HistoryCard extends StatelessWidget {
   }
 }
 
-class _DocumentCard extends StatelessWidget {
+class _DocumentCard extends ConsumerWidget {
   final Map<String, dynamic> doc;
 
   const _DocumentCard({required this.doc});
+
+  Future<void> _openDocument(BuildContext context, WidgetRef ref) async {
+    final path = doc['file_path'] as String? ??
+        doc['file_url'] as String? ??
+        doc['download_url'] as String?;
+    if (path == null || path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No file is attached to this document.')));
+      return;
+    }
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<List<int>>(
+        path,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (res.data == null || res.data!.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('No file available for this document.')));
+        }
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final fileName = (doc['file_name'] as String?) ??
+          'document_${doc['id'] ?? DateTime.now().millisecondsSinceEpoch}';
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(res.data!);
+      final openResult = await OpenFile.open(file.path);
+      if (context.mounted && openResult.type != ResultType.done) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Document saved. Open with a compatible viewer.')));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open document.')));
+      }
+    }
+  }
 
   static IconData _docIcon(String? type) {
     switch (type) {
@@ -1094,7 +1148,7 @@ class _DocumentCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final title =
         (doc['title'] ?? doc['document_name'] ?? 'Document').toString();
     final docType = doc['document_type'] as String?;
@@ -1108,13 +1162,19 @@ class _DocumentCard extends StatelessWidget {
     final cColor = _confidentialityColor(confidentiality);
 
     return Container(
-      padding: const EdgeInsets.all(12),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.bgSurface,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.border),
       ),
-      child: Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openDocument(context, ref),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
         children: [
           Container(
             width: 40,
@@ -1176,6 +1236,9 @@ class _DocumentCard extends StatelessWidget {
             ),
           ),
         ],
+            ),
+          ),
+        ),
       ),
     );
   }

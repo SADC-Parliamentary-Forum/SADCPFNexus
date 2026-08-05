@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/notifications/fcm_service.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -23,11 +24,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   String? _roleLabel;
   bool _loading = true;
   bool _loggingOut = false;
+  String _appVersion = '—';
 
   @override
   void initState() {
     super.initState();
     _loadUser();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _appVersion = 'v${info.version}+${info.buildNumber}');
+      }
+    } catch (_) {
+      // Keep placeholder if platform info is unavailable.
+    }
   }
 
   Future<void> _loadUser() async {
@@ -263,7 +277,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                 label: 'Notifications',
                                 iconColor: theme.colorScheme.primary,
                                 iconBg: theme.colorScheme.primary,
-                                onTap: () {},
+                                onTap: () => context.push('/notifications'),
                               ),
                               _ActionTile(
                                 icon: Icons.security,
@@ -292,16 +306,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           const SizedBox(height: 14),
 
                           // App info
-                          const _Section(
+                          _Section(
                             title: 'Application',
                             icon: Icons.info_outline,
                             children: [
                               _InfoTile(
                                 icon: Icons.phone_android,
                                 label: 'App Version',
-                                value: 'v4.2.0',
+                                value: _appVersion,
                               ),
-                              _InfoTile(
+                              const _InfoTile(
                                 icon: Icons.business,
                                 label: 'System',
                                 value: 'SADCPFNexus',

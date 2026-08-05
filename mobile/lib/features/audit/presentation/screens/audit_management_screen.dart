@@ -186,6 +186,69 @@ class _FindingsTab extends StatelessWidget {
   final List<Map<String, dynamic>> findings;
   final Future<void> Function() onRefresh;
 
+  void _showFindingDetails(BuildContext context, Map<String, dynamic> finding) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.bgSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${finding['title'] ?? 'Finding'}',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 12),
+              ...finding.entries
+                  .where((e) =>
+                      e.value != null && e.value.toString().isNotEmpty)
+                  .map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 120,
+                            child: Text(
+                              e.key.replaceAll('_', ' '),
+                              style: const TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              e.value.toString(),
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
@@ -210,7 +273,12 @@ class _FindingsTab extends StatelessWidget {
                 return StitchCard(
                   padding: EdgeInsets.zero,
                   child: ListTile(
-                    title: Text('${finding['title'] ?? 'Finding'}'),
+                    onTap: () => _showFindingDetails(context, finding),
+                    title: Text(
+                      '${finding['title'] ?? 'Finding'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     subtitle: Text(
                       '${finding['rating'] ?? '-'} - ${finding['status'] ?? '-'}',
                     ),

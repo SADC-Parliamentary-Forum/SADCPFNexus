@@ -1,5 +1,10 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 
@@ -252,10 +257,50 @@ class _HrFileDocumentsScreenState
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _DocCard extends StatelessWidget {
+class _DocCard extends ConsumerWidget {
   final Map<String, dynamic> doc;
 
   const _DocCard({required this.doc});
+
+  Future<void> _openDocument(BuildContext context, WidgetRef ref) async {
+    final path = doc['file_path'] as String? ??
+        doc['file_url'] as String? ??
+        doc['download_url'] as String?;
+    if (path == null || path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('No file is attached to this document.')));
+      return;
+    }
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<List<int>>(
+        path,
+        options: Options(responseType: ResponseType.bytes),
+      );
+      if (res.data == null || res.data!.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('No file available for this document.')));
+        }
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      final fileName = (doc['file_name'] as String?) ??
+          'document_${doc['id'] ?? DateTime.now().millisecondsSinceEpoch}';
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(res.data!);
+      final openResult = await OpenFile.open(file.path);
+      if (context.mounted && openResult.type != ResultType.done) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Document saved. Open with a compatible viewer.')));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open document.')));
+      }
+    }
+  }
 
   static IconData _typeIcon(String? type) {
     switch (type) {
@@ -322,7 +367,7 @@ class _DocCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final title = (doc['title'] ?? doc['document_name'] ?? 'Document').toString();
     final docType = doc['document_type'] as String?;
     final confidentiality = doc['confidentiality'] as String?;
@@ -360,7 +405,7 @@ class _DocCard extends StatelessWidget {
     }
 
     return Container(
-      padding: const EdgeInsets.all(13),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppColors.bgSurface,
         borderRadius: BorderRadius.circular(11),
@@ -370,7 +415,13 @@ class _DocCard extends StatelessWidget {
               : AppColors.border,
         ),
       ),
-      child: Row(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openDocument(context, ref),
+          child: Padding(
+            padding: const EdgeInsets.all(13),
+            child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Icon
@@ -474,6 +525,9 @@ class _DocCard extends StatelessWidget {
             ),
           ),
         ],
+            ),
+          ),
+        ),
       ),
     );
   }
