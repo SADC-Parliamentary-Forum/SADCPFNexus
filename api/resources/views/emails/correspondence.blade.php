@@ -112,7 +112,11 @@
         @if(!empty($letterhead['org_address']))
             <p class="lh-footer-addr">{{ $letterhead['org_address'] }}</p>
         @endif
-        <p class="lh-footer-disclaimer">This correspondence was sent via SADCPFNexus. Please do not reply to this automated message.</p>
+        <p class="lh-footer-disclaimer">
+            This correspondence was sent via SADCPFNexus. Please do not reply to this automated message.<br>
+            To manage your email preferences, visit
+            <a href="{{ env('APP_FRONTEND_URL', config('app.url')) }}/profile/security" style="color:#1d85ed">your profile settings</a>.
+        </p>
     </div>
 
 </div>

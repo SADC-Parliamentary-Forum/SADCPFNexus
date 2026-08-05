@@ -138,6 +138,16 @@ export default function AssetsPrintPage() {
         </table>
       </div>
 
+      {/*
+        Intentionally NOT using the shared PrintButton (web/components/ui/PrintButton.tsx) print
+        mechanism here. PrintButton hides layout chrome (header/nav/aside/buttons) around a single
+        shared content tree. This page instead renders two structurally different views — an
+        interactive on-screen summary and a separate print-formatted table (with QR images, a
+        generated timestamp, and print-only pagination-friendly markup) — and swaps between them
+        via visibility toggling. The visibility-hidden approach is required to fully suppress the
+        on-screen view (including elements outside any single "main" container) while revealing
+        only the dedicated print block.
+      */}
       <style jsx global>{`
         @media print {
           body * { visibility: hidden; }

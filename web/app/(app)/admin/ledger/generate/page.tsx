@@ -95,13 +95,13 @@ thead{background:#f9fafb}th{padding:6px 8px;font-size:10px;text-transform:upperc
 tfoot td{font-size:11px;color:#9ca3af;padding:8px}@media print{body{margin:8px}}</style></head>
 <body>
 <h1>SADCPFNexus — ${title}</h1>
-<div class="meta">Generated: ${new Date().toLocaleString("en-GB")} &nbsp;Â·&nbsp; Period: ${dateFrom || "All time"} â€“ ${dateTo || "Present"} &nbsp;Â·&nbsp; Total entries: ${logs.length}</div>
+<div class="meta">Generated: ${new Date().toLocaleString("en-GB")} &nbsp;·&nbsp; Period: ${dateFrom || "All time"} – ${dateTo || "Present"} &nbsp;·&nbsp; Total entries: ${logs.length}</div>
 <table>
 <thead><tr>
   <th>#</th><th>Timestamp</th><th>User</th><th>Module</th><th>Action</th><th>Record Ref</th><th>Hash</th>
 </tr></thead>
 <tbody>${rows}</tbody>
-<tfoot><tr><td colspan="7">SHA-256 Â· WORM Storage Â· 7-Year Retention Policy — SADCPFNexus ERP</td></tr></tfoot>
+<tfoot><tr><td colspan="7">SHA-256 · WORM Storage · 7-Year Retention Policy — SADCPFNexus ERP</td></tr></tfoot>
 </table>
 </body></html>`;
 
@@ -305,10 +305,10 @@ export default function GenerateLedgerReportPage() {
           <div>
             <p className="text-sm font-bold text-neutral-900">{reportTitle}</p>
             <p className="text-xs text-neutral-500 mt-0.5">
-              {previewTotal.toLocaleString()} entries Â· {dateFrom || "All time"} â€“ {dateTo || "Present"}
-              {selectedModule && ` Â· ${MODULES.find((m) => m.value === selectedModule)?.label}`}
-              {scope === "user" && userFilter && ` Â· User: ${userFilter}`}
-              {" Â· "}
+              {previewTotal.toLocaleString()} entries · {dateFrom || "All time"} – {dateTo || "Present"}
+              {selectedModule && ` · ${MODULES.find((m) => m.value === selectedModule)?.label}`}
+              {scope === "user" && userFilter && ` · User: ${userFilter}`}
+              {" · "}
               <span className="font-medium">{FORMATS.find((f) => f.value === format)?.label}</span>
             </p>
           </div>
@@ -324,7 +324,7 @@ export default function GenerateLedgerReportPage() {
         <div className="card overflow-hidden">
           <div className="px-5 py-3 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">
             <span className="text-xs font-semibold text-neutral-600">Preview (first {Math.min(previewLogs.length, 100)} of {previewTotal.toLocaleString()} entries)</span>
-            <span className="text-xs text-neutral-400 font-mono">SHA-256 Â· WORM</span>
+            <span className="text-xs text-neutral-400 font-mono">SHA-256 · WORM</span>
           </div>
           <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
             <table className="data-table w-full">

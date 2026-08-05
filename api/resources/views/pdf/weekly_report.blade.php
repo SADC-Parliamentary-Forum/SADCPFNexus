@@ -12,7 +12,7 @@
         .item { margin: 8px 0; padding: 6px; background: #f7f7f7; }
         .item strong { display: block; }
         .muted { color: #666; font-size: 10px; }
-        .banner { background: #0b3d2e; color: #fff; padding: 10px 12px; margin-bottom: 16px; }
+        .banner { background: #1d85ed; color: #fff; padding: 10px 12px; margin-bottom: 16px; }
     </style>
 </head>
 <body>

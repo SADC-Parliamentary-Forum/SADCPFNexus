@@ -84,7 +84,9 @@
         <p>
             SADC Parliamentary Forum · SADC-PF Nexus Paperless System<br>
             This is an automated notification. Please do not reply to this email.<br>
-            Nexus will never ask you to share your password or MFA code by email.
+            Nexus will never ask you to share your password or MFA code by email.<br>
+            To manage your email preferences, visit
+            <a href="{{ env('APP_FRONTEND_URL', config('app.url')) }}/profile/security" style="color:#1d85ed">your profile settings</a>.
         </p>
     </div>
 

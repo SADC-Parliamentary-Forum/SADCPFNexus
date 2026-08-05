@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { financeApi, type SalaryAdvanceRequest } from "@/lib/api";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 import { PrintButton } from "@/components/ui/PrintButton";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -89,7 +89,7 @@ export default function AdvanceCertificatePage() {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400 mb-1">Amount</p>
-            <p className="text-sm font-bold text-primary">{advance.currency} {advance.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            <p className="text-sm font-bold text-primary">{formatCurrency(advance.amount, advance.currency)}</p>
           </div>
           <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400 mb-1">Repayment Period</p>

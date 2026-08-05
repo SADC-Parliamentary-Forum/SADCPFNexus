@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { imprestApi, type ImprestRequest } from "@/lib/api";
+import { formatCurrency } from "@/lib/utils";
 import { PrintButton } from "@/components/ui/PrintButton";
 
 export default function ImprestCertificatePage() {
@@ -80,11 +81,11 @@ export default function ImprestCertificatePage() {
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400 mb-1">Amount Requested</p>
-            <p className="text-sm font-bold text-primary">{request.currency} {request.amount_requested.toLocaleString()}</p>
+            <p className="text-sm font-bold text-primary">{formatCurrency(request.amount_requested, request.currency)}</p>
           </div>
           <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400 mb-1">Amount Approved</p>
-            <p className="text-sm font-bold text-green-700">{request.currency} {(request.amount_approved ?? request.amount_requested).toLocaleString()}</p>
+            <p className="text-sm font-bold text-green-700">{formatCurrency(request.amount_approved ?? request.amount_requested, request.currency)}</p>
           </div>
         </div>
 

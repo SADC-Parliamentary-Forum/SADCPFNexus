@@ -10,6 +10,7 @@ use App\Models\LeaveRequest;
 use App\Models\LeaveSegment;
 use App\Models\LeaveType;
 use App\Models\OvertimeAccrual;
+use App\Models\TenantSetting;
 use App\Models\ToilCredit;
 use App\Models\TravelToilCandidate;
 use App\Models\User;
@@ -984,6 +985,7 @@ class LeaveService
         return \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.leave_form_005', [
             'leave' => $leave,
             'generatedAt' => now(),
+            'letterhead' => TenantSetting::getLetterheadSettings($leave->tenant_id),
         ]);
     }
 

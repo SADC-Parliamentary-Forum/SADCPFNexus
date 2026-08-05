@@ -10,13 +10,14 @@
         td, th { padding: 3px 6px; text-align: left; vertical-align: top; }
         .label { font-weight: bold; width: 35%; }
         .qr { text-align: right; }
+        .banner { background: #1d85ed; color: #fff; padding: 10px 12px; margin-bottom: 14px; }
     </style>
 </head>
 <body>
+    <div class="banner"><strong>SADC PF Nexus — Programme Implementation Form</strong></div>
     <table>
         <tr>
             <td>
-                <h1>Programme Implementation Form</h1>
                 <div>Reference: {{ $programme->reference_number }}</div>
                 <div>Status: {{ ucwords(str_replace('_', ' ', $programme->status)) }}</div>
             </td>

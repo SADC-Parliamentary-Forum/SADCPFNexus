@@ -13,6 +13,7 @@ use App\Models\SalaryAdvancePolicyException;
 use App\Models\SalaryAdvancePolicyVersion;
 use App\Models\SalaryAdvanceReconciliation;
 use App\Models\SalaryAdvanceRequest;
+use App\Models\TenantSetting;
 use App\Models\User;
 use App\Modules\Finance\Contracts\PayrollRecoveryAdapterInterface;
 use App\Services\WorkflowService;
@@ -1043,6 +1044,7 @@ class SalaryAdvanceService
         return Pdf::loadView('pdf.salary_advance_form_002', [
             'advance' => $advance,
             'ledger'  => $this->ledger($advance),
+            'letterhead' => TenantSetting::getLetterheadSettings($advance->tenant_id),
         ]);
     }
 

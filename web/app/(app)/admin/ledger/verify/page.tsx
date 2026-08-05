@@ -324,7 +324,7 @@ export default function LedgerVerifyPage() {
         {/* Pagination */}
         {lastPage > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-100">
-            <span className="text-xs text-neutral-400">Page {page} of {lastPage} Â· {total.toLocaleString()} checks</span>
+            <span className="text-xs text-neutral-400">Page {page} of {lastPage} · {total.toLocaleString()} checks</span>
             <div className="flex gap-1">
               <button
                 type="button"
@@ -367,9 +367,9 @@ export default function LedgerVerifyPage() {
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-5 py-3 flex items-center justify-between gap-4 text-xs text-neutral-500">
         <span className="flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[14px] text-neutral-400">shield</span>
-          End-to-end encrypted Â· WORM storage Â· 7-year retention
+          End-to-end encrypted · WORM storage · 7-year retention
         </span>
-        <span className="font-mono text-neutral-300">SHA-256 Â· RSA-4096 Â· GovRoot CA G2</span>
+        <span className="font-mono text-neutral-300">SHA-256 · RSA-4096 · GovRoot CA G2</span>
       </div>
     </div>
   );
