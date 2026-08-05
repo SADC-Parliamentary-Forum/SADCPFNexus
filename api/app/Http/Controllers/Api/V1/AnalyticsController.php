@@ -88,33 +88,70 @@ class AnalyticsController extends Controller
         ]);
     }
 
+    /**
+     * Resolve the [start, end] Carbon range for a period token (MTD/QTD/YTD).
+     */
+    private static function periodRange(string $period): array
+    {
+        $now = now();
+        return match (strtoupper($period)) {
+            'MTD' => [$now->copy()->startOfMonth(), $now->copy()->endOfDay()],
+            'QTD' => [$now->copy()->startOfQuarter(), $now->copy()->endOfDay()],
+            default => [$now->copy()->startOfYear(), $now->copy()->endOfDay()], // YTD
+        };
+    }
+
+    /**
+     * Apply the tenant, optional period, and optional department scope to a request-model query.
+     */
+    private static function scopeQuery($query, int $tenantId, ?array $range, ?string $department)
+    {
+        $query->where('tenant_id', $tenantId);
+        if ($range) {
+            $query->whereBetween('created_at', $range);
+        }
+        if ($department && strtolower($department) !== 'all') {
+            $query->whereHas('requester.department', function ($q) use ($department) {
+                $q->where('name', $department);
+            });
+        }
+        return $query;
+    }
+
     public function summary(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId   = $request->user()->tenant_id;
+        $periodParm = $request->input('period');
+        $department = $request->input('dept') ?? $request->input('department');
+        $range      = $periodParm ? self::periodRange((string) $periodParm) : null;
 
         // Total submissions per module
-        $travelCount = TravelRequest::where('tenant_id', $tenantId)->count();
-        $leaveCount = LeaveRequest::where('tenant_id', $tenantId)->count();
-        $imprestCount = ImprestRequest::where('tenant_id', $tenantId)->count();
-        $procurementCount = ProcurementRequest::where('tenant_id', $tenantId)->count();
+        $travelCount = self::scopeQuery(TravelRequest::query(), $tenantId, $range, $department)->count();
+        $leaveCount = self::scopeQuery(LeaveRequest::query(), $tenantId, $range, $department)->count();
+        $imprestCount = self::scopeQuery(ImprestRequest::query(), $tenantId, $range, $department)->count();
+        $procurementCount = self::scopeQuery(ProcurementRequest::query(), $tenantId, $range, $department)->count();
         $totalCount = $travelCount + $leaveCount + $imprestCount + $procurementCount;
 
         // Approval rates
-        $travelApproved = TravelRequest::where('tenant_id', $tenantId)->whereIn('status', ['approved', 'paid'])->count();
-        $leaveApproved = LeaveRequest::where('tenant_id', $tenantId)->whereIn('status', ['approved'])->count();
-        $totalSubmitted = TravelRequest::where('tenant_id', $tenantId)->whereNotIn('status', ['draft'])->count()
-            + LeaveRequest::where('tenant_id', $tenantId)->whereNotIn('status', ['draft'])->count();
+        $travelApproved = self::scopeQuery(TravelRequest::query(), $tenantId, $range, $department)->whereIn('status', ['approved', 'paid'])->count();
+        $leaveApproved = self::scopeQuery(LeaveRequest::query(), $tenantId, $range, $department)->whereIn('status', ['approved'])->count();
+        $totalSubmitted = self::scopeQuery(TravelRequest::query(), $tenantId, $range, $department)->whereNotIn('status', ['draft'])->count()
+            + self::scopeQuery(LeaveRequest::query(), $tenantId, $range, $department)->whereNotIn('status', ['draft'])->count();
         $totalApproved = $travelApproved + $leaveApproved;
         $approvalRate = $totalSubmitted > 0 ? round(($totalApproved / $totalSubmitted) * 100, 1) : 0;
 
-        // Monthly submissions (last 12 months)
+        // Monthly submissions (last 12 months, clipped to the selected period when narrower)
         $monthly = [];
         for ($i = 11; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $month = $date->format('Y-m');
-            $count = TravelRequest::where('tenant_id', $tenantId)->whereYear('created_at', $date->year)->whereMonth('created_at', $date->month)->count()
-                + LeaveRequest::where('tenant_id', $tenantId)->whereYear('created_at', $date->year)->whereMonth('created_at', $date->month)->count()
-                + ImprestRequest::where('tenant_id', $tenantId)->whereYear('created_at', $date->year)->whereMonth('created_at', $date->month)->count();
+            if ($range && ($date->endOfMonth()->lt($range[0]) || $date->startOfMonth()->gt($range[1]))) {
+                $monthly[] = ['month' => $month, 'label' => $date->format('M'), 'count' => 0];
+                continue;
+            }
+            $count = self::scopeQuery(TravelRequest::query(), $tenantId, null, $department)->whereYear('created_at', $date->year)->whereMonth('created_at', $date->month)->count()
+                + self::scopeQuery(LeaveRequest::query(), $tenantId, null, $department)->whereYear('created_at', $date->year)->whereMonth('created_at', $date->month)->count()
+                + self::scopeQuery(ImprestRequest::query(), $tenantId, null, $department)->whereYear('created_at', $date->year)->whereMonth('created_at', $date->month)->count();
             $monthly[] = ['month' => $month, 'label' => $date->format('M'), 'count' => $count];
         }
 
@@ -128,7 +165,7 @@ class AnalyticsController extends Controller
 
         // Activity heatmap from audit logs (day_of_week 0=Sun..6=Sat, hour 0-23)
         $heatmapRaw = AuditLog::where('tenant_id', $tenantId)
-            ->where('created_at', '>=', now()->subDays(90))
+            ->where('created_at', '>=', $range ? $range[0] : now()->subDays(90))
             ->select(
                 DB::raw('EXTRACT(DOW FROM created_at) as dow'),
                 DB::raw('EXTRACT(HOUR FROM created_at) as hour'),
@@ -160,7 +197,7 @@ class AnalyticsController extends Controller
             'kpi' => [
                 'total_submissions' => $totalCount,
                 'approval_rate_pct' => $approvalRate,
-                'active_travel' => TravelRequest::where('tenant_id', $tenantId)->whereIn('status', ['approved', 'submitted'])->count(),
+                'active_travel' => self::scopeQuery(TravelRequest::query(), $tenantId, $range, $department)->whereIn('status', ['approved', 'submitted'])->count(),
             ],
             'by_module' => $byModule,
             'monthly_submissions' => $monthly,

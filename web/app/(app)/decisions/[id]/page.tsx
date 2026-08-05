@@ -1,11 +1,11 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { decisionsApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { useState } from "react";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 export default function DecisionDetailPage() {
   const params = useParams<{ id: string }>();
@@ -71,21 +71,18 @@ export default function DecisionDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link href="/decisions" className="text-sm text-neutral-500 hover:text-primary">← Decision Register</Link>
-        <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="font-mono text-xs text-neutral-500">{data.reference_number}</p>
-            <h1 className="text-2xl font-semibold">{data.title}</h1>
-            <p className="mt-1 text-sm text-neutral-500 capitalize">{data.decision_type.replace("_", " ")} · {data.status.replace("_", " ")}</p>
+      <ModulePageHeader
+        title={data.title}
+        subtitle={`${data.reference_number} · ${data.decision_type.replace("_", " ")} · ${data.status.replace("_", " ")}`}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Decision Register", href: "/decisions" }, { label: data.reference_number }]} />}
+        meta={
+          <div className="flex flex-wrap items-center gap-3 text-sm text-neutral-600 dark:text-neutral-400">
+            <span>Owner: {data.owner?.name ?? "—"}</span>
+            <span>Due: {data.due_date ? formatDateShort(data.due_date) : "—"}</span>
+            {data.is_confidential && <span className="text-amber-600 dark:text-amber-400">Confidential</span>}
           </div>
-          <div className="text-sm text-neutral-600 space-y-1 text-right">
-            <div>Owner: {data.owner?.name ?? "—"}</div>
-            <div>Due: {data.due_date ? formatDateShort(data.due_date) : "—"}</div>
-            {data.is_confidential && <div className="text-amber-600">Confidential</div>}
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {data.body && (
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-4 whitespace-pre-wrap text-sm">

@@ -10,6 +10,7 @@ import {
   type SetupOptions,
 } from "@/lib/api";
 import { Stepper } from "@/components/ui/Stepper";
+import { useTheme } from "@/components/providers/ThemeProvider";
 import { cn } from "@/lib/utils";
 import { readStoredUser, writeStoredUser } from "@/lib/session";
 import { attachCanvasPassiveFalseTouchListeners } from "@/lib/attachCanvasPassiveFalseTouchListeners";
@@ -84,13 +85,13 @@ function StepCard({
   title, description, step, children,
 }: { title: string; description?: string; step: number; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl bg-white border border-neutral-200 shadow-sm p-8">
+    <div className="rounded-2xl bg-white dark:bg-[var(--dk-bg-surface)] border border-neutral-200 dark:border-neutral-700 shadow-sm p-8">
       <div className="mb-6">
         <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1">
           Step {step} of 7
         </p>
-        <h2 className="text-xl font-bold text-neutral-900">{title}</h2>
-        {description && <p className="text-sm text-neutral-500 mt-1">{description}</p>}
+        <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{title}</h2>
+        {description && <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">{description}</p>}
       </div>
       {children}
     </div>
@@ -107,7 +108,7 @@ function StepFooter({
   saving?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between mt-8 pt-6 border-t border-neutral-100">
+    <div className="flex items-center justify-between mt-8 pt-6 border-t border-neutral-100 dark:border-neutral-700/50">
       {onBack ? (
         <button type="button" onClick={onBack} className="btn-secondary flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
@@ -132,7 +133,7 @@ function StepFooter({
 
 function ErrorBanner({ message }: { message: string }) {
   return (
-    <div className="mb-4 flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+    <div className="mb-4 flex items-start gap-2 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 px-4 py-3 text-sm text-red-700 dark:text-red-300">
       <span className="material-symbols-outlined text-[16px] mt-0.5">error_outline</span>
       {message}
     </div>
@@ -141,24 +142,24 @@ function ErrorBanner({ message }: { message: string }) {
 
 function FieldLabel({ label, required }: { label: string; required?: boolean }) {
   return (
-    <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">
+    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1.5 uppercase tracking-wide">
       {label}
-      {required && <span className="text-red-500 ml-0.5">*</span>}
+      {required && <span className="text-red-500 dark:text-red-400 ml-0.5">*</span>}
     </label>
   );
 }
 
 function ReviewSection({ title, items }: { title: string; items: [string, string][] }) {
   return (
-    <div className="rounded-xl border border-neutral-100 overflow-hidden">
-      <div className="px-4 py-2.5 bg-neutral-50 border-b border-neutral-100">
-        <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{title}</p>
+    <div className="rounded-xl border border-neutral-100 dark:border-neutral-700/50 overflow-hidden">
+      <div className="px-4 py-2.5 bg-neutral-50 dark:bg-white/5 border-b border-neutral-100 dark:border-neutral-700/50">
+        <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{title}</p>
       </div>
-      <div className="divide-y divide-neutral-50">
+      <div className="divide-y divide-neutral-50 dark:divide-neutral-700/50">
         {items.map(([label, value]) => (
           <div key={label} className="px-4 py-2.5 flex items-center justify-between">
-            <span className="text-xs text-neutral-500">{label}</span>
-            <span className="text-sm font-medium text-neutral-800">{value || "—"}</span>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">{label}</span>
+            <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">{value || "—"}</span>
           </div>
         ))}
       </div>
@@ -170,10 +171,10 @@ function FormSection({
   title, description, children,
 }: { title: string; description?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-neutral-200 bg-neutral-50/70 p-5">
+    <section className="rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/70 dark:bg-white/5 p-5">
       <div className="mb-4">
-        <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
-        {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
+        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
+        {description && <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{description}</p>}
       </div>
       {children}
     </section>
@@ -184,18 +185,18 @@ function FormSection({
 
 function SetupHeader() {
   return (
-    <div className="border-b border-neutral-200 bg-white px-6 py-4">
+    <div className="border-b border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[var(--dk-bg-surface)] px-6 py-4">
       <div className="mx-auto max-w-3xl flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/sadcpf-logo.jpg" alt="SADC-PF" className="h-8 w-auto object-contain shrink-0" />
           <div className="min-w-0">
-            <p className="text-sm font-bold text-neutral-900">SADC-PF Nexus</p>
-            <p className="text-xs text-neutral-400">Account Setup</p>
+            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">SADC-PF Nexus</p>
+            <p className="text-xs text-neutral-400 dark:text-neutral-500">Account Setup</p>
           </div>
         </div>
         <div className="flex items-center gap-4 shrink-0">
-          <p className="text-xs text-neutral-400 hidden sm:block max-w-[200px] md:max-w-none text-right">
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 hidden sm:block max-w-[200px] md:max-w-none text-right">
             Complete your profile to access the system
           </p>
           <a
@@ -442,16 +443,16 @@ function SignatureSlot({
 }) {
   if (saved) {
     return (
-      <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200">
-        <span className="material-symbols-outlined text-green-600 text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+      <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40">
+        <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
         <div className="flex-1">
-          <p className="text-sm font-semibold text-green-800">{label} saved</p>
-          <p className="text-xs text-green-600">Your {type === "full" ? "signature" : "initials"} has been stored securely.</p>
+          <p className="text-sm font-semibold text-green-800 dark:text-green-300">{label} saved</p>
+          <p className="text-xs text-green-600 dark:text-green-400">Your {type === "full" ? "signature" : "initials"} has been stored securely.</p>
         </div>
         <button
           type="button"
           onClick={() => setMethod("draw")}
-          className="text-xs text-green-700 underline hover:no-underline"
+          className="text-xs text-green-700 dark:text-green-300 underline hover:no-underline"
         >
           Re-do
         </button>
@@ -462,7 +463,7 @@ function SignatureSlot({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-neutral-700">{label}</p>
+        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{label}</p>
         {method === null && (
           <div className="flex gap-2">
             <button type="button" onClick={() => setMethod("draw")}
@@ -477,13 +478,13 @@ function SignatureSlot({
         )}
         {method !== null && (
           <button type="button" onClick={() => setMethod(null)}
-            className="text-xs text-neutral-400 hover:text-neutral-700 flex items-center gap-1">
+            className="text-xs text-neutral-400 dark:text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300 flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">close</span>Cancel
           </button>
         )}
       </div>
       {method === null && (
-        <div className="rounded-xl border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-400">
+        <div className="rounded-xl border border-dashed border-neutral-200 dark:border-neutral-700 p-6 text-center text-sm text-neutral-400 dark:text-neutral-500">
           Choose a method above to add your {type === "full" ? "signature" : "initials"}
         </div>
       )}
@@ -860,6 +861,7 @@ function Step5Security({ onNext, onBack }: { onNext: () => void; onBack: () => v
 function Step6Preferences({
   state, update, onNext, onBack,
 }: { state: WizardState; update: (p: Partial<WizardState>) => void; onNext: () => void; onBack: () => void }) {
+  const { setTheme } = useTheme();
   function handleNext() {
     localStorage.setItem("sadcpf_user_prefs", JSON.stringify({
       language: state.language,
@@ -867,15 +869,9 @@ function Step6Preferences({
       notifEmail: state.notifEmail,
       notifInApp: state.notifInApp,
     }));
-    if (typeof document !== "undefined") {
-      if (state.theme === "dark") {
-        document.documentElement.classList.add("dark");
-        localStorage.setItem("sadcpf_theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        localStorage.setItem("sadcpf_theme", "light");
-      }
-    }
+    // Use the same theme-setting logic as ThemeProvider so `data-theme` stays
+    // in sync with the `dark` class and localStorage key it reads on load.
+    setTheme(state.theme === "dark" ? "dark" : "light");
     onNext();
   }
 

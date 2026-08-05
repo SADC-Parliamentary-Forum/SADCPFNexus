@@ -5981,7 +5981,8 @@ export interface AnalyticsSummary {
 }
 
 export const analyticsApi = {
-  summary: () => api.get<AnalyticsSummary>("/analytics/summary"),
+  summary: (params?: { period?: string; dept?: string }) =>
+    api.get<AnalyticsSummary>("/analytics/summary", { params }),
 };
 
 // ─── HR Incidents ─────────────────────────────────────────────────────────────
