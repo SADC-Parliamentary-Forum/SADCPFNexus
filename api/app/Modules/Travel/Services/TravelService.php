@@ -5,6 +5,7 @@ use App\Models\Attachment;
 use App\Models\AuditLog;
 use App\Models\TravelAmendment;
 use App\Models\TravelFundingLine;
+use App\Models\TenantSetting;
 use App\Models\TravelRequest;
 use App\Models\User;
 use App\Models\WorkplanEvent;
@@ -1108,6 +1109,7 @@ class TravelService
 
         return \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.travel_authorisation_parts_ad', [
             'travel' => $travel,
+            'letterhead' => TenantSetting::getLetterheadSettings($travel->tenant_id),
         ]);
     }
 

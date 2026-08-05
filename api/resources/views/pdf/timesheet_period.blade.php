@@ -6,7 +6,7 @@
     <style>
         body { font-family: DejaVu Sans, sans-serif; font-size: 11px; color: #222; }
         h1 { font-size: 16px; margin: 0 0 6px; }
-        .banner { background: #0b3d2e; color: #fff; padding: 10px 12px; margin-bottom: 14px; }
+        .banner { background: #1d85ed; color: #fff; padding: 10px 12px; margin-bottom: 14px; }
         .meta td { padding: 2px 10px 2px 0; vertical-align: top; }
         table.entries { width: 100%; border-collapse: collapse; margin-top: 12px; }
         table.entries th, table.entries td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }

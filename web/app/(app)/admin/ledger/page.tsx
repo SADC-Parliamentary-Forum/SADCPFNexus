@@ -369,7 +369,7 @@ export default function AdminLedgerPage() {
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
             <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-            Live Â· {timeAgo(lastVerified)}
+            Live · {timeAgo(lastVerified)}
           </div>
         </div>
 
@@ -509,7 +509,7 @@ export default function AdminLedgerPage() {
         {lastPage > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-neutral-100">
             <span className="text-xs text-neutral-400">
-              Page {page} of {lastPage} Â· {total.toLocaleString()} entries
+              Page {page} of {lastPage} · {total.toLocaleString()} entries
             </span>
             <div className="flex gap-1">
               <button
@@ -567,7 +567,7 @@ export default function AdminLedgerPage() {
               </span>
             )}
           </div>
-          <span className="font-mono text-neutral-300">SHA-256 Â· WORM Â· 7yr retention</span>
+          <span className="font-mono text-neutral-300">SHA-256 · WORM · 7yr retention</span>
         </div>
       )}
     </div>
