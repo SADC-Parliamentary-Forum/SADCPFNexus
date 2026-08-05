@@ -23,11 +23,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _biometricLoading = false;
+  bool _biometricAvailable = false;
 
   // 2FA state
   bool _mfaRequired = false;
   final _totpController = TextEditingController();
   bool _totpLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricAvailability();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    bool canCheck = false;
+    try {
+      canCheck = await LocalAuthentication().canCheckBiometrics;
+    } catch (_) {
+      canCheck = false;
+    }
+    if (mounted) setState(() => _biometricAvailable = canCheck);
+  }
 
   Future<void> _handleBiometricLogin() async {
     final storage = ref.read(authStorageProvider);
@@ -533,6 +550,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             size: 20,
                           ),
                           suffixIcon: IconButton(
+                            tooltip: _obscurePassword
+                                ? 'Show password'
+                                : 'Hide password',
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_outlined
@@ -624,35 +644,54 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                       Center(
-                        child: TextButton.icon(
-                          onPressed: _biometricLoading
-                              ? null
-                              : _handleBiometricLogin,
-                          icon: _biometricLoading
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                        child: _biometricAvailable
+                            ? TextButton.icon(
+                                onPressed: _biometricLoading
+                                    ? null
+                                    : _handleBiometricLogin,
+                                icon: _biometricLoading
+                                    ? SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: c.primary,
+                                        ),
+                                      )
+                                    : Icon(
+                                        Icons.fingerprint,
+                                        color: c.primary,
+                                        size: 22,
+                                      ),
+                                label: Text(
+                                  _biometricLoading
+                                      ? 'Authenticating…'
+                                      : 'Use biometric login',
+                                  style: GoogleFonts.publicSans(
                                     color: c.primary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                )
-                              : Icon(
-                                  Icons.fingerprint,
-                                  color: c.primary,
-                                  size: 22,
                                 ),
-                          label: Text(
-                            _biometricLoading
-                                ? 'Authenticating…'
-                                : 'Use biometric login',
-                            style: GoogleFonts.publicSans(
-                              color: c.primary,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                              )
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.fingerprint,
+                                    color: c.onSurface.withValues(alpha: 0.35),
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Biometric login is not available on this device.',
+                                    style: GoogleFonts.publicSans(
+                                      color: c.onSurface.withValues(alpha: 0.5),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
                       ),
                     ],
                   ),
