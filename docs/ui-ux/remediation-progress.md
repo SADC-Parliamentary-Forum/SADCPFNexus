@@ -1,14 +1,15 @@
 # UI/UX Audit Remediation Progress
 
-> **Programme verdict:** All **21 P0s (Pass 1-5) Fixed**. Closed **334/520 (64.2%)** Fixed/Already-fixed under honest route/theme verification.
+> **Programme verdict:** All **21 P0s (Pass 1-5) Fixed**. Closed **334/593 (56.3%)** Fixed/Already-fixed under honest route/theme verification, with **73 Pass 6 findings in remediation**.
 > Pass 2 (`feat/ui-ux-audit-remediation-2`) closed universal toast, WorkflowStatusBanner on remaining workflow details, register captions, Leave mobile cards + DS Input/Select/Badge/Button seed, Header a11y, dark `bg-white` hotspots, residual double padding.
 > Pass 3 verification hardened P0 regressions: sidebar now exposes one Approvals entry point, native browser confirm usage is blocked by unit test, and `ConfirmDialog` restores focus with dialog ARIA/Escape/backdrop handling.
 > Pass 4 (2026-08-03) ran four parallel read-only sweeps (admin web forms/tables/empty-states, admin web accessibility/dark-mode, mobile Flutter screen-level UX, mobile Flutter cross-screen consistency) scoped to find only issues **not** already catalogued below. Added **85 new findings, UX-365..UX-449**; all **85 Pass 4 findings** are now Fixed.
 > Pass 5 (2026-08-04) ran four more parallel sweeps (mobile remaining-features UX, admin web under-explored modules, admin web copy/visual-consistency, admin-web-vs-mobile parity) scoped to find only issues **not** already catalogued. Added **71 new findings, UX-450..UX-520**, including **2 new P0s**. All **71 Pass 5 findings were remediated** by six parallel implementation workstreams (isolated git worktrees, merged 2026-08-04): mobile HR/assignments, mobile finance/travel (incl. the P0 travel-document-validation gap), admin web fleet/M&E/SRHR/budget, admin web correspondence/stock/weekly-summaries, admin-web-vs-mobile parity, and admin web copy/visual-consistency (incl. mojibake cleanup across 14 files).
+> Pass 6 (2026-08-05) ran five parallel sweeps (admin web untouched modules, admin web layout/CSS-bug hunt, mobile untouched screens, mobile performance/offline edge cases, cross-platform notifications/PDF/print) scoped to find only issues **not** already catalogued. Added **73 new findings, UX-521..UX-593**, including **1 new P0** (mojibake corruption in the compliance audit ledger export). Remediation dispatched the same day across six parallel worktree workstreams — status pending verification.
 > Remaining Deferred items are predominantly **product/IA decisions** (dual module surfaces, calendar multiplicity, settings IA) or residual per-route polish where the canonical pattern now exists.
 **Branch:** `feat/ui-ux-audit-remediation-2`
 **Base:** `SADCPFNexus/main` @ `33cfa96`
-**Generated:** 2026-07-31 (Pass 1-3) · **Updated:** 2026-08-04 (Pass 5 fixed)
+**Generated:** 2026-07-31 (Pass 1-3) · **Updated:** 2026-08-05 (Pass 6 logged)
 
 ## Counts
 
@@ -17,11 +18,11 @@
 | Fixed | 327 |
 | Already-fixed-by-prior-pack | 7 |
 | Deferred | 186 |
-| New | 0 |
+| New (Pass 6, remediation in progress) | 73 |
 | Out-of-scope | 0 |
-| **Total** | **520** |
+| **Total** | **593** |
 
-**Closed (Fixed + Already-fixed):** **334 / 520 (64.2%)**
+**Closed (Fixed + Already-fixed):** **334 / 593 (56.3%)**
 
 ## Evidence snapshot
 
@@ -667,4 +668,90 @@ _Generated 2026-08-04 via four parallel read-only agent sweeps, scoped to report
 - **UX-518** (P2/platform): Same back-link affordance is lowercase after "to" in 3 files vs Title Case elsewhere — `admin/workflows/designer/page.tsx:128`, `finance/budget/[id]/page.tsx:198`, `travel/missions/[id]/page.tsx:41`.
 - **UX-519** (P2/platform): "Submitting..." (ASCII dots) vs "Submitting…" (Unicode ellipsis) for the identical submit-in-progress state across sibling create flows — `leave/create/page.tsx:491`, `procurement/create/page.tsx:495` vs 3 others.
 - **UX-520** (P2/platform): `text-red-400` used for the required-field asterisk on 3 pages while 134 other occurrences across the app use `text-red-500` — `admin/users/[id]/page.tsx:551,555`, `assignments/create/page.tsx:98,112,197`, `assignments/[id]/page.tsx:578`.
+
+### New — Pass 6 fresh sweep (73, remediation in progress)
+
+_Generated 2026-08-05 via five parallel read-only agent sweeps, scoped to report only issues not already covered by UX-001..UX-520 above. Remediation dispatched the same day across six parallel worktree workstreams; status pending merge/verification._
+
+#### P0 — Critical (1)
+
+- **UX-521** (P0/admin-ledger): Mojibake corruption (`Â·`, `â€“` instead of `·`/`–`) throughout the compliance audit ledger export — both the generated print/export HTML and the on-screen module footer that claims "SHA-256 · WORM Storage · 7-Year Retention Policy" integrity guarantees — `web/app/(app)/admin/ledger/generate/page.tsx:98,104,308-311`.
+
+#### P1 — High (30)
+
+- **UX-522** (P1/mobile-hr): HR document cards render metadata but have no tap handler — users cannot open their own personnel documents — `mobile/lib/features/hr/presentation/screens/hr_file_documents_screen.dart:362-478`.
+- **UX-523** (P1/mobile-hr): Same dead-end on the HR file summary "Documents" tab — `mobile/lib/features/hr/presentation/screens/hr_file_summary_screen.dart:1047-1181`.
+- **UX-524** (P1/mobile-procurement): Vendor compliance-document rows have no download/open affordance — `mobile/lib/features/procurement/presentation/screens/vendor_detail_screen.dart:417-489`.
+- **UX-525** (P1/mobile-reports): Report list items have no tap handler — the entire report detail screen is non-interactive — `mobile/lib/features/reports/presentation/screens/report_detail_screen.dart:210-243`.
+- **UX-526** (P1/mobile-audit): Audit finding rows have no tap handler — no way to open finding detail — `mobile/lib/features/audit/presentation/screens/audit_management_screen.dart:210-225`.
+- **UX-527** (P1/mobile-notifications): Tapping a notification only marks it read; it never navigates to the underlying record despite carrying a link to it — `mobile/lib/features/notifications/presentation/screens/notifications_screen.dart:274-276`.
+- **UX-528** (P1/mobile-profile): "Notifications" preference tile is a dead no-op — `mobile/lib/features/profile/presentation/screens/profile_screen.dart:261-267`.
+- **UX-529** (P1/analytics): MTD/QTD/YTD period buttons and department filter update state but the data fetch has no dependency on them and never refetches — decorative filters — `web/app/(app)/analytics/page.tsx:126-193`.
+- **UX-530** (P1/profile): "Auto Session Timeout" save button shows a success toast but makes no API call at all — the setting is never persisted — `web/app/(app)/profile/security/page.tsx:651-668`.
+- **UX-531** (P1/setup): Dark-theme choice in the setup wizard only partially applies (missing `data-theme` attribute), leaving the app in a mismatched light/dark state right after onboarding — `web/app/setup/page.tsx:869-878`.
+- **UX-532** (P1/governance): "Official Report" and "Export" buttons on Plenary Resolutions have no `onClick` handler at all — `web/app/(app)/governance/resolutions/page.tsx:848-853`.
+- **UX-533** (P1/procurement): External (unauthenticated) RFQ quote submission gives suppliers no success confirmation — `web/app/external-rfq/[token]/page.tsx:39-54`.
+- **UX-534** (P1/platform): Public signature-verification page dumps raw `JSON.stringify` instead of a formatted result — the entire point of the page is non-technical verification — `web/app/(auth)/verify-signature/page.tsx:57-60`.
+- **UX-535** (P1/admin): Admin notifications page instructs admins to "edit via the legacy editor below" — no such editor exists on the page — `web/app/(app)/admin/notifications/page.tsx:111`.
+- **UX-536** (P1/mobile-imprest): Expense-line amount field has no validator/min bound; negative values are silently folded into totals — `mobile/lib/features/imprest/presentation/screens/imprest_requisition_form_screen.dart:778-790`.
+- **UX-537** (P1/mobile-profile): Change-password dialog has no minimum-length or match validation before hitting the API, unlike the login screen's equivalent — `mobile/lib/features/profile/presentation/screens/user_profile_security_screen.dart:96-169`.
+- **UX-538** (P1/mobile-hr): Payslip screen hardcodes an "N$" currency prefix regardless of the payslip's actual currency — `mobile/lib/features/hr/presentation/screens/payslip_screen.dart:98-99`.
+- **UX-539** (P1/finance): Salary-advance certificate shows the raw ISO currency code where the detail/create screens show the localized symbol — the legal certificate disagrees with the screen it was approved from — `web/app/(app)/salary-advances/[id]/certificate/page.tsx:92`.
+- **UX-540** (P1/imprest): Imprest certificate has the same raw-currency-code mismatch — `web/app/(app)/imprest/[id]/certificate/page.tsx:83,87`.
+- **UX-541** (P1/mobile-hr): "Add timeline event" has no submit-lock — rapid double-tap creates duplicate HR events — `mobile/lib/features/hr/presentation/screens/hr_file_summary_screen.dart:671-699`.
+- **UX-542** (P1/mobile-profile): Entire mobile Security Settings screen hardcodes light-theme colors, ignoring the app's dark-mode setting completely — `mobile/lib/features/profile/presentation/screens/user_profile_security_screen.dart:174-421`.
+- **UX-543** (P1/platform): Show/hide-password icon buttons have no accessible label on web login and reset-password — `web/app/(auth)/login/page.tsx:258-264`, `reset-password/page.tsx:132-138,180-186`.
+- **UX-544** (P1/mobile-platform): App shell uses a plain `ShellRoute` instead of an indexed stack — every bottom-nav tab switch tears down and rebuilds the destination screen from scratch — `mobile/lib/core/router/app_router.dart:309-320`.
+- **UX-545** (P1/mobile-requests): Concrete symptom of UX-544: the Requests tab always refetches and resets scroll position on every visit — `mobile/lib/features/requests/presentation/screens/requests_screen.dart:70-73`.
+- **UX-546** (P1/mobile-platform): None of the offline-draft-capable forms hook app lifecycle events — backgrounding or an OS kill loses unsaved work even though the app has a mechanism meant to prevent exactly that — repo-wide (5 screens), confirmed via search.
+- **UX-547** (P1/mobile-hr): Incident report form has no draft-preservation on submit failure — sensitive HR data is lost with no recovery path — `mobile/lib/features/hr/presentation/screens/report_new_incident_screen.dart:43-81`.
+- **UX-548** (P1/mobile-procurement): Multi-line-item procurement requisition has the same catch-and-lose failure mode — `mobile/lib/features/procurement/presentation/screens/procurement_requisition_form_screen.dart:131-162`.
+- **UX-549** (P1/finance): `/salary-advances/pending-approval` stacks two page titles and misaligns its header against the table below it — the one surviving instance of the `ModulePageHeader`-composition bug class after UX-450..520 remediation — `web/app/(app)/salary-advances/pending-approval/page.tsx:10-32`.
+- **UX-550** (P1/platform): Leave, salary-advance, and travel-authorisation official PDF forms have no letterhead/logo, while correspondence and signed-document exports do — `api/resources/views/pdf/leave_form_005.blade.php:28` (+2 others).
+- **UX-551** (P1/admin-ledger): The mojibake corruption from UX-521 also appears throughout the ledger module's on-screen UI, not just the print export — `web/app/(app)/admin/ledger/page.tsx:372,512,570`, `admin/ledger/verify/page.tsx:327,370,372`.
+
+#### P2 — Medium (42)
+
+- **UX-552** (P2/supplier): Nine supplier-profile inputs (contact name, phone, website, country, address, bank details) are placeholder-only with no `<label>` — `web/app/(app)/supplier/profile/page.tsx:92-100`.
+- **UX-553** (P2/supplier): Invoice submission modal's number/date inputs have no `<label>` — `web/app/(app)/supplier/invoices/page.tsx:244-264`.
+- **UX-554** (P2/governance): Committee color-swatch picker buttons (12 options) have no `aria-label` — `web/app/(app)/governance/resolutions/page.tsx:592-595,626-629`.
+- **UX-555** (P2/mobile-auth): "Use biometric login" button is always shown regardless of device capability; unavailability only revealed after tap — `mobile/lib/features/auth/presentation/screens/login_screen.dart:626-655`.
+- **UX-556** (P2/mobile-procurement): Vendor-create email field has no validator despite an email keyboard type — `mobile/lib/features/procurement/presentation/screens/vendor_create_screen.dart:179-185`.
+- **UX-557** (P2/mobile-auth): Password visibility icon button has no tooltip/Semantics label — `mobile/lib/features/auth/presentation/screens/login_screen.dart:535-546`.
+- **UX-558** (P2/setup): Entire setup wizard hardcodes light-only colors despite letting the user pick a dark theme in Step 6 — `web/app/setup/page.tsx` (StepCard, ErrorBanner, FieldLabel, etc.).
+- **UX-559** (P2/analytics): KPI icon backgrounds have no `dark:` variant while the rest of the page is dark-mode aware — `web/app/(app)/analytics/page.tsx:156-158`.
+- **UX-560** (P2/supplier): KPI value text has no `dark:` variant — `web/app/(app)/supplier/page.tsx:33`.
+- **UX-561** (P2/profile): `/profile` is hardcoded light-only while sibling `/profile/security` is dark-aware, producing a jarring flip when navigating between them — `web/app/(app)/profile/page.tsx:161,179,200,219,234,239`.
+- **UX-562** (P2/mobile-imprest): Expense retirement multiline justification field has no draft-preservation on failure — `mobile/lib/features/imprest/presentation/screens/expense_retirement_screen.dart:361`.
+- **UX-563** (P2/mobile-assets): Asset request justification field has no draft-preservation — `mobile/lib/features/assets/presentation/screens/asset_request_screen.dart:102`.
+- **UX-564** (P2/mobile-assets): Asset condition report notes field has no draft-preservation — `mobile/lib/features/assets/presentation/screens/asset_condition_report_screen.dart:330`.
+- **UX-565** (P2/mobile-hr): Overtime claim justification field has no draft-preservation — `mobile/lib/features/hr/presentation/screens/overtime_claim_form_screen.dart:298`.
+- **UX-566** (P2/mobile-assignments): Assignment create description field has no draft-preservation — `mobile/lib/features/assignments/presentation/screens/assignment_create_screen.dart:128`.
+- **UX-567** (P2/mobile-procurement): Vendor create notes field has no draft-preservation — `mobile/lib/features/procurement/presentation/screens/vendor_create_screen.dart:197`.
+- **UX-568** (P2/mobile-audit): Finding title text has no `maxLines`/`overflow`, risking layout breaks — `mobile/lib/features/audit/presentation/screens/audit_management_screen.dart:213`.
+- **UX-569** (P2/mobile-reports): Report item title has no `maxLines`/`overflow` — `mobile/lib/features/reports/presentation/screens/report_detail_screen.dart:221-228`.
+- **UX-570** (P2/mobile-hr): Employee name text has no `maxLines`/`overflow` in the HR file summary header — `mobile/lib/features/hr/presentation/screens/hr_file_summary_screen.dart:249-256`.
+- **UX-571** (P2/supplier): RFQ detail page hand-rolls its own header instead of `ModulePageHeader`, and has no breadcrumbs — `web/app/(app)/supplier/rfqs/[id]/page.tsx:63-70`.
+- **UX-572** (P2/decisions): Decisions detail page is the only one in its module not using `ModulePageHeader`/`PageBreadcrumbs` — `web/app/(app)/decisions/[id]/page.tsx`.
+- **UX-573** (P2/assets): Assets print page implements its own independent `@media print` strategy that duplicates but diverges from the shared `PrintButton` mechanism — `web/app/(app)/assets/print/page.tsx:142-148`.
+- **UX-574** (P2/platform): PDF export banner color is inconsistent — dark green on budget/weekly/timesheet reports vs blue on correspondence/signed-document/notification exports — `api/resources/views/pdf/budget_report.blade.php:9` (+2 others).
+- **UX-575** (P2/platform): Two PDF templates have no banner/branding at all — a third, unbranded tier — `api/resources/views/reports/scheduled.blade.php`, `pdf/programme.blade.php`.
+- **UX-576** (P2/mobile-travel): Attachment uploads have no progress indicator, just a generic spinner regardless of file size — `mobile/lib/features/requests/presentation/screens/travel_request_form_screen.dart:208-218`.
+- **UX-577** (P2/mobile-pif): Same missing upload-progress pattern — `mobile/lib/features/pif/presentation/screens/pif_review_approval_screen.dart:108-148`.
+- **UX-578** (P2/mobile-hr): HR directory fetch has no pagination params — unbounded as the roster grows — `mobile/lib/features/hr/presentation/screens/hr_directory_screen.dart:52`.
+- **UX-579** (P2/mobile-procurement): Vendor directory fetch has the same unbounded-fetch issue — `mobile/lib/features/procurement/presentation/screens/vendor_directory_screen.dart:39-42`.
+- **UX-580** (P2/mobile-finance): Budget pressure/allocated/spent getters recompute (loop+sort) on every access, ~5x per single build — `mobile/lib/features/finance/presentation/screens/finance_command_center_screen.dart:110-141`.
+- **UX-581** (P2/mobile-notifications): Notifications list is filtered twice per rebuild with no memoization — `mobile/lib/features/notifications/presentation/screens/notifications_screen.dart:142,148`.
+- **UX-582** (P2/approvals): Unrecognized `module_type` produces a dead `#id` anchor link instead of a working route — `web/app/(app)/approvals/page.tsx:79-85,323-329`.
+- **UX-583** (P2/supplier): Category checkboxes silently no-op past the 3-item cap with no explanatory message — `web/app/(app)/supplier/profile/page.tsx:112-118`.
+- **UX-584** (P2/procurement): RFQ quote amount fields have no `min="0"` on two untracked routes — `web/app/(app)/supplier/rfqs/[id]/page.tsx:127`, `web/app/external-rfq/[token]/page.tsx:90`.
+- **UX-585** (P2/procurement): Tender submission deadline rendered as a raw unformatted string instead of using the shared date formatter — `web/app/(auth)/tender-notices/page.tsx:58`.
+- **UX-586** (P2/mobile-profile): App version hardcoded as `'v4.2.0'` instead of read from build metadata — `mobile/lib/features/profile/presentation/screens/profile_screen.dart:302`.
+- **UX-587** (P2/admin): Debug-style string `enabled=true`/`enabled=false` renders literally instead of a human-readable label — `web/app/(app)/admin/notifications/page.tsx:189`.
+- **UX-588** (P2/supplier): Password/confirm-password fields have no client-side match check before submit, unlike other auth pages — `web/app/(auth)/supplier/register/page.tsx:320-321`.
+- **UX-589** (P2/platform): Two institutional email templates have no unsubscribe/preference link while a third one does — `api/resources/views/emails/notification.blade.php`, `correspondence.blade.php`.
+- **UX-590** (P2/platform): Shared `PrintButton` component blanket-hides all `button` elements in print with no per-page override hook — `web/components/ui/PrintButton.tsx:20-22`.
+- **UX-591** (P2/platform): PDF download is only available on the travel certificate; leave/procurement/salary-advance/imprest certificates have no equivalent export despite matching PDF views existing — certificate pages, various.
+- **UX-592** (P2/mobile-notifications): Notifications list has no pull-to-refresh, unlike sibling list screens — `mobile/lib/features/notifications/presentation/screens/notifications_screen.dart:80-158`.
+- **UX-593** (P2/mobile-notifications): Swipe-to-delete permanently deletes a notification with no confirmation and no undo — `mobile/lib/features/notifications/presentation/screens/notifications_screen.dart:260-273`.
 
