@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/offline/draft_database.dart';
+import '../../../../core/offline/draft_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class AssetConditionReportScreen extends ConsumerStatefulWidget {
@@ -85,15 +89,16 @@ class _AssetConditionReportScreenState
     final asset = _selectedAsset;
     if (asset == null) return;
     setState(() => _submitting = true);
+    final payload = {
+      'subject': 'Asset condition report: ${asset['name'] ?? asset['asset_code'] ?? 'Asset'}',
+      'description':
+          'Asset ID: ${asset['id']}\nAsset Code: ${asset['asset_code'] ?? '-'}\nCondition: ${_conditionLabels[_condition]}\nIssue Category: $_category\nNotes: ${_notesCtrl.text.trim().isEmpty ? '-' : _notesCtrl.text.trim()}',
+      'priority': _condition <= 2 || _category == 'Needs Service' ? 'high' : 'medium',
+    };
     try {
       await ref.read(apiClientProvider).dio.post(
         '/support/tickets',
-        data: {
-          'subject': 'Asset condition report: ${asset['name'] ?? asset['asset_code'] ?? 'Asset'}',
-          'description':
-              'Asset ID: ${asset['id']}\nAsset Code: ${asset['asset_code'] ?? '-'}\nCondition: ${_conditionLabels[_condition]}\nIssue Category: $_category\nNotes: ${_notesCtrl.text.trim().isEmpty ? '-' : _notesCtrl.text.trim()}',
-          'priority': _condition <= 2 || _category == 'Needs Service' ? 'high' : 'medium',
-        },
+        data: payload,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,16 +109,37 @@ class _AssetConditionReportScreenState
       );
       Navigator.pop(context);
     } catch (_) {
+      final savedLocally = await _saveDraftOnFailure(payload);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to submit condition report.'),
+          SnackBar(
+            content: Text(savedLocally
+                ? 'Failed to submit condition report. Saved to Offline Drafts so you can retry.'
+                : 'Failed to submit condition report.'),
             backgroundColor: AppColors.danger,
           ),
         );
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// Persists the entered condition report locally so it is not lost when
+  /// submission fails (e.g. no connectivity), following the same
+  /// offline-draft pattern used by the other draft-capable request forms.
+  Future<bool> _saveDraftOnFailure(Map<String, dynamic> payload) async {
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+            type: 'condition_report',
+            title: payload['subject'] as String? ?? 'Condition report',
+            payload: jsonEncode(payload),
+            createdAt: DateTime.now(),
+          ));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

@@ -58,7 +58,7 @@ class PifFormScreen extends ConsumerStatefulWidget {
   ConsumerState<PifFormScreen> createState() => _PifFormScreenState();
 }
 
-class _PifFormScreenState extends ConsumerState<PifFormScreen> {
+class _PifFormScreenState extends ConsumerState<PifFormScreen> with WidgetsBindingObserver {
   final _titleController = TextEditingController();
   final _objectiveController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -71,9 +71,55 @@ class _PifFormScreenState extends ConsumerState<PifFormScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _applyInitialDraft();
     if (_budgetLines.isEmpty) {
       _budgetLines.add(_BudgetLineInput());
+    }
+  }
+
+  bool get _hasMeaningfulContent =>
+      _titleController.text.trim().isNotEmpty ||
+      _objectiveController.text.trim().isNotEmpty ||
+      _descriptionController.text.trim().isNotEmpty ||
+      _locationController.text.trim().isNotEmpty ||
+      _leadOfficerController.text.trim().isNotEmpty ||
+      _budgetLinePayloads.isNotEmpty;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused && !_submitting && _hasMeaningfulContent) {
+      _autoSaveDraftOnBackground();
+    }
+  }
+
+  /// Silently persists the current form as a draft when the app is
+  /// backgrounded, without navigation or user-facing feedback (mirrors
+  /// [_saveDraft] but is safe to call outside a user gesture).
+  Future<void> _autoSaveDraftOnBackground() async {
+    try {
+      final payload = {
+        'title': _titleController.text.trim(),
+        'overall_objective': _objectiveController.text.trim(),
+        'background': _descriptionController.text.trim(),
+        'location': _locationController.text.trim(),
+        'lead_officer': _leadOfficerController.text.trim(),
+        'budget_lines': _budgetLinePayloads,
+      };
+
+      final db = ref.read(draftDatabaseProvider);
+      await db.into(db.draftEntries).insert(
+            DraftEntriesCompanion.insert(
+              type: 'pif',
+              title: _titleController.text.trim().isEmpty
+                  ? 'PIF draft'
+                  : _titleController.text.trim(),
+              payload: jsonEncode(payload),
+              createdAt: DateTime.now(),
+            ),
+          );
+    } catch (_) {
+      // Best-effort; nothing actionable if this fails while backgrounded.
     }
   }
 
@@ -217,6 +263,7 @@ class _PifFormScreenState extends ConsumerState<PifFormScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _titleController.dispose();
     _objectiveController.dispose();
     _descriptionController.dispose();

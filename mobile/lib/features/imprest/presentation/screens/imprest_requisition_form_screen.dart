@@ -38,7 +38,7 @@ class ImprestRequisitionFormScreen extends ConsumerStatefulWidget {
 }
 
 class _ImprestRequisitionFormScreenState
-    extends ConsumerState<ImprestRequisitionFormScreen> {
+    extends ConsumerState<ImprestRequisitionFormScreen> with WidgetsBindingObserver {
   final int _currentStep = 1;
   static const int _totalSteps = 3;
   bool _submitting = false;
@@ -67,7 +67,45 @@ class _ImprestRequisitionFormScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _applyInitialDraft();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  bool get _hasMeaningfulContent =>
+      _selectedMission != null ||
+      _items.any((i) =>
+          i.description.isNotEmpty || i.amount > 0 || i.note.isNotEmpty);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused && !_submitting && _hasMeaningfulContent) {
+      _autoSaveDraftOnBackground();
+    }
+  }
+
+  /// Silently persists the current form as a draft when the app is
+  /// backgrounded, without navigation or user-facing feedback (mirrors
+  /// [_saveDraft] but is safe to call outside a user gesture).
+  Future<void> _autoSaveDraftOnBackground() async {
+    if (_total < 1) return;
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      final payload = _buildPayload();
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+        type: 'imprest',
+        title: payload['purpose'] as String? ?? 'Imprest draft',
+        payload: jsonEncode(payload),
+        createdAt: DateTime.now(),
+      ));
+    } catch (_) {
+      // Best-effort; nothing actionable if this fails while backgrounded.
+    }
   }
 
   void _applyInitialDraft() {
@@ -704,6 +742,7 @@ class _ExpenseRowState extends State<_ExpenseRow> {
   late final TextEditingController _descCtrl;
   late final TextEditingController _amtCtrl;
   late final TextEditingController _noteCtrl;
+  String? _amountError;
 
   @override
   void initState() {
@@ -724,10 +763,12 @@ class _ExpenseRowState extends State<_ExpenseRow> {
     super.dispose();
   }
 
-  InputDecoration _deco(String hint) => InputDecoration(
+  InputDecoration _deco(String hint, {String? errorText}) => InputDecoration(
         hintText: hint,
         hintStyle:
             const TextStyle(color: AppColors.textMuted, fontSize: 12),
+        errorText: errorText,
+        errorStyle: const TextStyle(color: AppColors.danger, fontSize: 10),
         filled: true,
         fillColor: AppColors.bgDark,
         contentPadding:
@@ -744,6 +785,10 @@ class _ExpenseRowState extends State<_ExpenseRow> {
           borderRadius: BorderRadius.circular(8),
           borderSide:
               const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: AppColors.danger),
         ),
       );
 
@@ -780,12 +825,22 @@ class _ExpenseRowState extends State<_ExpenseRow> {
                   keyboardType: const TextInputType.numberWithOptions(
                       decimal: true),
                   onChanged: (v) {
-                    widget.item.amount = double.tryParse(v) ?? 0;
+                    final parsed = double.tryParse(v);
+                    setState(() {
+                      if (parsed != null && parsed < 0) {
+                        _amountError = 'Amount cannot be negative.';
+                        // Do not fold a negative amount into the running
+                        // total — keep the last valid (non-negative) value.
+                      } else {
+                        _amountError = null;
+                        widget.item.amount = parsed ?? 0;
+                      }
+                    });
                     widget.onChanged();
                   },
                   style: const TextStyle(
                       color: AppColors.textPrimary, fontSize: 13),
-                  decoration: _deco('0.00'),
+                  decoration: _deco('0.00', errorText: _amountError),
                 ),
               ),
             ],

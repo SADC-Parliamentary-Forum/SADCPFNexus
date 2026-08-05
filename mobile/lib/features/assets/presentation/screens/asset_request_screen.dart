@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
+import '../../../../../core/offline/draft_database.dart';
+import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/theme/app_theme.dart';
 
 /// Screen to request an asset with justification (and optional doc).
@@ -43,12 +47,13 @@ class _AssetRequestScreenState extends ConsumerState<AssetRequestScreen> {
       _submitting = true;
       _error = null;
     });
+    final justification = _justificationController.text.trim();
     try {
       final dio = ref.read(apiClientProvider).dio;
       await dio.post<Map<String, dynamic>>(
         '/asset-requests',
         data: {
-          'justification': _justificationController.text.trim(),
+          'justification': justification,
         },
       );
       if (!mounted) return;
@@ -57,11 +62,32 @@ class _AssetRequestScreenState extends ConsumerState<AssetRequestScreen> {
       );
       context.pop();
     } catch (e) {
+      final savedLocally = await _saveDraftOnFailure(justification);
       if (!mounted) return;
       setState(() {
         _submitting = false;
-        _error = 'Failed to submit request. Please try again.';
+        _error = savedLocally
+            ? 'Failed to submit request. Saved to Offline Drafts so you can retry.'
+            : 'Failed to submit request. Please try again.';
       });
+    }
+  }
+
+  /// Persists the entered justification locally so it is not lost when
+  /// submission fails (e.g. no connectivity), following the same
+  /// offline-draft pattern used by the other draft-capable request forms.
+  Future<bool> _saveDraftOnFailure(String justification) async {
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+            type: 'asset_request',
+            title: 'Asset request',
+            payload: jsonEncode({'justification': justification}),
+            createdAt: DateTime.now(),
+          ));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

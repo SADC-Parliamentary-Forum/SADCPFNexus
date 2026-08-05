@@ -8,8 +8,12 @@ import 'notification_banner.dart';
 import 'shell_drawer_scope.dart';
 
 class AppShell extends ConsumerStatefulWidget {
-  final Widget child;
-  const AppShell({super.key, required this.child});
+  /// The active branch navigator, supplied by `StatefulShellRoute.indexedStack`.
+  /// Each bottom-nav tab keeps its own offstage `Navigator` (and therefore its
+  /// scroll position / in-flight state) instead of being torn down and
+  /// rebuilt on every tab switch, as a plain `ShellRoute` would do.
+  final StatefulNavigationShell navigationShell;
+  const AppShell({super.key, required this.navigationShell});
 
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
@@ -90,41 +94,21 @@ class _AppShellState extends ConsumerState<AppShell>
     return false;
   }
 
-  int _getSelectedIndex(BuildContext context) {
-    final location =
-        GoRouter.of(context).routeInformationProvider.value.uri.toString();
-    if (location.startsWith('/dashboard')) return 0;
-    if (location.startsWith('/requests')) return 1;
-    if (location.startsWith('/approvals')) return 2;
-    if (location.startsWith('/reports')) return 3;
-    if (location.startsWith('/profile')) return 4;
-    return 0;
-  }
-
   void _onTap(BuildContext context, int index) {
     _showNav();
-    switch (index) {
-      case 0:
-        context.go('/dashboard');
-        break;
-      case 1:
-        context.go('/requests');
-        break;
-      case 2:
-        context.go('/approvals');
-        break;
-      case 3:
-        context.go('/reports');
-        break;
-      case 4:
-        context.go('/profile');
-        break;
-    }
+    // `goBranch` switches the offstage `Navigator` for the tapped tab
+    // in-place; passing `initialLocation: true` when re-tapping the already
+    // active tab pops it back to that branch's first route (mirrors the
+    // common go_router "tap active tab to go to root" convention).
+    widget.navigationShell.goBranch(
+      index,
+      initialLocation: index == widget.navigationShell.currentIndex,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = _getSelectedIndex(context);
+    final selectedIndex = widget.navigationShell.currentIndex;
     void openDrawer() => _scaffoldKey.currentState?.openDrawer();
 
     return ShellDrawerScope(
@@ -141,7 +125,7 @@ class _AppShellState extends ConsumerState<AppShell>
                 Positioned.fill(
                   child: NotificationListener<ScrollNotification>(
                     onNotification: _handleScroll,
-                    child: widget.child,
+                    child: widget.navigationShell,
                   ),
                 ),
 

@@ -45,7 +45,7 @@ class LeaveRequestFormScreen extends ConsumerStatefulWidget {
   ConsumerState<LeaveRequestFormScreen> createState() => _LeaveRequestFormScreenState();
 }
 
-class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen> {
+class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen> with WidgetsBindingObserver {
   int _step = 0;
   String _leaveType = 'Annual Leave';
   DateTime? _startDate;
@@ -68,7 +68,38 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _applyInitialDraft();
+  }
+
+  bool get _hasMeaningfulContent =>
+      _startDate != null || _endDate != null || _reasonCtrl.text.trim().isNotEmpty || _selectedAccrualIds.isNotEmpty;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused && !_submitting && _hasMeaningfulContent) {
+      _autoSaveDraftOnBackground();
+    }
+  }
+
+  /// Silently persists the current form as a draft when the app is
+  /// backgrounded, without navigation or user-facing feedback (mirrors
+  /// [_saveDraft] but is safe to call outside a user gesture).
+  Future<void> _autoSaveDraftOnBackground() async {
+    final payload = _buildPayload();
+    if (payload.isEmpty) return;
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      final title = 'Leave: $_leaveType';
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+        type: 'leave',
+        title: title,
+        payload: jsonEncode(payload),
+        createdAt: DateTime.now(),
+      ));
+    } catch (_) {
+      // Best-effort; nothing actionable if this fails while backgrounded.
+    }
   }
 
   void _applyInitialDraft() {
@@ -168,6 +199,7 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _reasonCtrl.dispose();
     super.dispose();
   }

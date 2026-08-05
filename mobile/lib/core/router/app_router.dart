@@ -306,107 +306,136 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // â”€â”€â”€ App shell with bottom navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      ShellRoute(
-        builder: (context, state, child) => AppShell(child: child),
-        routes: [
-          GoRoute(
-            path: '/dashboard',
-            name: 'dashboard',
-            builder: (context, state) => const DashboardScreen(),
-          ),
-          GoRoute(
-            path: '/requests',
-            name: 'requests',
-            builder: (context, state) => const RequestsScreen(),
+      // `StatefulShellRoute.indexedStack` keeps one offstage `Navigator` per
+      // bottom-nav tab (branch) alive in an `IndexedStack`, instead of the
+      // plain `ShellRoute` behaviour of tearing down and rebuilding the
+      // destination screen on every tab switch. Route paths, names, and
+      // nesting below are unchanged from the previous `ShellRoute` — only
+      // the wiring around them changed. Branch order must match
+      // `bottom_nav_bar.dart`'s `_onTap`/`_GlassNavBar` tab order
+      // (Dashboard, Requests, Approvals, Reports, Profile).
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AppShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
             routes: [
               GoRoute(
-                path: 'travel/new',
-                name: 'travel-new',
-                pageBuilder: (context, state) {
-                  final extra = state.extra as Map<String, dynamic>?;
-                  return MaterialPage(
-                    fullscreenDialog: true,
-                    child: TravelRequestFormScreen(
-                      initialDraft: extra?['payload'] as Map<String, dynamic>?,
-                      draftId: extra?['draftId'] as int?,
+                path: '/dashboard',
+                name: 'dashboard',
+                builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/requests',
+                name: 'requests',
+                builder: (context, state) => const RequestsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'travel/new',
+                    name: 'travel-new',
+                    pageBuilder: (context, state) {
+                      final extra = state.extra as Map<String, dynamic>?;
+                      return MaterialPage(
+                        fullscreenDialog: true,
+                        child: TravelRequestFormScreen(
+                          initialDraft: extra?['payload'] as Map<String, dynamic>?,
+                          draftId: extra?['draftId'] as int?,
+                        ),
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'travel/detail',
+                    name: 'travel-detail',
+                    builder: (context, state) => TravelRequestDetailScreen(
+                      requestId: state.uri.queryParameters['id'],
                     ),
-                  );
-                },
-              ),
-              GoRoute(
-                path: 'travel/detail',
-                name: 'travel-detail',
-                builder: (context, state) => TravelRequestDetailScreen(
-                  requestId: state.uri.queryParameters['id'],
-                ),
-              ),
-              GoRoute(
-                path: 'travel/finance-queue',
-                name: 'travel-finance-queue',
-                builder: (context, state) => const TravelFinanceQueueScreen(),
-              ),
-              GoRoute(
-                path: 'travel/toil',
-                name: 'travel-toil',
-                builder: (context, state) => const TravelToilQueueScreen(),
-              ),
-              GoRoute(
-                path: 'leave/new',
-                name: 'leave-new',
-                pageBuilder: (context, state) {
-                  final extra = state.extra as Map<String, dynamic>?;
-                  return MaterialPage(
-                    fullscreenDialog: true,
-                    child: LeaveRequestFormScreen(
-                      initialDraft: extra?['payload'] as Map<String, dynamic>?,
-                      draftId: extra?['draftId'] as int?,
+                  ),
+                  GoRoute(
+                    path: 'travel/finance-queue',
+                    name: 'travel-finance-queue',
+                    builder: (context, state) => const TravelFinanceQueueScreen(),
+                  ),
+                  GoRoute(
+                    path: 'travel/toil',
+                    name: 'travel-toil',
+                    builder: (context, state) => const TravelToilQueueScreen(),
+                  ),
+                  GoRoute(
+                    path: 'leave/new',
+                    name: 'leave-new',
+                    pageBuilder: (context, state) {
+                      final extra = state.extra as Map<String, dynamic>?;
+                      return MaterialPage(
+                        fullscreenDialog: true,
+                        child: LeaveRequestFormScreen(
+                          initialDraft: extra?['payload'] as Map<String, dynamic>?,
+                          draftId: extra?['draftId'] as int?,
+                        ),
+                      );
+                    },
+                  ),
+                  GoRoute(
+                    path: 'leave/balance',
+                    name: 'leave-balance',
+                    builder: (context, state) => const LeaveBalanceScreen(),
+                  ),
+                  GoRoute(
+                    path: 'leave/detail',
+                    name: 'leave-detail',
+                    builder: (context, state) => LeaveRequestDetailScreen(
+                      requestId: state.uri.queryParameters['id'],
                     ),
-                  );
-                },
+                  ),
+                  GoRoute(
+                    path: 'imprest/detail',
+                    name: 'imprest-detail',
+                    builder: (context, state) => ImprestDetailScreen(
+                      requestId: state.uri.queryParameters['id'],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/approvals',
+                name: 'approvals',
+                builder: (context, state) => const ApprovalsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/reports',
+                name: 'reports',
+                builder: (context, state) => const ReportsScreen(),
               ),
               GoRoute(
-                path: 'leave/balance',
-                name: 'leave-balance',
-                builder: (context, state) => const LeaveBalanceScreen(),
-              ),
-              GoRoute(
-                path: 'leave/detail',
-                name: 'leave-detail',
-                builder: (context, state) => LeaveRequestDetailScreen(
-                  requestId: state.uri.queryParameters['id'],
-                ),
-              ),
-              GoRoute(
-                path: 'imprest/detail',
-                name: 'imprest-detail',
-                builder: (context, state) => ImprestDetailScreen(
-                  requestId: state.uri.queryParameters['id'],
+                path: '/reports/detail',
+                name: 'report-detail',
+                builder: (context, state) => ReportDetailScreen(
+                  reportType: state.uri.queryParameters['type'] ?? 'travel',
+                  reportTitle: state.uri.queryParameters['title'],
                 ),
               ),
             ],
           ),
-          GoRoute(
-            path: '/approvals',
-            name: 'approvals',
-            builder: (context, state) => const ApprovalsScreen(),
-          ),
-          GoRoute(
-            path: '/reports',
-            name: 'reports',
-            builder: (context, state) => const ReportsScreen(),
-          ),
-          GoRoute(
-            path: '/reports/detail',
-            name: 'report-detail',
-            builder: (context, state) => ReportDetailScreen(
-              reportType: state.uri.queryParameters['type'] ?? 'travel',
-              reportTitle: state.uri.queryParameters['title'],
-            ),
-          ),
-          GoRoute(
-            path: '/profile',
-            name: 'profile',
-            builder: (context, state) => const ProfileScreen(),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/profile',
+                name: 'profile',
+                builder: (context, state) => const ProfileScreen(),
+              ),
+            ],
           ),
         ],
       ),

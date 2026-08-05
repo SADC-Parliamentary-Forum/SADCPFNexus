@@ -113,11 +113,14 @@ class TravelRequestFormScreen extends ConsumerStatefulWidget {
 }
 
 class _TravelRequestFormScreenState
-    extends ConsumerState<TravelRequestFormScreen> {
+    extends ConsumerState<TravelRequestFormScreen> with WidgetsBindingObserver {
   final _form = _TravelFormData();
   final List<_PendingTravelAttachment> _pendingAttachments = [];
   int _step = 0; // 0=Mission, 1=Funding, 2=Itinerary, 3=Documents, 4=Review
   bool _submitting = false;
+  /// 0-100 overall attachment upload progress while submitting, or null when
+  /// no upload is in progress (request creation, or done).
+  int? _uploadProgressPercent;
 
   static const _stepLabels = [
     'Mission',
@@ -135,7 +138,50 @@ class _TravelRequestFormScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _applyInitialDraft();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  bool get _hasMeaningfulContent =>
+      _form.missionTitle.isNotEmpty ||
+      _form.purpose.isNotEmpty ||
+      _form.destinationCountry.isNotEmpty ||
+      _form.budgetLine.isNotEmpty ||
+      _form.estimatedCost > 0 ||
+      _form.accommodation.isNotEmpty ||
+      _pendingAttachments.isNotEmpty;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused && !_submitting && _hasMeaningfulContent) {
+      _autoSaveDraftOnBackground();
+    }
+  }
+
+  /// Silently persists the current form as a draft when the app is
+  /// backgrounded, without navigation or user-facing feedback (mirrors
+  /// [_saveDraft] but is safe to call outside a user gesture).
+  Future<void> _autoSaveDraftOnBackground() async {
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      final payload = _buildPayload();
+      final title =
+          _form.missionTitle.isNotEmpty ? _form.missionTitle : 'Travel draft';
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+            type: 'travel',
+            title: title,
+            payload: jsonEncode(payload),
+            createdAt: DateTime.now(),
+          ));
+    } catch (_) {
+      // Best-effort; nothing actionable if this fails while backgrounded.
+    }
   }
 
   void _applyInitialDraft() {
@@ -207,14 +253,22 @@ class _TravelRequestFormScreenState
 
       if (createdId != null && _pendingAttachments.isNotEmpty) {
         try {
-          for (final att in _pendingAttachments) {
+          final total = _pendingAttachments.length;
+          for (var i = 0; i < total; i++) {
+            final att = _pendingAttachments[i];
             final form = FormData.fromMap({
               'file': await MultipartFile.fromFile(att.path,
                   filename: att.name),
               'document_type': att.documentType,
             });
             await dio.post('/travel/requests/$createdId/attachments',
-                data: form);
+                data: form,
+                onSendProgress: (sent, totalBytes) {
+                  if (!mounted || totalBytes <= 0) return;
+                  final filePercent = sent / totalBytes;
+                  final overall = ((i + filePercent) / total * 100).clamp(0, 100);
+                  setState(() => _uploadProgressPercent = overall.round());
+                });
           }
         } catch (_) {
           if (mounted) {
@@ -226,6 +280,8 @@ class _TravelRequestFormScreenState
               ),
             );
           }
+        } finally {
+          if (mounted) setState(() => _uploadProgressPercent = null);
         }
       }
 
@@ -447,6 +503,7 @@ class _TravelRequestFormScreenState
           form: _form,
           attachments: _pendingAttachments,
           submitting: _submitting,
+          uploadProgressPercent: _uploadProgressPercent,
           onSubmit: _submit,
           onEdit: (s) => setState(() => _step = s),
         );
@@ -1117,13 +1174,26 @@ class _BottomBar extends StatelessWidget {
                 elevation: 0,
               ),
               child: loading
-                  ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: c.onPrimary,
-                      ),
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: c.onPrimary,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          ctaLabel,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
                     )
                   : Text(
                       ctaLabel,
@@ -2094,6 +2164,7 @@ class _Step5Review extends StatelessWidget {
   final _TravelFormData form;
   final List<_PendingTravelAttachment> attachments;
   final bool submitting;
+  final int? uploadProgressPercent;
   final VoidCallback onSubmit;
   final ValueChanged<int> onEdit;
 
@@ -2101,6 +2172,7 @@ class _Step5Review extends StatelessWidget {
     required this.form,
     required this.attachments,
     required this.submitting,
+    this.uploadProgressPercent,
     required this.onSubmit,
     required this.onEdit,
   });
@@ -2331,7 +2403,11 @@ class _Step5Review extends StatelessWidget {
               : '${form.currency} 0.00',
           rightLabel: 'DURATION',
           rightValue: form.nights > 0 ? '${form.nights} nights' : '—',
-          ctaLabel: submitting ? 'Submitting...' : 'Submit for Approval',
+          ctaLabel: submitting
+              ? (uploadProgressPercent != null
+                  ? 'Uploading $uploadProgressPercent%...'
+                  : 'Submitting...')
+              : 'Submit for Approval',
           onCta: submitting ? null : onSubmit,
           loading: submitting,
         ),

@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
+import 'package:sadcpf_nexus/core/offline/draft_database.dart';
+import 'package:sadcpf_nexus/core/offline/draft_provider.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
 
@@ -64,18 +68,17 @@ class _AssignmentCreateScreenState
       return;
     }
     setState(() => _submitting = true);
+    final body = <String, dynamic>{
+      'title': _title.text.trim(),
+      'description': _description.text.trim(),
+      'priority': _priority,
+      'due_date': _due.toIso8601String().split('T').first,
+    };
+    if (_selectedAssigneeId != null) {
+      body['assigned_to'] = _selectedAssigneeId;
+    }
     try {
       final dio = ref.read(apiClientProvider).dio;
-      final body = <String, dynamic>{
-        'title': _title.text.trim(),
-        'description': _description.text.trim(),
-        'priority': _priority,
-        'due_date': _due.toIso8601String().split('T').first,
-      };
-      if (_selectedAssigneeId != null) {
-        body['assigned_to'] = _selectedAssigneeId;
-      }
-
       final res = await dio.post('/assignments', data: body);
       final data = res.data;
       int? id;
@@ -89,13 +92,35 @@ class _AssignmentCreateScreenState
         context.pop();
       }
     } catch (_) {
+      final savedLocally = await _saveDraftOnFailure(body);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not create assignment.')),
+          SnackBar(
+              content: Text(savedLocally
+                  ? 'Could not create assignment. Saved to Offline Drafts so you can retry.'
+                  : 'Could not create assignment.')),
         );
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// Persists the entered assignment locally so it is not lost when
+  /// creation fails (e.g. no connectivity), following the same
+  /// offline-draft pattern used by the other draft-capable request forms.
+  Future<bool> _saveDraftOnFailure(Map<String, dynamic> payload) async {
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+            type: 'assignment',
+            title: payload['title'] as String? ?? 'Assignment draft',
+            payload: jsonEncode(payload),
+            createdAt: DateTime.now(),
+          ));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
