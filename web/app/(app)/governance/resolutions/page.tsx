@@ -8,6 +8,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { governanceApi, minutesApi, committeeApi, governanceMeetingTypeApi, type GovernanceResolution, type GovernanceDocument, type GovernanceMeeting, type MeetingMinutesRecord, type MeetingActionItem, type GovernanceCommittee, type GovernanceMeetingType } from "@/lib/api";
 import api from "@/lib/api";
 import type { TenantUserOption } from "@/lib/api";
+import { exportToCsv } from "@/lib/csvExport";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -498,6 +499,21 @@ const COLOR_SWATCHES = [
   "#10b981", "#64748b", "#ef4444", "#0ea5e9",
 ];
 
+const COLOR_SWATCH_NAMES: Record<string, string> = {
+  "#3b82f6": "Blue",
+  "#f43f5e": "Rose",
+  "#f59e0b": "Amber",
+  "#6366f1": "Indigo",
+  "#a855f7": "Purple",
+  "#f97316": "Orange",
+  "#14b8a6": "Teal",
+  "#ec4899": "Pink",
+  "#10b981": "Emerald",
+  "#64748b": "Slate",
+  "#ef4444": "Red",
+  "#0ea5e9": "Sky Blue",
+};
+
 // ─── Manage Committees Modal ──────────────────────────────────────────────────
 
 function ManageCommitteesModal({
@@ -590,6 +606,8 @@ function ManageCommitteesModal({
                   <div className="flex gap-1 flex-wrap">
                     {COLOR_SWATCHES.map((sw) => (
                       <button key={sw} onClick={() => setEditColor(sw)}
+                        aria-label={COLOR_SWATCH_NAMES[sw] ?? sw}
+                        aria-pressed={editColor === sw}
                         className={`size-5 rounded-full border-2 transition-transform ${editColor === sw ? "border-neutral-800 scale-110" : "border-transparent"}`}
                         style={{ backgroundColor: sw }} />
                     ))}
@@ -625,6 +643,8 @@ function ManageCommitteesModal({
           <div className="flex gap-1 flex-wrap">
             {COLOR_SWATCHES.map((sw) => (
               <button key={sw} onClick={() => setNewColor(sw)}
+                aria-label={COLOR_SWATCH_NAMES[sw] ?? sw}
+                aria-pressed={newColor === sw}
                 className={`size-5 rounded-full border-2 transition-transform ${newColor === sw ? "border-neutral-800 scale-110" : "border-transparent"}`}
                 style={{ backgroundColor: sw }} />
             ))}
@@ -832,6 +852,73 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
 
   const isCommittee = type === "committee";
 
+  const handleExport = () => {
+    if (filtered.length === 0) {
+      toast("error", "Nothing to export", "There are no resolutions matching the current filters.");
+      return;
+    }
+    exportToCsv(
+      `${isCommittee ? "committee" : "plenary"}-resolutions-${new Date().toISOString().slice(0, 10)}`,
+      filtered as unknown as Record<string, unknown>[],
+      [
+        { key: "reference_number", header: "Reference" },
+        { key: "title", header: "Title" },
+        { key: "status", header: "Status" },
+        { key: "committee", header: "Committee" },
+        { key: "lead_member", header: "Lead Member" },
+        { key: "lead_role", header: "Lead Role" },
+        { key: "adopted_at", header: "Adopted At" },
+      ]
+    );
+    toast("success", "Exported", "Resolutions exported to CSV.");
+  };
+
+  const handleOfficialReport = () => {
+    if (filtered.length === 0) {
+      toast("error", "Nothing to report", "There are no resolutions matching the current filters.");
+      return;
+    }
+    const win = window.open("", "_blank");
+    if (!win) {
+      toast("error", "Popup blocked", "Allow popups for this site to generate the official report.");
+      return;
+    }
+    const rows = filtered.map((r) => `
+      <tr>
+        <td>${r.reference_number ?? "—"}</td>
+        <td>${r.title}</td>
+        <td>${r.status}</td>
+        <td>${r.lead_member ?? "—"}</td>
+        <td>${r.adopted_at ? fmtDate(r.adopted_at) : "—"}</td>
+      </tr>`).join("");
+    win.document.write(`
+      <html>
+        <head>
+          <title>Official Report — Plenary Resolutions</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 32px; color: #1a1a1a; }
+            h1 { font-size: 18px; margin-bottom: 4px; }
+            p.subtitle { color: #666; margin-top: 0; margin-bottom: 24px; }
+            table { width: 100%; border-collapse: collapse; font-size: 12px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background: #f5f5f5; }
+          </style>
+        </head>
+        <body>
+          <h1>Official Report — Plenary Resolutions</h1>
+          <p class="subtitle">Generated ${new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</p>
+          <table>
+            <thead><tr><th>Reference</th><th>Title</th><th>Status</th><th>Lead Member</th><th>Adopted</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+  };
+
   return (
     <div className="space-y-5">
       {/* Sub-header */}
@@ -845,10 +932,10 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
           <button onClick={() => setShowManageCommittees(true)} className={`btn-secondary px-3 py-2 text-sm flex items-center gap-1.5 ${isCommittee ? "" : "hidden"}`}>
             <span className="material-symbols-outlined text-[16px]">settings</span>Committees
           </button>
-          <button className={`btn-secondary px-3 py-2 text-xs flex items-center gap-1 ${isCommittee ? "hidden" : ""}`}>
+          <button onClick={handleOfficialReport} className={`btn-secondary px-3 py-2 text-xs flex items-center gap-1 ${isCommittee ? "hidden" : ""}`}>
             <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>Official Report
           </button>
-          <button className={`btn-secondary px-3 py-2 text-xs flex items-center gap-1 ${isCommittee ? "hidden" : ""}`}>
+          <button onClick={handleExport} className={`btn-secondary px-3 py-2 text-xs flex items-center gap-1 ${isCommittee ? "hidden" : ""}`}>
             <span className="material-symbols-outlined text-[16px]">download</span>Export
           </button>
           <button onClick={() => { setEditingResolution(null); setShowForm(true); }} className="btn-primary px-4 py-2 text-sm flex items-center gap-2 whitespace-nowrap">

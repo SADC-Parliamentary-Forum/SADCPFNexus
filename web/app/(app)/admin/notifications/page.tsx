@@ -108,7 +108,7 @@ export default function AdminNotificationsPage() {
       {!loading && tab === "templates" && (
         <div className="space-y-2">
           <p className="text-sm text-[var(--muted-foreground)]">
-            {templates.length} template(s). Edit via trigger key in the legacy editor below or publish versioned EN/FR/PT templates via API.
+            {templates.length} template(s), identified by trigger key. This is a read-only list — publish versioned EN/FR/PT templates via the API.
           </p>
           <ul className="divide-y divide-[var(--border)] rounded-md border border-[var(--border)]">
             {templates.slice(0, 40).map((t) => (
@@ -186,7 +186,12 @@ export default function AdminNotificationsPage() {
               <div className="font-medium mb-1">Channel governance</div>
               <div>SMS: {guards.sms_status} ({guards.sms_provider})</div>
               <div>WhatsApp: {guards.whatsapp_status} ({guards.whatsapp_provider})</div>
-              <div>AI provider: {guards.provider} · enabled={String(guards.ai_enabled)}</div>
+              <div className="flex items-center gap-2">
+                AI provider: {guards.provider} ·
+                <span className={`badge ${guards.ai_enabled ? "badge-success" : "badge-muted"}`}>
+                  {guards.ai_enabled ? "Enabled" : "Disabled"}
+                </span>
+              </div>
             </div>
           )}
           {analytics && (

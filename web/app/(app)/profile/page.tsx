@@ -124,18 +124,18 @@ export default function MyProfilePage() {
     }
   };
 
-  const inputCls = "w-full px-4 py-3 rounded-xl border border-neutral-200 bg-neutral-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm";
+  const inputCls = "w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-white/5 text-neutral-900 dark:text-neutral-100 focus:bg-white dark:focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm";
 
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
         <span className="material-symbols-outlined animate-spin text-primary text-4xl mb-4">progress_activity</span>
-        <p className="text-neutral-500 font-medium">Loading your profile...</p>
+        <p className="text-neutral-500 dark:text-neutral-400 font-medium">Loading your profile...</p>
       </div>
     );
   }
   if (!user) {
-    return <div className="p-8 text-center text-red-500">Error loading profile.</div>;
+    return <div className="p-8 text-center text-red-500 dark:text-red-400">Error loading profile.</div>;
   }
 
   const initials = user.name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "?";
@@ -158,16 +158,16 @@ export default function MyProfilePage() {
         {/* Left Column */}
         <div className="lg:col-span-4 space-y-6">
           {/* Avatar Card */}
-          <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm">
-            <div className="h-24 bg-gradient-to-r from-primary/10 to-blue-50" />
+          <div className="bg-white dark:bg-[var(--dk-bg-surface)] rounded-3xl border border-neutral-200 dark:border-neutral-700 overflow-hidden shadow-sm">
+            <div className="h-24 bg-gradient-to-r from-primary/10 to-blue-50 dark:from-primary/20 dark:to-blue-900/20" />
             <div className="px-6 pb-6 text-center">
-              <div className="relative -mt-12 mb-4 mx-auto w-24 h-24 rounded-full border-4 border-white bg-primary text-white flex items-center justify-center text-3xl font-bold shadow-lg shadow-primary/10">
+              <div className="relative -mt-12 mb-4 mx-auto w-24 h-24 rounded-full border-4 border-white dark:border-[var(--dk-bg-surface)] bg-primary text-white flex items-center justify-center text-3xl font-bold shadow-lg shadow-primary/10">
                 {initials}
               </div>
-              <h2 className="text-xl font-bold text-neutral-900">{user.name}</h2>
-              <p className="text-sm text-neutral-500">{user.email}</p>
+              <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">{user.name}</h2>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400">{user.email}</p>
               {user.job_title && (
-                <p className="text-xs text-neutral-400 mt-1">{user.job_title}</p>
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">{user.job_title}</p>
               )}
               {user.department && (
                 <p className="text-xs font-semibold text-primary mt-2">{(user.department as any)?.name ?? ""}</p>
@@ -176,7 +176,7 @@ export default function MyProfilePage() {
           </div>
 
           {/* Nav */}
-          <div className="bg-white rounded-2xl border border-neutral-200 p-2 shadow-sm">
+          <div className="bg-white dark:bg-[var(--dk-bg-surface)] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-2 shadow-sm">
             {navItems.map((item) => (
               <button
                 key={item.id}
@@ -185,7 +185,7 @@ export default function MyProfilePage() {
                   "flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-semibold transition-all mb-1 last:mb-0",
                   activeSection === item.id
                     ? "bg-primary/5 text-primary"
-                    : "text-neutral-500 hover:bg-neutral-50"
+                    : "text-neutral-500 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-white/5"
                 )}
               >
                 <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
@@ -197,14 +197,14 @@ export default function MyProfilePage() {
 
           {/* Portfolios */}
           {user.portfolios && user.portfolios.length > 0 && (
-            <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm space-y-3">
-              <h3 className="text-sm font-bold text-neutral-700 flex items-center gap-2">
+            <div className="bg-white dark:bg-[var(--dk-bg-surface)] rounded-2xl border border-neutral-200 dark:border-neutral-700 p-5 shadow-sm space-y-3">
+              <h3 className="text-sm font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-2">
                 <span className="material-symbols-outlined text-indigo-500 text-[18px]">hub</span>
                 Portfolios
               </h3>
               <div className="flex flex-wrap gap-2">
                 {user.portfolios.map(p => (
-                  <div key={p.id} className="flex items-center gap-2 rounded-full px-3 py-1.5 border border-indigo-100 bg-indigo-50/50 text-indigo-700 text-xs font-medium">
+                  <div key={p.id} className="flex items-center gap-2 rounded-full px-3 py-1.5 border border-indigo-100 dark:border-indigo-800/40 bg-indigo-50/50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-medium">
                     <div className="size-2 rounded-full" style={{ backgroundColor: p.color || "#ccc" }} />
                     {p.name}
                   </div>
@@ -216,7 +216,7 @@ export default function MyProfilePage() {
 
         {/* Right Column */}
         <div className="lg:col-span-8">
-          <div className="bg-white rounded-3xl border border-neutral-200 shadow-sm overflow-hidden min-h-[500px]">
+          <div className="bg-white dark:bg-[var(--dk-bg-surface)] rounded-3xl border border-neutral-200 dark:border-neutral-700 shadow-sm overflow-hidden min-h-[500px]">
 
             {/* ── Profile Info Section ──────────────────────────────────── */}
             {activeSection === "info" && (
@@ -224,30 +224,30 @@ export default function MyProfilePage() {
 
                 {/* Personal Details */}
                 <section>
-                  <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">contact_page</span>
                     Personal Details
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Full Name</label>
-                      <input className={cn(inputCls, "bg-neutral-100 cursor-not-allowed")} value={user.name} disabled />
-                      <p className="text-[10px] text-neutral-400 ml-1 italic">Contact admin to update your name.</p>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Full Name</label>
+                      <input className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.name} disabled />
+                      <p className="text-[10px] text-neutral-400 dark:text-neutral-500 ml-1 italic">Contact admin to update your name.</p>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Email Address</label>
-                      <input className={cn(inputCls, "bg-neutral-100 cursor-not-allowed")} value={user.email} disabled />
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Email Address</label>
+                      <input className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.email} disabled />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Phone Number</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Phone Number</label>
                       <input type="tel" className={inputCls} value={user.phone || ""} onChange={e => setUser({ ...user, phone: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Nationality</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Nationality</label>
                       <input type="text" className={inputCls} value={user.nationality || ""} onChange={e => setUser({ ...user, nationality: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Gender</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Gender</label>
                       <select className={inputCls} value={user.gender || ""} onChange={e => setUser({ ...user, gender: e.target.value })}>
                         <option value="">Select Gender</option>
                         <option value="Male">Male</option>
@@ -256,7 +256,7 @@ export default function MyProfilePage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Marital Status</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Marital Status</label>
                       <select className={inputCls} value={user.marital_status || ""} onChange={e => setUser({ ...user, marital_status: e.target.value })}>
                         <option value="">Select Status</option>
                         <option value="Single">Single</option>
@@ -266,69 +266,69 @@ export default function MyProfilePage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Date of Birth</label>
-                      <input type="date" className={cn(inputCls, "bg-neutral-100 cursor-not-allowed")} value={user.date_of_birth || ""} disabled />
-                      <p className="text-[10px] text-neutral-400 ml-1 italic">Contact HR to update your date of birth.</p>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Date of Birth</label>
+                      <input type="date" className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.date_of_birth || ""} disabled />
+                      <p className="text-[10px] text-neutral-400 dark:text-neutral-500 ml-1 italic">Contact HR to update your date of birth.</p>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Join Date</label>
-                      <input type="date" className={cn(inputCls, "bg-neutral-100 cursor-not-allowed")} value={user.join_date || ""} disabled />
-                      <p className="text-[10px] text-neutral-400 ml-1 italic">Contact HR to update your join date.</p>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Join Date</label>
+                      <input type="date" className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.join_date || ""} disabled />
+                      <p className="text-[10px] text-neutral-400 dark:text-neutral-500 ml-1 italic">Contact HR to update your join date.</p>
                     </div>
                   </div>
                 </section>
 
                 {/* Address */}
-                <section className="pt-8 border-t border-neutral-100">
-                  <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
+                <section className="pt-8 border-t border-neutral-100 dark:border-neutral-700/50">
+                  <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">home</span>
                     Residential Address
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2 space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Address Line 1</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Address Line 1</label>
                       <input type="text" placeholder="Street name and number" className={inputCls} value={user.address_line1 || ""} onChange={e => setUser({ ...user, address_line1: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Address Line 2</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Address Line 2</label>
                       <input type="text" placeholder="Unit / Apartment" className={inputCls} value={user.address_line2 || ""} onChange={e => setUser({ ...user, address_line2: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">City</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">City</label>
                       <input type="text" placeholder="Windhoek" className={inputCls} value={user.city || ""} onChange={e => setUser({ ...user, city: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Country</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Country</label>
                       <input type="text" placeholder="Namibia" className={inputCls} value={user.country || ""} onChange={e => setUser({ ...user, country: e.target.value })} />
                     </div>
                   </div>
                 </section>
 
                 {/* Emergency Contact */}
-                <section className="pt-8 border-t border-neutral-100">
-                  <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
+                <section className="pt-8 border-t border-neutral-100 dark:border-neutral-700/50">
+                  <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">contact_emergency</span>
                     Emergency Contact
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Contact Name</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Contact Name</label>
                       <input type="text" placeholder="Full Name" className={inputCls} value={user.emergency_contact_name || ""} onChange={e => setUser({ ...user, emergency_contact_name: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Relationship</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Relationship</label>
                       <input type="text" placeholder="e.g. Spouse" className={inputCls} value={user.emergency_contact_relationship || ""} onChange={e => setUser({ ...user, emergency_contact_relationship: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Contact Phone</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Contact Phone</label>
                       <input type="tel" placeholder="+264..." className={inputCls} value={user.emergency_contact_phone || ""} onChange={e => setUser({ ...user, emergency_contact_phone: e.target.value })} />
                     </div>
                   </div>
                 </section>
 
                 {/* Bio */}
-                <section className="pt-8 border-t border-neutral-100">
-                  <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
+                <section className="pt-8 border-t border-neutral-100 dark:border-neutral-700/50">
+                  <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-6 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">description</span>
                     Professional Summary
                   </h3>
@@ -343,29 +343,29 @@ export default function MyProfilePage() {
 
                 {/* Pending request banner */}
               {pendingRequest && (
-                <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-start gap-3">
-                  <span className="material-symbols-outlined text-amber-500 text-[22px] flex-shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>pending_actions</span>
+                <div className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 p-4 flex items-start gap-3">
+                  <span className="material-symbols-outlined text-amber-500 dark:text-amber-400 text-[22px] flex-shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>pending_actions</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-amber-800">Profile update pending HR approval</p>
-                    <p className="text-xs text-amber-600 mt-0.5">Submitted {new Date(pendingRequest.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}. Your current profile remains unchanged until approved.</p>
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Profile update pending HR approval</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Submitted {new Date(pendingRequest.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}. Your current profile remains unchanged until approved.</p>
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {Object.keys(pendingRequest.requested_changes).map(f => (
-                        <span key={f} className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700">{FIELD_LABELS[f] ?? f}</span>
+                        <span key={f} className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-2.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300">{FIELD_LABELS[f] ?? f}</span>
                       ))}
                     </div>
                   </div>
                   <button type="button" onClick={handleCancelRequest} disabled={cancelling}
-                    className="text-xs font-semibold text-red-500 hover:underline flex-shrink-0">
+                    className="text-xs font-semibold text-red-500 dark:text-red-400 hover:underline flex-shrink-0">
                     {cancelling ? "Withdrawing…" : "Withdraw"}
                   </button>
                 </div>
               )}
 
               {/* Optional note to HR */}
-              <section className="pt-6 border-t border-neutral-100">
-                <label className="text-sm font-bold text-neutral-700 flex items-center gap-2 mb-2">
-                  <span className="material-symbols-outlined text-[18px] text-neutral-400">note_add</span>
-                  Note to HR <span className="font-normal text-neutral-400">(optional)</span>
+              <section className="pt-6 border-t border-neutral-100 dark:border-neutral-700/50">
+                <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-2 mb-2">
+                  <span className="material-symbols-outlined text-[18px] text-neutral-400 dark:text-neutral-500">note_add</span>
+                  Note to HR <span className="font-normal text-neutral-400 dark:text-neutral-500">(optional)</span>
                 </label>
                 <textarea
                   rows={2}
@@ -376,8 +376,8 @@ export default function MyProfilePage() {
                 />
               </section>
 
-              <div className="flex items-center justify-between gap-3 pt-4 border-t border-neutral-100">
-                <p className="text-xs text-neutral-400 italic">Changes are submitted to HR for approval before taking effect.</p>
+              <div className="flex items-center justify-between gap-3 pt-4 border-t border-neutral-100 dark:border-neutral-700/50">
+                <p className="text-xs text-neutral-400 dark:text-neutral-500 italic">Changes are submitted to HR for approval before taking effect.</p>
                 <button type="submit" disabled={saving || !!pendingRequest} className="btn-primary disabled:opacity-60">
                   {saving ? (
                     <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
@@ -393,11 +393,11 @@ export default function MyProfilePage() {
             {/* ── Documents Section ─────────────────────────────────────── */}
             {activeSection === "documents" && (
               <div className="p-8 animate-in fade-in duration-300">
-                <h3 className="text-lg font-bold text-neutral-900 mb-2 flex items-center gap-2">
+                <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary">folder_open</span>
                   My Documents
                 </h3>
-                <p className="text-sm text-neutral-500 mb-6">Upload and manage your personal HR documents, qualifications, and certifications.</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">Upload and manage your personal HR documents, qualifications, and certifications.</p>
                 <DocumentsPanel
                   documents={documents}
                   loading={docsLoading}
@@ -428,15 +428,15 @@ export default function MyProfilePage() {
             {activeSection === "password" && (
               <form onSubmit={handlePasswordChange} className="p-8 space-y-8 animate-in fade-in duration-300">
                 <section>
-                  <h3 className="text-lg font-bold text-neutral-900 mb-2 flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-2 flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary">lock</span>
                     Change Password
                   </h3>
-                  <p className="text-sm text-neutral-500 mb-6">Choose a strong password that you don't use elsewhere.</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-6">Choose a strong password that you don't use elsewhere.</p>
 
                   <div className="max-w-md space-y-5">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Current Password</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Current Password</label>
                       <input
                         type="password"
                         className={inputCls}
@@ -447,7 +447,7 @@ export default function MyProfilePage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">New Password</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">New Password</label>
                       <input
                         type="password"
                         className={inputCls}
@@ -459,7 +459,7 @@ export default function MyProfilePage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Confirm New Password</label>
+                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Confirm New Password</label>
                       <input
                         type="password"
                         className={inputCls}
@@ -471,7 +471,7 @@ export default function MyProfilePage() {
                       />
                     </div>
 
-                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-100 text-xs text-amber-700 space-y-1">
+                    <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 text-xs text-amber-700 dark:text-amber-300 space-y-1">
                       <p className="font-bold">Password requirements:</p>
                       <ul className="list-disc ml-4 space-y-0.5">
                         <li>At least 8 characters</li>

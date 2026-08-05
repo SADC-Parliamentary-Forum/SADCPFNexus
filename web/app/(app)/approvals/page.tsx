@@ -74,6 +74,35 @@ const MODULE_CONFIG: Record<
     label: "Governance",
     href: (id) => `/governance/${id}`,
   },
+  correspondence: {
+    icon: "mail",
+    color: "text-sky-600 dark:text-sky-300",
+    bg: "bg-sky-50 dark:bg-sky-900/20",
+    label: "Correspondence",
+    href: (id) => `/correspondence/${id}`,
+  },
+  salary_advance: {
+    icon: "payments",
+    color: "text-primary",
+    bg: "bg-primary/10",
+    label: "Salary Advance",
+    href: (id) => `/salary-advances/${id}`,
+  },
+  programmes: {
+    icon: "assignment",
+    color: "text-indigo-600 dark:text-indigo-300",
+    bg: "bg-indigo-50 dark:bg-indigo-900/20",
+    label: "Programme",
+    href: (id) => `/pif/${id}`,
+  },
+  hr: {
+    icon: "badge",
+    color: "text-rose-600 dark:text-rose-300",
+    bg: "bg-rose-50 dark:bg-rose-900/20",
+    label: "HR",
+    // No single canonical HR request detail route yet — route to the inbox instead of a dead anchor.
+    href: () => `/approvals`,
+  },
 };
 
 const DEFAULT_MODULE = {
@@ -81,7 +110,8 @@ const DEFAULT_MODULE = {
   color: "text-neutral-600 dark:text-neutral-400",
   bg: "bg-neutral-100 dark:bg-neutral-700/40",
   label: "Request",
-  href: (id: number) => `#${id}`,
+  // Unknown module types fall back to the general approvals inbox rather than a dead `#id` anchor.
+  href: (_id: number) => `/approvals`,
 };
 
 export default function ApprovalsPage() {
