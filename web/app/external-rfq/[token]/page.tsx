@@ -5,12 +5,15 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { externalRfqApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
 export default function ExternalRfqPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const queryClient = useQueryClient();
+  const { success: showSuccessToast } = useToast();
+  const [submitted, setSubmitted] = useState(false);
   const [vendorName, setVendorName] = useState("");
   const [quotedAmount, setQuotedAmount] = useState("");
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
@@ -48,9 +51,13 @@ export default function ExternalRfqPage({ params }: { params: Promise<{ token: s
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["external-rfq", token] });
       setError(null);
+      setSubmitted(true);
+      showSuccessToast("Quote submitted", "Your quote has been submitted successfully.");
     },
-    onError: (err: unknown) =>
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to submit quote."),
+    onError: (err: unknown) => {
+      setSubmitted(false);
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to submit quote.");
+    },
   });
 
   if (isLoading) return <div className="max-w-4xl mx-auto card p-6 mt-10">Loading invitation...</div>;
@@ -79,6 +86,12 @@ export default function ExternalRfqPage({ params }: { params: Promise<{ token: s
 
       <div className="card p-5 space-y-4">
         <h2 className="text-sm font-bold text-neutral-800">Submit Quote</h2>
+        {submitted && !error && (
+          <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+            <span className="material-symbols-outlined text-[16px] mt-0.5">check_circle</span>
+            Your quote has been submitted successfully.
+          </div>
+        )}
         {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         {!data.can_submit && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
@@ -87,7 +100,7 @@ export default function ExternalRfqPage({ params }: { params: Promise<{ token: s
         )}
         <div className="grid gap-4 md:grid-cols-3">
           <input className="form-input md:col-span-3" placeholder="Supplier name" value={vendorName} onChange={(e) => setVendorName(e.target.value)} disabled={!data.can_submit} />
-          <input type="number" className="form-input" placeholder="Quoted amount" value={quotedAmount} onChange={(e) => setQuotedAmount(e.target.value)} disabled={!data.can_submit} />
+          <input type="number" min="0" className="form-input" placeholder="Quoted amount" value={quotedAmount} onChange={(e) => setQuotedAmount(e.target.value)} disabled={!data.can_submit} />
           <input className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} disabled={!data.can_submit} />
           <input type="date" className="form-input" value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} disabled={!data.can_submit} />
         </div>

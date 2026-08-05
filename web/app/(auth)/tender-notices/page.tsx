@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import Link from "next/link";
+import { formatDateShort } from "@/lib/utils";
 
 type Notice = {
   reference_number: string;
@@ -55,7 +56,7 @@ export default function PublicTenderNoticesPage() {
               </div>
               {n.notice && <p className="text-sm text-neutral-700 whitespace-pre-wrap">{n.notice}</p>}
               <p className="text-xs text-neutral-500">
-                Submission deadline: {n.submission_deadline ?? "—"}
+                Submission deadline: {n.submission_deadline ? formatDateShort(n.submission_deadline) : "—"}
                 {n.sealed_mode ? " · Sealed bids" : ""}
               </p>
             </article>

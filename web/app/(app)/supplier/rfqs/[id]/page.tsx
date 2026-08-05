@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supplierPortalApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -61,13 +62,20 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="max-w-4xl mx-auto space-y-5">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="page-title">{request.title}</h1>
-          <p className="page-subtitle">{request.reference_number}</p>
-        </div>
-        <span className="badge badge-primary">{invitation.status}</span>
-      </div>
+      <ModulePageHeader
+        title={request.title}
+        subtitle={request.reference_number}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Supplier Portal", href: "/supplier" },
+              { label: "RFQs", href: "/supplier/rfqs" },
+              { label: request.reference_number },
+            ]}
+          />
+        }
+        actions={<span className="badge badge-primary">{invitation.status}</span>}
+      />
 
       <div className="card p-5 space-y-4">
         <div className="grid gap-4 md:grid-cols-3 text-sm">
@@ -124,7 +132,7 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
         </div>
         {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         <div className="grid gap-4 md:grid-cols-3">
-          <input type="number" className="form-input" placeholder="Quoted amount" value={quotedAmount} onChange={(e) => setQuotedAmount(e.target.value)} disabled={isAwarded} />
+          <input type="number" min="0" className="form-input" placeholder="Quoted amount" value={quotedAmount} onChange={(e) => setQuotedAmount(e.target.value)} disabled={isAwarded} />
           <input className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} disabled={isAwarded} />
           <input type="date" className="form-input" value={quoteDate} onChange={(e) => setQuoteDate(e.target.value)} disabled={isAwarded} />
         </div>

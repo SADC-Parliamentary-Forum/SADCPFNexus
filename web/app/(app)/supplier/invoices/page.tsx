@@ -241,15 +241,25 @@ export default function SupplierInvoicesPage() {
 
             {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
 
-            <input
-              className="form-input"
-              placeholder="Supplier invoice number"
-              value={vendorInvoiceNumber}
-              onChange={(event) => setVendorInvoiceNumber(event.target.value)}
-            />
+            <div>
+              <label htmlFor="invoice-vendor-number" className="mb-1 block text-xs font-semibold text-neutral-700">Supplier invoice number</label>
+              <input
+                id="invoice-vendor-number"
+                className="form-input w-full"
+                placeholder="Supplier invoice number"
+                value={vendorInvoiceNumber}
+                onChange={(event) => setVendorInvoiceNumber(event.target.value)}
+              />
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <input type="date" className="form-input" value={invoiceDate} onChange={(event) => setInvoiceDate(event.target.value)} />
-              <input type="date" className="form-input" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+              <div>
+                <label htmlFor="invoice-date" className="mb-1 block text-xs font-semibold text-neutral-700">Invoice date</label>
+                <input id="invoice-date" type="date" className="form-input w-full" value={invoiceDate} onChange={(event) => setInvoiceDate(event.target.value)} />
+              </div>
+              <div>
+                <label htmlFor="invoice-due-date" className="mb-1 block text-xs font-semibold text-neutral-700">Due date</label>
+                <input id="invoice-due-date" type="date" className="form-input w-full" value={dueDate} onChange={(event) => setDueDate(event.target.value)} />
+              </div>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               <input

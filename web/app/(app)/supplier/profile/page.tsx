@@ -4,9 +4,11 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supplierCategoriesApi, supplierPortalApi } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 export default function SupplierProfilePage() {
   const queryClient = useQueryClient();
+  const { info: showInfoToast } = useToast();
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [website, setWebsite] = useState("");
@@ -89,15 +91,42 @@ export default function SupplierProfilePage() {
         )}
 
         <div className="grid gap-4 md:grid-cols-2">
-          <input className="form-input" placeholder="Contact name" value={contactName} onChange={(e) => setContactName(e.target.value)} />
-          <input className="form-input" placeholder="Contact phone" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
-          <input className="form-input" placeholder="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
-          <input className="form-input" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
-          <input className="form-input md:col-span-2" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
-          <input className="form-input" placeholder="Bank name" value={bankName} onChange={(e) => setBankName(e.target.value)} />
-          <input className="form-input" placeholder="Payment terms" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
-          <input className="form-input" placeholder="Bank account" value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} />
-          <input className="form-input" placeholder="Bank branch or SWIFT" value={bankBranch} onChange={(e) => setBankBranch(e.target.value)} />
+          <div>
+            <label htmlFor="supplier-contact-name" className="mb-1 block text-xs font-semibold text-neutral-600">Contact name</label>
+            <input id="supplier-contact-name" className="form-input w-full" placeholder="Contact name" value={contactName} onChange={(e) => setContactName(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="supplier-contact-phone" className="mb-1 block text-xs font-semibold text-neutral-600">Contact phone</label>
+            <input id="supplier-contact-phone" className="form-input w-full" placeholder="Contact phone" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="supplier-website" className="mb-1 block text-xs font-semibold text-neutral-600">Website</label>
+            <input id="supplier-website" className="form-input w-full" placeholder="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="supplier-country" className="mb-1 block text-xs font-semibold text-neutral-600">Country</label>
+            <input id="supplier-country" className="form-input w-full" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
+          </div>
+          <div className="md:col-span-2">
+            <label htmlFor="supplier-address" className="mb-1 block text-xs font-semibold text-neutral-600">Address</label>
+            <input id="supplier-address" className="form-input w-full" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="supplier-bank-name" className="mb-1 block text-xs font-semibold text-neutral-600">Bank name</label>
+            <input id="supplier-bank-name" className="form-input w-full" placeholder="Bank name" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="supplier-payment-terms" className="mb-1 block text-xs font-semibold text-neutral-600">Payment terms</label>
+            <input id="supplier-payment-terms" className="form-input w-full" placeholder="Payment terms" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="supplier-bank-account" className="mb-1 block text-xs font-semibold text-neutral-600">Bank account</label>
+            <input id="supplier-bank-account" className="form-input w-full" placeholder="Bank account" value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="supplier-bank-branch" className="mb-1 block text-xs font-semibold text-neutral-600">Bank branch or SWIFT</label>
+            <input id="supplier-bank-branch" className="form-input w-full" placeholder="Bank branch or SWIFT" value={bankBranch} onChange={(e) => setBankBranch(e.target.value)} />
+          </div>
         </div>
 
         <div className="space-y-2">
@@ -110,11 +139,16 @@ export default function SupplierProfilePage() {
                   className="mr-2"
                   checked={categoryIds.includes(category.id)}
                   onChange={() =>
-                    setCategoryIds((current) =>
-                      current.includes(category.id)
-                        ? current.filter((id) => id !== category.id)
-                        : current.length >= 3 ? current : [...current, category.id]
-                    )
+                    setCategoryIds((current) => {
+                      if (current.includes(category.id)) {
+                        return current.filter((id) => id !== category.id);
+                      }
+                      if (current.length >= 3) {
+                        showInfoToast("Category limit reached", "You can select up to 3 categories.");
+                        return current;
+                      }
+                      return [...current, category.id];
+                    })
                   }
                 />
                 {category.name}
