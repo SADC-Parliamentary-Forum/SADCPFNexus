@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
+import '../../../../../core/offline/draft_database.dart';
+import '../../../../../core/offline/draft_provider.dart';
 
 class ReportNewIncidentScreen extends ConsumerStatefulWidget {
   const ReportNewIncidentScreen({super.key});
@@ -70,14 +74,44 @@ class _ReportNewIncidentScreenState
       );
       Navigator.of(context).pop();
     } catch (e) {
+      await _saveDraftOnFailure(subject);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Failed to submit: ${e.toString()}'),
+            content: Text(
+                'Failed to submit: ${e.toString()}. Saved to Offline Drafts so you can retry.'),
             backgroundColor: Colors.red),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// Persists the entered report locally so it is not lost when submission
+  /// fails (e.g. no connectivity), following the same offline-draft pattern
+  /// used by the draft-capable request forms.
+  Future<void> _saveDraftOnFailure(String subject) async {
+    String description = _descriptionController.text.trim();
+    if (_witnesses.isNotEmpty) {
+      description = description.isEmpty
+          ? 'Witnesses: ${_witnesses.join(", ")}'
+          : '$description\n\nWitnesses: ${_witnesses.join(", ")}';
+    }
+    final payload = {
+      'subject': subject,
+      'description': description.isEmpty ? null : description,
+      'severity': _severity.toLowerCase(),
+    };
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+            type: 'incident',
+            title: 'Incident: $subject',
+            payload: jsonEncode(payload),
+            createdAt: DateTime.now(),
+          ));
+    } catch (_) {
+      // Best-effort; nothing actionable if local persistence also fails.
     }
   }
 

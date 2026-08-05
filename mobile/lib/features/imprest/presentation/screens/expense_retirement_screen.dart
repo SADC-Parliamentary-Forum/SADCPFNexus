@@ -1,6 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
+import '../../../../../core/offline/draft_database.dart';
+import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/router/safe_back.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
@@ -113,19 +117,21 @@ class _ExpenseRetirementScreenState
     }
 
     setState(() => _submitting = true);
+    final payload = {
+      'request_id': id,
+      'items': validItems
+          .map((i) => {
+                'description': i.description.trim(),
+                'amount': double.tryParse(i.amount) ?? 0,
+              })
+          .toList(),
+      if (_notesController.text.trim().isNotEmpty)
+        'notes': _notesController.text.trim(),
+    };
     try {
       await ref.read(apiClientProvider).dio.post(
         '/imprest/requests/$id/retire',
-        data: {
-          'items': validItems
-              .map((i) => {
-                    'description': i.description.trim(),
-                    'amount': double.tryParse(i.amount) ?? 0,
-                  })
-              .toList(),
-          if (_notesController.text.trim().isNotEmpty)
-            'notes': _notesController.text.trim(),
-        },
+        data: payload,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -134,13 +140,35 @@ class _ExpenseRetirementScreenState
       ));
       context.safePopOrGoHome();
     } catch (e) {
+      final savedLocally = await _saveDraftOnFailure(id, payload);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Submission failed. Please try again.'),
+        content: Text(savedLocally
+            ? 'Submission failed. Saved to Offline Drafts so you can retry.'
+            : 'Submission failed. Please try again.'),
         backgroundColor: AppColors.danger,
       ));
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// Persists the entered retirement locally so it is not lost when
+  /// submission fails (e.g. no connectivity), following the same
+  /// offline-draft pattern used by the other draft-capable request forms.
+  Future<bool> _saveDraftOnFailure(
+      String requestId, Map<String, dynamic> payload) async {
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+            type: 'expense_retirement',
+            title: 'Retirement: Imprest #$requestId',
+            payload: jsonEncode(payload),
+            createdAt: DateTime.now(),
+          ));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

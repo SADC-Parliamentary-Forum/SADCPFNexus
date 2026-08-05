@@ -38,7 +38,7 @@ class SalaryAdvanceRequestScreen extends ConsumerStatefulWidget {
 }
 
 class _SalaryAdvanceRequestScreenState
-    extends ConsumerState<SalaryAdvanceRequestScreen> {
+    extends ConsumerState<SalaryAdvanceRequestScreen> with WidgetsBindingObserver {
   final _amountController = TextEditingController();
   bool _loadingContext = true;
   bool _submitting = false;
@@ -73,8 +73,42 @@ class _SalaryAdvanceRequestScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _applyInitialDraft();
     _loadContext();
+  }
+
+  bool get _hasMeaningfulContent => _requestedAmount > 0;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused && !_submitting && _hasMeaningfulContent) {
+      _autoSaveDraftOnBackground();
+    }
+  }
+
+  /// Silently persists the current form as a draft when the app is
+  /// backgrounded, without navigation or user-facing feedback (mirrors
+  /// [_saveDraft] but is safe to call outside a user gesture).
+  Future<void> _autoSaveDraftOnBackground() async {
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      final payload = {
+        'amount': _requestedAmount,
+        'purpose': _purpose,
+        'repayment_months': _recoveryMonths,
+      };
+      await db.into(db.draftEntries).insert(
+            DraftEntriesCompanion.insert(
+              type: 'salary_advance',
+              title: _purpose,
+              payload: jsonEncode(payload),
+              createdAt: DateTime.now(),
+            ),
+          );
+    } catch (_) {
+      // Best-effort; nothing actionable if this fails while backgrounded.
+    }
   }
 
   void _applyInitialDraft() {
@@ -240,6 +274,7 @@ class _SalaryAdvanceRequestScreenState
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _amountController.dispose();
     super.dispose();
   }

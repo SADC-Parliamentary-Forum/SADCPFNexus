@@ -66,6 +66,15 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
   String? _error;
   final List<List<Map<String, dynamic>>> _data = [[], [], []];
 
+  /// Tracks the last time a network refresh actually ran, across widget
+  /// instances (this screen is torn down and re-mounted on every bottom-nav
+  /// tab switch because the app shell uses a plain `ShellRoute`; a `static`
+  /// field is the only way to remember "we just fetched this" across that
+  /// rebuild). Used to skip a redundant background refresh when the cached
+  /// data is still fresh, rather than hitting the network on every mount.
+  static DateTime? _lastBackgroundRefreshAt;
+  static const _backgroundRefreshStaleAfter = Duration(minutes: 2);
+
   @override
   void initState() {
     super.initState();
@@ -98,7 +107,15 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
           _loading = false;
           _error   = null;
         });
-        _load(backgroundRefresh: true);
+        // Cache is fresh (within its 5-minute TTL, checked above) — only
+        // hit the network again if we haven't done so recently. Without
+        // this, a background refresh fires on every mount, i.e. every
+        // bottom-nav tab switch, even when nothing changed.
+        final lastRefresh = _lastBackgroundRefreshAt;
+        if (lastRefresh == null || DateTime.now().difference(lastRefresh) >= _backgroundRefreshStaleAfter) {
+          _lastBackgroundRefreshAt = DateTime.now();
+          _load(backgroundRefresh: true);
+        }
         return;
       }
     }
@@ -131,6 +148,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> with SingleTick
       }
     }
     if (!mounted) return;
+    _lastBackgroundRefreshAt = DateTime.now();
     if (backgroundRefresh) return; // data already shown; don't flash UI
     setState(() {
       for (var i = 0; i < results.length && i < _data.length; i++) {

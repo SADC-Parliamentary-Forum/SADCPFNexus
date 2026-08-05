@@ -36,6 +36,12 @@ class _VendorDirectoryScreenState extends ConsumerState<VendorDirectoryScreen> {
     });
     try {
       final dio = ref.read(apiClientProvider).dio;
+      // NOTE: `GET /procurement/vendors` (VendorController::index) does not
+      // currently support `per_page`/`page` — it always returns the full,
+      // unpaginated vendor collection via `->get()`. Adding pagination here
+      // on the client would have no effect until the backend endpoint is
+      // updated to paginate; that is a backend change, tracked separately
+      // from this mobile UI/UX pass.
       final res = await dio.get<Map<String, dynamic>>(
         '/procurement/vendors',
         queryParameters: {'status': _statusFilter},

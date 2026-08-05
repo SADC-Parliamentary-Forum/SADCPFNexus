@@ -129,6 +129,31 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
               'budget_lines': payload['budget_lines'] ?? [],
             };
             break;
+          case 'incident':
+            endpoint = '/hr/incidents';
+            break;
+          case 'expense_retirement':
+            final requestId = payload['request_id'];
+            if (requestId == null) {
+              failed++;
+              continue;
+            }
+            endpoint = '/imprest/requests/$requestId/retire';
+            requestBody = Map<String, dynamic>.from(payload)
+              ..remove('request_id');
+            break;
+          case 'asset_request':
+            endpoint = '/asset-requests';
+            break;
+          case 'condition_report':
+            endpoint = '/support/tickets';
+            break;
+          case 'overtime_claim':
+            endpoint = '/hr/timesheets';
+            break;
+          case 'assignment':
+            endpoint = '/assignments';
+            break;
           default:
             failed++;
             continue;
@@ -140,6 +165,8 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
           await dio.post('/finance/advances/$createdId/submit');
         } else if (draft.type.toLowerCase() == 'pif' && createdId != null) {
           await dio.post('/programmes/$createdId/submit');
+        } else if (draft.type.toLowerCase() == 'overtime_claim' && createdId != null) {
+          await dio.post('/hr/timesheets/$createdId/submit');
         }
         await (db.delete(db.draftEntries)..where((t) => t.id.equals(draft.id)))
             .go();
@@ -202,6 +229,19 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
         break;
       case 'pif':
         context.push('/pif/form', extra: extra);
+        break;
+      case 'incident':
+      case 'expense_retirement':
+      case 'asset_request':
+      case 'condition_report':
+      case 'overtime_claim':
+      case 'assignment':
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'This draft resubmits automatically — tap Sync All to retry.'),
+              backgroundColor: AppColors.info),
+        );
         break;
       default:
         ScaffoldMessenger.of(context).showSnackBar(
@@ -268,6 +308,18 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
         return 'Salary Advance';
       case 'pif':
         return 'PIF';
+      case 'incident':
+        return 'Incident Report';
+      case 'expense_retirement':
+        return 'Expense Retirement';
+      case 'asset_request':
+        return 'Asset Request';
+      case 'condition_report':
+        return 'Condition Report';
+      case 'overtime_claim':
+        return 'Overtime Claim';
+      case 'assignment':
+        return 'Assignment';
       default:
         return type;
     }
@@ -287,6 +339,18 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
         return Icons.account_balance_wallet_outlined;
       case 'pif':
         return Icons.assignment_outlined;
+      case 'incident':
+        return Icons.report_gmailerrorred_outlined;
+      case 'expense_retirement':
+        return Icons.receipt_long_outlined;
+      case 'asset_request':
+        return Icons.devices_other_outlined;
+      case 'condition_report':
+        return Icons.build_outlined;
+      case 'overtime_claim':
+        return Icons.schedule_outlined;
+      case 'assignment':
+        return Icons.task_alt_outlined;
       default:
         return Icons.edit_note;
     }
@@ -306,6 +370,18 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
         return const Color(0xFF13EC80);
       case 'pif':
         return const Color(0xFF3B82F6);
+      case 'incident':
+        return const Color(0xFFEF4444);
+      case 'expense_retirement':
+        return const Color(0xFFD4AF37);
+      case 'asset_request':
+        return const Color(0xFF3B82F6);
+      case 'condition_report':
+        return const Color(0xFFD97706);
+      case 'overtime_claim':
+        return const Color(0xFF7C3AED);
+      case 'assignment':
+        return const Color(0xFF13EC80);
       default:
         return AppColors.primary;
     }

@@ -31,6 +31,13 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
   int _probation = 0;
   int _warnings = 0;
 
+  // Pagination — `/hr/files` is server-paginated (per_page capped at 100).
+  static const _perPage = 100;
+  int _currentPage = 1;
+  int _lastPage = 1;
+  bool _hasMorePages = false;
+  bool _loadingMore = false;
+
   @override
   void initState() {
     super.initState();
@@ -48,20 +55,27 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
       _isHr = roles.any((r) =>
           r.toLowerCase().contains('hr') || r.toLowerCase().contains('admin'));
 
-      final res =
-          await ref.read(apiClientProvider).dio.get<dynamic>('/hr/files');
+      final res = await ref.read(apiClientProvider).dio.get<dynamic>(
+        '/hr/files',
+        queryParameters: {'per_page': _perPage, 'page': 1},
+      );
       final data = res.data;
       final List<dynamic> raw = (data is Map && data['data'] != null)
           ? data['data'] as List<dynamic>
           : (data is List ? data : []);
       _files = raw.cast<Map<String, dynamic>>();
+      if (data is Map) {
+        _currentPage = (data['current_page'] as num?)?.toInt() ?? 1;
+        _lastPage = (data['last_page'] as num?)?.toInt() ?? 1;
+        _total = (data['total'] as num?)?.toInt() ?? _files.length;
+      } else {
+        _currentPage = 1;
+        _lastPage = 1;
+        _total = _files.length;
+      }
+      _hasMorePages = _currentPage < _lastPage;
 
-      _total = _files.length;
-      _active = _files.where((f) => f['employment_status'] == 'active').length;
-      _probation =
-          _files.where((f) => f['probation_status'] == 'on_probation').length;
-      _warnings = _files.where((f) => f['active_warning_flag'] == true).length;
-
+      _recomputeStats();
       _applyFilters();
       setState(() => _loading = false);
     } catch (e) {
@@ -70,6 +84,52 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
         _error = e.toString();
       });
     }
+  }
+
+  /// Fetches the next page of employee files and appends it to the list.
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMorePages) return;
+    setState(() => _loadingMore = true);
+    try {
+      final nextPage = _currentPage + 1;
+      final res = await ref.read(apiClientProvider).dio.get<dynamic>(
+        '/hr/files',
+        queryParameters: {'per_page': _perPage, 'page': nextPage},
+      );
+      final data = res.data;
+      final List<dynamic> raw = (data is Map && data['data'] != null)
+          ? data['data'] as List<dynamic>
+          : (data is List ? data : []);
+      _files.addAll(raw.cast<Map<String, dynamic>>());
+      if (data is Map) {
+        _currentPage = (data['current_page'] as num?)?.toInt() ?? nextPage;
+        _lastPage = (data['last_page'] as num?)?.toInt() ?? _lastPage;
+        _total = (data['total'] as num?)?.toInt() ?? _total;
+      }
+      _hasMorePages = _currentPage < _lastPage;
+
+      _recomputeStats();
+      _applyFilters();
+      if (mounted) setState(() => _loadingMore = false);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _loadingMore = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load more files.')),
+        );
+      }
+    }
+  }
+
+  /// Recomputes stat tiles from the files loaded so far. When more pages
+  /// remain, `_total` still reflects the server-reported grand total, but
+  /// the breakdown counts only cover loaded records until "Load more" is
+  /// used to fetch the rest.
+  void _recomputeStats() {
+    _active = _files.where((f) => f['employment_status'] == 'active').length;
+    _probation =
+        _files.where((f) => f['probation_status'] == 'on_probation').length;
+    _warnings = _files.where((f) => f['active_warning_flag'] == true).length;
   }
 
   void _applyFilters() {
@@ -175,6 +235,25 @@ class _HrDirectoryScreenState extends ConsumerState<HrDirectoryScreen> {
                                 ),
                               ),
                               childCount: _filtered.length,
+                            ),
+                          ),
+                        ),
+                      if (_hasMorePages && _selectedFilter == 'all' && _searchQuery.isEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
+                            child: Center(
+                              child: OutlinedButton(
+                                onPressed: _loadingMore ? null : _loadMore,
+                                child: _loadingMore
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      )
+                                    : const Text('Load more'),
+                              ),
                             ),
                           ),
                         ),

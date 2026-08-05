@@ -25,6 +25,9 @@ class _PifReviewApprovalScreenState
   bool _loading = true;
   bool _attachmentsLoading = false;
   bool _uploadingAttachment = false;
+  /// 0-100 upload progress for the in-flight attachment, or null when no
+  /// upload is in progress.
+  int? _uploadProgressPercent;
   bool _generatingImprest = false;
   String? _error;
   Map<String, dynamic>? _programme;
@@ -115,16 +118,24 @@ class _PifReviewApprovalScreenState
     final path = file?.files.single.path;
     if (path == null || !mounted) return;
 
-    setState(() => _uploadingAttachment = true);
+    setState(() {
+      _uploadingAttachment = true;
+      _uploadProgressPercent = 0;
+    });
     try {
       final form = FormData.fromMap({
         'file': await MultipartFile.fromFile(path, filename: file!.files.single.name),
         'document_type': 'other',
       });
-      await ref
-          .read(apiClientProvider)
-          .dio
-          .post('/programmes/$programmeId/attachments', data: form);
+      await ref.read(apiClientProvider).dio.post(
+        '/programmes/$programmeId/attachments',
+        data: form,
+        onSendProgress: (sent, totalBytes) {
+          if (!mounted || totalBytes <= 0) return;
+          setState(() =>
+              _uploadProgressPercent = ((sent / totalBytes) * 100).round());
+        },
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -143,7 +154,12 @@ class _PifReviewApprovalScreenState
         );
       }
     } finally {
-      if (mounted) setState(() => _uploadingAttachment = false);
+      if (mounted) {
+        setState(() {
+          _uploadingAttachment = false;
+          _uploadProgressPercent = null;
+        });
+      }
     }
   }
 
@@ -601,7 +617,11 @@ class _PifReviewApprovalScreenState
                     ),
                   )
                 : const Icon(Icons.add),
-            label: Text(_uploadingAttachment ? 'Uploading...' : 'Add attachment'),
+            label: Text(_uploadingAttachment
+                ? (_uploadProgressPercent != null
+                    ? 'Uploading $_uploadProgressPercent%...'
+                    : 'Uploading...')
+                : 'Add attachment'),
           ),
         ],
       ),

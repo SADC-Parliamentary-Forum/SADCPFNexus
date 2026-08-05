@@ -65,6 +65,9 @@ class _FinanceCommandCenterScreenState
                   : <String, dynamic>{},
             )
             .toList();
+        // Invalidate the memoized budget-pressure computation — `_budgets`
+        // just changed, so the cached list (and derived totals) are stale.
+        _budgetPressureCache = null;
         _loading = false;
       });
     } catch (_) {
@@ -107,7 +110,15 @@ class _FinanceCommandCenterScreenState
     return (_activeAdvanceAmount / _advanceCap).clamp(0, 1);
   }
 
+  /// Memoized result of [_budgetPressure] — the loop + sort only needs to
+  /// run once per `_budgets` update, not on every access within a build
+  /// (it was previously read ~5x per `build()` via `_budgetPressure`,
+  /// `_budgetAllocated`, and `_budgetSpent`).
+  List<_BudgetPressure>? _budgetPressureCache;
+
   List<_BudgetPressure> get _budgetPressure {
+    final cached = _budgetPressureCache;
+    if (cached != null) return cached;
     final pressures = <_BudgetPressure>[];
     for (final budget in _budgets) {
       final budgetName = budget['name']?.toString() ?? 'Budget';
@@ -129,7 +140,9 @@ class _FinanceCommandCenterScreenState
       }
     }
     pressures.sort((a, b) => b.ratio.compareTo(a.ratio));
-    return pressures.take(5).toList();
+    final result = pressures.take(5).toList();
+    _budgetPressureCache = result;
+    return result;
   }
 
   double get _budgetAllocated {

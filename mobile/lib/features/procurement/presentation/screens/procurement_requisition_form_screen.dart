@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
+import '../../../../../core/offline/draft_database.dart';
+import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../data/procurement_api_helpers.dart';
 
@@ -160,12 +164,42 @@ class _ProcurementRequisitionFormScreenState
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      final msg = e.toString().contains('422')
+      final is422 = e.toString().contains('422');
+      String msg = is422
           ? 'Validation failed. Check required fields and try again.'
           : 'Failed to save procurement request.';
+      if (!is422) {
+        final savedLocally = await _saveDraftOnFailure();
+        if (savedLocally) {
+          msg = 'Failed to save procurement request. Saved to Offline Drafts so you can retry.';
+        }
+      }
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(msg), backgroundColor: AppColors.danger),
       );
+    }
+  }
+
+  /// Persists the entered requisition locally so it is not lost when saving
+  /// fails (e.g. no connectivity), following the same offline-draft pattern
+  /// used by the other draft-capable request forms.
+  Future<bool> _saveDraftOnFailure() async {
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      final payload = _buildPayload();
+      final title = _titleCtrl.text.trim().isNotEmpty
+          ? _titleCtrl.text.trim()
+          : 'Procurement requisition draft';
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+            type: 'procurement',
+            title: title,
+            payload: jsonEncode(payload),
+            createdAt: DateTime.now(),
+          ));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

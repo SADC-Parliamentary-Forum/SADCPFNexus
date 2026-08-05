@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
+import '../../../../../core/offline/draft_database.dart';
+import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/theme/app_theme.dart';
 
 class OvertimeClaimFormScreen extends ConsumerStatefulWidget {
@@ -90,29 +94,30 @@ class _OvertimeClaimFormScreenState
   Future<void> _submit() async {
     if (!_valid || _date == null) return;
     setState(() => _submitting = true);
+    final workDate = _date!;
     try {
-      final workDate = _date!;
       final weekStart = _weekStart(workDate);
       final weekEnd = _weekEnd(workDate);
       final dio = ref.read(apiClientProvider).dio;
+      final payload = {
+        'week_start': weekStart.toIso8601String().split('T').first,
+        'week_end': weekEnd.toIso8601String().split('T').first,
+        'entries': [
+          {
+            'work_date': workDate.toIso8601String().split('T').first,
+            'hours': _hours,
+            'overtime_hours': _hours,
+            'description':
+                '${_reasonCtrl.text.trim()} [Compensation: $_compensation]',
+            'activity_type': 'overtime_claim',
+            'work_bucket': 'operations',
+            'entry_category': _compensationCategory,
+          }
+        ],
+      };
       final createRes = await dio.post<Map<String, dynamic>>(
         '/hr/timesheets',
-        data: {
-          'week_start': weekStart.toIso8601String().split('T').first,
-          'week_end': weekEnd.toIso8601String().split('T').first,
-          'entries': [
-            {
-              'work_date': workDate.toIso8601String().split('T').first,
-              'hours': _hours,
-              'overtime_hours': _hours,
-              'description':
-                  '${_reasonCtrl.text.trim()} [Compensation: $_compensation]',
-              'activity_type': 'overtime_claim',
-              'work_bucket': 'operations',
-              'entry_category': _compensationCategory,
-            }
-          ],
-        },
+        data: payload,
       );
       final timesheetId = createRes.data?['data']?['id'];
       if (timesheetId != null) {
@@ -129,16 +134,56 @@ class _OvertimeClaimFormScreenState
       );
       Navigator.pop(context);
     } catch (_) {
+      final savedLocally = await _saveDraftOnFailure(workDate);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to submit overtime entry.'),
+          SnackBar(
+            content: Text(savedLocally
+                ? 'Failed to submit overtime entry. Saved to Offline Drafts so you can retry.'
+                : 'Failed to submit overtime entry.'),
             backgroundColor: AppColors.danger,
           ),
         );
       }
     } finally {
       if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// Persists the entered overtime claim locally so it is not lost when
+  /// submission fails (e.g. no connectivity), following the same
+  /// offline-draft pattern used by the other draft-capable request forms.
+  Future<bool> _saveDraftOnFailure(DateTime workDate) async {
+    final weekStart = _weekStart(workDate);
+    final weekEnd = _weekEnd(workDate);
+    final payload = {
+      'week_start': weekStart.toIso8601String().split('T').first,
+      'week_end': weekEnd.toIso8601String().split('T').first,
+      'entries': [
+        {
+          'work_date': workDate.toIso8601String().split('T').first,
+          'hours': _hours,
+          'overtime_hours': _hours,
+          'description':
+              '${_reasonCtrl.text.trim()} [Compensation: $_compensation]',
+          'activity_type': 'overtime_claim',
+          'work_bucket': 'operations',
+          'entry_category': _compensationCategory,
+        }
+      ],
+    };
+    try {
+      final db = ref.read(draftDatabaseProvider);
+      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
+            type: 'overtime_claim',
+            title:
+                'Overtime: ${workDate.toIso8601String().split('T').first}',
+            payload: jsonEncode(payload),
+            createdAt: DateTime.now(),
+          ));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
