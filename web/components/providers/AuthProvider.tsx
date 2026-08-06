@@ -3,8 +3,9 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { AuthContext, mergeEffectivePermissions } from "@/lib/auth";
-import { accessApi, authApi, type AuthUser } from "@/lib/api";
+import { authApi, type AuthUser } from "@/lib/api";
 import { clearStoredUser, readStoredUser, writeStoredUser } from "@/lib/session";
+import { clearEffectiveAccessCache, fetchEffectiveAccess } from "@/lib/effectiveAccessCache";
 
 /** Paths where unauthenticated visitors are expected — do not call /auth/me. */
 const SKIP_REFRESH_PATHS = [
@@ -32,9 +33,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(({ data }) => {
         writeStoredUser(data);
         setUser(data);
-        return accessApi.effective()
-          .then(({ data: access }) => {
-            const merged = mergeEffectivePermissions(data, access.data) ?? data;
+        return fetchEffectiveAccess()
+          .then((access) => {
+            const merged = mergeEffectivePermissions(data, access) ?? data;
             writeStoredUser(merged);
             setUser(merged);
           })
@@ -47,18 +48,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Only evict session on explicit auth rejection; preserve cached user if backend is unreachable
         if (status === 401 || status === 403) {
           clearStoredUser();
+          clearEffectiveAccessCache();
           setUser(null);
         }
       });
   }, [pathname]);
 
   const login = (newUser: AuthUser) => {
+    clearEffectiveAccessCache();
     writeStoredUser(newUser);
     setUser(newUser);
   };
 
   const logout = () => {
     clearStoredUser();
+    clearEffectiveAccessCache();
     setUser(null);
   };
 

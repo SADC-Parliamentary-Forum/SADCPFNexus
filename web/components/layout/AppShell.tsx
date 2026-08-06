@@ -5,8 +5,10 @@ import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { AccessDenied } from "@/components/ui/AccessDenied";
+import { AppShellLoading } from "@/components/ui/AppShellLoading";
 import { canAccessRouteWithEffective, getStoredUser } from "@/lib/auth";
-import { accessApi, type AccessEffectivePayload } from "@/lib/api";
+import { type AccessEffectivePayload } from "@/lib/api";
+import { fetchEffectiveAccess, getCachedEffectiveAccess } from "@/lib/effectiveAccessCache";
 
 const SIDEBAR_OPEN_KEY = "sadcpf_sidebar_open";
 
@@ -15,16 +17,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [accessDenied, setAccessDenied] = useState(false);
-  const [accessReady, setAccessReady] = useState(false);
+  // Seed synchronously from the shared cache: if another AppShell mount (or
+  // AuthProvider) already fetched this session, remounting AppShell (e.g.
+  // crossing the /dashboard <-> (app) layout boundary) shows content
+  // immediately instead of a loading flash.
+  const [effectiveAccess, setEffectiveAccess] = useState<AccessEffectivePayload | null>(
+    () => getCachedEffectiveAccess()
+  );
+  const [accessReady, setAccessReady] = useState(() => getCachedEffectiveAccess() !== null);
   const [accessLoadFailed, setAccessLoadFailed] = useState(false);
-  const [effectiveAccess, setEffectiveAccess] = useState<AccessEffectivePayload | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    accessApi.effective()
-      .then(({ data }) => {
+    fetchEffectiveAccess()
+      .then((data) => {
         if (!cancelled) {
-          setEffectiveAccess(data.data);
+          setEffectiveAccess(data);
           setAccessReady(true);
           setAccessLoadFailed(false);
         }
@@ -107,14 +115,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="flex-1 overflow-y-auto p-6 min-w-0"
           onClick={closeSidebar}
         >
-          {!accessReady || accessDenied ? (
+          {!accessReady ? (
+            <AppShellLoading />
+          ) : accessDenied ? (
             <AccessDenied
               path={pathname ?? undefined}
-              reason={!accessReady
-                ? "Access permissions are still being verified. Reload this page if the check does not complete."
-                : accessLoadFailed
-                  ? "Access permissions could not be verified. The page is unavailable until the authorization service responds."
-                  : "Your account does not include permission for this route. Contact an administrator if you need access."}
+              reason={accessLoadFailed
+                ? "Access permissions could not be verified. The page is unavailable until the authorization service responds."
+                : "Your account does not include permission for this route. Contact an administrator if you need access."}
             />
           ) : (
             children
