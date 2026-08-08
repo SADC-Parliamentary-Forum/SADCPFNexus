@@ -36,6 +36,30 @@ class WorkflowEngineController extends Controller
         return response()->json(['data' => $rows]);
     }
 
+    /**
+     * Update the workflow-level self-approval policy (PRD §10-11). Deliberately
+     * narrow — the designer's structured stage editor covers per-step config
+     * via createVersion()/updateDraft(); this is the one workflow-level (not
+     * per-step) setting the admin UI needs to change directly.
+     */
+    public function updatePolicy(Request $request, ApprovalWorkflow $workflow): JsonResponse
+    {
+        $this->authorizePermission($request, 'workflows.manage-definitions', 'workflows.admin');
+        abort_unless((int) $workflow->tenant_id === (int) $request->user()->tenant_id, 404);
+
+        $data = $request->validate([
+            'self_approval_policy' => ['required', 'string', 'in:' . implode(',', [
+                ApprovalWorkflow::SELF_APPROVAL_DENIED,
+                ApprovalWorkflow::SELF_APPROVAL_ALLOW_WITH_CONTROLS,
+                ApprovalWorkflow::SELF_APPROVAL_REQUIRE_EXTERNAL_APPROVER,
+            ])],
+        ]);
+
+        $workflow->update($data);
+
+        return response()->json(['data' => $workflow->fresh()]);
+    }
+
     public function createVersion(Request $request, ApprovalWorkflow $workflow): JsonResponse
     {
         $this->authorizePermission($request, 'workflows.manage-definitions', 'workflows.admin');

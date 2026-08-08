@@ -1719,6 +1719,7 @@ Route::prefix('v1')->group(function () {
         // Workflow Engine Phase 1 (PRD §100)
         Route::prefix('workflow-engine')->group(function () {
             Route::get('definitions', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'definitions']);
+            Route::patch('definitions/{workflow}/policy', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'updatePolicy']);
             Route::post('definitions/{workflow}/versions', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'createVersion']);
             Route::post('versions/{version}/validate', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'validateVersion']);
             Route::post('versions/{version}/approve', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'approveVersion']);

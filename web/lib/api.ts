@@ -465,6 +465,7 @@ export interface ApprovalWorkflow {
   is_active: boolean;
   target_type?: "programme" | "department" | null;
   target_id?: number | null;
+  self_approval_policy?: "denied" | "allow_with_controls" | "require_external_approver" | string;
   steps: ApprovalStep[];
 }
 
@@ -1142,6 +1143,8 @@ export const workflowApi = {
 
 export const workflowEngineApi = {
   definitions: () => api.get<{ data: ApprovalWorkflow[] }>("/workflow-engine/definitions"),
+  updatePolicy: (workflowId: number, self_approval_policy: string) =>
+    api.patch<{ data: ApprovalWorkflow }>(`/workflow-engine/definitions/${workflowId}/policy`, { self_approval_policy }),
   createVersion: (workflowId: number, data?: Record<string, unknown>) =>
     api.post(`/workflow-engine/definitions/${workflowId}/versions`, data ?? {}),
   updateDraft: (versionId: number, data: Record<string, unknown>) =>

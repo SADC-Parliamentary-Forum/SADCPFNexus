@@ -11,6 +11,7 @@ type StageDraft = {
   step_name?: string;
   stage_type: string;
   actor_selector: string;
+  role_id?: number | null;
   completion_rule?: string;
   quorum_count?: number | null;
   quorum_percentage?: number | null;
@@ -18,8 +19,22 @@ type StageDraft = {
   routing_strategy?: string;
   sla_hours?: number | null;
   governance_body_name?: string | null;
+  requires_comment?: boolean;
+  allow_return?: boolean;
   condition_expression?: unknown;
 };
+
+const ACTOR_SELECTORS = [
+  { value: "supervisor", label: "Direct supervisor" },
+  { value: "hod", label: "Head of department (up the chain)" },
+  { value: "director_finance", label: "Director of Finance" },
+  { value: "sg", label: "Secretary General" },
+  { value: "specific_role", label: "Specific role (set Role ID)" },
+  { value: "specific_user", label: "Specific user" },
+  { value: "position", label: "Position holder" },
+  { value: "queue", label: "Shared queue" },
+  { value: "authority_holder", label: "Authority-action holder" },
+];
 
 export default function WorkflowDesignerPage() {
   const { toast } = useToast();
@@ -29,6 +44,8 @@ export default function WorkflowDesignerPage() {
   const [stages, setStages] = useState<StageDraft[]>([]);
   const [lint, setLint] = useState<{ hard: string[]; soft: string[]; valid: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [selfApprovalPolicy, setSelfApprovalPolicy] = useState("denied");
+  const [conditionDrafts, setConditionDrafts] = useState<Record<number, string>>({});
 
   useEffect(() => {
     workflowEngineApi.definitions().then((res) => setDefinitions(res.data.data || [])).catch(() => {
@@ -39,19 +56,51 @@ export default function WorkflowDesignerPage() {
   const loadDraft = async (workflowId: number) => {
     setBusy(true);
     setSelectedId(workflowId);
+    setSelfApprovalPolicy(definitions.find((d) => d.id === workflowId)?.self_approval_policy ?? "denied");
     try {
       const created = await workflowEngineApi.createVersion(workflowId);
       const version = (created.data as any).data;
       setVersionId(version.id);
-      setStages((version.stages_snapshot || []).map((s: StageDraft, i: number) => ({
+      const loadedStages = (version.stages_snapshot || []).map((s: StageDraft, i: number) => ({
         ...s,
         step_order: s.step_order ?? i,
-      })));
+      }));
+      setStages(loadedStages);
+      setConditionDrafts(
+        Object.fromEntries(
+          loadedStages.map((s: StageDraft, i: number) => [i, s.condition_expression ? JSON.stringify(s.condition_expression) : ""]),
+        ),
+      );
       setLint(null);
     } catch {
       toast("error", "Draft failed", "Could not create draft version.");
     } finally {
       setBusy(false);
+    }
+  };
+
+  const saveSelfApprovalPolicy = async (policy: string) => {
+    if (!selectedId) return;
+    setSelfApprovalPolicy(policy);
+    try {
+      await workflowEngineApi.updatePolicy(selectedId, policy);
+      setDefinitions((prev) => prev.map((d) => (d.id === selectedId ? { ...d, self_approval_policy: policy } : d)));
+      toast("success", "Policy updated", "Self-approval policy saved.");
+    } catch {
+      toast("error", "Save failed", "Could not update self-approval policy.");
+    }
+  };
+
+  const applyConditionDraft = (index: number, raw: string) => {
+    setConditionDrafts((prev) => ({ ...prev, [index]: raw }));
+    if (raw.trim() === "") {
+      updateStage(index, { condition_expression: null });
+      return;
+    }
+    try {
+      updateStage(index, { condition_expression: JSON.parse(raw) });
+    } catch {
+      // Leave the stage's last-valid condition_expression in place while the JSON is mid-edit/invalid.
     }
   };
 
@@ -143,6 +192,24 @@ export default function WorkflowDesignerPage() {
         <button disabled={!versionId || busy || Boolean(lint && !lint.valid)} onClick={publish} className="px-3 py-2 border rounded">Approve & publish</button>
       </div>
 
+      {selectedId && (
+        <div className="border rounded p-3 flex flex-wrap items-center gap-3">
+          <label className="text-sm font-medium">Self-approval policy</label>
+          <select
+            className="border rounded px-2 py-1 bg-transparent"
+            value={selfApprovalPolicy}
+            onChange={(e) => saveSelfApprovalPolicy(e.target.value)}
+          >
+            <option value="denied">Denied — always blocked</option>
+            <option value="allow_with_controls">Allow with controls — mandatory comment + audit flag</option>
+            <option value="require_external_approver">Require external approver — routes to an outside authority</option>
+          </select>
+          <span className="text-xs text-[var(--muted)]">
+            Governs what happens when the applicant is also a resolved approver on this workflow (PRD §10-11).
+          </span>
+        </div>
+      )}
+
       {lint && (
         <div className="border rounded p-3 text-sm space-y-1">
           <div>Valid: {lint.valid ? "yes" : "no"}</div>
@@ -163,7 +230,22 @@ export default function WorkflowDesignerPage() {
             <select className="border rounded px-2 py-1 bg-transparent" value={stage.stage_type} onChange={(e) => updateStage(index, { stage_type: e.target.value })}>
               {["review", "recommend", "verify", "certify", "authorise", "approve", "sign", "release"].map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
-            <input className="border rounded px-2 py-1 bg-transparent" placeholder="Actor selector" value={stage.actor_selector || ""} onChange={(e) => updateStage(index, { actor_selector: e.target.value })} />
+            <select
+              className="border rounded px-2 py-1 bg-transparent"
+              value={ACTOR_SELECTORS.some((s) => s.value === stage.actor_selector) ? stage.actor_selector : "specific_role"}
+              onChange={(e) => updateStage(index, { actor_selector: e.target.value })}
+            >
+              {ACTOR_SELECTORS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+            </select>
+            {(stage.actor_selector === "specific_role" || stage.actor_selector === "specific_user") && (
+              <input
+                className="border rounded px-2 py-1 bg-transparent"
+                type="number"
+                placeholder={stage.actor_selector === "specific_role" ? "Role ID" : "User ID"}
+                value={stage.role_id ?? ""}
+                onChange={(e) => updateStage(index, { role_id: e.target.value ? Number(e.target.value) : null })}
+              />
+            )}
             <select className="border rounded px-2 py-1 bg-transparent" value={stage.completion_rule || "any"} onChange={(e) => updateStage(index, { completion_rule: e.target.value })}>
               {["any", "all", "quorum", "percentage", "lead_plus_support"].map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -174,6 +256,26 @@ export default function WorkflowDesignerPage() {
             </select>
             <input className="border rounded px-2 py-1 bg-transparent" type="number" placeholder="SLA hours" value={stage.sla_hours ?? ""} onChange={(e) => updateStage(index, { sla_hours: e.target.value ? Number(e.target.value) : null })} />
             <input className="border rounded px-2 py-1 bg-transparent" placeholder="Governance body" value={stage.governance_body_name || ""} onChange={(e) => updateStage(index, { governance_body_name: e.target.value || null })} />
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={Boolean(stage.requires_comment)} onChange={(e) => updateStage(index, { requires_comment: e.target.checked })} />
+              Requires comment
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={Boolean(stage.allow_return)} onChange={(e) => updateStage(index, { allow_return: e.target.checked })} />
+              Allow return for correction
+            </label>
+            <div className="md:col-span-2">
+              <label className="text-xs text-[var(--muted)] block mb-1">
+                Condition expression (JSON — e.g. {"{"}"field":"amount","op":"gte","value":5000{"}"}, empty = always run)
+              </label>
+              <textarea
+                className="border rounded px-2 py-1 bg-transparent w-full font-mono text-xs"
+                rows={2}
+                placeholder='{"field":"amount","op":"gte","value":5000}'
+                value={conditionDrafts[index] ?? ""}
+                onChange={(e) => applyConditionDraft(index, e.target.value)}
+              />
+            </div>
           </div>
         ))}
       </div>
