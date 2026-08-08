@@ -98,6 +98,45 @@ class Correspondence extends Model
         return $this->belongsTo(User::class, 'registered_by');
     }
 
+    public function approvalRequest()
+    {
+        return $this->morphOne(ApprovalRequest::class, 'approvable');
+    }
+
+    public function onWorkflowApproved(User $approver): void
+    {
+        $referenceNumber = $this->reference_number
+            ?: app(\App\Modules\Correspondence\Services\CorrespondenceRegisterService::class)->allocateOutgoingReference($this, $approver);
+
+        $this->update([
+            'status'                => 'approved',
+            'approved_by'           => $approver->id,
+            'approved_at'           => now(),
+            'reference_number'      => $referenceNumber,
+            'letterhead_applied_at' => $this->letterhead_applied_at ?? now(),
+        ]);
+
+        AuditLog::record('correspondence.approved', [
+            'auditable_type' => self::class,
+            'auditable_id'   => $this->id,
+            'new_values'     => ['status' => 'approved', 'reference_number' => $referenceNumber],
+        ]);
+    }
+
+    public function onWorkflowRejected(User $approver, ?string $reason = null): void
+    {
+        $this->update([
+            'status'          => 'draft',
+            'rejection_reason'=> $reason,
+        ]);
+
+        AuditLog::record('correspondence.rejected', [
+            'auditable_type' => self::class,
+            'auditable_id'   => $this->id,
+            'new_values'     => ['reason' => $reason],
+        ]);
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);

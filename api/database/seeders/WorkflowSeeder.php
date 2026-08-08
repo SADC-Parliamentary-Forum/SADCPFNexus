@@ -55,10 +55,12 @@ class WorkflowSeeder extends Seeder
             ...($sgRole  ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'SG Approval']] : []),
         ]);
 
+        // Correspondence Approval (PRD §19): two stages to match the two client-facing
+        // actions (CorrespondenceController::review()/approve()) — HOD/Director review,
+        // then SG final approval and registry dispatch authorisation.
         $this->makeWorkflow($tenant, 'Correspondence Approval', 'correspondence', [
-            ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'review'],
-            ['approver_type' => 'up_the_chain', 'actor_selector' => 'hod', 'stage_type' => 'recommend'],
-            ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve']] : []),
+            ['approver_type' => 'up_the_chain', 'actor_selector' => 'hod', 'stage_type' => 'review', 'step_name' => 'HOD/Director Review', 'allow_return' => true, 'sla_hours' => 48],
+            ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'Secretary General Approval', 'authority_action' => 'sg.approve', 'sla_hours' => 48]] : []),
         ]);
 
         $this->makeWorkflow($tenant, 'Procurement Approval', 'procurement', [

@@ -9,6 +9,7 @@ use App\Models\Correspondence;
 use App\Models\CorrespondenceRecipient;
 use App\Modules\Correspondence\Services\CorrespondenceRegisterService;
 use App\Modules\Documents\Services\DocumentStorageService;
+use App\Services\WorkflowService;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,6 +21,7 @@ class CorrespondenceController extends Controller
     public function __construct(
         private readonly CorrespondenceRegisterService $register,
         private readonly DocumentStorageService $documents,
+        private readonly WorkflowService $workflowService,
     ) {}
 
     private function checkPerm(Request $request, string $permission): void
@@ -288,6 +290,8 @@ class CorrespondenceController extends Controller
             'submitted_at' => now(),
         ]);
 
+        $this->workflowService->initiate($correspondence->fresh(), 'correspondence', $request->user());
+
         AuditLog::record('correspondence.submitted', [
             'auditable_type' => Correspondence::class,
             'auditable_id'   => $correspondence->id,
@@ -302,7 +306,6 @@ class CorrespondenceController extends Controller
 
     public function review(Request $request, Correspondence $correspondence): JsonResponse
     {
-        $this->checkPerm($request, 'correspondence.review');
         $this->register->assertCanAccess($correspondence, $request->user());
 
         if (!$correspondence->isPendingReview()) {
@@ -311,10 +314,41 @@ class CorrespondenceController extends Controller
 
         $data = $request->validate([
             'action'  => ['required', 'string', 'in:approve,reject'],
-            'comment' => ['nullable', 'string', 'max:2000'],
+            'comment' => ['nullable', 'string', 'max:2000', 'required_if:action,reject'],
         ]);
 
         $user = $request->user();
+        $approvalRequest = $correspondence->approvalRequest;
+
+        if ($approvalRequest) {
+            if ($data['action'] === 'approve') {
+                $this->workflowService->approve($approvalRequest, $user, $data['comment'] ?? null);
+                $correspondence->refresh();
+                if ($correspondence->status === 'pending_review') {
+                    // Not yet the final step — advance the local status marker so the
+                    // SG-facing approve() endpoint's isPendingApproval() gate opens.
+                    $correspondence->update([
+                        'status'         => 'pending_approval',
+                        'reviewed_by'    => $user->id,
+                        'reviewed_at'    => now(),
+                        'review_comment' => $data['comment'] ?? null,
+                    ]);
+                }
+            } else {
+                $this->workflowService->reject($approvalRequest, $user, $data['comment']);
+                $correspondence->refresh();
+                $correspondence->update(['reviewed_by' => $user->id, 'reviewed_at' => now(), 'review_comment' => $data['comment']]);
+            }
+
+            return response()->json([
+                'message' => $data['action'] === 'approve'
+                    ? 'Correspondence forwarded for approval.'
+                    : 'Correspondence returned to author.',
+                'data' => $correspondence->fresh(),
+            ]);
+        }
+
+        $this->checkPerm($request, 'correspondence.review');
         $newStatus = $data['action'] === 'approve' ? 'pending_approval' : 'draft';
 
         $correspondence->update([
@@ -340,7 +374,6 @@ class CorrespondenceController extends Controller
 
     public function approve(Request $request, Correspondence $correspondence): JsonResponse
     {
-        $this->checkPerm($request, 'correspondence.approve');
         $this->register->assertCanAccess($correspondence, $request->user());
 
         if (!$correspondence->isPendingApproval()) {
@@ -348,6 +381,19 @@ class CorrespondenceController extends Controller
         }
 
         $user = $request->user();
+        $data = $request->validate(['comment' => ['nullable', 'string', 'max:2000']]);
+
+        $approvalRequest = $correspondence->approvalRequest;
+        if ($approvalRequest) {
+            $this->workflowService->approve($approvalRequest, $user, $data['comment'] ?? null);
+
+            return response()->json([
+                'message' => 'Correspondence approved.',
+                'data'    => $correspondence->fresh(['approver:id,name']),
+            ]);
+        }
+
+        $this->checkPerm($request, 'correspondence.approve');
         $referenceNumber = $correspondence->reference_number;
 
         if (! $referenceNumber) {
