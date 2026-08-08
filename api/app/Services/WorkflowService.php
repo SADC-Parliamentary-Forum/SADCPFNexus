@@ -545,6 +545,40 @@ class WorkflowService
             'returned_count'      => $request->returned_count,
             'steps'               => $perStep,
             'history'             => $history,
+            'resubmission_impact' => $this->resubmissionImpact($request),
+        ];
+    }
+
+    /**
+     * Whether resubmitting *right now* would resume at the step this request
+     * was returned from (cosmetic-only edit) or restart the whole chain
+     * (material edit) — surfaced ahead of time so the requester isn't
+     * surprised by which prior approvals survive (PRD §33–34).
+     */
+    private function resubmissionImpact(ApprovalRequest $request): ?array
+    {
+        if ($request->status !== 'returned' || ! $request->approvable) {
+            return null;
+        }
+
+        try {
+            $isMaterial = $this->packages()->hasMaterialChangeSinceLastCapture($request, $request->approvable);
+        } catch (Throwable $e) {
+            report($e);
+            $isMaterial = true;
+        }
+
+        $returnedFromStep = (int) (ApprovalHistory::where('approval_request_id', $request->id)
+            ->where('action', 'return')
+            ->orderByDesc('id')
+            ->value('step_index') ?? 0);
+
+        return [
+            'is_material'        => $isMaterial,
+            'resume_step_index'  => $isMaterial ? 0 : $returnedFromStep,
+            'message'            => $isMaterial
+                ? 'Changes made since this was returned affect approval-relevant fields — resubmitting will restart the full approval chain.'
+                : 'No approval-relevant fields have changed since this was returned — resubmitting will resume from the step it was returned at, preserving prior approvals.',
         ];
     }
 

@@ -14,11 +14,17 @@ export function WorkflowTracker({
     due_at?: string | null;
     approval_package_hash?: string | null;
     record_version?: number | null;
+    resubmission_impact?: {
+      is_material: boolean;
+      resume_step_index: number;
+      message: string;
+    } | null;
   } | null;
 }) {
   if (!snapshot) return null;
 
   const holders = snapshot.currently_with ?? [];
+  const impact = snapshot.resubmission_impact;
 
   return (
     <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-4 space-y-3 bg-white dark:bg-neutral-950">
@@ -61,6 +67,23 @@ export function WorkflowTracker({
           <span title={snapshot.approval_package_hash}>Package {snapshot.approval_package_hash.slice(0, 10)}…</span>
         ) : null}
       </div>
+      {impact ? (
+        <div
+          className={
+            impact.is_material
+              ? "flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300"
+              : "flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-xs text-green-800 dark:border-green-800/50 dark:bg-green-900/20 dark:text-green-300"
+          }
+        >
+          <span className="material-symbols-outlined text-[16px]">
+            {impact.is_material ? "history" : "verified"}
+          </span>
+          <span>
+            <strong>{impact.is_material ? "Full re-approval on resubmit. " : "Prior approvals preserved. "}</strong>
+            {impact.message}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }

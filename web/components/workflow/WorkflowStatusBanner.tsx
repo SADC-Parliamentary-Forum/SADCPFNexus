@@ -11,6 +11,11 @@ type Snapshot = {
   due_at?: string | null;
   approval_package_hash?: string | null;
   record_version?: number | null;
+  resubmission_impact?: {
+    is_material: boolean;
+    resume_step_index: number;
+    message: string;
+  } | null;
 };
 
 interface WorkflowStatusBannerProps {
