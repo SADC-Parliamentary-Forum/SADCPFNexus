@@ -91,6 +91,34 @@ class Risk extends Model
         return $this->belongsTo(User::class, 'submitted_by');
     }
 
+    /** Alias so WorkflowService::getRequesterFromApprovable() resolves the submitter. */
+    public function requester(): BelongsTo
+    {
+        return $this->submitter();
+    }
+
+    public function approvalRequest()
+    {
+        return $this->morphOne(\App\Models\ApprovalRequest::class, 'approvable');
+    }
+
+    public function onWorkflowApproved(User $approver): void
+    {
+        app(\App\Modules\Risk\Services\RiskService::class)->approve($this, [], $approver);
+    }
+
+    public function onWorkflowRejected(User $approver, ?string $reason = null): void
+    {
+        $this->update(['status' => 'draft']);
+
+        \App\Models\AuditLog::record('risk.rejected', [
+            'auditable_type' => self::class,
+            'auditable_id' => $this->id,
+            'new_values' => ['reason' => $reason],
+            'tags' => 'risk',
+        ]);
+    }
+
     public function riskOwner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'risk_owner_id');

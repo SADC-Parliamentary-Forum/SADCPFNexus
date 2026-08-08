@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Api\V1\Risk;
 use App\Http\Controllers\Controller;
 use App\Models\Risk;
 use App\Modules\Risk\Services\RiskService;
+use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class RiskController extends Controller
 {
-    public function __construct(private readonly RiskService $riskService) {}
+    public function __construct(
+        private readonly RiskService $riskService,
+        private readonly WorkflowService $workflowService,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -140,6 +144,22 @@ class RiskController extends Controller
             abort(404);
         }
 
+        $approvalRequest = $risk->approvalRequest;
+        if ($approvalRequest) {
+            $this->workflowService->approve($approvalRequest, $request->user());
+            $risk->refresh();
+            if ($risk->status === 'submitted') {
+                // Not yet the final step — perform the actual review transition
+                // (status/history/notifications) now that the engine has
+                // authorised this actor for the current step.
+                $updated = $this->riskService->startReview($risk, $request->user());
+
+                return response()->json(['message' => 'Risk review started.', 'data' => $updated]);
+            }
+
+            return response()->json(['message' => 'Risk review started.', 'data' => $risk->fresh()]);
+        }
+
         if (!$request->user()->hasAnyRole([
             'HOD', 'Director', 'Governance Officer', 'Internal Auditor',
             'System Admin', 'super-admin',
@@ -157,15 +177,25 @@ class RiskController extends Controller
             abort(404);
         }
 
+        $data = $request->validate([
+            'review_notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $approvalRequest = $risk->approvalRequest;
+        if ($approvalRequest) {
+            if (! empty($data['review_notes'])) {
+                $risk->update(['review_notes' => $data['review_notes']]);
+            }
+            $this->workflowService->approve($approvalRequest, $request->user(), $data['review_notes'] ?? null);
+
+            return response()->json(['message' => 'Risk approved.', 'data' => $risk->fresh()]);
+        }
+
         if (!$request->user()->hasAnyRole([
             'Director', 'Secretary General', 'System Admin', 'super-admin',
         ])) {
             abort(403);
         }
-
-        $data = $request->validate([
-            'review_notes' => ['nullable', 'string', 'max:2000'],
-        ]);
 
         $updated = $this->riskService->approve($risk, $data, $request->user());
         return response()->json(['message' => 'Risk approved.', 'data' => $updated]);

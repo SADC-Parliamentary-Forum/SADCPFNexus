@@ -101,6 +101,16 @@ class WorkflowSeeder extends Seeder
             ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance/Project Validation', 'authority_action' => 'finance.certify', 'sla_hours' => 48, 'condition_expression' => ['field' => 'is_donor_funded', 'op' => 'eq', 'value' => true], 'skip_if_condition_false' => true]] : []),
         ]);
 
+        // Risk register (PRD §23) — two stages matching the two client-facing
+        // actions (RiskController::startReview()/approve()): Governance review,
+        // then Director final approval. The existing hardcoded gate also allows
+        // Secretary General to approve; severity-conditional SG escalation for
+        // high/critical risks is deferred (would need a 3rd endpoint/UI action).
+        $this->makeWorkflow($tenant, 'Risk Register Approval', 'risk', [
+            ...($govRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $govRole->id, 'stage_type' => 'review', 'step_name' => 'Governance Review', 'sla_hours' => 72]] : []),
+            ...($directorRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $directorRole->id, 'stage_type' => 'approve', 'step_name' => 'Director Approval', 'sla_hours' => 72]] : []),
+        ]);
+
         // Supplier registration (PRD §18) — self-service applicant (portal user, no
         // institutional supervisor/HOD) so this chain uses role-based verify/authorise
         // steps only: Procurement verifies company info, Finance/Compliance verifies

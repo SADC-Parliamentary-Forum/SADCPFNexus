@@ -30,6 +30,7 @@ class WorkflowService
         'pif'               => 'Programme (PIF)',
         'supplier'          => 'Supplier Registration',
         'correspondence'    => 'Correspondence',
+        'risk'              => 'Risk Register',
     ];
 
     public function __construct(

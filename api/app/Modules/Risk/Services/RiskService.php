@@ -8,6 +8,7 @@ use App\Models\RiskHistory;
 use App\Models\RiskIncident;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\WorkflowService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
@@ -17,6 +18,7 @@ class RiskService
         private readonly NotificationService $notifications,
         private readonly RiskAssessmentService $assessments,
         private readonly RiskAppetiteService $appetite,
+        private readonly WorkflowService $workflowService,
     ) {}
     // ── List ──────────────────────────────────────────────────────────────────
 
@@ -342,6 +344,8 @@ class RiskService
 
         $from = $risk->status;
         $risk->update(['status' => 'submitted', 'submitted_at' => now()]);
+
+        $this->workflowService->initiate($risk->fresh(), 'risk', $user);
 
         $this->recordHistory($risk, 'submitted', $user, $from, 'submitted');
 
