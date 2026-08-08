@@ -483,6 +483,7 @@ export interface ApprovalStep {
   allow_delegate: boolean;
   sla_hours?: number | null;
   requires_comment: boolean;
+  stage_type?: string | null;
 }
 
 export interface ApprovalRequest {

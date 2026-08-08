@@ -103,7 +103,68 @@ const MODULE_CONFIG: Record<
     // No single canonical HR request detail route yet — route to the inbox instead of a dead anchor.
     href: () => `/approvals`,
   },
+  supplier: {
+    icon: "storefront",
+    color: "text-rose-600 dark:text-rose-300",
+    bg: "bg-rose-50 dark:bg-rose-900/20",
+    label: "Supplier",
+    href: (id) => `/procurement/vendors/${id}`,
+  },
+  risk: {
+    icon: "warning",
+    color: "text-orange-600 dark:text-orange-300",
+    bg: "bg-orange-50 dark:bg-orange-900/20",
+    label: "Risk",
+    href: (id) => `/risk/${id}`,
+  },
+  weekly_report: {
+    icon: "summarize",
+    color: "text-cyan-600 dark:text-cyan-300",
+    bg: "bg-cyan-50 dark:bg-cyan-900/20",
+    label: "Weekly Report",
+    href: (id) => `/weekly-summaries/${id}`,
+  },
+  mande: {
+    icon: "insights",
+    color: "text-indigo-600 dark:text-indigo-300",
+    bg: "bg-indigo-50 dark:bg-indigo-900/20",
+    label: "M&E Report",
+    href: (id) => `/mande/activity-reports/${id}`,
+  },
+  budget_submission: {
+    icon: "account_balance",
+    color: "text-teal-600 dark:text-teal-300",
+    bg: "bg-teal-50 dark:bg-teal-900/20",
+    label: "Budget",
+    href: (id) => `/budget/submissions/${id}`,
+  },
+  timesheet: {
+    icon: "schedule",
+    color: "text-amber-600 dark:text-amber-300",
+    bg: "bg-amber-50 dark:bg-amber-900/20",
+    label: "Timesheet",
+    href: (id) => `/timesheets/${id}`,
+  },
 };
+
+/** Human labels for engine stage_type — never a generic "Approve" for a differentiated action (PRD §8). */
+const STAGE_ACTION_LABELS: Record<string, string> = {
+  recommend: "Recommend",
+  certify: "Certify",
+  verify: "Verify",
+  authorise: "Authorise",
+  approve: "Approve",
+  sign: "Sign",
+  acknowledge: "Acknowledge",
+  accept: "Accept",
+  review: "Review",
+  prepare: "Prepare",
+};
+
+function stageActionLabel(req: ApprovalRequest): string {
+  const stageType = req.workflow?.steps?.find((s) => s.step_order === req.current_step_index)?.stage_type;
+  return STAGE_ACTION_LABELS[stageType ?? ""] ?? "Approve";
+}
 
 const DEFAULT_MODULE = {
   icon: "description",
@@ -127,6 +188,10 @@ export default function ApprovalsPage() {
   } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [selfApproveTarget, setSelfApproveTarget] = useState<{ id: number; label: string; actionLabel: string } | null>(
+    null,
+  );
+  const [selfApproveComment, setSelfApproveComment] = useState("");
 
   const { data: pending = [], isLoading: pendingLoading, isError: pendingError } = useQuery({
     queryKey: ["approvals", "pending"],
@@ -251,6 +316,30 @@ export default function ApprovalsPage() {
     }
   };
 
+  const handleSelfApproveConfirm = async () => {
+    if (!selfApproveTarget || !selfApproveComment.trim()) return;
+    setActionLoading(selfApproveTarget.id);
+    try {
+      await workflowApi.approve(selfApproveTarget.id, selfApproveComment.trim());
+      removeFromCache(selfApproveTarget.id);
+      queryClient.invalidateQueries({ queryKey: ["approvals"] });
+      toast(
+        "success",
+        "Self-authorised",
+        `Request ${selfApproveTarget.label} has been approved in your institutional capacity.`,
+      );
+      setSelfApproveTarget(null);
+      setSelfApproveComment("");
+    } catch (err: any) {
+      const message =
+        err?.response?.data?.message ??
+        "This workflow does not permit self-authorisation. It must be actioned by another approver.";
+      toast("error", "Action Failed", message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const loading = tab === "awaiting" ? pendingLoading || tasksLoading : tasksLoading;
 
   return (
@@ -358,10 +447,22 @@ export default function ApprovalsPage() {
                       View
                     </Link>
                     {isOwnRequest ? (
-                      <span className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-neutral-100 px-3 py-2 text-xs font-medium text-neutral-500 dark:border-neutral-700 dark:bg-neutral-700/40 dark:text-neutral-400">
-                        <span className="material-symbols-outlined text-[13px]">person</span>
-                        Your request
-                      </span>
+                      <button
+                        type="button"
+                        disabled={isActing}
+                        onClick={() => {
+                          setSelfApproveTarget({
+                            id: req.id,
+                            label: approvable?.reference_number ?? `#${req.approvable_id}`,
+                            actionLabel: stageActionLabel(req),
+                          });
+                          setSelfApproveComment("");
+                        }}
+                        className="flex items-center gap-1 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700/50 dark:bg-amber-900/20 dark:text-amber-400"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">person</span>
+                        Self-Authorisation
+                      </button>
                     ) : (
                       <>
                         <button
@@ -393,7 +494,7 @@ export default function ApprovalsPage() {
                           ) : (
                             <span className="material-symbols-outlined text-[14px]">check_circle</span>
                           )}
-                          Approve
+                          {stageActionLabel(req)}
                         </button>
                       </>
                     )}
@@ -537,6 +638,64 @@ export default function ApprovalsPage() {
                 className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-60"
               >
                 Confirm rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selfApproveTarget && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
+            <div className="p-6">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 dark:bg-amber-900/20">
+                  <span
+                    className="material-symbols-outlined text-[20px] text-amber-600 dark:text-amber-400"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    person
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+                    Self-Authorisation
+                  </h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{selfApproveTarget.label}</p>
+                </div>
+              </div>
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800/50 dark:bg-amber-900/20 dark:text-amber-300">
+                You are the applicant on this request and are also acting in your institutional capacity to{" "}
+                {selfApproveTarget.actionLabel.toLowerCase()} it. This action is recorded as a self-authorisation
+                and flagged in the audit trail. If this workflow does not permit self-authorisation, the action
+                will be blocked and it must instead be actioned by another approver.
+              </div>
+              <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Comment <span className="text-red-500">*</span>
+                <span className="ml-1 font-normal text-neutral-400">(required for self-authorisation)</span>
+              </label>
+              <textarea
+                className="form-input h-28 w-full resize-none"
+                placeholder="Explain why you are authorising your own request…"
+                value={selfApproveComment}
+                onChange={(e) => setSelfApproveComment(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-3 px-6 pb-5">
+              <button
+                type="button"
+                onClick={() => setSelfApproveTarget(null)}
+                className="btn-secondary px-4 py-2 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!selfApproveComment.trim() || actionLoading !== null}
+                onClick={handleSelfApproveConfirm}
+                className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
+              >
+                Confirm self-authorisation
               </button>
             </div>
           </div>
