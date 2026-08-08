@@ -4,6 +4,7 @@ namespace App\Modules\WorkflowEngine\Services;
 
 use App\Models\ApprovalHistory;
 use App\Models\ApprovalRequest;
+use App\Models\PeopleAuthority\IdentityAuditEvent;
 use App\Models\User;
 use App\Models\WorkflowEngine\WorkflowDecision;
 use App\Models\WorkflowEngine\WorkflowTask;
@@ -96,6 +97,18 @@ class WorkflowAnalyticsService
             ->where('updated_at', '>=', $since)
             ->count();
 
+        // Self-authorisation and acting-authority usage (PRD §10-11, §32) —
+        // captured at decision time but not previously surfaced anywhere.
+        $selfApprovedCount = IdentityAuditEvent::where('tenant_id', $tenantId)
+            ->where('event_type', 'authority.check.self_approval_allowed')
+            ->where('created_at', '>=', $since)
+            ->count();
+
+        $actingAuthorityApprovals = WorkflowDecision::where('tenant_id', $tenantId)
+            ->where('decided_at', '>=', $since)
+            ->whereNotNull('acting_appointment_snapshot')
+            ->count();
+
         return [
             'window_since' => is_string($since) ? $since : $since->toIso8601String(),
             'completed_count' => $completed->count(),
@@ -111,6 +124,8 @@ class WorkflowAnalyticsService
             'reject_rate' => $this->rate($rejects, $totalDecisions),
             'delegation_usage' => $delegationUsage,
             'exceptions_held' => $exceptions,
+            'self_approved_count' => $selfApprovedCount,
+            'acting_authority_approvals' => $actingAuthorityApprovals,
             'note' => 'Aggregate process metrics only — not individual performance rankings.',
         ];
     }
