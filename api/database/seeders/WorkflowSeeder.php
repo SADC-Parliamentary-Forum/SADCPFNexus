@@ -101,6 +101,15 @@ class WorkflowSeeder extends Seeder
             ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance/Project Validation', 'authority_action' => 'finance.certify', 'sla_hours' => 48, 'condition_expression' => ['field' => 'is_donor_funded', 'op' => 'eq', 'value' => true], 'skip_if_condition_false' => true]] : []),
         ]);
 
+        // Weekly Reports (PRD §21) — single supervisor accept/return stage,
+        // matching the existing WeeklyReportController accept()/returnReport()
+        // actions (WeeklyReportService::assertCanReview() already allows
+        // supervisor_id, department HOD, or a review-team permission holder;
+        // the engine step targets the direct supervisor as the primary path).
+        $this->makeWorkflow($tenant, 'Weekly Report Acceptance', 'weekly_report', [
+            ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'accept', 'step_name' => 'Supervisor Acceptance', 'allow_return' => true, 'sla_hours' => 72],
+        ]);
+
         // Risk register (PRD §23) — two stages matching the two client-facing
         // actions (RiskController::startReview()/approve()): Governance review,
         // then Director final approval. The existing hardcoded gate also allows

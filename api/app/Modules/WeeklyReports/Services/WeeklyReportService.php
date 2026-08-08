@@ -20,6 +20,7 @@ use App\Models\WeeklyReportSupportRequest;
 use App\Models\WeeklyReportVersion;
 use App\Models\WeeklyReportingPeriod;
 use App\Services\NotificationService;
+use App\Services\WorkflowService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -30,6 +31,7 @@ class WeeklyReportService
         private readonly WeeklySuggestionService $suggestions,
         private readonly WeeklyReportAuditService $audit,
         private readonly NotificationService $notifications,
+        private readonly WorkflowService $workflowService,
     ) {}
 
     public function dashboard(User $user): array
@@ -465,6 +467,13 @@ class WeeklyReportService
                 $report->update(['status' => 'pending_review']);
             }
 
+            $existingRequest = $report->approvalRequest;
+            if ($wasReturned && $existingRequest && $existingRequest->status === 'returned') {
+                $this->workflowService->resubmit($existingRequest, $actor);
+            } else {
+                $this->workflowService->initiate($report->fresh(), 'weekly_report', $actor);
+            }
+
             $this->snapshotVersion($report, $actor, $wasReturned ? 'resubmit' : 'submit');
             $this->audit->record($report, $actor, 'report.submitted');
 
@@ -485,10 +494,16 @@ class WeeklyReportService
         });
     }
 
-    public function returnReport(WeeklyReport $report, User $reviewer, array $data): WeeklyReport
+    public function returnReport(WeeklyReport $report, User $reviewer, array $data, bool $enforceLegacyAuthChecks = true): WeeklyReport
     {
-        $this->assertCanReview($report, $reviewer);
-        $this->assertNotSelfReview($report, $reviewer);
+        if ($enforceLegacyAuthChecks) {
+            // Skipped when called from Workflow::onWorkflowReturned() — the engine
+            // has already authorised this actor for the current step (which may be
+            // an acting appointee/delegate the hardcoded supervisor_id/HOD checks
+            // below don't know about).
+            $this->assertCanReview($report, $reviewer);
+            $this->assertNotSelfReview($report, $reviewer);
+        }
 
         if (empty($data['reason'] ?? $data['correction_requested'] ?? null)) {
             throw ValidationException::withMessages(['reason' => 'Return requires a reason.']);
@@ -531,10 +546,14 @@ class WeeklyReportService
         });
     }
 
-    public function accept(WeeklyReport $report, User $reviewer, array $data = []): WeeklyReport
+    public function accept(WeeklyReport $report, User $reviewer, array $data = [], bool $enforceLegacyAuthChecks = true): WeeklyReport
     {
-        $this->assertCanReview($report, $reviewer);
-        $this->assertNotSelfReview($report, $reviewer);
+        if ($enforceLegacyAuthChecks) {
+            // Skipped when called from Workflow::onWorkflowApproved() — see
+            // returnReport()'s matching comment.
+            $this->assertCanReview($report, $reviewer);
+            $this->assertNotSelfReview($report, $reviewer);
+        }
 
         return DB::transaction(function () use ($report, $reviewer, $data) {
             WeeklyReportReview::create([

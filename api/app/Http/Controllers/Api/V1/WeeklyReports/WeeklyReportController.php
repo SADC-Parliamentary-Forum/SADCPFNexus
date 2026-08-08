@@ -13,6 +13,7 @@ use App\Modules\WeeklyReports\Services\WeeklyExportService;
 use App\Modules\WeeklyReports\Services\WeeklyPeriodService;
 use App\Modules\WeeklyReports\Services\WeeklyReportService;
 use App\Modules\WeeklyReports\Services\WeeklyTrendAnalyticsService;
+use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -24,6 +25,7 @@ class WeeklyReportController extends Controller
         private readonly WeeklyConsolidationService $consolidation,
         private readonly WeeklyExportService $exports,
         private readonly WeeklyTrendAnalyticsService $trends,
+        private readonly WorkflowService $workflowService,
     ) {}
 
     public function dashboard(Request $request): JsonResponse
@@ -189,6 +191,13 @@ class WeeklyReportController extends Controller
             'is_confidential' => 'nullable|boolean',
         ]);
 
+        $approvalRequest = $weeklySummary->approvalRequest;
+        if ($approvalRequest) {
+            $this->workflowService->returnForCorrection($approvalRequest, $request->user(), $data['reason']);
+
+            return response()->json(['data' => $weeklySummary->fresh()]);
+        }
+
         return response()->json(['data' => $this->reports->returnReport($weeklySummary, $request->user(), $data)]);
     }
 
@@ -199,6 +208,13 @@ class WeeklyReportController extends Controller
             'comment_type' => 'nullable|string',
             'is_confidential' => 'nullable|boolean',
         ]);
+
+        $approvalRequest = $weeklySummary->approvalRequest;
+        if ($approvalRequest) {
+            $this->workflowService->approve($approvalRequest, $request->user(), $data['comments'] ?? null);
+
+            return response()->json(['data' => $weeklySummary->fresh()]);
+        }
 
         return response()->json(['data' => $this->reports->accept($weeklySummary, $request->user(), $data)]);
     }

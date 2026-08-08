@@ -31,6 +31,7 @@ class WorkflowService
         'supplier'          => 'Supplier Registration',
         'correspondence'    => 'Correspondence',
         'risk'              => 'Risk Register',
+        'weekly_report'     => 'Weekly Report',
     ];
 
     public function __construct(

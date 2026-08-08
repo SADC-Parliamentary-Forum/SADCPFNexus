@@ -57,6 +57,26 @@ class WeeklyReport extends Model
     public function supervisor(): BelongsTo { return $this->belongsTo(User::class, 'supervisor_id'); }
     public function owner(): BelongsTo { return $this->belongsTo(User::class, 'owner_id'); }
     public function preparedBy(): BelongsTo { return $this->belongsTo(User::class, 'prepared_by_id'); }
+
+    /** Alias so WorkflowService::getRequesterFromApprovable() resolves the report owner. */
+    public function requester(): BelongsTo { return $this->employee(); }
+
+    public function approvalRequest()
+    {
+        return $this->morphOne(\App\Models\ApprovalRequest::class, 'approvable');
+    }
+
+    public function onWorkflowApproved(User $approver): void
+    {
+        app(\App\Modules\WeeklyReports\Services\WeeklyReportService::class)
+            ->accept($this, $approver, [], enforceLegacyAuthChecks: false);
+    }
+
+    public function onWorkflowReturned(User $approver, ?string $comment = null): void
+    {
+        app(\App\Modules\WeeklyReports\Services\WeeklyReportService::class)
+            ->returnReport($this, $approver, ['reason' => $comment ?: 'Returned for correction.'], enforceLegacyAuthChecks: false);
+    }
     public function items(): HasMany { return $this->hasMany(WeeklyReportItem::class); }
     public function blockers(): HasMany { return $this->hasMany(WeeklyReportBlocker::class); }
     public function decisionRequests(): HasMany { return $this->hasMany(WeeklyReportDecisionRequest::class); }
