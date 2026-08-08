@@ -192,6 +192,8 @@ export default function ApprovalsPage() {
     null,
   );
   const [selfApproveComment, setSelfApproveComment] = useState("");
+  const [recuseTarget, setRecuseTarget] = useState<{ id: number; label: string } | null>(null);
+  const [recuseReason, setRecuseReason] = useState("");
 
   const { data: pending = [], isLoading: pendingLoading, isError: pendingError } = useQuery({
     queryKey: ["approvals", "pending"],
@@ -340,6 +342,28 @@ export default function ApprovalsPage() {
     }
   };
 
+  const handleRecuseConfirm = async () => {
+    if (!recuseTarget || !recuseReason.trim()) return;
+    setActionLoading(recuseTarget.id);
+    try {
+      await workflowApi.recuse(recuseTarget.id, recuseReason.trim());
+      removeFromCache(recuseTarget.id);
+      queryClient.invalidateQueries({ queryKey: ["approvals"] });
+      toast(
+        "success",
+        "Recused",
+        `You have declared a conflict of interest and been removed as an approver for ${recuseTarget.label}.`,
+      );
+      setRecuseTarget(null);
+      setRecuseReason("");
+    } catch (err: any) {
+      const message = err?.response?.data?.message ?? "Could not record the recusal.";
+      toast("error", "Action Failed", message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const loading = tab === "awaiting" ? pendingLoading || tasksLoading : tasksLoading;
 
   return (
@@ -465,6 +489,22 @@ export default function ApprovalsPage() {
                       </button>
                     ) : (
                       <>
+                        <button
+                          type="button"
+                          disabled={isActing}
+                          title="Declare a conflict of interest and remove yourself as an approver on this step"
+                          onClick={() => {
+                            setRecuseTarget({
+                              id: req.id,
+                              label: approvable?.reference_number ?? `#${req.approvable_id}`,
+                            });
+                            setRecuseReason("");
+                          }}
+                          className="flex items-center gap-1 rounded-lg border border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-600 transition-colors hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">block</span>
+                          Recuse
+                        </button>
                         <button
                           type="button"
                           disabled={isActing}
@@ -696,6 +736,61 @@ export default function ApprovalsPage() {
                 className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700 disabled:opacity-60"
               >
                 Confirm self-authorisation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {recuseTarget && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
+            <div className="p-6">
+              <div className="mb-4 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700/40">
+                  <span
+                    className="material-symbols-outlined text-[20px] text-neutral-600 dark:text-neutral-300"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >
+                    block
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+                    Declare conflict of interest
+                  </h3>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{recuseTarget.label}</p>
+                </div>
+              </div>
+              <p className="mb-4 text-xs text-neutral-500 dark:text-neutral-400">
+                You will be removed as an approver for this step and an alternate approver will be notified. This
+                does not approve or reject the request — it only removes you from the decision.
+              </p>
+              <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                Reason <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                className="form-input h-28 w-full resize-none"
+                placeholder="Describe the conflict of interest…"
+                value={recuseReason}
+                onChange={(e) => setRecuseReason(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-3 px-6 pb-5">
+              <button
+                type="button"
+                onClick={() => setRecuseTarget(null)}
+                className="btn-secondary px-4 py-2 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!recuseReason.trim() || actionLoading !== null}
+                onClick={handleRecuseConfirm}
+                className="flex items-center gap-2 rounded-lg bg-neutral-700 px-4 py-2 text-sm font-semibold text-white hover:bg-neutral-800 disabled:opacity-60"
+              >
+                Confirm recusal
               </button>
             </div>
           </div>

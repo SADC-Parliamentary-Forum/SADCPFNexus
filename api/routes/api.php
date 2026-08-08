@@ -1710,6 +1710,7 @@ Route::prefix('v1')->group(function () {
             Route::get('inbox', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'inbox']);
             Route::post('{approvalRequest}/approve', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'approve']);
             Route::post('{approvalRequest}/reject', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'reject']);
+            Route::post('{approvalRequest}/recuse', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'recuse']);
             Route::get('{approvalRequest}/history', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'history']);
             Route::get('{approvalRequest}/snapshot', [\App\Http\Controllers\Api\V1\ApprovalController::class, 'snapshot']);
             Route::get('{approvalRequest}/certificate', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEngineController::class, 'certificate']);

@@ -75,6 +75,20 @@ class ApprovalController extends Controller
     }
 
     /**
+     * Recuse / declare a conflict of interest on the current step (PRD §32).
+     */
+    public function recuse(Request $request, ApprovalRequest $approvalRequest): JsonResponse
+    {
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:1000'],
+        ]);
+
+        $result = $this->workflowService->recuse($approvalRequest, $request->user(), $data['reason']);
+
+        return response()->json(['message' => 'Conflict of interest recorded; you have been recused from this step.', 'data' => $result]);
+    }
+
+    /**
      * Get history for a specific request.
      */
     public function history(ApprovalRequest $approvalRequest): JsonResponse

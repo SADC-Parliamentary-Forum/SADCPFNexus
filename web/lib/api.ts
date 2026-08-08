@@ -1133,6 +1133,7 @@ export const workflowApi = {
     api.post(`/approvals/${id}/approve`, { comment, idempotency_key: idempotencyKey }),
   reject: (id: number, comment: string, idempotencyKey?: string) =>
     api.post(`/approvals/${id}/reject`, { comment, idempotency_key: idempotencyKey }),
+  recuse: (id: number, reason: string) => api.post(`/approvals/${id}/recuse`, { reason }),
   getHistory: (id: number) => api.get<{ data: ApprovalHistory[] }>(`/approvals/${id}/history`),
   getSnapshot: (id: number) => api.get<{ data: Record<string, unknown> }>(`/approvals/${id}/snapshot`),
   decideTask: (taskId: number, data: { decision_type: string; comment?: string | null; idempotency_key?: string }) =>

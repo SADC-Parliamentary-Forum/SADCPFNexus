@@ -58,14 +58,21 @@ class ActorResolutionService
         // role, acting appointment, or delegation) — a single filter point
         // here covers every current and future resolver rather than needing
         // an is_active check duplicated into each individual query above.
+        // Recused actors (PRD §32) never resolve as an approver for this
+        // request again, regardless of resolution path — a declared conflict
+        // of interest excludes the candidate, it doesn't just skip one turn.
+        $recusedIds = array_map('intval', $context['recused_user_ids'] ?? []);
+
         $activeActors = array_values(array_filter(
             $expanded['actors'],
-            fn (User $u) => $u->accountAllowsAuthentication()
+            fn (User $u) => $u->accountAllowsAuthentication() && ! in_array((int) $u->id, $recusedIds, true)
         ));
 
         $reason = $result['reason'];
         if ($activeActors === [] && $expanded['actors'] !== []) {
-            $reason = 'Resolved actor(s) exist but their account(s) are inactive, locked, or suspended.';
+            $reason = $recusedIds !== [] && array_intersect($recusedIds, array_map(fn (User $u) => (int) $u->id, $expanded['actors'])) !== []
+                ? 'Resolved actor(s) have recused themselves (conflict of interest declared); no alternate approver was found.'
+                : 'Resolved actor(s) exist but their account(s) are inactive, locked, or suspended.';
         }
 
         return [

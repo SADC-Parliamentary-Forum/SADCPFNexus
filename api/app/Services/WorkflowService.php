@@ -350,6 +350,58 @@ class WorkflowService
     }
 
     /**
+     * Recuse / declare a conflict of interest (PRD §32). The recusing actor is
+     * excluded from actor resolution for this request going forward (persisted
+     * on condition_context, which every resolve() call already reads) and an
+     * alternate approver is resolved and notified — never auto-approved. The
+     * step itself does not advance; recusal only removes one candidate from
+     * the resolved actor pool, it is not a decision.
+     */
+    public function recuse(ApprovalRequest $request, User $actor, string $reason): array
+    {
+        $this->verifyActorCanApprove($request, $actor);
+
+        $context = $request->condition_context ?? [];
+        $recused = collect($context['recused_user_ids'] ?? [])->map(fn ($id) => (int) $id)->push((int) $actor->id)->unique()->values()->all();
+        $context['recused_user_ids'] = $recused;
+
+        DB::transaction(function () use ($request, $actor, $reason, $context) {
+            $request->update(['condition_context' => $context]);
+
+            ApprovalHistory::create([
+                'approval_request_id' => $request->id,
+                'user_id'             => $actor->id,
+                'action'              => 'recuse',
+                'step_index'          => $request->current_step_index,
+                'comment'             => $reason,
+            ]);
+
+            \App\Models\WorkflowEngine\WorkflowAuditEvent::create([
+                'tenant_id'            => $request->tenant_id,
+                'approval_request_id' => $request->id,
+                'event_type'           => 'ActorRecused',
+                'actor_user_id'        => $actor->id,
+                'payload'              => ['step_index' => $request->current_step_index, 'reason' => $reason],
+                'occurred_at'          => now(),
+            ]);
+        });
+
+        // Drop any task/holder assignment to the recusing actor so they no
+        // longer see this in their inbox, then notify whoever the engine
+        // resolves next (recused actor already excluded via condition_context).
+        \App\Models\WorkflowEngine\WorkflowTask::where('approval_request_id', $request->id)
+            ->where('step_index', $request->current_step_index)
+            ->where('assigned_user_id', $actor->id)
+            ->whereIn('status', ['awaiting', 'claimed'])
+            ->update(['status' => 'recused']);
+
+        $request->refresh();
+        $notified = $this->notifyApprovers($request);
+
+        return ['recused_user_ids' => $recused, 'notified_approvers' => $notified];
+    }
+
+    /**
      * Get the requester/creator of the approvable entity (for workflow steps and self-approval check).
      */
     protected function getRequesterFromApprovable(ApprovalRequest $request): ?User
