@@ -116,7 +116,8 @@ class MeActivityReport extends Model
 
     public function onWorkflowApproved(User $approver): void
     {
-        app(\App\Modules\MAndE\Services\MeReviewService::class)->accept($this, [], $approver);
+        app(\App\Modules\MAndE\Services\MeReviewService::class)
+            ->accept($this, [], $approver, enforceLegacyAuthChecks: false);
     }
 
     public function onWorkflowReturned(User $approver, ?string $comment = null): void

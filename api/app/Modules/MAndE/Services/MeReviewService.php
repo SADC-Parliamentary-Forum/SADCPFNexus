@@ -109,17 +109,25 @@ class MeReviewService
         return $report->fresh();
     }
 
-    public function accept(MeActivityReport $report, array $data, User $reviewer): MeActivityReport
+    public function accept(MeActivityReport $report, array $data, User $reviewer, bool $enforceLegacyAuthChecks = true): MeActivityReport
     {
         if ($report->review_status !== MeActivityReport::STATUS_REVIEWED) {
             throw ValidationException::withMessages(['review_status' => 'Only reviewed reports can be accepted.']);
         }
 
-        if ((int) $report->responsible_officer_id === (int) $reviewer->id
-            || (int) ($report->submitted_by ?? 0) === (int) $reviewer->id) {
-            throw ValidationException::withMessages([
-                'accept' => 'Separation of duties: the reporting officer cannot accept their own report.',
-            ]);
+        if ($enforceLegacyAuthChecks) {
+            // Skipped when called from MeActivityReport::onWorkflowApproved() —
+            // the engine has already authorised this actor for the current
+            // step, including applying the workflow's self_approval_policy.
+            // Re-running this hardcoded check here would permanently block
+            // self-acceptance no matter what that policy says (see
+            // WeeklyReportService::accept()'s matching pattern).
+            if ((int) $report->responsible_officer_id === (int) $reviewer->id
+                || (int) ($report->submitted_by ?? 0) === (int) $reviewer->id) {
+                throw ValidationException::withMessages([
+                    'accept' => 'Separation of duties: the reporting officer cannot accept their own report.',
+                ]);
+            }
         }
 
         $pmRequired = (bool) $this->settings->forTenant((int) $reviewer->tenant_id)->programme_manager_review;
