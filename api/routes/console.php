@@ -63,6 +63,10 @@ Schedule::command('decisions:promote-weekly-assignments')->mondays()->at('07:35'
 // Correspondence deadline overdue notifications + HOD escalation after 3 days.
 Schedule::command('correspondence:escalate-deadlines')->dailyAt('08:05');
 
+// Notify (never reassign/auto-approve) approvers of overdue workflow steps,
+// escalating to their supervisor after a sustained breach.
+Schedule::command('workflow:escalate-overdue')->hourly()->withoutOverlapping();
+
 // Poll designated registry mailbox into suggestions only (requires IMAP config or is a no-op when disabled).
 Schedule::command('correspondence:poll-mailbox')->everyFifteenMinutes()->withoutOverlapping();
 
