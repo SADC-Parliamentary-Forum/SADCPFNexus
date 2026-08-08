@@ -38,7 +38,7 @@ class WorkflowSeeder extends Seeder
             ['approver_type' => 'up_the_chain', 'actor_selector' => 'hod', 'stage_type' => 'review', 'step_name' => 'Department Review', 'allow_return' => true, 'sla_hours' => 48],
             ...($hrRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $hrRole->id, 'stage_type' => 'certify', 'step_name' => 'Administration Certification', 'authority_action' => 'leave.certify', 'sla_hours' => 72]] : []),
             ...($sgRole  ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'authorise', 'step_name' => 'Head of Institution Authorisation', 'authority_action' => 'sg.approve', 'sla_hours' => 72]] : []),
-        ]);
+        ], ApprovalWorkflow::SELF_APPROVAL_ALLOW_WITH_CONTROLS);
 
         $this->makeWorkflow($tenant, 'Standard Travel & Mission Approval', 'travel', [
             ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'recommend', 'step_name' => 'Supervisor Recommendation', 'allow_return' => true, 'sla_hours' => 48],
@@ -118,7 +118,7 @@ class WorkflowSeeder extends Seeder
         }
     }
 
-    private function makeWorkflow(Tenant $tenant, string $name, string $module, array $steps): void
+    private function makeWorkflow(Tenant $tenant, string $name, string $module, array $steps, ?string $selfApprovalPolicy = null): void
     {
         $wf = ApprovalWorkflow::updateOrCreate(
             ['tenant_id' => $tenant->id, 'name' => $name],
@@ -127,6 +127,7 @@ class WorkflowSeeder extends Seeder
                 'record_type' => $module,
                 'is_active' => true,
                 'definition_status' => 'published',
+                'self_approval_policy' => $selfApprovalPolicy ?? ApprovalWorkflow::SELF_APPROVAL_DENIED,
             ]
         );
 

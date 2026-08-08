@@ -53,9 +53,24 @@ class ActorResolutionService
         // Expand acting appointments & identity delegations covering these principals
         $expanded = $this->expandActingAndDelegation($result['actors'], $requester->tenant_id, $asOf, $step);
 
+        // Disabled/locked/suspended accounts must never resolve as an approver,
+        // regardless of which selector path found them (direct, position,
+        // role, acting appointment, or delegation) — a single filter point
+        // here covers every current and future resolver rather than needing
+        // an is_active check duplicated into each individual query above.
+        $activeActors = array_values(array_filter(
+            $expanded['actors'],
+            fn (User $u) => $u->accountAllowsAuthentication()
+        ));
+
+        $reason = $result['reason'];
+        if ($activeActors === [] && $expanded['actors'] !== []) {
+            $reason = 'Resolved actor(s) exist but their account(s) are inactive, locked, or suspended.';
+        }
+
         return [
-            'actors' => $expanded['actors'],
-            'reason' => $result['reason'],
+            'actors' => $activeActors,
+            'reason' => $reason,
             'selector' => $selector,
             'snapshots' => array_merge($result['snapshots'] ?? [], $expanded['snapshots']),
         ];

@@ -400,6 +400,14 @@ class WorkflowOrchestrator
                         'authority' => 'Self-approval is blocked by segregation of duties.',
                     ]);
                 }
+                // Self-approval permitted under the workflow's policy (PRD §10-11)
+                // still requires an explicit comment — the UI must not let this
+                // decision go through silently just because it's technically allowed.
+                if (! empty($authorityResult['self_approval']) && trim((string) $comment) === '') {
+                    throw ValidationException::withMessages([
+                        'comment' => 'A comment is required when approving your own request in your institutional capacity.',
+                    ]);
+                }
             }
 
             $signatureEventId = $extra['document_signature_event_id'] ?? null;
@@ -609,6 +617,7 @@ class WorkflowOrchestrator
             'department_id' => $requester?->department_id ?? $entity?->department_id ?? null,
             'context_type' => 'ApprovalRequest',
             'context_id' => $request->id,
+            'self_approval_policy' => $request->workflow?->self_approval_policy ?? \App\Models\ApprovalWorkflow::SELF_APPROVAL_DENIED,
         ]);
 
         // Technical workflow admin must never auto-pass business authority

@@ -37,6 +37,7 @@ class AuthorityCheckService
      *   require_contract_signing?:bool,
      *   context_type?:?string,
      *   context_id?:?int,
+     *   self_approval_policy?:?string,
      * }  $input
      * @return array{
      *   authorised:bool,
@@ -47,6 +48,7 @@ class AuthorityCheckService
      *   acting_appointment_id:?int,
      *   limitations:array,
      *   self_approval_conflict:bool,
+     *   self_approval:bool,
      *   denial_reason:?string,
      *   snapshot_id:?int
      * }
@@ -60,6 +62,8 @@ class AuthorityCheckService
         $asOf = isset($input['date']) ? Carbon::parse($input['date']) : now();
         $requireContract = (bool) ($input['require_contract_signing'] ?? false);
 
+        $selfApprovalPolicy = (string) ($input['self_approval_policy'] ?? \App\Models\ApprovalWorkflow::SELF_APPROVAL_DENIED);
+
         $result = [
             'authorised' => false,
             'authority_used' => null,
@@ -69,6 +73,7 @@ class AuthorityCheckService
             'acting_appointment_id' => null,
             'limitations' => [],
             'self_approval_conflict' => false,
+            'self_approval' => false,
             'denial_reason' => null,
             'snapshot_id' => null,
         ];
@@ -97,15 +102,37 @@ class AuthorityCheckService
 
         $requesterUserId = $input['requester_user_id'] ?? null;
         $requesterPersonId = $input['requester_person_id'] ?? null;
-        if (
-            ($requesterUserId && (int) $requesterUserId === (int) $user->id)
-            || ($requesterPersonId && $personId && (int) $requesterPersonId === (int) $personId)
-        ) {
+        $isSelfApproval = ($requesterUserId && (int) $requesterUserId === (int) $user->id)
+            || ($requesterPersonId && $personId && (int) $requesterPersonId === (int) $personId);
+
+        if ($isSelfApproval && $selfApprovalPolicy === \App\Models\ApprovalWorkflow::SELF_APPROVAL_ALLOW_WITH_CONTROLS) {
+            // Permitted under the workflow's explicit policy (e.g. the
+            // Secretary General approving her own leave in her institutional
+            // capacity as Head of Institution, PRD §10-11). The caller
+            // (WorkflowOrchestrator::decide) still requires a mandatory
+            // comment, and this flag is preserved verbatim into
+            // WorkflowDecision.authority_snapshot for the audit trail.
+            $result['authorised'] = true;
+            $result['self_approval'] = true;
+            $result['role_used'] = 'self_approval:allow_with_controls';
+            $this->audit->record($user, 'authority.check.self_approval_allowed', $personId, null, null, [
+                'action' => $action,
+                'module' => $module,
+                'policy' => $selfApprovalPolicy,
+            ]);
+
+            return $result;
+        }
+
+        if ($isSelfApproval) {
             $result['self_approval_conflict'] = true;
-            $result['denial_reason'] = 'Self-approval is blocked by segregation of duties.';
+            $result['denial_reason'] = $selfApprovalPolicy === \App\Models\ApprovalWorkflow::SELF_APPROVAL_REQUIRE_EXTERNAL_APPROVER
+                ? 'This request requires approval by a designated external authority, not the requester.'
+                : 'Self-approval is blocked by segregation of duties.';
             $this->audit->record($user, 'authority.check.self_approval_blocked', $personId, null, null, [
                 'action' => $action,
                 'module' => $module,
+                'policy' => $selfApprovalPolicy,
             ]);
 
             return $result;

@@ -552,16 +552,12 @@ class WorkflowService
             // they are not the applicant (self-approval still blocked below).
         }
 
-        $requester = $this->getRequesterFromApprovable($request);
-        if ($requester && (int) $requester->id === (int) $actor->id) {
-            $isSecretaryGeneralAtFinalStep = $actor->isSecretaryGeneral()
-                && $request->current_step_index >= 1;
-            if (!$isSecretaryGeneralAtFinalStep) {
-                throw ValidationException::withMessages([
-                    'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
-                ]);
-            }
-        }
+        // Self-approval is gated by policy, not a hard block here: this method
+        // only confirms the actor is a legitimate holder for the current step.
+        // The actual allow/deny decision (per ApprovalWorkflow::self_approval_policy)
+        // happens inside WorkflowOrchestrator::decide() -> AuthorityCheckService::check(),
+        // which is policy-aware and — unlike the SG-only carve-out this replaced —
+        // is consulted for every decision, not effectively dead for non-SG actors.
     }
 
     protected function finalizeApprovable(ApprovalRequest $request, string $status, User $actor, ?string $reason = null): void
