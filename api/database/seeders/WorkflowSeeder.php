@@ -101,6 +101,17 @@ class WorkflowSeeder extends Seeder
             ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance/Project Validation', 'authority_action' => 'finance.certify', 'sla_hours' => 48, 'condition_expression' => ['field' => 'is_donor_funded', 'op' => 'eq', 'value' => true], 'skip_if_condition_false' => true]] : []),
         ]);
 
+        // M&E Activity Reports (PRD §24) — two stages matching the two
+        // client-facing actions (MeReviewController::review()/accept()):
+        // M&E Officer review, then Programme Manager acceptance. This is a
+        // deliberately separate workflow instance from PIF/Programme approval
+        // even when a report pre-populates from a PIF — per spec, M&E review
+        // does NOT inherit the programme's own approval chain.
+        $this->makeWorkflow($tenant, 'M&E Activity Report Review', 'mande', [
+            ...($govRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $govRole->id, 'stage_type' => 'review', 'step_name' => 'M&E Review', 'allow_return' => true, 'sla_hours' => 72]] : []),
+            ...($directorRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $directorRole->id, 'stage_type' => 'accept', 'step_name' => 'Programme Manager Acceptance', 'allow_return' => true, 'sla_hours' => 72]] : []),
+        ]);
+
         // Weekly Reports (PRD §21) — single supervisor accept/return stage,
         // matching the existing WeeklyReportController accept()/returnReport()
         // actions (WeeklyReportService::assertCanReview() already allows

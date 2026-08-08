@@ -32,6 +32,7 @@ class WorkflowService
         'correspondence'    => 'Correspondence',
         'risk'              => 'Risk Register',
         'weekly_report'     => 'Weekly Report',
+        'mande'             => 'M&E Activity Report',
     ];
 
     public function __construct(

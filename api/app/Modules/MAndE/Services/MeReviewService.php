@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\MeActivityReport;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\WorkflowService;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -26,6 +27,7 @@ class MeReviewService
     public function __construct(
         private readonly NotificationService $notificationService,
         private readonly MeSettingsService $settings,
+        private readonly WorkflowService $workflowService,
     ) {}
 
     public function submit(MeActivityReport $report, User $user): MeActivityReport
@@ -54,6 +56,13 @@ class MeReviewService
         }
 
         $report->update($payload);
+
+        $existingRequest = $report->approvalRequest;
+        if ($from === MeActivityReport::STATUS_RETURNED && $existingRequest && $existingRequest->status === 'returned') {
+            $this->workflowService->resubmit($existingRequest, $user);
+        } else {
+            $this->workflowService->initiate($report->fresh(), 'mande', $user);
+        }
 
         $this->transition($report, 'submitted', $user, $from, MeActivityReport::STATUS_SUBMITTED);
         $this->notifyReviewers($report, $user);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\MAndE;
 use App\Http\Controllers\Controller;
 use App\Models\MeActivityReport;
 use App\Modules\MAndE\Services\MeReviewService;
+use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,7 +17,10 @@ class MeReviewController extends Controller
         'Secretary General', 'System Admin', 'super-admin',
     ];
 
-    public function __construct(private readonly MeReviewService $service) {}
+    public function __construct(
+        private readonly MeReviewService $service,
+        private readonly WorkflowService $workflowService,
+    ) {}
 
     public function submit(Request $request, MeActivityReport $activityReport): JsonResponse
     {
@@ -37,15 +41,32 @@ class MeReviewController extends Controller
 
     public function review(Request $request, MeActivityReport $activityReport): JsonResponse
     {
-        $this->ensureReviewer($request, $activityReport);
+        $this->ensureTenant($request, $activityReport);
         $data = $request->validate(['review_notes' => ['nullable', 'string', 'max:5000']]);
+
+        $approvalRequest = $activityReport->approvalRequest;
+        if ($approvalRequest) {
+            $this->workflowService->approve($approvalRequest, $request->user(), $data['review_notes'] ?? null);
+            $activityReport->refresh();
+            if ($activityReport->review_status === MeActivityReport::STATUS_SUBMITTED) {
+                // Not yet the final step — perform the actual reviewed-status
+                // transition now that the engine has authorised this actor.
+                $report = $this->service->review($activityReport, $data, $request->user());
+
+                return response()->json(['message' => 'Report marked as reviewed.', 'data' => $report]);
+            }
+
+            return response()->json(['message' => 'Report marked as reviewed.', 'data' => $activityReport->fresh()]);
+        }
+
+        $this->ensureReviewer($request, $activityReport);
         $report = $this->service->review($activityReport, $data, $request->user());
         return response()->json(['message' => 'Report marked as reviewed.', 'data' => $report]);
     }
 
     public function requestCorrection(Request $request, MeActivityReport $activityReport): JsonResponse
     {
-        $this->ensureReviewer($request, $activityReport);
+        $this->ensureTenant($request, $activityReport);
         $data = $request->validate([
             'review_notes'     => ['required', 'string', 'max:5000'],
             'section'          => ['nullable', 'string', 'max:100'],
@@ -55,14 +76,32 @@ class MeReviewController extends Controller
             'correction_due_at'=> ['nullable', 'date'],
             'due_date'         => ['nullable', 'date'],
         ]);
+
+        $approvalRequest = $activityReport->approvalRequest;
+        if ($approvalRequest) {
+            $this->workflowService->returnForCorrection($approvalRequest, $request->user(), $data['review_notes']);
+
+            return response()->json(['message' => 'Report returned for correction.', 'data' => $activityReport->fresh()]);
+        }
+
+        $this->ensureReviewer($request, $activityReport);
         $report = $this->service->requestCorrection($activityReport, $data, $request->user());
         return response()->json(['message' => 'Report returned for correction.', 'data' => $report]);
     }
 
     public function accept(Request $request, MeActivityReport $activityReport): JsonResponse
     {
-        $this->ensureReviewer($request, $activityReport);
+        $this->ensureTenant($request, $activityReport);
         $data = $request->validate(['review_notes' => ['nullable', 'string', 'max:5000']]);
+
+        $approvalRequest = $activityReport->approvalRequest;
+        if ($approvalRequest) {
+            $this->workflowService->approve($approvalRequest, $request->user(), $data['review_notes'] ?? null);
+
+            return response()->json(['message' => 'Report accepted.', 'data' => $activityReport->fresh()]);
+        }
+
+        $this->ensureReviewer($request, $activityReport);
         $report = $this->service->accept($activityReport, $data, $request->user());
         return response()->json(['message' => 'Report accepted.', 'data' => $report]);
     }

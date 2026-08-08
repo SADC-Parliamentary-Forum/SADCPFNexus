@@ -109,6 +109,22 @@ class MeActivityReport extends Model
         return $this->belongsTo(User::class, 'reviewed_by');
     }
 
+    public function approvalRequest()
+    {
+        return $this->morphOne(\App\Models\ApprovalRequest::class, 'approvable');
+    }
+
+    public function onWorkflowApproved(User $approver): void
+    {
+        app(\App\Modules\MAndE\Services\MeReviewService::class)->accept($this, [], $approver);
+    }
+
+    public function onWorkflowReturned(User $approver, ?string $comment = null): void
+    {
+        app(\App\Modules\MAndE\Services\MeReviewService::class)
+            ->requestCorrection($this, ['review_notes' => $comment ?: 'Returned for correction.'], $approver);
+    }
+
     public function indicators(): BelongsToMany
     {
         return $this->belongsToMany(Indicator::class, 'me_activity_report_indicator')
