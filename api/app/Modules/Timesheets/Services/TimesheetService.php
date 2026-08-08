@@ -458,14 +458,24 @@ class TimesheetService
         if ($timesheet->status !== 'submitted') {
             throw ValidationException::withMessages(['status' => 'Only submitted timesheets can be approved.']);
         }
-        if ((int) $timesheet->user_id === (int) $approver->id) {
-            throw ValidationException::withMessages(['approval' => 'You cannot approve your own timesheet.']);
-        }
 
         if ($timesheet->approvalRequest) {
+            // Self-approval is governed by the workflow's configured policy
+            // (WorkflowService::approve() -> AuthorityCheckService::check()),
+            // not a hardcoded block here — re-checking it here would silently
+            // override the policy if this workflow is ever configured with
+            // SELF_APPROVAL_ALLOW_WITH_CONTROLS, matching ProgrammeService's
+            // engine-path finalization method.
             $this->workflowService->approve($timesheet->approvalRequest, $approver, $comment);
             $timesheet->refresh();
         } else {
+            // Legacy fallback for timesheets with no ApprovalRequest at all —
+            // there is no engine here to enforce self-approval, so it must be
+            // blocked directly.
+            if ((int) $timesheet->user_id === (int) $approver->id) {
+                throw ValidationException::withMessages(['approval' => 'You cannot approve your own timesheet.']);
+            }
+
             $timesheet->update([
                 'status' => 'approved',
                 'approved_at' => now(),
