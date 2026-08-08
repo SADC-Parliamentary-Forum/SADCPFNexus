@@ -41,7 +41,7 @@ class DefinitionLintService
             if (empty($stage['stage_type'])) {
                 $hard[] = "Stage {$order} is missing stage_type.";
             }
-            if (in_array($stage['stage_type'] ?? '', ['approve', 'authorise', 'sign', 'release'], true)) {
+            if (in_array($stage['stage_type'] ?? '', ['approve', 'authorise', 'sign', 'release', 'accept'], true)) {
                 $hasTerminal = true;
             }
 
