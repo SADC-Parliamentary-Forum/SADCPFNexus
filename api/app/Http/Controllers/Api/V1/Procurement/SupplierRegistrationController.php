@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Services\NotificationService;
+use App\Services\WorkflowService;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +19,10 @@ use Spatie\Permission\Models\Role;
 
 class SupplierRegistrationController extends Controller
 {
-    public function __construct(private readonly NotificationService $notifications) {}
+    public function __construct(
+        private readonly NotificationService $notifications,
+        private readonly WorkflowService $workflowService,
+    ) {}
 
     public function register(Request $request): JsonResponse
     {
@@ -117,6 +121,8 @@ class SupplierRegistrationController extends Controller
                 'size_bytes'        => $file->getSize(),
             ]);
         }
+
+        $this->workflowService->initiate($vendor->fresh(), 'supplier', $user);
 
         SupplierApprovalLog::create([
             'tenant_id'    => $tenant->id,

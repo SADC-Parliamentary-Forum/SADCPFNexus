@@ -32,6 +32,7 @@ class WorkflowSeeder extends Seeder
         $adminOfficerRole = Role::where('name', 'Administration Officer')->where('guard_name', 'sanctum')->first()
             ?? Role::where('name', 'HR Administrator')->where('guard_name', 'sanctum')->first();
         $directorRole = Role::where('name', 'Director')->where('guard_name', 'sanctum')->first();
+        $procurementOfficer = Role::where('name', 'Procurement Officer')->where('guard_name', 'sanctum')->first();
 
         $this->makeWorkflow($tenant, 'Standard Leave Approval', 'leave', [
             ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'recommend', 'step_name' => 'HOD Recommendation', 'authority_action' => 'leave.recommend', 'allow_return' => true, 'sla_hours' => 48],
@@ -96,6 +97,16 @@ class WorkflowSeeder extends Seeder
         $this->makeWorkflow($tenant, 'Timesheet Approval', 'timesheet', [
             ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'accept', 'step_name' => 'Supervisor Acceptance', 'allow_return' => true, 'sla_hours' => 48],
             ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance/Project Validation', 'authority_action' => 'finance.certify', 'sla_hours' => 48, 'condition_expression' => ['field' => 'is_donor_funded', 'op' => 'eq', 'value' => true], 'skip_if_condition_false' => true]] : []),
+        ]);
+
+        // Supplier registration (PRD §18) — self-service applicant (portal user, no
+        // institutional supervisor/HOD) so this chain uses role-based verify/authorise
+        // steps only: Procurement verifies company info, Finance/Compliance verifies
+        // banking/tax/statutory documentation, Procurement gives final authorisation.
+        $this->makeWorkflow($tenant, 'Supplier Registration Approval', 'supplier', [
+            ...($procurementOfficer ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $procurementOfficer->id, 'stage_type' => 'verify', 'step_name' => 'Procurement Verification', 'allow_return' => true, 'sla_hours' => 72]] : []),
+            ...($finRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'verify', 'step_name' => 'Finance/Compliance Verification', 'allow_return' => true, 'sla_hours' => 72]] : []),
+            ...($procurementOfficer ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $procurementOfficer->id, 'stage_type' => 'authorise', 'step_name' => 'Procurement Authorisation', 'authority_action' => 'procurement.authorise', 'sla_hours' => 72]] : []),
         ]);
 
         // PIF / Programmes — requesting officer → activity auth → Finance → DF → SG

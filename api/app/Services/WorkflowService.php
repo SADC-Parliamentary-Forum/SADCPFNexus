@@ -28,6 +28,7 @@ class WorkflowService
         'budget_submission' => 'Budget Submission',
         'programmes'        => 'Programme (PIF)',
         'pif'               => 'Programme (PIF)',
+        'supplier'          => 'Supplier Registration',
     ];
 
     public function __construct(

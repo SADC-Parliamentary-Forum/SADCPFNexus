@@ -12,13 +12,17 @@ use App\Models\Vendor;
 use App\Models\VendorRating;
 use Illuminate\Validation\ValidationException;
 use App\Modules\Procurement\Services\VendorService;
+use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class VendorController extends Controller
 {
-    public function __construct(private readonly VendorService $vendorService) {}
+    public function __construct(
+        private readonly VendorService $vendorService,
+        private readonly WorkflowService $workflowService,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -247,11 +251,20 @@ class VendorController extends Controller
 
     public function approve(Request $request, Vendor $vendor): JsonResponse
     {
-        abort_unless($this->canManageVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
 
+        $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
+
+        $approvalRequest = $vendor->approvalRequest;
+        if ($approvalRequest) {
+            $this->workflowService->approve($approvalRequest, $request->user(), $data['comment'] ?? null);
+
+            return response()->json(['message' => 'Approval recorded.', 'data' => $vendor->fresh()]);
+        }
+
+        abort_unless($this->canManageVendors($request), 403);
         $vendor = $this->vendorService->approveVendor($vendor, $request->user());
 
         return response()->json(['message' => 'Vendor approved.', 'data' => $vendor]);
@@ -259,7 +272,6 @@ class VendorController extends Controller
 
     public function reject(Request $request, Vendor $vendor): JsonResponse
     {
-        abort_unless($this->canManageVendors($request), 403);
         if ((int) $vendor->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
@@ -268,6 +280,14 @@ class VendorController extends Controller
             'reason' => ['required', 'string', 'max:1000'],
         ]);
 
+        $approvalRequest = $vendor->approvalRequest;
+        if ($approvalRequest) {
+            $this->workflowService->reject($approvalRequest, $request->user(), $data['reason']);
+
+            return response()->json(['message' => 'Rejection recorded.', 'data' => $vendor->fresh()]);
+        }
+
+        abort_unless($this->canManageVendors($request), 403);
         $vendor = $this->vendorService->rejectVendor($vendor, $data['reason'], $request->user());
 
         return response()->json(['message' => 'Vendor rejected.', 'data' => $vendor]);

@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 
 class Vendor extends Model
 {
@@ -45,6 +46,21 @@ class Vendor extends Model
     public function attachments(): MorphMany
     {
         return $this->morphMany(Attachment::class, 'attachable')->latest();
+    }
+
+    public function approvalRequest(): MorphOne
+    {
+        return $this->morphOne(ApprovalRequest::class, 'approvable');
+    }
+
+    public function onWorkflowApproved(User $approver): void
+    {
+        app(\App\Modules\Procurement\Services\VendorService::class)->approveVendor($this, $approver);
+    }
+
+    public function onWorkflowRejected(User $approver, ?string $reason = null): void
+    {
+        app(\App\Modules\Procurement\Services\VendorService::class)->rejectVendor($this, $reason ?? 'Rejected during approval workflow.', $approver);
     }
 
     public function procurementRequests()
