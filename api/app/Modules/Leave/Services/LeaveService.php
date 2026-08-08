@@ -327,6 +327,24 @@ class LeaveService
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be approved.']);
         }
 
+        // Sequential-stage guard: the PDP's 'assigned' scope check below is a
+        // no-op for Leave (LeaveRequest has no assigned_to/current_approver_id
+        // column for AccessScopeResolver::isAssigned() to key on, and the
+        // context here always hardcodes 'assigned' => true), so without this,
+        // any holder of the general authorise permission could approve a
+        // freshly-submitted request, skipping HOD recommendation and HR/Admin
+        // certification entirely. "Sequential means sequential" (PRD §2).
+        if ($leave->recommendation_status !== 'recommended') {
+            throw ValidationException::withMessages([
+                'status' => 'This request has not yet been recommended by the Head of Department/Supervisor.',
+            ]);
+        }
+        if (! in_array($leave->certification_status, ['certified', 'certified_with_condition'], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'This request has not yet been certified by HR/Administration.',
+            ]);
+        }
+
         app(\App\Modules\AccessControl\Services\PolicyDecisionPoint::class)->assert(
             $approver,
             'leave.request.authorise.assigned',
