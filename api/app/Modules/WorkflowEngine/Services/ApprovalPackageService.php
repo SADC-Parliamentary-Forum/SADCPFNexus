@@ -84,15 +84,101 @@ class ApprovalPackageService
 
     public function assertUnchanged(ApprovalRequest $request, Model $entity): void
     {
+        if ($this->materialDiffAgainstLatestPackage($request, $entity) !== []) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'record' => 'The record has changed since submission. Material changes require resubmission and re-approval.',
+            ]);
+        }
+    }
+
+    /**
+     * Whether the entity's locked fields differ from the most recently
+     * captured approval package for this request. Used to decide, on
+     * resubmission after a return-for-correction, whether prior step
+     * approvals can be preserved (cosmetic-only edit) or must be
+     * restarted (material edit) — see WorkflowService::resubmit().
+     */
+    public function hasMaterialChangeSinceLastCapture(ApprovalRequest $request, Model $entity): bool
+    {
+        return $this->materialDiffAgainstLatestPackage($request, $entity) !== [];
+    }
+
+    /**
+     * Attachments whose content_hash no longer matches what was captured in
+     * the last approval package — i.e. a document was swapped after the
+     * package was locked. assertUnchanged()/decide() only guards documents
+     * while a request is still pending/returned; once a request reaches
+     * 'approved' nothing else in the engine re-checks attachment integrity,
+     * so a swapped quotation/certificate/contract on an already-approved
+     * record would otherwise go completely undetected. This is read-only
+     * detection (surfaced via WorkflowService::snapshot()) rather than a
+     * blocking guard on every module's own attachment-upload endpoint —
+     * there's no single central attachment-replace pathway in this codebase
+     * to safely intercept, so flagging on view is the achievable, low-risk
+     * version of PRD §36's "approval integrity broken -> reapproval required".
+     *
+     * @return list<array{id:int|string|null, name:?string, expected_hash:?string, current_hash:?string}>
+     */
+    public function attachmentIntegrityIssues(ApprovalRequest $request): array
+    {
+        $package = WorkflowApprovalPackage::where('approval_request_id', $request->id)
+            ->orderByDesc('package_version')
+            ->first();
+        if (! $package || empty($package->document_snapshot)) {
+            return [];
+        }
+
+        $entity = $request->approvable;
+        if (! $entity) {
+            return [];
+        }
+
+        $expectedById = [];
+        foreach ($package->document_snapshot as $doc) {
+            if (isset($doc['id'])) {
+                $expectedById[$doc['id']] = $doc;
+            }
+        }
+        if ($expectedById === []) {
+            return [];
+        }
+
+        $currentById = [];
+        foreach ($this->snapshotDocuments($entity) as $doc) {
+            if (isset($doc['id'])) {
+                $currentById[$doc['id']] = $doc;
+            }
+        }
+
+        $issues = [];
+        foreach ($expectedById as $id => $expected) {
+            $current = $currentById[$id] ?? null;
+            $expectedHash = $expected['hash'] ?? null;
+            $currentHash = $current['hash'] ?? null;
+            if ($expectedHash !== null && $expectedHash !== $currentHash) {
+                $issues[] = [
+                    'id' => $id,
+                    'name' => $current['name'] ?? $expected['name'] ?? null,
+                    'expected_hash' => $expectedHash,
+                    'current_hash' => $currentHash,
+                ];
+            }
+        }
+
+        return $issues;
+    }
+
+    private function materialDiffAgainstLatestPackage(ApprovalRequest $request, Model $entity): array
+    {
         if (! $request->approval_package_hash) {
-            return;
+            return [];
         }
 
         $package = WorkflowApprovalPackage::where('approval_request_id', $request->id)
             ->orderByDesc('package_version')
             ->first();
         if (! $package) {
-            return;
+            return [];
         }
 
         $locked = $package->locked_fields ?? self::DEFAULT_LOCKED_FIELDS;
@@ -110,11 +196,7 @@ class ApprovalPackageService
             }
         }
 
-        if ($materialDiff !== []) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'record' => 'The record has changed since submission. Material changes require resubmission and re-approval.',
-            ]);
-        }
+        return $materialDiff;
     }
 
     private function normalizeComparable(mixed $value): mixed

@@ -34,11 +34,17 @@ class WorkflowService
         protected NotificationService $notificationService,
         protected SignedTokenService  $signedTokenService,
         protected ?WorkflowOrchestrator $orchestrator = null,
+        protected ?\App\Modules\WorkflowEngine\Services\ApprovalPackageService $packages = null,
     ) {}
 
     protected function engine(): WorkflowOrchestrator
     {
         return $this->orchestrator ??= app(WorkflowOrchestrator::class);
+    }
+
+    protected function packages(): \App\Modules\WorkflowEngine\Services\ApprovalPackageService
+    {
+        return $this->packages ??= app(\App\Modules\WorkflowEngine\Services\ApprovalPackageService::class);
     }
 
     /**
@@ -235,17 +241,44 @@ class WorkflowService
             ]);
         }
 
-        DB::transaction(function () use ($request, $actor) {
+        // Material vs. cosmetic edit (PRD Sec 33-34): a typo fix shouldn't force
+        // every prior stage to re-approve, but a changed amount/date/etc. must.
+        // Default to "material" (full restart) whenever this can't be determined
+        // safely - resubmit() runs on requests going back years, and some may
+        // predate the approval-package snapshot mechanism entirely (no captured
+        // package to diff against), so failing safe here means "restart",
+        // matching the prior unconditional behaviour, not "skip re-approval".
+        $resumeStepIndex = 0;
+        if ($request->approvable) {
+            try {
+                $isMaterial = $this->packages()->hasMaterialChangeSinceLastCapture($request, $request->approvable);
+            } catch (Throwable $e) {
+                report($e);
+                $isMaterial = true;
+            }
+            if (! $isMaterial) {
+                $returnedFromStep = (int) (ApprovalHistory::where('approval_request_id', $request->id)
+                    ->where('action', 'return')
+                    ->orderByDesc('id')
+                    ->value('step_index') ?? 0);
+                $resumeStepIndex = $returnedFromStep;
+            }
+        }
+
+        DB::transaction(function () use ($request, $actor, $resumeStepIndex) {
             ApprovalHistory::create([
                 'approval_request_id' => $request->id,
                 'user_id'             => $actor->id,
                 'action'              => 'resubmit',
-                'step_index'          => 0,
+                'step_index'          => $resumeStepIndex,
+                'comment'             => $resumeStepIndex > 0
+                    ? 'Cosmetic-only correction — resumed at the returning step; prior approvals preserved.'
+                    : null,
             ]);
 
             $request->update([
                 'status'             => 'pending',
-                'current_step_index' => 0,
+                'current_step_index' => $resumeStepIndex,
             ]);
 
             $this->finalizeApprovable($request, 'resubmitted', $actor);
@@ -441,6 +474,9 @@ class WorkflowService
             'definition_version_id' => $request->definition_version_id,
             'record_version'      => $request->record_version,
             'approval_package_hash' => $request->approval_package_hash,
+            'attachment_integrity_issues' => $request->status === 'approved'
+                ? $this->packages()->attachmentIntegrityIssues($request)
+                : [],
             'due_at'              => optional($request->due_at)->toIso8601String(),
             'submitted_by'        => $mapUser($requester),
             'prepared_by'         => $entity && isset($entity->prepared_by)
