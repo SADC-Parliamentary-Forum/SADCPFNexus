@@ -89,6 +89,15 @@ class WorkflowSeeder extends Seeder
             ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve']] : []),
         ]);
 
+        // Timesheets — Supervisor accepts; donor/project-funded work additionally
+        // requires Finance/Project validation of the coding (PRD §20). Gated by
+        // is_donor_funded in the condition context TimesheetService::submit()
+        // passes to initiate() (true when any entry is logged against a project).
+        $this->makeWorkflow($tenant, 'Timesheet Approval', 'timesheet', [
+            ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'accept', 'step_name' => 'Supervisor Acceptance', 'allow_return' => true, 'sla_hours' => 48],
+            ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance/Project Validation', 'authority_action' => 'finance.certify', 'sla_hours' => 48, 'condition_expression' => ['field' => 'is_donor_funded', 'op' => 'eq', 'value' => true], 'skip_if_condition_false' => true]] : []),
+        ]);
+
         // PIF / Programmes — requesting officer → activity auth → Finance → DF → SG
         $this->makeWorkflow($tenant, 'Programme Activity Approval', 'programmes', [
             ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'recommend', 'step_name' => 'Activity Authorisation', 'allow_return' => true, 'sla_hours' => 48],

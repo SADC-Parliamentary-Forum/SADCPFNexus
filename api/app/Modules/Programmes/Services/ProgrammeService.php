@@ -470,18 +470,27 @@ class ProgrammeService
         return $programme->fresh();
     }
 
+    /**
+     * Finalizes an approved programme (or amendment). This is invoked in two
+     * ways only, never called directly by a controller for a request that has
+     * an active workflow:
+     *  1. As the WorkflowService finalization hook via Programme::onWorkflowApproved()
+     *     once every workflow step has been completed — WorkflowService::verifyActorCanApprove()
+     *     has already authorised the final actor (including the Secretary
+     *     General's own-request carve-out) by the time this runs, so no
+     *     self-approval check belongs here — re-checking it here would
+     *     incorrectly block a legitimately-authorised SG self-approval.
+     *  2. As a legacy fallback by ProgrammeController::approve()/reject() for
+     *     the rare record with no ApprovalRequest (e.g. pre-workflow-engine
+     *     data) — the controller performs the self-approval check itself
+     *     before reaching this method in that path.
+     */
     public function approve(Programme $programme, User $approver): Programme
     {
         $isAmendment = $programme->status === 'amendment_pending_approval';
 
         if (!$isAmendment && !$programme->isSubmitted()) {
             throw ValidationException::withMessages(['status' => 'Only submitted programmes can be approved.']);
-        }
-
-        if ($programme->created_by && (int) $programme->created_by === (int) $approver->id) {
-            throw ValidationException::withMessages([
-                'approval' => 'You cannot approve your own request. Requests must go through the workflow before the Secretary General approves.',
-            ]);
         }
 
         $programme->update([
@@ -611,6 +620,27 @@ class ProgrammeService
             'declaration_confirmed_at'  => now(),
             'declaration_version'       => config('pif.current_declaration_version'),
         ]);
+
+        // Amendments are a fresh approval cycle and must go through the same
+        // sequential workflow as the original PIF (PRD §80/§111) — without
+        // this, an amendment had no ApprovalRequest at all and approval fell
+        // straight to the legacy direct-write path.
+        try {
+            app(WorkflowService::class)->initiate(
+                $amendment->fresh(),
+                'programmes',
+                $user,
+                'pif-amendment-submit-'.$amendment->id.'-'.($amendment->fresh()->submitted_at?->timestamp ?? time()),
+                [
+                    'amount' => $amendment->total_budget ?? null,
+                    'currency' => $amendment->currency ?? 'NAD',
+                    'department_id' => $user->department_id,
+                ]
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return $amendment->fresh();
     }
 

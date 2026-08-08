@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Api\V1\Programmes;
 use App\Http\Controllers\Controller;
 use App\Models\Programme;
 use App\Modules\Programmes\Services\ProgrammeService;
+use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class ProgrammeController extends Controller
 {
-    public function __construct(private readonly ProgrammeService $service) {}
+    public function __construct(
+        private readonly ProgrammeService $service,
+        private readonly WorkflowService $workflowService,
+    ) {}
 
     /**
      * Resolves what a field's value will be *after* this request is applied:
@@ -353,17 +357,56 @@ class ProgrammeController extends Controller
         return response()->json(['message' => 'Programme submitted.', 'data' => $result]);
     }
 
+    /**
+     * PIF/amendment approvals go through the shared workflow engine whenever
+     * a workflow was initiated for this record (submit()/submitAmendment()
+     * both call WorkflowService::initiate()) — this is exclusively how a
+     * multi-step PIF approval can be authorised; there is no direct-approve
+     * path for a record with an active workflow. The legacy fallback below
+     * only fires for a record with no ApprovalRequest at all (e.g. data that
+     * predates the workflow engine), matching the pattern already used by
+     * LeaveController/TravelController.
+     */
     public function approve(Request $request, Programme $programme): JsonResponse
     {
-        $result = $this->service->approve($programme, $request->user());
-        return response()->json(['message' => 'Programme approved.', 'data' => $result]);
+        $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
+
+        $approvalRequest = $programme->approvalRequest;
+        if (!$approvalRequest) {
+            if ($programme->created_by && (int) $programme->created_by === (int) $request->user()->id) {
+                abort(403, 'You cannot approve your own request.');
+            }
+            $result = $this->service->approve($programme, $request->user());
+            return response()->json(['message' => 'Programme approved.', 'data' => $result]);
+        }
+
+        $this->workflowService->approve($approvalRequest, $request->user(), $data['comment'] ?? null);
+
+        return response()->json([
+            'message' => 'Decision recorded.',
+            'data'    => $this->service->get($programme->fresh()),
+        ]);
     }
 
     public function reject(Request $request, Programme $programme): JsonResponse
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
-        $result = $this->service->reject($programme, $data['reason'], $request->user());
-        return response()->json(['message' => 'Programme rejected.', 'data' => $result]);
+
+        $approvalRequest = $programme->approvalRequest;
+        if (!$approvalRequest) {
+            if ($programme->created_by && (int) $programme->created_by === (int) $request->user()->id) {
+                abort(403, 'You cannot reject your own request.');
+            }
+            $result = $this->service->reject($programme, $data['reason'], $request->user());
+            return response()->json(['message' => 'Programme rejected.', 'data' => $result]);
+        }
+
+        $this->workflowService->reject($approvalRequest, $request->user(), $data['reason']);
+
+        return response()->json([
+            'message' => 'Programme rejected.',
+            'data'    => $this->service->get($programme->fresh()),
+        ]);
     }
 
     public function amend(Request $request, Programme $programme): JsonResponse

@@ -402,7 +402,10 @@ class TimesheetService
             'rejection_reason' => null,
         ]);
 
-        $this->workflowService->initiate($timesheet, 'timesheet', $user);
+        $isDonorFunded = $timesheet->entries()->whereNotNull('project_id')->exists();
+        $this->workflowService->initiate($timesheet, 'timesheet', $user, null, [
+            'is_donor_funded' => $isDonorFunded,
+        ]);
 
         $approvers = User::role(['HR Manager', 'HR Administrator', 'Secretary General'])
             ->where('tenant_id', $user->tenant_id)
