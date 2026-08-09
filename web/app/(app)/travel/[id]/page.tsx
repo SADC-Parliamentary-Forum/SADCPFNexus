@@ -602,10 +602,23 @@ export default function TravelDetailPage() {
 
       <WorkflowStatusBanner
         status={request.status}
-        currentStage={workflowMeta?.current_stage_label ?? workflowMeta?.current_stage ?? request.status}
+        currentStage={
+          workflowMeta?.current_stage_label ??
+          workflowMeta?.current_stage?.label ??
+          (typeof workflowMeta?.current_stage === "string" ? workflowMeta.current_stage : null) ??
+          request.status
+        }
         currentHolder={currentlyWith || "—"}
         extras={[
-          { label: "Next stage", value: String(workflowMeta?.next_stage_label ?? workflowMeta?.next_stage ?? "—") },
+          {
+            label: "Next stage",
+            value: String(
+              workflowMeta?.next_stage_label ??
+                workflowMeta?.next_step?.label ??
+                (typeof workflowMeta?.next_stage === "string" ? workflowMeta.next_stage : null) ??
+                "—",
+            ),
+          },
           { label: "Submitted on", value: request.submitted_at ? formatDateShort(request.submitted_at) : "—" },
         ]}
       />
