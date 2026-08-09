@@ -907,7 +907,7 @@ export default function TravelDetailPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-neutral-900">{leg.from_location} → {leg.to_location}</p>
-                  <p className="text-xs text-neutral-400 mt-0.5">{leg.travel_date} · {leg.days_count} day{leg.days_count !== 1 ? "s" : ""}</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">{formatDateShort(leg.travel_date)} · {leg.days_count} day{leg.days_count !== 1 ? "s" : ""}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-[10px] text-neutral-400 uppercase tracking-wide">DSA</p>
