@@ -31,7 +31,16 @@
 # re-testing manually before trusting cron with it.
 LOGFILE=/home/sadcpf-nexus/logs/php-watchdog.log
 COOLDOWN_FILE=/home/sadcpf-nexus/logs/.php-watchdog-last-restart
-COOLDOWN_SECONDS=300
+# Was 300s. On 2026-08-09, a restart at 13:21:33 fixed one incident, but a
+# DIFFERENT failure (all 8 probes returning 403 "Access denied.", a symptom
+# never seen before or traced to app code) started within ~90s and was
+# correctly detected at 13:23:02/13:24:02/13:25:03 — but the cooldown from
+# the FIRST restart blocked all three, leaving it broken for several minutes
+# with the watchdog aware of it and unable to act. 300s made sense for
+# preventing restart-thrashing on one *persistent* failure; it was too long
+# once it started blocking legitimate fixes for *distinct* new failures
+# arriving shortly after an unrelated one.
+COOLDOWN_SECONDS=120
 APP_DIR=/home/sadcpf-nexus/htdocs/nexus.sadcpf.org/app
 
 # --- Primary signal: real 500s on /api/v1/* in nginx's log in the last 90s ---
