@@ -89,6 +89,59 @@ export default function StocktakeDetailPage() {
     }
   };
 
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [offlineInput, setOfflineInput] = useState("");
+  const [syncConflicts, setSyncConflicts] = useState<Array<{ line_id: number; server_counted_qty: number; incoming_counted_qty: number }>>([]);
+
+  const handleOfflineSync = async (force = false) => {
+    if (!stocktake || !offlineInput.trim()) return;
+    setSaving(true);
+    try {
+      let lines: Array<{ stock_item_id?: number; barcode?: string; counted_qty: number }> = [];
+      try {
+        lines = JSON.parse(offlineInput);
+      } catch {
+        // Parse CSV format: stock_item_id/barcode, counted_qty
+        lines = offlineInput
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => {
+            const parts = line.split(",").map((p) => p.trim());
+            const first = parts[0];
+            const counted = Number(parts[1]);
+            const isId = /^\d+$/.test(first);
+            return {
+              ...(isId ? { stock_item_id: Number(first) } : { barcode: first }),
+              counted_qty: Number.isNaN(counted) ? 0 : counted,
+            };
+          });
+      }
+
+      const res = await stocktakesApi.syncOffline(stocktake.id, lines, force);
+      const data = res.data.data;
+      if (data.conflicts && data.conflicts.length > 0 && !force) {
+        setSyncConflicts(data.conflicts);
+        toast("warning", `${data.conflicts.length} count conflicts detected! Confirm overwrite.`);
+      } else {
+        setStocktake(data.stocktake);
+        const map: Record<number, string> = {};
+        (data.stocktake.lines ?? []).forEach((l: StocktakeLine) => {
+          map[l.id] = l.counted_qty != null ? String(l.counted_qty) : "";
+        });
+        setCounts(map);
+        setShowSyncModal(false);
+        setOfflineInput("");
+        setSyncConflicts([]);
+        toast("success", `Offline sync complete! Applied ${data.applied.length} lines.`);
+      }
+    } catch {
+      toast("error", "Offline sync failed.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!stocktake) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   return (
@@ -106,6 +159,9 @@ export default function StocktakeDetailPage() {
           <Link href="/stock/stocktakes" className="btn-secondary">Back</Link>
           {canIssue && editable && (
             <>
+              <button type="button" className="btn-secondary" disabled={saving} onClick={() => setShowSyncModal(true)}>
+                Offline Sync Queue
+              </button>
               <button type="button" className="btn-secondary" disabled={saving} onClick={saveCounts}>Save counts</button>
               <button type="button" className="btn-primary" disabled={saving} onClick={complete}>Submit / Complete</button>
             </>
@@ -117,6 +173,44 @@ export default function StocktakeDetailPage() {
           )}
         </div>
       </div>
+
+      {showSyncModal && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">
+          <div className="flex justify-between items-center">
+            <h3 className="font-semibold text-amber-900 text-sm">Offline Stocktake Queue Sync</h3>
+            <button type="button" className="text-xs text-neutral-500 hover:text-neutral-700" onClick={() => setShowSyncModal(false)}>Close</button>
+          </div>
+          <p className="text-xs text-amber-800">
+            Paste offline count lines as JSON array or CSV format (<code className="font-mono">stock_item_id or barcode, counted_qty</code> per line):
+          </p>
+          <textarea
+            rows={4}
+            className="w-full form-input text-xs font-mono"
+            placeholder={'Example CSV:\n101, 15\nBARCODE123, 8\n\nOr JSON:\n[{"stock_item_id": 101, "counted_qty": 15}]'}
+            value={offlineInput}
+            onChange={(e) => setOfflineInput(e.target.value)}
+          />
+          {syncConflicts.length > 0 && (
+            <div className="p-2 bg-red-100 border border-red-300 rounded text-xs text-red-800 space-y-1">
+              <p className="font-semibold">{syncConflicts.length} conflict(s) detected:</p>
+              {syncConflicts.map((c) => (
+                <p key={c.line_id}>Line {c.line_id}: Server has {c.server_counted_qty}, Incoming has {c.incoming_counted_qty}</p>
+              ))}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            {syncConflicts.length > 0 ? (
+              <button type="button" className="btn-primary bg-red-600 hover:bg-red-700" disabled={saving} onClick={() => handleOfflineSync(true)}>
+                Force Overwrite Conflicts
+              </button>
+            ) : (
+              <button type="button" className="btn-primary" disabled={saving || !offlineInput.trim()} onClick={() => handleOfflineSync(false)}>
+                Apply Offline Queue
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <thead className="bg-neutral-50 text-left text-xs text-neutral-500">

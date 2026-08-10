@@ -2169,6 +2169,26 @@ export const stocktakesApi = {
     api.post<{ data: Stocktake; message: string }>(`/stock/stocktakes/${id}/approve-variances`),
   cancel: (id: number) =>
     api.post<{ data: Stocktake; message: string }>(`/stock/stocktakes/${id}/cancel`),
+  syncOffline: (
+    id: number,
+    lines: Array<{
+      client_line_key?: string;
+      stock_item_id?: number;
+      barcode?: string;
+      counted_qty: number;
+      notes?: string;
+    }>,
+    force?: boolean
+  ) =>
+    api.post<{
+      data: {
+        applied: Array<{ line_id: number; client_line_key?: string; counted_qty: number }>;
+        conflicts: Array<{ client_line_key?: string; line_id: number; server_counted_qty: number; incoming_counted_qty: number }>;
+        skipped: Array<{ index: number; reason: string }>;
+        stocktake: Stocktake;
+      };
+      message?: string;
+    }>(`/stock/stocktakes/${id}/sync-offline`, { lines, force }),
 };
 
 export interface StockRequestLine {

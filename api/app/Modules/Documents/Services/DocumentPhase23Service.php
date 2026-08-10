@@ -236,22 +236,52 @@ class DocumentPhase23Service
         return $result;
     }
 
-    // ── Watermarked download (derivative marker; bytes unchanged in Phase 2) ─
+    // ── Watermarked download (derivative marker + active watermark headers) ──
 
     public function streamWatermarked(User $actor, DocumentVersion $version): StreamedResponse
     {
-        DocumentDerivative::firstOrCreate(
+        $watermarkStamp = 'SADC-PF-NEXUS-WATERMARK // User: '.$actor->email.' // Date: '.now()->toIso8601String();
+
+        DocumentDerivative::updateOrCreate(
             [
                 'tenant_id' => $actor->tenant_id,
                 'source_version_id' => $version->id,
                 'kind' => 'watermark',
             ],
-            ['status' => 'ready', 'payload' => ['note' => 'Filename watermark marker']]
+            [
+                'status' => 'ready',
+                'payload' => [
+                    'note' => 'Active watermark download transform',
+                    'stamp' => $watermarkStamp,
+                    'actor_id' => $actor->id,
+                ],
+            ]
         );
 
-        $response = $this->documents->streamDownload($actor, $version);
-        // Override filename via headers already set; re-stream with WM prefix:
-        return $this->documents->streamDownload($actor, $version);
+        $disk = $version->storage_disk ?: 'local';
+        $filename = 'WM-'.$version->original_filename;
+        $mime = $version->mime_type ?: 'application/octet-stream';
+
+        return response()->streamDownload(
+            function () use ($version, $disk, $watermarkStamp, $mime) {
+                // If plain text or html, prepend watermark banner
+                if (str_contains($mime, 'text/') || str_contains($mime, 'json')) {
+                    echo "/* --- WATERMARK BANNER: {$watermarkStamp} --- */\n";
+                }
+
+                $stream = Storage::disk($disk)->readStream($version->storage_path);
+                if (is_resource($stream)) {
+                    fpassthru($stream);
+                    fclose($stream);
+                }
+            },
+            $filename,
+            [
+                'Content-Type' => $mime,
+                'X-Nexus-Watermark-Applied' => 'true',
+                'X-Nexus-Watermark-Stamp' => $watermarkStamp,
+            ]
+        );
     }
 
     // ── Duplicate suggestions by content hash ────────────────────────────────

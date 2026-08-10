@@ -376,6 +376,35 @@ export default function BudgetCashflowPage() {
           )}
         </div>
 
+        {forecast && (
+          <div className="mb-4 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+              <p className="text-xs text-neutral-500 font-medium">Net FY Cash Movement</p>
+              <p className={`text-lg font-bold ${Number(forecast.totals.closing_balance) - Number(forecast.opening_balance) >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+                {money(Number(forecast.totals.closing_balance) - Number(forecast.opening_balance))}
+              </p>
+            </div>
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+              <p className="text-xs text-neutral-500 font-medium">Lowest Monthly Liquidity</p>
+              {(() => {
+                const minBalance = Math.min(...forecast.periods.map((p) => Number(p.closing_balance)));
+                const isRisk = minBalance < 0;
+                return (
+                  <p className={`text-lg font-bold ${isRisk ? "text-red-700" : "text-emerald-700"}`}>
+                    {money(minBalance)} {isRisk && "⚠️ (Deficit Risk)"}
+                  </p>
+                );
+              })()}
+            </div>
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+              <p className="text-xs text-neutral-500 font-medium">Scenario Overlay Impact</p>
+              <p className="text-lg font-bold text-indigo-700">
+                In: {money(Number(forecast.totals.scenario_inflow))} | Out: {money(Number(forecast.totals.scenario_outflow))}
+              </p>
+            </div>
+          </div>
+        )}
+
         {forecastQuery.isLoading && <p className="text-sm text-neutral-600">Loading forecast…</p>}
         {forecastQuery.isError && (
           <p className="text-sm text-red-700">Failed to load forecast. Check financial year selection.</p>
