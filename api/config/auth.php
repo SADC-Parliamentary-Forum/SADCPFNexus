@@ -116,4 +116,14 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    | Privileged MFA is required in production unless REQUIRE_PRIVILEGED_MFA is
+    | explicitly false. PHPUnit stays off unless enforce_privileged_mfa_in_tests.
+    */
+    'require_privileged_mfa' => filter_var(
+        env('REQUIRE_PRIVILEGED_MFA', env('APP_ENV') === 'production' ? 'true' : 'false'),
+        FILTER_VALIDATE_BOOLEAN
+    ),
+    'enforce_privileged_mfa_in_tests' => false,
+
 ];

@@ -40,12 +40,12 @@ class RequireMfaForPrivileged
 
     public function handle(Request $request, Closure $next): Response
     {
-        $required = filter_var(
-            env('REQUIRE_PRIVILEGED_MFA', app()->environment('production') ? 'true' : 'false'),
-            FILTER_VALIDATE_BOOLEAN
-        );
-        // Never lock out PHPUnit / CI even if env is mis-set.
-        if (app()->environment('testing') || ! $required) {
+        $required = (bool) config('auth.require_privileged_mfa');
+        if (! $required) {
+            return $next($request);
+        }
+        // PHPUnit stays open unless a test opts into the production gate.
+        if (app()->environment('testing') && ! config('auth.enforce_privileged_mfa_in_tests')) {
             return $next($request);
         }
 

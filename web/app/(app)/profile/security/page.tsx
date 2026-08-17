@@ -23,7 +23,8 @@ export default function ProfileSecurityPage() {
   const { t } = useI18n();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [sessionTimeout, setSessionTimeout] = useState("60");
+  const [sessionTimeout, setSessionTimeout] = useState("120");
+  const [savingTimeout, setSavingTimeout] = useState(false);
   const [forceMfaBanner, setForceMfaBanner] = useState(false);
   const [mfaJustEnabled, setMfaJustEnabled] = useState(false);
 
@@ -112,6 +113,32 @@ export default function ProfileSecurityPage() {
       })
       .finally(() => setMfaLoading(false));
   }, []);
+
+  useEffect(() => {
+    profileApi.get()
+      .then((res) => {
+        const minutes = res.data.idle_timeout_minutes;
+        setSessionTimeout(minutes === null || minutes === undefined ? "120" : String(minutes));
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveIdleTimeout = async () => {
+    setSavingTimeout(true);
+    try {
+      const minutes = Number(sessionTimeout);
+      const res = await profileApi.updateIdleTimeout(minutes);
+      const stored = readStoredUser();
+      if (stored) {
+        writeStoredUser({ ...stored, idle_timeout_minutes: res.data.data.idle_timeout_minutes });
+      }
+      success("Session timeout saved. You will be signed out after inactivity.");
+    } catch {
+      error("Failed to save session timeout.");
+    } finally {
+      setSavingTimeout(false);
+    }
+  };
 
   const handleStartEnable2FA = async () => {
     setMfaActionLoading(true);
@@ -647,13 +674,15 @@ export default function ProfileSecurityPage() {
             <span className="material-symbols-outlined text-neutral-600 text-[18px]">timer</span>
           </div>
           <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Auto Session Timeout</h3>
-          <span className="ml-1 rounded-full bg-neutral-100 dark:bg-neutral-700/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-            Coming soon
-          </span>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Sign out after inactivity</label>
-          <select disabled className="form-input max-w-xs opacity-60 cursor-not-allowed" value={sessionTimeout} onChange={(e) => setSessionTimeout(e.target.value)}>
+          <label htmlFor="idle-timeout" className="block text-xs font-semibold text-neutral-700 mb-1">Sign out after inactivity</label>
+          <select
+            id="idle-timeout"
+            className="form-input max-w-xs"
+            value={sessionTimeout}
+            onChange={(e) => setSessionTimeout(e.target.value)}
+          >
             <option value="15">15 minutes</option>
             <option value="30">30 minutes</option>
             <option value="60">1 hour</option>
@@ -662,14 +691,18 @@ export default function ProfileSecurityPage() {
             <option value="0">Never (not recommended)</option>
           </select>
           <p className="text-xs text-neutral-400 mt-1">
-            Server-enforced session timeout is not available yet — this preference cannot be saved until the backend supports it.
+            Enforced on the server and in this browser. Mobile uses the same preference.
           </p>
         </div>
         <div className="flex justify-end mt-4">
-          <button type="button" disabled title="Not available yet"
-            className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2 opacity-60 cursor-not-allowed">
+          <button
+            type="button"
+            onClick={handleSaveIdleTimeout}
+            disabled={savingTimeout}
+            className="btn-primary px-5 py-2.5 text-sm flex items-center gap-2 disabled:opacity-60"
+          >
             <span className="material-symbols-outlined text-[18px]">save</span>
-            Save Settings
+            {savingTimeout ? "Saving…" : "Save Settings"}
           </button>
         </div>
       </div>

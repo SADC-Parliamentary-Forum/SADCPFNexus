@@ -639,10 +639,11 @@ class AuthController extends Controller
             'tenant_id'           => $user->tenant_id,
             'vendor_id'           => $user->vendor_id,
             'classification'      => $user->classification,
-            'mfa_enabled'         => (bool) $user->mfa_enabled,
-            'must_reset_password' => (bool) $user->must_reset_password,
-            'setup_completed'     => (bool) $user->setup_completed,
-            'roles'               => $user->getRoleNames(),
+            'mfa_enabled'           => (bool) $user->mfa_enabled,
+            'must_reset_password'   => (bool) $user->must_reset_password,
+            'setup_completed'       => (bool) $user->setup_completed,
+            'idle_timeout_minutes'  => $user->idle_timeout_minutes,
+            'roles'                 => $user->getRoleNames(),
             'permissions'         => $user->getAllPermissions()->pluck('name'),
         ];
     }

@@ -23,9 +23,28 @@ class PrivilegedMfaMiddlewareTest extends TestCase
 
     public function test_require_privileged_mfa_defaults_off_outside_production(): void
     {
-        $this->assertFalse(filter_var(
-            env('REQUIRE_PRIVILEGED_MFA', 'false'),
-            FILTER_VALIDATE_BOOLEAN
-        ));
+        $this->assertFalse((bool) config('auth.require_privileged_mfa'));
+        $this->assertFalse((bool) config('auth.enforce_privileged_mfa_in_tests'));
+    }
+
+    public function test_privileged_user_without_mfa_is_blocked_when_enforced(): void
+    {
+        config([
+            'auth.require_privileged_mfa' => true,
+            'auth.enforce_privileged_mfa_in_tests' => true,
+        ]);
+
+        $tenant = Tenant::factory()->create();
+        $admin = $this->makeAdmin($tenant);
+        $admin->forceFill(['mfa_enabled' => false])->save();
+
+        $this->asUser($admin)
+            ->getJson('/api/v1/auth/me')
+            ->assertOk();
+
+        $this->asUser($admin)
+            ->getJson('/api/v1/profile')
+            ->assertForbidden()
+            ->assertJsonPath('mfa_setup_required', true);
     }
 }

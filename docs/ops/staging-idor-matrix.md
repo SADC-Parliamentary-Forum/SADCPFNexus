@@ -39,6 +39,22 @@ php artisan test --filter=HighFindingsF1F2F3Test
 php artisan test --filter=UploadContentSniffingTest
 ```
 
+Automated PHPUnit coverage is **not** staging evidence. Leave the result columns above blank until a human runs the matrix on staging.
+
+## Automated mapping (CI / local PHPUnit)
+
+These tests cover the same classes of check. Record the SHA and date when they last passed; do **not** copy Pass into the staging table above.
+
+| Matrix # | Automated test | File |
+|----------|----------------|------|
+| 1–3, 15 | `test_peer_cannot_view_another_users_travel_request` / `test_guest_cannot_view_travel_request` | `RequestBolaAuthorizationTest` |
+| 6 | `test_peer_cannot_view_another_users_leave_request` | `RequestBolaAuthorizationTest` |
+| 8 | `test_peer_cannot_view_another_users_imprest_request` | `RequestBolaAuthorizationTest` |
+| 10 | `test_peer_cannot_view_another_users_procurement_request` | `RequestBolaAuthorizationTest` |
+| 4, 7, 9, 11, 13 | `test_peer_cannot_read_another_users_leave_certificate` / `test_peer_cannot_read_salary_advance_travel_imprest_procurement_certificates` | `HighFindingsF1F2F3Test` |
+
+Last automated run (optional): Date ______ SHA ______ Result ______
+
 ## Sign-off
 
 - Environment: __________________

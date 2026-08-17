@@ -168,7 +168,7 @@ export default function BudgetCashflowPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
         title="Cashflow / scenarios"
-        subtitle="Monthly liquidity forecast from budget actuals and open commitments, with optional scenario overlays.\r\n            Opening balances are Finance assumptions — Ne"
+        subtitle="Monthly liquidity forecast from budget actuals and open commitments, with optional scenario overlays. Opening balances are Finance assumptions — not bank-confirmed cash."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Cashflow / scenarios" }]} />}
       />
         <div className="flex flex-wrap items-center gap-2">

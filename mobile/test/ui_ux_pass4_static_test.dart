@@ -9,7 +9,8 @@ void main() {
     final access = read('lib/core/auth/feature_access.dart');
     final router = read('lib/core/router/app_router.dart');
 
-    expect(access, contains("'/salary/advance/preview': ['finance.view']"));
+    expect(access, contains("'/salary/advance/preview':"));
+    expect(access, contains("'salary_advance.request.read.self'"));
     expect(router, contains('int? _routeIntParam'));
     expect(router, contains('Widget _invalidRouteScreen'));
     expect(router, isNot(contains('int.parse(state.pathParameters')));
@@ -122,6 +123,7 @@ void main() {
     expect(hr, contains('DebouncedSearchField'));
     expect(hr, contains('matchesSearchText'));
     expect(vendors, contains('DebouncedSearchField'));
-    expect(vendors, contains('matchesSearchText'));
+    expect(vendors, contains("'per_page': 50"));
+    expect(vendors, contains('Load more vendors'));
   });
 }

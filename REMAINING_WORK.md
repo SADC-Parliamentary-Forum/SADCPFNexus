@@ -1,29 +1,38 @@
 # SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-07-30  
-**Baseline tip:** Document Service PRD Phase 1–3 pack (`feat/next-continuation-pack`).
+**Last updated:** 2026-08-17  
+**Baseline tip:** `feat/remaining-work-closeout` (from `437aaa7`).
 
 ---
 
-## Landed (recent)
+## Landed in this closeout
 
 | Area | Status |
 |------|--------|
-| Document Service Phase 1 | Shipped earlier (`abe49e3`) — versioning, hashing, tokens, Null AV |
-| Document Repository PRD Phase 1–3 | This pack — file objects, links, holds, quarantine semantics, module wiring, Phase 2 slices, Phase 3 AI stubs, §125 governance UI |
-| Notifications Phase 1–3 + producer migration | Shipped — outbox path; no business-module `Mail::` |
+| Vendor directory server pagination | Shipped — `page` / `per_page` (max 100) + `summary` |
+| Per-user idle timeout | Shipped — API, web guard, mobile timer |
+| Honest WORM / support-health copy | Shipped — no fake “WORM Operational” |
+| Validation pack (conditional) | `docs/validation/01-executive-summary.md` |
+| Restore drill script | `scripts/ops/restore-drill.sh` (not executed here) |
 
 ---
 
 ## Ops-only / Governance Pending (not inventable in code)
 
-- Prod IMAP password installation
-- Live SMS/WhatsApp — **Governance Configuration Pending** (Null stubs remain)
-- Approved AV product credentials (`DOCUMENT_AV_DRIVER` + ClamAV/HTTP env)
-- OCR vendor credentials (`DOCUMENT_OCR_DRIVER`)
-- SharePoint/OneDrive migration credentials
-- Real LLM vendor credentials (weekly/procurement AI — stub default)
-- Document §125 / Notifications §124 checklist answers — record in admin UIs only
+- UAT sign-off for 15 role scripts
+- Access-control pilot + cutover (AC-8/9/10)
+- Restore drill measured RTO/RPO
+- Staging IDOR matrix human results
+- Prod IMAP / SMS / WhatsApp / AV / OCR / SharePoint / LLM / SIEM / WORM / FCM / payroll / Calendar / Graph / e-sign / Play / ASC credentials
+- Document §125 / Notifications §124 / Access MFA-policy checklist answers
+- Pen-test engagement or documented residual-risk acceptance
+
+Privileged MFA product gate: **on by default when `APP_ENV=production`** (`config/auth.php` `require_privileged_mfa`). Institutional policy at `/admin/access/governance` remains operator-owned.
+
+Vendor list/show: Procurement Officer (canonical `procurement.supplier.read`) and System Admin. General Employee / `staff` does not get the vendor register unless granted `procurement.view` or equivalent. `CanonicalRoleManager` now creates missing catalogue permission rows so role sync does not wipe grants to an empty set.
+
+
+Sentry: env-gated hooks exist (`App\Support\Observability`, `web/lib/observability.ts`). Install `sentry/sentry-laravel` / `@sentry/nextjs` only when a DSN is issued. Never commit a DSN.
 
 ---
 
@@ -39,17 +48,16 @@
 
 ---
 
-## Optional light follow-ons
+## Optional later-phase depth (not launch blockers)
 
-- [ ] Wire offline stocktake queue auto-apply UI onto stocktake detail
-- [ ] Cashflow / scenario forecasting UX depth
-- [ ] Watermarked download binary transform (filename marker shipped; visual watermark optional)
+- Live LLM / newspaper notices / cashflow charts beyond the 3-card summary
+- Stock forecasting, courier APIs, automated KRIs, biometric attendance
+- 186 deferred UX IA tickets (dual surfaces, calendars, settings IA)
 
 ---
 
 ## Reference
 
 - Deploy: `scripts/deploy.sh`
-- Health: API `200`, Web `307` (auth redirect)
-- Documents: `/admin/documents`, `/admin/documents/governance`, `/admin/documents/retention`
-- Notifications: `/notifications`, `/admin/notifications`, `/admin/notifications/governance`
+- Restore drill: `scripts/ops/restore-drill.sh`
+- Validation: `docs/validation/01-executive-summary.md`

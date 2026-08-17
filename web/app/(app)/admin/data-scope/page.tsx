@@ -278,7 +278,7 @@ export default function DataScopePage() {
           </div>
           <div className="px-5 py-3 border-t border-neutral-100 dark:border-neutral-700 text-xs text-neutral-400 dark:text-neutral-500 flex items-center justify-between">
             <span>{passCount}/{SECURITY_GATES.length} passing</span>
-            <span className="font-mono">SHA-256 · RLS · WORM</span>
+            <span className="font-mono">SHA-256 · RLS</span>
           </div>
         </div>
 

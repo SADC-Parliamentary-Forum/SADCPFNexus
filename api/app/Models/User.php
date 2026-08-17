@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -50,6 +51,7 @@ class User extends Authenticatable
         'password_changed_at',
         'setup_completed',
         'last_login_at',
+        'idle_timeout_minutes',
         'bio',
         'date_of_birth',
         'join_date',
@@ -78,7 +80,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'last_login_at'     => 'datetime',
+            'last_login_at'          => 'datetime',
             'password'          => 'hashed',
             'is_active'              => 'boolean',
             'status_changed_at'      => 'datetime',
@@ -96,6 +98,17 @@ class User extends Authenticatable
             'skills'            => 'array',
             'qualifications'    => 'array',
         ];
+    }
+
+    /**
+     * Null means “use SESSION_LIFETIME”. Built-in integer casts would turn null into 0.
+     */
+    protected function idleTimeoutMinutes(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value === null ? null : (int) $value,
+            set: fn ($value) => $value === null || $value === '' ? null : (int) $value,
+        );
     }
 
     public function tenant(): BelongsTo

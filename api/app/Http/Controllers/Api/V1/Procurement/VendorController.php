@@ -43,29 +43,34 @@ class VendorController extends Controller
             });
         }
 
-        if ($request->filled('status')) {
-            if ($request->status === 'approved') {
+        $status = (string) $request->input('status', '');
+        if ($status !== '' && $status !== 'all') {
+            if ($status === 'approved') {
                 $query->where('status', 'approved');
-            } elseif ($request->status === 'pending') {
+            } elseif ($status === 'pending') {
                 $query->whereIn('status', ['draft', 'pending_approval']);
-            } elseif ($request->status === 'inactive') {
+            } elseif ($status === 'inactive') {
                 $query->whereIn('status', ['rejected', 'suspended']);
-            } elseif ($request->status === 'blacklisted') {
+            } elseif ($status === 'blacklisted') {
                 $query->where('status', 'blacklisted');
             }
         } else {
             $query->where('status', '!=', 'blacklisted');
         }
 
-        $vendors = $query->withAvg('ratings', 'rating')->get([
-            'id', 'name', 'contact_name', 'registration_number',
-            'contact_email', 'contact_phone', 'address',
-            'country', 'category', 'is_sme',
-            'is_approved', 'is_active', 'is_blacklisted',
-            'status', 'risk_level', 'blacklist_reason', 'created_at',
-        ]);
+        $perPage = min(max((int) $request->input('per_page', 50), 1), 100);
 
-        return response()->json(['data' => $vendors]);
+        $vendors = $query->withAvg('ratings', 'rating')->paginate($perPage);
+
+        $summaryBase = Vendor::query()->where('tenant_id', $tenantId);
+        $payload = $vendors->toArray();
+        $payload['summary'] = [
+            'approved'    => (clone $summaryBase)->where('status', 'approved')->count(),
+            'pending'     => (clone $summaryBase)->whereIn('status', ['draft', 'pending_approval'])->count(),
+            'blacklisted' => (clone $summaryBase)->where('status', 'blacklisted')->count(),
+        ];
+
+        return response()->json($payload);
     }
 
     public function store(Request $request): JsonResponse
@@ -490,7 +495,11 @@ class VendorController extends Controller
         $user = $request->user();
 
         return $user->isSystemAdmin()
-            || $user->hasAnyPermission(['procurement.view', 'procurement.manage_vendors', 'procurement.admin']);
+            || $user->hasAnyRole(['Procurement Officer'])
+            || $user->can('procurement.view')
+            || $user->can('procurement.manage_vendors')
+            || $user->can('procurement.admin')
+            || $user->can('procurement.supplier.read');
     }
 
     private function canManageVendors(Request $request): bool
@@ -498,6 +507,9 @@ class VendorController extends Controller
         $user = $request->user();
 
         return $user->isSystemAdmin()
-            || $user->hasAnyPermission(['procurement.manage_vendors', 'procurement.admin']);
+            || $user->hasAnyRole(['Procurement Officer'])
+            || $user->can('procurement.manage_vendors')
+            || $user->can('procurement.admin')
+            || $user->can('procurement.supplier.approve');
     }
 }

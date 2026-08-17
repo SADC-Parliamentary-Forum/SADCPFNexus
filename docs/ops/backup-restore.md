@@ -61,6 +61,23 @@ php artisan app:create-admin
 php artisan db:seed --class=WorkflowSeeder --force
 ```
 
+## Local throwaway drill script
+
+From the repository root, with Compose Postgres running (does **not** target production and does **not** tick the checklist below):
+
+```bash
+bash scripts/ops/restore-drill.sh
+```
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `POSTGRES_CONTAINER` | `sadcpf_postgres` | Docker container name |
+| `POSTGRES_USER` | `sadcpf` | Database role |
+| `POSTGRES_DB` | `sadcpfnexus` | Source database to dump |
+| `RESTORE_DRILL_DIR` | `/tmp/nexus-restore-drill` | Where the gzipped dump is written |
+
+The script dumps the source database, restores into `sadcpfnexus_restore_drill`, counts `migrations` rows, then drops the throwaway database.
+
 ## Drill checklist (operator)
 
 - [ ] Date/time of last successful restore drill

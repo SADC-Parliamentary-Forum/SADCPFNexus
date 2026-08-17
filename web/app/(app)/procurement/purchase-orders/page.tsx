@@ -67,7 +67,7 @@ function PurchaseOrdersPageInner() {
   // Load approved vendors for selector
   const { data: vendorData } = useQuery({
     queryKey: ["vendors-approved"],
-    queryFn: () => vendorsApi.list({ status: "approved" }).then((r) => r.data),
+    queryFn: () => vendorsApi.list({ status: "approved", per_page: 100 }).then((r) => r.data),
     enabled: showModal,
   });
 

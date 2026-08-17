@@ -6,6 +6,8 @@ import 'app_drawer.dart';
 import 'connectivity_banner.dart';
 import 'notification_banner.dart';
 import 'shell_drawer_scope.dart';
+import '../../core/auth/auth_providers.dart';
+import 'dart:async';
 
 class AppShell extends ConsumerStatefulWidget {
   /// The active branch navigator, supplied by `StatefulShellRoute.indexedStack`.
@@ -25,6 +27,9 @@ class _AppShellState extends ConsumerState<AppShell>
   late AnimationController _animController;
   late Animation<Offset> _slideAnimation;
   final _navVisible = ValueNotifier<bool>(true);
+  Timer? _idleTimer;
+  DateTime _lastActivity = DateTime.now();
+  int? _idleMinutes;
 
   @override
   void initState() {
@@ -44,11 +49,36 @@ class _AppShellState extends ConsumerState<AppShell>
     ));
 
     WidgetsBinding.instance.addObserver(this);
+    _idleTimer = Timer.periodic(const Duration(seconds: 15), (_) => _checkIdle());
+    _loadIdlePreference();
+  }
+
+  Future<void> _loadIdlePreference() async {
+    try {
+      final res = await ref.read(apiClientProvider).dio.get<Map<String, dynamic>>('/profile');
+      final raw = res.data?['idle_timeout_minutes'];
+      if (raw is num) {
+        _idleMinutes = raw.toInt();
+      } else {
+        _idleMinutes = 120;
+      }
+    } catch (_) {
+      _idleMinutes ??= 120;
+    }
+  }
+
+  void _checkIdle() {
+    final minutes = _idleMinutes;
+    if (minutes == null || minutes <= 0) return;
+    if (DateTime.now().difference(_lastActivity) >= Duration(minutes: minutes)) {
+      ref.read(authSessionControllerProvider).handleUnauthorized();
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _idleTimer?.cancel();
     _animController.dispose();
     _navVisible.dispose();
     super.dispose();
@@ -117,50 +147,48 @@ class _AppShellState extends ConsumerState<AppShell>
         key: _scaffoldKey,
         drawer: const AppDrawer(),
         extendBody: true,
-        body: ConnectivityBannerOverlay(
-          child: NotificationBannerOverlay(
-            child: Stack(
-              children: [
-                // Content area — full screen, NotificationListener catches scroll from any child
-                Positioned.fill(
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _handleScroll,
-                    child: widget.navigationShell,
-                  ),
-                ),
-
-                // Transparent tap-zone at the bottom — only active when nav is hidden
-                ValueListenableBuilder<bool>(
-                  valueListenable: _navVisible,
-                  builder: (context, visible, _) {
-                    if (visible) return const SizedBox.shrink();
-                    return Positioned(
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      height: 72,
-                      child: GestureDetector(
-                        onTap: _showNav,
-                        behavior: HitTestBehavior.translucent,
-                      ),
-                    );
-                  },
-                ),
-
-                // Glassy floating pill nav bar
-                Positioned(
-                  bottom: 0,
-                  left: 12,
-                  right: 12,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: _GlassNavBar(
-                      selectedIndex: selectedIndex,
-                      onTap: (index) => _onTap(context, index),
+        body: Listener(
+          onPointerDown: (_) => _lastActivity = DateTime.now(),
+          child: ConnectivityBannerOverlay(
+            child: NotificationBannerOverlay(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: _handleScroll,
+                      child: widget.navigationShell,
                     ),
                   ),
-                ),
-              ],
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _navVisible,
+                    builder: (context, visible, _) {
+                      if (visible) return const SizedBox.shrink();
+                      return Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: 72,
+                        child: GestureDetector(
+                          onTap: _showNav,
+                          behavior: HitTestBehavior.translucent,
+                        ),
+                      );
+                    },
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 12,
+                    right: 12,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: _GlassNavBar(
+                        selectedIndex: selectedIndex,
+                        onTap: (index) => _onTap(context, index),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

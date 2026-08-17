@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { AccessDenied } from "@/components/ui/AccessDenied";
 import { AppShellLoading } from "@/components/ui/AppShellLoading";
+import { IdleTimeoutGuard } from "@/components/auth/IdleTimeoutGuard";
 import { canAccessRouteWithEffective, getStoredUser } from "@/lib/auth";
 import { type AccessEffectivePayload } from "@/lib/api";
 import { fetchEffectiveAccess, getCachedEffectiveAccess } from "@/lib/effectiveAccessCache";
@@ -104,6 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         Skip to main content
       </a>
       <Header onMenuClick={toggleSidebar} sidebarOpen={sidebarOpen} />
+      <IdleTimeoutGuard />
       <div className="flex flex-1 overflow-hidden relative">
         <Sidebar
           isOpen={sidebarOpen}

@@ -367,7 +367,7 @@ export default function LedgerVerifyPage() {
       <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-5 py-3 flex items-center justify-between gap-4 text-xs text-neutral-500">
         <span className="flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[14px] text-neutral-400">shield</span>
-          End-to-end encrypted · WORM storage · 7-year retention
+          End-to-end encrypted · SHA-256 hash chain · off-platform WORM pending
         </span>
         <span className="font-mono text-neutral-300">SHA-256 · RSA-4096 · GovRoot CA G2</span>
       </div>

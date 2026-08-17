@@ -83,7 +83,7 @@ api.interceptors.response.use(
   (error) => {
     if (typeof window !== "undefined") {
       const status = error.response?.status;
-      const data = error.response?.data as { mfa_setup_required?: boolean; message?: string } | undefined;
+      const data = error.response?.data as { mfa_setup_required?: boolean; message?: string; code?: string } | undefined;
 
       // Privileged role without MFA — send user to security setup (API middleware).
       // Skip background notification polls and any call already on the security page.
@@ -135,7 +135,9 @@ api.interceptors.response.use(
               .catch(() => { /* ignore — session is already invalid */ });
           }
 
-          window.location.href = "/login";
+          window.location.href = data?.code === "session_idle_timeout"
+            ? "/login?reason=idle"
+            : "/login";
         }
       } else if (status && status >= 500) {
         captureClientException(error, { status, url: error.config?.url });
@@ -309,6 +311,7 @@ export interface AuthUser {
   mfa_enabled?: boolean;
   must_reset_password?: boolean;
   setup_completed?: boolean;
+  idle_timeout_minutes?: number | null;
   roles: string[];
   permissions: string[];
 }
@@ -397,6 +400,7 @@ export interface User {
     expires_at: string;
   } | null;
   mfa_enabled: boolean;
+  idle_timeout_minutes?: number | null;
   bio?: string | null;
   date_of_birth?: string | null;
   join_date?: string | null;
@@ -795,6 +799,10 @@ export interface TimesheetProject {
 export const profileApi = {
   get: () => api.get<User>("/profile"),
   update: (data: Partial<User>) => api.put<{ message: string; user: User }>("/profile", data),
+  updateIdleTimeout: (idle_timeout_minutes: number) =>
+    api.patch<{ data: { idle_timeout_minutes: number } }>("/profile/idle-timeout", {
+      idle_timeout_minutes,
+    }),
   updatePassword: (currentPassword: string, newPassword: string, confirmPassword: string) =>
     api.put<{ message: string }>("/profile/password", {
       current_password: currentPassword,
@@ -3510,8 +3518,15 @@ export interface VendorQuote {
 }
 
 export const vendorsApi = {
-  list: (params?: { search?: string; status?: string }) =>
-    api.get<{ data: Vendor[] }>("/procurement/vendors", { params }),
+  list: (params?: { search?: string; status?: string; page?: number; per_page?: number }) =>
+    api.get<{
+      data: Vendor[];
+      current_page: number;
+      last_page: number;
+      per_page: number;
+      total: number;
+      summary?: { approved: number; pending: number; blacklisted: number };
+    }>("/procurement/vendors", { params }),
   get: (id: number) =>
     api.get<{ data: Vendor }>(`/procurement/vendors/${id}`),
   create: (data: Partial<Vendor>) =>

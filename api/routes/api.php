@@ -103,6 +103,7 @@ Route::prefix('v1')->group(function () {
         // User Profile (Self-Service)
         Route::get('profile', [\App\Http\Controllers\Api\V1\ProfileController::class, 'show']);
         Route::put('profile', [\App\Http\Controllers\Api\V1\ProfileController::class, 'update']);
+        Route::patch('profile/idle-timeout', [\App\Http\Controllers\Api\V1\ProfileController::class, 'updateIdleTimeout']);
         Route::put('profile/password', [\App\Http\Controllers\Api\V1\ProfileController::class, 'updatePassword']);
 
         // Profile Change Requests (Self-Service Approval Workflow)

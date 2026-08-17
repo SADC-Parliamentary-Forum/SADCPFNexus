@@ -84,11 +84,21 @@ class CanonicalRoleManager
         }
 
         foreach ($rolePermissions as $targetName => $keys) {
-            $models = collect($keys)
-                ->map(fn (string $key) => $permissions->get($key))
-                ->filter()
-                ->values()
-                ->all();
+            $models = [];
+            foreach ($keys as $key) {
+                $model = $permissions->get($key);
+                if (! $model) {
+                    $model = Permission::firstOrCreate([
+                        'name' => $key,
+                        'guard_name' => $guard,
+                    ]);
+                    $permissions->put($key, $model);
+                }
+                $models[] = $model;
+            }
+            if ($models === []) {
+                continue;
+            }
             Role::firstOrCreate(['name' => $targetName, 'guard_name' => $guard])
                 ->syncPermissions($models);
         }

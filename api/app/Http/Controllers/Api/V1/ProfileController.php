@@ -47,6 +47,34 @@ class ProfileController extends Controller
     }
 
     /**
+     * Persist the user's inactivity sign-out preference.
+     * 0 = never; null on the user row means platform default (SESSION_LIFETIME).
+     */
+    public function updateIdleTimeout(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'idle_timeout_minutes' => ['required', 'integer', 'in:0,15,30,60,120,480'],
+        ]);
+
+        $request->user()->update([
+            'idle_timeout_minutes' => $data['idle_timeout_minutes'],
+        ]);
+
+        AuditLog::record('auth.idle_timeout_updated', [
+            'auditable_type' => \App\Models\User::class,
+            'auditable_id'   => $request->user()->id,
+            'tags'           => 'auth',
+            'new_values'     => ['idle_timeout_minutes' => $data['idle_timeout_minutes']],
+        ]);
+
+        return response()->json([
+            'data' => [
+                'idle_timeout_minutes' => (int) $request->user()->fresh()->idle_timeout_minutes,
+            ],
+        ]);
+    }
+
+    /**
      * Change authenticated user's password.
      */
     public function updatePassword(Request $request): JsonResponse

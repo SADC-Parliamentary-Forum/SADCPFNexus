@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supplierCategoriesApi, vendorsApi, type SupplierCategory, type Vendor } from "@/lib/api";
@@ -8,7 +8,7 @@ import { canManageProcurementVendors, getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
-import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { DEFAULT_PAGE_SIZE, getLastPage, getListData, getTotal } from "@/lib/listPagination";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAYMENT_TERMS = ["Immediate", "Net 15", "Net 30", "Net 45", "Net 60", "Net 90"] as const;
@@ -580,33 +580,49 @@ export default function VendorsPage() {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["vendors", search, statusFilter],
+  const { data: payload, isLoading, isError } = useQuery({
+    queryKey: ["vendors", search, statusFilter, page],
     queryFn: () =>
-      vendorsApi.list({ search: search || undefined, status: statusFilter }).then((r) => r.data.data),
+      vendorsApi.list({
+        search: search || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        page,
+        per_page: DEFAULT_PAGE_SIZE,
+      }).then((r) => r.data),
   });
   const { data: supplierCategories = [] } = useQuery({
     queryKey: ["supplier-categories"],
     queryFn: () => supplierCategoriesApi.list().then((r) => r.data.data),
   });
 
-  const vendors = data ?? [];
-  const lastPage = clientPageCount(vendors.length, DEFAULT_PAGE_SIZE);
-  const pagedVendors = useMemo(
-    () => slicePage(vendors, Math.min(page, lastPage), DEFAULT_PAGE_SIZE),
-    [vendors, page, lastPage],
-  );
+  const vendors = getListData<Vendor>(payload);
+  const lastPage = getLastPage(payload);
+  const pagedVendors = vendors;
+  const totalVendors = getTotal(payload, vendors.length);
 
-  const approvedCount    = vendors.filter((v) => v.is_approved && v.is_active && !v.is_blacklisted).length;
-  const pendingCount     = vendors.filter((v) => !v.is_approved && v.is_active && !v.is_blacklisted).length;
-  const blacklistedCount = vendors.filter((v) => v.is_blacklisted).length;
-  const avgRated         = vendors.filter((v) => v.ratings_avg_rating).length;
+  const approvedCount    = payload?.summary?.approved ?? vendors.filter((v) => v.is_approved && v.is_active && !v.is_blacklisted).length;
+  const pendingCount     = payload?.summary?.pending ?? vendors.filter((v) => !v.is_approved && v.is_active && !v.is_blacklisted).length;
+  const blacklistedCount = payload?.summary?.blacklisted ?? vendors.filter((v) => v.is_blacklisted).length;
 
-  const handleExport = () => {
-    if (vendors.length === 0) return;
+  const handleExport = async () => {
+    const rows: Vendor[] = [];
+    let exportPage = 1;
+    let exportLast = 1;
+    do {
+      const res = await vendorsApi.list({
+        search: search || undefined,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        page: exportPage,
+        per_page: 100,
+      });
+      rows.push(...(res.data.data ?? []));
+      exportLast = res.data.last_page ?? 1;
+      exportPage += 1;
+    } while (exportPage <= exportLast);
+    if (rows.length === 0) return;
     exportToCsv(
       `vendors-${new Date().toISOString().slice(0, 10)}.csv`,
-      vendors.map((v) => ({
+      rows.map((v) => ({
         name: v.name,
         country: v.country ?? "",
         email: v.contact_email ?? "",
@@ -647,7 +663,7 @@ export default function VendorsPage() {
             <button
               type="button"
               className="btn-secondary flex items-center gap-2 disabled:opacity-50"
-              disabled={vendors.length === 0}
+              disabled={totalVendors === 0}
               onClick={handleExport}
             >
               <span className="material-symbols-outlined text-[18px]">download</span>
@@ -670,7 +686,7 @@ export default function VendorsPage() {
         {!isLoading && !isError && (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             {[
-              { label: "Total Vendors",    value: vendors.length,    icon: "storefront", color: "text-primary",   bg: "bg-primary/10" },
+              { label: "Total Vendors",    value: totalVendors,    icon: "storefront", color: "text-primary",   bg: "bg-primary/10" },
               { label: "Approved",         value: approvedCount,     icon: "verified",   color: "text-green-600", bg: "bg-green-50"   },
               { label: "Pending Approval", value: pendingCount,      icon: "pending",    color: "text-amber-600", bg: "bg-amber-50"   },
               { label: "Blacklisted",      value: blacklistedCount,  icon: "gpp_bad",    color: "text-red-600",   bg: "bg-red-50"     },
@@ -884,7 +900,7 @@ export default function VendorsPage() {
           <ListPagination
             page={Math.min(page, lastPage)}
             lastPage={lastPage}
-            total={vendors.length}
+            total={totalVendors}
             onPageChange={setPage}
           />
         </div>

@@ -16,7 +16,7 @@ export default function CataloguePage() {
 
   const { data: vendors } = useQuery({
     queryKey: ["vendors", "catalogue"],
-    queryFn: () => vendorsApi.list().then((r) => r.data.data ?? []),
+    queryFn: () => vendorsApi.list({ per_page: 100 }).then((r) => r.data.data ?? []),
   });
 
   const { data, isLoading } = useQuery({

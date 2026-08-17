@@ -567,7 +567,7 @@ export default function AdminLedgerPage() {
               </span>
             )}
           </div>
-          <span className="font-mono text-neutral-300">SHA-256 · WORM · 7yr retention</span>
+            <span className="font-mono text-neutral-300">SHA-256 hash chain · off-platform WORM pending</span>
         </div>
       )}
     </div>

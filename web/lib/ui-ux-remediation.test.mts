@@ -540,3 +540,21 @@ test("cited close and delete icon buttons expose accessible names", () => {
     }
   }
 });
+
+test("vendor register uses server pagination params", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/procurement/vendors/page.tsx"), "utf8");
+  assert.match(source, /per_page:\s*DEFAULT_PAGE_SIZE/);
+  assert.match(source, /getLastPage\(payload\)/);
+  assert.doesNotMatch(source, /slicePage\(/);
+});
+
+test("session timeout preference is wired to the profile API", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/profile/security/page.tsx"), "utf8");
+  assert.match(source, /updateIdleTimeout/);
+  assert.doesNotMatch(source, /Coming soon/);
+});
+
+test("AppShell mounts IdleTimeoutGuard", () => {
+  const source = readFileSync(join(webRoot, "components/layout/AppShell.tsx"), "utf8");
+  assert.match(source, /IdleTimeoutGuard/);
+});

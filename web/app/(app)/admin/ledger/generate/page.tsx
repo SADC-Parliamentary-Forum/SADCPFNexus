@@ -101,7 +101,7 @@ tfoot td{font-size:11px;color:#9ca3af;padding:8px}@media print{body{margin:8px}}
   <th>#</th><th>Timestamp</th><th>User</th><th>Module</th><th>Action</th><th>Record Ref</th><th>Hash</th>
 </tr></thead>
 <tbody>${rows}</tbody>
-<tfoot><tr><td colspan="7">SHA-256 · WORM Storage · 7-Year Retention Policy — SADCPFNexus ERP</td></tr></tfoot>
+<tfoot><tr><td colspan="7">SHA-256 hash chain · 7-Year Retention Policy — SADCPFNexus ERP</td></tr></tfoot>
 </table>
 </body></html>`;
 
@@ -324,7 +324,7 @@ export default function GenerateLedgerReportPage() {
         <div className="card overflow-hidden">
           <div className="px-5 py-3 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">
             <span className="text-xs font-semibold text-neutral-600">Preview (first {Math.min(previewLogs.length, 100)} of {previewTotal.toLocaleString()} entries)</span>
-            <span className="text-xs text-neutral-400 font-mono">SHA-256 · WORM</span>
+            <span className="text-xs text-neutral-400 font-mono">SHA-256 hash chain</span>
           </div>
           <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
             <table className="data-table w-full">

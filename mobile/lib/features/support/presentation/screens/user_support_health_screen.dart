@@ -137,12 +137,12 @@ class _UserSupportHealthScreenState extends ConsumerState<UserSupportHealthScree
   }
 
   final _systemChecks = [
-    {'service': 'API Server', 'status': 'Operational', 'latency': '42ms'},
-    {'service': 'Database', 'status': 'Operational', 'latency': '8ms'},
-    {'service': 'File Storage', 'status': 'Operational', 'latency': '120ms'},
-    {'service': 'Push Notifications', 'status': 'Degraded', 'latency': '—'},
-    {'service': 'Biometric Auth', 'status': 'Operational', 'latency': '35ms'},
-    {'service': 'WORM Archive', 'status': 'Operational', 'latency': '220ms'},
+    {'service': 'API Server', 'status': 'Check /up', 'latency': '—'},
+    {'service': 'Database', 'status': 'Dependent on API', 'latency': '—'},
+    {'service': 'File Storage', 'status': 'Dependent on API', 'latency': '—'},
+    {'service': 'Push Notifications', 'status': 'Not configured until FCM credentials', 'latency': '—'},
+    {'service': 'Biometric Auth', 'status': 'Device-local', 'latency': '—'},
+    {'service': 'Off-platform WORM', 'status': 'Pending operator platform', 'latency': '—'},
   ];
 
   final _faqs = [

@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureSessionAuthIsValid
@@ -34,9 +35,14 @@ class EnsureSessionAuthIsValid
             ], 403);
         }
 
+        $idleResponse = $this->rejectIfIdle($request, $user);
+        if ($idleResponse !== null) {
+            return $idleResponse;
+        }
+
         $currentToken = $user->currentAccessToken();
 
-        if ($currentToken instanceof \Laravel\Sanctum\PersonalAccessToken) {
+        if ($currentToken instanceof PersonalAccessToken) {
             $tokenId = $currentToken->getKey();
 
             UserSession::updateOrCreate(
@@ -82,6 +88,55 @@ class EnsureSessionAuthIsValid
         ])->save();
 
         return $next($request);
+    }
+
+    private function rejectIfIdle(Request $request, $user): ?Response
+    {
+        $minutes = $user->idle_timeout_minutes;
+        if ($minutes === null) {
+            $minutes = (int) config('session.lifetime', 120);
+        }
+        $minutes = (int) $minutes;
+        if ($minutes <= 0) {
+            return null;
+        }
+
+        $tracked = $this->findTrackedSession($request, $user);
+        if ($tracked === null || $tracked->last_active_at === null) {
+            return null;
+        }
+
+        if ($tracked->last_active_at->gt(now()->subMinutes($minutes))) {
+            return null;
+        }
+
+        $this->revokeCurrentAuth($request);
+
+        return response()->json([
+            'message' => 'You were signed out after a period of inactivity.',
+            'code'    => 'session_idle_timeout',
+        ], 401);
+    }
+
+    private function findTrackedSession(Request $request, $user): ?UserSession
+    {
+        $currentToken = $user->currentAccessToken();
+
+        if ($currentToken instanceof PersonalAccessToken) {
+            return UserSession::where('user_id', $user->id)
+                ->where('token_id', $currentToken->getKey())
+                ->where('auth_type', 'token')
+                ->first();
+        }
+
+        if (! $request->hasSession()) {
+            return null;
+        }
+
+        return UserSession::where('user_id', $user->id)
+            ->where('auth_type', 'browser')
+            ->where('session_id', $request->session()->getId())
+            ->first();
     }
 
     private function revokeCurrentAuth(Request $request): void

@@ -139,6 +139,10 @@ return [
         ['pattern' => 'api/v1/admin/*', 'permissions' => [
             '*' => ['admin.platform.manage', 'system.admin'],
         ]],
+        ['pattern' => 'api/v1/procurement/vendors*', 'permissions' => [
+            'GET' => ['procurement.view', 'procurement.admin', 'procurement.manage_vendors', 'procurement.supplier.read'],
+            'WRITE' => ['procurement.manage_vendors', 'procurement.admin', 'procurement.supplier.approve', 'procurement.create'],
+        ]],
         ['pattern' => 'api/v1/procurement*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin'],
             'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],

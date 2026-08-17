@@ -36,7 +36,7 @@ class VendorsTest extends TestCase
 
     public function test_authenticated_user_can_list_vendors(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProcurementOfficer();
 
         $response = $http->getJson('/api/v1/procurement/vendors');
         $response->assertOk()
@@ -101,7 +101,8 @@ class VendorsTest extends TestCase
         $create = $procurementHttp->postJson('/api/v1/procurement/vendors', $this->vendorPayload(['tenant' => $tenant]));
         $id = $create->json('data.id');
 
-        [$staffHttp] = $this->asStaff($tenant);
+        [$staffHttp, $staff] = $this->asStaff($tenant);
+        $staff->givePermissionTo('procurement.view');
 
         $staffHttp->getJson("/api/v1/procurement/vendors/{$id}")
             ->assertOk()

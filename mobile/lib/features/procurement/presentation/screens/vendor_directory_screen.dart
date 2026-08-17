@@ -22,6 +22,9 @@ class _VendorDirectoryScreenState extends ConsumerState<VendorDirectoryScreen> {
   List<Map<String, dynamic>> _filtered = [];
   String _searchQuery = '';
   String _statusFilter = 'approved';
+  int _page = 1;
+  int _lastPage = 1;
+  bool _loadingMore = false;
 
   @override
   void initState() {
@@ -36,22 +39,24 @@ class _VendorDirectoryScreenState extends ConsumerState<VendorDirectoryScreen> {
     });
     try {
       final dio = ref.read(apiClientProvider).dio;
-      // NOTE: `GET /procurement/vendors` (VendorController::index) does not
-      // currently support `per_page`/`page` — it always returns the full,
-      // unpaginated vendor collection via `->get()`. Adding pagination here
-      // on the client would have no effect until the backend endpoint is
-      // updated to paginate; that is a backend change, tracked separately
-      // from this mobile UI/UX pass.
       final res = await dio.get<Map<String, dynamic>>(
         '/procurement/vendors',
-        queryParameters: {'status': _statusFilter},
+        queryParameters: {
+          'status': _statusFilter,
+          'page': 1,
+          'per_page': 50,
+          if (_searchQuery.trim().isNotEmpty) 'search': _searchQuery.trim(),
+        },
       );
       if (!mounted) return;
       final data = res.data?['data'] as List<dynamic>?;
+      final lastPage = (res.data?['last_page'] as num?)?.toInt() ?? 1;
       final list =
           (data ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
       setState(() {
         _vendors = list;
+        _page = 1;
+        _lastPage = lastPage;
         _loading = false;
       });
       _filter();
@@ -66,16 +71,39 @@ class _VendorDirectoryScreenState extends ConsumerState<VendorDirectoryScreen> {
 
   void _filter() {
     setState(() {
-      _filtered = _searchQuery.trim().isEmpty
-          ? List.from(_vendors)
-          : _vendors.where((v) {
-              return matchesSearchText(
-                v,
-                _searchQuery,
-                const ['name', 'category', 'country', 'contact_email'],
-              );
-            }).toList();
+      _filtered = List.from(_vendors);
     });
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || _page >= _lastPage) return;
+    setState(() => _loadingMore = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final nextPage = _page + 1;
+      final res = await dio.get<Map<String, dynamic>>(
+        '/procurement/vendors',
+        queryParameters: {
+          'status': _statusFilter,
+          'page': nextPage,
+          'per_page': 50,
+          if (_searchQuery.trim().isNotEmpty) 'search': _searchQuery.trim(),
+        },
+      );
+      if (!mounted) return;
+      final data = res.data?['data'] as List<dynamic>?;
+      final extra =
+          (data ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      setState(() {
+        _vendors = [..._vendors, ...extra];
+        _page = nextPage;
+        _loadingMore = false;
+      });
+      _filter();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
+    }
   }
 
   Color _statusColor(Map<String, dynamic> v) {
@@ -131,7 +159,7 @@ class _VendorDirectoryScreenState extends ConsumerState<VendorDirectoryScreen> {
               hintText: 'Search vendors...',
               onChanged: (value) {
                 _searchQuery = value;
-                _filter();
+                _loadVendors();
               },
             ),
           ),
@@ -197,17 +225,31 @@ class _VendorDirectoryScreenState extends ConsumerState<VendorDirectoryScreen> {
                             child: ListView.separated(
                               padding:
                                   const EdgeInsets.fromLTRB(16, 8, 16, 100),
-                              itemCount: _filtered.length,
+                              itemCount: _filtered.length +
+                                  (_page < _lastPage ? 1 : 0),
                               separatorBuilder: (_, __) =>
                                   const SizedBox(height: 10),
-                              itemBuilder: (ctx, i) => _VendorCard(
-                                vendor: _filtered[i],
-                                statusColor: _statusColor(_filtered[i]),
-                                statusLabel: _statusLabel(_filtered[i]),
-                                onTap: () => context.push(
-                                  '/procurement/vendors/${_filtered[i]['id']}',
-                                ),
-                              ),
+                              itemBuilder: (ctx, i) {
+                                if (i >= _filtered.length) {
+                                  return TextButton(
+                                    onPressed:
+                                        _loadingMore ? null : _loadMore,
+                                    child: Text(
+                                      _loadingMore
+                                          ? 'Loading…'
+                                          : 'Load more vendors',
+                                    ),
+                                  );
+                                }
+                                return _VendorCard(
+                                  vendor: _filtered[i],
+                                  statusColor: _statusColor(_filtered[i]),
+                                  statusLabel: _statusLabel(_filtered[i]),
+                                  onTap: () => context.push(
+                                    '/procurement/vendors/${_filtered[i]['id']}',
+                                  ),
+                                );
+                              },
                             ),
                           ),
           ),

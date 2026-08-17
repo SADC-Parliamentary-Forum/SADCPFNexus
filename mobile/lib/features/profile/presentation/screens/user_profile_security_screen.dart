@@ -20,7 +20,7 @@ class _UserProfileSecurityScreenState
   bool _loading = true;
   bool _biometricEnabled = false;
   bool _loginAlerts = true;
-  bool _sessionTimeout = false;
+  int _idleMinutes = 120;
   bool _biometricAvailable = false;
   String? _error;
   Map<String, dynamic>? _profile;
@@ -51,7 +51,12 @@ class _UserProfileSecurityScreenState
             : Map<String, dynamic>.from(profileRes.data as Map);
         _biometricEnabled = prefs.getBool('security.biometric_enabled') ?? false;
         _loginAlerts = prefs.getBool('security.login_alerts') ?? true;
-        _sessionTimeout = prefs.getBool('security.session_timeout') ?? false;
+        final idle = _profile?['idle_timeout_minutes'];
+        if (idle is num) {
+          _idleMinutes = idle.toInt();
+        } else {
+          _idleMinutes = prefs.getInt('security.idle_timeout_minutes') ?? 120;
+        }
         _biometricAvailable = canCheck;
         _loading = false;
       });
@@ -88,9 +93,21 @@ class _UserProfileSecurityScreenState
     if (mounted) setState(() => _loginAlerts = value);
   }
 
-  Future<void> _toggleSessionTimeout(bool value) async {
-    await _storeBool('security.session_timeout', value);
-    if (mounted) setState(() => _sessionTimeout = value);
+  Future<void> _saveIdleTimeout(int minutes) async {
+    try {
+      await ref.read(apiClientProvider).dio.patch(
+        '/profile/idle-timeout',
+        data: {'idle_timeout_minutes': minutes},
+      );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('security.idle_timeout_minutes', minutes);
+      if (mounted) setState(() => _idleMinutes = minutes);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save session timeout.')),
+      );
+    }
   }
 
   Future<void> _changePassword() async {
@@ -334,14 +351,7 @@ class _UserProfileSecurityScreenState
                       onChanged: _toggleLoginAlerts,
                       color: AppColors.warning,
                     ),
-                    _settingsTile(
-                      icon: Icons.timer_outlined,
-                      label: 'Session Timeout',
-                      subtitle: 'Remember your timeout preference on this device.',
-                      value: _sessionTimeout,
-                      onChanged: _toggleSessionTimeout,
-                      color: AppColors.info,
-                    ),
+                    _idleTimeoutTile(c, muted, secondary),
                     const SizedBox(height: 16),
                     Text(
                       'ACCOUNT ACTIONS',
@@ -391,6 +401,73 @@ class _UserProfileSecurityScreenState
                     const SizedBox(height: 32),
                   ],
                 ),
+    );
+  }
+
+  Widget _idleTimeoutTile(ColorScheme c, Color muted, Color secondary) {
+    const options = <int, String>{
+      15: '15 minutes',
+      30: '30 minutes',
+      60: '1 hour',
+      120: '2 hours',
+      480: '8 hours',
+      0: 'Never',
+    };
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: c.outline),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppColors.info.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.timer_outlined, color: AppColors.info, size: 18),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Session Timeout',
+                  style: TextStyle(
+                    color: c.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  'Sign out after inactivity. Enforced by the server.',
+                  style: TextStyle(color: secondary, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          DropdownButton<int>(
+            value: options.containsKey(_idleMinutes) ? _idleMinutes : 120,
+            underline: const SizedBox.shrink(),
+            onChanged: (value) {
+              if (value != null) _saveIdleTimeout(value);
+            },
+            items: options.entries
+                .map(
+                  (e) => DropdownMenuItem<int>(
+                    value: e.key,
+                    child: Text(e.value, style: TextStyle(color: muted, fontSize: 12)),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
     );
   }
 

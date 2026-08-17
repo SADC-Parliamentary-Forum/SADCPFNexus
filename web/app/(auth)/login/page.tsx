@@ -45,13 +45,17 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [code, setCode] = useState("");
+  const [idleNotice, setIdleNotice] = useState(false);
 
   // `signout` query: middleware allows `/login` so we can wipe cookies — otherwise
   // authenticated users incomplete on setup were redirected `/login` → `/setup` forever.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const sp = new URLSearchParams(window.location.search);
-    if (sp.has("signout")) {
+    if (sp.get("reason") === "idle") {
+      setIdleNotice(true);
+    }
+    if (sp.has("signout") || sp.get("reason") === "idle") {
       void (async () => {
         try {
           await ensureCsrfCookie();
@@ -63,7 +67,7 @@ export default function LoginPage() {
         clearStoredUser();
         clearMustResetCookie();
         clearSetupCompleteCookie();
-        window.history.replaceState({}, "", "/login");
+        window.history.replaceState({}, "", sp.get("reason") === "idle" ? "/login?reason=idle" : "/login");
       })();
       return;
     }
@@ -215,6 +219,13 @@ export default function LoginPage() {
             </div>
             <LocaleSwitcher />
           </div>
+
+          {idleNotice && (
+            <div className="mb-5 flex items-start gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+              <span className="material-symbols-outlined text-[16px] mt-0.5">timer</span>
+              You were signed out after a period of inactivity.
+            </div>
+          )}
 
           {error && (
             <div className="mb-5 flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
