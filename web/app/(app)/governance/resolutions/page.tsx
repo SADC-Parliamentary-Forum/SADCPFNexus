@@ -28,12 +28,12 @@ const STATUS_STYLE: Record<ResStatus, string> = {
   "Pending Review": "bg-amber-100 text-amber-800 border-amber-200",
   "Implemented":    "bg-teal-100 text-teal-800 border-teal-200",
   "Rejected":       "bg-red-100 text-red-800 border-red-200",
-  "Actioned":       "bg-purple-100 text-purple-800 border-purple-200",
+  "Actioned":       "bg-teal-100 text-teal-800 border-teal-200",
 };
 const STATUS_DOT: Record<ResStatus, string> = {
   "Draft": "bg-neutral-400", "Adopted": "bg-emerald-500", "In Progress": "bg-blue-500",
   "Pending Review": "bg-amber-500", "Implemented": "bg-teal-500",
-  "Rejected": "bg-red-500", "Actioned": "bg-purple-500",
+  "Rejected": "bg-red-500", "Actioned": "bg-teal-500",
 };
 
 // Committees and meeting types are loaded from the API — see committeeApi / governanceMeetingTypeApi

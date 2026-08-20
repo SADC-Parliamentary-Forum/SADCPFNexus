@@ -56,7 +56,7 @@ const SEARCH_INDEX: SearchResult[] = [
 
 const CATEGORY_ORDER = ["Actions", "Modules", "Admin", "Account", "Help"];
 const CATEGORY_COLOR: Record<string, string> = {
-  Actions: "text-primary", Modules: "text-neutral-600", Admin: "text-purple-600",
+  Actions: "text-primary", Modules: "text-neutral-600", Admin: "text-primary",
   Account: "text-teal-600", Help: "text-amber-600",
 };
 

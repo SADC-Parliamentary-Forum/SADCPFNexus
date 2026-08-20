@@ -7,6 +7,25 @@ import { stocktakesApi, type Stocktake, type StocktakeLine } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 
+const OFFLINE_QUEUE_KEY = "sadcpf.stocktake.offlineQueue";
+
+type BrowserQueueLine = {
+  client_line_key?: string;
+  stock_item_id?: number;
+  barcode?: string;
+  counted_qty: number;
+};
+
+function readBrowserQueue(): BrowserQueueLine[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || "[]") as BrowserQueueLine[];
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function StocktakeDetailPage() {
   const params = useParams();
   const id = Number(params.id);
@@ -93,35 +112,19 @@ export default function StocktakeDetailPage() {
   const [offlineInput, setOfflineInput] = useState("");
   const [syncConflicts, setSyncConflicts] = useState<Array<{ line_id: number; server_counted_qty: number; incoming_counted_qty: number }>>([]);
 
-  const handleOfflineSync = async (force = false) => {
-    if (!stocktake || !offlineInput.trim()) return;
+  const applyLines = async (
+    lines: Array<{ client_line_key?: string; stock_item_id?: number; barcode?: string; counted_qty: number }>,
+    force = false,
+    clearBrowserQueue = false,
+  ) => {
+    if (!stocktake || lines.length === 0) return;
     setSaving(true);
     try {
-      let lines: Array<{ stock_item_id?: number; barcode?: string; counted_qty: number }> = [];
-      try {
-        lines = JSON.parse(offlineInput);
-      } catch {
-        // Parse CSV format: stock_item_id/barcode, counted_qty
-        lines = offlineInput
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean)
-          .map((line) => {
-            const parts = line.split(",").map((p) => p.trim());
-            const first = parts[0];
-            const counted = Number(parts[1]);
-            const isId = /^\d+$/.test(first);
-            return {
-              ...(isId ? { stock_item_id: Number(first) } : { barcode: first }),
-              counted_qty: Number.isNaN(counted) ? 0 : counted,
-            };
-          });
-      }
-
       const res = await stocktakesApi.syncOffline(stocktake.id, lines, force);
       const data = res.data.data;
       if (data.conflicts && data.conflicts.length > 0 && !force) {
         setSyncConflicts(data.conflicts);
+        setShowSyncModal(true);
         toast("warning", `${data.conflicts.length} count conflicts detected! Confirm overwrite.`);
       } else {
         setStocktake(data.stocktake);
@@ -133,6 +136,9 @@ export default function StocktakeDetailPage() {
         setShowSyncModal(false);
         setOfflineInput("");
         setSyncConflicts([]);
+        if (clearBrowserQueue) {
+          localStorage.removeItem(OFFLINE_QUEUE_KEY);
+        }
         toast("success", `Offline sync complete! Applied ${data.applied.length} lines.`);
       }
     } catch {
@@ -140,6 +146,48 @@ export default function StocktakeDetailPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleOfflineSync = async (force = false) => {
+    if (!stocktake || !offlineInput.trim()) return;
+    let lines: Array<{ client_line_key?: string; stock_item_id?: number; barcode?: string; counted_qty: number }> = [];
+    try {
+      lines = JSON.parse(offlineInput);
+    } catch {
+      lines = offlineInput
+        .split("\n")
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const parts = line.split(",").map((p) => p.trim());
+          const first = parts[0];
+          const counted = Number(parts[1]);
+          const isId = /^\d+$/.test(first);
+          return {
+            ...(isId ? { stock_item_id: Number(first) } : { barcode: first }),
+            counted_qty: Number.isNaN(counted) ? 0 : counted,
+          };
+        });
+    }
+    await applyLines(lines, force, false);
+  };
+
+  const applyBrowserQueue = async (force = false) => {
+    const queue = readBrowserQueue();
+    if (queue.length === 0) {
+      toast("error", "Browser queue is empty. Scan items first.");
+      return;
+    }
+    await applyLines(
+      queue.map((q) => ({
+        client_line_key: q.client_line_key,
+        stock_item_id: q.stock_item_id,
+        barcode: q.barcode,
+        counted_qty: Number(q.counted_qty) || 0,
+      })),
+      force,
+      true,
+    );
   };
 
   if (!stocktake) return <p className="text-sm text-neutral-500">Loading…</p>;
@@ -159,6 +207,9 @@ export default function StocktakeDetailPage() {
           <Link href="/stock/stocktakes" className="btn-secondary">Back</Link>
           {canIssue && editable && (
             <>
+              <button type="button" className="btn-secondary" disabled={saving} onClick={() => applyBrowserQueue(false)}>
+                Apply browser queue
+              </button>
               <button type="button" className="btn-secondary" disabled={saving} onClick={() => setShowSyncModal(true)}>
                 Offline Sync Queue
               </button>
@@ -200,7 +251,12 @@ export default function StocktakeDetailPage() {
           )}
           <div className="flex justify-end gap-2">
             {syncConflicts.length > 0 ? (
-              <button type="button" className="btn-primary bg-red-600 hover:bg-red-700" disabled={saving} onClick={() => handleOfflineSync(true)}>
+              <button
+                type="button"
+                className="btn-primary bg-red-600 hover:bg-red-700"
+                disabled={saving}
+                onClick={() => (offlineInput.trim() ? handleOfflineSync(true) : applyBrowserQueue(true))}
+              >
                 Force Overwrite Conflicts
               </button>
             ) : (

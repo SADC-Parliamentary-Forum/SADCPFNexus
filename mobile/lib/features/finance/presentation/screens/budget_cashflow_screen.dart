@@ -109,6 +109,60 @@ class _BudgetCashflowScreenState extends ConsumerState<BudgetCashflowScreen> {
                               color: AppColors.textSecondary, height: 1.4),
                         ),
                       ),
+                      if (_periodBars().isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        const Text('Closing balance by period',
+                            style: TextStyle(
+                                color: AppColors.textMuted, fontSize: 12)),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          key: const Key('cashflow-period-chart'),
+                          height: 140,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: _periodBars().map((bar) {
+                              return Expanded(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 2),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Expanded(
+                                        child: Align(
+                                          alignment: Alignment.bottomCenter,
+                                          child: FractionallySizedBox(
+                                            heightFactor: bar.height,
+                                            widthFactor: 1,
+                                            child: DecoratedBox(
+                                              decoration: BoxDecoration(
+                                                color: bar.negative
+                                                    ? AppColors.danger
+                                                    : AppColors.success,
+                                                borderRadius:
+                                                    const BorderRadius.vertical(
+                                                        top: Radius.circular(4)),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        bar.label,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                            color: AppColors.textMuted,
+                                            fontSize: 9),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 20),
                       const Text('Budget availability',
                           style: TextStyle(
@@ -149,4 +203,40 @@ class _BudgetCashflowScreenState extends ConsumerState<BudgetCashflowScreen> {
                 ),
     );
   }
+
+  List<_PeriodBar> _periodBars() {
+    final raw = _forecast?['periods'];
+    if (raw is! List) return const [];
+    final periods = raw
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+    if (periods.isEmpty) return const [];
+    final max = periods.fold<double>(0, (acc, p) {
+      final v = (p['closing_balance'] as num?)?.abs().toDouble() ?? 0;
+      return v > acc ? v : acc;
+    });
+    final denom = max <= 0 ? 1.0 : max;
+    return periods.map((p) {
+      final closing = (p['closing_balance'] as num?)?.toDouble() ?? 0;
+      final period = p['period']?.toString() ?? '';
+      return _PeriodBar(
+        label: period.length > 7 ? period.substring(5) : period,
+        height: (closing.abs() / denom).clamp(0.04, 1.0),
+        negative: closing < 0,
+      );
+    }).toList();
+  }
+}
+
+class _PeriodBar {
+  const _PeriodBar({
+    required this.label,
+    required this.height,
+    required this.negative,
+  });
+
+  final String label;
+  final double height;
+  final bool negative;
 }

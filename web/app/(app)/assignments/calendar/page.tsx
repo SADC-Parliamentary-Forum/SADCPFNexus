@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi } from "@/lib/api";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
 
 function monthBounds(d = new Date()) {
   const from = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -20,6 +21,12 @@ export default function AssignmentsCalendarPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["assignments-calendar", bounds.from, bounds.to, scope],
     queryFn: () => assignmentsApi.calendar({ from: bounds.from, to: bounds.to, scope }).then((r) => r.data),
+  });
+
+  const { data: feed } = useQuery({
+    queryKey: ["assignments-calendar-feed"],
+    queryFn: () => assignmentsApi.calendarFeed().then((r) => r.data.data),
+    staleTime: 60_000,
   });
 
   const items = (data?.data ?? []) as Array<{
@@ -88,6 +95,26 @@ export default function AssignmentsCalendarPage() {
 
       {isLoading && <p className="text-sm text-neutral-500">Loading calendar…</p>}
       {isError && <p className="text-sm text-red-700">Failed to load assignment calendar.</p>}
+
+      {feed ? (
+        <div className="card space-y-3 p-5">
+          <h2 className="text-sm font-semibold text-neutral-900">Subscribe / sync</h2>
+          <p className="text-xs text-neutral-500">
+            {feed.google_credentials_present
+              ? "Google Calendar credentials are present. ICS subscribe remains available."
+              : "Google credentials are not configured. Use the ICS subscribe URL in Google Calendar or Outlook — this is not live two-way sync."}
+          </p>
+          <LabelledRecord
+            value={{
+              provider: feed.provider,
+              google_credentials_present: feed.google_credentials_present,
+              subscribe_url: feed.subscribe_url,
+              download_url: feed.download_url,
+              instructions: feed.instructions,
+            }}
+          />
+        </div>
+      ) : null}
 
       <div className="card grid grid-cols-7 gap-px overflow-hidden bg-[var(--border)] p-px">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (

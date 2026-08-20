@@ -23,11 +23,21 @@ class _WeeklySummaryDetailScreenState
   Map<String, dynamic>? _aiDraft;
   bool _busy = false;
   bool _aiConfirmed = false;
+  final _donorCode = TextEditingController();
+  final _donorName = TextEditingController();
+  String _templateKey = '';
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _donorCode.dispose();
+    _donorName.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -42,6 +52,9 @@ class _WeeklySummaryDetailScreenState
       setState(() {
         _report = extractObjectData(res.data);
         _aiConfirmed = _report?['ai_draft_confirmed_at'] != null;
+        _donorCode.text = _report?['donor_code']?.toString() ?? '';
+        _donorName.text = _report?['donor_name']?.toString() ?? '';
+        _templateKey = _report?['template_key']?.toString() ?? '';
         _loading = false;
       });
     } catch (_) {
@@ -95,6 +108,32 @@ class _WeeklySummaryDetailScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Confirm failed.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _saveDonorTemplate() async {
+    setState(() => _busy = true);
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      await dio.put('/weekly-summaries/${widget.reportId}', data: {
+        'donor_code': _donorCode.text.trim().isEmpty ? null : _donorCode.text.trim(),
+        'donor_name': _donorName.text.trim().isEmpty ? null : _donorName.text.trim(),
+        'template_key': _templateKey.isEmpty ? null : _templateKey,
+      });
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Donor and template saved.')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not save donor/template.')),
         );
       }
     } finally {
@@ -161,6 +200,42 @@ class _WeeklySummaryDetailScreenState
                     const SizedBox(height: 6),
                     Text('Status: ${r['status'] ?? '—'}',
                         style: const TextStyle(color: AppColors.textMuted)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _donorCode,
+                      style: const TextStyle(color: AppColors.textPrimary),
+                      decoration: const InputDecoration(labelText: 'Donor code'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _donorName,
+                      style: const TextStyle(color: AppColors.textPrimary),
+                      decoration:
+                          const InputDecoration(labelText: 'Donor / project name'),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _templateKey.isEmpty ? '' : _templateKey,
+                      dropdownColor: AppColors.bgSurface,
+                      decoration: const InputDecoration(labelText: 'Template'),
+                      items: const [
+                        DropdownMenuItem(value: '', child: Text('Template (optional)')),
+                        DropdownMenuItem(value: 'standard', child: Text('Standard')),
+                        DropdownMenuItem(
+                            value: 'donor_progress', child: Text('Donor progress')),
+                        DropdownMenuItem(
+                            value: 'project_update', child: Text('Project update')),
+                      ],
+                      onChanged: (v) => setState(() => _templateKey = v ?? ''),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _busy ? null : _saveDonorTemplate,
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.bgSurface),
+                      child: const Text('Save donor/template',
+                          style: TextStyle(color: AppColors.textPrimary)),
+                    ),
                     const SizedBox(height: 16),
                     Text(r['additional_notes']?.toString() ?? '',
                         style: const TextStyle(

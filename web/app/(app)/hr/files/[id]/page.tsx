@@ -515,8 +515,8 @@ export default function HrFileDetailPage() {
           {/* Professional certifications */}
           <div className="card p-4">
             <h3 className="text-sm font-semibold text-neutral-900 mb-3 flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg bg-purple-50 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[16px] text-purple-600">workspace_premium</span>
+              <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[16px] text-primary">workspace_premium</span>
               </div>
               Certifications &amp; Memberships
             </h3>

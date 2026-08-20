@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { stockTransactionsApi, stockItemsApi, type StockTransaction, type StockItem } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { StockMovementModal } from "@/components/stock/StockMovementModal";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const typeConfig: Record<string, { label: string; cls: string; icon: string }> = {
   in: { label: "Stock In", cls: "badge-success", icon: "south_west" },
@@ -44,23 +44,19 @@ export default function StockMovementsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/stock" className="hover:text-primary transition-colors">Consumables / Stock</Link>
-            <span>/</span>
-            <span className="text-neutral-700 font-medium">Movements</span>
-          </div>
-          <h1 className="page-title">Stock Movements</h1>
-          <p className="page-subtitle">Stock-in receipts, stock-out issues and adjustments.</p>
-        </div>
-        {canIssue && (
-          <button type="button" onClick={() => setShowMovement(true)} className="btn-primary">
-            <span className="material-symbols-outlined text-[18px]">add_task</span>
-            Record Movement
-          </button>
-        )}
-      </div>
+      <ModulePageHeader
+        title="Stock Movements"
+        subtitle="Stock-in receipts, stock-out issues and adjustments."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Movements" }]} />}
+        actions={
+          canIssue ? (
+            <button type="button" onClick={() => setShowMovement(true)} className="btn-primary">
+              <span className="material-symbols-outlined text-[18px]">add_task</span>
+              Record Movement
+            </button>
+          ) : undefined
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

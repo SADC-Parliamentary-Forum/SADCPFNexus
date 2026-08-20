@@ -12,7 +12,7 @@ const MEETING_TYPES = ["All", "ExCo", "Sub-Committee", "Plenary", "Technical", "
 
 const TYPE_STYLE: Record<string, string> = {
   "ExCo":          "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/50",
-  "Sub-Committee": "bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 border-purple-200 dark:border-purple-800/50",
+  "Sub-Committee": "bg-indigo-100 dark:bg-indigo-900/20 text-indigo-800 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/50",
   "Plenary":       "bg-emerald-100 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50",
   "Technical":     "bg-amber-100 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/50",
   "Other":         "bg-neutral-100 dark:bg-neutral-700/40 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-600",

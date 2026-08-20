@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { FormSection, FormField } from "@/components/ui/FormSection";
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
@@ -133,12 +134,13 @@ export default function AssetDisposalPage() {
       {err && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>}
 
       {showCreate && (
-        <form onSubmit={createDisposal} className="card space-y-3 p-4">
-          <h2 className="text-lg font-semibold">Create disposal request</h2>
-          <label className="block text-sm">
-            Asset
+        <form onSubmit={createDisposal}>
+          <FormSection title="Create disposal request" icon="delete_forever" dense>
+            <div className="space-y-3">
+          <FormField label="Asset" htmlFor="disposal-asset" required>
             <select
-              className="form-input mt-1 w-full"
+              id="disposal-asset"
+              className="form-input w-full"
               required
               value={form.asset_id}
               onChange={(e) => setForm({ ...form, asset_id: e.target.value })}
@@ -150,50 +152,50 @@ export default function AssetDisposalPage() {
                 </option>
               ))}
             </select>
-          </label>
+          </FormField>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="block text-sm">
-              Reason
-              <select className="form-input mt-1 w-full" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}>
+            <FormField label="Reason" htmlFor="disposal-reason">
+              <select id="disposal-reason" className="form-input w-full" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}>
                 {REASONS.map((r) => (
                   <option key={r} value={r}>{r}</option>
                 ))}
               </select>
-            </label>
-            <label className="block text-sm">
-              Method
-              <select className="form-input mt-1 w-full" value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
+            </FormField>
+            <FormField label="Method" htmlFor="disposal-method">
+              <select id="disposal-method" className="form-input w-full" value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
                 {METHODS.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
-            </label>
+            </FormField>
           </div>
-          <label className="block text-sm">
-            Justification
+          <FormField label="Justification" htmlFor="disposal-justification" required>
             <textarea
-              className="form-input mt-1 w-full"
+              id="disposal-justification"
+              className="form-input w-full"
               rows={3}
               required
               value={form.justification}
               onChange={(e) => setForm({ ...form, justification: e.target.value })}
             />
-          </label>
-          <label className="block text-sm">
-            Estimated value
+          </FormField>
+          <FormField label="Estimated value" htmlFor="disposal-value">
             <input
+              id="disposal-value"
               type="number"
               min="0"
               step="0.01"
-              className="form-input mt-1 w-full"
+              className="form-input w-full"
               value={form.estimated_value}
               onChange={(e) => setForm({ ...form, estimated_value: e.target.value })}
             />
-          </label>
+          </FormField>
           <div className="flex gap-2">
             <button type="submit" className="btn-primary btn-sm" disabled={saving}>{saving ? "Saving…" : "Submit request"}</button>
             <button type="button" className="btn-secondary btn-sm" onClick={() => setShowCreate(false)}>Cancel</button>
           </div>
+            </div>
+          </FormSection>
         </form>
       )}
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -35,7 +35,9 @@ function cell(v: unknown): string {
 }
 
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","privilege-alerts"],
     queryFn: async () => {
@@ -64,11 +66,23 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
     return ordered.length ? ordered : ["id"];
   }, [filtered]);
 
+  const detect = useMutation({
+    mutationFn: () => peopleAuthorityApi.detectPrivilegeAlerts(),
+    onSuccess: () => {
+      setMsg("Detection ran. Alerts are suggestions only.");
+      qc.invalidateQueries({ queryKey: ["people-authority", "privilege-alerts"] });
+    },
+  });
+  const ack = useMutation({
+    mutationFn: (id: number) => peopleAuthorityApi.acknowledgePrivilegeAlert(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["people-authority", "privilege-alerts"] }),
+  });
+
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <ModulePageHeader
         title="Privilege Alerts"
-        subtitle="People & Privilege Alerts"
+        subtitle="Anomalous privilege suggestions only — never auto-revoke or auto-grant access."
         breadcrumbs={
           <PageBreadcrumbs
             items={[
@@ -78,11 +92,23 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
           />
         }
         actions={
-          <Link href="/people" className="btn-secondary text-sm">
-            Hub
-          </Link>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="btn-primary text-sm"
+              onClick={() => detect.mutate()}
+              disabled={detect.isPending}
+            >
+              {detect.isPending ? "Detecting…" : "Detect alerts"}
+            </button>
+            <Link href="/people" className="btn-secondary text-sm">
+              Hub
+            </Link>
+          </div>
         }
       />
+
+      {msg && <p className="text-sm text-green-700">{msg}</p>}
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">
@@ -131,6 +157,7 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
                       {c.replace(/_/g, " ")}
                     </th>
                   ))}
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -139,6 +166,18 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
                     {columns.map((c) => (
                       <td key={c}>{cell(r[c])}</td>
                     ))}
+                    <td>
+                      {r.status !== "acknowledged" && (
+                        <button
+                          type="button"
+                          className="text-xs text-emerald-700 hover:underline"
+                          onClick={() => ack.mutate(Number(r.id))}
+                          disabled={ack.isPending}
+                        >
+                          Acknowledge
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

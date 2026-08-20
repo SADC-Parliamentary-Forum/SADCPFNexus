@@ -28,6 +28,9 @@ class _AssignmentCreateScreenState
   int? _selectedAssigneeId;
   bool _loadingAssignees = true;
   bool _submitting = false;
+  bool _asTemplate = false;
+  String _frequency = 'weekly';
+  String _interval = '1';
   List<_AssigneeOption> _assigneeOptions = [];
 
   @override
@@ -77,9 +80,18 @@ class _AssignmentCreateScreenState
     if (_selectedAssigneeId != null) {
       body['assigned_to'] = _selectedAssigneeId;
     }
+    if (_asTemplate) {
+      body['recurrence_rule'] = {
+        'frequency': _frequency,
+        'interval': int.tryParse(_interval) ?? 1,
+      };
+    }
     try {
       final dio = ref.read(apiClientProvider).dio;
-      final res = await dio.post('/assignments', data: body);
+      final res = await dio.post(
+        _asTemplate ? '/assignments/templates' : '/assignments',
+        data: body,
+      );
       final data = res.data;
       int? id;
       if (data is Map && data['data'] is Map) {
@@ -210,6 +222,33 @@ class _AssignmentCreateScreenState
                 if (picked != null) setState(() => _due = picked);
               },
             ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Save as recurring template',
+                  style: TextStyle(color: AppColors.textPrimary)),
+              value: _asTemplate,
+              onChanged: (v) => setState(() => _asTemplate = v),
+            ),
+            if (_asTemplate) ...[
+              DropdownButtonFormField<String>(
+                value: _frequency,
+                dropdownColor: AppColors.bgSurface,
+                decoration: const InputDecoration(labelText: 'Frequency'),
+                items: const [
+                  DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                  DropdownMenuItem(value: 'monthly', child: Text('Monthly')),
+                ],
+                onChanged: (v) => setState(() => _frequency = v ?? 'weekly'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                initialValue: _interval,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: AppColors.textPrimary),
+                decoration: const InputDecoration(labelText: 'Interval'),
+                onChanged: (v) => _interval = v,
+              ),
+            ],
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _submitting ? null : _submit,

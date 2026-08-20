@@ -4,7 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fleetApi, type FleetBooking, type FleetDriver, type FleetVehicle } from "@/lib/api";
+import { adminApi, fleetApi, type FleetBooking, type FleetDriver, type FleetVehicle, type User } from "@/lib/api";
 
 type Tab = "vehicles" | "drivers" | "calendar";
 
@@ -24,6 +24,11 @@ export default function FleetListPage() {
   const bookingsQuery = useQuery({
     queryKey: ["fleet", "bookings"],
     queryFn: () => fleetApi.listBookings().then((r) => r.data.data ?? []),
+  });
+  const usersQuery = useQuery({
+    queryKey: ["admin", "users", "fleet-drivers"],
+    queryFn: () => adminApi.listUsers({ per_page: 100 }).then((r) => r.data.data ?? []),
+    enabled: tab === "drivers",
   });
 
   const vehicles = (vehiclesQuery.data ?? []) as FleetVehicle[];
@@ -113,7 +118,7 @@ export default function FleetListPage() {
 
       {tab === "vehicles" && (
         <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
-          <table className="min-w-full text-sm">
+          <table className="data-table">
             <thead className="bg-neutral-50 text-left text-neutral-600 dark:bg-neutral-950/60 dark:text-neutral-400">
               <tr>
                 <th className="px-3 py-2 font-medium">Code</th>
@@ -151,8 +156,20 @@ export default function FleetListPage() {
         <div className="space-y-4">
           <form onSubmit={onDriver} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900 md:grid-cols-3">
             <label className="space-y-1">
-              <span className="text-sm font-medium">User ID</span>
-              <input className="input w-full" required value={driverUserId} onChange={(e) => setDriverUserId(e.target.value)} />
+              <span className="text-sm font-medium">Staff member</span>
+              <select
+                className="input w-full"
+                required
+                value={driverUserId}
+                onChange={(e) => setDriverUserId(e.target.value)}
+              >
+                <option value="">Select staff…</option>
+                {((usersQuery.data ?? []) as User[]).map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.name}
+                  </option>
+                ))}
+              </select>
             </label>
             <label className="space-y-1">
               <span className="text-sm font-medium">Licence #</span>
@@ -165,7 +182,7 @@ export default function FleetListPage() {
             </div>
           </form>
           <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
-            <table className="min-w-full text-sm">
+            <table className="data-table">
               <thead className="bg-neutral-50 text-left text-neutral-600 dark:bg-neutral-950/60 dark:text-neutral-400">
                 <tr>
                   <th className="px-3 py-2 font-medium">Driver</th>
@@ -227,7 +244,7 @@ export default function FleetListPage() {
             </div>
           </form>
           <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900">
-            <table className="min-w-full text-sm">
+            <table className="data-table">
               <thead className="bg-neutral-50 text-left text-neutral-600 dark:bg-neutral-950/60 dark:text-neutral-400">
                 <tr>
                   <th className="px-3 py-2 font-medium">Vehicle</th>

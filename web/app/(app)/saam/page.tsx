@@ -47,7 +47,7 @@ function moduleColor(signableType: string): string {
     "App\\Models\\TravelRequest": "text-blue-600 bg-blue-50",
     "App\\Models\\LeaveRequest": "text-green-600 bg-green-50",
     "App\\Models\\ImprestRequest": "text-amber-600 bg-amber-50",
-    "App\\Models\\ProcurementRequest": "text-purple-600 bg-purple-50",
+    "App\\Models\\ProcurementRequest": "text-primary bg-primary/10",
     "App\\Models\\FinanceRecord": "text-teal-600 bg-teal-50",
     "App\\Models\\Correspondence": "text-indigo-600 bg-indigo-50",
     "App\\Models\\HrPersonalFile": "text-pink-600 bg-pink-50",

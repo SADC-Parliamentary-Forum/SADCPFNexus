@@ -152,9 +152,9 @@ export default function FinancePage() {
       label: "Imprest Requests",
       icon: "account_balance_wallet",
       href: "/imprest",
-      color: "text-purple-600",
-      bg: "bg-purple-50 dark:bg-purple-900/20",
-      border: "border-purple-200 dark:border-purple-800/50",
+      color: "text-primary",
+      bg: "bg-primary/10",
+      border: "border-primary/20",
     },
     ...(isAdminOrFinance
       ? [{

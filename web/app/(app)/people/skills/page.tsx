@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -34,8 +34,33 @@ function cell(v: unknown): string {
   return String(v);
 }
 
+function personLabel(p: Record<string, unknown>): string {
+  return String(p.preferred_name ?? [p.first_name, p.last_name].filter(Boolean).join(" ") ?? p.name ?? p.id);
+}
+
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [form, setForm] = useState({ code: "", name: "", category: "" });
+  const [err, setErr] = useState<string | null>(null);
+  const [assignForm, setAssignForm] = useState({ person_id: "", skill_id: "", level: "working" });
+  const peopleQuery = useQuery({
+    queryKey: ["people-authority", "people-options"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listPeople({ directory: 1, per_page: 100 })).data),
+  });
+  const assign = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.assignSkill({
+        person_id: Number(assignForm.person_id),
+        skill_id: Number(assignForm.skill_id),
+        level: assignForm.level,
+      }),
+    onSuccess: () => {
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "skills"] });
+    },
+    onError: () => setErr("Could not assign the skill. Person and skill are required."),
+  });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","skills"],
     queryFn: async () => {
@@ -64,6 +89,21 @@ return (await peopleAuthorityApi.listSkills()).data;
     return ordered.length ? ordered : ["id"];
   }, [filtered]);
 
+  const create = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.createSkill({
+        code: form.code.trim(),
+        name: form.name.trim(),
+        category: form.category.trim() || undefined,
+      }),
+    onSuccess: () => {
+      setForm({ code: "", name: "", category: "" });
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "skills"] });
+    },
+    onError: () => setErr("Could not create the skill. Code and name are required."),
+  });
+
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <ModulePageHeader
@@ -83,6 +123,78 @@ return (await peopleAuthorityApi.listSkills()).data;
           </Link>
         }
       />
+
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!form.code.trim() || !form.name.trim()) {
+            setErr("Code and name are required.");
+            return;
+          }
+          create.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Code
+          <input className="form-input mt-1" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} required />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Name
+          <input className="form-input mt-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Category
+          <input className="form-input mt-1" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
+        </label>
+        <div className="sm:col-span-3 flex items-center gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
+            {create.isPending ? "Saving…" : "Add skill"}
+          </button>
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
+
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          assign.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Person
+          <select className="form-input mt-1" value={assignForm.person_id} onChange={(e) => setAssignForm((f) => ({ ...f, person_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(peopleQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Skill
+          <select className="form-input mt-1" value={assignForm.skill_id} onChange={(e) => setAssignForm((f) => ({ ...f, skill_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {rows.map((s) => (
+              <option key={String(s.id)} value={String(s.id)}>{String(s.name ?? s.code ?? s.id)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Level
+          <select className="form-input mt-1" value={assignForm.level} onChange={(e) => setAssignForm((f) => ({ ...f, level: e.target.value }))}>
+            <option value="awareness">Awareness</option>
+            <option value="working">Working</option>
+            <option value="proficient">Proficient</option>
+            <option value="expert">Expert</option>
+          </select>
+        </label>
+        <div className="sm:col-span-3">
+          <button type="submit" className="btn-primary text-sm" disabled={assign.isPending}>
+            {assign.isPending ? "Saving…" : "Assign skill"}
+          </button>
+        </div>
+      </form>
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">

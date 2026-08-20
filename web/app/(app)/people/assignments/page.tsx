@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -34,12 +34,50 @@ function cell(v: unknown): string {
   return String(v);
 }
 
+function personLabel(p: Record<string, unknown>): string {
+  return String(p.preferred_name ?? [p.first_name, p.last_name].filter(Boolean).join(" ") ?? p.name ?? p.id);
+}
+
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const today = new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState({
+    position_id: "",
+    person_id: "",
+    assignment_type: "substantive",
+    start_at: today,
+  });
+  const positionsQuery = useQuery({
+    queryKey: ["people-authority", "positions-options"],
+    queryFn: async () => {
+      const res = await peopleAuthorityApi.listPositions();
+      return asRows(res.data);
+    },
+  });
+  const peopleQuery = useQuery({
+    queryKey: ["people-authority", "people-options"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listPeople({ directory: 1, per_page: 100 })).data),
+  });
+  const assign = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.assignPosition(Number(form.position_id), {
+        person_id: Number(form.person_id),
+        assignment_type: form.assignment_type,
+        start_at: form.start_at,
+      }),
+    onSuccess: () => {
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "position-assignments"] });
+    },
+    onError: () => setErr("Could not assign the position. Person, position, type, and start date are required."),
+  });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "position-assignments"],
     queryFn: async () => {
-return (await peopleAuthorityApi.listPositions()).data;
+      const chart = (await peopleAuthorityApi.orgChart()).data.data as Record<string, unknown>;
+      return chart.assignments ?? [];
     },
   });
 
@@ -83,6 +121,51 @@ return (await peopleAuthorityApi.listPositions()).data;
           </Link>
         }
       />
+
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          assign.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Position
+          <select className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(positionsQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Person
+          <select className="form-input mt-1" value={form.person_id} onChange={(e) => setForm((f) => ({ ...f, person_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(peopleQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Assignment type
+          <select className="form-input mt-1" value={form.assignment_type} onChange={(e) => setForm((f) => ({ ...f, assignment_type: e.target.value }))}>
+            <option value="substantive">Substantive</option>
+            <option value="acting">Acting</option>
+            <option value="temporary">Temporary</option>
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Start
+          <input type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
+        </label>
+        <div className="sm:col-span-4 flex items-center gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={assign.isPending}>
+            {assign.isPending ? "Saving…" : "Assign position"}
+          </button>
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">

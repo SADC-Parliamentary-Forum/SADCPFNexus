@@ -234,8 +234,8 @@ export default function ProfileSettingsPage() {
         {/* Accessibility */}
         <div className="card p-6">
           <div className="flex items-center gap-2 mb-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50">
-              <span className="material-symbols-outlined text-purple-600 text-[18px]">accessibility</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <span className="material-symbols-outlined text-primary text-[18px]">accessibility</span>
             </div>
             <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Accessibility</h3>
           </div>

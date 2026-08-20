@@ -715,7 +715,7 @@ export default function ConductDetailPage() {
             <div className="card overflow-hidden">
               <div className="card-header">
                 <div className="flex items-center gap-2">
-                  <SectionIcon icon="gavel" colorClass="text-purple-600" bgClass="bg-purple-50" />
+                  <SectionIcon icon="gavel" colorClass="text-primary" bgClass="bg-primary/10" />
                   <h3 className="text-sm font-semibold text-neutral-900">Outcome / Decision</h3>
                 </div>
               </div>

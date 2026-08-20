@@ -2,13 +2,40 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { weeklyReportsApi, type WeeklyOpsReport } from "@/lib/api";
+import { assignmentsApi, weeklyReportsApi, type WeeklyOpsReport } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 
+type AssignmentFeedItem = {
+  id: number;
+  reference_number?: string | null;
+  title?: string | null;
+  status?: string | null;
+  due_date?: string | null;
+};
+
+type WeeklyAssignmentFeed = {
+  period_start?: string;
+  period_end?: string;
+  completed?: AssignmentFeedItem[];
+  active?: AssignmentFeedItem[];
+  overdue?: AssignmentFeedItem[];
+  blocked?: AssignmentFeedItem[];
+  upcoming_deadlines?: AssignmentFeedItem[];
+  counts?: Record<string, number>;
+};
+
+function asFeedItems(value: unknown): AssignmentFeedItem[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((row): row is AssignmentFeedItem =>
+    Boolean(row && typeof row === "object" && "id" in row),
+  );
+}
+
 export default function WeeklySummariesPage() {
   const [report, setReport] = useState<WeeklyOpsReport | null>(null);
+  const [feed, setFeed] = useState<WeeklyAssignmentFeed | null>(null);
   const [suggestions, setSuggestions] = useState<Array<Record<string, unknown>>>([]);
   const [deferred, setDeferred] = useState<Array<Record<string, unknown>>>([]);
   const [title, setTitle] = useState("");
@@ -27,6 +54,15 @@ export default function WeeklySummariesPage() {
         weeklyReportsApi.current(),
         weeklyReportsApi.suggestions(),
       ]);
+      const period = current.data.period;
+      try {
+        const { data: feedPayload } = await assignmentsApi.weeklySummaryFeed(
+          period ? { period_start: period.start_date, period_end: period.end_date } : undefined,
+        );
+        setFeed(feedPayload as WeeklyAssignmentFeed);
+      } catch {
+        setFeed(null);
+      }
       setReport(current.data);
       setDonorCode((current.data as WeeklyOpsReport & { donor_code?: string }).donor_code ?? "");
       setDonorName((current.data as WeeklyOpsReport & { donor_name?: string }).donor_name ?? "");
@@ -190,7 +226,73 @@ export default function WeeklySummariesPage() {
             >
               Submit with declaration
             </button>
+            <a href={weeklyReportsApi.exportUrl(report.id, "word")} className="btn-secondary text-sm">
+              Export Word
+            </a>
           </div>
+        </FormSection>
+      ) : null}
+
+      {feed ? (
+        <FormSection
+          title="Assignment feed"
+          description={`Completed, active, overdue, blocked, and upcoming work for ${feed.period_start ?? "this period"} → ${feed.period_end ?? "now"}.`}
+          icon="task_alt"
+        >
+          <dl className="mb-4 grid gap-2 text-sm sm:grid-cols-5">
+            {["completed", "active", "overdue", "blocked", "upcoming"].map((key) => (
+              <div key={key} className="rounded-lg border border-neutral-100 px-3 py-2">
+                <dt className="capitalize text-neutral-500">{key}</dt>
+                <dd className="text-lg font-semibold text-neutral-900">{feed.counts?.[key] ?? 0}</dd>
+              </div>
+            ))}
+          </dl>
+          {(
+            [
+              ["Completed", feed.completed],
+              ["Active", feed.active],
+              ["Overdue", feed.overdue],
+              ["Blocked", feed.blocked],
+              ["Upcoming deadlines", feed.upcoming_deadlines],
+            ] as const
+          ).map(([label, rows]) => {
+            const items = asFeedItems(rows);
+            return (
+              <div key={label} className="mt-4">
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">{label}</h3>
+                {items.length === 0 ? (
+                  <p className="text-sm text-neutral-500">None.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead>
+                        <tr className="border-b border-neutral-100 text-neutral-500">
+                          <th className="py-2 pr-3 font-medium">Reference</th>
+                          <th className="py-2 pr-3 font-medium">Title</th>
+                          <th className="py-2 pr-3 font-medium">Status</th>
+                          <th className="py-2 font-medium">Due</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((row) => (
+                          <tr key={row.id} className="border-b border-neutral-50">
+                            <td className="py-2 pr-3">
+                              <Link href={`/assignments/${row.id}`} className="font-medium text-primary hover:underline">
+                                {row.reference_number ?? row.id}
+                              </Link>
+                            </td>
+                            <td className="py-2 pr-3">{row.title ?? "—"}</td>
+                            <td className="py-2 pr-3 capitalize">{row.status ?? "—"}</td>
+                            <td className="py-2">{row.due_date ?? "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </FormSection>
       ) : null}
 

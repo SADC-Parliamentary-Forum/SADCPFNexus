@@ -529,7 +529,7 @@ export default function LeaveBalancesPage() {
                 <th className="min-w-[160px]">Employee</th>
                 <th className="min-w-[200px]">Annual Leave (Opening / Used)</th>
                 <th className="min-w-[140px]">Sick Leave</th>
-                <th className="min-w-[100px]">LIL Used / Avail</th>
+                <th className="min-w-[100px]">Leave in Lieu Used / Avail</th>
                 <th className="min-w-[100px]">Mat / Pat</th>
                 <th className="min-w-[100px]">Status</th>
               </tr>

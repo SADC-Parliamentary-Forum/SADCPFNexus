@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -34,13 +34,33 @@ function cell(v: unknown): string {
   return String(v);
 }
 
+function personLabel(p: Record<string, unknown>): string {
+  return String(p.preferred_name ?? [p.first_name, p.last_name].filter(Boolean).join(" ") ?? p.name ?? p.id);
+}
+
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    position_id: "",
+    person_id: "",
+    start_at: new Date().toISOString().slice(0, 10),
+    end_at: "",
+    reason: "",
+  });
+
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "acting-appointments"],
-    queryFn: async () => {
-return (await peopleAuthorityApi.listActing()).data;
-    },
+    queryFn: async () => (await peopleAuthorityApi.listActing()).data,
+  });
+  const peopleQuery = useQuery({
+    queryKey: ["people-authority", "people-options"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listPeople({ directory: 1, per_page: 100 })).data),
+  });
+  const positionsQuery = useQuery({
+    queryKey: ["people-authority", "position-options"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listPositions({ per_page: 100 })).data),
   });
 
   const rows = useMemo(() => asRows(data), [data]);
@@ -50,19 +70,25 @@ return (await peopleAuthorityApi.listActing()).data;
     return rows.filter((r) => JSON.stringify(r).toLowerCase().includes(term));
   }, [rows, q]);
 
-  const columns = useMemo(() => {
-    const keys = new Set<string>();
-    for (const r of filtered.slice(0, 20)) {
-      Object.keys(r).forEach((k) => {
-        if (!["id", "uuid", "created_at", "updated_at", "deleted_at"].includes(k) && typeof r[k] !== "object") keys.add(k);
-        else if (["name", "title", "status", "email", "code", "type"].includes(k)) keys.add(k);
-      });
-    }
-    const preferred = ["name", "title", "code", "type", "status", "email", "first_name", "last_name"];
-    const ordered = preferred.filter((k) => keys.has(k));
-    for (const k of keys) if (!ordered.includes(k) && ordered.length < 6) ordered.push(k);
-    return ordered.length ? ordered : ["id"];
-  }, [filtered]);
+  const create = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.createActing({
+        position_id: Number(form.position_id),
+        person_id: Number(form.person_id),
+        start_at: form.start_at,
+        end_at: form.end_at || undefined,
+        reason: form.reason || undefined,
+      }),
+    onSuccess: () => {
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "acting-appointments"] });
+    },
+    onError: () => setErr("Could not create the acting appointment. Position, person, and start date are required."),
+  });
+  const approve = useMutation({
+    mutationFn: (id: number) => peopleAuthorityApi.approveActing(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["people-authority", "acting-appointments"] }),
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -77,22 +103,58 @@ return (await peopleAuthorityApi.listActing()).data;
             ]}
           />
         }
-        actions={
-          <Link href="/people" className="btn-secondary text-sm">
-            Hub
-          </Link>
-        }
+        actions={<Link href="/people" className="btn-secondary text-sm">Hub</Link>}
       />
+
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          create.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Position
+          <select className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(positionsQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.name ?? p.code ?? p.id)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Acting person
+          <select className="form-input mt-1" value={form.person_id} onChange={(e) => setForm((f) => ({ ...f, person_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(peopleQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Start
+          <input type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          End
+          <input type="date" className="form-input mt-1" value={form.end_at} onChange={(e) => setForm((f) => ({ ...f, end_at: e.target.value }))} />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600 sm:col-span-2">
+          Reason
+          <input className="form-input mt-1" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
+        </label>
+        <div className="sm:col-span-2 flex items-center gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
+            {create.isPending ? "Saving…" : "Create acting appointment"}
+          </button>
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">
           Search
-          <input
-            className="form-input mt-1"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
-          />
+          <input className="form-input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter rows…" />
         </label>
       </div>
 
@@ -108,11 +170,7 @@ return (await peopleAuthorityApi.listActing()).data;
             icon="error"
             title="Unable to load"
             description="Could not retrieve this register."
-            action={
-              <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
-              </button>
-            }
+            action={<button type="button" className="btn-primary text-sm" onClick={() => refetch()}>Retry</button>}
           />
         </div>
       ) : filtered.length === 0 ? (
@@ -126,19 +184,27 @@ return (await peopleAuthorityApi.listActing()).data;
               <caption className="sr-only">Acting Appointments</caption>
               <thead>
                 <tr>
-                  {columns.map((c) => (
-                    <th key={c} className="capitalize">
-                      {c.replace(/_/g, " ")}
-                    </th>
-                  ))}
+                  <th>Reference</th>
+                  <th>Status</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((r, idx) => (
                   <tr key={String(r.id ?? idx)}>
-                    {columns.map((c) => (
-                      <td key={c}>{cell(r[c])}</td>
-                    ))}
+                    <td>{cell(r.reference ?? r.id)}</td>
+                    <td>{cell(r.status)}</td>
+                    <td>{cell(r.start_at)}</td>
+                    <td>{cell(r.end_at)}</td>
+                    <td>
+                      {r.status !== "approved" && r.status !== "active" && (
+                        <button type="button" className="text-xs text-emerald-700 hover:underline" onClick={() => approve.mutate(Number(r.id))} disabled={approve.isPending}>
+                          Approve
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

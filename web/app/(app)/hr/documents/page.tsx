@@ -48,7 +48,7 @@ const SOURCE_COLOR: Record<DocumentSource, string> = {
   travel:    "bg-blue-50 text-blue-600",
   leave:     "bg-green-50 text-green-600",
   imprest:   "bg-amber-50 text-amber-600",
-  appraisal: "bg-purple-50 text-purple-600",
+  appraisal: "bg-primary/10 text-primary",
   other:     "bg-neutral-100 text-neutral-500",
 };
 
@@ -100,7 +100,7 @@ const MODULE_SECTIONS: ModuleSection[] = [
     description: "Evidence files, KRA documents and supporting materials from your performance appraisals.",
     href:        "/hr/appraisals",
     icon:        "assessment",
-    iconColor:   "bg-purple-50 text-purple-600",
+    iconColor:   "bg-primary/10 text-primary",
   },
 ];
 

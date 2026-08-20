@@ -5,12 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { hrSettingsApi } from "@/lib/api";
-
-function truncateJson(val: unknown, maxLen = 80): string {
-  if (val === null || val === undefined) return "—";
-  const str = typeof val === "string" ? val : JSON.stringify(val);
-  return str.length > maxLen ? str.slice(0, maxLen) + "…" : str;
-}
+import { LabelledChangeRows } from "@/components/ui/LabelledRecord";
 
 function EventBadge({ event }: { event: string }) {
   const colorMap: Record<string, string> = {
@@ -135,26 +130,8 @@ export default function HrSettingsAuditPage() {
                       </div>
                     </td>
                     <td>
-                      <div className="max-w-xs">
-                        {log.new_values && Object.keys(log.new_values).length > 0 ? (
-                          <div className="space-y-0.5">
-                            {Object.entries(log.new_values)
-                              .slice(0, 3)
-                              .map(([k, v]) => (
-                                <p key={k} className="text-xs text-neutral-600">
-                                  <span className="font-medium text-neutral-500">{k}:</span>{" "}
-                                  <span className="font-mono">{truncateJson(v, 40)}</span>
-                                </p>
-                              ))}
-                            {Object.keys(log.new_values).length > 3 && (
-                              <p className="text-xs text-neutral-400">
-                                +{Object.keys(log.new_values).length - 3} more fields
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-neutral-400">—</span>
-                        )}
+                      <div className="max-w-md">
+                        <LabelledChangeRows oldValues={log.old_values} newValues={log.new_values} />
                       </div>
                     </td>
                   </tr>

@@ -130,7 +130,7 @@ test("correspondence retention save locks duplicate submits while pending", () =
   assert.match(source, /\/correspondence\/letters\/\$\{targetLetterId\}\/retention/);
   assert.match(source, /disabled=\{saving\}/);
   assert.match(source, /disabled=\{saving \|\| !letterId\.trim\(\)\}/);
-  assert.match(source, /Saving\.\.\./);
+  assert.match(source, /Saving…/);
 });
 
 test("leave create blocks segments whose end date is before the start date", () => {
@@ -557,4 +557,208 @@ test("session timeout preference is wired to the profile API", () => {
 test("AppShell mounts IdleTimeoutGuard", () => {
   const source = readFileSync(join(webRoot, "components/layout/AppShell.tsx"), "utf8");
   assert.match(source, /IdleTimeoutGuard/);
+});
+
+test("UX-196 asset transfers CTA uses Next Link", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/assets/transfers/page.tsx"), "utf8");
+  assert.match(source, /<Link href="\/assets\/movement\/new"/);
+  assert.doesNotMatch(source, /<a href="\/assets\/movement\/new"/);
+});
+
+test("UX-208 stock register title does not use slash style", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/stock/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /Consumables \/ Stock/);
+  assert.match(source, /title="Stock"/);
+});
+
+test("UX-212 and UX-344 login demo tiles use brand tokens and dark variants", () => {
+  const source = readFileSync(join(webRoot, "app/(auth)/login/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /text-purple-600 bg-purple-50/);
+  assert.match(source, /dark:bg-/);
+  assert.match(source, /text-primary/);
+});
+
+test("UX-282 balance-register verify uses Next Link for supporting documents", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/finance/balance-register/[id]/verify/page.tsx"), "utf8");
+  assert.match(source, /<Link href=\{txn\.supporting_document_path\}/);
+  assert.doesNotMatch(source, /<a href=\{txn\.supporting_document_path\}/);
+});
+
+test("UX-313 GlobalSearch Admin category is not purple", () => {
+  const source = readFileSync(join(webRoot, "components/layout/GlobalSearch.tsx"), "utf8");
+  assert.doesNotMatch(source, /Admin:\s*"text-purple-600"/);
+  assert.match(source, /Admin:\s*"text-primary"/);
+});
+
+test("UX-323 and UX-325 organogram connectors are labelled and theme-aware", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/organogram/page.tsx"), "utf8");
+  assert.match(source, /aria-hidden="true"|<title>/);
+  assert.doesNotMatch(source, /fill="#cbd5e1"/);
+  assert.doesNotMatch(source, /stroke="#cbd5e1"/);
+  assert.match(source, /currentColor|var\(--/);
+});
+
+test("UX-326 workplan milestone palette is not hardcoded purple hex", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/workplan/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /bar: "#8b5cf6"/);
+  const detail = readFileSync(join(webRoot, "app/(app)/workplan/[id]/page.tsx"), "utf8");
+  assert.doesNotMatch(detail, /bg-purple-100 text-purple-700/);
+});
+
+test("UX-337 fleet tables use data-table", () => {
+  const fleet = readFileSync(join(webRoot, "app/(app)/fleet/page.tsx"), "utf8");
+  const utilisation = readFileSync(join(webRoot, "app/(app)/fleet/utilisation/page.tsx"), "utf8");
+  assert.match(fleet, /className="data-table"/);
+  assert.match(utilisation, /className="data-table"/);
+});
+
+test("UX-349 access review create shows required-name error text", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/admin/access/reviews/page.tsx"), "utf8");
+  assert.match(source, /error=\{/);
+  assert.match(source, /Campaign name is required/);
+});
+
+test("UX-355 fleet driver create uses a user picker not a raw id input", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/fleet/page.tsx"), "utf8");
+  assert.match(source, /adminApi\.listUsers|listUsers\(/);
+  assert.match(source, /<select/);
+  assert.doesNotMatch(source, /<span className="text-sm font-medium">User ID<\/span>/);
+});
+
+test("UX-356 Header procurement icon is not purple", () => {
+  const source = readFileSync(join(webRoot, "components/layout/Header.tsx"), "utf8");
+  assert.doesNotMatch(source, /procurement:[\s\S]{0,80}text-purple-600/);
+});
+
+test("UX-362 risk compliance category is not purple", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/risk/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /compliance:[\s\S]{0,80}text-purple-600/);
+});
+
+test("UX-077 leave LIL block is not purple", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/leave/[id]/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /LIL Accrual[\s\S]{0,400}text-purple-600/);
+});
+
+test("UX-109 dashboard open requisitions KPI is not purple", () => {
+  const source = readFileSync(join(webRoot, "app/dashboard/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /open_requisitions[\s\S]{0,120}text-purple-600/);
+});
+
+test("UX-333 risk history icon is not purple", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/risk/[id]/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /SectionIcon icon="history" color="text-purple-600"/);
+});
+
+test("UX-351 assets keep institutional EN-GB Capitalise", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
+  assert.match(source, /Capitalise/);
+  assert.doesNotMatch(source, /Capitalize/);
+});
+
+test("UX-061 stacked btn btn-primary alias is unused", () => {
+  const css = readFileSync(join(webRoot, "app/globals.css"), "utf8");
+  assert.doesNotMatch(css, /\.btn\.btn-primary/);
+  assert.doesNotMatch(css, /\.btn\.btn-secondary/);
+});
+
+test("UX-231 procurement services category is not purple", () => {
+  const register = readFileSync(join(webRoot, "app/(app)/procurement/page.tsx"), "utf8");
+  const detail = readFileSync(join(webRoot, "app/(app)/procurement/[id]/page.tsx"), "utf8");
+  const vendor = readFileSync(join(webRoot, "app/(app)/procurement/vendors/[id]/page.tsx"), "utf8");
+  assert.doesNotMatch(register, /services:[\s\S]{0,120}text-purple/);
+  assert.doesNotMatch(detail, /services:[\s\S]{0,80}text-purple/);
+  assert.doesNotMatch(vendor, /services:[\s\S]{0,80}text-purple/);
+});
+
+test("UX-316 risk analytics category map is not purple or pink", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/risk/analytics/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /compliance:\s*"text-purple/);
+  assert.doesNotMatch(source, /reputational:\s*"text-pink/);
+});
+
+test("UX-076 cited widget accents are not purple", () => {
+  const assignments = readFileSync(join(webRoot, "app/(app)/assignments/page.tsx"), "utf8");
+  const dashboard = readFileSync(join(webRoot, "app/dashboard/page.tsx"), "utf8");
+  const finance = readFileSync(join(webRoot, "app/(app)/finance/page.tsx"), "utf8");
+  const riskDash = readFileSync(join(webRoot, "app/(app)/risk/dashboard/page.tsx"), "utf8");
+  assert.doesNotMatch(assignments, /Awaiting Acceptance[\s\S]{0,80}text-purple/);
+  assert.doesNotMatch(dashboard, /label="Awaiting"[\s\S]{0,80}text-purple/);
+  assert.doesNotMatch(finance, /Imprest Requests[\s\S]{0,200}text-purple/);
+  assert.doesNotMatch(riskDash, /sg:[\s\S]{0,80}text-purple/);
+});
+
+test("UX-292 audit hub shortcuts use icon tiles not underlined links", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/audit/page.tsx"), "utf8");
+  assert.match(source, /material-symbols-outlined/);
+  assert.doesNotMatch(source, /<Link className="underline"/);
+});
+
+test("UX-108 dashboard module grid covers core sidebar modules", () => {
+  const source = readFileSync(join(webRoot, "app/dashboard/page.tsx"), "utf8");
+  for (const href of ["/stock", "/assets", "/fleet", "/people", "/audit", "/risk", "/workplan", "/assignments", "/correspondence", "/governance", "/reports"]) {
+    assert.match(source, new RegExp(`href: "${href}"`));
+  }
+});
+
+test("UX-102 HR leave uses shared date preference formatter", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/hr/leave/page.tsx"), "utf8");
+  assert.match(source, /useFormatDate/);
+  assert.doesNotMatch(source, /toLocaleDateString\("en-GB"/);
+});
+
+test("UX-262 fleet utilisation exports CSV", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/fleet/utilisation/page.tsx"), "utf8");
+  assert.match(source, /exportToCsv/);
+});
+
+test("UX-353 correspondence retention exports CSV", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/correspondence/retention/page.tsx"), "utf8");
+  assert.match(source, /exportToCsv/);
+  assert.match(source, /Saving…/);
+  assert.doesNotMatch(source, /Saving\.\.\./);
+});
+
+test("UX-354 stock register syncs filters to the URL", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/stock/page.tsx"), "utf8");
+  assert.match(source, /useSearchParams/);
+  assert.match(source, /params\.set\("q"/);
+});
+
+test("UX-203 asset disposal create uses FormSection", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/assets/disposal/page.tsx"), "utf8");
+  assert.match(source, /FormSection/);
+  assert.match(source, /FormField/);
+});
+
+test("UX-211 sidebar scrollbar is visible", () => {
+  const css = readFileSync(join(webRoot, "app/globals.css"), "utf8");
+  const start = css.indexOf(".sidebar-nav,");
+  assert.notEqual(start, -1);
+  const block = css.slice(start, start + 450);
+  assert.match(block, /scrollbar-width:\s*thin/);
+  assert.doesNotMatch(block, /scrollbar-width:\s*none/);
+});
+
+test("UX-276 stock submodules use ModulePageHeader", () => {
+  for (const rel of ["categories", "low-stock", "movements", "reports", "scan"]) {
+    const source = readFileSync(join(webRoot, `app/(app)/stock/${rel}/page.tsx`), "utf8");
+    assert.match(source, /ModulePageHeader/, `missing header on stock/${rel}`);
+  }
+});
+
+test("UX-074 LIL chrome uses Leave in Lieu wording", () => {
+  const leave = readFileSync(join(webRoot, "app/(app)/leave/page.tsx"), "utf8");
+  const detail = readFileSync(join(webRoot, "app/(app)/leave/[id]/page.tsx"), "utf8");
+  const balances = readFileSync(join(webRoot, "app/(app)/hr/leave/balances/page.tsx"), "utf8");
+  assert.match(leave, /Leave in Lieu/);
+  assert.doesNotMatch(leave, /LIL linkings/);
+  assert.match(detail, /Leave in Lieu Accrual Linkings/);
+  assert.match(balances, /Leave in Lieu Used \/ Avail/);
+});
+
+test("UX-317 access requests register shows business reason", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/admin/access/requests/page.tsx"), "utf8");
+  assert.match(source, /<th>Reason<\/th>/);
+  assert.match(source, /r\.business_reason/);
 });

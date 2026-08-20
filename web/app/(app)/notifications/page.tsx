@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { userNotificationsApi, alertsApi, type UserNotification, type AlertsSummary } from "@/lib/api";
+import { userNotificationsApi, alertsApi, notificationsPhase23Api, type UserNotification, type AlertsSummary } from "@/lib/api";
 import { useFormatDate } from "@/lib/useFormatDate";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
@@ -36,7 +36,7 @@ const MODULE_ICONS: Record<string, { icon: string; color: string; bg: string }> 
   travel:      { icon: "flight_takeoff",         color: "text-primary",     bg: "bg-primary/10" },
   leave:       { icon: "event_available",        color: "text-green-600",   bg: "bg-green-50 dark:bg-green-900/20" },
   imprest:     { icon: "account_balance_wallet", color: "text-amber-600",   bg: "bg-amber-50 dark:bg-amber-900/20" },
-  procurement: { icon: "shopping_cart",          color: "text-purple-600",  bg: "bg-purple-50 dark:bg-purple-900/20" },
+  procurement: { icon: "shopping_cart",          color: "text-primary",     bg: "bg-primary/10" },
   assignment:  { icon: "task_alt",               color: "text-blue-600",    bg: "bg-blue-50 dark:bg-blue-900/20" },
   finance:     { icon: "payments",               color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
 };
@@ -272,14 +272,14 @@ function AlertsTab() {
                 meeting: "border-primary/30 bg-primary/5",
                 travel: "border-teal-200 dark:border-teal-800/50 bg-teal-50 dark:bg-teal-900/20",
                 leave: "border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20",
-                milestone: "border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/20",
+                milestone: "border-primary/20 bg-primary/10",
                 deadline: "border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-900/20",
               };
               const labelColors: Record<string, string> = {
                 meeting: "text-primary",
                 travel: "text-teal-700 dark:text-teal-300",
                 leave: "text-amber-700 dark:text-amber-300",
-                milestone: "text-purple-700 dark:text-purple-300",
+                milestone: "text-primary",
                 deadline: "text-red-700 dark:text-red-300",
               };
               const typeIcons: Record<string, string> = {
@@ -313,20 +313,23 @@ function AlertsTab() {
 
 // ─── Notifications (inbox) tab ────────────────────────────────────────────────
 
-type InboxFilter = "all" | "unread" | "read";
+type InboxFilter = "all" | "unread" | "read" | "action_required" | "archived";
 
 function InboxTab() {
   const { fmt } = useFormatDate();
   const { success, error: showErrorToast } = useToast();
   const [filter, setFilter] = useState<InboxFilter>("all");
+  const [moduleFilter, setModuleFilter] = useState<string | undefined>();
+  const [nlQuery, setNlQuery] = useState("");
+  const [nlBusy, setNlBusy] = useState(false);
   const [page, setPage]     = useState(1);
   const queryClient = useQueryClient();
   const router = useRouter();
 
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["notifications", "list", filter, page],
-    queryFn: () => userNotificationsApi.list({ filter, page, per_page: 20 }).then(r => r.data),
+    queryKey: ["notifications", "list", filter, moduleFilter, page],
+    queryFn: () => userNotificationsApi.list({ filter, module: moduleFilter, page, per_page: 20 }).then(r => r.data),
     staleTime: 10_000,
   });
 
@@ -361,6 +364,26 @@ function InboxTab() {
     try { await userNotificationsApi.destroy(id); invalidate(); } catch { /* ignore */ }
   };
 
+  const runNlSearch = async () => {
+    const q = nlQuery.trim();
+    if (!q) return;
+    setNlBusy(true);
+    try {
+      const res = await notificationsPhase23Api.nlSearch(q);
+      const payload = (res.data as { data?: { filters?: { filter?: string; module?: string } } }).data;
+      const next = payload?.filters?.filter;
+      if (next === "all" || next === "unread" || next === "read" || next === "action_required" || next === "archived") {
+        setFilter(next);
+      }
+      setModuleFilter(payload?.filters?.module);
+      setPage(1);
+    } catch {
+      showErrorToast("Search could not suggest inbox filters.");
+    } finally {
+      setNlBusy(false);
+    }
+  };
+
   const notifications: UserNotification[] = data?.data ?? [];
   const unreadCount = countData ?? 0;
 
@@ -368,11 +391,46 @@ function InboxTab() {
     { key: "all",    label: "All" },
     { key: "unread", label: `Unread${unreadCount > 0 ? ` (${unreadCount})` : ""}` },
     { key: "read",   label: "Read" },
+    { key: "action_required", label: "Action required" },
+    { key: "archived", label: "Archived" },
   ];
 
   return (
     <div className="space-y-5">
 
+      <form
+        className="flex flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void runNlSearch();
+        }}
+      >
+        <label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-medium text-neutral-500">
+          Inbox search
+          <input
+            className="form-input text-sm"
+            value={nlQuery}
+            onChange={(e) => setNlQuery(e.target.value)}
+            placeholder="e.g. unread travel, action required leave"
+            aria-label="Inbox search"
+          />
+        </label>
+        <button type="submit" className="btn-secondary text-sm" disabled={nlBusy}>
+          {nlBusy ? "Searching…" : "Search inbox"}
+        </button>
+        {moduleFilter ? (
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            onClick={() => { setModuleFilter(undefined); setPage(1); }}
+          >
+            Clear module ({moduleFilter})
+          </button>
+        ) : null}
+      </form>
+      <p className="text-xs text-neutral-500">
+        Search suggests inbox filters only. It does not send messages.
+      </p>
       <div className="flex items-center justify-between">
         <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-700 flex-1">
           {filterTabs.map(tab => (

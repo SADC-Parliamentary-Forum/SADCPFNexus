@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -35,7 +35,19 @@ function cell(v: unknown): string {
 }
 
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const analyse = useMutation({
+    mutationFn: () => peopleAuthorityApi.analyseSod({ title: title.trim() || undefined }),
+    onSuccess: () => {
+      setTitle("");
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "sod"] });
+    },
+    onError: () => setErr("Could not run the SoD analysis."),
+  });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","sod"],
     queryFn: async () => {
@@ -83,6 +95,25 @@ return (await peopleAuthorityApi.listSodReports()).data;
           </Link>
         }
       />
+
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          analyse.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Report title
+          <input className="form-input mt-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Optional" />
+        </label>
+        <div className="flex items-end gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={analyse.isPending}>
+            {analyse.isPending ? "Analysing…" : "Run SoD analysis"}
+          </button>
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">

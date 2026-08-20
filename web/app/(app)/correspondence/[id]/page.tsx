@@ -49,11 +49,15 @@ export default function CorrespondenceDetailPage() {
   const [signingModal, setSigningModal] = useState<{ action: "approve" | "reject" | "review" | "return"; stepKey: string } | null>(null);
   const [signingEvents, setSigningEvents] = useState<SignatureEvent[]>([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [trackingBusy, setTrackingBusy] = useState<number | null>(null);
 
-  useEffect(() => {
+  const loadLetter = () =>
     correspondenceApi
       .get(Number(id))
-      .then((res) => setLetter(res.data.data))
+      .then((res) => setLetter(res.data.data));
+
+  useEffect(() => {
+    loadLetter()
       .catch(() => setError("Failed to load correspondence."))
       .finally(() => setLoading(false));
     // Load signing events (best-effort)
@@ -107,6 +111,19 @@ export default function CorrespondenceDetailPage() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch { setError("Download failed."); }
+  }
+
+  async function handleRefreshTracking(dispatchId: number) {
+    setTrackingBusy(dispatchId);
+    setError(null);
+    try {
+      await correspondenceApi.refreshTracking(dispatchId);
+      await loadLetter();
+    } catch {
+      setError("Tracking refresh failed.");
+    } finally {
+      setTrackingBusy(null);
+    }
   }
 
   if (loading) {
@@ -373,6 +390,58 @@ export default function CorrespondenceDetailPage() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card p-5 space-y-3">
+        <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Courier tracking</h3>
+        <p className="text-xs text-neutral-500">
+          Refresh uses the configured courier URL, or a local stub when none is set. Stub status is not live carrier proof.
+        </p>
+        {(letter.dispatches ?? []).length === 0 ? (
+          <p className="text-sm text-neutral-400">No dispatches recorded.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-neutral-100 text-neutral-500">
+                  <th className="py-2 pr-3 font-medium">Channel</th>
+                  <th className="py-2 pr-3 font-medium">Carrier</th>
+                  <th className="py-2 pr-3 font-medium">Tracking</th>
+                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 pr-3 font-medium">Checked</th>
+                  <th className="py-2 font-medium"> </th>
+                </tr>
+              </thead>
+              <tbody>
+                {(letter.dispatches ?? []).map((dispatch) => (
+                  <tr key={dispatch.id} className="border-b border-neutral-50">
+                    <td className="py-2 pr-3 capitalize">{dispatch.channel ?? "—"}</td>
+                    <td className="py-2 pr-3">{dispatch.courier_carrier ?? "—"}</td>
+                    <td className="py-2 pr-3 font-mono text-xs">
+                      {dispatch.tracking_number ?? dispatch.tracking_reference ?? "—"}
+                    </td>
+                    <td className="py-2 pr-3">{dispatch.tracking_status ?? dispatch.delivery_status ?? "—"}</td>
+                    <td className="py-2 pr-3">
+                      {dispatch.tracking_checked_at
+                        ? new Date(dispatch.tracking_checked_at).toLocaleString("en-GB")
+                        : "—"}
+                    </td>
+                    <td className="py-2 text-right">
+                      <button
+                        type="button"
+                        className="btn-secondary text-xs"
+                        disabled={actionLoading || trackingBusy === dispatch.id}
+                        onClick={() => void handleRefreshTracking(dispatch.id)}
+                      >
+                        {trackingBusy === dispatch.id ? "Refreshing…" : "Refresh tracking"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Body */}

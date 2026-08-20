@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { stockCategoriesApi, type StockCategory } from "@/lib/api";
 import { canManageStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 interface ApiError {
   response?: { data?: { message?: string } };
@@ -101,24 +101,20 @@ export default function StockCategoriesPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/stock" className="hover:text-primary transition-colors">Consumables / Stock</Link>
-            <span>/</span>
-            <span className="text-neutral-700 font-medium">Categories</span>
-          </div>
-          <h1 className="page-title">Stock Categories</h1>
-          <p className="page-subtitle">Configure consumable categories (stationery, toner, regalia, event material…).</p>
-        </div>
-        <button
-          onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ name: "", code: "", sort_order: 0 }); }}
-          className="btn-primary"
-        >
-          <span className="material-symbols-outlined text-[18px]">{showForm && !editId ? "close" : "add"}</span>
-          {showForm && !editId ? "Cancel" : "New Category"}
-        </button>
-      </div>
+      <ModulePageHeader
+        title="Stock Categories"
+        subtitle="Configure consumable categories (stationery, toner, regalia, event material…)."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Categories" }]} />}
+        actions={
+          <button
+            onClick={() => { setShowForm(!showForm); setEditId(null); setForm({ name: "", code: "", sort_order: 0 }); }}
+            className="btn-primary"
+          >
+            <span className="material-symbols-outlined text-[18px]">{showForm && !editId ? "close" : "add"}</span>
+            {showForm && !editId ? "Cancel" : "New Category"}
+          </button>
+        }
+      />
 
       {showForm && (
         <div className="card border-primary/20 p-5 space-y-4">

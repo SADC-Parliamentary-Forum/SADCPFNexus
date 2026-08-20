@@ -6,6 +6,23 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { correspondenceApi } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
+const TOKEN = /\{\{([a-z0-9_]+)\}\}/gi;
+
+function extractTokens(...parts: Array<string | undefined>): string[] {
+  const found = new Set<string>();
+  for (const part of parts) {
+    if (!part) continue;
+    for (const match of part.matchAll(TOKEN)) {
+      found.add(match[1]);
+    }
+  }
+  return Array.from(found);
+}
+
+function labelFor(token: string): string {
+  return token.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default function CorrespondenceMailMergePage() {
   const router = useRouter();
   const qc = useQueryClient();
@@ -15,7 +32,7 @@ export default function CorrespondenceMailMergePage() {
   });
 
   const [templateId, setTemplateId] = useState<number | "">("");
-  const [fieldsRaw, setFieldsRaw] = useState('{\n  "recipient_name": "",\n  "subject_matter": "",\n  "letter_date": "",\n  "signatory_name": ""\n}');
+  const [fields, setFields] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState<{ subject: string; body: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,18 +41,25 @@ export default function CorrespondenceMailMergePage() {
     [templates, templateId],
   );
 
-  const parseFields = () => {
-    try {
-      return JSON.parse(fieldsRaw) as Record<string, string>;
-    } catch {
-      throw new Error("Fields must be valid JSON object of string values.");
+  const tokens = useMemo(
+    () => extractTokens(selected?.subject_template, selected?.body_template),
+    [selected],
+  );
+
+  const fieldPayload = (): Record<string, string> => {
+    const out: Record<string, string> = {};
+    for (const token of tokens) {
+      out[token] = fields[token] ?? "";
     }
+    return out;
   };
 
   const previewMutation = useMutation({
     mutationFn: async () => {
       if (!templateId) throw new Error("Select a template.");
-      return correspondenceApi.mailMergePreview({ template_id: Number(templateId), fields: parseFields() }).then((r) => r.data.data);
+      return correspondenceApi
+        .mailMergePreview({ template_id: Number(templateId), fields: fieldPayload() })
+        .then((r) => r.data.data);
     },
     onSuccess: (data) => {
       setPreview(data);
@@ -47,11 +71,13 @@ export default function CorrespondenceMailMergePage() {
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!templateId) throw new Error("Select a template.");
-      return correspondenceApi.mailMergeCreate({
-        template_id: Number(templateId),
-        fields: parseFields(),
-        type: "external",
-      }).then((r) => r.data.data);
+      return correspondenceApi
+        .mailMergeCreate({
+          template_id: Number(templateId),
+          fields: fieldPayload(),
+          type: "external",
+        })
+        .then((r) => r.data.data);
     },
     onSuccess: (letter) => {
       void qc.invalidateQueries({ queryKey: ["correspondence"] });
@@ -93,7 +119,11 @@ export default function CorrespondenceMailMergePage() {
             <select
               className="form-input w-full"
               value={templateId}
-              onChange={(e) => setTemplateId(e.target.value ? Number(e.target.value) : "")}
+              onChange={(e) => {
+                setTemplateId(e.target.value ? Number(e.target.value) : "");
+                setFields({});
+                setPreview(null);
+              }}
               disabled={isLoading}
             >
               <option value="">Select…</option>
@@ -116,10 +146,21 @@ export default function CorrespondenceMailMergePage() {
           </div>
         )}
 
-        <label className="block text-sm">
-          <span className="mb-1 block text-neutral-600">Field values (JSON)</span>
-          <textarea className="form-input min-h-40 w-full font-mono text-xs" value={fieldsRaw} onChange={(e) => setFieldsRaw(e.target.value)} />
-        </label>
+        {tokens.length > 0 && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {tokens.map((token) => (
+              <label key={token} className="block text-sm">
+                <span className="mb-1 block text-neutral-600">{labelFor(token)}</span>
+                <input
+                  className="form-input w-full"
+                  value={fields[token] ?? ""}
+                  onChange={(e) => setFields((prev) => ({ ...prev, [token]: e.target.value }))}
+                  placeholder={`{{${token}}}`}
+                />
+              </label>
+            ))}
+          </div>
+        )}
 
         {error && <p className="text-sm text-red-700">{error}</p>}
 

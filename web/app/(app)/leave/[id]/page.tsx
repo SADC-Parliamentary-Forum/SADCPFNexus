@@ -700,17 +700,17 @@ export default function LeaveDetailPage() {
       {hasLil && (
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
-            <SectionIcon icon="swap_horiz" color="text-purple-600" bg="bg-purple-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">LIL Accrual Linkings</h3>
+            <SectionIcon icon="swap_horiz" color="text-primary" bg="bg-primary/10" />
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Leave in Lieu Accrual Linkings</h3>
             {request.lil_hours_required != null && request.lil_hours_linked != null && (
               <div className="ml-auto flex items-center gap-1.5">
                 <div className="h-1.5 w-20 rounded-full bg-neutral-100 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-purple-500 transition-all"
+                    className="h-full rounded-full bg-primary transition-all"
                     style={{ width: `${Math.min(100, (request.lil_hours_linked / request.lil_hours_required) * 100)}%` }}
                   />
                 </div>
-                <span className="text-xs font-semibold text-purple-600">
+                <span className="text-xs font-semibold text-primary">
                   {request.lil_hours_linked}/{request.lil_hours_required} hrs
                 </span>
               </div>
@@ -719,10 +719,10 @@ export default function LeaveDetailPage() {
           {lilLinkings.length > 0 && (
             <div className="space-y-2">
               {lilLinkings.map((lil) => (
-                <div key={lil.id} className="flex items-center justify-between rounded-xl bg-purple-50 border border-purple-100 p-3.5">
+                <div key={lil.id} className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/20 p-3.5">
                   <div className="flex items-start gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-purple-100 flex-shrink-0">
-                      <span className="material-symbols-outlined text-purple-600 text-[16px]">schedule</span>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-primary/20 flex-shrink-0">
+                      <span className="material-symbols-outlined text-primary text-[16px]">schedule</span>
                     </div>
                     <div>
                       <p className="text-sm font-medium text-neutral-900">{lil.description ?? "—"}</p>
@@ -739,7 +739,7 @@ export default function LeaveDetailPage() {
                         Verified
                       </span>
                     )}
-                    <p className="text-sm font-bold text-purple-700">{lil.hours ?? 0} hrs</p>
+                    <p className="text-sm font-bold text-primary">{lil.hours ?? 0} hrs</p>
                     <p className="text-[10px] text-neutral-400">Code: {lil.code ?? "—"}</p>
                   </div>
                 </div>

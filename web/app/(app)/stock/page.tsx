@@ -3,6 +3,7 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { stockItemsApi, stockCategoriesApi, type StockItem, type StockCategory } from "@/lib/api";
 import { canManageStock, canIssueStock, getStoredUser } from "@/lib/auth";
 import { StockItemFormModal } from "@/components/stock/StockItemFormModal";
@@ -14,6 +15,9 @@ function fmtMoney(n: number | string | null | undefined): string {
 }
 
 export default function StockItemsPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<StockItem[]>([]);
   const [categories, setCategories] = useState<StockCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,9 +25,9 @@ export default function StockItemsPage() {
   const [canManage, setCanManage] = useState(false);
   const [canIssue, setCanIssue] = useState(false);
 
-  const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("active");
+  const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
+  const [filterCategory, setFilterCategory] = useState(() => searchParams.get("category") ?? "all");
+  const [filterStatus, setFilterStatus] = useState(() => searchParams.get("status") ?? "active");
 
   const [showItemForm, setShowItemForm] = useState(false);
   const [editItem, setEditItem] = useState<StockItem | null>(null);
@@ -48,6 +52,15 @@ export default function StockItemsPage() {
     stockCategoriesApi.list().then((res) => setCategories(res.data.data ?? [])).catch(() => {});
   }, [loadItems]);
 
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("q", search.trim());
+    if (filterCategory !== "all") params.set("category", filterCategory);
+    if (filterStatus !== "active") params.set("status", filterStatus);
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [search, filterCategory, filterStatus, pathname, router]);
+
   const filtered = items.filter((i) => {
     const q = search.toLowerCase();
     const matchSearch = !q || i.name.toLowerCase().includes(q) || i.item_code.toLowerCase().includes(q);
@@ -70,9 +83,9 @@ export default function StockItemsPage() {
     <div className="space-y-6 max-w-6xl">
       <div className="flex items-start justify-between flex-wrap gap-4">
         <ModulePageHeader
-        title="Consumables / Stock"
+        title="Stock"
         subtitle="Track consumable stock items, balances and reorder levels — separate from fixed assets."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Consumables / Stock" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock" }]} />}
       />
         <div className="flex gap-2 flex-wrap">
           <Link href="/stock/dashboard" className="btn-secondary">

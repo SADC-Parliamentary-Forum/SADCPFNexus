@@ -20,10 +20,10 @@ import { safeInternalPath } from "@/lib/safeInternalPath";
 const IS_DEV = process.env.NODE_ENV === "development";
 
 const DEMO_CREDENTIALS = IS_DEV ? [
-  { role: "System Admin",       email: "admin@sadcpf.org",   icon: "admin_panel_settings", color: "text-purple-600 bg-purple-50" },
-  { role: "Secretary General",  email: "sg@sadcpf.org",      icon: "gavel",                color: "text-neutral-700 bg-neutral-100" },
-  { role: "HR Manager",         email: "hr@sadcpf.org",      icon: "people",               color: "text-green-600 bg-green-50"  },
-  { role: "Finance Controller", email: "finance@sadcpf.org", icon: "payments",             color: "text-amber-600 bg-amber-50"  },
+  { role: "System Admin",       email: "admin@sadcpf.org",   icon: "admin_panel_settings", color: "text-primary bg-primary/10 dark:bg-primary/20" },
+  { role: "Secretary General",  email: "sg@sadcpf.org",      icon: "gavel",                color: "text-neutral-700 bg-neutral-100 dark:bg-neutral-800 dark:text-neutral-200" },
+  { role: "HR Manager",         email: "hr@sadcpf.org",      icon: "people",               color: "text-green-600 bg-green-50 dark:bg-green-900/20"  },
+  { role: "Finance Controller", email: "finance@sadcpf.org", icon: "payments",             color: "text-amber-600 bg-amber-50 dark:bg-amber-900/20"  },
 ] : [];
 
 const FEATURES = [

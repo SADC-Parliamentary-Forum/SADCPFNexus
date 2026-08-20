@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -34,13 +34,32 @@ function cell(v: unknown): string {
   return String(v);
 }
 
+function personLabel(p: Record<string, unknown>): string {
+  return String(p.preferred_name ?? [p.first_name, p.last_name].filter(Boolean).join(" ") ?? p.name ?? p.id);
+}
+
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const today = new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState({
+    principal_person_id: "",
+    delegate_person_id: "",
+    delegation_type: "workflow",
+    start_at: today,
+    end_at: today,
+    reason: "",
+    scope_action: "approve",
+  });
+
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "delegations"],
-    queryFn: async () => {
-return (await peopleAuthorityApi.listDelegations()).data;
-    },
+    queryFn: async () => (await peopleAuthorityApi.listDelegations()).data,
+  });
+  const peopleQuery = useQuery({
+    queryKey: ["people-authority", "people-options"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listPeople({ directory: 1, per_page: 100 })).data),
   });
 
   const rows = useMemo(() => asRows(data), [data]);
@@ -50,19 +69,31 @@ return (await peopleAuthorityApi.listDelegations()).data;
     return rows.filter((r) => JSON.stringify(r).toLowerCase().includes(term));
   }, [rows, q]);
 
-  const columns = useMemo(() => {
-    const keys = new Set<string>();
-    for (const r of filtered.slice(0, 20)) {
-      Object.keys(r).forEach((k) => {
-        if (!["id", "uuid", "created_at", "updated_at", "deleted_at"].includes(k) && typeof r[k] !== "object") keys.add(k);
-        else if (["name", "title", "status", "email", "code", "type"].includes(k)) keys.add(k);
-      });
-    }
-    const preferred = ["name", "title", "code", "type", "status", "email", "first_name", "last_name"];
-    const ordered = preferred.filter((k) => keys.has(k));
-    for (const k of keys) if (!ordered.includes(k) && ordered.length < 6) ordered.push(k);
-    return ordered.length ? ordered : ["id"];
-  }, [filtered]);
+  const create = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.createDelegation({
+        principal_person_id: Number(form.principal_person_id),
+        delegate_person_id: Number(form.delegate_person_id),
+        delegation_type: form.delegation_type,
+        start_at: form.start_at,
+        end_at: form.end_at,
+        reason: form.reason || undefined,
+        scopes: [{ action: form.scope_action }],
+      }),
+    onSuccess: () => {
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "delegations"] });
+    },
+    onError: () => setErr("Could not create the delegation. Principal, delegate, dates, and a scope action are required."),
+  });
+  const approve = useMutation({
+    mutationFn: (id: number) => peopleAuthorityApi.approveDelegation(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["people-authority", "delegations"] }),
+  });
+  const revoke = useMutation({
+    mutationFn: (id: number) => peopleAuthorityApi.revokeDelegation(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["people-authority", "delegations"] }),
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
@@ -84,15 +115,69 @@ return (await peopleAuthorityApi.listDelegations()).data;
         }
       />
 
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          create.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Principal
+          <select className="form-input mt-1" value={form.principal_person_id} onChange={(e) => setForm((f) => ({ ...f, principal_person_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(peopleQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Delegate
+          <select className="form-input mt-1" value={form.delegate_person_id} onChange={(e) => setForm((f) => ({ ...f, delegate_person_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(peopleQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Type
+          <select className="form-input mt-1" value={form.delegation_type} onChange={(e) => setForm((f) => ({ ...f, delegation_type: e.target.value }))}>
+            <option value="workflow">Workflow</option>
+            <option value="approval">Approval</option>
+            <option value="signing">Signing</option>
+            <option value="preparation">Preparation</option>
+            <option value="general">General</option>
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Scope action
+          <input className="form-input mt-1" value={form.scope_action} onChange={(e) => setForm((f) => ({ ...f, scope_action: e.target.value }))} required />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Start
+          <input type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          End
+          <input type="date" className="form-input mt-1" value={form.end_at} onChange={(e) => setForm((f) => ({ ...f, end_at: e.target.value }))} required />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600 sm:col-span-2">
+          Reason
+          <input className="form-input mt-1" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
+        </label>
+        <div className="sm:col-span-2 flex items-center gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
+            {create.isPending ? "Saving…" : "Create delegation"}
+          </button>
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
+
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">
           Search
-          <input
-            className="form-input mt-1"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
-          />
+          <input className="form-input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter rows…" />
         </label>
       </div>
 
@@ -109,9 +194,7 @@ return (await peopleAuthorityApi.listDelegations()).data;
             title="Unable to load"
             description="Could not retrieve this register."
             action={
-              <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
-              </button>
+              <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>Retry</button>
             }
           />
         </div>
@@ -126,19 +209,34 @@ return (await peopleAuthorityApi.listDelegations()).data;
               <caption className="sr-only">Delegations</caption>
               <thead>
                 <tr>
-                  {columns.map((c) => (
-                    <th key={c} className="capitalize">
-                      {c.replace(/_/g, " ")}
-                    </th>
-                  ))}
+                  <th>Reference</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((r, idx) => (
                   <tr key={String(r.id ?? idx)}>
-                    {columns.map((c) => (
-                      <td key={c}>{cell(r[c])}</td>
-                    ))}
+                    <td>{cell(r.reference ?? r.id)}</td>
+                    <td>{cell(r.delegation_type)}</td>
+                    <td>{cell(r.status)}</td>
+                    <td>{cell(r.start_at)}</td>
+                    <td>{cell(r.end_at)}</td>
+                    <td className="space-x-2">
+                      {r.status !== "active" && r.status !== "revoked" && (
+                        <button type="button" className="text-xs text-emerald-700 hover:underline" onClick={() => approve.mutate(Number(r.id))} disabled={approve.isPending}>
+                          Approve
+                        </button>
+                      )}
+                      {r.status !== "revoked" && (
+                        <button type="button" className="text-xs text-red-700 hover:underline" onClick={() => revoke.mutate(Number(r.id))} disabled={revoke.isPending}>
+                          Revoke
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

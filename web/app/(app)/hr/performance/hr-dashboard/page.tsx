@@ -165,7 +165,7 @@ export default function HrPerformanceDashboardPage() {
               { label: "Satisfactory", value: satisfactory, icon: "check_circle", color: "text-neutral-600", bg: "bg-neutral-100" },
               { label: "Watchlist", value: watchlistCount, icon: "warning", color: "text-amber-600", bg: "bg-amber-50" },
               { label: "At Risk / Critical", value: atRiskCount, icon: "crisis_alert", color: "text-red-600", bg: "bg-red-50" },
-              { label: "Avg Completion", value: `${Math.round(avgCompletion)}%`, icon: "donut_large", color: "text-purple-600", bg: "bg-purple-50" },
+              { label: "Avg Completion", value: `${Math.round(avgCompletion)}%`, icon: "donut_large", color: "text-primary", bg: "bg-primary/10" },
             ].map((stat) => (
               <div key={stat.label} className="card p-4">
                 <div className={`h-9 w-9 rounded-lg ${stat.bg} flex items-center justify-center mb-2`}>

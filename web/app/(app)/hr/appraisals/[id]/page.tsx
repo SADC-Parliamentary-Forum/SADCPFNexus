@@ -61,7 +61,7 @@ const STATUS_CLS: Record<string, string> = {
   employee_submitted: "bg-amber-100 text-amber-800 border-amber-200",
   supervisor_reviewed: "bg-blue-100 text-blue-800 border-blue-200",
   hod_reviewed: "bg-indigo-100 text-indigo-800 border-indigo-200",
-  hr_reviewed: "bg-purple-100 text-purple-800 border-purple-200",
+  hr_reviewed: "bg-teal-100 text-teal-800 border-teal-200",
   finalized: "bg-green-100 text-green-800 border-green-200",
 };
 

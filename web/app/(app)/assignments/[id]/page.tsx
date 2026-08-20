@@ -47,7 +47,7 @@ const updateTypeIcon: Record<string, string> = {
 const updateTypeColor: Record<string, string> = {
   update:          "bg-blue-50 text-blue-600",
   comment:         "bg-neutral-100 text-neutral-600",
-  feedback:        "bg-purple-50 text-purple-600",
+  feedback:        "bg-primary/10 text-primary",
   escalation:      "bg-red-50 text-red-600",
   closure_request: "bg-green-50 text-green-600",
   system:          "bg-neutral-100 text-neutral-500",
@@ -134,6 +134,7 @@ export default function AssignmentDetailPage() {
   const [verifyForm, setVerifyForm] = useState({ decision: "accepted", comments: "" });
   const [reassignForm, setReassignForm] = useState({ assigned_to: "", reason: "" });
   const [checklistTitle, setChecklistTitle] = useState("");
+  const [depId, setDepId] = useState("");
 
   useEffect(() => {
     tenantUsersApi.list().then((r) => setUsers(r.data.data ?? [])).catch(() => {});
@@ -143,6 +144,33 @@ export default function AssignmentDetailPage() {
     queryKey: ["assignments", id],
     queryFn: () => assignmentsApi.get(Number(id)).then((r) => r.data),
     staleTime: 30_000,
+  });
+
+  const numericId = Number(id);
+  const depsQuery = useQuery({
+    queryKey: ["assignments", id, "dependencies"],
+    enabled: Number.isFinite(numericId) && numericId > 0,
+    queryFn: () => assignmentsApi.dependencies(numericId).then((r) => r.data.data),
+  });
+  const peersQuery = useQuery({
+    queryKey: ["assignments", "dep-peers"],
+    queryFn: async () => {
+      const res = await assignmentsApi.list({ per_page: "50" });
+      const body = res.data as { data?: Assignment[] };
+      return body.data ?? [];
+    },
+  });
+  const addDep = useMutation({
+    mutationFn: () =>
+      assignmentsApi.addDependency(numericId, { depends_on_assignment_id: Number(depId) }),
+    onSuccess: () => {
+      setDepId("");
+      qc.invalidateQueries({ queryKey: ["assignments", id, "dependencies"] });
+    },
+  });
+  const removeDep = useMutation({
+    mutationFn: (dependencyId: number) => assignmentsApi.removeDependency(numericId, dependencyId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["assignments", id, "dependencies"] }),
   });
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["assignments", id] });
@@ -430,10 +458,78 @@ export default function AssignmentDetailPage() {
           </div>
         </div>
 
+        <div className="card p-5">
+          <SectionIcon icon="account_tree" color="bg-amber-50 text-amber-700" label="Dependencies" />
+          <p className="mb-3 text-xs text-neutral-500">
+            This assignment is blocked by the items below. Removing a link does not change permissions.
+          </p>
+          <ul className="mb-3 space-y-2 text-sm">
+            {(depsQuery.data?.blocked_by ?? []).map((raw) => {
+              const row = raw as {
+                id?: number;
+                depends_on_assignment_id?: number;
+                assignment?: { id?: number; title?: string; reference_number?: string };
+              };
+              const linked = row.assignment;
+              return (
+                <li key={String(row.id)} className="flex items-center justify-between gap-2">
+                  <Link href={`/assignments/${row.depends_on_assignment_id}`} className="hover:underline">
+                    {linked?.title ?? `Assignment #${row.depends_on_assignment_id}`}
+                    {linked?.reference_number ? ` · ${linked.reference_number}` : ""}
+                  </Link>
+                  <button
+                    type="button"
+                    className="text-xs text-red-700 hover:underline"
+                    onClick={() => removeDep.mutate(Number(row.id))}
+                    disabled={removeDep.isPending}
+                  >
+                    Remove
+                  </button>
+                </li>
+              );
+            })}
+            {(depsQuery.data?.blocked_by ?? []).length === 0 && (
+              <li className="text-neutral-500">Not blocked by another assignment.</li>
+            )}
+          </ul>
+          {(depsQuery.data?.blocks ?? []).length > 0 && (
+            <p className="mb-3 text-xs text-neutral-500">
+              Blocks {(depsQuery.data?.blocks ?? []).length} later assignment(s).
+            </p>
+          )}
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="block min-w-[220px] flex-1 text-sm">
+              <span className="mb-1 block text-neutral-600">Depends on</span>
+              <select
+                className="form-input w-full"
+                value={depId}
+                onChange={(e) => setDepId(e.target.value)}
+              >
+                <option value="">Select assignment…</option>
+                {(peersQuery.data ?? [])
+                  .filter((a) => a.id !== assignment.id)
+                  .map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.title} ({a.reference_number})
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="btn-secondary text-sm"
+              disabled={!depId || addDep.isPending}
+              onClick={() => addDep.mutate()}
+            >
+              Add dependency
+            </button>
+          </div>
+        </div>
+
         {/* Objective & Output */}
         {(assignment.objective || assignment.expected_output) && (
           <div className="card p-5">
-            <SectionIcon icon="flag" color="bg-purple-50 text-purple-600" label="Objective & Output" />
+            <SectionIcon icon="flag" color="bg-primary/10 text-primary" label="Objective & Output" />
             {assignment.objective && (
               <div className="mb-3">
                 <p className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wide mb-1">Objective</p>

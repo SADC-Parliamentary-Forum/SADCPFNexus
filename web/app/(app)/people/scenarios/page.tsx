@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -35,7 +35,23 @@ function cell(v: unknown): string {
 }
 
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [form, setForm] = useState({ name: "", description: "" });
+  const create = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.createOrgScenario({
+        name: form.name.trim(),
+        description: form.description.trim() || undefined,
+      }),
+    onSuccess: () => {
+      setForm({ name: "", description: "" });
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "org-scenarios"] });
+    },
+    onError: () => setErr("Could not create the scenario. Name is required."),
+  });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","org-scenarios"],
     queryFn: async () => {
@@ -83,6 +99,29 @@ return (await peopleAuthorityApi.listOrgScenarios()).data;
           </Link>
         }
       />
+
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          create.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Name
+          <input className="form-input mt-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Description
+          <input className="form-input mt-1" value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+        </label>
+        <div className="sm:col-span-2 flex items-center gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
+            {create.isPending ? "Saving…" : "Add scenario"}
+          </button>
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">

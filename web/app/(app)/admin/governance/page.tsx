@@ -136,7 +136,7 @@ export default function AdminGovernanceConfigPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {([
                 { key: "census", label: "Finance Records 2024", badge: "Class A", badgeColor: "bg-blue-100 text-blue-700" },
-                { key: "tax", label: "HR Records Q1-Q4", badge: "Class B", badgeColor: "bg-purple-100 text-purple-700" },
+                { key: "tax", label: "HR Records Q1-Q4", badge: "Class B", badgeColor: "bg-teal-100 text-teal-700" },
                 { key: "infra", label: "Procurement Logs", badge: "Public", badgeColor: "bg-green-100 text-green-700" },
                 { key: "personnel", label: "Personnel Records", badge: "Restricted", badgeColor: "bg-red-100 text-red-700" },
               ]).map(({ key, label, badge, badgeColor }) => (

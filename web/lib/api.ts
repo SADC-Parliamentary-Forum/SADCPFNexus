@@ -5827,7 +5827,12 @@ export interface NotificationPage {
 }
 
 export const userNotificationsApi = {
-  list: (params?: { filter?: "all" | "unread" | "read" | "action_required" | "archived"; per_page?: number; page?: number }) =>
+  list: (params?: {
+    filter?: "all" | "unread" | "read" | "action_required" | "archived";
+    module?: string;
+    per_page?: number;
+    page?: number;
+  }) =>
     api.get<NotificationPage>("/notifications", { params }),
   unreadCount: () => api.get<{ count: number }>("/notifications/unread-count"),
   markRead: (id: string) => api.post<{ message: string }>(`/notifications/${id}/read`),
@@ -6655,6 +6660,20 @@ export interface CorrespondenceLetter {
   recipients?: CorrespondenceRecipient[];
   owners?: Array<{ id: number; role: string; user?: { id: number; name: string } }>;
   subject_files?: Array<{ id: number; file_code: string; title: string }>;
+  dispatches?: CorrespondenceDispatch[];
+}
+
+export interface CorrespondenceDispatch {
+  id: number;
+  channel?: string | null;
+  courier_carrier?: string | null;
+  tracking_number?: string | null;
+  tracking_reference?: string | null;
+  tracking_status?: string | null;
+  tracking_checked_at?: string | null;
+  delivery_status?: string | null;
+  dispatched_at?: string | null;
+  tracking_payload?: Record<string, unknown> | null;
 }
 
 export interface CorrespondenceSubjectFile {
@@ -6758,6 +6777,10 @@ export const correspondenceApi = {
     api.post(`/correspondence/letters/${id}/sign`, { comment }),
   dispatch: (id: number, data: Record<string, unknown>) =>
     api.post(`/correspondence/letters/${id}/dispatch`, data),
+  refreshTracking: (dispatchId: number) =>
+    api.post<{ message: string; data: CorrespondenceDispatch }>(
+      `/correspondence/dispatches/${dispatchId}/refresh-tracking`,
+    ),
   linkAssignment: (id: number, data: { assignment_id?: number; create?: Record<string, unknown> }) =>
     api.post(`/correspondence/letters/${id}/assignments`, data),
   linkRelationship: (id: number, data: { to_correspondence_id: number; type: string }) =>

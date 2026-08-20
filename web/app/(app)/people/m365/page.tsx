@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -35,7 +35,18 @@ function cell(v: unknown): string {
 }
 
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [dryRun, setDryRun] = useState(true);
+  const run = useMutation({
+    mutationFn: () => peopleAuthorityApi.runDirectorySync({ dry_run: dryRun }),
+    onSuccess: () => {
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "directory-sync"] });
+    },
+    onError: () => setErr("Could not start directory sync. Live Graph still needs operator credentials."),
+  });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","directory-sync"],
     queryFn: async () => {
@@ -83,6 +94,23 @@ return (await peopleAuthorityApi.listDirectorySync()).data;
           </Link>
         }
       />
+
+      <form
+        className="card flex flex-wrap items-end gap-3 p-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          run.mutate();
+        }}
+      >
+        <label className="flex items-center gap-2 text-sm text-neutral-700">
+          <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
+          Dry run
+        </label>
+        <button type="submit" className="btn-primary text-sm" disabled={run.isPending}>
+          {run.isPending ? "Running…" : "Run directory sync"}
+        </button>
+        {err && <p className="text-sm text-red-700">{err}</p>}
+      </form>
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">

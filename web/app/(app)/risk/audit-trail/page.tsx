@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { riskApi, type RiskHistory } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
+import { LabelledChangeRows } from "@/components/ui/LabelledRecord";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -305,10 +306,8 @@ export default function RiskAuditTrailPage() {
 
           {(selected.old_values || selected.new_values) && (
             <div>
-              <p className="text-xs text-neutral-500 mb-1">Change Payload</p>
-              <pre className="text-xs text-neutral-700 bg-neutral-50 rounded-lg p-3 border border-neutral-200 overflow-x-auto">
-                {JSON.stringify({ old: selected.old_values, new: selected.new_values }, null, 2)}
-              </pre>
+              <p className="text-xs text-neutral-500 mb-1">Change rows</p>
+              <LabelledChangeRows oldValues={selected.old_values} newValues={selected.new_values} />
             </div>
           )}
         </div>

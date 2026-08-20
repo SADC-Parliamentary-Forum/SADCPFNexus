@@ -40,7 +40,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 
 const CATEGORY_COLORS: Record<string, string> = {
   strategic: "text-indigo-600", operational: "text-blue-600", financial: "text-green-600",
-  compliance: "text-purple-600", reputational: "text-pink-600", security: "text-red-600", other: "text-neutral-500",
+  compliance: "text-teal-600", reputational: "text-orange-600", security: "text-red-600", other: "text-neutral-500",
 };
 
 // ── Page ──────────────────────────────────────────────────────────────────────

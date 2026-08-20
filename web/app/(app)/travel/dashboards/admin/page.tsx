@@ -114,8 +114,8 @@ export default function TravelAdminDashboardPage() {
       label: "Amendments open",
       value: data?.amendments_open ?? 0,
       icon: "edit_note",
-      color: "text-purple-600 dark:text-purple-300",
-      bg: "bg-purple-50 dark:bg-purple-900/20",
+      color: "text-primary dark:text-primary",
+      bg: "bg-primary/10",
       hint: "Pending changes awaiting review.",
     },
   ];

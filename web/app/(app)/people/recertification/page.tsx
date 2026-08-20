@@ -1,74 +1,35 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { EmptyState } from "@/components/ui/EmptyState";
-
-function asRows(payload: unknown): Record<string, unknown>[] {
-  if (Array.isArray(payload)) return payload as Record<string, unknown>[];
-  if (payload && typeof payload === "object") {
-    const obj = payload as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data as Record<string, unknown>[];
-    if (obj.data && typeof obj.data === "object") {
-      const nested = obj.data as Record<string, unknown>;
-      for (const key of ["data", "items", "results", "people", "units", "positions"]) {
-        if (Array.isArray(nested[key])) return nested[key] as Record<string, unknown>[];
-      }
-    }
-    for (const key of ["items", "results", "people", "units", "positions", "authorities", "delegations"]) {
-      if (Array.isArray(obj[key])) return obj[key] as Record<string, unknown>[];
-    }
-  }
-  return [];
-}
-
-function cell(v: unknown): string {
-  if (v == null) return "-";
-  if (typeof v === "object") {
-    const o = v as Record<string, unknown>;
-    return String(o.name ?? o.title ?? o.label ?? o.code ?? JSON.stringify(v));
-  }
-  return String(v);
-}
 
 export default function Page() {
-  const [q, setQ] = useState("");
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["people-authority","recertification"],
-    queryFn: async () => {
-return (await peopleAuthorityApi.openRecertification()).data;
+  const [name, setName] = useState("Privileged role recertification");
+  const [dueDate, setDueDate] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const open = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.openRecertification({
+        name: name.trim() || undefined,
+        due_date: dueDate || undefined,
+        auto_populate_roles: true,
+      }),
+    onSuccess: () => {
+      setMsg("Recertification campaign opened. Reviewers still decide each item.");
+      setErr(null);
     },
+    onError: () => setErr("Could not open a recertification campaign."),
   });
-
-  const rows = useMemo(() => asRows(data), [data]);
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return rows;
-    return rows.filter((r) => JSON.stringify(r).toLowerCase().includes(term));
-  }, [rows, q]);
-
-  const columns = useMemo(() => {
-    const keys = new Set<string>();
-    for (const r of filtered.slice(0, 20)) {
-      Object.keys(r).forEach((k) => {
-        if (!["id", "uuid", "created_at", "updated_at", "deleted_at"].includes(k) && typeof r[k] !== "object") keys.add(k);
-        else if (["name", "title", "status", "email", "code", "type"].includes(k)) keys.add(k);
-      });
-    }
-    const preferred = ["name", "title", "code", "type", "status", "email", "first_name", "last_name"];
-    const ordered = preferred.filter((k) => keys.has(k));
-    for (const k of keys) if (!ordered.includes(k) && ordered.length < 6) ordered.push(k);
-    return ordered.length ? ordered : ["id"];
-  }, [filtered]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <ModulePageHeader
         title="Recertification"
-        subtitle="People & Recertification"
+        subtitle="Open a campaign on demand. This page does not create campaigns just by loading."
         breadcrumbs={
           <PageBreadcrumbs
             items={[
@@ -77,76 +38,29 @@ return (await peopleAuthorityApi.openRecertification()).data;
             ]}
           />
         }
-        actions={
-          <Link href="/people" className="btn-secondary text-sm">
-            Hub
-          </Link>
-        }
+        actions={<Link href="/people" className="btn-secondary text-sm">Hub</Link>}
       />
-
-      <div className="card p-3">
+      <form
+        className="card space-y-3 p-4 max-w-xl"
+        onSubmit={(e) => {
+          e.preventDefault();
+          open.mutate();
+        }}
+      >
         <label className="block text-xs font-medium text-neutral-600">
-          Search
-          <input
-            className="form-input mt-1"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
-          />
+          Campaign name
+          <input className="form-input mt-1" value={name} onChange={(e) => setName(e.target.value)} />
         </label>
-      </div>
-
-      {isLoading ? (
-        <div className="card space-y-3 p-6">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-10 animate-pulse rounded bg-neutral-100" />
-          ))}
-        </div>
-      ) : isError ? (
-        <div className="card">
-          <EmptyState
-            icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
-            action={
-              <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
-              </button>
-            }
-          />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
-        </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <caption className="sr-only">Recertification</caption>
-              <thead>
-                <tr>
-                  {columns.map((c) => (
-                    <th key={c} className="capitalize">
-                      {c.replace(/_/g, " ")}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r, idx) => (
-                  <tr key={String(r.id ?? idx)}>
-                    {columns.map((c) => (
-                      <td key={c}>{cell(r[c])}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+        <label className="block text-xs font-medium text-neutral-600">
+          Due date
+          <input type="date" className="form-input mt-1" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+        </label>
+        <button type="submit" className="btn-primary text-sm" disabled={open.isPending}>
+          {open.isPending ? "Opening…" : "Open recertification campaign"}
+        </button>
+        {msg && <p className="text-sm text-green-700">{msg}</p>}
+        {err && <p className="text-sm text-red-700">{err}</p>}
+      </form>
     </div>
   );
 }
-

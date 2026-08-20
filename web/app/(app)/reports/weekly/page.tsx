@@ -197,7 +197,7 @@ export default function WeeklyReportsPage() {
               </Section>
 
               {/* Timesheets */}
-              <Section title="Timesheets" icon="schedule" color="text-purple-500">
+              <Section title="Timesheets" icon="schedule" color="text-primary">
                 <StatRow items={[
                   { label: "Submitted", value: payload.timesheets?.submitted ?? 0 },
                   { label: "Approved",  value: payload.timesheets?.approved ?? 0 },

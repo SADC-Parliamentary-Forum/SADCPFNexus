@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -35,7 +35,28 @@ function cell(v: unknown): string {
 }
 
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [form, setForm] = useState({ title: "", code: "", organisational_unit_id: "" });
+  const unitsQuery = useQuery({
+    queryKey: ["people-authority", "organisational-units"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listUnits()).data),
+  });
+  const create = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.createPosition({
+        title: form.title.trim(),
+        code: form.code.trim() || undefined,
+        organisational_unit_id: form.organisational_unit_id ? Number(form.organisational_unit_id) : undefined,
+      }),
+    onSuccess: () => {
+      setForm({ title: "", code: "", organisational_unit_id: "" });
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "positions"] });
+    },
+    onError: () => setErr("Could not create the position. Title is required."),
+  });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "positions"],
     queryFn: async () => {
@@ -83,6 +104,42 @@ return (await peopleAuthorityApi.listPositions()).data;
           </Link>
         }
       />
+
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!form.title.trim()) {
+            setErr("Title is required.");
+            return;
+          }
+          create.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Title
+          <input className="form-input mt-1" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Code
+          <input className="form-input mt-1" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Organisational unit
+          <select className="form-input mt-1" value={form.organisational_unit_id} onChange={(e) => setForm((f) => ({ ...f, organisational_unit_id: e.target.value }))}>
+            <option value="">None</option>
+            {(unitsQuery.data ?? []).map((u) => (
+              <option key={String(u.id)} value={String(u.id)}>{String(u.name ?? u.code ?? u.id)}</option>
+            ))}
+          </select>
+        </label>
+        <div className="sm:col-span-3 flex items-center gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
+            {create.isPending ? "Saving…" : "Add position"}
+          </button>
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">

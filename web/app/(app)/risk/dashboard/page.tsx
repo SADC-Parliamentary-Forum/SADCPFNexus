@@ -37,7 +37,7 @@ const ESCALATION_CONFIG: Record<string, string> = {
   none:         "text-neutral-500 bg-neutral-100",
   departmental: "text-blue-700 bg-blue-50 border-blue-200",
   directorate:  "text-indigo-700 bg-indigo-50 border-indigo-200",
-  sg:           "text-purple-700 bg-purple-50 border-purple-200",
+  sg:           "text-primary bg-primary/10 border-primary/20",
   committee:    "text-teal-700 bg-teal-50 border-teal-200",
 };
 
@@ -300,7 +300,7 @@ export default function RiskDashboardPage() {
       <div className="card p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-neutral-800 flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] text-purple-500">history</span>
+            <span className="material-symbols-outlined text-[16px] text-primary">history</span>
             Recent Activity
           </h2>
           <Link href="/risk/audit-trail" className="text-xs text-primary hover:underline">Full audit trail</Link>

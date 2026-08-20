@@ -73,12 +73,15 @@ function isAncestorOf(flat: Department[], ancestorId: number, targetId: number):
 function Connectors({ flat, positions }: { flat: Department[]; positions: PosMap }) {
   return (
     <svg
+      className="text-neutral-300 dark:text-neutral-600"
       style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", overflow: "visible" }}
       width="100%" height="100%"
+      role="img"
     >
+      <title>Reporting-line connectors</title>
       <defs>
         <marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-          <circle cx="3" cy="3" r="1.5" fill="#cbd5e1" />
+          <circle cx="3" cy="3" r="1.5" fill="currentColor" />
         </marker>
       </defs>
       {flat.map(node => {
@@ -96,7 +99,7 @@ function Connectors({ flat, positions }: { flat: Department[]; positions: PosMap
             key={node.id}
             d={`M ${x1} ${y1} C ${x1} ${my}, ${x2} ${my}, ${x2} ${y2}`}
             fill="none"
-            stroke="#cbd5e1"
+            stroke="currentColor"
             strokeWidth={1.5}
             markerEnd="url(#arrow)"
           />

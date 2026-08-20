@@ -15,26 +15,37 @@ const statConfig = [
   { key: "pending_approvals" as const, label: "Pending Approvals", icon: "pending_actions", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20", border: "border-amber-100 dark:border-amber-800/30", href: "/approvals" },
   { key: "active_travels" as const, label: "Active Travels", icon: "flight_takeoff", color: "text-primary", bg: "bg-primary/10", border: "border-primary/20", href: "/travel" },
   { key: "leave_requests" as const, label: "Leave Requests", icon: "event_available", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20", border: "border-green-100 dark:border-green-800/30", href: "/leave" },
-  { key: "open_requisitions" as const, label: "Open Requisitions", icon: "shopping_cart", color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-900/20", border: "border-purple-100 dark:border-purple-800/30", href: "/procurement" },
+  { key: "open_requisitions" as const, label: "Open Requisitions", icon: "shopping_cart", color: "text-primary", bg: "bg-primary/10", border: "border-primary/20", href: "/procurement" },
 ];
 
 const quickActions = [
   { label: "New Travel Request",   href: "/travel/create",           icon: "flight_takeoff",         color: "text-primary",    bg: "bg-primary/10"  },
   { label: "Apply for Leave",      href: "/leave/create",            icon: "event_available",         color: "text-green-600",  bg: "bg-green-50 dark:bg-green-900/20"    },
   { label: "Request Imprest",      href: "/imprest/create",          icon: "account_balance_wallet",  color: "text-amber-600",  bg: "bg-amber-50 dark:bg-amber-900/20"    },
-  { label: "Salary Advance",       href: "/salary-advances/create", icon: "payments",                color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-900/20"   },
+  { label: "Salary Advance",       href: "/salary-advances/create", icon: "payments",                color: "text-primary", bg: "bg-primary/10"   },
   { label: "Procurement Request",  href: "/procurement/create",      icon: "shopping_cart",           color: "text-rose-600",   bg: "bg-rose-50 dark:bg-rose-900/20"     },
   { label: "Timesheet",            href: "/hr/timesheets",           icon: "schedule",                color: "text-teal-600",   bg: "bg-teal-50 dark:bg-teal-900/20"     },
 ];
 
 const modules = [
-  { label: "Travel",      href: "/travel",      icon: "flight_takeoff",         desc: "Missions & DSA"      },
-  { label: "Leave",       href: "/leave",       icon: "event_available",        desc: "Leave management"    },
-  { label: "Finance",     href: "/finance",     icon: "payments",               desc: "Payslips & advances" },
-  { label: "Imprest",     href: "/imprest",     icon: "account_balance_wallet", desc: "Petty cash"          },
-  { label: "Procurement", href: "/procurement", icon: "shopping_cart",          desc: "Requisitions"        },
-  { label: "HR",          href: "/hr",          icon: "people",                 desc: "Timesheets & leave"  },
-  { label: "Admin",       href: "/admin",       icon: "admin_panel_settings",   desc: "Users & settings"    },
+  { label: "Travel",          href: "/travel",          icon: "flight_takeoff",         desc: "Missions & DSA" },
+  { label: "Leave",           href: "/leave",           icon: "event_available",        desc: "Leave management" },
+  { label: "Finance",         href: "/finance",         icon: "payments",               desc: "Payslips & advances" },
+  { label: "Imprest",         href: "/imprest",         icon: "account_balance_wallet", desc: "Petty cash" },
+  { label: "Procurement",     href: "/procurement",     icon: "shopping_cart",          desc: "Requisitions" },
+  { label: "Stock",           href: "/stock",           icon: "inventory_2",            desc: "Consumables" },
+  { label: "Assets",          href: "/assets",          icon: "precision_manufacturing", desc: "Fixed assets" },
+  { label: "Fleet",           href: "/fleet",           icon: "directions_car",         desc: "Vehicles & bookings" },
+  { label: "HR",              href: "/hr",              icon: "people",                 desc: "Timesheets & leave" },
+  { label: "People",          href: "/people",          icon: "badge",                  desc: "Directory & authority" },
+  { label: "Assignments",     href: "/assignments",     icon: "task_alt",               desc: "Tasks & accountability" },
+  { label: "Workplan",        href: "/workplan",        icon: "calendar_month",         desc: "Institutional calendar" },
+  { label: "Correspondence",  href: "/correspondence",  icon: "mail",                   desc: "Registry & letters" },
+  { label: "Governance",      href: "/governance",      icon: "gavel",                  desc: "Resolutions & meetings" },
+  { label: "Risk",            href: "/risk",            icon: "warning",                desc: "Risk register" },
+  { label: "Audit",           href: "/audit",           icon: "policy",                 desc: "Plans & findings" },
+  { label: "Reports",         href: "/reports",         icon: "summarize",              desc: "Exports & packs" },
+  { label: "Admin",           href: "/admin",           icon: "admin_panel_settings",   desc: "Users & settings" },
 ];
 
 interface ActivityItem {
@@ -219,7 +230,7 @@ export default function DashboardPage() {
 
   const EVENT_COLOR: Record<string, string> = {
     meeting: "bg-primary/10 text-primary", travel: "bg-blue-50 dark:bg-blue-900/20 text-blue-600",
-    leave: "bg-green-50 dark:bg-green-900/20 text-green-600", milestone: "bg-purple-50 dark:bg-purple-900/20 text-purple-600",
+    leave: "bg-green-50 dark:bg-green-900/20 text-green-600", milestone: "bg-primary/10 text-primary",
     deadline: "bg-red-50 dark:bg-red-900/20 text-red-600", birthday: "bg-pink-50 dark:bg-pink-900/20 text-pink-600",
   };
 
@@ -436,7 +447,7 @@ export default function DashboardPage() {
               <>
                 <StatPill label="Total" value={assignStats.total} href="/assignments/all" />
                 <StatPill label="Active" value={assignStats.active} href="/assignments/all?status=active" color="text-green-600" />
-                <StatPill label="Awaiting" value={assignStats.awaiting} href="/assignments/pending" color="text-purple-600" />
+                <StatPill label="Awaiting" value={assignStats.awaiting} href="/assignments/pending" color="text-primary" />
                 <StatPill label="Blocked" value={assignStats.blocked} href="/assignments/blocked" color="text-red-500" />
                 <StatPill label="Overdue" value={assignStats.overdue} href="/assignments/overdue" color="text-red-600" />
                 <StatPill label="Due Soon" value={assignStats.due_soon} color="text-amber-600" />

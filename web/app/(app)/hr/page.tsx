@@ -62,7 +62,7 @@ function HRPageContent() {
     { label: "Hours This Month", value: summary != null ? `${summary.hours_this_month} hrs` : "—", icon: "schedule", color: "text-primary", bg: "bg-primary/10" },
     { label: "Overtime (MTD)", value: summary != null ? `${summary.overtime_mtd} hrs` : "—", icon: "more_time", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
     { label: "Annual Leave Left", value: summary != null ? `${summary.annual_leave_left} days` : "—", icon: "event_available", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20" },
-    { label: "LIL Hours Available", value: summary != null ? `${summary.lil_hours_available} hrs` : "—", icon: "swap_horiz", color: "text-purple-600", bg: "bg-purple-50 dark:bg-purple-900/20" },
+    { label: "LIL Hours Available", value: summary != null ? `${summary.lil_hours_available} hrs` : "—", icon: "swap_horiz", color: "text-primary", bg: "bg-primary/10" },
   ];
 
   const quickActions = [

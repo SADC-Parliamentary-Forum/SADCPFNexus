@@ -4,6 +4,8 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import api from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { exportToCsv } from "@/lib/csvExport";
 
 type HoldRow = {
   id: number;
@@ -90,22 +92,51 @@ export default function CorrespondenceRetentionPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <div className="page-header">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/correspondence" className="hover:text-primary">Correspondence</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Retention</span>
-          </div>
-          <h1 className="page-title">Retention & Legal Holds</h1>
-          <p className="page-subtitle">
-            Set retention schedules and legal holds. Purge is blocked while a hold is active.
-          </p>
-        </div>
-        <Link href="/correspondence/master-register" className="btn-secondary btn-sm">
-          Master register
-        </Link>
-      </div>
+      <ModulePageHeader
+        title="Retention & Legal Holds"
+        subtitle="Set retention schedules and legal holds. Purge is blocked while a hold is active."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Correspondence", href: "/correspondence" },
+              { label: "Retention" },
+            ]}
+          />
+        }
+        actions={
+          <>
+            <button
+              type="button"
+              className="btn-secondary btn-sm"
+              onClick={() =>
+                exportToCsv(
+                  "correspondence-legal-holds.csv",
+                  holds.map((h) => ({
+                    ref: h.registry_reference || h.reference_number || h.id,
+                    title: h.title,
+                    policy: h.retention_policy ?? "",
+                    retain_until: h.retain_until ?? "",
+                    reason: h.legal_hold_reason ?? "",
+                  })),
+                  [
+                    { key: "ref", header: "Ref" },
+                    { key: "title", header: "Title" },
+                    { key: "policy", header: "Policy" },
+                    { key: "retain_until", header: "Retain until" },
+                    { key: "reason", header: "Reason" },
+                  ],
+                )
+              }
+              disabled={holds.length === 0}
+            >
+              Export CSV
+            </button>
+            <Link href="/correspondence/master-register" className="btn-secondary btn-sm">
+              Master register
+            </Link>
+          </>
+        }
+      />
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
       {err && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>}
 
@@ -169,7 +200,7 @@ export default function CorrespondenceRetentionPage() {
           />
         </label>
         <button type="submit" className="btn-primary btn-sm disabled:opacity-60 disabled:cursor-not-allowed" disabled={saving || !letterId.trim()}>
-          {saving ? "Saving..." : "Save"}
+          {saving ? "Saving…" : "Save"}
         </button>
       </form>
 
@@ -204,7 +235,7 @@ export default function CorrespondenceRetentionPage() {
                     onClick={() => void release(h.id)}
                     disabled={releasingId === h.id}
                   >
-                    {releasingId === h.id ? "Releasing..." : "Release hold"}
+                    {releasingId === h.id ? "Releasing…" : "Release hold"}
                   </button>
                 </td>
               </tr>

@@ -26,7 +26,7 @@ const SECURITY_GATES: SecurityGate[] = [
 ];
 
 const SCOPE_LEVELS: Record<string, { label: string; color: string }> = {
-  confidential: { label: "Confidential", color: "bg-purple-100 text-purple-700 border-purple-200" },
+  confidential: { label: "Confidential", color: "bg-indigo-100 text-indigo-700 border-indigo-200" },
   internal:     { label: "Internal",     color: "bg-blue-100 text-blue-700 border-blue-200" },
   restricted:   { label: "Restricted",   color: "bg-amber-100 text-amber-700 border-amber-200" },
   public:       { label: "Public",       color: "bg-green-100 text-green-700 border-green-200" },

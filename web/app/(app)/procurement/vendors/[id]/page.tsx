@@ -106,7 +106,7 @@ const statusConfig: Record<string, { label: string; cls: string; icon: string }>
 
 const categoryConfig: Record<string, { icon: string; color: string; bg: string }> = {
   goods:    { icon: "inventory_2",  color: "text-primary",    bg: "bg-primary/10"  },
-  services: { icon: "handyman",     color: "text-purple-600", bg: "bg-purple-50"   },
+  services: { icon: "handyman",     color: "text-teal-600", bg: "bg-teal-50"   },
   works:    { icon: "construction", color: "text-orange-600", bg: "bg-orange-50"   },
 };
 
@@ -1017,7 +1017,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
             {/* ── Performance Evaluations ─────────────────────────────────────── */}
             <div className="card p-6 space-y-5">
               <div className="flex items-center gap-3">
-                <SectionIcon icon="verified" color="text-purple-600" bg="bg-purple-50" />
+                <SectionIcon icon="verified" color="text-primary" bg="bg-primary/10" />
                 <div>
                   <h3 className="text-sm font-semibold text-neutral-800">Performance Evaluations</h3>
                   <p className="text-xs text-neutral-400">Formal 5-dimension scored evaluations (linked to contracts)</p>
@@ -1117,13 +1117,13 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                       <div key={ev.id} className="rounded-xl border border-neutral-100 bg-white p-4 space-y-3">
                         <div className="flex items-center justify-between flex-wrap gap-2">
                           <div className="flex items-center gap-2">
-                            <div className="h-7 w-7 rounded-full bg-purple-50 flex items-center justify-center text-xs font-bold text-purple-600">
+                            <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
                               {(ev.evaluator?.name ?? "?")[0].toUpperCase()}
                             </div>
                             <span className="text-sm font-semibold text-neutral-800">{ev.evaluator?.name ?? "Staff member"}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-purple-600">{overall != null ? overall.toFixed(1) : "—"} / 5</span>
+                            <span className="text-sm font-bold text-primary">{overall != null ? overall.toFixed(1) : "—"} / 5</span>
                             {ev.created_at && <span className="text-xs text-neutral-400">{formatDateShort(ev.created_at)}</span>}
                           </div>
                         </div>
@@ -1135,7 +1135,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                                 <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wide capitalize mb-1">{dim}</p>
                                 <div className="flex items-center gap-1.5">
                                   <div className="flex-1 h-1.5 rounded-full bg-neutral-200 overflow-hidden">
-                                    <div className="h-1.5 rounded-full bg-purple-500 transition-all" style={{ width: `${(score / 5) * 100}%` }} />
+                                    <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${(score / 5) * 100}%` }} />
                                   </div>
                                   <span className="text-xs font-bold text-neutral-700">{score}</span>
                                 </div>
@@ -1387,7 +1387,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
           {/* Vendor stats card */}
           <div className="lg:col-span-2 card p-5 space-y-5">
             <div className="flex items-center gap-3">
-              <SectionIcon icon="analytics" color="text-purple-600" bg="bg-purple-50" />
+              <SectionIcon icon="analytics" color="text-primary" bg="bg-primary/10" />
               <h2 className="text-sm font-semibold text-neutral-800">Procurement Activity</h2>
             </div>
             <div className="grid grid-cols-3 gap-4">
@@ -1410,8 +1410,8 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   label: "Unique RFQs",
                   value: new Set(quotes.map((q) => q.procurement_request?.id)).size,
                   icon: "description",
-                  color: "text-purple-600",
-                  bg: "bg-purple-50",
+                  color: "text-primary",
+                  bg: "bg-primary/10",
                 },
               ].map((s) => (
                 <div key={s.label} className="rounded-xl border border-neutral-100 bg-neutral-50/60 p-4">

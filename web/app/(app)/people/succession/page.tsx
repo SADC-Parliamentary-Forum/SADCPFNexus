@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -35,7 +35,10 @@ function cell(v: unknown): string {
 }
 
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [form, setForm] = useState({ position_id: "", title: "" });
+  const [err, setErr] = useState<string | null>(null);
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","succession"],
     queryFn: async () => {
@@ -64,6 +67,25 @@ return (await peopleAuthorityApi.listSuccession()).data;
     return ordered.length ? ordered : ["id"];
   }, [filtered]);
 
+  const positionsQuery = useQuery({
+    queryKey: ["people-authority", "position-options"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listPositions({ per_page: 100 })).data),
+  });
+
+  const create = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.createSuccession({
+        position_id: Number(form.position_id),
+        title: form.title.trim() || undefined,
+      }),
+    onSuccess: () => {
+      setForm({ position_id: "", title: "" });
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "succession"] });
+    },
+    onError: () => setErr("Could not create the succession plan. A position is required."),
+  });
+
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <ModulePageHeader
@@ -83,6 +105,40 @@ return (await peopleAuthorityApi.listSuccession()).data;
           </Link>
         }
       />
+
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!form.position_id) {
+            setErr("Select a position.");
+            return;
+          }
+          create.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Position
+          <select className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(positionsQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>
+                {String(p.title ?? p.name ?? p.code ?? p.id)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Plan title
+          <input className="form-input mt-1" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
+        </label>
+        <div className="sm:col-span-2 flex items-center gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
+            {create.isPending ? "Saving…" : "Create succession plan"}
+          </button>
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">

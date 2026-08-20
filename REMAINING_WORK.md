@@ -1,7 +1,7 @@
 # SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-08-17  
-**Baseline tip:** `feat/remaining-work-closeout` (from `437aaa7`).
+**Last updated:** 2026-08-20  
+**Baseline tip:** `feat/remaining-product-depth` (from `4843c98` on `main`).
 
 ---
 
@@ -23,9 +23,13 @@
 - Access-control pilot + cutover (AC-8/9/10)
 - Restore drill measured RTO/RPO
 - Staging IDOR matrix human results
-- Prod IMAP / SMS / WhatsApp / AV / OCR / SharePoint / LLM / SIEM / WORM / FCM / payroll / Calendar / Graph / e-sign / Play / ASC credentials
+- Prod IMAP / AV / FCM credentials (launch)
+- Prod SMS / WhatsApp / LLM / SIEM credentials (launch — remaining, not deferred)
+- Prod OCR / SharePoint / WORM / payroll / Calendar / Graph / e-sign / Play / ASC credentials
 - Document §125 / Notifications §124 / Access MFA-policy checklist answers
 - Pen-test engagement or documented residual-risk acceptance
+
+Launch remaining (not deferred): enable **SMS**, **WhatsApp**, **LLM assists**, and **SIEM** with real operator vendors/keys. Approve `/admin/notifications/governance` SMS/WhatsApp and `/admin/audit-trail/governance` SIEM first. Drivers today are Null/stub — do not invent secrets in code.
 
 Privileged MFA product gate: **on by default when `APP_ENV=production`** (`config/auth.php` `require_privileged_mfa`). Institutional policy at `/admin/access/governance` remains operator-owned.
 
@@ -50,9 +54,56 @@ Sentry: env-gated hooks exist (`App\Support\Observability`, `web/lib/observabili
 
 ## Optional later-phase depth (not launch blockers)
 
-- Live LLM / newspaper notices / cashflow charts beyond the 3-card summary
-- Stock forecasting, courier APIs, automated KRIs, biometric attendance
-- 186 deferred UX IA tickets (dual surfaces, calendars, settings IA)
+Shipped in `feat/remaining-product-depth` (over existing APIs):
+
+- Cashflow period closing-balance chart
+- Stocktake **Apply browser queue** from scan localStorage
+- Recurring assignment template create form
+- Assignment dependency graph on detail
+- Governance meeting pack tables (not raw JSON)
+- Correspondence mail-merge labelled fields
+- People & Authority mutate UI (skills, succession, delegations, acting, onboarding/offboarding, access reviews, recertification, privilege-alert detect/ack)
+
+Still later-phase (secrets / vendor / OOS):
+
+- Newspaper notices (live LLM is remaining go-live, not later-phase)
+- Stock forecasting, live courier HTTP, biometric attendance
+- Salary-advance instalments remain v1-locked to `full_eom`
+- 135 deferred UX IA tickets (dual surfaces, calendars, settings IA)
+
+Shipped this continuation (module depth over existing APIs):
+
+- Decisions dashboard **Promote weekly assignments** (`promoteWeeklyAssignments`; never auto-completes)
+- Audit donor templates apply via labelled engagement/template selects (MD-16)
+- Cashflow **Generate optimistic / pessimistic** overlays from a selected scenario (scale opening + adjustments ±20%; not live FX)
+- Weekly summary **assignment feed** (`weeklySummaryFeed`) plus Word export on the current-period page
+- Notifications inbox **NL search** suggests filters only; it does not send messages
+- Correspondence detail **courier tracking refresh** (stub when no courier URL is configured — not live carrier proof)
+- Assignment calendar **ICS subscribe / sync** panel (`calendarFeed`; honest when Google credentials are absent)
+- People org search object cells use `LabelledRecord` instead of JSON dumps
+- HR settings audit log uses labelled old/new change rows
+
+Shipped on this branch (People labelled forms + watermark + remaining inventable product):
+
+- Units / positions / job descriptions create forms
+- Position assign (was miswired to listPositions)
+- Authority create + assign
+- Reporting line create
+- E-sign create + submit
+- Org scenario create, SoD analyse, M365 run sync
+- Signature enrol/activate (staff specimen remains `/saam`)
+- Skills assign to person
+- Directory create/update person (PR-13)
+- PDF/image visual watermark via `DocumentWatermarkPainter` (uncompressed PDF text operator + GD raster; compressed PDFs may still need FPDI later)
+- Mobile weekly-summary donor/template fields (PR-15)
+- Mobile cashflow period chart (PR-16)
+- Mobile assignment dependencies + recurring templates (PR-17)
+- Audit / People AI nested values as labelled fields (PR-18/19)
+- Travel amendment proposed_changes labelled diff (PR-20)
+- Risk audit-trail old/new labelled change rows (PR-21)
+- HR settings dead “Coming Soon” branch removed (PR-22)
+
+Not done in code (operator-owned): UAT signatures, AC-8/9/10 execution, restore-drill RTO/RPO, staging IDOR result columns, Admin governance Pending rows, and live IMAP/AV/FCM/SMS/WhatsApp/LLM/SIEM credentials. Do not invent secrets or tick those rows.
 
 ---
 

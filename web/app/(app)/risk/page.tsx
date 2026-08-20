@@ -39,7 +39,7 @@ const CATEGORY_CONFIG: Record<string, { icon: string; color: string }> = {
   strategic:     { icon: "flag",             color: "text-indigo-600"  },
   operational:   { icon: "settings",         color: "text-blue-600"    },
   financial:     { icon: "payments",         color: "text-green-600"   },
-  compliance:    { icon: "gavel",            color: "text-purple-600"  },
+  compliance:    { icon: "gavel",            color: "text-teal-600"    },
   reputational:  { icon: "verified_user",    color: "text-pink-600"    },
   security:      { icon: "security",         color: "text-red-600"     },
   other:         { icon: "more_horiz",       color: "text-neutral-500" },

@@ -2,7 +2,8 @@
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
-import api, { assetMovementsApi, type AssetMovement } from "@/lib/api";
+import Link from "next/link";
+import { assetMovementsApi, type AssetMovement } from "@/lib/api";
 
 export default function AssetTransfersPage() {
   const [rows, setRows] = useState<AssetMovement[]>([]);
@@ -21,7 +22,7 @@ export default function AssetTransfersPage() {
         subtitle="Custody transfers and movement log. Assignment history is immutable on the API."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Asset Transfers" }]} />}
       />
-        <a href="/assets/movement/new" className="btn-primary">Record movement</a>
+        <Link href="/assets/movement/new" className="btn-primary">Record movement</Link>
       </div>
       <div className="table-wrap">
         <table className="data-table">

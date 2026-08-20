@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { EmptyState } from "@/components/ui/EmptyState";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -14,61 +13,43 @@ function asRows(payload: unknown): Record<string, unknown>[] {
     if (Array.isArray(obj.data)) return obj.data as Record<string, unknown>[];
     if (obj.data && typeof obj.data === "object") {
       const nested = obj.data as Record<string, unknown>;
-      for (const key of ["data", "items", "results", "people", "units", "positions"]) {
+      for (const key of ["data", "items", "results", "people"]) {
         if (Array.isArray(nested[key])) return nested[key] as Record<string, unknown>[];
       }
-    }
-    for (const key of ["items", "results", "people", "units", "positions", "authorities", "delegations"]) {
-      if (Array.isArray(obj[key])) return obj[key] as Record<string, unknown>[];
     }
   }
   return [];
 }
 
-function cell(v: unknown): string {
-  if (v == null) return "-";
-  if (typeof v === "object") {
-    const o = v as Record<string, unknown>;
-    return String(o.name ?? o.title ?? o.label ?? o.code ?? JSON.stringify(v));
-  }
-  return String(v);
+function personLabel(p: Record<string, unknown>): string {
+  return String(p.preferred_name ?? [p.first_name, p.last_name].filter(Boolean).join(" ") ?? p.name ?? p.id);
 }
 
 export default function Page() {
-  const [q, setQ] = useState("");
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["people-authority", "onboarding"],
-    queryFn: async () => {
-return { note: "Use API POST /people-authority/onboarding" };
-    },
+  const [personId, setPersonId] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const peopleQuery = useQuery({
+    queryKey: ["people-authority", "people-options"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listPeople({ directory: 1, per_page: 100 })).data),
   });
-
-  const rows = useMemo(() => asRows(data), [data]);
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return rows;
-    return rows.filter((r) => JSON.stringify(r).toLowerCase().includes(term));
-  }, [rows, q]);
-
-  const columns = useMemo(() => {
-    const keys = new Set<string>();
-    for (const r of filtered.slice(0, 20)) {
-      Object.keys(r).forEach((k) => {
-        if (!["id", "uuid", "created_at", "updated_at", "deleted_at"].includes(k) && typeof r[k] !== "object") keys.add(k);
-        else if (["name", "title", "status", "email", "code", "type"].includes(k)) keys.add(k);
-      });
-    }
-    const preferred = ["name", "title", "code", "type", "status", "email", "first_name", "last_name"];
-    const ordered = preferred.filter((k) => keys.has(k));
-    for (const k of keys) if (!ordered.includes(k) && ordered.length < 6) ordered.push(k);
-    return ordered.length ? ordered : ["id"];
-  }, [filtered]);
+  const create = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.createOnboarding({
+        person_id: personId ? Number(personId) : undefined,
+      }),
+    onSuccess: () => {
+      setMsg("Onboarding case created.");
+      setErr(null);
+    },
+    onError: () => setErr("Could not create the onboarding case."),
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <ModulePageHeader
         title="Onboarding"
-        subtitle="People & Authority register"
+        subtitle="Open an onboarding case. Access is not granted until the checklist is completed in the case record."
         breadcrumbs={
           <PageBreadcrumbs
             items={[
@@ -77,75 +58,30 @@ return { note: "Use API POST /people-authority/onboarding" };
             ]}
           />
         }
-        actions={
-          <Link href="/people" className="btn-secondary text-sm">
-            Hub
-          </Link>
-        }
+        actions={<Link href="/people" className="btn-secondary text-sm">Hub</Link>}
       />
-
-      <div className="card p-3">
+      <form
+        className="card space-y-3 p-4 max-w-xl"
+        onSubmit={(e) => {
+          e.preventDefault();
+          create.mutate();
+        }}
+      >
         <label className="block text-xs font-medium text-neutral-600">
-          Search
-          <input
-            className="form-input mt-1"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Filter rows…"
-          />
+          Person (optional)
+          <select className="form-input mt-1" value={personId} onChange={(e) => setPersonId(e.target.value)}>
+            <option value="">Unassigned</option>
+            {(peopleQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
+            ))}
+          </select>
         </label>
-      </div>
-
-      {isLoading ? (
-        <div className="card space-y-3 p-6">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="h-10 animate-pulse rounded bg-neutral-100" />
-          ))}
-        </div>
-      ) : isError ? (
-        <div className="card">
-          <EmptyState
-            icon="error"
-            title="Unable to load"
-            description="Could not retrieve this register."
-            action={
-              <button type="button" className="btn-primary text-sm" onClick={() => refetch()}>
-                Retry
-              </button>
-            }
-          />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="card">
-          <EmptyState icon="inbox" title="No records" description="Nothing to show in this register yet." />
-        </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="data-table">
-              <caption className="sr-only">Onboarding</caption>
-              <thead>
-                <tr>
-                  {columns.map((c) => (
-                    <th key={c} className="capitalize">
-                      {c.replace(/_/g, " ")}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r, idx) => (
-                  <tr key={String(r.id ?? idx)}>
-                    {columns.map((c) => (
-                      <td key={c}>{cell(r[c])}</td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+        <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
+          {create.isPending ? "Saving…" : "Create onboarding case"}
+        </button>
+        {msg && <p className="text-sm text-green-700">{msg}</p>}
+        {err && <p className="text-sm text-red-700">{err}</p>}
+      </form>
     </div>
   );
 }

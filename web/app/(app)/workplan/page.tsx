@@ -23,7 +23,7 @@ const TYPE_COLOR: Record<string, { bg: string; text: string; border: string; bar
   meeting:   { bg: "bg-primary/10",                                     text: "text-primary",                         border: "border-primary/25",                                    bar: "#1d85ed" },
   travel:    { bg: "bg-amber-100 dark:bg-amber-900/20",                 text: "text-amber-800 dark:text-amber-300",   border: "border-amber-300 dark:border-amber-700/50",             bar: "#f59e0b" },
   leave:     { bg: "bg-green-100 dark:bg-green-900/20",                 text: "text-green-800 dark:text-green-300",   border: "border-green-300 dark:border-green-700/50",             bar: "#10b981" },
-  milestone: { bg: "bg-purple-100 dark:bg-purple-900/20",               text: "text-purple-800 dark:text-purple-300", border: "border-purple-300 dark:border-purple-700/50",           bar: "#8b5cf6" },
+  milestone: { bg: "bg-primary/10",                                     text: "text-primary",                         border: "border-primary/25",                                    bar: "var(--primary)" },
   deadline:  { bg: "bg-red-100 dark:bg-red-900/20",                     text: "text-red-800 dark:text-red-300",       border: "border-red-300 dark:border-red-700/50",                 bar: "#ef4444" },
 };
 

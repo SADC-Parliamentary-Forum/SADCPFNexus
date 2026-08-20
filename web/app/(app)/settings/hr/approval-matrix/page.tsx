@@ -24,7 +24,7 @@ const MODULE_COLORS: Record<string, string> = {
   leave: "bg-teal-50 text-teal-700",
   imprest: "bg-amber-50 text-amber-700",
   finance: "bg-green-50 text-green-700",
-  procurement: "bg-purple-50 text-purple-700",
+  procurement: "bg-primary/10 text-primary",
   hr: "bg-pink-50 text-pink-700",
   governance: "bg-orange-50 text-orange-700",
 };

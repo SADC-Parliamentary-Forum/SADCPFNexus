@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -34,13 +34,44 @@ function cell(v: unknown): string {
   return String(v);
 }
 
+function personLabel(p: Record<string, unknown>): string {
+  return String(p.preferred_name ?? [p.first_name, p.last_name].filter(Boolean).join(" ") ?? p.name ?? p.id);
+}
+
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [enrolForm, setEnrolForm] = useState({ person_id: "", enrolment_type: "drawn" });
+  const [activateId, setActivateId] = useState("");
+  const peopleQuery = useQuery({
+    queryKey: ["people-authority", "people-options"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listPeople({ directory: 1, per_page: 100 })).data),
+  });
+  const enrol = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.enrolSignature({
+        person_id: Number(enrolForm.person_id),
+        enrolment_type: enrolForm.enrolment_type,
+      }),
+    onSuccess: () => {
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "signature-register"] });
+    },
+    onError: () => setErr("Could not enrol the signature. Staff specimen capture is on SAAM."),
+  });
+  const activate = useMutation({
+    mutationFn: () => peopleAuthorityApi.activateSignature(Number(activateId)),
+    onSuccess: () => {
+      setActivateId("");
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "signature-register"] });
+    },
+    onError: () => setErr("Could not activate that enrolment."),
+  });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "signature-register"],
-    queryFn: async () => {
-return (await peopleAuthorityApi.me()).data.data;
-    },
+    queryFn: async () => asRows((await peopleAuthorityApi.listPeople({ directory: 1, per_page: 100 })).data),
   });
 
   const rows = useMemo(() => asRows(data), [data]);
@@ -78,11 +109,59 @@ return (await peopleAuthorityApi.me()).data.data;
           />
         }
         actions={
-          <Link href="/people" className="btn-secondary text-sm">
-            Hub
+          <Link href="/saam" className="btn-secondary text-sm">
+            SAAM enrolment
           </Link>
         }
       />
+
+      <p className="text-sm text-neutral-600">
+        Staff capture their specimen in <Link href="/saam" className="text-primary underline">SAAM</Link>. This register enrols and activates records for administration.
+      </p>
+
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          enrol.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Person
+          <select className="form-input mt-1" value={enrolForm.person_id} onChange={(e) => setEnrolForm((f) => ({ ...f, person_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(peopleQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Enrolment type
+          <input className="form-input mt-1" value={enrolForm.enrolment_type} onChange={(e) => setEnrolForm((f) => ({ ...f, enrolment_type: e.target.value }))} />
+        </label>
+        <div className="flex items-end">
+          <button type="submit" className="btn-primary text-sm" disabled={enrol.isPending}>
+            {enrol.isPending ? "Saving…" : "Enrol signature"}
+          </button>
+        </div>
+      </form>
+
+      <form
+        className="card flex flex-wrap items-end gap-3 p-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          activate.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Enrolment id
+          <input className="form-input mt-1" value={activateId} onChange={(e) => setActivateId(e.target.value)} required />
+        </label>
+        <button type="submit" className="btn-primary text-sm" disabled={activate.isPending}>
+          {activate.isPending ? "Activating…" : "Activate signature"}
+        </button>
+        {err && <p className="text-sm text-red-700">{err}</p>}
+      </form>
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">

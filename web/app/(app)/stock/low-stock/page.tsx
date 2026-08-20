@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { stockItemsApi, type StockItem } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { StockMovementModal } from "@/components/stock/StockMovementModal";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 export default function LowStockPage() {
   const [items, setItems] = useState<StockItem[]>([]);
@@ -30,15 +30,11 @@ export default function LowStockPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/stock" className="hover:text-primary transition-colors">Consumables / Stock</Link>
-          <span>/</span>
-          <span className="text-neutral-700 font-medium">Low Stock / Reorder</span>
-        </div>
-        <h1 className="page-title">Low Stock / Reorder</h1>
-        <p className="page-subtitle">Items at or below their reorder level — replenish to avoid stock-outs.</p>
-      </div>
+      <ModulePageHeader
+        title="Low Stock / Reorder"
+        subtitle="Items at or below their reorder level — replenish to avoid stock-outs."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Low Stock / Reorder" }]} />}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

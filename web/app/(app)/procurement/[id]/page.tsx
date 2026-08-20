@@ -37,7 +37,7 @@ const statusConfig: Record<string, { label: string; cls: string; icon: string }>
   hod_rejected:            { label: "HOD Rejected",           cls: "text-red-700 bg-red-50 border-red-200",              icon: "person_off"         },
   budget_reserved:         { label: "Budget Reserved",        cls: "text-indigo-700 bg-indigo-50 border-indigo-200",     icon: "savings"            },
   rfq_issued:              { label: "RFQ Issued",             cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "send"               },
-  evaluated:               { label: "Evaluated",              cls: "text-purple-700 bg-purple-50 border-purple-200",     icon: "compare"            },
+  evaluated:               { label: "Evaluated",              cls: "text-teal-700 bg-teal-50 border-teal-200",           icon: "compare"            },
   rejected:                { label: "Rejected",               cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"             },
   draft:                   { label: "Draft",                  cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"          },
   awarded:                 { label: "Awarded",                cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "emoji_events"       },
@@ -49,7 +49,7 @@ const statusConfig: Record<string, { label: string; cls: string; icon: string }>
 
 const categoryConfig: Record<string, { icon: string; color: string; bg: string }> = {
   goods:    { icon: "inventory_2",    color: "text-primary",  bg: "bg-primary/10"  },
-  services: { icon: "handyman",       color: "text-purple-600", bg: "bg-purple-50" },
+  services: { icon: "handyman",       color: "text-teal-600", bg: "bg-teal-50" },
   works:    { icon: "construction",   color: "text-orange-600", bg: "bg-orange-50" },
 };
 
@@ -645,7 +645,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
       {/* Requisition Details */}
       <div className="card p-5">
         <div className="flex items-center gap-3 mb-4">
-          <SectionIcon icon="shopping_cart" color="text-purple-600" bg="bg-purple-50" />
+          <SectionIcon icon="shopping_cart" color="text-primary" bg="bg-primary/10" />
           <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Requisition Details</h3>
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">

@@ -239,7 +239,7 @@ export default function LeavePage() {
   return (
     <RegisterShell
       title="Leave Requests"
-      subtitle="Manage leave applications, balances, and LIL linkings."
+        subtitle="Manage leave applications, balances, and Leave in Lieu linkings."
       breadcrumbs={
         <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
           <span className="text-neutral-700">Leave</span>

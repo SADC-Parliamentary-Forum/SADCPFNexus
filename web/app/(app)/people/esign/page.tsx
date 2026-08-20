@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -35,7 +35,28 @@ function cell(v: unknown): string {
 }
 
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [form, setForm] = useState({ document_type: "", document_id: "", document_hash: "" });
+  const create = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.createEsign({
+        document_type: form.document_type.trim(),
+        document_id: form.document_id.trim(),
+        document_hash: form.document_hash.trim(),
+      }),
+    onSuccess: () => {
+      setForm({ document_type: "", document_id: "", document_hash: "" });
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "esign"] });
+    },
+    onError: () => setErr("Could not create the e-sign request. Type, document id, and hash are required."),
+  });
+  const submit = useMutation({
+    mutationFn: (id: number) => peopleAuthorityApi.submitEsign(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["people-authority", "esign"] }),
+  });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","esign"],
     queryFn: async () => {
@@ -84,6 +105,33 @@ return (await peopleAuthorityApi.listEsign()).data;
         }
       />
 
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          create.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Document type
+          <input className="form-input mt-1" value={form.document_type} onChange={(e) => setForm((f) => ({ ...f, document_type: e.target.value }))} required />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Document id
+          <input className="form-input mt-1" value={form.document_id} onChange={(e) => setForm((f) => ({ ...f, document_id: e.target.value }))} required />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Document hash
+          <input className="form-input mt-1" value={form.document_hash} onChange={(e) => setForm((f) => ({ ...f, document_hash: e.target.value }))} required />
+        </label>
+        <div className="sm:col-span-3 flex items-center gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
+            {create.isPending ? "Saving…" : "Create e-sign request"}
+          </button>
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
+
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">
           Search
@@ -131,6 +179,7 @@ return (await peopleAuthorityApi.listEsign()).data;
                       {c.replace(/_/g, " ")}
                     </th>
                   ))}
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -139,6 +188,16 @@ return (await peopleAuthorityApi.listEsign()).data;
                     {columns.map((c) => (
                       <td key={c}>{cell(r[c])}</td>
                     ))}
+                    <td>
+                      <button
+                        type="button"
+                        className="btn-secondary text-sm"
+                        disabled={submit.isPending || r.id == null}
+                        onClick={() => submit.mutate(Number(r.id))}
+                      >
+                        Submit
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

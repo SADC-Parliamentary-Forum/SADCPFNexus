@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -35,7 +35,34 @@ function cell(v: unknown): string {
 }
 
 export default function Page() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const today = new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState({
+    subordinate_position_id: "",
+    supervisor_position_id: "",
+    relationship_type: "line",
+    effective_from: today,
+  });
+  const positionsQuery = useQuery({
+    queryKey: ["people-authority", "positions"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listPositions()).data),
+  });
+  const create = useMutation({
+    mutationFn: () =>
+      peopleAuthorityApi.createReporting({
+        subordinate_position_id: Number(form.subordinate_position_id),
+        supervisor_position_id: Number(form.supervisor_position_id),
+        relationship_type: form.relationship_type,
+        effective_from: form.effective_from,
+      }),
+    onSuccess: () => {
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "reporting-relationships"] });
+    },
+    onError: () => setErr("Could not create the reporting line. Both positions and a start date are required."),
+  });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "reporting-relationships"],
     queryFn: async () => {
@@ -83,6 +110,47 @@ const chart = (await peopleAuthorityApi.orgChart()).data.data as any; return cha
           </Link>
         }
       />
+
+      <form
+        className="card grid gap-3 p-4 sm:grid-cols-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          create.mutate();
+        }}
+      >
+        <label className="block text-xs font-medium text-neutral-600">
+          Subordinate position
+          <select className="form-input mt-1" value={form.subordinate_position_id} onChange={(e) => setForm((f) => ({ ...f, subordinate_position_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(positionsQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Supervisor position
+          <select className="form-input mt-1" value={form.supervisor_position_id} onChange={(e) => setForm((f) => ({ ...f, supervisor_position_id: e.target.value }))} required>
+            <option value="">Select…</option>
+            {(positionsQuery.data ?? []).map((p) => (
+              <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Relationship
+          <input className="form-input mt-1" value={form.relationship_type} onChange={(e) => setForm((f) => ({ ...f, relationship_type: e.target.value }))} />
+        </label>
+        <label className="block text-xs font-medium text-neutral-600">
+          Effective from
+          <input type="date" className="form-input mt-1" value={form.effective_from} onChange={(e) => setForm((f) => ({ ...f, effective_from: e.target.value }))} required />
+        </label>
+        <div className="sm:col-span-2 flex items-center gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
+            {create.isPending ? "Saving…" : "Add reporting line"}
+          </button>
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
 
       <div className="card p-3">
         <label className="block text-xs font-medium text-neutral-600">

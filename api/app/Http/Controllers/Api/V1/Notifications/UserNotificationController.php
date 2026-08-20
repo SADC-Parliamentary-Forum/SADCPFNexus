@@ -36,6 +36,14 @@ class UserNotificationController extends Controller
             $query->whereNull('archived_at');
         }
 
+        $module = $request->query('module');
+        if (is_string($module) && $module !== '') {
+            $query->where(function ($q) use ($module) {
+                $q->where('category', $module)
+                    ->orWhere('meta->module', $module);
+            });
+        }
+
         $paginated = $query->paginate((int) $request->query('per_page', 20));
 
         return response()->json([

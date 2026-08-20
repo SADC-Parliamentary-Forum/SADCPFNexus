@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { auditApi } from "@/lib/api";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
 
 export default function AuditAiAssistPage() {
   const qc = useQueryClient();
@@ -58,7 +59,7 @@ export default function AuditAiAssistPage() {
       {last && (
         <div className="border rounded p-4 bg-white space-y-3 text-sm">
           <div>Status: <strong>{String(last.status)}</strong> · Provider: {String(last.provider)}</div>
-          <pre className="text-xs bg-neutral-50 p-3 rounded overflow-auto max-h-64">{JSON.stringify(last.suggestion, null, 2)}</pre>
+          <LabelledRecord value={last.suggestion} />
           {last.status === "pending_confirmation" && (
             <>
               <label className="block">

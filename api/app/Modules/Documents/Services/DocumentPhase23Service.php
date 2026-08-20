@@ -155,20 +155,23 @@ class DocumentPhase23Service
 
         $disk = $version->storage_disk ?: 'local';
         $filename = $version->original_filename;
+        $mime = $version->mime_type ?: 'application/octet-stream';
+        $raw = Storage::disk($disk)->get($version->storage_path) ?: '';
         if ($row->watermark) {
             $filename = 'WM-'.$filename;
+            $raw = (new DocumentWatermarkPainter)->apply(
+                $raw,
+                $mime,
+                'SADC-PF-NEXUS-WATERMARK // share '.$row->id
+            );
         }
 
         return response()->streamDownload(
-            function () use ($version, $disk) {
-                $stream = Storage::disk($disk)->readStream($version->storage_path);
-                if (is_resource($stream)) {
-                    fpassthru($stream);
-                    fclose($stream);
-                }
+            function () use ($raw) {
+                echo $raw;
             },
             $filename,
-            ['Content-Type' => $version->mime_type ?: 'application/octet-stream']
+            ['Content-Type' => $mime]
         );
     }
 
@@ -261,25 +264,19 @@ class DocumentPhase23Service
         $disk = $version->storage_disk ?: 'local';
         $filename = 'WM-'.$version->original_filename;
         $mime = $version->mime_type ?: 'application/octet-stream';
+        $raw = Storage::disk($disk)->get($version->storage_path) ?: '';
+        $painted = (new DocumentWatermarkPainter)->apply($raw, $mime, $watermarkStamp);
 
         return response()->streamDownload(
-            function () use ($version, $disk, $watermarkStamp, $mime) {
-                // If plain text or html, prepend watermark banner
-                if (str_contains($mime, 'text/') || str_contains($mime, 'json')) {
-                    echo "/* --- WATERMARK BANNER: {$watermarkStamp} --- */\n";
-                }
-
-                $stream = Storage::disk($disk)->readStream($version->storage_path);
-                if (is_resource($stream)) {
-                    fpassthru($stream);
-                    fclose($stream);
-                }
+            function () use ($painted) {
+                echo $painted;
             },
             $filename,
             [
                 'Content-Type' => $mime,
                 'X-Nexus-Watermark-Applied' => 'true',
                 'X-Nexus-Watermark-Stamp' => $watermarkStamp,
+                'X-Nexus-Watermark-Visual' => 'true',
             ]
         );
     }

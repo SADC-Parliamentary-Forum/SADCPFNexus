@@ -38,8 +38,8 @@ const MODES = [
     id: "it_security",
     label: "IT / Security",
     icon: "security",
-    color: "text-purple-600 bg-purple-50 border-purple-200",
-    activeColor: "bg-purple-600 text-white border-purple-600",
+    color: "text-teal-600 bg-teal-50 border-teal-200",
+    activeColor: "bg-teal-600 text-white border-teal-600",
     desc: "Data breach, system access violation, or physical security incident.",
   },
 ];

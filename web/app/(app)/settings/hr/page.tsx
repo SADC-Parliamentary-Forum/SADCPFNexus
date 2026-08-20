@@ -12,7 +12,6 @@ const settingsLinks = [
     bg: "bg-primary/10",
     border: "border-primary/20",
     badge: "Core",
-    available: true,
   },
   {
     title: "Salary Scales",
@@ -23,7 +22,6 @@ const settingsLinks = [
     bg: "bg-green-50",
     border: "border-green-100",
     badge: "Core",
-    available: true,
   },
   {
     title: "Job Families",
@@ -34,7 +32,6 @@ const settingsLinks = [
     bg: "bg-violet-50",
     border: "border-violet-100",
     badge: null,
-    available: true,
   },
   {
     title: "Contract Types",
@@ -45,7 +42,6 @@ const settingsLinks = [
     bg: "bg-amber-50",
     border: "border-amber-100",
     badge: "Phase 2",
-    available: true,
   },
   {
     title: "Leave Profiles",
@@ -56,7 +52,6 @@ const settingsLinks = [
     bg: "bg-teal-50",
     border: "border-teal-100",
     badge: "Phase 2",
-    available: true,
   },
   {
     title: "Allowance Profiles",
@@ -67,7 +62,6 @@ const settingsLinks = [
     bg: "bg-emerald-50",
     border: "border-emerald-100",
     badge: "Phase 2",
-    available: true,
   },
   {
     title: "Appraisal Templates",
@@ -78,7 +72,6 @@ const settingsLinks = [
     bg: "bg-pink-50",
     border: "border-pink-100",
     badge: "Phase 3",
-    available: true,
   },
   {
     title: "Personnel File Sections",
@@ -89,7 +82,6 @@ const settingsLinks = [
     bg: "bg-indigo-50",
     border: "border-indigo-100",
     badge: "Phase 3",
-    available: true,
   },
   {
     title: "Approval Matrix",
@@ -100,7 +92,6 @@ const settingsLinks = [
     bg: "bg-orange-50",
     border: "border-orange-100",
     badge: "Phase 3",
-    available: true,
   },
   {
     title: "Settings Audit Log",
@@ -111,7 +102,6 @@ const settingsLinks = [
     bg: "bg-neutral-100",
     border: "border-neutral-200",
     badge: "Phase 3",
-    available: true,
   },
 ];
 
@@ -146,8 +136,7 @@ export default function HrSettingsDashboard() {
 
       {/* Settings grid */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {settingsLinks.map((item) =>
-          item.available ? (
+        {settingsLinks.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -176,26 +165,7 @@ export default function HrSettingsDashboard() {
                 <p className="text-xs text-neutral-500 mt-1 leading-relaxed">{item.description}</p>
               </div>
             </Link>
-          ) : (
-            <div
-              key={item.href}
-              className={`card p-5 flex gap-4 items-start border ${item.border} opacity-60 cursor-not-allowed`}
-            >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${item.bg}`}>
-                <span className={`material-symbols-outlined text-[20px] ${item.color}`}>{item.icon}</span>
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-neutral-900 text-sm">{item.title}</span>
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-400">
-                    Coming Soon
-                  </span>
-                </div>
-                <p className="text-xs text-neutral-400 mt-1 leading-relaxed">{item.description}</p>
-              </div>
-            </div>
-          )
-        )}
+        ))}
       </div>
     </div>
   );

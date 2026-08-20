@@ -228,8 +228,8 @@ export default function AdminUsersPage() {
             label: "MFA Enabled",
             value: users.filter((u) => u.mfa_enabled).length,
             icon: "security",
-            color: "text-purple-600",
-            bg: "bg-purple-50",
+            color: "text-primary",
+            bg: "bg-primary/10",
           },
         ].map((s) => (
           <div key={s.label} className="card p-4">

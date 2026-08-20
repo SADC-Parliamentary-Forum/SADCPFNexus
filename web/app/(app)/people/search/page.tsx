@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import type { ReactNode } from "react";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -25,11 +27,13 @@ function asRows(payload: unknown): Record<string, unknown>[] {
   return [];
 }
 
-function cell(v: unknown): string {
+function cell(v: unknown): ReactNode {
   if (v == null) return "-";
   if (typeof v === "object") {
     const o = v as Record<string, unknown>;
-    return String(o.name ?? o.title ?? o.label ?? o.code ?? JSON.stringify(v));
+    const labelled = o.name ?? o.title ?? o.label ?? o.code;
+    if (labelled != null && labelled !== "") return String(labelled);
+    return <LabelledRecord value={v} nested />;
   }
   return String(v);
 }

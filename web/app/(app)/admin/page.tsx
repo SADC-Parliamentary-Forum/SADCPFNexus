@@ -29,9 +29,9 @@ const adminLinks = [
     description: "Configure roles and assign permissions across the platform.",
     href: "/admin/access/roles",
     icon: "admin_panel_settings",
-    color: "text-purple-600",
-    bg: "bg-purple-50",
-    border: "border-purple-100",
+    color: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-primary/20",
   },
   {
     title: "Departments",

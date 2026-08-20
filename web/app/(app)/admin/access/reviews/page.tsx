@@ -24,6 +24,7 @@ type Campaign = {
 export default function AccessReviewsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [name, setName] = useState("Q3 privileged access review");
+  const [nameError, setNameError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = () =>
@@ -37,7 +38,12 @@ export default function AccessReviewsPage() {
   }, []);
 
   const create = async () => {
-    await api.post("/admin/access/reviews", { name, cadence: "quarterly" });
+    if (!name.trim()) {
+      setNameError("Campaign name is required.");
+      return;
+    }
+    setNameError(null);
+    await api.post("/admin/access/reviews", { name: name.trim(), cadence: "quarterly" });
     load();
   };
 
@@ -67,15 +73,24 @@ export default function AccessReviewsPage() {
 
       <FormSection title="Create campaign" icon="fact_check" dense>
         <div className="flex flex-wrap items-end gap-3">
-          <FormField label="Campaign name" htmlFor="campaign-name" required className="min-w-[280px] flex-1">
+          <FormField
+            label="Campaign name"
+            htmlFor="campaign-name"
+            required
+            error={nameError ?? undefined}
+            className="min-w-[280px] flex-1"
+          >
             <input
               id="campaign-name"
               className="form-input"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (nameError) setNameError(null);
+              }}
             />
           </FormField>
-          <button type="button" className="btn-primary text-sm" onClick={create} disabled={!name}>
+          <button type="button" className="btn-primary text-sm" onClick={create}>
             Create campaign
           </button>
         </div>

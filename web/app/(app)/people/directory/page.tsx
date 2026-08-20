@@ -2,28 +2,44 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { RegisterShell } from "@/components/registers/RegisterShell";
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { FormField } from "@/components/ui/FormSection";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 
 type DirectoryPerson = {
   id?: number;
   first_name?: string;
   last_name?: string;
+  display_name?: string | null;
   preferred_name?: string | null;
   email?: string | null;
+  work_email?: string | null;
   employee_number?: string | null;
+  person_number?: string | null;
+  work_phone?: string | null;
   department?: string | { name?: string } | null;
   position?: string | { title?: string; name?: string } | null;
   status?: string | null;
+  employment_status?: string | null;
+};
+
+const emptyForm = {
+  first_name: "",
+  last_name: "",
+  preferred_name: "",
+  work_email: "",
+  person_number: "",
+  work_phone: "",
 };
 
 function displayName(p: DirectoryPerson): string {
   const preferred = p.preferred_name?.trim();
   if (preferred) return preferred;
+  if (p.display_name?.trim()) return p.display_name.trim();
   return [p.first_name, p.last_name].filter(Boolean).join(" ") || `Person #${p.id ?? "-"}`;
 }
 
@@ -37,6 +53,14 @@ function positionLabel(p: DirectoryPerson): string {
   if (!p.position) return "-";
   if (typeof p.position === "string") return p.position;
   return p.position.title ?? p.position.name ?? "-";
+}
+
+function emailOf(p: DirectoryPerson): string {
+  return p.work_email ?? p.email ?? "-";
+}
+
+function numberOf(p: DirectoryPerson): string {
+  return p.person_number ?? p.employee_number ?? "-";
 }
 
 function normalizeList(payload: unknown): DirectoryPerson[] {
@@ -55,8 +79,12 @@ function normalizeList(payload: unknown): DirectoryPerson[] {
 }
 
 export default function StaffDirectoryPage() {
+  const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
+  const [err, setErr] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority", "staff-directory"],
@@ -71,7 +99,7 @@ export default function StaffDirectoryPage() {
     const term = q.trim().toLowerCase();
     if (!term) return people;
     return people.filter((p) => {
-      const hay = [displayName(p), p.email, p.employee_number, deptLabel(p), positionLabel(p)]
+      const hay = [displayName(p), emailOf(p), numberOf(p), deptLabel(p), positionLabel(p)]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -81,6 +109,54 @@ export default function StaffDirectoryPage() {
 
   const pageCount = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
   const rows = slicePage(filtered, page, DEFAULT_PAGE_SIZE);
+
+  const payload = () => ({
+    first_name: form.first_name.trim(),
+    last_name: form.last_name.trim(),
+    preferred_name: form.preferred_name.trim() || null,
+    work_email: form.work_email.trim() || null,
+    person_number: form.person_number.trim() || null,
+    work_phone: form.work_phone.trim() || null,
+  });
+
+  const create = useMutation({
+    mutationFn: () => peopleAuthorityApi.createPerson(payload()),
+    onSuccess: () => {
+      setForm(emptyForm);
+      setEditingId(null);
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
+    },
+    onError: () => setErr("Could not create the person. First name and last name are required."),
+  });
+
+  const update = useMutation({
+    mutationFn: () => {
+      if (!editingId) throw new Error("No person selected");
+      return peopleAuthorityApi.updatePerson(editingId, payload());
+    },
+    onSuccess: () => {
+      setForm(emptyForm);
+      setEditingId(null);
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
+    },
+    onError: () => setErr("Could not update the person."),
+  });
+
+  function startEdit(p: DirectoryPerson) {
+    if (!p.id) return;
+    setEditingId(p.id);
+    setForm({
+      first_name: p.first_name ?? "",
+      last_name: p.last_name ?? "",
+      preferred_name: p.preferred_name ?? "",
+      work_email: p.work_email ?? p.email ?? "",
+      person_number: p.person_number ?? p.employee_number ?? "",
+      work_phone: p.work_phone ?? "",
+    });
+    setErr(null);
+  }
 
   return (
     <RegisterShell
@@ -154,6 +230,96 @@ export default function StaffDirectoryPage() {
           : undefined
       }
     >
+      <form
+        className="card mb-4 grid gap-3 p-4 sm:grid-cols-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!form.first_name.trim() || !form.last_name.trim()) {
+            setErr("First name and last name are required.");
+            return;
+          }
+          if (editingId) update.mutate();
+          else create.mutate();
+        }}
+      >
+        <FormField label="First name" htmlFor="dir-first-name" required>
+          <input
+            id="dir-first-name"
+            className="form-input"
+            value={form.first_name}
+            onChange={(e) => setForm((f) => ({ ...f, first_name: e.target.value }))}
+            required
+          />
+        </FormField>
+        <FormField label="Last name" htmlFor="dir-last-name" required>
+          <input
+            id="dir-last-name"
+            className="form-input"
+            value={form.last_name}
+            onChange={(e) => setForm((f) => ({ ...f, last_name: e.target.value }))}
+            required
+          />
+        </FormField>
+        <FormField label="Preferred name" htmlFor="dir-preferred-name">
+          <input
+            id="dir-preferred-name"
+            className="form-input"
+            value={form.preferred_name}
+            onChange={(e) => setForm((f) => ({ ...f, preferred_name: e.target.value }))}
+          />
+        </FormField>
+        <FormField label="Work email" htmlFor="dir-work-email">
+          <input
+            id="dir-work-email"
+            type="email"
+            className="form-input"
+            value={form.work_email}
+            onChange={(e) => setForm((f) => ({ ...f, work_email: e.target.value }))}
+          />
+        </FormField>
+        <FormField label="Employee number" htmlFor="dir-person-number">
+          <input
+            id="dir-person-number"
+            className="form-input"
+            value={form.person_number}
+            onChange={(e) => setForm((f) => ({ ...f, person_number: e.target.value }))}
+          />
+        </FormField>
+        <FormField label="Work phone" htmlFor="dir-work-phone">
+          <input
+            id="dir-work-phone"
+            className="form-input"
+            value={form.work_phone}
+            onChange={(e) => setForm((f) => ({ ...f, work_phone: e.target.value }))}
+          />
+        </FormField>
+        <div className="sm:col-span-3 flex flex-wrap items-center gap-3">
+          <button type="submit" className="btn-primary text-sm" disabled={create.isPending || update.isPending}>
+            {editingId
+              ? update.isPending
+                ? "Saving…"
+                : "Update person"
+              : create.isPending
+                ? "Saving…"
+                : "Add person"}
+          </button>
+          {editingId ? (
+            <button
+              type="button"
+              className="btn-secondary text-sm"
+              onClick={() => {
+                setEditingId(null);
+                setForm(emptyForm);
+                setErr(null);
+              }}
+            >
+              Cancel edit
+            </button>
+          ) : null}
+          {err && <p className="text-sm text-red-700">{err}</p>}
+        </div>
+      </form>
+
       {rows.length > 0 ? (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
@@ -171,14 +337,18 @@ export default function StaffDirectoryPage() {
               </thead>
               <tbody>
                 {rows.map((p, idx) => (
-                  <tr key={p.id ?? idx}>
+                  <tr
+                    key={p.id ?? idx}
+                    className="cursor-pointer"
+                    onClick={() => startEdit(p)}
+                  >
                     <td className="font-medium text-neutral-800">{displayName(p)}</td>
-                    <td>{p.employee_number ?? "-"}</td>
+                    <td>{numberOf(p)}</td>
                     <td>{deptLabel(p)}</td>
                     <td>{positionLabel(p)}</td>
-                    <td className="text-neutral-600">{p.email ?? "-"}</td>
+                    <td className="text-neutral-600">{emailOf(p)}</td>
                     <td>
-                      <span className="badge badge-muted capitalize">{p.status ?? "-"}</span>
+                      <span className="badge badge-muted capitalize">{p.employment_status ?? p.status ?? "-"}</span>
                     </td>
                   </tr>
                 ))}

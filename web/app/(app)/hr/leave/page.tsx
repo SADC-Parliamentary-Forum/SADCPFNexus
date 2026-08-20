@@ -8,6 +8,7 @@ import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPaginat
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
+import { useFormatDate } from "@/lib/useFormatDate";
 
 const STATUS_BADGE: Record<string, string> = {
   approved:  "badge-success",
@@ -25,10 +26,6 @@ const LEAVE_TYPE_LABELS: Record<string, string> = {
   maternity: "Maternity",
   paternity: "Paternity",
 };
-
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
 
 function UserAutocomplete({
   label,
@@ -111,6 +108,7 @@ function SkeletonRow() {
 
 export default function HRLeavePage() {
   const { success, error: showErrorToast, info } = useToast();
+  const { fmt } = useFormatDate();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -381,8 +379,8 @@ export default function HRLeavePage() {
                       <td>
                         <span className="badge badge-muted">{LEAVE_TYPE_LABELS[r.leave_type] ?? r.leave_type}</span>
                       </td>
-                      <td className="text-neutral-600 text-xs whitespace-nowrap">{formatDate(r.start_date)}</td>
-                      <td className="text-neutral-600 text-xs whitespace-nowrap">{formatDate(r.end_date)}</td>
+                      <td className="text-neutral-600 text-xs whitespace-nowrap">{fmt(r.start_date)}</td>
+                      <td className="text-neutral-600 text-xs whitespace-nowrap">{fmt(r.end_date)}</td>
                       <td className="text-neutral-700">{r.days_requested}d</td>
                       <td>
                         <span className={`badge ${STATUS_BADGE[r.status] ?? "badge-muted"} capitalize`}>{r.status}</span>

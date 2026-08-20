@@ -14,6 +14,13 @@ type AccessRequest = {
   scope_type?: string;
 };
 
+const STATUS_BADGE: Record<string, string> = {
+  pending: "badge-warning",
+  submitted: "badge-warning",
+  approved: "badge-success",
+  rejected: "badge-danger",
+};
+
 export default function AccessRequestsPage() {
   const [rows, setRows] = useState<AccessRequest[]>([]);
   const [permission, setPermission] = useState("procurement.evaluation.read.assigned");
@@ -109,6 +116,7 @@ export default function AccessRequestsPage() {
                 <tr>
                   <th>ID</th>
                   <th>Permission</th>
+                  <th>Reason</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -118,8 +126,9 @@ export default function AccessRequestsPage() {
                   <tr key={r.id}>
                     <td className="font-mono text-xs">{r.id}</td>
                     <td className="font-medium text-neutral-800">{r.permission_key}</td>
+                    <td className="max-w-xs text-sm text-neutral-600">{r.business_reason || "—"}</td>
                     <td>
-                      <span className="badge badge-muted text-xs capitalize">{r.status}</span>
+                      <span className={`badge text-xs capitalize ${STATUS_BADGE[r.status] ?? "badge-muted"}`}>{r.status}</span>
                     </td>
                     <td>
                       <div className="flex flex-wrap gap-2">

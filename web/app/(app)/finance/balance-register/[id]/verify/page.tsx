@@ -189,11 +189,11 @@ function VerifyTransactionPageContent() {
           {txn.supporting_document_path && (
             <div className="col-span-2">
               <p className="text-xs text-neutral-400">Supporting document</p>
-              <a href={txn.supporting_document_path} target="_blank" rel="noopener noreferrer"
+              <Link href={txn.supporting_document_path} target="_blank" rel="noopener noreferrer"
                 className="text-primary text-sm hover:underline flex items-center gap-1">
                 <span className="material-symbols-outlined text-base">description</span>
                 View document
-              </a>
+              </Link>
             </div>
           )}
         </div>

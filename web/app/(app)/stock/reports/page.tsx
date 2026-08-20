@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { stockItemsApi, stockCategoriesApi, type StockItem, type StockCategory } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
 import { loadPdfLibs } from "@/lib/pdf-libs";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 function fmtMoney(n: number | string | null | undefined): string {
   if (n === null || n === undefined || n === "") return "";
@@ -97,28 +97,24 @@ export default function StockReportsPage() {
 
   return (
     <div className="space-y-6 max-w-6xl">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/stock" className="hover:text-primary transition-colors">Consumables / Stock</Link>
-            <span>/</span>
-            <span className="text-neutral-700 font-medium">Reports</span>
+      <ModulePageHeader
+        title="Stock Reports"
+        subtitle="Consumables register report with CSV and PDF export."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Reports" }]} />}
+        actions={
+          <div className="flex gap-2">
+            <button type="button" onClick={handleCsv} className="btn-secondary">
+              <span className="material-symbols-outlined text-[18px]">download</span>Export CSV
+            </button>
+            <button type="button" onClick={handlePdf} disabled={exportingPdf} className="btn-secondary">
+              {exportingPdf
+                ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                : <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>}
+              Export PDF
+            </button>
           </div>
-          <h1 className="page-title">Stock Reports</h1>
-          <p className="page-subtitle">Consumables register report with CSV and PDF export.</p>
-        </div>
-        <div className="flex gap-2">
-          <button type="button" onClick={handleCsv} className="btn-secondary">
-            <span className="material-symbols-outlined text-[18px]">download</span>Export CSV
-          </button>
-          <button type="button" onClick={handlePdf} disabled={exportingPdf} className="btn-secondary">
-            {exportingPdf
-              ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-              : <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>}
-            Export PDF
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

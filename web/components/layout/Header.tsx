@@ -240,7 +240,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                     travel:      { icon: "flight_takeoff",         color: "text-primary",     bg: "bg-primary/10" },
                     leave:       { icon: "event_available",        color: "text-green-600",   bg: "bg-green-50" },
                     imprest:     { icon: "account_balance_wallet", color: "text-amber-600",   bg: "bg-amber-50" },
-                    procurement: { icon: "shopping_cart",          color: "text-purple-600",  bg: "bg-purple-50" },
+                    procurement: { icon: "shopping_cart",          color: "text-primary",     bg: "bg-primary/10" },
                     assignment:  { icon: "task_alt",               color: "text-blue-600",    bg: "bg-blue-50" },
                     finance:     { icon: "payments",               color: "text-emerald-600", bg: "bg-emerald-50" },
                   };

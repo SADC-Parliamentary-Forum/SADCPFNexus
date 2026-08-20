@@ -560,8 +560,8 @@ export default function AdminUserCreatePage() {
 
           <div className="card p-6 space-y-4">
             <div className="flex items-center gap-2 mb-1">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50">
-                <span className="material-symbols-outlined text-purple-600 text-[18px]">badge</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                <span className="material-symbols-outlined text-primary text-[18px]">badge</span>
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-neutral-900">System Role</h3>

@@ -125,20 +125,25 @@
     @apply bg-primary text-white shadow-sm;
   }
 
-  /* Hide scrollbar on sidebar while keeping scroll (Design: no visible scrollbar) */
+  /* Thin scrollbar on sidebar so long trees remain discoverable */
   .sidebar-nav,
   aside .sidebar-nav {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--neutral-300, #d4d4d4) transparent;
     overflow-y: auto;
     overflow-x: hidden;
   }
 
   .sidebar-nav::-webkit-scrollbar,
   aside .sidebar-nav::-webkit-scrollbar {
-    display: none;
-    width: 0;
-    height: 0;
+    width: 6px;
+    height: 6px;
+  }
+
+  .sidebar-nav::-webkit-scrollbar-thumb,
+  aside .sidebar-nav::-webkit-scrollbar-thumb {
+    background-color: #d4d4d4;
+    border-radius: 999px;
   }
 
   .scrollbar-hide {
@@ -237,14 +242,6 @@
 
   .btn-sm {
     @apply px-3 py-1.5 text-xs;
-  }
-
-  .btn.btn-primary {
-    @apply bg-primary font-semibold text-white shadow-sm hover:bg-primary-600;
-  }
-
-  .btn.btn-secondary {
-    @apply border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50;
   }
 
   .alert {

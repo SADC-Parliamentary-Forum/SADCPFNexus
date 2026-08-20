@@ -608,7 +608,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
           {/* Review history */}
           <div className="card p-5">
             <div className="flex items-center gap-2 mb-4">
-              <SectionIcon icon="history" color="text-purple-600" bg="bg-purple-50" />
+              <SectionIcon icon="history" color="text-primary" bg="bg-primary/10" />
               <h2 className="text-sm font-semibold text-neutral-800">History</h2>
             </div>
             {history.length === 0 ? (

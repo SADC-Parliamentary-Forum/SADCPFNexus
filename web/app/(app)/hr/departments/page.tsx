@@ -241,7 +241,7 @@ export default function AdminDepartmentsPage() {
           {[
             { label: "Total Departments", value: departments.length, icon: "corporate_fare", color: "text-primary", bg: "bg-primary/10" },
             { label: "Total Staff", value: departments.reduce((s, d) => s + (d.users_count ?? 0), 0), icon: "people", color: "text-green-600", bg: "bg-green-50" },
-            { label: "Active Units", value: departments.filter(d => (d.users_count ?? 0) > 0).length, icon: "hub", color: "text-purple-600", bg: "bg-purple-50" },
+            { label: "Active Units", value: departments.filter(d => (d.users_count ?? 0) > 0).length, icon: "hub", color: "text-primary", bg: "bg-primary/10" },
           ].map((s) => (
             <div key={s.label} className="card p-4">
               <div className="flex items-center gap-3">

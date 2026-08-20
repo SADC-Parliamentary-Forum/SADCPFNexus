@@ -154,7 +154,7 @@ export default function AssignmentsDashboard() {
           <KpiCard label="Active"             value={stats.active}     icon="play_circle"         color="bg-green-50 text-green-600" href="/assignments/all?status=active" />
           <KpiCard label="Overdue"            value={stats.overdue}    icon="event_busy"          color="bg-red-50 text-red-600"     href="/assignments/overdue" />
           <KpiCard label="Due This Week"      value={stats.due_soon}   icon="schedule"            color="bg-amber-50 text-amber-600" />
-          <KpiCard label="Awaiting Acceptance" value={stats.awaiting}  icon="pending_actions"     color="bg-purple-50 text-purple-600" href="/assignments/pending" />
+          <KpiCard label="Awaiting Acceptance" value={stats.awaiting}  icon="pending_actions"     color="bg-primary/10 text-primary" href="/assignments/pending" />
           <KpiCard label="Blocked"            value={stats.blocked}    icon="block"               color="bg-red-50 text-red-600"     href="/assignments/blocked" />
           <KpiCard label="My Pending"         value={stats.my_pending} icon="assignment_late"     color="bg-orange-50 text-orange-600" />
           <KpiCard label="Closed"             value={stats.completed}  icon="check_circle"        color="bg-neutral-50 text-neutral-500" />

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import api from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 type StockItem = {
   id: number;
@@ -76,20 +77,14 @@ export default function StockBarcodeScanPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
-      <div className="page-header">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/stock" className="hover:text-primary">Stock</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Barcode scan</span>
-          </div>
-          <h1 className="page-title">Barcode Scan</h1>
-          <p className="page-subtitle">
-            Scan-to-find stock items. Queue counts offline-friendly for later stocktake sync.
-          </p>
-        </div>
-        <Link href="/stock/stocktakes" className="btn-secondary btn-sm">Stocktakes</Link>
-      </div>
+      <ModulePageHeader
+        title="Barcode Scan"
+        subtitle="Scan-to-find stock items. Queue counts offline-friendly for later stocktake sync."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Barcode scan" }]} />}
+        actions={
+          <Link href="/stock/stocktakes" className="btn-secondary btn-sm">Open stocktake to Apply browser queue</Link>
+        }
+      />
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
       {err && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>}
 
@@ -131,7 +126,7 @@ export default function StockBarcodeScanPage() {
           )}
         </div>
         <p className="text-xs text-neutral-500">
-          Stored in browser localStorage. When online, open a stocktake and apply counts with matching client_line_key for idempotent sync.
+          Stored in browser localStorage. When online, open a draft stocktake and use <strong>Apply browser queue</strong> so counts sync with matching client_line_key.
         </p>
         <ul className="space-y-1 text-sm">
           {queue.map((q) => (

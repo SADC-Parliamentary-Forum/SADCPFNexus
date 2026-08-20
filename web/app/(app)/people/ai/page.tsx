@@ -7,6 +7,7 @@ import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
 
 export default function PeopleAiPage() {
   const [kind, setKind] = useState("access_recommendation");
@@ -75,16 +76,7 @@ export default function PeopleAiPage() {
 
       {suggestion ? (
         <FormSection title="Suggestion" icon="lightbulb" dense>
-          <dl className="grid gap-2 text-sm">
-            {Object.entries(suggestion).map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-4 border-b border-neutral-100 py-2">
-                <dt className="capitalize text-neutral-500">{k.replace(/_/g, " ")}</dt>
-                <dd className="max-w-[60%] text-right font-medium text-neutral-800 break-words">
-                  {typeof v === "object" && v != null ? JSON.stringify(v) : String(v ?? "-")}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <LabelledRecord value={suggestion} />
           {suggestionId ? (
             <button
               type="button"

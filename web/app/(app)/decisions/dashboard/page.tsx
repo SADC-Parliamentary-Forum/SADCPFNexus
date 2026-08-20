@@ -1,13 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { decisionsApi } from "@/lib/api";
 
 export default function DecisionsDashboardPage() {
+  const qc = useQueryClient();
+  const [promoteMsg, setPromoteMsg] = useState<string | null>(null);
+  const [promoteErr, setPromoteErr] = useState<string | null>(null);
+
   const { data, isLoading, isError } = useQuery({
     queryKey: ["decisions", "dashboard"],
     queryFn: async () => (await decisionsApi.dashboard()).data.data,
+  });
+
+  const promote = useMutation({
+    mutationFn: () => decisionsApi.promoteWeeklyAssignments(),
+    onSuccess: (res) => {
+      const row = res.data.data;
+      setPromoteErr(null);
+      setPromoteMsg(
+        `Promoted ${row.promoted} adopted/in-progress decisions into assignments; skipped ${row.skipped}. Completion stays human-owned.`,
+      );
+      qc.invalidateQueries({ queryKey: ["decisions"] });
+      qc.invalidateQueries({ queryKey: ["assignments"] });
+    },
+    onError: () => {
+      setPromoteMsg(null);
+      setPromoteErr("Could not promote weekly assignments. Governance write access is required.");
+    },
   });
 
   return (
@@ -17,8 +39,25 @@ export default function DecisionsDashboardPage() {
           <Link href="/decisions" className="text-sm text-neutral-500 hover:text-primary">← Decision Register</Link>
           <h1 className="mt-2 text-2xl font-semibold">Decisions dashboard</h1>
         </div>
-        <Link href="/decisions/create" className="btn-primary">New decision</Link>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={promote.isPending}
+            onClick={() => promote.mutate()}
+          >
+            {promote.isPending ? "Promoting…" : "Promote weekly assignments"}
+          </button>
+          <Link href="/decisions/create" className="btn-primary">New decision</Link>
+        </div>
       </div>
+
+      <p className="text-sm text-neutral-600">
+        Weekly promote creates assignment drafts from adopted decisions that already have an owner and due date.
+        It never auto-completes or auto-closes the assignment.
+      </p>
+      {promoteMsg && <p className="text-sm text-green-700">{promoteMsg}</p>}
+      {promoteErr && <p className="text-sm text-red-600">{promoteErr}</p>}
 
       {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
       {isError && <p className="text-sm text-red-600">Failed to load dashboard.</p>}

@@ -155,7 +155,7 @@ export default function AnalyticsPage() {
   const kpi = data?.kpi ?? { total_submissions: 0, approval_rate_pct: 0, active_travel: 0 };
   const kpiCards = [
     { label: "Total Submissions", value: loading ? "—" : kpi.total_submissions.toLocaleString(), trend: null, icon: "description", iconBg: "bg-blue-100 dark:bg-blue-900/30", iconColor: "text-blue-600 dark:text-blue-400" },
-    { label: "Approval Rate", value: loading ? "—" : `${kpi.approval_rate_pct}%`, trend: null, icon: "fact_check", iconBg: "bg-purple-100 dark:bg-purple-900/30", iconColor: "text-purple-600 dark:text-purple-400" },
+    { label: "Approval Rate", value: loading ? "—" : `${kpi.approval_rate_pct}%`, trend: null, icon: "fact_check", iconBg: "bg-primary/10", iconColor: "text-primary" },
     { label: "Active Travel", value: loading ? "—" : kpi.active_travel.toLocaleString(), trend: null, icon: "flight_takeoff", iconBg: "bg-orange-100 dark:bg-orange-900/30", iconColor: "text-orange-600 dark:text-orange-400" },
   ];
 

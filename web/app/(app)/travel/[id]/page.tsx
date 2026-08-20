@@ -15,6 +15,7 @@ import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { getListData } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:                { label: "Approved",              cls: "text-green-700 bg-green-50 border-green-200",   icon: "check_circle" },
@@ -997,9 +998,9 @@ export default function TravelDetailPage() {
                       {a.reason || "No reason provided"}
                       {a.creator?.name ? ` · by ${a.creator.name}` : ""}
                     </p>
-                    <p className="text-xs text-neutral-600 mt-2 font-mono break-all">
-                      {JSON.stringify(a.proposed_changes)}
-                    </p>
+                    <div className="mt-2 text-left">
+                      <LabelledRecord value={a.proposed_changes} />
+                    </div>
                     {a.original_snapshot && (
                       <p className="text-[11px] text-neutral-400 mt-1">
                         Original snapshot preserved

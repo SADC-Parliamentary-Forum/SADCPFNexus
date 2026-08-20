@@ -18,7 +18,7 @@ const statusConfig: Record<string, { label: string; cls: string }> = {
 
 const categoryColors: Record<string, string> = {
   goods:    "text-primary bg-primary/10 border-primary/20",
-  services: "text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/50",
+  services: "text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800/50",
   works:    "text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800/50",
 };
 
@@ -89,7 +89,7 @@ export default function ProcurementPage() {
           { label: "Total Requisitions", value: requests.length.toString(),                                       icon: "shopping_cart",  color: "text-primary",   bg: "bg-primary/10"},
           { label: "Pending Approval",   value: requests.filter((r) => r.status === "submitted").length.toString(), icon: "pending_actions",color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20"  },
           { label: "Approved",           value: requests.filter((r) => r.status === "approved").length.toString(),  icon: "check_circle",   color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20"  },
-          { label: "Total Value",        value: totalValue > 0 ? `${currency} ${(totalValue / 1000).toFixed(0)}k` : "—", icon: "payments", color: "text-purple-600",bg: "bg-purple-50 dark:bg-purple-900/20" },
+          { label: "Total Value",        value: totalValue > 0 ? `${currency} ${(totalValue / 1000).toFixed(0)}k` : "—", icon: "payments", color: "text-primary",bg: "bg-primary/10" },
         ].map((s) => (
           <div key={s.label} className="card p-4">
             <div className="flex items-center justify-between">
@@ -140,8 +140,8 @@ export default function ProcurementPage() {
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-4 flex-1 min-w-0">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-900/20">
-                      <span className="material-symbols-outlined text-purple-600 dark:text-purple-400 text-[20px]">shopping_cart</span>
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                      <span className="material-symbols-outlined text-primary text-[20px]">shopping_cart</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">

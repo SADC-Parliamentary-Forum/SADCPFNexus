@@ -160,6 +160,44 @@ export default function BudgetCashflowPage() {
     onError: () => setFormError("Could not create structured inflow."),
   });
 
+  const generateBands = useMutation({
+    mutationFn: async () => {
+      const source = scenarioDetailQuery.data;
+      if (!source) throw new Error("Select a scenario first");
+      const opening = Number(source.opening_balance || 0);
+      const adjustments = source.adjustments ?? [];
+      for (const spec of [
+        { kind: "optimistic" as const, factor: 1.2, label: "Optimistic" },
+        { kind: "pessimistic" as const, factor: 0.8, label: "Pessimistic" },
+      ]) {
+        const created = await budgetApi.createCashflowScenario({
+          financial_year_id: source.financial_year_id,
+          name: `${source.name} (${spec.label})`,
+          kind: spec.kind === "optimistic" ? "optimistic" : "pessimistic",
+          opening_balance: Number((opening * spec.factor).toFixed(2)),
+          status: "active",
+          currency: source.currency ?? "NAD",
+        });
+        const id = created.data.data.id;
+        for (const adj of adjustments) {
+          await budgetApi.addCashflowAdjustment(id, {
+            period: adj.period,
+            direction: adj.direction,
+            amount: Number((Number(adj.amount) * spec.factor).toFixed(2)),
+            label: adj.label ?? undefined,
+            category: adj.category ?? undefined,
+          });
+        }
+      }
+    },
+    onSuccess: () => {
+      setFormError(null);
+      qc.invalidateQueries({ queryKey: ["budget", "cashflow"] });
+    },
+    onError: () =>
+      setFormError("Could not generate optimistic/pessimistic overlays. Select a source scenario first."),
+  });
+
   const forecast = forecastQuery.data as CashflowForecast | undefined;
   const adjustments = scenarioDetailQuery.data?.adjustments ?? [];
 
@@ -277,6 +315,20 @@ export default function BudgetCashflowPage() {
           >
             {createScenario.isPending ? "Creating…" : "Create scenario"}
           </button>
+          <div data-testid="cashflow-generate-bands" className="space-y-2 border-t border-[var(--border)] pt-3">
+            <p className="text-sm text-neutral-600">
+              Generate optimistic (+20%) and pessimistic (−20%) overlays from the selected scenario.
+              Opening balance and overlay adjustments are scaled; FX projection stays a Finance assumption, not a live vendor feed.
+            </p>
+            <button
+              type="button"
+              className="btn-secondary text-sm"
+              disabled={!scenarioId || generateBands.isPending}
+              onClick={() => generateBands.mutate()}
+            >
+              {generateBands.isPending ? "Generating…" : "Generate optimistic / pessimistic"}
+            </button>
+          </div>
         </div>
 
         <div className="card space-y-3 p-4">
@@ -401,6 +453,35 @@ export default function BudgetCashflowPage() {
               <p className="text-lg font-bold text-indigo-700">
                 In: {money(Number(forecast.totals.scenario_inflow))} | Out: {money(Number(forecast.totals.scenario_outflow))}
               </p>
+            </div>
+          </div>
+        )}
+
+        {forecast && forecast.periods.length > 0 && (
+          <div data-testid="cashflow-period-chart" className="mb-4">
+            <p className="mb-2 text-xs font-medium text-neutral-500">Closing balance by period</p>
+            <div className="flex h-40 items-end gap-1">
+              {forecast.periods.map((p) => {
+                const values = forecast.periods.map((x) => Math.abs(Number(x.closing_balance)));
+                const max = Math.max(...values, 1);
+                const closing = Number(p.closing_balance);
+                const h = Math.max(4, (Math.abs(closing) / max) * 100);
+                return (
+                  <div
+                    key={p.period}
+                    className="flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                    title={`${p.period}: ${money(closing)}`}
+                  >
+                    <div
+                      className={`w-full rounded-t ${closing < 0 ? "bg-red-400" : "bg-emerald-500"}`}
+                      style={{ height: `${h}%` }}
+                    />
+                    <span className="mt-1 w-full truncate text-center text-[9px] text-neutral-500">
+                      {p.period.length > 7 ? p.period.slice(5) : p.period}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
