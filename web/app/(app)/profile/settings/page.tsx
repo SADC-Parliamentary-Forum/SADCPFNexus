@@ -6,6 +6,12 @@ import { useState, useEffect } from "react";
 import { TIMEZONES, DATE_FORMATS, CURRENCIES, LANGUAGES, PREFS_KEY } from "@/lib/constants";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useToast } from "@/components/ui/Toast";
+import {
+  notificationsPhase23Api,
+  userNotificationsApi,
+  type NotificationPreference,
+} from "@/lib/api";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
 
 const NAV = [
   { label: "Profile",       href: "/profile",           icon: "person" },
@@ -32,6 +38,8 @@ interface Prefs {
   compactMode: boolean;
   highContrast: boolean;
 }
+
+const MANDATORY_CATEGORIES = new Set(["workflow", "security", "compliance", "mandatory_transactional"]);
 
 const DEFAULT_PREFS: Prefs = {
   notifyTravelApproved: true,
@@ -68,12 +76,21 @@ export default function ProfileSettingsPage() {
   const { success, error, info } = useToast();
   const { theme, setTheme } = useTheme();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
+  const [inboxPrefs, setInboxPrefs] = useState<NotificationPreference[]>([]);
+  const [inboxBusy, setInboxBusy] = useState(false);
+  const [suggestion, setSuggestion] = useState<unknown>(null);
 
   useEffect(() => {
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
       if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) });
     } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    userNotificationsApi.preferences()
+      .then((res) => setInboxPrefs(res.data.data ?? []))
+      .catch(() => {});
   }, []);
 
   const set = <K extends keyof Prefs>(key: K, value: Prefs[K]) =>
@@ -85,6 +102,62 @@ export default function ProfileSettingsPage() {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(prefs));
     window.dispatchEvent(new Event("sadcpf:prefs-updated"));
     success("Preferences saved.");
+  };
+
+  const saveInboxPrefs = async () => {
+    setInboxBusy(true);
+    try {
+      const payload = inboxPrefs.map((row) => {
+        const mandatory = MANDATORY_CATEGORIES.has(row.category);
+        return {
+          category: row.category,
+          digest_mode: row.digest_mode ?? "immediate",
+          in_app_enabled: mandatory ? true : Boolean(row.in_app_enabled),
+          email_enabled: mandatory ? true : Boolean(row.email_enabled),
+          push_enabled: Boolean(row.push_enabled),
+        };
+      });
+      const res = await userNotificationsApi.updatePreferences(payload);
+      setInboxPrefs(res.data.data ?? payload);
+      success("Inbox delivery saved. Mandatory notices still deliver.");
+    } catch {
+      error("Could not save inbox delivery preferences.");
+    } finally {
+      setInboxBusy(false);
+    }
+  };
+
+  const loadSuggestions = async () => {
+    setInboxBusy(true);
+    try {
+      const res = await notificationsPhase23Api.preferenceSuggestions();
+      const payload = (res.data as { data?: { suggestion?: unknown } }).data;
+      setSuggestion(payload?.suggestion ?? payload);
+    } catch {
+      error("Could not load a digest suggestion.");
+    } finally {
+      setInboxBusy(false);
+    }
+  };
+
+  const applySuggestedDigest = async () => {
+    const rec = suggestion && typeof suggestion === "object" ? (suggestion as { proposed?: Array<{ category?: string; digest_mode?: NotificationPreference["digest_mode"] }> }) : null;
+    const proposed = rec?.proposed ?? [];
+    if (proposed.length === 0) return;
+    setInboxPrefs((current) => {
+      const next = [...current];
+      for (const row of proposed) {
+        if (!row.category || MANDATORY_CATEGORIES.has(row.category)) continue;
+        const idx = next.findIndex((p) => p.category === row.category);
+        if (idx >= 0) {
+          next[idx] = { ...next[idx], digest_mode: row.digest_mode ?? next[idx].digest_mode };
+        } else {
+          next.push({ category: row.category, digest_mode: row.digest_mode ?? "daily", in_app_enabled: true, email_enabled: true });
+        }
+      }
+      return next;
+    });
+    info("Suggested digest applied to the form. Save to persist. Mandatory categories stay on.");
   };
 
   return (
@@ -131,6 +204,61 @@ export default function ProfileSettingsPage() {
           </div>
           <Toggle checked={prefs.notifyEmail} onChange={(v) => set("notifyEmail", v)} label="Email notifications" description="Receive notifications to your registered email" />
           <Toggle checked={prefs.notifyInApp} onChange={(v) => set("notifyInApp", v)} label="In-app notifications" description="Show notification badge and bell alerts" />
+        </div>
+
+        <div className="card p-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <span className="material-symbols-outlined text-primary text-[18px]">inbox</span>
+            </div>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Inbox delivery (server)</h3>
+          </div>
+          <p className="text-xs text-neutral-500">
+            Digest applies to optional categories only. Workflow, security, and compliance notices cannot be switched off.
+          </p>
+          {inboxPrefs.length === 0 ? (
+            <p className="text-sm text-neutral-500">No server preference rows yet. Request a suggestion or save after the first notice arrives.</p>
+          ) : (
+            <div className="space-y-3">
+              {inboxPrefs.map((row, idx) => {
+                const mandatory = MANDATORY_CATEGORIES.has(row.category);
+                return (
+                  <div key={`${row.category}-${idx}`} className="rounded-lg border border-neutral-100 p-3">
+                    <p className="text-sm font-medium capitalize">{row.category.replace(/_/g, " ")}{mandatory ? " (mandatory)" : ""}</p>
+                    <label className="mt-2 block text-xs font-medium text-neutral-500">
+                      Digest
+                      <select
+                        className="form-input mt-1"
+                        value={row.digest_mode ?? "immediate"}
+                        disabled={mandatory}
+                        onChange={(e) => {
+                          const digest_mode = e.target.value as NotificationPreference["digest_mode"];
+                          setInboxPrefs((rows) => rows.map((item, i) => (i === idx ? { ...item, digest_mode } : item)));
+                        }}
+                      >
+                        <option value="immediate">Immediate</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="off">Off (optional only)</option>
+                      </select>
+                    </label>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-secondary text-sm" disabled={inboxBusy} onClick={() => void loadSuggestions()}>
+              {inboxBusy ? "Working…" : "Suggest digest"}
+            </button>
+            <button type="button" className="btn-secondary text-sm" disabled={inboxBusy || !suggestion} onClick={() => applySuggestedDigest()}>
+              Apply optional suggestion
+            </button>
+            <button type="button" className="btn-primary text-sm" disabled={inboxBusy} onClick={() => void saveInboxPrefs()}>
+              Save inbox delivery
+            </button>
+          </div>
+          {suggestion ? <LabelledRecord value={suggestion} /> : null}
         </div>
 
         {/* Display & locale */}

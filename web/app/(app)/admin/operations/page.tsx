@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { adminConsoleApi, type AdminConsoleDashboard, type AdminConsoleRow } from "@/lib/api";
 
 type ResourceState = {
@@ -57,14 +58,22 @@ async function safeLoad<T, F = T>(loader: () => Promise<{ data: { data: T } }>, 
   }
 }
 
-function display(value: unknown): string {
+function display(value: unknown): ReactNode {
   if (value === null || value === undefined || value === "") return "-";
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (Array.isArray(value)) return value.length ? value.map(display).join(", ") : "-";
+  if (Array.isArray(value)) {
+    if (!value.length) return "-";
+    return value.map((item, idx) => (
+      <span key={idx}>
+        {display(item)}
+        {idx < value.length - 1 ? ", " : ""}
+      </span>
+    ));
+  }
   if (typeof value === "object") {
     const asRecord = value as Record<string, unknown>;
     if ("value" in asRecord) return display(asRecord.value);
-    return JSON.stringify(value);
+    return <LabelledRecord value={value} nested />;
   }
   return String(value).replaceAll("_", " ");
 }

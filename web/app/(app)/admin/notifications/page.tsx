@@ -1,13 +1,27 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { FormField, FormSection } from "@/components/ui/FormSection";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { notificationAdminApi, notificationTemplatesApi, type NotifTemplate } from "@/lib/api";
+import {
+  notificationAdminApi,
+  notificationTemplatesApi,
+  notificationsPhase23Api,
+  type NotifTemplate,
+} from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { ObjectSummary } from "@/components/ui/ObjectSummary";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
 
-type Tab = "templates" | "deliveries" | "failures" | "analytics";
+type Tab = "templates" | "deliveries" | "failures" | "analytics" | "broadcasts" | "maintenance";
+
+function unwrapData<T>(payload: unknown): T | null {
+  if (!payload || typeof payload !== "object") return null;
+  const rec = payload as Record<string, unknown>;
+  if ("data" in rec) return (rec.data as T) ?? null;
+  return payload as T;
+}
 
 export default function AdminNotificationsPage() {
   const { success, error } = useToast();
@@ -17,7 +31,26 @@ export default function AdminNotificationsPage() {
   const [failures, setFailures] = useState<{ failed_deliveries: any[]; dead_letters: any[] } | null>(null);
   const [analytics, setAnalytics] = useState<any>(null);
   const [guards, setGuards] = useState<any>(null);
+  const [fatigue, setFatigue] = useState<unknown>(null);
+  const [maintenance, setMaintenance] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [broadcastForm, setBroadcastForm] = useState({
+    title: "",
+    body: "",
+    impact: "normal",
+    broadcast_type: "general",
+    scheduled_at: "",
+  });
+  const [draftBroadcast, setDraftBroadcast] = useState<{ id?: number; status?: string; title?: string } | null>(null);
+  const [broadcastId, setBroadcastId] = useState("");
+  const [cancelReason, setCancelReason] = useState("");
+  const [maintenanceForm, setMaintenanceForm] = useState({
+    title: "",
+    body: "",
+    starts_at: "",
+    ends_at: "",
+  });
+  const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -35,12 +68,21 @@ export default function AdminNotificationsPage() {
       Promise.all([
         notificationAdminApi.analytics(),
         notificationAdminApi.aiGuards(),
+        notificationAdminApi.fatigue(),
       ])
-        .then(([a, g]: any[]) => {
+        .then(([a, g, f]: any[]) => {
           setAnalytics(a.data?.data ?? a.data ?? null);
           setGuards(g.data?.data ?? g.data ?? null);
+          setFatigue(f.data?.data ?? f.data ?? null);
         })
         .catch(() => error("Could not load analytics"))
+        .finally(() => setLoading(false));
+    } else if (tab === "broadcasts") {
+      setLoading(false);
+    } else if (tab === "maintenance") {
+      notificationAdminApi.listMaintenance()
+        .then((r: any) => setMaintenance(r.data?.data ?? r.data ?? []))
+        .catch(() => error("Could not load maintenance windows"))
         .finally(() => setLoading(false));
     } else {
       notificationAdminApi.failures()
@@ -69,6 +111,77 @@ export default function AdminNotificationsPage() {
     }
   };
 
+  const createDraftBroadcast = async () => {
+    if (!broadcastForm.title.trim() || !broadcastForm.body.trim()) return;
+    setBusy("create");
+    try {
+      const res = await notificationsPhase23Api.createBroadcast({
+        title: broadcastForm.title.trim(),
+        body: broadcastForm.body.trim(),
+        impact: broadcastForm.impact,
+        broadcast_type: broadcastForm.broadcast_type,
+        scheduled_at: broadcastForm.scheduled_at || undefined,
+      });
+      const created = unwrapData<{ id?: number; status?: string; title?: string }>(res.data);
+      setDraftBroadcast(created);
+      if (created?.id) setBroadcastId(String(created.id));
+      setBroadcastForm({ title: "", body: "", impact: "normal", broadcast_type: "general", scheduled_at: "" });
+      success("Draft broadcast saved. It has not been sent.");
+    } catch {
+      error("Could not create the draft broadcast.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const actOnBroadcast = async (action: "submit" | "approve" | "cancel") => {
+    const id = broadcastId.trim();
+    if (!id) return;
+    setBusy(action);
+    try {
+      if (action === "submit") await notificationsPhase23Api.submitBroadcast(id);
+      if (action === "approve") await notificationsPhase23Api.approveBroadcast(id);
+      if (action === "cancel") await notificationsPhase23Api.cancelBroadcast(id, cancelReason || undefined);
+      success(
+        action === "submit"
+          ? "Broadcast submitted for approval."
+          : action === "approve"
+            ? "Broadcast approved. Unscheduled items may send immediately."
+            : "Broadcast cancelled.",
+      );
+      if (action === "cancel") setCancelReason("");
+    } catch {
+      error(
+        action === "approve"
+          ? "Approval failed. High-impact broadcasts need a different approver than the sender."
+          : `Could not ${action} this broadcast.`,
+      );
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const scheduleWindow = async () => {
+    if (!maintenanceForm.title.trim() || !maintenanceForm.body.trim() || !maintenanceForm.starts_at) return;
+    setBusy("maintenance");
+    try {
+      await notificationAdminApi.scheduleMaintenance({
+        title: maintenanceForm.title.trim(),
+        body: maintenanceForm.body.trim(),
+        starts_at: maintenanceForm.starts_at,
+        ends_at: maintenanceForm.ends_at || undefined,
+      });
+      success("Maintenance window scheduled.");
+      setMaintenanceForm({ title: "", body: "", starts_at: "", ends_at: "" });
+      const r: any = await notificationAdminApi.listMaintenance();
+      setMaintenance(r.data?.data ?? r.data ?? []);
+    } catch {
+      error("Could not schedule the maintenance window.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -91,6 +204,8 @@ export default function AdminNotificationsPage() {
           ["deliveries", "Deliveries"],
           ["failures", "Failures / DLQ"],
           ["analytics", "Analytics"],
+          ["broadcasts", "Broadcasts"],
+          ["maintenance", "Maintenance"],
         ] as const).map(([key, label]) => (
           <button
             key={key}
@@ -214,6 +329,190 @@ export default function AdminNotificationsPage() {
               </div>
             </div>
           )}
+          {fatigue != null && (
+            <div className="rounded-md border border-[var(--border)] p-3 text-sm">
+              <div className="font-medium mb-2">Fatigue</div>
+              <LabelledRecord value={fatigue} />
+            </div>
+          )}
+        </div>
+      )}
+
+      {!loading && tab === "broadcasts" && (
+        <div className="space-y-4">
+          <FormSection
+            title="Create draft broadcast"
+            description="Saves a draft only. Submit and approve are separate human steps. High-impact sender cannot approve. Approval may send immediately if the broadcast is not scheduled."
+            icon="campaign"
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField label="Title" htmlFor="broadcast-title" required>
+                <input
+                  id="broadcast-title"
+                  className="form-input"
+                  value={broadcastForm.title}
+                  onChange={(e) => setBroadcastForm((f) => ({ ...f, title: e.target.value }))}
+                />
+              </FormField>
+              <FormField label="Impact" htmlFor="broadcast-impact">
+                <select
+                  id="broadcast-impact"
+                  className="form-input"
+                  value={broadcastForm.impact}
+                  onChange={(e) => setBroadcastForm((f) => ({ ...f, impact: e.target.value }))}
+                >
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </FormField>
+              <FormField label="Type" htmlFor="broadcast-type">
+                <input
+                  id="broadcast-type"
+                  className="form-input"
+                  value={broadcastForm.broadcast_type}
+                  onChange={(e) => setBroadcastForm((f) => ({ ...f, broadcast_type: e.target.value }))}
+                />
+              </FormField>
+              <FormField label="Schedule (optional)" htmlFor="broadcast-schedule" hint="Leave empty to send on approval.">
+                <input
+                  id="broadcast-schedule"
+                  type="datetime-local"
+                  className="form-input"
+                  value={broadcastForm.scheduled_at}
+                  onChange={(e) => setBroadcastForm((f) => ({ ...f, scheduled_at: e.target.value }))}
+                />
+              </FormField>
+              <FormField label="Body" htmlFor="broadcast-body" required className="sm:col-span-2">
+                <textarea
+                  id="broadcast-body"
+                  className="form-input"
+                  rows={4}
+                  value={broadcastForm.body}
+                  onChange={(e) => setBroadcastForm((f) => ({ ...f, body: e.target.value }))}
+                />
+              </FormField>
+            </div>
+            <button
+              type="button"
+              className="btn-primary mt-3 disabled:opacity-60"
+              disabled={busy !== null || !broadcastForm.title.trim() || !broadcastForm.body.trim()}
+              onClick={() => void createDraftBroadcast()}
+            >
+              {busy === "create" ? "Saving…" : "Save draft"}
+            </button>
+            {draftBroadcast?.id ? (
+              <p className="mt-2 text-sm text-neutral-600">
+                Draft #{draftBroadcast.id} saved as {draftBroadcast.status ?? "draft"}. It has not been sent.
+              </p>
+            ) : null}
+          </FormSection>
+
+          <FormSection
+            title="Submit, approve, or cancel"
+            description="Use a different approver for high-impact broadcasts. Approval is not silent send when a future schedule is set."
+            icon="verified"
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField label="Broadcast ID" htmlFor="broadcast-id" required>
+                <input
+                  id="broadcast-id"
+                  className="form-input"
+                  value={broadcastId}
+                  onChange={(e) => setBroadcastId(e.target.value)}
+                />
+              </FormField>
+              <FormField label="Cancel reason" htmlFor="broadcast-cancel-reason">
+                <input
+                  id="broadcast-cancel-reason"
+                  className="form-input"
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                />
+              </FormField>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" className="btn-secondary text-sm disabled:opacity-60" disabled={busy !== null || !broadcastId.trim()} onClick={() => void actOnBroadcast("submit")}>
+                {busy === "submit" ? "Submitting…" : "Submit for approval"}
+              </button>
+              <button type="button" className="btn-secondary text-sm disabled:opacity-60" disabled={busy !== null || !broadcastId.trim()} onClick={() => void actOnBroadcast("approve")}>
+                {busy === "approve" ? "Approving…" : "Approve"}
+              </button>
+              <button type="button" className="btn-secondary text-sm text-red-600 disabled:opacity-60" disabled={busy !== null || !broadcastId.trim()} onClick={() => void actOnBroadcast("cancel")}>
+                {busy === "cancel" ? "Cancelling…" : "Cancel"}
+              </button>
+            </div>
+          </FormSection>
+        </div>
+      )}
+
+      {!loading && tab === "maintenance" && (
+        <div className="space-y-4">
+          <FormSection
+            title="Schedule maintenance alert"
+            description="Creates a maintenance window. It does not send SMS or WhatsApp unless those channels are live."
+            icon="construction"
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField label="Title" htmlFor="maint-title" required>
+                <input
+                  id="maint-title"
+                  className="form-input"
+                  value={maintenanceForm.title}
+                  onChange={(e) => setMaintenanceForm((f) => ({ ...f, title: e.target.value }))}
+                />
+              </FormField>
+              <FormField label="Starts at" htmlFor="maint-start" required>
+                <input
+                  id="maint-start"
+                  type="datetime-local"
+                  className="form-input"
+                  value={maintenanceForm.starts_at}
+                  onChange={(e) => setMaintenanceForm((f) => ({ ...f, starts_at: e.target.value }))}
+                />
+              </FormField>
+              <FormField label="Ends at" htmlFor="maint-end">
+                <input
+                  id="maint-end"
+                  type="datetime-local"
+                  className="form-input"
+                  value={maintenanceForm.ends_at}
+                  onChange={(e) => setMaintenanceForm((f) => ({ ...f, ends_at: e.target.value }))}
+                />
+              </FormField>
+              <FormField label="Body" htmlFor="maint-body" required className="sm:col-span-2">
+                <textarea
+                  id="maint-body"
+                  className="form-input"
+                  rows={3}
+                  value={maintenanceForm.body}
+                  onChange={(e) => setMaintenanceForm((f) => ({ ...f, body: e.target.value }))}
+                />
+              </FormField>
+            </div>
+            <button
+              type="button"
+              className="btn-primary mt-3 disabled:opacity-60"
+              disabled={busy !== null || !maintenanceForm.title.trim() || !maintenanceForm.body.trim() || !maintenanceForm.starts_at}
+              onClick={() => void scheduleWindow()}
+            >
+              {busy === "maintenance" ? "Saving…" : "Schedule window"}
+            </button>
+          </FormSection>
+          <div className="rounded-md border border-[var(--border)] p-3 text-sm">
+            <h2 className="font-medium mb-2">Scheduled windows</h2>
+            {maintenance.length === 0 ? (
+              <p className="text-[var(--muted-foreground)]">No maintenance windows listed.</p>
+            ) : (
+              <ul className="space-y-3">
+                {maintenance.map((row, idx) => (
+                  <li key={String(row.id ?? idx)}>
+                    <LabelledRecord value={row} nested />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
     </div>

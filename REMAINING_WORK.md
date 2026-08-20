@@ -80,8 +80,15 @@ Shipped this continuation (module depth over existing APIs):
 - Notifications inbox **NL search** suggests filters only; it does not send messages
 - Correspondence detail **courier tracking refresh** (stub when no courier URL is configured — not live carrier proof)
 - Assignment calendar **ICS subscribe / sync** panel (`calendarFeed`; honest when Google credentials are absent)
+- Assignment calendar **ICS import** creates drafts only (`importIcs`; does not issue or complete work)
+- Profile settings **server inbox delivery** plus optional digest suggestion (mandatory workflow/security/compliance stay on)
 - People org search object cells use `LabelledRecord` instead of JSON dumps
 - HR settings audit log uses labelled old/new change rows
+- Assignment detail **claim** (department-queue only) and **change due date** (date + reason)
+- Notifications inbox **archive** and **acknowledge**
+- Admin notifications **draft broadcasts** (create ≠ submit ≠ approve; high-impact SoD) plus **maintenance windows**
+- People register object cells use `labelledObjectCell` instead of JSON dumps
+- Admin operations object cells use `LabelledRecord` instead of JSON dumps
 
 Shipped on this branch (People labelled forms + watermark + remaining inventable product):
 

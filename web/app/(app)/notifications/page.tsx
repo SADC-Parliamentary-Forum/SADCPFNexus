@@ -364,6 +364,28 @@ function InboxTab() {
     try { await userNotificationsApi.destroy(id); invalidate(); } catch { /* ignore */ }
   };
 
+  const handleArchive = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await userNotificationsApi.archive(id);
+      invalidate();
+      success("Notification archived.");
+    } catch {
+      showErrorToast("Could not archive this notification.");
+    }
+  };
+
+  const handleAcknowledge = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await userNotificationsApi.acknowledge(id);
+      invalidate();
+      success("Notification acknowledged.");
+    } catch {
+      showErrorToast("Could not acknowledge this notification.");
+    }
+  };
+
   const runNlSearch = async () => {
     const q = nlQuery.trim();
     if (!q) return;
@@ -516,6 +538,20 @@ function InboxTab() {
                   </span>
                 )}
               </div>
+              <button
+                onClick={(e) => handleAcknowledge(n.id, e)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-300 hover:text-primary flex-shrink-0"
+                title="Acknowledge"
+              >
+                <span className="material-symbols-outlined text-[16px]">task_alt</span>
+              </button>
+              <button
+                onClick={(e) => handleArchive(n.id, e)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-300 hover:text-primary flex-shrink-0"
+                title="Archive"
+              >
+                <span className="material-symbols-outlined text-[16px]">archive</span>
+              </button>
               <button
                 onClick={(e) => handleDelete(n.id, e)}
                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-300 hover:text-red-400 flex-shrink-0"

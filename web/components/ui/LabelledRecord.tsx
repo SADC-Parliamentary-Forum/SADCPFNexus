@@ -19,6 +19,19 @@ function primitive(value: unknown): string {
   return String(value);
 }
 
+export function labelledObjectCell(value: unknown): ReactNode {
+  if (value == null || value === "") return "-";
+  if (typeof value === "object") {
+    const rec = asRecord(value);
+    if (rec) {
+      const labelled = rec.name ?? rec.title ?? rec.label ?? rec.code;
+      if (labelled != null && labelled !== "") return String(labelled);
+    }
+    return <LabelledRecord value={value} nested />;
+  }
+  return String(value);
+}
+
 export function LabelledRecord({ value, nested = false }: { value: unknown; nested?: boolean }) {
   if (value == null || value === "") {
     return <span className="text-neutral-400">—</span>;

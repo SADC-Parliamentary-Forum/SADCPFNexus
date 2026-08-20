@@ -335,3 +335,49 @@ test("HR settings audit uses labelled change rows", () => {
   assert.match(source, /LabelledChangeRows/);
   assert.doesNotMatch(source, /truncateJson/);
 });
+
+test("assignment calendar can import ICS on demand", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/assignments/calendar/page.tsx"), "utf8");
+  assert.match(source, /importIcs/);
+  assert.match(source, /data-testid="assignment-ics-import"/);
+});
+
+test("profile settings loads and saves server notification preferences", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/profile/settings/page.tsx"), "utf8");
+  assert.match(source, /userNotificationsApi\.preferences/);
+  assert.match(source, /updatePreferences/);
+  assert.match(source, /preferenceSuggestions/);
+});
+
+test("assignment detail can change due date and claim unassigned work", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/assignments/[id]/page.tsx"), "utf8");
+  assert.match(source, /changeDueDate/);
+  assert.match(source, /assignmentsApi\.claim/);
+});
+
+test("notifications inbox can archive and acknowledge", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/notifications/page.tsx"), "utf8");
+  assert.match(source, /userNotificationsApi\.archive/);
+  assert.match(source, /userNotificationsApi\.acknowledge/);
+});
+
+test("admin notifications can create a draft broadcast without sending it from the form", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/admin/notifications/page.tsx"), "utf8");
+  assert.match(source, /createBroadcast/);
+  assert.match(source, /submitBroadcast/);
+  assert.match(source, /approveBroadcast/);
+  assert.match(source, /scheduleMaintenance/);
+  assert.doesNotMatch(source, /createBroadcast\([^)]+\).*\.then\(\(\) => notificationsPhase23Api\.submitBroadcast/);
+});
+
+test("people units register uses labelled object cells instead of JSON dumps", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/people/units/page.tsx"), "utf8");
+  assert.match(source, /labelledObjectCell/);
+  assert.doesNotMatch(source, /JSON\.stringify\(v\)/);
+});
+
+test("admin operations renders labelled objects instead of JSON dumps", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/admin/operations/page.tsx"), "utf8");
+  assert.match(source, /LabelledRecord/);
+  assert.doesNotMatch(source, /return JSON\.stringify\(value\)/);
+});

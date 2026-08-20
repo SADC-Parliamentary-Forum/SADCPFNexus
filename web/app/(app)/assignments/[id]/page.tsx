@@ -112,8 +112,10 @@ export default function AssignmentDetailPage() {
   const [showBlockModal, setShowBlockModal] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
   const [showReassignModal, setShowReassignModal] = useState(false);
+  const [showDueDateModal, setShowDueDateModal] = useState(false);
   const [showChecklistModal, setShowChecklistModal] = useState(false);
   const [users, setUsers] = useState<TenantUserOption[]>([]);
+  const { success, error: showErrorToast } = useToast();
 
   // Update form state
   const [updateForm, setUpdateForm] = useState({
@@ -133,6 +135,7 @@ export default function AssignmentDetailPage() {
   const [blockForm, setBlockForm] = useState({ blocker_type: "awaiting_information", blocker_owner_id: "", blocker_details: "" });
   const [verifyForm, setVerifyForm] = useState({ decision: "accepted", comments: "" });
   const [reassignForm, setReassignForm] = useState({ assigned_to: "", reason: "" });
+  const [dueDateForm, setDueDateForm] = useState({ due_date: "", reason: "" });
   const [checklistTitle, setChecklistTitle] = useState("");
   const [depId, setDepId] = useState("");
 
@@ -247,6 +250,29 @@ export default function AssignmentDetailPage() {
     onSuccess: () => { invalidate(); setShowReassignModal(false); setReassignForm({ assigned_to: "", reason: "" }); },
   });
 
+  const changeDueDateMutation = useMutation({
+    mutationFn: () => assignmentsApi.changeDueDate(Number(id), {
+      due_date: dueDateForm.due_date,
+      reason: dueDateForm.reason.trim(),
+    }),
+    onSuccess: () => {
+      invalidate();
+      setShowDueDateModal(false);
+      setDueDateForm({ due_date: "", reason: "" });
+      success("Due date updated.");
+    },
+    onError: () => showErrorToast("Could not change the due date."),
+  });
+
+  const claimMutation = useMutation({
+    mutationFn: () => assignmentsApi.claim(Number(id)),
+    onSuccess: () => {
+      invalidate();
+      success("Assignment claimed.");
+    },
+    onError: () => showErrorToast("Could not claim this assignment. Only unassigned department-queue work can be claimed."),
+  });
+
   const checklistMutation = useMutation({
     mutationFn: () => assignmentsApi.addChecklistItem(Number(id), { title: checklistTitle.trim() }),
     onSuccess: () => { invalidate(); setShowChecklistModal(false); setChecklistTitle(""); },
@@ -345,6 +371,17 @@ export default function AssignmentDetailPage() {
 
         {/* Action buttons */}
         <div className="mt-4 flex flex-wrap gap-2">
+          {!assignment.assigned_to && (
+            <button
+              onClick={() => claimMutation.mutate()}
+              disabled={claimMutation.isPending || !assignment.department_id}
+              title={!assignment.department_id ? "Only department-queue assignments can be claimed." : "Claim this assignment"}
+              className="btn-secondary disabled:opacity-60"
+            >
+              <span className="material-symbols-outlined text-[16px]">handshake</span>
+              Claim
+            </button>
+          )}
           {assignment.status === "draft" && (
             <button
               onClick={() => issueMutation.mutate()}
@@ -431,10 +468,25 @@ export default function AssignmentDetailPage() {
             </>
           )}
           {!["closed", "cancelled"].includes(assignment.status) && (
-            <button onClick={() => setShowCancelModal(true)} className="btn-secondary text-red-500 border-red-200 hover:bg-red-50">
-              <span className="material-symbols-outlined text-[16px]">cancel</span>
-              Cancel
-            </button>
+            <>
+              <button
+                onClick={() => {
+                  setDueDateForm({
+                    due_date: assignment.due_date ? String(assignment.due_date).slice(0, 10) : "",
+                    reason: "",
+                  });
+                  setShowDueDateModal(true);
+                }}
+                className="btn-secondary"
+              >
+                <span className="material-symbols-outlined text-[16px]">event</span>
+                Change due date
+              </button>
+              <button onClick={() => setShowCancelModal(true)} className="btn-secondary text-red-500 border-red-200 hover:bg-red-50">
+                <span className="material-symbols-outlined text-[16px]">cancel</span>
+                Cancel
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -923,6 +975,40 @@ export default function AssignmentDetailPage() {
               onClick={() => reassignMutation.mutate()}
             >
               {reassignMutation.isPending ? "Saving…" : "Reassign"}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showDueDateModal && (
+        <Modal title="Change due date" onClose={() => setShowDueDateModal(false)}>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1" htmlFor="assignment-due-date">New due date</label>
+              <input
+                id="assignment-due-date"
+                type="date"
+                className="form-input"
+                value={dueDateForm.due_date}
+                onChange={(e) => setDueDateForm((f) => ({ ...f, due_date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 mb-1" htmlFor="assignment-due-reason">Reason</label>
+              <textarea
+                id="assignment-due-reason"
+                className="form-input"
+                rows={3}
+                value={dueDateForm.reason}
+                onChange={(e) => setDueDateForm((f) => ({ ...f, reason: e.target.value }))}
+              />
+            </div>
+            <button
+              className="btn-primary disabled:opacity-60"
+              disabled={changeDueDateMutation.isPending || !dueDateForm.due_date || !dueDateForm.reason.trim()}
+              onClick={() => changeDueDateMutation.mutate()}
+            >
+              {changeDueDateMutation.isPending ? "Saving…" : "Update due date"}
             </button>
           </div>
         </Modal>

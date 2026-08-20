@@ -5971,6 +5971,7 @@ export const notificationsPhase23Api = {
     api.post("/notifications/devices/refresh", payload),
   revokeDevice: (token: string) => api.delete("/notifications/devices", { data: { token } }),
   nlSearch: (q: string) => api.post("/notifications/nl-search", { q }),
+  preferenceSuggestions: () => api.post("/notifications/preference-suggestions"),
   createBroadcast: (payload: Record<string, unknown>) => api.post("/notifications/broadcasts", payload),
   submitBroadcast: (id: number | string) => api.post(`/notifications/broadcasts/${id}/submit`),
   approveBroadcast: (id: number | string) => api.post(`/notifications/broadcasts/${id}/approve`),

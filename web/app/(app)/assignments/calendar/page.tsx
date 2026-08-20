@@ -2,7 +2,7 @@
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { assignmentsApi } from "@/lib/api";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 
@@ -14,8 +14,13 @@ function monthBounds(d = new Date()) {
 }
 
 export default function AssignmentsCalendarPage() {
+  const queryClient = useQueryClient();
   const [cursor, setCursor] = useState(() => new Date());
   const [scope, setScope] = useState<"mine" | "team" | "register">("mine");
+  const [icsText, setIcsText] = useState("");
+  const [icsBusy, setIcsBusy] = useState(false);
+  const [icsResult, setIcsResult] = useState<Record<string, unknown> | null>(null);
+  const [icsError, setIcsError] = useState<string | null>(null);
   const bounds = useMemo(() => monthBounds(cursor), [cursor]);
 
   const { data, isLoading, isError } = useQuery({
@@ -61,7 +66,7 @@ export default function AssignmentsCalendarPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <ModulePageHeader
         title="Assignment Calendar"
-        subtitle="In-app due-date calendar for {bounds.label}. Download ICS for Google Calendar / Outlook when API credentials are absent."
+        subtitle={`In-app due-date calendar for ${bounds.label}. Download ICS for Google Calendar / Outlook when API credentials are absent.`}
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Assignment Calendar" }]} />}
       />
         <div className="flex flex-wrap gap-2">
@@ -115,6 +120,48 @@ export default function AssignmentsCalendarPage() {
           />
         </div>
       ) : null}
+
+      <form
+        data-testid="assignment-ics-import"
+        className="card space-y-3 p-5"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const ics = icsText.trim();
+          if (!ics) return;
+          setIcsBusy(true);
+          setIcsError(null);
+          try {
+            const res = await assignmentsApi.importIcs({ ics });
+            setIcsResult(res.data.data as Record<string, unknown>);
+            setIcsText("");
+            await queryClient.invalidateQueries({ queryKey: ["assignments-calendar"] });
+          } catch {
+            setIcsError("ICS import failed. Events are created as drafts only.");
+          } finally {
+            setIcsBusy(false);
+          }
+        }}
+      >
+        <h2 className="text-sm font-semibold text-neutral-900">Import ICS</h2>
+        <p className="text-xs text-neutral-500">
+          Paste a calendar file. Import creates draft assignments assigned to you — it does not issue or complete work.
+        </p>
+        <label className="block text-xs font-medium text-neutral-600">
+          ICS text
+          <textarea
+            className="form-input mt-1 min-h-32 font-mono text-xs"
+            value={icsText}
+            onChange={(e) => setIcsText(e.target.value)}
+            placeholder="BEGIN:VCALENDAR"
+            aria-label="ICS text"
+          />
+        </label>
+        <button type="submit" className="btn-secondary text-sm" disabled={icsBusy || !icsText.trim()}>
+          {icsBusy ? "Importing…" : "Import ICS"}
+        </button>
+        {icsError ? <p className="text-sm text-red-700">{icsError}</p> : null}
+        {icsResult ? <LabelledRecord value={icsResult} /> : null}
+      </form>
 
       <div className="card grid grid-cols-7 gap-px overflow-hidden bg-[var(--border)] p-px">
         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (

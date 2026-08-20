@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { labelledObjectCell } from "@/components/ui/LabelledRecord";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -23,15 +24,6 @@ function asRows(payload: unknown): Record<string, unknown>[] {
     }
   }
   return [];
-}
-
-function cell(v: unknown): string {
-  if (v == null) return "-";
-  if (typeof v === "object") {
-    const o = v as Record<string, unknown>;
-    return String(o.name ?? o.title ?? o.label ?? o.code ?? JSON.stringify(v));
-  }
-  return String(v);
 }
 
 export default function Page() {
@@ -193,7 +185,7 @@ return (await peopleAuthorityApi.listSuccession()).data;
                 {filtered.map((r, idx) => (
                   <tr key={String(r.id ?? idx)}>
                     {columns.map((c) => (
-                      <td key={c}>{cell(r[c])}</td>
+                      <td key={c}>{labelledObjectCell(r[c])}</td>
                     ))}
                   </tr>
                 ))}
