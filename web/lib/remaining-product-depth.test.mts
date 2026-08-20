@@ -376,6 +376,14 @@ test("people units register uses labelled object cells instead of JSON dumps", (
   assert.doesNotMatch(source, /JSON\.stringify\(v\)/);
 });
 
+test("people acting and delegations tables use labelledObjectCell instead of a local cell helper", () => {
+  for (const page of ["acting", "delegations"]) {
+    const source = readFileSync(join(webRoot, `app/(app)/people/${page}/page.tsx`), "utf8");
+    assert.match(source, /labelledObjectCell/);
+    assert.doesNotMatch(source, /\{cell\(/);
+  }
+});
+
 test("admin operations renders labelled objects instead of JSON dumps", () => {
   const source = readFileSync(join(webRoot, "app/(app)/admin/operations/page.tsx"), "utf8");
   assert.match(source, /LabelledRecord/);

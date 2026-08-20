@@ -186,10 +186,10 @@ export default function Page() {
               <tbody>
                 {filtered.map((r, idx) => (
                   <tr key={String(r.id ?? idx)}>
-                    <td>{cell(r.reference ?? r.id)}</td>
-                    <td>{cell(r.status)}</td>
-                    <td>{cell(r.start_at)}</td>
-                    <td>{cell(r.end_at)}</td>
+                    <td>{labelledObjectCell(r.reference ?? r.id)}</td>
+                    <td>{labelledObjectCell(r.status)}</td>
+                    <td>{labelledObjectCell(r.start_at)}</td>
+                    <td>{labelledObjectCell(r.end_at)}</td>
                     <td>
                       {r.status !== "approved" && r.status !== "active" && (
                         <button type="button" className="text-xs text-emerald-700 hover:underline" onClick={() => approve.mutate(Number(r.id))} disabled={approve.isPending}>
