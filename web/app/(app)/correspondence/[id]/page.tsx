@@ -50,6 +50,9 @@ export default function CorrespondenceDetailPage() {
   const [signingEvents, setSigningEvents] = useState<SignatureEvent[]>([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [trackingBusy, setTrackingBusy] = useState<number | null>(null);
+  const [notes, setNotes] = useState<Array<{ id: number; body: string; author?: { name: string } }>>([]);
+  const [noteBody, setNoteBody] = useState("");
+  const [ackStatus, setAckStatus] = useState<"viewed" | "accepted" | "misrouted">("viewed");
 
   const loadLetter = () =>
     correspondenceApi
@@ -64,6 +67,10 @@ export default function CorrespondenceDetailPage() {
     saamApi.getEvents("correspondence", Number(id))
       .then((res) => setSigningEvents(res.data.data ?? []))
       .catch(() => {});
+    correspondenceApi
+      .listNotes(Number(id))
+      .then((res) => setNotes(res.data.data ?? []))
+      .catch(() => setNotes([]));
   }, [id]);
 
   useEffect(() => {
@@ -90,6 +97,7 @@ export default function CorrespondenceDetailPage() {
       await action();
       const res = await correspondenceApi.get(Number(id));
       setLetter(res.data.data);
+      correspondenceApi.listNotes(Number(id)).then((n) => setNotes(n.data.data ?? [])).catch(() => {});
       if (successMsg) alert(successMsg);
     } catch {
       setError("Action failed. Please try again.");
@@ -264,6 +272,29 @@ export default function CorrespondenceDetailPage() {
                 <span className="material-symbols-outlined text-[16px] mr-1">send</span>
                 Dispatch / Send
               </button>
+            )}
+            {["pending_sg_routing", "routed", "in_progress", "sent"].includes(letter.status) && (
+              <>
+                <label className="sr-only" htmlFor="correspondence-ack-status">Acknowledgement</label>
+                <select
+                  id="correspondence-ack-status"
+                  className="form-input text-sm"
+                  value={ackStatus}
+                  onChange={(e) => setAckStatus(e.target.value as "viewed" | "accepted" | "misrouted")}
+                >
+                  <option value="viewed">Viewed</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="misrouted">Misrouted</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => runAction(() => correspondenceApi.acknowledge(letter.id, ackStatus), "Routing acknowledgement recorded.")}
+                  disabled={actionLoading}
+                  className="btn-secondary text-sm"
+                >
+                  Acknowledge
+                </button>
+              </>
             )}
             {["approved", "signed", "ready_dispatch"].includes(letter.status) && (isSystemAdmin(currentUser) || hasPermission(currentUser, "correspondence.dispatch")) && (
               <button
@@ -451,6 +482,47 @@ export default function CorrespondenceDetailPage() {
           <p className="text-sm text-neutral-700 whitespace-pre-wrap">{letter.body}</p>
         </div>
       )}
+
+      <div className="card p-5 space-y-3">
+        <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Internal notes</h3>
+        {notes.length === 0 ? (
+          <p className="text-sm text-neutral-400">No notes yet.</p>
+        ) : (
+          <ul className="space-y-2 text-sm">
+            {notes.map((note) => (
+              <li key={note.id} className="rounded-lg border border-neutral-100 px-3 py-2">
+                <p className="text-neutral-800 whitespace-pre-wrap">{note.body}</p>
+                {note.author?.name ? <p className="mt-1 text-xs text-neutral-400">{note.author.name}</p> : null}
+              </li>
+            ))}
+          </ul>
+        )}
+        <label className="block text-xs font-medium text-neutral-600" htmlFor="correspondence-note">
+          Add note
+          <textarea
+            id="correspondence-note"
+            className="form-input mt-1 w-full"
+            rows={3}
+            value={noteBody}
+            onChange={(e) => setNoteBody(e.target.value)}
+          />
+        </label>
+        <button
+          type="button"
+          className="btn-secondary text-sm disabled:opacity-60"
+          disabled={actionLoading || !noteBody.trim()}
+          onClick={() => {
+            const body = noteBody.trim();
+            if (!body) return;
+            void runAction(async () => {
+              await correspondenceApi.addNote(letter.id, body);
+              setNoteBody("");
+            }, "Note added.");
+          }}
+        >
+          Save note
+        </button>
+      </div>
 
       {/* Approval Chain */}
       {signingEvents.length > 0 && (

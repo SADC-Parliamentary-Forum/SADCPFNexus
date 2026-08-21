@@ -14,7 +14,7 @@ import { useToast } from "@/components/ui/Toast";
 import { ObjectSummary } from "@/components/ui/ObjectSummary";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 
-type Tab = "templates" | "deliveries" | "failures" | "analytics" | "broadcasts" | "maintenance";
+type Tab = "templates" | "deliveries" | "failures" | "analytics" | "broadcasts" | "maintenance" | "acks";
 
 function unwrapData<T>(payload: unknown): T | null {
   if (!payload || typeof payload !== "object") return null;
@@ -50,6 +50,10 @@ export default function AdminNotificationsPage() {
     starts_at: "",
     ends_at: "",
   });
+  const [ackForm, setAckForm] = useState({ title: "", body: "", deadline_at: "", user_ids: "" });
+  const [ackId, setAckId] = useState("");
+  const [ackReport, setAckReport] = useState<unknown>(null);
+  const [draftAck, setDraftAck] = useState<{ id?: number; status?: string } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
@@ -77,7 +81,7 @@ export default function AdminNotificationsPage() {
         })
         .catch(() => error("Could not load analytics"))
         .finally(() => setLoading(false));
-    } else if (tab === "broadcasts") {
+    } else if (tab === "broadcasts" || tab === "acks") {
       setLoading(false);
     } else if (tab === "maintenance") {
       notificationAdminApi.listMaintenance()
@@ -182,6 +186,60 @@ export default function AdminNotificationsPage() {
     }
   };
 
+  const createDraftAck = async () => {
+    if (!ackForm.title.trim() || !ackForm.body.trim()) return;
+    setBusy("ack-create");
+    try {
+      const userIds = ackForm.user_ids
+        .split(/[,\s]+/)
+        .map((part) => Number(part))
+        .filter((n) => Number.isFinite(n) && n > 0);
+      const res = await notificationsPhase23Api.createAckCampaign({
+        title: ackForm.title.trim(),
+        body: ackForm.body.trim(),
+        deadline_at: ackForm.deadline_at || undefined,
+        audience: { user_ids: userIds },
+      });
+      const created = unwrapData<{ id?: number; status?: string }>(res.data);
+      setDraftAck(created);
+      if (created?.id) setAckId(String(created.id));
+      setAckForm({ title: "", body: "", deadline_at: "", user_ids: "" });
+      success("Draft acknowledgement campaign saved. It has not notified anyone.");
+    } catch {
+      error("Could not create the draft campaign.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const activateAck = async () => {
+    const id = ackId.trim();
+    if (!id) return;
+    setBusy("ack-activate");
+    try {
+      await notificationsPhase23Api.activateAckCampaign(id);
+      success("Campaign activated. Recipients in the audience are notified now.");
+    } catch {
+      error("Could not activate this campaign.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const loadAckReport = async () => {
+    const id = ackId.trim();
+    if (!id) return;
+    setBusy("ack-report");
+    try {
+      const res = await notificationsPhase23Api.ackReport(id);
+      setAckReport(unwrapData(res.data) ?? res.data);
+    } catch {
+      error("Could not load the acknowledgement report.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -205,6 +263,7 @@ export default function AdminNotificationsPage() {
           ["failures", "Failures / DLQ"],
           ["analytics", "Analytics"],
           ["broadcasts", "Broadcasts"],
+          ["acks", "Ack campaigns"],
           ["maintenance", "Maintenance"],
         ] as const).map(([key, label]) => (
           <button
@@ -513,6 +572,99 @@ export default function AdminNotificationsPage() {
               </ul>
             )}
           </div>
+        </div>
+      )}
+
+      {!loading && tab === "acks" && (
+        <div className="space-y-4">
+          <FormSection
+            title="Create draft acknowledgement campaign"
+            description="Saves a draft only. Activate is a separate human step and notifies the listed audience immediately."
+            icon="fact_check"
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField label="Title" htmlFor="ack-title" required>
+                <input
+                  id="ack-title"
+                  className="form-input"
+                  value={ackForm.title}
+                  onChange={(e) => setAckForm((f) => ({ ...f, title: e.target.value }))}
+                />
+              </FormField>
+              <FormField label="Deadline" htmlFor="ack-deadline">
+                <input
+                  id="ack-deadline"
+                  type="datetime-local"
+                  className="form-input"
+                  value={ackForm.deadline_at}
+                  onChange={(e) => setAckForm((f) => ({ ...f, deadline_at: e.target.value }))}
+                />
+              </FormField>
+              <FormField
+                label="Audience user IDs"
+                htmlFor="ack-users"
+                hint="Comma-separated user IDs. Leave empty to notify nobody on activate."
+                className="sm:col-span-2"
+              >
+                <input
+                  id="ack-users"
+                  className="form-input"
+                  value={ackForm.user_ids}
+                  onChange={(e) => setAckForm((f) => ({ ...f, user_ids: e.target.value }))}
+                />
+              </FormField>
+              <FormField label="Body" htmlFor="ack-body" required className="sm:col-span-2">
+                <textarea
+                  id="ack-body"
+                  className="form-input"
+                  rows={4}
+                  value={ackForm.body}
+                  onChange={(e) => setAckForm((f) => ({ ...f, body: e.target.value }))}
+                />
+              </FormField>
+            </div>
+            <button
+              type="button"
+              className="btn-primary mt-3 disabled:opacity-60"
+              disabled={busy !== null || !ackForm.title.trim() || !ackForm.body.trim()}
+              onClick={() => void createDraftAck()}
+            >
+              {busy === "ack-create" ? "Saving…" : "Save draft"}
+            </button>
+            {draftAck?.id ? (
+              <p className="mt-2 text-sm text-neutral-600">
+                Draft #{draftAck.id} saved as {draftAck.status ?? "draft"}. It has not notified anyone.
+              </p>
+            ) : null}
+          </FormSection>
+
+          <FormSection
+            title="Activate or report"
+            description="Activation notifies the campaign audience immediately. It does not wait for a later approval step."
+            icon="campaign"
+          >
+            <FormField label="Campaign ID" htmlFor="ack-id" required>
+              <input
+                id="ack-id"
+                className="form-input"
+                value={ackId}
+                onChange={(e) => setAckId(e.target.value)}
+              />
+            </FormField>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" className="btn-secondary text-sm disabled:opacity-60" disabled={busy !== null || !ackId.trim()} onClick={() => void activateAck()}>
+                {busy === "ack-activate" ? "Activating…" : "Activate"}
+              </button>
+              <button type="button" className="btn-secondary text-sm disabled:opacity-60" disabled={busy !== null || !ackId.trim()} onClick={() => void loadAckReport()}>
+                {busy === "ack-report" ? "Loading…" : "Load report"}
+              </button>
+            </div>
+            {ackReport != null ? (
+              <div className="mt-3">
+                <LabelledRecord value={ackReport} />
+              </div>
+            ) : null}
+          </FormSection>
         </div>
       )}
     </div>

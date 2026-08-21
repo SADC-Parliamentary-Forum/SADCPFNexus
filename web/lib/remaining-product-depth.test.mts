@@ -389,3 +389,28 @@ test("admin operations renders labelled objects instead of JSON dumps", () => {
   assert.match(source, /LabelledRecord/);
   assert.doesNotMatch(source, /return JSON\.stringify\(value\)/);
 });
+
+test("correspondence detail can add notes and acknowledge routing", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/correspondence/[id]/page.tsx"), "utf8");
+  assert.match(source, /listNotes/);
+  assert.match(source, /addNote/);
+  assert.match(source, /correspondenceApi\.acknowledge/);
+});
+
+test("notifications inbox can mark a read item unread", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/notifications/page.tsx"), "utf8");
+  assert.match(source, /userNotificationsApi\.markUnread/);
+});
+
+test("admin notifications can create a draft ack campaign without activating it from the form", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/admin/notifications/page.tsx"), "utf8");
+  assert.match(source, /createAckCampaign/);
+  assert.match(source, /activateAckCampaign/);
+  assert.doesNotMatch(source, /createAckCampaign\([^)]+\).*\.then\(\(\) => notificationsPhase23Api\.activateAckCampaign/);
+});
+
+test("admin documents register can set retention and show backup status", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/admin/documents/page.tsx"), "utf8");
+  assert.match(source, /setRetention/);
+  assert.match(source, /backupStatus/);
+});

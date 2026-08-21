@@ -386,6 +386,17 @@ function InboxTab() {
     }
   };
 
+  const handleMarkUnread = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await userNotificationsApi.markUnread(id);
+      invalidate();
+      success("Notification marked unread.");
+    } catch {
+      showErrorToast("Could not mark this notification unread.");
+    }
+  };
+
   const runNlSearch = async () => {
     const q = nlQuery.trim();
     if (!q) return;
@@ -538,6 +549,15 @@ function InboxTab() {
                   </span>
                 )}
               </div>
+              {!isUnread && (
+                <button
+                  onClick={(e) => handleMarkUnread(n.id, e)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-300 hover:text-primary flex-shrink-0"
+                  title="Mark unread"
+                >
+                  <span className="material-symbols-outlined text-[16px]">mark_email_unread</span>
+                </button>
+              )}
               <button
                 onClick={(e) => handleAcknowledge(n.id, e)}
                 className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-neutral-300 hover:text-primary flex-shrink-0"

@@ -1,6 +1,8 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { FormField, FormSection } from "@/components/ui/FormSection";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { documentServiceApi, type ManagedDocumentRow } from "@/lib/api";
@@ -15,6 +17,8 @@ export default function AdminDocumentsPage() {
   const [holdOnly, setHoldOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [backup, setBackup] = useState<unknown>(null);
+  const [retentionForm, setRetentionForm] = useState({ id: "", retain_until: "", retention_policy: "" });
 
   const load = () => {
     setLoading(true);
@@ -36,6 +40,10 @@ export default function AdminDocumentsPage() {
       })
       .catch(() => error("Could not load document register"))
       .finally(() => setLoading(false));
+    documentServiceApi
+      .backupStatus()
+      .then((r: { data?: unknown }) => setBackup((r.data as { data?: unknown })?.data ?? r.data))
+      .catch(() => setBackup({ status: "unavailable", note: "Backup status could not be loaded." }));
   };
 
   useEffect(() => {
@@ -62,6 +70,22 @@ export default function AdminDocumentsPage() {
       load();
     } catch {
       error("Failed to release hold");
+    }
+  };
+
+  const saveRetention = async () => {
+    const id = Number(retentionForm.id);
+    if (!id || (!retentionForm.retain_until.trim() && !retentionForm.retention_policy.trim())) return;
+    try {
+      await documentServiceApi.setRetention(id, {
+        retain_until: retentionForm.retain_until || undefined,
+        retention_policy: retentionForm.retention_policy || undefined,
+      });
+      success("Retention updated");
+      setRetentionForm({ id: "", retain_until: "", retention_policy: "" });
+      load();
+    } catch {
+      error("Failed to set retention");
     }
   };
 
@@ -191,6 +215,54 @@ export default function AdminDocumentsPage() {
           Next
         </button>
       </div>
+
+      {backup != null ? (
+        <FormSection title="Backup status" description="Operator backup evidence. This does not invent a completed restore drill." icon="backup">
+          <LabelledRecord value={backup} />
+        </FormSection>
+      ) : null}
+
+      <FormSection
+        title="Set retention"
+        description="Updates retain-until / policy for one document. It does not dispose records."
+        icon="policy"
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <FormField label="Document ID" htmlFor="doc-retention-id" required>
+            <input
+              id="doc-retention-id"
+              className="form-input"
+              value={retentionForm.id}
+              onChange={(e) => setRetentionForm((f) => ({ ...f, id: e.target.value }))}
+            />
+          </FormField>
+          <FormField label="Retain until" htmlFor="doc-retention-until">
+            <input
+              id="doc-retention-until"
+              type="date"
+              className="form-input"
+              value={retentionForm.retain_until}
+              onChange={(e) => setRetentionForm((f) => ({ ...f, retain_until: e.target.value }))}
+            />
+          </FormField>
+          <FormField label="Policy" htmlFor="doc-retention-policy">
+            <input
+              id="doc-retention-policy"
+              className="form-input"
+              value={retentionForm.retention_policy}
+              onChange={(e) => setRetentionForm((f) => ({ ...f, retention_policy: e.target.value }))}
+            />
+          </FormField>
+        </div>
+        <button
+          type="button"
+          className="btn-primary mt-3 text-sm disabled:opacity-60"
+          disabled={!retentionForm.id.trim() || (!retentionForm.retain_until.trim() && !retentionForm.retention_policy.trim())}
+          onClick={() => void saveRetention()}
+        >
+          Save retention
+        </button>
+      </FormSection>
     </div>
   );
 }
