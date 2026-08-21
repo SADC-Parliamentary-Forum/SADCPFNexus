@@ -1,6 +1,6 @@
 # SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-08-20  
+**Last updated:** 2026-08-21  
 **Baseline tip:** `feat/remaining-product-depth` (from `4843c98` on `main`).
 
 ---
@@ -17,17 +17,25 @@
 
 ---
 
-## Ops-only / Governance Pending (not inventable in code)
+## Ops-only / Governance Pending (complete remaining — not Done)
 
-- UAT sign-off for 15 role scripts
-- Access-control pilot + cutover (AC-8/9/10)
-- Restore drill measured RTO/RPO
-- Staging IDOR matrix human results
-- Prod IMAP / AV / FCM credentials (launch)
-- Prod SMS / WhatsApp / LLM / SIEM credentials (launch — remaining, not deferred)
-- Prod OCR / SharePoint / WORM / payroll / Calendar / Graph / e-sign / Play / ASC credentials
-- Document §125 / Notifications §124 / Access MFA-policy checklist answers
-- Pen-test engagement or documented residual-risk acceptance
+These rows are **complete as remaining work**: surfaces exist, evidence packs exist, result/sign-off columns stay blank until a human operator fills them. Do not tick them Done in code.
+
+| Item | Where to complete | Status |
+|------|-------------------|--------|
+| UAT sign-off (15 role scripts) | `docs/testing/uat/*.md` | Pending operator signatures |
+| Access-control pilot (AC-8) | `docs/access-control/pilot-signoff-pack.md` | Pending operator evidence |
+| Role freeze / cutover (AC-9/10) | `docs/access-control/cutover-checklist.md` | Pending operator execution |
+| Restore drill measured RTO/RPO | `docs/ops/backup-restore.md` + `scripts/ops/restore-drill.sh` | Script shipped; RTO/RPO unmeasured |
+| Staging IDOR matrix | `docs/ops/staging-idor-matrix.md` | Result columns blank until a human run |
+| Prod IMAP / AV / FCM | Server env + `/admin/settings` | Pending live credentials |
+| Prod SMS / WhatsApp | `/admin/notifications/governance` then env | Remaining go-live — Null/stub until real vendors |
+| Prod LLM assists | `/admin/notifications/governance` then env | Remaining go-live — Null/stub until a real provider |
+| Prod SIEM | `/admin/audit-trail/governance` then env | Remaining go-live — Null/stub until a real sink |
+| Prod OCR / SharePoint / WORM / payroll / Calendar / Graph / e-sign / Play / ASC | Server env | Pending live credentials |
+| Document §125 / Notifications §124 / Access MFA-policy | `/admin/documents/governance`, `/admin/notifications/governance`, `/admin/access/governance` | Pending institutional answers |
+| Pen-test or residual-risk acceptance | `/admin/access/governance` | Pending |
+| Sentry DSN | Env only — never commit | Hooks exist; no DSN in repo |
 
 Launch remaining (not deferred): enable **SMS**, **WhatsApp**, **LLM assists**, and **SIEM** with real operator vendors/keys. Approve `/admin/notifications/governance` SMS/WhatsApp and `/admin/audit-trail/governance` SIEM first. Drivers today are Null/stub — do not invent secrets in code.
 
@@ -87,6 +95,10 @@ Shipped this continuation (module depth over existing APIs):
 - Assignment detail **claim** (department-queue only) and **change due date** (date + reason)
 - Notifications inbox **archive** and **acknowledge**
 - Admin notifications **draft broadcasts** (create ≠ submit ≠ approve; high-impact SoD) plus **maintenance windows**
+- Admin notifications **draft acknowledgement campaigns** (create ≠ activate; activate notifies the listed audience)
+- Correspondence detail **internal notes** and **routing acknowledgement**
+- Notifications inbox **mark unread**
+- Admin document register **set retention** plus **backup status** (not a completed restore drill)
 - People register object cells use `labelledObjectCell` instead of JSON dumps
 - Admin operations object cells use `LabelledRecord` instead of JSON dumps
 
@@ -110,7 +122,7 @@ Shipped on this branch (People labelled forms + watermark + remaining inventable
 - Risk audit-trail old/new labelled change rows (PR-21)
 - HR settings dead “Coming Soon” branch removed (PR-22)
 
-Not done in code (operator-owned): UAT signatures, AC-8/9/10 execution, restore-drill RTO/RPO, staging IDOR result columns, Admin governance Pending rows, and live IMAP/AV/FCM/SMS/WhatsApp/LLM/SIEM credentials. Do not invent secrets or tick those rows.
+Not done in code (operator-owned, and not marked Done): UAT signatures, AC-8/9/10 execution, restore-drill RTO/RPO, staging IDOR result columns, Admin governance Pending rows, and live IMAP/AV/FCM/SMS/WhatsApp/LLM/SIEM credentials. The table above is the complete remaining list. Do not invent secrets or tick those rows.
 
 ---
 

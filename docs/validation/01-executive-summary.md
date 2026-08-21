@@ -20,7 +20,7 @@ This pack is generated from repository evidence. It does **not** replace operato
 3. Run `scripts/ops/restore-drill.sh` (or equivalent) and fill `docs/ops/backup-restore.md`.
 4. Fill `docs/ops/staging-idor-matrix.md` on staging (automated PHPUnit is not a substitute).
 5. Record MFA policy, break-glass, and pen-test decision at `/admin/access/governance`.
-6. Enable only launch-critical operator credentials (IMAP, AV, FCM). Leave SMS/WhatsApp/LLM/SIEM stubbed until approved.
+6. Enable launch-critical operator credentials (IMAP, AV, FCM). **SMS, WhatsApp, LLM assists, and SIEM remain go-live work** — approve `/admin/notifications/governance` and `/admin/audit-trail/governance`, then install real vendors/keys. Do not invent secrets or treat Null drivers as live.
 7. Do not treat this document as production approval.
 
 ## Explicitly not done here

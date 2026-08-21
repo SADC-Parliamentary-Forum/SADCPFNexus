@@ -12,7 +12,9 @@ Companion to `01-executive-summary.md`. Nothing in this file is a signed approva
 | Restore drill measured RTO/RPO | `docs/ops/backup-restore.md` + `scripts/ops/restore-drill.sh` |
 | Staging IDOR matrix | `docs/ops/staging-idor-matrix.md` |
 | MFA / break-glass / pen-test policy | `/admin/access/governance` |
-| Live IMAP, AV, FCM, SMS, WhatsApp, OCR, SIEM, WORM, LLM, payroll, Calendar, Graph, e-sign, Play/ASC | `/admin/settings` + server env |
+| Live IMAP / AV / FCM | `/admin/settings` + server env |
+| SMS / WhatsApp / LLM / SIEM (remaining go-live, not deferred) | `/admin/notifications/governance`, `/admin/audit-trail/governance`, then server env |
+| OCR, WORM, payroll, Calendar, Graph, e-sign, Play/ASC | `/admin/settings` + server env |
 
 ## Product shipped in this closeout
 
