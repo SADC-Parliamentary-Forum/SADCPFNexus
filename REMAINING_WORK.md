@@ -29,15 +29,15 @@ These rows are **complete as remaining work**: surfaces exist, evidence packs ex
 | Restore drill measured RTO/RPO | `docs/ops/backup-restore.md` + `scripts/ops/restore-drill.sh` | Script shipped; RTO/RPO unmeasured |
 | Staging IDOR matrix | `docs/ops/staging-idor-matrix.md` | Result columns blank until a human run |
 | Prod IMAP / AV / FCM | Server env + `/admin/settings` | Pending live credentials |
-| Prod SMS / WhatsApp | `/admin/notifications/governance` then env | Remaining go-live — Null/stub until real vendors |
-| Prod LLM assists | `/admin/notifications/governance` then env | Remaining go-live — Null/stub until a real provider |
-| Prod SIEM | `/admin/audit-trail/governance` then env | Remaining go-live — Null/stub until a real sink |
+| Prod SMS / WhatsApp | `/admin/notifications/governance` then env `NOTIFICATIONS_SMS_*` / `NOTIFICATIONS_WHATSAPP_*` | HTTP drivers shipped — Pending live URL/token |
+| Prod LLM assists | `/admin/notifications/governance` then env `NOTIFICATIONS_AI_*` | HTTP summariser shipped — Pending live URL/token; human confirm only |
+| Prod SIEM | `/admin/audit-trail/governance` then env `AUDIT_SIEM_*` | HTTP webhook shipped — Pending live URL/token |
 | Prod OCR / SharePoint / WORM / payroll / Calendar / Graph / e-sign / Play / ASC | Server env | Pending live credentials |
 | Document §125 / Notifications §124 / Access MFA-policy | `/admin/documents/governance`, `/admin/notifications/governance`, `/admin/access/governance` | Pending institutional answers |
 | Pen-test or residual-risk acceptance | `/admin/access/governance` | Pending |
 | Sentry DSN | Env only — never commit | Hooks exist; no DSN in repo |
 
-Launch remaining (not deferred): enable **SMS**, **WhatsApp**, **LLM assists**, and **SIEM** with real operator vendors/keys. Approve `/admin/notifications/governance` SMS/WhatsApp and `/admin/audit-trail/governance` SIEM first. Drivers today are Null/stub — do not invent secrets in code.
+Launch remaining (not deferred): enable **SMS**, **WhatsApp**, **LLM assists**, and **SIEM** with real operator vendors/keys on the server (`NOTIFICATIONS_*_HTTP_*`, `AUDIT_SIEM_*`). Approve `/admin/notifications/governance` SMS/WhatsApp and `/admin/audit-trail/governance` SIEM first. HTTP drivers are in code; default remains Null — do not invent secrets.
 
 Privileged MFA product gate: **on by default when `APP_ENV=production`** (`config/auth.php` `require_privileged_mfa`). Institutional policy at `/admin/access/governance` remains operator-owned.
 
@@ -101,6 +101,9 @@ Shipped this continuation (module depth over existing APIs):
 - Admin document register **set retention** plus **backup status** (not a completed restore drill)
 - People register object cells use `labelledObjectCell` instead of JSON dumps
 - Admin operations object cells use `LabelledRecord` instead of JSON dumps
+- Weekly summaries **review / department / institutional / compliance** queues: labelled chrome, no raw ID boxes, report rows open detail
+- Weekly summary **detail**: labelled return reason, items table, exports
+- Weekly summaries **trends**: `weeklyReportsApi.trends`, labelled snapshot, hub breadcrumb
 
 Shipped on this branch (People labelled forms + watermark + remaining inventable product):
 

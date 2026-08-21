@@ -7979,6 +7979,8 @@ export interface WeeklyOpsReport {
 
 export const weeklyReportsApi = {
   dashboard: () => api.get<{ data: Record<string, unknown> }>("/weekly-summaries/dashboard"),
+  trends: (params?: { from?: string; to?: string }) =>
+    api.get<{ data: Record<string, unknown> }>("/weekly-summaries/trends", { params }),
   periods: () => api.get<{ data: Array<Record<string, unknown>> }>("/weekly-summaries/periods"),
   current: (periodId?: number) =>
     api.get<{ data: WeeklyOpsReport }>("/weekly-summaries/current", { params: periodId ? { period_id: periodId } : undefined }),

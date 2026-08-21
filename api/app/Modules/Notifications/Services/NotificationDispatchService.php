@@ -573,8 +573,8 @@ class NotificationDispatchService
             ]));
         }
 
-        // SMS / WhatsApp — Null stubs only (Governance Configuration Pending). Never live without credentials.
-        if (($policy['sms_enabled'] ?? false) && config('notifications.sms_enabled')) {
+        // SMS / WhatsApp — live HTTP only when resolver is enabled. Policy still defaults off.
+        if (($policy['sms_enabled'] ?? false) && app(OutboundChannelResolver::class)->sms()->isEnabled()) {
             $sms = $this->channels->createDelivery(
                 (int) $user->tenant_id,
                 $recipientRow->id,
@@ -586,7 +586,7 @@ class NotificationDispatchService
             );
             $this->channels->attemptSms($sms, (string) ($user->phone ?? ''), $rendered['subject'] ?? '');
         }
-        if (($policy['whatsapp_enabled'] ?? false) && config('notifications.whatsapp_enabled')) {
+        if (($policy['whatsapp_enabled'] ?? false) && app(OutboundChannelResolver::class)->whatsapp()->isEnabled()) {
             $wa = $this->channels->createDelivery(
                 (int) $user->tenant_id,
                 $recipientRow->id,

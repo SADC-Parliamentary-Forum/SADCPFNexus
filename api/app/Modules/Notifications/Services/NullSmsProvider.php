@@ -31,8 +31,11 @@ class NullSmsProvider
 
         return [
             'ok' => false,
+            'temporary' => false,
             'code' => 'sms_governance_pending',
             'summary' => 'SMS delivery not enabled — Governance Configuration Pending',
+            'provider' => 'null_sms',
+            'message_id' => null,
         ];
     }
 }

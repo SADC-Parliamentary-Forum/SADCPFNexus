@@ -224,6 +224,15 @@ class AuditEventIngestionService
                 }
             }
 
+            try {
+                app(HttpSiemSink::class)->forward($event);
+            } catch (Throwable $siemError) {
+                Log::warning('platform_audit.siem_forward_failed', [
+                    'event_id' => $event->id,
+                    'error' => $siemError->getMessage(),
+                ]);
+            }
+
             return $event;
         } catch (Throwable $e) {
             $outbox->status = 'failed';

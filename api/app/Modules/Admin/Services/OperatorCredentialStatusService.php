@@ -25,6 +25,10 @@ final class OperatorCredentialStatusService
             $this->peopleAuthorityEsign(),
             $this->peopleAuthorityCertificate(),
             $this->peopleAuthorityAi(),
+            $this->sms(),
+            $this->whatsapp(),
+            $this->notificationsAi(),
+            $this->siem(),
             $this->playStore(),
             $this->appStoreConnect(),
         ];
@@ -257,6 +261,88 @@ final class OperatorCredentialStatusService
             'guidance' => 'Set PEOPLE_AUTHORITY_AI_PROVIDER=http plus HTTP_URL/TOKEN. Suggestions only — never auto-grants access/authority/delegation/signing/privileged roles.',
             'details' => [
                 'enabled' => (bool) config('people_authority.ai_enabled', true),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function sms(): array
+    {
+        $driver = (string) config('notifications.sms_provider', 'null');
+        $configured = $driver === 'http' && filled(config('notifications.sms_http_url'));
+
+        return [
+            'key' => 'sms',
+            'label' => 'SMS delivery',
+            'configured' => $configured,
+            'driver' => $driver,
+            'secret_source' => 'env',
+            'guidance' => 'Set NOTIFICATIONS_SMS_PROVIDER=http plus NOTIFICATIONS_SMS_HTTP_URL and optional TOKEN. Default remains Null. Approve /admin/notifications/governance first.',
+            'details' => [
+                'url_set' => filled(config('notifications.sms_http_url')),
+                'token_set' => filled(config('notifications.sms_http_token')),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function whatsapp(): array
+    {
+        $driver = (string) config('notifications.whatsapp_provider', 'null');
+        $configured = $driver === 'http' && filled(config('notifications.whatsapp_http_url'));
+
+        return [
+            'key' => 'whatsapp',
+            'label' => 'WhatsApp delivery',
+            'configured' => $configured,
+            'driver' => $driver,
+            'secret_source' => 'env',
+            'guidance' => 'Set NOTIFICATIONS_WHATSAPP_PROVIDER=http plus NOTIFICATIONS_WHATSAPP_HTTP_URL and optional TOKEN. Default remains Null. Approve /admin/notifications/governance first.',
+            'details' => [
+                'url_set' => filled(config('notifications.whatsapp_http_url')),
+                'token_set' => filled(config('notifications.whatsapp_http_token')),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function notificationsAi(): array
+    {
+        $provider = (string) config('notifications.ai_provider', 'stub');
+        $configured = $provider === 'http'
+            && filled(config('notifications.ai_http_url'));
+
+        return [
+            'key' => 'notifications_ai',
+            'label' => 'Notifications LLM assist',
+            'configured' => $configured,
+            'driver' => $provider,
+            'secret_source' => 'env',
+            'guidance' => 'Set NOTIFICATIONS_AI_PROVIDER=http plus NOTIFICATIONS_AI_HTTP_URL/TOKEN. Digest summaries only — never auto-sends or auto-applies.',
+            'details' => [
+                'enabled' => (bool) config('notifications.ai_enabled', true),
+                'url_set' => filled(config('notifications.ai_http_url')),
+                'token_set' => filled(config('notifications.ai_http_token')),
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function siem(): array
+    {
+        $driver = (string) config('audit.siem_driver', 'null');
+        $configured = $driver === 'http' && filled(config('audit.siem_http_url'));
+
+        return [
+            'key' => 'siem',
+            'label' => 'SIEM webhook',
+            'configured' => $configured,
+            'driver' => $driver,
+            'secret_source' => 'env',
+            'guidance' => 'Set AUDIT_SIEM_DRIVER=http plus AUDIT_SIEM_HTTP_URL and optional TOKEN. Approve /admin/audit-trail/governance SIEM first. Local ingest is never rolled back on sink failure.',
+            'details' => [
+                'url_set' => filled(config('audit.siem_http_url')),
+                'token_set' => filled(config('audit.siem_http_token')),
             ],
         ];
     }

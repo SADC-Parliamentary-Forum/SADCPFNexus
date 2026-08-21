@@ -25,6 +25,21 @@ return [
     'ai_http_token' => env('AUDIT_AI_HTTP_TOKEN'),
     'ai_enabled' => filter_var(env('AUDIT_AI_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
 
+    /*
+    |--------------------------------------------------------------------------
+    | SIEM webhook (Phase 2) — env-gated, null by default
+    |--------------------------------------------------------------------------
+    |
+    | AUDIT_SIEM_DRIVER=null|http
+    | AUDIT_SIEM_HTTP_URL=  generic HTTPS sink (Splunk HEC, Sentinel, webhook)
+    | AUDIT_SIEM_HTTP_TOKEN= optional bearer from server env only
+    |
+    | Ingest always commits locally. Sink failures are logged, never rolled back.
+    */
+    'siem_driver' => env('AUDIT_SIEM_DRIVER', 'null'),
+    'siem_http_url' => env('AUDIT_SIEM_HTTP_URL'),
+    'siem_http_token' => env('AUDIT_SIEM_HTTP_TOKEN'),
+
     'allowed_suggestion_kinds' => [
         'workpaper_summary',
         'duplicate_findings',

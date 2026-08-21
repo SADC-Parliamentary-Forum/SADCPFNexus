@@ -243,32 +243,77 @@ class ChannelDeliveryService
 
     public function attemptSms(NotificationChannelDelivery $delivery, string $destination, string $body): NotificationChannelDelivery
     {
-        $attemptNumber = ((int) $delivery->attempt_count) + 1;
-        $result = app(NullSmsProvider::class)->send($destination, $body);
-        $delivery->update([
-            'status' => 'suppressed',
-            'suppressed' => true,
-            'suppression_reason' => $result['code'],
-            'attempt_count' => $attemptNumber,
-            'provider' => 'null_sms',
-        ]);
-
-        return $delivery->fresh();
+        return $this->attemptOutboundChannel(
+            $delivery,
+            app(OutboundChannelResolver::class)->sms()->send($destination, $body),
+        );
     }
 
     public function attemptWhatsApp(NotificationChannelDelivery $delivery, string $destination, string $body): NotificationChannelDelivery
     {
-        $attemptNumber = ((int) $delivery->attempt_count) + 1;
-        $result = app(NullWhatsAppProvider::class)->send($destination, $body);
-        $delivery->update([
-            'status' => 'suppressed',
-            'suppressed' => true,
-            'suppression_reason' => $result['code'],
-            'attempt_count' => $attemptNumber,
-            'provider' => 'null_whatsapp',
-        ]);
+        return $this->attemptOutboundChannel(
+            $delivery,
+            app(OutboundChannelResolver::class)->whatsapp()->send($destination, $body),
+        );
+    }
 
-        return $delivery->fresh();
+    /**
+     * @param  array{ok: bool, temporary?: bool, code: string, summary: string, provider?: string, message_id?: ?string}  $result
+     */
+    private function attemptOutboundChannel(NotificationChannelDelivery $delivery, array $result): NotificationChannelDelivery
+    {
+        $started = microtime(true);
+        $attemptNumber = ((int) $delivery->attempt_count) + 1;
+        $provider = (string) ($result['provider'] ?? $delivery->channel);
+
+        if ($result['ok'] ?? false) {
+            NotificationDeliveryAttempt::create([
+                'channel_delivery_id' => $delivery->id,
+                'attempt_number' => $attemptNumber,
+                'attempted_at' => now(),
+                'result' => 'accepted',
+                'response_code' => $result['code'],
+                'response_summary' => Str::limit($result['summary'], 500),
+                'temporary_failure' => false,
+                'duration_ms' => (int) ((microtime(true) - $started) * 1000),
+            ]);
+
+            $delivery->update([
+                'status' => 'sent',
+                'sent_at' => now(),
+                'attempt_count' => $attemptNumber,
+                'provider' => $provider,
+                'provider_message_id' => $result['message_id'] ?? null,
+                'latency_ms' => (int) ((microtime(true) - $started) * 1000),
+            ]);
+
+            return $delivery->fresh();
+        }
+
+        $pending = in_array($result['code'] ?? '', [
+            'sms_governance_pending',
+            'whatsapp_governance_pending',
+            'sms_credentials_pending',
+            'whatsapp_credentials_pending',
+        ], true);
+
+        if ($pending) {
+            $delivery->update([
+                'status' => 'suppressed',
+                'suppressed' => true,
+                'suppression_reason' => $result['code'],
+                'attempt_count' => $attemptNumber,
+                'provider' => $provider,
+            ]);
+
+            return $delivery->fresh();
+        }
+
+        if ($result['temporary'] ?? false) {
+            return $this->failTemporary($delivery, $attemptNumber, $result['code'], $result['summary'], $started);
+        }
+
+        return $this->failPermanent($delivery, $attemptNumber, $result['code'], $result['summary'], $started);
     }
 
     public function processScheduled(int $limit = 50): int

@@ -414,3 +414,202 @@ test("admin documents register can set retention and show backup status", () => 
   assert.match(source, /setRetention/);
   assert.match(source, /backupStatus/);
 });
+
+test("weekly summaries review page uses labelled chrome instead of a stub list", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/review/page.tsx"), "utf8");
+  assert.match(source, /ModulePageHeader/);
+  assert.match(source, /PageBreadcrumbs/);
+  assert.match(source, /href: "\/weekly-summaries"/);
+  assert.match(source, /FormSection/);
+  assert.match(source, /LabelledRecord|labelledObjectCell/);
+  assert.doesNotMatch(source, /JSON\.stringify\(/);
+  assert.doesNotMatch(source, /window\.prompt/);
+});
+
+test("weekly summaries review page shows pending and missing reports as labelled UI", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/review/page.tsx"), "utf8");
+  assert.match(source, /team_pending_review/);
+  assert.match(source, /team_pending_reports/);
+  assert.match(source, /missing_reports/);
+  assert.match(source, /LabelledRecord|labelledObjectCell/);
+  assert.doesNotMatch(source, /Pending review: \{pending\}/);
+  assert.doesNotMatch(source, /String\(m\.name\)/);
+});
+
+test("weekly summaries review page links queue items to report detail", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/review/page.tsx"), "utf8");
+  assert.match(source, /\/weekly-summaries\/\$\{/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.accept/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.returnReport/);
+});
+
+test("weekly summaries review page has empty, error, and loading copy", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/review/page.tsx"), "utf8");
+  assert.match(source, /EmptyState/);
+  assert.match(source, /Loading/);
+  assert.match(source, /Failed to load/);
+});
+
+test("weekly report dashboard exposes pending reports for the supervisor queue", () => {
+  const source = readFileSync(
+    join(webRoot, "..", "api/app/Modules/WeeklyReports/Services/WeeklyReportService.php"),
+    "utf8",
+  );
+  assert.match(source, /team_pending_review/);
+  assert.match(source, /team_pending_reports/);
+  assert.match(source, /employee_name|employee\?->name/);
+});
+
+test("weekly summaries compliance page uses module chrome and labelled records", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  assert.match(source, /ModulePageHeader/);
+  assert.match(source, /PageBreadcrumbs/);
+  assert.match(source, /href: "\/weekly-summaries"/);
+  assert.match(source, /FormSection/);
+  assert.match(source, /LabelledRecord|labelledObjectCell/);
+});
+
+test("weekly summaries compliance page has no raw ID number field as primary UX", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /Period ID/);
+  assert.doesNotMatch(source, /placeholder=["'][^"']*ID/);
+  assert.doesNotMatch(source, /type=["']number["']/);
+  assert.doesNotMatch(source, /window\.prompt/);
+});
+
+test("weekly summaries compliance page does not dump JSON", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /JSON\.stringify/);
+});
+
+test("weekly summaries compliance page has empty, error, and loading copy", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  assert.match(source, /EmptyState/);
+  assert.match(source, /Loading/);
+  assert.match(source, /Failed to load/);
+});
+
+test("weekly summaries compliance page links listed reports to weekly summary detail", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  assert.match(source, /\/weekly-summaries\/\$\{/);
+  assert.match(source, /team_pending_reports/);
+  assert.match(source, /missing_reports/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.accept/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.submit/);
+});
+
+test("weekly summaries department page uses a labelled department picker instead of a raw id field", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"), "utf8");
+  assert.match(source, /listDepartments/);
+  assert.match(source, /Department/);
+  assert.match(source, /role=["']combobox["']/);
+  assert.match(source, /\.name/);
+  assert.doesNotMatch(source, /placeholder=["']Period ID["']/);
+  assert.doesNotMatch(source, /placeholder=["']Department ID["']/);
+  assert.doesNotMatch(source, /htmlFor=["']weekly-period-id["']/);
+  assert.doesNotMatch(source, />Department ID</);
+  assert.doesNotMatch(source, /window\.prompt/);
+});
+
+test("weekly summaries department page uses ModulePageHeader, FormSection, and labelled records", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"), "utf8");
+  assert.match(source, /ModulePageHeader/);
+  assert.match(source, /PageBreadcrumbs/);
+  assert.match(source, /href: "\/weekly-summaries"/);
+  assert.match(source, /FormSection/);
+  assert.match(source, /FormField/);
+  assert.match(source, /LabelledRecord|labelledObjectCell/);
+  assert.doesNotMatch(source, /JSON\.stringify\(/);
+});
+
+test("weekly summaries department page links reports to weekly-summaries detail", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"), "utf8");
+  assert.match(source, /weeklyReportsApi\.department/);
+  assert.match(source, /\/weekly-summaries\/\$\{/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.submit/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.accept/);
+});
+
+test("weekly summaries department page has empty, error, and loading copy", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"), "utf8");
+  assert.match(source, /EmptyState/);
+  assert.match(source, /Loading/);
+  assert.match(source, /Failed to load|Unable to load/);
+});
+
+
+test("institutional weekly summary has no raw ID number field as primary UX", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/institutional/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /placeholder=["']Period ID["']/);
+  assert.doesNotMatch(source, /Period ID/);
+  assert.doesNotMatch(source, /<input[^>]*(type=["']number["']|placeholder=["'][^"']*ID)/i);
+  assert.doesNotMatch(source, /window\.prompt/);
+  assert.doesNotMatch(source, /JSON\.stringify\(/);
+});
+
+test("institutional weekly summary uses a labelled period picker or auto-loads the current tenant", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/institutional/page.tsx"), "utf8");
+  assert.match(source, /weeklyReportsApi\.periods/);
+  assert.match(source, /weeklyReportsApi\.institutional/);
+  assert.match(source, /weeklyReportsApi\.dashboard/);
+  assert.match(source, /useEffect/);
+  assert.match(source, /<select/);
+  assert.match(source, /FormField/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.submit/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.accept/);
+});
+
+test("institutional weekly summary uses ModulePageHeader, FormSection, and labelled records", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/institutional/page.tsx"), "utf8");
+  assert.match(source, /ModulePageHeader/);
+  assert.match(source, /PageBreadcrumbs/);
+  assert.match(source, /href: "\/weekly-summaries"/);
+  assert.match(source, /FormSection/);
+  assert.match(source, /LabelledRecord/);
+  assert.match(source, /\/weekly-summaries\/\$\{/);
+  assert.match(source, /\/weekly-summaries\/department/);
+});
+
+test("institutional weekly summary has empty, error, and loading copy", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/institutional/page.tsx"), "utf8");
+  assert.match(source, /EmptyState/);
+  assert.match(source, /Loading|animate-pulse/);
+  assert.match(source, /Failed to load|Could not load/);
+});
+
+test("weekly summary detail uses labelled chrome instead of a stub header", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/[id]/page.tsx"), "utf8");
+  assert.match(source, /ModulePageHeader/);
+  assert.match(source, /PageBreadcrumbs/);
+  assert.match(source, /href: "\/weekly-summaries"/);
+  assert.match(source, /FormSection/);
+  assert.match(source, /FormField/);
+  assert.match(source, /LabelledRecord|labelledObjectCell/);
+  assert.doesNotMatch(source, /JSON\.stringify\(/);
+  assert.doesNotMatch(source, /window\.prompt/);
+});
+
+test("weekly summary detail return reason is a labelled field, not sr-only", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/[id]/page.tsx"), "utf8");
+  assert.match(source, /htmlFor=["']weekly-return-reason["']/);
+  assert.match(source, /weeklyReportsApi\.returnReport/);
+  assert.match(source, /weeklyReportsApi\.accept/);
+  assert.doesNotMatch(source, /className=["']sr-only["']/);
+  assert.match(source, /EmptyState/);
+  assert.match(source, /Loading/);
+  assert.match(source, /Failed to load/);
+});
+
+test("weekly summaries trends page uses labelled chrome and the trends API", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/trends/page.tsx"), "utf8");
+  assert.match(source, /weeklyReportsApi\.trends/);
+  assert.match(source, /ModulePageHeader/);
+  assert.match(source, /PageBreadcrumbs/);
+  assert.match(source, /href: "\/weekly-summaries"/);
+  assert.match(source, /FormSection/);
+  assert.match(source, /LabelledRecord|labelledObjectCell/);
+  assert.match(source, /EmptyState/);
+  assert.doesNotMatch(source, /JSON\.stringify\(/);
+  assert.doesNotMatch(source, /api\.get\("\/weekly-summaries\/trends"\)/);
+});
+

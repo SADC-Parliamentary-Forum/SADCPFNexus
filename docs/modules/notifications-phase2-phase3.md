@@ -26,7 +26,7 @@ Extends the shared Phase 1 outbox engine (`/notifications`, `/admin/notification
 | Fatigue analysis | Admin metrics / hints — cannot suppress mandatory |
 | Predictive channels | Advisory only; policy still decides mandatory channels |
 | NL inbox search | Basic filter assist (`unread` / `action_required` / module keywords) |
-| SMS / WhatsApp | **Null stubs only** — marked **Governance Configuration Pending**; live send disabled |
+| SMS / WhatsApp | **Null stubs only** until `NOTIFICATIONS_*_PROVIDER=http` + URL/token. Status is Governance Configuration Pending or Credentials Pending until then. |
 
 ## AI must never
 
@@ -43,6 +43,10 @@ NOTIFICATIONS_AI_PROVIDER=stub
 NOTIFICATIONS_AI_ENABLED=true
 NOTIFICATIONS_SMS_PROVIDER=null
 NOTIFICATIONS_WHATSAPP_PROVIDER=null
+# NOTIFICATIONS_SMS_HTTP_URL=
+# NOTIFICATIONS_SMS_HTTP_TOKEN=
+# NOTIFICATIONS_WHATSAPP_HTTP_URL=
+# NOTIFICATIONS_WHATSAPP_HTTP_TOKEN=
 NOTIFICATIONS_DEEP_LINK_SCHEME=sadcpfnexus
 NOTIFICATIONS_EXTERNAL_TOKEN_TTL_HOURS=72
 ```
@@ -56,10 +60,10 @@ NOTIFICATIONS_EXTERNAL_TOKEN_TTL_HOURS=72
 
 ## Tests
 
-`NotificationsPhase2Phase3Test` + Phase 1 regression smoke (`NotificationsPhase1Test`).
+`NotificationsPhase2Phase3Test` + `LiveChannelDriversTest` + Phase 1 regression smoke (`NotificationsPhase1Test`).
 
 ## Deferred
 
-- Live SMS / WhatsApp (await governance + credentials — do not invent keys)
+- Live SMS / WhatsApp until `NOTIFICATIONS_SMS_PROVIDER=http` (or WhatsApp) plus HTTP URL/token on the server — do not invent keys
 - Live FCM until `NOTIFICATIONS_PUSH_PROVIDER=fcm` + credentials configured
 - Email open tracking as delivery proof (explicitly out of policy)

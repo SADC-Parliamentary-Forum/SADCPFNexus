@@ -30,8 +30,11 @@ class NullWhatsAppProvider
 
         return [
             'ok' => false,
+            'temporary' => false,
             'code' => 'whatsapp_governance_pending',
             'summary' => 'WhatsApp delivery not enabled — Governance Configuration Pending',
+            'provider' => 'null_whatsapp',
+            'message_id' => null,
         ];
     }
 }

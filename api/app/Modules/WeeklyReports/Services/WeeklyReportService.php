@@ -45,18 +45,34 @@ class WeeklyReportService
             ->first();
 
         $teamPending = WeeklyReport::query()
+            ->with(['employee:id,name', 'period:id,reference,start_date,end_date'])
             ->where('tenant_id', $user->tenant_id)
             ->where('report_type', WeeklyReport::TYPE_INDIVIDUAL)
             ->where('supervisor_id', $user->id)
             ->whereIn('status', ['submitted', 'pending_review', 'resubmitted'])
-            ->count();
+            ->orderByDesc('submitted_at')
+            ->get(['id', 'reference', 'status', 'employee_id', 'period_id', 'submitted_at']);
 
         $missing = $this->missingReports($user, $period);
 
         return [
             'period' => $period,
             'my_report' => $mine,
-            'team_pending_review' => $teamPending,
+            'team_pending_review' => $teamPending->count(),
+            'team_pending_reports' => $teamPending->map(function (WeeklyReport $report) {
+                return [
+                    'id' => $report->id,
+                    'reference' => $report->reference,
+                    'status' => $report->status,
+                    'employee_id' => $report->employee_id,
+                    'employee_name' => $report->employee?->name,
+                    'employee' => $report->employee
+                        ? ['id' => $report->employee->id, 'name' => $report->employee->name]
+                        : null,
+                    'period' => $this->periodSummary($report->period),
+                    'submitted_at' => optional($report->submitted_at)->toIso8601String(),
+                ];
+            })->values()->all(),
             'missing_reports' => $missing,
             'compliance' => [
                 'submitted' => WeeklyReport::where('period_id', $period->id)
@@ -96,10 +112,34 @@ class WeeklyReportService
         $exempted = WeeklyReportExemption::where('period_id', $period->id)->pluck('employee_id')->all();
         $skip = array_unique(array_merge($submitted, $exempted));
 
+        $periodSummary = $this->periodSummary($period);
+
         return $employees->reject(fn ($e) => in_array($e->id, $skip, true))
             ->values()
-            ->map(fn ($e) => ['id' => $e->id, 'name' => $e->name, 'department_id' => $e->department_id])
+            ->map(fn ($e) => [
+                'id' => $e->id,
+                'name' => $e->name,
+                'department_id' => $e->department_id,
+                'period' => $periodSummary,
+            ])
             ->all();
+    }
+
+    /**
+     * @return array{id: mixed, reference: mixed, start_date: ?string, end_date: ?string}|null
+     */
+    private function periodSummary(?WeeklyReportingPeriod $period): ?array
+    {
+        if (! $period) {
+            return null;
+        }
+
+        return [
+            'id' => $period->id,
+            'reference' => $period->reference,
+            'start_date' => optional($period->start_date)->toDateString(),
+            'end_date' => optional($period->end_date)->toDateString(),
+        ];
     }
 
     public function findOrCreateIndividual(User $employee, ?int $periodId = null): WeeklyReport

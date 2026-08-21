@@ -204,16 +204,20 @@ class NotificationIntelligenceService
 
     public function guards(): array
     {
+        $resolver = app(OutboundChannelResolver::class);
+        $sms = $resolver->sms();
+        $whatsapp = $resolver->whatsapp();
+
         return [
             'ai_enabled' => (bool) config('notifications.ai_enabled', true),
             'provider' => config('notifications.ai_provider', 'stub'),
             'forbidden_actions' => config('notifications.forbidden_ai_actions', []),
-            'sms_status' => 'Governance Configuration Pending',
-            'whatsapp_status' => 'Governance Configuration Pending',
+            'sms_status' => $sms->status(),
+            'whatsapp_status' => $whatsapp->status(),
             'sms_provider' => config('notifications.sms_provider', 'null'),
             'whatsapp_provider' => config('notifications.whatsapp_provider', 'null'),
-            'sms_enabled' => false,
-            'whatsapp_enabled' => false,
+            'sms_enabled' => $sms->isEnabled(),
+            'whatsapp_enabled' => $whatsapp->isEnabled(),
         ];
     }
 

@@ -20,10 +20,15 @@ return [
     'external_token_ttl_hours' => (int) env('NOTIFICATIONS_EXTERNAL_TOKEN_TTL_HOURS', 72),
     'deep_link_scheme' => env('NOTIFICATIONS_DEEP_LINK_SCHEME', 'sadcpfnexus'),
 
-    'sms_provider' => env('NOTIFICATIONS_SMS_PROVIDER', 'null'), // null only until governance approval
-    'whatsapp_provider' => env('NOTIFICATIONS_WHATSAPP_PROVIDER', 'null'),
-    'sms_enabled' => false, // Governance Configuration Pending
-    'whatsapp_enabled' => false, // Governance Configuration Pending
+    'sms_provider' => env('NOTIFICATIONS_SMS_PROVIDER', 'null'), // null|http
+    'whatsapp_provider' => env('NOTIFICATIONS_WHATSAPP_PROVIDER', 'null'), // null|http
+    'sms_http_url' => env('NOTIFICATIONS_SMS_HTTP_URL'),
+    'sms_http_token' => env('NOTIFICATIONS_SMS_HTTP_TOKEN'),
+    'whatsapp_http_url' => env('NOTIFICATIONS_WHATSAPP_HTTP_URL'),
+    'whatsapp_http_token' => env('NOTIFICATIONS_WHATSAPP_HTTP_TOKEN'),
+    // Runtime enablement is resolver-based (provider=http + URL). Defaults stay off.
+    'sms_enabled' => env('NOTIFICATIONS_SMS_PROVIDER', 'null') === 'http' && filled(env('NOTIFICATIONS_SMS_HTTP_URL')),
+    'whatsapp_enabled' => env('NOTIFICATIONS_WHATSAPP_PROVIDER', 'null') === 'http' && filled(env('NOTIFICATIONS_WHATSAPP_HTTP_URL')),
 
     'ai_provider' => env('NOTIFICATIONS_AI_PROVIDER', 'stub'), // stub|http
     'ai_enabled' => filter_var(env('NOTIFICATIONS_AI_ENABLED', true), FILTER_VALIDATE_BOOLEAN),

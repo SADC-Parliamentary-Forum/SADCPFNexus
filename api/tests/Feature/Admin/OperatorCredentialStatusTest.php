@@ -24,6 +24,18 @@ class OperatorCredentialStatusTest extends TestCase
             'mande_ai.llm_api_key' => null,
             'payroll_vendor.driver' => 'null',
             'payroll_vendor.api_key' => null,
+            'notifications.sms_provider' => 'null',
+            'notifications.sms_http_url' => null,
+            'notifications.sms_http_token' => null,
+            'notifications.whatsapp_provider' => 'null',
+            'notifications.whatsapp_http_url' => null,
+            'notifications.whatsapp_http_token' => null,
+            'notifications.ai_provider' => 'stub',
+            'notifications.ai_http_url' => null,
+            'notifications.ai_http_token' => null,
+            'audit.siem_driver' => 'null',
+            'audit.siem_http_url' => null,
+            'audit.siem_http_token' => null,
         ]);
 
         $items = app(OperatorCredentialStatusService::class)->status();
@@ -42,6 +54,14 @@ class OperatorCredentialStatusTest extends TestCase
         $this->assertContains('people_ai', $keys);
         $this->assertContains('play_store', $keys);
         $this->assertContains('app_store_connect', $keys);
+        $this->assertContains('sms', $keys);
+        $this->assertContains('whatsapp', $keys);
+        $this->assertContains('notifications_ai', $keys);
+        $this->assertContains('siem', $keys);
+
+        $sms = collect($items)->firstWhere('key', 'sms');
+        $this->assertFalse($sms['configured']);
+        $this->assertSame('null', $sms['driver']);
 
         foreach ($items as $item) {
             $this->assertArrayHasKey('configured', $item);

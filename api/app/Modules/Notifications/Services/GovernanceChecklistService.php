@@ -68,7 +68,7 @@ class GovernanceChecklistService
             [
                 'key' => 'sms_whatsapp_approval',
                 'title' => 'SMS/WhatsApp approval',
-                'description' => 'Whether SMS or WhatsApp will ever be approved. Live providers remain Null stubs until decided.',
+                'description' => 'Whether SMS or WhatsApp will ever be approved. Live HTTP drivers stay off until operator URL/token env is set.',
             ],
             [
                 'key' => 'approved_broadcast_senders',
@@ -177,15 +177,17 @@ class GovernanceChecklistService
     }
 
     /**
-     * SMS / WhatsApp channel status for admin UI — always governance-pending Null stubs.
+     * SMS / WhatsApp channel status for admin UI — Null until HTTP credentials exist.
      *
      * @return array{sms: string, whatsapp: string}
      */
     public function channelGovernanceStatus(): array
     {
+        $resolver = app(OutboundChannelResolver::class);
+
         return [
-            'sms' => app(NullSmsProvider::class)->status(),
-            'whatsapp' => app(NullWhatsAppProvider::class)->status(),
+            'sms' => $resolver->sms()->status(),
+            'whatsapp' => $resolver->whatsapp()->status(),
         ];
     }
 }
