@@ -53,7 +53,7 @@ export default function TravelCalendarPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <ModulePageHeader
         title="Travel Calendar"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel Calendar" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel", href: "/travel" }, { label: "Calendar" }]} />}
       />
         <div className="flex items-center gap-2">
           <button type="button" className="btn-secondary" onClick={() => setMonthOffset((v) => v - 1)}>Previous</button>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { travelApi, type TravelRequest, type TravelAmendment, type ModuleAttachment, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
+import { travelApi, type TravelRequest, type TravelAmendment, type ModuleAttachment, type TravelDestinationCountry, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
 import { formatCurrency, formatDateShort, formatDateRelative } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
@@ -16,6 +16,7 @@ import { getListData } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { TravelDestinationFields } from "@/components/travel/DestinationPickers";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:                { label: "Approved",              cls: "text-green-700 bg-green-50 border-green-200",   icon: "check_circle" },
@@ -96,6 +97,9 @@ export default function TravelDetailPage() {
   const [amendDeparture, setAmendDeparture] = useState("");
   const [amendReturn, setAmendReturn] = useState("");
   const [amendDestination, setAmendDestination] = useState("");
+  const [amendCity, setAmendCity] = useState("");
+  const [destinations, setDestinations] = useState<TravelDestinationCountry[]>([]);
+  const [addingDestination, setAddingDestination] = useState(false);
   const [amendPurpose, setAmendPurpose] = useState("");
   const [amendReason, setAmendReason] = useState("");
   const [amendError, setAmendError] = useState<string | null>(null);
@@ -230,6 +234,13 @@ export default function TravelDetailPage() {
       .catch(() => {
         if (active) setFleet([]);
       });
+    travelApi.listDestinations()
+      .then((r) => {
+        if (active) setDestinations(r.data.data?.countries ?? []);
+      })
+      .catch(() => {
+        if (active) setDestinations([]);
+      });
 
     return () => {
       active = false;
@@ -354,6 +365,7 @@ export default function TravelDetailPage() {
     setAmendDeparture(request.departure_date?.slice(0, 10) ?? "");
     setAmendReturn(request.return_date?.slice(0, 10) ?? "");
     setAmendDestination(request.destination_country ?? "");
+    setAmendCity(request.destination_city ?? "");
     setAmendPurpose(request.purpose ?? "");
     setAmendReason("");
     setAmendError(null);
@@ -371,6 +383,9 @@ export default function TravelDetailPage() {
     }
     if (amendDestination && amendDestination !== request.destination_country) {
       changes.destination_country = amendDestination;
+    }
+    if (amendCity !== (request.destination_city ?? "")) {
+      changes.destination_city = amendCity || null;
     }
     if (amendPurpose && amendPurpose !== request.purpose) {
       changes.purpose = amendPurpose;
@@ -921,7 +936,12 @@ export default function TravelDetailPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-neutral-900">{leg.from_location} → {leg.to_location}</p>
-                  <p className="text-xs text-neutral-400 mt-0.5">{formatDateShort(leg.travel_date)} · {leg.days_count} day{leg.days_count !== 1 ? "s" : ""}</p>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    {formatDateShort(leg.travel_date)} · {leg.days_count} day{leg.days_count !== 1 ? "s" : ""}
+                    {(leg.flight_name || leg.flight_number) ? (
+                      <> · {[leg.flight_name, leg.flight_number].filter(Boolean).join(" ")}</>
+                    ) : null}
+                  </p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-[10px] text-neutral-400 uppercase tracking-wide">DSA</p>
@@ -1744,10 +1764,38 @@ export default function TravelDetailPage() {
                 <input type="date" className="form-input" value={amendReturn} onChange={(e) => setAmendReturn(e.target.value)} />
               </label>
             </div>
-            <label className="block text-xs text-neutral-500 space-y-1">
-              <span>Destination country</span>
-              <input className="form-input" value={amendDestination} onChange={(e) => setAmendDestination(e.target.value)} />
-            </label>
+            <TravelDestinationFields
+              country={amendDestination}
+              city={amendCity}
+              countries={destinations}
+              adding={addingDestination}
+              onCountryChange={setAmendDestination}
+              onCityChange={setAmendCity}
+              onAddCountry={async (name) => {
+                setAddingDestination(true);
+                try {
+                  const res = await travelApi.createCountry({ name });
+                  const list = await travelApi.listDestinations();
+                  setDestinations(list.data.data?.countries ?? []);
+                  setAmendDestination(res.data.data.name);
+                  setAmendCity("");
+                } finally {
+                  setAddingDestination(false);
+                }
+              }}
+              onAddCity={async (country, name) => {
+                setAddingDestination(true);
+                try {
+                  const res = await travelApi.createCity({ country, name });
+                  const list = await travelApi.listDestinations();
+                  setDestinations(list.data.data?.countries ?? []);
+                  setAmendDestination(res.data.data.country);
+                  setAmendCity(res.data.data.name);
+                } finally {
+                  setAddingDestination(false);
+                }
+              }}
+            />
             <label className="block text-xs text-neutral-500 space-y-1">
               <span>Purpose</span>
               <input className="form-input" value={amendPurpose} onChange={(e) => setAmendPurpose(e.target.value)} />

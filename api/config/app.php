@@ -56,6 +56,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend (web) URL
+    |--------------------------------------------------------------------------
+    |
+    | Public Next.js origin used in emails and other human-facing links.
+    | FRONTEND_URL is canonical (first origin if comma-separated for CORS).
+    | APP_FRONTEND_URL is a legacy alias. Do not fall back to localhost here
+    | when a real APP_URL is set — production config:cache must snapshot this.
+    |
+    */
+
+    'frontend_url' => (static function (): string {
+        $raw = (string) (env('FRONTEND_URL') ?: env('APP_FRONTEND_URL') ?: env('APP_URL', 'http://localhost'));
+        $first = trim(explode(',', $raw)[0]);
+
+        return rtrim($first, '/');
+    })(),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

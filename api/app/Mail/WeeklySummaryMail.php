@@ -19,8 +19,8 @@ class WeeklySummaryMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $start = $this->report->period_start->format('d M');
-        $end   = $this->report->period_end->format('d M Y');
+        $start = human_date($this->report->period_start);
+        $end   = human_date($this->report->period_end);
 
         return new Envelope(
             subject: "SADCPFNexus Weekly Summary – {$start} to {$end}"

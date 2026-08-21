@@ -3,6 +3,7 @@
 namespace App\Modules\WeeklyReports\Services;
 
 use App\Models\Assignment;
+use App\Models\Department;
 use App\Models\LeaveRequest;
 use App\Models\Risk;
 use App\Models\User;
@@ -38,41 +39,22 @@ class WeeklyReportService
     {
         $period = $this->periods->ensureCurrent($user);
         $mine = WeeklyReport::query()
+            ->with(['department:id,name', 'employee:id,name,department_id', 'employee.department:id,name'])
             ->where('tenant_id', $user->tenant_id)
             ->where('report_type', WeeklyReport::TYPE_INDIVIDUAL)
             ->where('employee_id', $user->id)
             ->where('period_id', $period->id)
             ->first();
 
-        $teamPending = WeeklyReport::query()
-            ->with(['employee:id,name', 'period:id,reference,start_date,end_date'])
-            ->where('tenant_id', $user->tenant_id)
-            ->where('report_type', WeeklyReport::TYPE_INDIVIDUAL)
-            ->where('supervisor_id', $user->id)
-            ->whereIn('status', ['submitted', 'pending_review', 'resubmitted'])
-            ->orderByDesc('submitted_at')
-            ->get(['id', 'reference', 'status', 'employee_id', 'period_id', 'submitted_at']);
-
+        $teamPending = $this->pendingReviewQuery($user, supervisorOnly: true)->get();
         $missing = $this->missingReports($user, $period);
+        $pendingRows = $teamPending->map(fn (WeeklyReport $report) => $this->serializeQueueReport($report))->values()->all();
 
         return [
             'period' => $period,
             'my_report' => $mine,
-            'team_pending_review' => $teamPending->count(),
-            'team_pending_reports' => $teamPending->map(function (WeeklyReport $report) {
-                return [
-                    'id' => $report->id,
-                    'reference' => $report->reference,
-                    'status' => $report->status,
-                    'employee_id' => $report->employee_id,
-                    'employee_name' => $report->employee?->name,
-                    'employee' => $report->employee
-                        ? ['id' => $report->employee->id, 'name' => $report->employee->name]
-                        : null,
-                    'period' => $this->periodSummary($report->period),
-                    'submitted_at' => optional($report->submitted_at)->toIso8601String(),
-                ];
-            })->values()->all(),
+            'team_pending_review' => count($pendingRows),
+            'team_pending_reports' => $pendingRows,
             'missing_reports' => $missing,
             'compliance' => [
                 'submitted' => WeeklyReport::where('period_id', $period->id)
@@ -88,18 +70,39 @@ class WeeklyReportService
         ];
     }
 
+    public function reviewQueue(User $user): array
+    {
+        $this->assertCanAccessReviewQueue($user);
+
+        $period = $this->periods->ensureCurrent($user);
+        $teamPending = $this->pendingReviewQuery($user, supervisorOnly: false)->get();
+        $missing = $this->missingReports($user, $period);
+        $pendingRows = $teamPending->map(fn (WeeklyReport $report) => $this->serializeQueueReport($report))->values()->all();
+        $overduePending = collect($pendingRows)->filter(fn ($row) => (int) ($row['days_late'] ?? 0) > 0)->count();
+        $overdueMissing = collect($missing)->filter(fn ($row) => (int) ($row['days_late'] ?? 0) > 0)->count();
+
+        return [
+            'period' => $this->periodSummary($period),
+            'team_pending_review' => count($pendingRows),
+            'team_pending_reports' => $pendingRows,
+            'missing_reports' => $missing,
+            'overdue_count' => $overduePending + $overdueMissing,
+        ];
+    }
+
     public function missingReports(User $user, WeeklyReportingPeriod $period): array
     {
+        $fullTenant = $this->seesTenantReviewQueue($user);
         $deptId = $user->department_id;
-        if (! $deptId && ! $user->can('weekly-reports.view-management') && ! $user->isSystemAdmin()) {
+        if (! $deptId && ! $fullTenant) {
             return [];
         }
 
         $employees = User::query()
+            ->with('department:id,name')
             ->where('tenant_id', $user->tenant_id)
             ->where('is_active', true)
-            ->when($deptId && ! $user->can('weekly-reports.view-management') && ! $user->isSystemAdmin(),
-                fn ($q) => $q->where('department_id', $deptId))
+            ->when($deptId && ! $fullTenant, fn ($q) => $q->where('department_id', $deptId))
             ->get(['id', 'name', 'email', 'department_id']);
 
         $submitted = WeeklyReport::query()
@@ -120,13 +123,17 @@ class WeeklyReportService
                 'id' => $e->id,
                 'name' => $e->name,
                 'department_id' => $e->department_id,
+                'department' => $this->departmentSummary($e->department),
+                'department_name' => $e->department?->name,
                 'period' => $periodSummary,
+                'employee_due_at' => $periodSummary['employee_due_at'] ?? null,
+                'days_late' => $this->daysLate(null, $period->employee_due_at),
             ])
             ->all();
     }
 
     /**
-     * @return array{id: mixed, reference: mixed, start_date: ?string, end_date: ?string}|null
+     * @return array{id: mixed, reference: mixed, start_date: ?string, end_date: ?string, employee_due_at: ?string}|null
      */
     private function periodSummary(?WeeklyReportingPeriod $period): ?array
     {
@@ -139,7 +146,225 @@ class WeeklyReportService
             'reference' => $period->reference,
             'start_date' => optional($period->start_date)->toDateString(),
             'end_date' => optional($period->end_date)->toDateString(),
+            'employee_due_at' => optional($period->employee_due_at)->toIso8601String(),
         ];
+    }
+
+    /**
+     * Staff lists for a department weekly rollup. ISO dates stay in the API; the UI formats them.
+     *
+     * @return array{
+     *     department: array{id: mixed, name: mixed, code: mixed}|null,
+     *     period: array{id: mixed, reference: mixed, start_date: ?string, end_date: ?string, employee_due_at: ?string}|null,
+     *     submitted_staff: list<array<string, mixed>>,
+     *     missing_staff: list<array<string, mixed>>,
+     *     late_staff: list<array<string, mixed>>,
+     *     counts: array{submitted: int, missing: int, late: int}
+     * }
+     */
+    public function departmentStaffRollup(User $actor, WeeklyReport $departmentReport): array
+    {
+        $departmentReport->loadMissing(['department', 'period']);
+        $departmentId = (int) $departmentReport->department_id;
+        $period = $departmentReport->period;
+
+        $employees = User::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->where('is_active', true)
+            ->where('department_id', $departmentId)
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $reports = WeeklyReport::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->where('period_id', $departmentReport->period_id)
+            ->where('report_type', WeeklyReport::TYPE_INDIVIDUAL)
+            ->whereIn('employee_id', $employees->pluck('id')->all() ?: [0])
+            ->get(['id', 'employee_id', 'reference', 'status', 'submitted_at', 'employee_due_at']);
+
+        $byEmployee = $reports->keyBy('employee_id');
+        $exempted = WeeklyReportExemption::query()
+            ->where('period_id', $departmentReport->period_id)
+            ->whereIn('employee_id', $employees->pluck('id')->all() ?: [0])
+            ->pluck('employee_id')
+            ->all();
+        $exemptedSet = array_flip($exempted);
+        $dueAt = $period?->employee_due_at;
+        $now = now();
+
+        $submitted = [];
+        $missing = [];
+        $late = [];
+
+        foreach ($employees as $employee) {
+            $report = $byEmployee->get($employee->id);
+            $submittedAt = $report?->submitted_at;
+            $rowDue = $report?->employee_due_at ?? $dueAt;
+            $row = [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'report_id' => $report?->id,
+                'reference' => $report?->reference,
+                'status' => $report?->status,
+                'submitted_at' => optional($submittedAt)->toIso8601String(),
+                'employee_due_at' => optional($rowDue)->toIso8601String(),
+            ];
+
+            if ($submittedAt) {
+                $submitted[] = $row;
+                if ($rowDue && $submittedAt->gt($rowDue)) {
+                    $late[] = $row;
+                }
+            } elseif (! isset($exemptedSet[$employee->id])) {
+                $missing[] = $row;
+                if ($rowDue && $rowDue->lt($now)) {
+                    $late[] = $row;
+                }
+            }
+        }
+
+        $department = $departmentReport->department;
+
+        return [
+            'department' => $department ? [
+                'id' => $department->id,
+                'name' => $department->name,
+                'code' => $department->code ?? null,
+            ] : null,
+            'period' => $this->periodSummary($period),
+            'submitted_staff' => $submitted,
+            'missing_staff' => $missing,
+            'late_staff' => $late,
+            'counts' => [
+                'submitted' => count($submitted),
+                'missing' => count($missing),
+                'late' => count($late),
+            ],
+        ];
+    }
+
+    /**
+     * @return array{id: mixed, name: mixed}|null
+     */
+    private function departmentSummary(mixed $department): ?array
+    {
+        if (! $department) {
+            return null;
+        }
+
+        return [
+            'id' => $department->id,
+            'name' => $department->name,
+        ];
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Builder<WeeklyReport>
+     */
+    private function pendingReviewQuery(User $user, bool $supervisorOnly)
+    {
+        $query = WeeklyReport::query()
+            ->with([
+                'employee:id,name,department_id',
+                'employee.department:id,name',
+                'department:id,name',
+                'period:id,reference,start_date,end_date,employee_due_at',
+            ])
+            ->where('tenant_id', $user->tenant_id)
+            ->where('report_type', WeeklyReport::TYPE_INDIVIDUAL)
+            ->whereIn('status', ['submitted', 'pending_review', 'resubmitted'])
+            ->orderByDesc('submitted_at');
+
+        if ($supervisorOnly) {
+            return $query->where('supervisor_id', $user->id);
+        }
+
+        if (! $this->seesTenantReviewQueue($user)) {
+            $query->where(function ($inner) use ($user) {
+                $inner->where('supervisor_id', $user->id);
+                if ($user->department_id) {
+                    $inner->orWhere('department_id', $user->department_id);
+                }
+            });
+        }
+
+        return $query;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function serializeQueueReport(WeeklyReport $report): array
+    {
+        $department = $report->department ?? $report->employee?->department;
+        $due = $report->employee_due_at ?? $report->period?->employee_due_at;
+
+        return [
+            'id' => $report->id,
+            'reference' => $report->reference,
+            'status' => $report->status,
+            'employee_id' => $report->employee_id,
+            'employee_name' => $report->employee?->name,
+            'employee' => $report->employee
+                ? ['id' => $report->employee->id, 'name' => $report->employee->name]
+                : null,
+            'department' => $this->departmentSummary($department),
+            'department_name' => $department?->name,
+            'period' => $this->periodSummary($report->period),
+            'submitted_at' => optional($report->submitted_at)->toIso8601String(),
+            'employee_due_at' => optional($due)->toIso8601String(),
+            'days_late' => $this->daysLate($report->submitted_at, $due),
+        ];
+    }
+
+    private function daysLate(mixed $submittedAt, mixed $dueAt): int
+    {
+        if (! $dueAt) {
+            return 0;
+        }
+
+        $due = \Illuminate\Support\Carbon::parse($dueAt);
+        $compare = $submittedAt ? \Illuminate\Support\Carbon::parse($submittedAt) : now();
+        if ($compare->lte($due)) {
+            return 0;
+        }
+
+        return (int) $due->copy()->startOfDay()->diffInDays($compare->copy()->startOfDay());
+    }
+
+    private function seesTenantReviewQueue(User $user): bool
+    {
+        return $user->isSystemAdmin()
+            || $user->isSecretaryGeneral()
+            || $user->can('weekly-reports.admin')
+            || $user->can('weekly-reports.view-management');
+    }
+
+    public function canAccessReviewQueue(User $user): bool
+    {
+        if ($this->seesTenantReviewQueue($user)) {
+            return true;
+        }
+        if ($user->can('weekly-reports.accept') || $user->can('weekly-reports.review-team') || $user->can('weekly-reports.return')) {
+            return true;
+        }
+        if ($user->hasRole('HOD') || $user->hasRole('Director')) {
+            return true;
+        }
+
+        return Department::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->where('supervisor_id', $user->id)
+            ->exists();
+    }
+
+    private function assertCanAccessReviewQueue(User $user): void
+    {
+        if ($this->canAccessReviewQueue($user)) {
+            return;
+        }
+
+        abort(403, 'Not authorised to review weekly reports.');
     }
 
     public function findOrCreateIndividual(User $employee, ?int $periodId = null): WeeklyReport
@@ -938,7 +1163,7 @@ class WeeklyReportService
 
     private function assertCanReview(WeeklyReport $report, User $reviewer): void
     {
-        if ($reviewer->isSystemAdmin() || $reviewer->can('weekly-reports.admin') || $reviewer->can('weekly-reports.accept')) {
+        if ($reviewer->isSystemAdmin() || $reviewer->isSecretaryGeneral() || $reviewer->can('weekly-reports.admin') || $reviewer->can('weekly-reports.accept')) {
             return;
         }
         if ($report->supervisor_id === $reviewer->id) {

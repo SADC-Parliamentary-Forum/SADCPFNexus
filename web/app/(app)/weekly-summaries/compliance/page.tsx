@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { weeklyReportsApi } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LabelledRecord, labelledObjectCell } from "@/components/ui/LabelledRecord";
 
 type FocusFilter = "all" | "late" | "missing" | "unaccepted";
+type TableColumn = "reference" | "person" | "period" | "department" | "status" | "days";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
@@ -39,13 +41,19 @@ function asRows(value: unknown): Record<string, unknown>[] {
   return value.filter((row): row is Record<string, unknown> => Boolean(asRecord(row)));
 }
 
+function shortDate(value: unknown): string {
+  if (value == null || value === "") return "";
+  const formatted = formatDateShort(String(value));
+  return formatted === "—" ? "" : formatted;
+}
+
 function periodLabel(value: unknown): string {
   const rec = asRecord(value);
   if (!rec) return "—";
   const ref = rec.reference != null && rec.reference !== "" ? String(rec.reference) : "";
-  const start = rec.start_date != null && rec.start_date !== "" ? String(rec.start_date) : "";
-  const end = rec.end_date != null && rec.end_date !== "" ? String(rec.end_date) : "";
-  const range = start && end ? `${start} → ${end}` : start || end;
+  const start = shortDate(rec.start_date);
+  const end = shortDate(rec.end_date);
+  const range = start && end ? `${start} – ${end}` : start || end;
   return [ref, range].filter(Boolean).join(" · ") || "—";
 }
 
@@ -102,15 +110,6 @@ function isUnacceptedStatus(status: unknown): boolean {
   return ["submitted", "pending_review", "resubmitted"].includes(String(status ?? ""));
 }
 
-function matchesPerson(row: Record<string, unknown>, query: string): boolean {
-  if (!query) return true;
-  const haystack = [personLabel(row), ownerLabel(row), row.reference]
-    .map((value) => (typeof value === "string" ? value : labelledText(value)))
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(query);
-}
-
 function labelledText(value: unknown): string {
   const rec = asRecord(value);
   if (!rec) return value == null ? "" : String(value);
@@ -121,7 +120,162 @@ function labelledText(value: unknown): string {
 function departmentLabel(row: Record<string, unknown>): unknown {
   if (row.department && typeof row.department === "object") return row.department;
   if (typeof row.department_name === "string" && row.department_name.trim()) return row.department_name;
+  const employee = asRecord(row.employee);
+  if (employee?.department && typeof employee.department === "object") return employee.department;
+  if (typeof employee?.department_name === "string" && employee.department_name.trim()) {
+    return employee.department_name;
+  }
   return "—";
+}
+
+function daysLate(due: unknown): string {
+  if (due == null || due === "") return "—";
+  const dueAt = new Date(String(due));
+  if (!Number.isFinite(dueAt.getTime())) return "—";
+  const days = Math.floor((Date.now() - dueAt.getTime()) / 86_400_000);
+  if (days <= 0) return "—";
+  return days === 1 ? "1 day" : `${days} days`;
+}
+
+function dueAt(row: Record<string, unknown>, periodFallback: Record<string, unknown> | null): unknown {
+  const nestedPeriod = asRecord(row.period);
+  return row.employee_due_at ?? nestedPeriod?.employee_due_at ?? periodFallback?.employee_due_at;
+}
+
+function matchesPerson(row: Record<string, unknown>, query: string): boolean {
+  if (!query) return true;
+  const haystack = [personLabel(row), ownerLabel(row), row.reference]
+    .map((value) => (typeof value === "string" ? value : labelledText(value)))
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(query);
+}
+
+function matchesDepartment(row: Record<string, unknown>, departmentName: string): boolean {
+  if (!departmentName) return true;
+  return labelledText(departmentLabel(row)).toLowerCase() === departmentName.toLowerCase();
+}
+
+function DepartmentNamePicker({
+  names,
+  selected,
+  onSelect,
+}: {
+  names: string[];
+  selected: string;
+  onSelect: (name: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const listId = "compliance-department-list";
+  const options = useMemo(() => ["All departments", ...names], [names]);
+
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return options;
+    return options.filter((name) => name.toLowerCase().includes(term));
+  }, [options, query]);
+
+  useEffect(() => {
+    if (!open) setQuery(selected || "");
+  }, [open, selected]);
+
+  useEffect(() => {
+    function handleClick(event: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+        setQuery(selected || "");
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [selected]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [query]);
+
+  const choose = (name: string) => {
+    onSelect(name === "All departments" ? "" : name);
+    setQuery(name === "All departments" ? "" : name);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={rootRef} className="relative">
+      <input
+        id="compliance-department"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={open}
+        aria-controls={listId}
+        aria-activedescendant={open && filtered[activeIndex] ? `compliance-dept-option-${activeIndex}` : undefined}
+        className="form-input"
+        placeholder="Search department by name"
+        value={open ? query : selected || query}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => {
+          setOpen(true);
+          setQuery("");
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setOpen(true);
+            setActiveIndex((index) => Math.min(index + 1, Math.max(filtered.length - 1, 0)));
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setActiveIndex((index) => Math.max(index - 1, 0));
+          } else if (event.key === "Enter" && open && filtered[activeIndex]) {
+            event.preventDefault();
+            choose(filtered[activeIndex]);
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            setOpen(false);
+            setQuery(selected || "");
+          }
+        }}
+      />
+      {open ? (
+        <ul
+          id={listId}
+          role="listbox"
+          aria-label="Departments"
+          className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-neutral-200 bg-white shadow-lg"
+        >
+          {filtered.length === 0 ? (
+            <li className="px-3 py-2 text-sm text-neutral-500">No departments match that name.</li>
+          ) : (
+            filtered.map((name, index) => (
+              <li key={name} role="presentation">
+                <button
+                  type="button"
+                  role="option"
+                  id={`compliance-dept-option-${index}`}
+                  aria-selected={(selected || "All departments") === name}
+                  className={`flex w-full items-center px-3 py-2 text-left text-sm ${
+                    index === activeIndex ? "bg-primary/5 text-neutral-900" : "text-neutral-700 hover:bg-neutral-50"
+                  }`}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    choose(name);
+                  }}
+                  onMouseEnter={() => setActiveIndex(index)}
+                >
+                  {name}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      ) : null}
+    </div>
+  );
 }
 
 export default function WeeklyCompliancePage() {
@@ -133,6 +287,7 @@ export default function WeeklyCompliancePage() {
   const [trends, setTrends] = useState<Record<string, unknown> | null>(null);
   const [focus, setFocus] = useState<FocusFilter>("all");
   const [personQuery, setPersonQuery] = useState("");
+  const [departmentName, setDepartmentName] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -175,6 +330,22 @@ export default function WeeklyCompliancePage() {
     unaccepted.length +
     (myReportUnaccepted && myReportId && !unaccepted.some((row) => reportId(row) === myReportId) ? 1 : 0);
   const lateCount = (pastDue ? missing.length : 0) + (myReportLate ? 1 : 0);
+  const countCards = [
+    { label: "Late", value: lateCount },
+    { label: "Missing", value: missing.length },
+    { label: "Unaccepted", value: unacceptedCount },
+  ];
+
+  const departmentNames = useMemo(() => {
+    const names = new Set<string>();
+    const rows = [...missing, ...unaccepted];
+    if (myReport) rows.push(myReport);
+    for (const row of rows) {
+      const name = labelledText(departmentLabel(row)).trim();
+      if (name && name !== "—") names.add(name);
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b));
+  }, [missing, myReport, unaccepted]);
 
   const lateRows = useMemo(() => {
     const rows: Record<string, unknown>[] = [];
@@ -190,12 +361,12 @@ export default function WeeklyCompliancePage() {
         rows.push({ ...row, finding: "Late — not submitted", status: "late" });
       }
     }
-    return rows.filter((row) => matchesPerson(row, query));
-  }, [missing, myReport, myReportLate, pastDue, query]);
+    return rows.filter((row) => matchesPerson(row, query) && matchesDepartment(row, departmentName));
+  }, [departmentName, missing, myReport, myReportLate, pastDue, query]);
 
   const missingRows = useMemo(
-    () => missing.filter((row) => matchesPerson(row, query)),
-    [missing, query],
+    () => missing.filter((row) => matchesPerson(row, query) && matchesDepartment(row, departmentName)),
+    [departmentName, missing, query],
   );
 
   const unacceptedRows = useMemo(() => {
@@ -207,22 +378,31 @@ export default function WeeklyCompliancePage() {
         rows.unshift({ ...myReport, employee_name: "Your report" });
       }
     }
-    return rows.filter((row) => matchesPerson(row, query));
-  }, [myReport, myReportUnaccepted, query, unaccepted]);
+    return rows.filter((row) => matchesPerson(row, query) && matchesDepartment(row, departmentName));
+  }, [departmentName, myReport, myReportUnaccepted, query, unaccepted]);
 
   const trendSummary = asRecord(trends?.summary);
   const showLate = focus === "all" || focus === "late";
   const showMissing = focus === "all" || focus === "missing";
   const showUnaccepted = focus === "all" || focus === "unaccepted";
+  const dueLabel = shortDate(period?.employee_due_at);
+  const periodDescription = [
+    periodLabel(period),
+    dueLabel ? `Due ${dueLabel}` : "",
+    pastDue ? "Employee due date has passed" : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const exportMissingCsv = () => {
     const lines = [
-      "Person,Period,Finding",
+      "Person,Department,Period,Finding",
       ...missingRows.map((row) => {
         const person = String(labelledText(personLabel(row)) || "Unknown person").replaceAll('"', '""');
+        const department = String(labelledText(departmentLabel(row)) || "—").replaceAll('"', '""');
         const periodText = periodLabel(row.period ?? period).replaceAll('"', '""');
         const finding = pastDue ? "Late — not submitted" : "Not submitted";
-        return `"${person}","${periodText}","${finding}"`;
+        return `"${person}","${department}","${periodText}","${finding}"`;
       }),
     ];
     const blob = new Blob([lines.join("\n")], { type: "text/csv" });
@@ -287,10 +467,10 @@ export default function WeeklyCompliancePage() {
         <>
           <FormSection
             title="Filters"
-            description="The current tenant period loads automatically. Filter by finding type or person name — numeric IDs are not required."
+            description="The current tenant period loads automatically. Filter by finding type, person, or department name — numeric IDs are not required."
             icon="filter_alt"
           >
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-3">
               <FormField label="Show" htmlFor="compliance-focus">
                 <select
                   id="compliance-focus"
@@ -313,35 +493,39 @@ export default function WeeklyCompliancePage() {
                   placeholder="Search by person or reference"
                 />
               </FormField>
+              <FormField label="Department" htmlFor="compliance-department" hint="Filter by department name.">
+                <DepartmentNamePicker names={departmentNames} selected={departmentName} onSelect={setDepartmentName} />
+              </FormField>
             </div>
           </FormSection>
 
-          <FormSection
-            title="Compliance snapshot"
-            description={`${periodLabel(period)}${pastDue ? " · Employee due date has passed" : ""}`}
-            icon="fact_check"
-          >
-            <LabelledRecord
-              value={{
-                period: periodLabel(period),
-                submitted: Number(compliance.submitted ?? 0),
-                exempted: Number(compliance.exempted ?? 0),
-                missing: missing.length,
-                late: lateCount,
-                unaccepted: unacceptedCount,
-              }}
-            />
+          <FormSection title="Compliance snapshot" description={periodDescription} icon="fact_check">
+            <div className="grid gap-3 sm:grid-cols-3">
+              {countCards.map((card) => (
+                <div key={card.label} className="rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{card.label}</p>
+                  <p className="mt-1 text-2xl font-semibold tabular-nums text-neutral-900">{card.value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4">
+              <LabelledRecord
+                value={{
+                  period: periodLabel(period),
+                  submitted: Number(compliance.submitted ?? 0),
+                  exempted: Number(compliance.exempted ?? 0),
+                }}
+              />
+            </div>
             {trendSummary ? (
               <div className="mt-4 border-t border-neutral-100 pt-4">
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">
-                  Last 12 weeks
-                </h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Last 12 weeks</h3>
                 <LabelledRecord
                   value={{
-                    total_reports: trendSummary.total_reports ?? 0,
+                    reports: trendSummary.total_reports ?? 0,
                     completed: trendSummary.completed ?? 0,
-                    completion_rate: `${trendSummary.completion_rate ?? 0}%`,
-                    missing_or_late: trendSummary.missing_or_late ?? 0,
+                    "completion rate": `${trendSummary.completion_rate ?? 0}%`,
+                    "missing or late": trendSummary.missing_or_late ?? 0,
                   }}
                 />
               </div>
@@ -361,6 +545,7 @@ export default function WeeklyCompliancePage() {
                     <tr className="border-b border-neutral-100 text-neutral-500">
                       <th className="py-2 pr-3 font-medium">Reference</th>
                       <th className="py-2 pr-3 font-medium">Period</th>
+                      <th className="py-2 pr-3 font-medium">Department</th>
                       <th className="py-2 font-medium">Status</th>
                     </tr>
                   </thead>
@@ -379,6 +564,7 @@ export default function WeeklyCompliancePage() {
                         )}
                       </td>
                       <td className="py-2 pr-3">{labelledObjectCell(periodLabel(myReport.period ?? period))}</td>
+                      <td className="py-2 pr-3">{labelledObjectCell(departmentLabel(myReport))}</td>
                       <td className="py-2">{labelledObjectCell(humanStatus(myReport.status))}</td>
                     </tr>
                   </tbody>
@@ -414,7 +600,7 @@ export default function WeeklyCompliancePage() {
                 <ComplianceTable
                   caption="Late weekly summaries"
                   rows={lateRows}
-                  columns={["reference", "person", "period", "status"]}
+                  columns={["person", "department", "period", "days", "status"]}
                   periodFallback={period}
                   linkReports
                 />
@@ -445,7 +631,7 @@ export default function WeeklyCompliancePage() {
                 <ComplianceTable
                   caption="People missing weekly summaries"
                   rows={missingRows}
-                  columns={["person", "period", "department", "status"]}
+                  columns={["person", "department", "period", "days", "status"]}
                   periodFallback={period}
                   personRows
                 />
@@ -469,7 +655,7 @@ export default function WeeklyCompliancePage() {
                 <ComplianceTable
                   caption="Unaccepted weekly summaries"
                   rows={unacceptedRows}
-                  columns={["reference", "person", "period", "status"]}
+                  columns={["reference", "person", "department", "period", "status"]}
                   periodFallback={period}
                   linkReports
                 />
@@ -492,7 +678,7 @@ function ComplianceTable({
 }: {
   caption: string;
   rows: Record<string, unknown>[];
-  columns: Array<"reference" | "person" | "period" | "department" | "status">;
+  columns: TableColumn[];
   periodFallback?: Record<string, unknown> | null;
   linkReports?: boolean;
   personRows?: boolean;
@@ -505,8 +691,9 @@ function ComplianceTable({
           <tr className="border-b border-neutral-100 text-neutral-500">
             {columns.includes("reference") ? <th className="py-2 pr-3 font-medium">Reference</th> : null}
             {columns.includes("person") ? <th className="py-2 pr-3 font-medium">Person</th> : null}
-            {columns.includes("period") ? <th className="py-2 pr-3 font-medium">Period</th> : null}
             {columns.includes("department") ? <th className="py-2 pr-3 font-medium">Department</th> : null}
+            {columns.includes("period") ? <th className="py-2 pr-3 font-medium">Period</th> : null}
+            {columns.includes("days") ? <th className="py-2 pr-3 font-medium">Days late</th> : null}
             {columns.includes("status") ? <th className="py-2 font-medium">Status</th> : null}
           </tr>
         </thead>
@@ -528,13 +715,24 @@ function ComplianceTable({
                   </td>
                 ) : null}
                 {columns.includes("person") ? (
-                  <td className="py-2 pr-3">{labelledObjectCell(personRows ? personLabel(row) : ownerLabel(row))}</td>
+                  <td className="py-2 pr-3">
+                    {linkReports && id ? (
+                      <Link href={`/weekly-summaries/${id}`} className="font-medium text-primary hover:underline">
+                        {labelledObjectCell(personRows ? personLabel(row) : ownerLabel(row))}
+                      </Link>
+                    ) : (
+                      labelledObjectCell(personRows ? personLabel(row) : ownerLabel(row))
+                    )}
+                  </td>
+                ) : null}
+                {columns.includes("department") ? (
+                  <td className="py-2 pr-3">{labelledObjectCell(departmentLabel(row))}</td>
                 ) : null}
                 {columns.includes("period") ? (
                   <td className="py-2 pr-3">{labelledObjectCell(periodLabel(row.period ?? periodFallback))}</td>
                 ) : null}
-                {columns.includes("department") ? (
-                  <td className="py-2 pr-3">{labelledObjectCell(departmentLabel(row))}</td>
+                {columns.includes("days") ? (
+                  <td className="py-2 pr-3">{labelledObjectCell(daysLate(dueAt(row, periodFallback)))}</td>
                 ) : null}
                 {columns.includes("status") ? (
                   <td className="py-2">{labelledObjectCell(humanStatus(status))}</td>

@@ -10,7 +10,7 @@ class SecureLinkService
 {
     public function frontendBase(): string
     {
-        return rtrim((string) (config('app.frontend_url') ?: env('FRONTEND_URL') ?: env('APP_FRONTEND_URL') ?: ''), '/');
+        return \App\Support\FrontendUrl::base();
     }
 
     /**

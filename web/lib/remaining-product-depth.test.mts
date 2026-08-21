@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { formatDateShort } from "./utils.ts";
 
 const webRoot = join(process.cwd());
 
@@ -450,6 +451,84 @@ test("weekly summaries review page has empty, error, and loading copy", () => {
   assert.match(source, /Failed to load/);
 });
 
+test("weekly summaries review page uses human-readable dates, not ISO as primary UI", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/review/page.tsx"), "utf8");
+  assert.match(source, /formatDateShort|formatDateRange/);
+  assert.doesNotMatch(source, /\$\{start\} → \$\{end\}/);
+  assert.doesNotMatch(source, /toIso8601String/);
+});
+
+test("weekly summaries review page shows department names, never department IDs as cell text", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/review/page.tsx"), "utf8");
+  assert.match(source, /department_name|department\?\.name|row\.department/);
+  assert.doesNotMatch(source, /row\.department_id/);
+  assert.doesNotMatch(source, />Department ID</);
+  assert.doesNotMatch(source, /placeholder=["'][^"']*ID/);
+});
+
+test("weekly summaries review page is a labelled supervisor queue with filters and overdue counts", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/review/page.tsx"), "utf8");
+  assert.match(source, /FormField/);
+  assert.match(source, /<select|role=["']combobox["']/);
+  assert.match(source, /submitted_at|Submitted/);
+  assert.match(source, /days_late|Days late/);
+  assert.match(source, /overdue/i);
+  assert.match(source, /canReviewWeeklySummaries/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.accept/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.returnReport/);
+});
+
+test("weekly summaries review nav is hidden from staff who cannot review", () => {
+  const auth = readFileSync(join(webRoot, "lib/auth.ts"), "utf8");
+  const reviewRule = auth.slice(0, auth.indexOf('{ path: "/weekly-summaries" }'));
+  assert.match(reviewRule, /\/weekly-summaries\/review/);
+  assert.match(auth, /weekly-reports\.review-team|weekly-reports\.accept/);
+  assert.match(auth, /canReviewWeeklySummaries/);
+});
+
+test("canReviewWeeklySummaries allows supervisors and SG, not plain staff", async () => {
+  const { canReviewWeeklySummaries, canAccessRoute } = await import("./auth.ts");
+  const staff = {
+    id: 1,
+    name: "Staff",
+    email: "staff@example.org",
+    tenant_id: 1,
+    classification: "UNCLASSIFIED",
+    roles: ["staff"],
+    permissions: ["weekly-reports.view-own", "weekly-reports.submit"],
+  };
+  const hod = {
+    ...staff,
+    id: 2,
+    name: "HOD",
+    email: "hod@example.org",
+    roles: ["HOD"],
+    permissions: ["weekly-reports.review-team", "weekly-reports.accept"],
+  };
+  const sg = {
+    ...staff,
+    id: 3,
+    name: "SG",
+    email: "sg@example.org",
+    roles: ["Secretary General"],
+    permissions: [],
+  };
+  assert.equal(canReviewWeeklySummaries(staff), false);
+  assert.equal(canAccessRoute(staff, "/weekly-summaries/review"), false);
+  assert.equal(canAccessRoute(staff, "/weekly-summaries"), true);
+  assert.equal(canReviewWeeklySummaries(hod), true);
+  assert.equal(canAccessRoute(hod, "/weekly-summaries/review"), true);
+  assert.equal(canReviewWeeklySummaries(sg), true);
+  assert.equal(canAccessRoute(sg, "/weekly-summaries/review"), true);
+});
+
+test("weekly reports API exposes a gated review-queue endpoint", () => {
+  const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const weekly = source.slice(source.indexOf("export const weeklyReportsApi"), source.indexOf("// ── M&E"));
+  assert.match(weekly, /reviewQueue/);
+  assert.match(weekly, /\/weekly-summaries\/review-queue/);
+});
+
 test("weekly report dashboard exposes pending reports for the supervisor queue", () => {
   const source = readFileSync(
     join(webRoot, "..", "api/app/Modules/WeeklyReports/Services/WeeklyReportService.php"),
@@ -458,6 +537,9 @@ test("weekly report dashboard exposes pending reports for the supervisor queue",
   assert.match(source, /team_pending_review/);
   assert.match(source, /team_pending_reports/);
   assert.match(source, /employee_name|employee\?->name/);
+  assert.match(source, /department_name|departmentSummary/);
+  assert.match(source, /assertCanAccessReviewQueue|canAccessReviewQueue/);
+  assert.match(source, /isSecretaryGeneral/);
 });
 
 test("weekly summaries compliance page uses module chrome and labelled records", () => {
@@ -498,6 +580,47 @@ test("weekly summaries compliance page links listed reports to weekly summary de
   assert.doesNotMatch(source, /weeklyReportsApi\.submit/);
 });
 
+test("weekly summaries compliance page formats period dates with formatDateShort", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  assert.match(source, /formatDateShort/);
+  assert.doesNotMatch(source, /T00:00:00/);
+  assert.doesNotMatch(source, /placeholder=["']Period ID["']/);
+});
+
+test("weekly summaries compliance page shows staff and department names, not department_id cells", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  assert.match(source, /personLabel|ownerLabel/);
+  assert.match(source, /employee_name/);
+  assert.match(source, /department_name|departmentLabel/);
+  assert.match(source, /Late reports/);
+  assert.match(source, /Missing reports/);
+  assert.match(source, /Unaccepted reports/);
+  assert.doesNotMatch(source, /labelledObjectCell\([^)]*department_id/);
+  assert.doesNotMatch(source, /\{row\.department_id\}/);
+  assert.doesNotMatch(source, /String\(row\.department_id\)/);
+});
+
+test("weekly summaries compliance page has labelled counts, department name combobox, and days late", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/compliance/page.tsx"), "utf8");
+  assert.match(source, /ModulePageHeader/);
+  assert.match(source, /EmptyState/);
+  assert.match(source, /\/weekly-summaries\/\$\{/);
+  assert.match(source, /role=["']combobox["']/);
+  assert.match(source, /label:\s*["']Late["']/);
+  assert.match(source, /label:\s*["']Missing["']/);
+  assert.match(source, /label:\s*["']Unaccepted["']/);
+  assert.match(source, /daysLate|Days late/);
+});
+
+test("weekly report dashboard missing and pending rows include department names", () => {
+  const source = readFileSync(
+    join(webRoot, "..", "api/app/Modules/WeeklyReports/Services/WeeklyReportService.php"),
+    "utf8",
+  );
+  assert.match(source, /department_name/);
+  assert.match(source, /department\?->name/);
+});
+
 test("weekly summaries department page uses a labelled department picker instead of a raw id field", () => {
   const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"), "utf8");
   assert.match(source, /listDepartments/);
@@ -535,6 +658,65 @@ test("weekly summaries department page has empty, error, and loading copy", () =
   assert.match(source, /EmptyState/);
   assert.match(source, /Loading/);
   assert.match(source, /Failed to load|Unable to load/);
+});
+
+test("weekly summaries department page formats dates with formatDateShort", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"), "utf8");
+  assert.match(source, /formatDateShort/);
+  assert.match(source, /from ["']@\/lib\/utils["']/);
+  assert.doesNotMatch(source, /\$\{period\.start_date\} → \$\{period\.end_date\}/);
+  assert.doesNotMatch(source, /report\.period\.start_date\} → \$\{report\.period\.end_date\}/);
+});
+
+test("weekly summaries department page period labels include formatted dates, not period id fields", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"), "utf8");
+  assert.match(source, /formatDateShort\(/);
+  assert.match(source, /periodLabel/);
+  assert.doesNotMatch(source, /placeholder=["']Period ID["']/);
+  assert.doesNotMatch(source, />Period ID</);
+  assert.doesNotMatch(source, /htmlFor=["']weekly-period-id["']/);
+});
+
+test("weekly summaries department page does not show department_id as visible cell text", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"), "utf8");
+  assert.match(source, /departmentLabel|dept\.name|department\.name/);
+  assert.doesNotMatch(source, /\{row\.department_id\}/);
+  assert.doesNotMatch(source, /\{selectedDept\.id\}/);
+  assert.doesNotMatch(source, />Department ID</);
+  assert.doesNotMatch(source, /placeholder=["']Department ID["']/);
+});
+
+test("weekly summaries department page shows submitted, missing, and late staff with names and counts", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/department/page.tsx"), "utf8");
+  assert.match(source, /submitted_staff|Submitted staff/);
+  assert.match(source, /missing_staff|Missing staff/);
+  assert.match(source, /late_staff|Late staff/);
+  assert.match(source, /counts\.submitted|submitted:/);
+  assert.match(source, /counts\.missing|missing:/);
+  assert.match(source, /counts\.late|late:/);
+  assert.match(source, /htmlFor=["']department-staff-search["']/);
+  assert.match(source, /\/weekly-summaries\/\$\{/);
+  assert.doesNotMatch(source, /JSON\.stringify\(/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.accept/);
+  assert.doesNotMatch(source, /weeklyReportsApi\.submit/);
+});
+
+test("department weekly rollup API includes department name and submitted missing late staff", () => {
+  const service = readFileSync(
+    join(webRoot, "..", "api/app/Modules/WeeklyReports/Services/WeeklyReportService.php"),
+    "utf8",
+  );
+  const controller = readFileSync(
+    join(webRoot, "..", "api/app/Http/Controllers/Api/V1/WeeklyReports/WeeklyReportController.php"),
+    "utf8",
+  );
+  assert.match(service, /function departmentStaffRollup/);
+  assert.match(service, /submitted_staff/);
+  assert.match(service, /missing_staff/);
+  assert.match(service, /late_staff/);
+  assert.match(service, /\$department->name/);
+  assert.match(controller, /departmentStaffRollup/);
+  assert.match(controller, /array_merge\(\$report->toArray\(\), \$extra\)/);
 });
 
 
@@ -612,4 +794,278 @@ test("weekly summaries trends page uses labelled chrome and the trends API", () 
   assert.doesNotMatch(source, /JSON\.stringify\(/);
   assert.doesNotMatch(source, /api\.get\("\/weekly-summaries\/trends"\)/);
 });
+
+test("travel API exposes destination catalog list and create endpoints", () => {
+  const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  assert.match(source, /listDestinations:\s*\(\)\s*=>/);
+  assert.match(source, /\/travel\/destinations/);
+  assert.match(source, /createCountry:/);
+  assert.match(source, /\/travel\/destinations\/countries/);
+  assert.match(source, /createCity:/);
+  assert.match(source, /\/travel\/destinations\/cities/);
+});
+
+test("travel create country picker loads the catalog and can add a missing country", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/travel/create/page.tsx"), "utf8");
+  const pickers = readFileSync(join(webRoot, "components/travel/DestinationPickers.tsx"), "utf8");
+  const source = page + pickers;
+  assert.match(source, /travelApi\.listDestinations/);
+  assert.match(source, /travelApi\.createCountry/);
+  assert.match(source, /as a country/);
+  assert.doesNotMatch(page, /const SADC_COUNTRIES/);
+});
+
+test("travel create city picker is a catalog dropdown that can add a missing city", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/travel/create/page.tsx"), "utf8");
+  const pickers = readFileSync(join(webRoot, "components/travel/DestinationPickers.tsx"), "utf8");
+  const source = page + pickers;
+  assert.match(source, /travelApi\.createCity/);
+  assert.match(source, /as a city/);
+  assert.match(page, /destination_city/);
+  assert.doesNotMatch(page, /placeholder=["']e\.g\. Harare["']/);
+});
+
+test("travel create addLeg uses the previous leg destination and date", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/create/page.tsx"), "utf8");
+  const addLeg = source.slice(source.indexOf("const addLeg"), source.indexOf("const removeLeg"));
+  assert.match(source, /nextTravelLeg/);
+  assert.match(addLeg, /nextTravelLeg/);
+  assert.doesNotMatch(addLeg, /from_location:\s*""/);
+  assert.doesNotMatch(addLeg, /travel_date:\s*""/);
+});
+
+test("next travel leg starts from the previous destination and date", async () => {
+  const { nextTravelLeg } = await import("./travelLegs.ts");
+  const next = nextTravelLeg({
+    from_location: "Windhoek, Namibia",
+    to_location: "Johannesburg, South Africa",
+    travel_date: "2026-08-21",
+    transport_mode: "flight",
+    days_count: 1,
+  });
+  assert.equal(next.from_location, "Johannesburg, South Africa");
+  assert.equal(next.to_location, "");
+  assert.equal(next.travel_date, "2026-08-21");
+  assert.equal(next.transport_mode, "flight");
+});
+
+test("next travel leg keeps an empty from/date when the previous leg is blank", async () => {
+  const { nextTravelLeg } = await import("./travelLegs.ts");
+  const next = nextTravelLeg({
+    from_location: "",
+    to_location: "",
+    travel_date: "",
+    transport_mode: "bus",
+    days_count: 2,
+  });
+  assert.equal(next.from_location, "");
+  assert.equal(next.travel_date, "");
+  assert.equal(next.transport_mode, "bus");
+});
+
+test("travel create itinerary has labelled flight name and number fields", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/create/page.tsx"), "utf8");
+  const itinerary = source.slice(source.indexOf("Step 1: Itinerary"), source.indexOf("Step 2: Funding"));
+  assert.match(itinerary, /FormField/);
+  assert.match(itinerary, /label=["']Flight name["']/);
+  assert.match(itinerary, /label=["']Flight number["']/);
+  assert.match(itinerary, /htmlFor=\{`leg-\$\{i\}-flight-name`\}/);
+  assert.match(itinerary, /htmlFor=\{`leg-\$\{i\}-flight-number`\}/);
+  assert.doesNotMatch(itinerary, /window\.prompt/);
+});
+
+test("travel create posts flight name and number with itineraries", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/create/page.tsx"), "utf8");
+  const payload = source.slice(source.indexOf("const buildPayload"), source.indexOf("const handleSubmit"));
+  assert.match(payload, /flight_name:\s*l\.flight_name/);
+  assert.match(payload, /flight_number:\s*l\.flight_number/);
+});
+
+test("travel detail shows flight name and number on itinerary legs", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/[id]/page.tsx"), "utf8");
+  assert.match(source, /leg\.flight_name/);
+  assert.match(source, /leg\.flight_number/);
+});
+
+test("next travel leg does not copy flight name or number from the previous hop", async () => {
+  const { nextTravelLeg } = await import("./travelLegs.ts");
+  const next = nextTravelLeg({
+    from_location: "Windhoek, Namibia",
+    to_location: "Johannesburg, South Africa",
+    travel_date: "2026-08-21",
+    transport_mode: "flight",
+    days_count: 1,
+    flight_name: "Air Namibia",
+    flight_number: "SW 287",
+  });
+  assert.equal(next.from_location, "Johannesburg, South Africa");
+  assert.equal(next.transport_mode, "flight");
+  assert.equal(next.flight_name, "");
+  assert.equal(next.flight_number, "");
+});
+
+test("formatDateShort uses 21 Aug 2026 and never dumps ISO", () => {
+  assert.equal(formatDateShort("2026-08-21"), "21 Aug 2026");
+  assert.equal(formatDateShort("2026-08-21T10:00:00.000000Z"), "21 Aug 2026");
+  assert.equal(formatDateShort("2026-08-21T00:00:00.000000Z"), "21 Aug 2026");
+  assert.doesNotMatch(formatDateShort("2026-08-21T10:00:00.000000Z"), /2026-08-21T|000000Z/);
+});
+
+test("weekly summaries assignment table formats due dates", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/page.tsx"), "utf8");
+  assert.match(source, /formatDateShort/);
+  assert.match(source, /formatDateShort\(row\.due_date/);
+  assert.doesNotMatch(source, /\{row\.due_date \?\? "—"\}/);
+});
+
+test("people assignment register formats ISO date cells via labelledObjectCell", () => {
+  const labelled = readFileSync(join(webRoot, "components/ui/LabelledRecord.tsx"), "utf8");
+  const page = readFileSync(join(webRoot, "app/(app)/people/assignments/page.tsx"), "utf8");
+  assert.match(labelled, /formatDateShort/);
+  assert.match(page, /labelledObjectCell/);
+});
+
+test("travel reports page uses module chrome and the reports pack API", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/reports/page.tsx"), "utf8");
+  assert.match(source, /ModulePageHeader/);
+  assert.match(source, /PageBreadcrumbs/);
+  assert.match(source, /href: "\/travel"/);
+  assert.match(source, /FormSection/);
+  assert.match(source, /FormField/);
+  assert.match(source, /LabelledRecord|labelledObjectCell/);
+  assert.match(source, /travelApi\.reportsPack/);
+  assert.match(source, /reportsPackExportUrl/);
+  assert.doesNotMatch(source, /JSON\.stringify/);
+  assert.doesNotMatch(source, /window\.prompt/);
+});
+
+test("travel reports page formats dates and currency and has empty loading error states", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/reports/page.tsx"), "utf8");
+  assert.match(source, /formatDateShort/);
+  assert.match(source, /formatCurrency/);
+  assert.match(source, /EmptyState/);
+  assert.match(source, /Loading/);
+  assert.match(source, /Failed to load/);
+});
+
+test("travel reports page shows named programmes not raw IDs", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/reports/page.tsx"), "utf8");
+  assert.match(source, /programme_title|programme_reference|\.programme\b/);
+  assert.doesNotMatch(source, /row\.programme_id/);
+  assert.doesNotMatch(source, /placeholder=["'][^"']*ID/);
+  assert.doesNotMatch(source, /type=["']number["']/);
+  assert.doesNotMatch(source, /Coming Soon/);
+});
+
+test("travel reports page renders labelled analytics slices with tables", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/reports/page.tsx"), "utf8");
+  assert.match(source, /by_status/);
+  assert.match(source, /cost_by_programme/);
+  assert.match(source, /cost_by_funding_agency/);
+  assert.match(source, /travel_register/);
+  assert.match(source, /<thead/);
+  assert.match(source, /Download CSV/);
+});
+
+function travelSidebarChildren(source: string): string[] {
+  const start = source.indexOf('label: "Travel"');
+  const leave = source.indexOf('label: "Leave"');
+  assert.ok(start >= 0 && leave > start, "Travel nav block not found in Sidebar");
+  const block = source.slice(start, leave);
+  const childrenStart = block.indexOf("children:");
+  assert.ok(childrenStart >= 0, "Travel children array not found");
+  return [...block.slice(childrenStart).matchAll(/href:\s*"([^"]+)"/g)].map((m) => m[1]);
+}
+
+test("travel hub page uses ModulePageHeader and labelled feature cards", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/travel/page.tsx"), "utf8");
+  const hub = readFileSync(join(webRoot, "lib/travelHub.ts"), "utf8");
+  const source = page + hub;
+  assert.match(page, /ModulePageHeader/);
+  assert.match(page, /PageBreadcrumbs/);
+  assert.match(page, /FormSection/);
+  assert.match(page, /EmptyState/);
+  assert.match(page, /TRAVEL_HUB_CARDS/);
+  assert.match(source, /href:\s*["']\/travel\/reports["']/);
+  assert.match(source, /href:\s*["']\/travel\/register["']/);
+  assert.match(source, /href:\s*["']\/travel\/create["']/);
+  assert.match(source, /href:\s*["']\/travel\/settings["']/);
+  assert.match(source, /href:\s*["']\/travel\/calendar["']/);
+  assert.match(source, /href:\s*["']\/travel\/missions["']/);
+  assert.match(source, /href:\s*["']\/travel\/toil["']/);
+  assert.match(source, /href:\s*["']\/travel\/queues\/approval["']/);
+  assert.match(source, /href:\s*["']\/travel\/queues\/admin["']/);
+  assert.match(source, /href:\s*["']\/travel\/queues\/finance["']/);
+  assert.match(source, /href:\s*["']\/travel\/queues\/director-finance["']/);
+  assert.match(source, /href:\s*["']\/travel\/queues\/retirement["']/);
+  assert.match(source, /href:\s*["']\/travel\/dashboards\/admin["']/);
+  assert.match(source, /href:\s*["']\/travel\/dashboards\/finance["']/);
+  assert.match(source, /imprest\?linked=travel/);
+  assert.match(source, /Visa reminders/);
+  assert.doesNotMatch(page, /JSON\.stringify\(/);
+});
+
+test("travel hub page keeps live dashboard counts and permission-filters cards", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/page.tsx"), "utf8");
+  assert.match(source, /travelApi\.dashboardTraveller/);
+  assert.match(source, /travelApi\.dashboardAdmin/);
+  assert.match(source, /travelApi\.dashboardFinance/);
+  assert.match(source, /canAccessRoute/);
+  assert.match(source, /formatDateShort/);
+  assert.match(source, /New request|Create request/i);
+  assert.match(source, /Open register|Register/);
+});
+
+test("sidebar Travel children are a short primary set not every leaf", () => {
+  const source = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
+  const hrefs = travelSidebarChildren(source);
+  assert.ok(
+    hrefs.length >= 1 && hrefs.length <= 6,
+    `expected <=6 Travel sidebar children, got ${hrefs.length}: ${hrefs.join(", ")}`,
+  );
+  assert.ok(hrefs.includes("/travel"), "hub remains in the Travel sidebar");
+  assert.ok(hrefs.includes("/travel/create"), "New request remains in the Travel sidebar");
+  assert.ok(hrefs.includes("/travel/register"), "Register remains in the Travel sidebar");
+  assert.ok(hrefs.includes("/travel/missions"), "Missions remains in the Travel sidebar");
+  assert.ok(hrefs.includes("/travel/settings"), "Settings remains in the Travel sidebar");
+  assert.ok(!hrefs.includes("/travel/calendar"), "Calendar moved off the sidebar");
+  assert.ok(!hrefs.includes("/travel/reports"), "Reports moved off the sidebar");
+  assert.ok(!hrefs.includes("/travel/toil"), "TOIL moved off the sidebar");
+  assert.ok(!hrefs.includes("/travel/queues/admin"), "Admin queue moved off the sidebar");
+  assert.ok(!hrefs.includes("/travel/queues/finance"), "Finance queue moved off the sidebar");
+  assert.ok(!hrefs.includes("/travel/queues/approval"), "Approval queue moved off the sidebar");
+});
+
+test("former travel routes remain reachable as pages", () => {
+  const pages = [
+    "app/(app)/travel/page.tsx",
+    "app/(app)/travel/create/page.tsx",
+    "app/(app)/travel/register/page.tsx",
+    "app/(app)/travel/calendar/page.tsx",
+    "app/(app)/travel/missions/page.tsx",
+    "app/(app)/travel/reports/page.tsx",
+    "app/(app)/travel/settings/page.tsx",
+    "app/(app)/travel/toil/page.tsx",
+    "app/(app)/travel/dashboards/admin/page.tsx",
+    "app/(app)/travel/dashboards/finance/page.tsx",
+    "app/(app)/travel/queues/admin/page.tsx",
+    "app/(app)/travel/queues/approval/page.tsx",
+    "app/(app)/travel/queues/director-finance/page.tsx",
+    "app/(app)/travel/queues/finance/page.tsx",
+    "app/(app)/travel/queues/retirement/page.tsx",
+    "app/(app)/travel/[id]/page.tsx",
+  ];
+  for (const page of pages) {
+    assert.ok(existsSync(join(webRoot, page)), `missing travel page ${page}`);
+  }
+});
+
+test("travel settings and calendar breadcrumbs link back to the hub", () => {
+  const settings = readFileSync(join(webRoot, "app/(app)/travel/settings/page.tsx"), "utf8");
+  const calendar = readFileSync(join(webRoot, "app/(app)/travel/calendar/page.tsx"), "utf8");
+  assert.match(settings, /href:\s*["']\/travel["']/);
+  assert.match(calendar, /href:\s*["']\/travel["']/);
+});
+
+
 

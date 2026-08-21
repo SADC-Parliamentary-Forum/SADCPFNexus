@@ -47,9 +47,21 @@ export function formatDateByFormat(
 
 /**
  * Friendly short date: "31 Mar 2027" (always include year for clarity).
+ * Date-only strings and UTC midnight are formatted as calendar days (no TZ shift).
  */
 export function formatDateShort(date: string | Date | null | undefined): string {
   if (!date) return "—";
+  if (typeof date === "string") {
+    const dateOnly = date.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ]00:00:00(?:\.0+)?(?:Z)?)?$/);
+    if (dateOnly) {
+      const d = new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]));
+      return new Intl.DateTimeFormat("en-GB", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(d);
+    }
+  }
   const d = new Date(date);
   if (isNaN(d.getTime())) return "—";
   return new Intl.DateTimeFormat("en-GB", {

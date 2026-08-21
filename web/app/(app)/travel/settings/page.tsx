@@ -93,7 +93,7 @@ export default function TravelSettingsPage() {
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <ModulePageHeader
         title="Travel Settings — DSA & FX Rates"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel Settings — DSA & FX Rates" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel", href: "/travel" }, { label: "Settings" }]} />}
       />
       {msg && <p className="text-sm text-primary">{msg}</p>}
       <form onSubmit={onSubmit} className="grid grid-cols-2 gap-3 bg-neutral-50 border rounded-lg p-4">

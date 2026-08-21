@@ -72,9 +72,9 @@
     {{-- Period bar --}}
     <div class="period-bar">
         <span class="period-label">
-            {{ \Carbon\Carbon::parse($payload['meta']['period_start'])->format('d M') }}
+            {{ human_date($payload['meta']['period_start']) }}
             –
-            {{ \Carbon\Carbon::parse($payload['meta']['period_end'])->format('d M Y') }}
+            {{ human_date($payload['meta']['period_end']) }}
         </span>
         <span class="scope-pill">{{ $payload['meta']['scope']['label'] }}</span>
     </div>
@@ -112,7 +112,7 @@
                         <td>{{ $person['department'] }}</td>
                         <td>{{ $person['status'] }}</td>
                         <td>{{ $person['location'] }}</td>
-                        <td>{{ \Carbon\Carbon::parse($person['return_date'])->format('d M') }}</td>
+                        <td>{{ human_date($person['return_date']) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -285,7 +285,7 @@
 
         {{-- CTA --}}
         <div class="cta">
-            <a href="{{ env('APP_FRONTEND_URL', config('app.url')) }}/dashboard">Open Your Dashboard →</a>
+            <a href="{{ \App\Support\FrontendUrl::to('dashboard') }}">Open Your Dashboard →</a>
         </div>
     </div>
 
@@ -293,10 +293,10 @@
     <div class="footer">
         <p>
             Report ID: {{ $report->id }} &nbsp;·&nbsp;
-            Generated: {{ \Carbon\Carbon::parse($payload['meta']['generated_at'])->format('d M Y H:i') }} UTC<br>
+            Generated: {{ human_datetime($payload['meta']['generated_at']) }} UTC<br>
             This is an automated weekly summary from SADC-PF Nexus. Do not reply to this email.<br>
             To manage your email preferences, visit
-            <a href="{{ env('APP_FRONTEND_URL', config('app.url')) }}/profile/security" style="color:#1d85ed">your profile settings</a>.
+            <a href="{{ \App\Support\FrontendUrl::to('profile/security') }}" style="color:#1d85ed">your profile settings</a>.
         </p>
     </div>
 

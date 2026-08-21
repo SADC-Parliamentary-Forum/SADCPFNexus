@@ -46,6 +46,7 @@ class TravelPackService
                 'to' => $leg->to_location,
                 'date' => $leg->travel_date?->toDateString(),
                 'mode' => $leg->transport_mode,
+                'flight_name' => $leg->flight_name ?? null,
                 'flight_number' => $leg->flight_number ?? null,
             ])->all(),
             'accommodations' => $travel->accommodations->map(fn ($a) => [

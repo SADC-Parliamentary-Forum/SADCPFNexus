@@ -313,7 +313,7 @@ class TravelService
 
         if (! empty($data['itineraries'])) {
             foreach ($data['itineraries'] as $leg) {
-                $travel->itineraries()->create($leg);
+                $travel->itineraries()->create($this->itineraryLegAttributes($leg));
             }
         }
 
@@ -390,15 +390,7 @@ class TravelService
         if (array_key_exists('itineraries', $data)) {
             $travel->itineraries()->delete();
             foreach ($data['itineraries'] ?? [] as $leg) {
-                $travel->itineraries()->create([
-                    'from_location'  => $leg['from_location'] ?? '',
-                    'to_location'    => $leg['to_location'] ?? '',
-                    'travel_date'    => $leg['travel_date'] ?? null,
-                    'transport_mode' => $leg['transport_mode'] ?? 'flight',
-                    'dsa_rate'       => $leg['dsa_rate'] ?? 0,
-                    'days_count'     => $leg['days_count'] ?? 1,
-                    'day_type'       => $leg['day_type'] ?? 'official',
-                ]);
+                $travel->itineraries()->create($this->itineraryLegAttributes($leg));
             }
         }
 
@@ -1194,5 +1186,33 @@ class TravelService
         ]);
 
         return $travel->fresh();
+    }
+
+    /**
+     * @param  array<string, mixed>  $leg
+     * @return array<string, mixed>
+     */
+    protected function itineraryLegAttributes(array $leg): array
+    {
+        $blankToNull = static function (mixed $value): mixed {
+            return is_string($value) && trim($value) === '' ? null : $value;
+        };
+
+        return [
+            'from_location'     => $leg['from_location'] ?? '',
+            'to_location'       => $leg['to_location'] ?? '',
+            'travel_date'       => $leg['travel_date'] ?? null,
+            'transport_mode'    => $leg['transport_mode'] ?? 'flight',
+            'dsa_rate'          => $leg['dsa_rate'] ?? 0,
+            'days_count'        => $leg['days_count'] ?? 1,
+            'day_type'          => $leg['day_type'] ?? 'official',
+            'flight_name'       => $blankToNull($leg['flight_name'] ?? null),
+            'flight_number'     => $blankToNull($leg['flight_number'] ?? null),
+            'carrier'           => $blankToNull($leg['carrier'] ?? null),
+            'departure_at'      => $leg['departure_at'] ?? null,
+            'arrival_at'        => $leg['arrival_at'] ?? null,
+            'parse_source'      => $leg['parse_source'] ?? null,
+            'itinerary_version' => $leg['itinerary_version'] ?? 0,
+        ];
     }
 }

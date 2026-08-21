@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Alerts\Services\AlertsService;
 use App\Services\NotificationService;
+use App\Support\FrontendUrl;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -24,7 +25,7 @@ class SendAlertDigest extends Command
     public function handle(AlertsService $alerts, NotificationService $notif): int
     {
         $today      = Carbon::today()->toFormattedDayDateString(); // e.g. "Thu, Apr 9, 2026"
-        $portalUrl  = env('APP_FRONTEND_URL', config('app.url'));
+        $portalUrl  = FrontendUrl::base();
         $dispatched = 0;
 
         $tenants = Tenant::all();

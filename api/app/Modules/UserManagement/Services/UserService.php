@@ -7,6 +7,7 @@ use App\Models\AccountInvitation;
 use App\Models\UserSession;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Support\FrontendUrl;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -184,7 +185,7 @@ class UserService
 
     private function activationUrl(string $plainToken): string
     {
-        $frontendUrl = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+        $frontendUrl = FrontendUrl::base();
 
         return "{$frontendUrl}/activate-account?token=".urlencode($plainToken);
     }

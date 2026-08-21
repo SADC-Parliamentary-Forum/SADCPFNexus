@@ -7,6 +7,7 @@ use App\Exceptions\TokenUsedException;
 use App\Models\ApprovalRequest;
 use App\Models\SignedActionToken;
 use App\Models\User;
+use App\Support\FrontendUrl;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
@@ -48,7 +49,7 @@ class SignedTokenService
             ],
         ]);
 
-        $frontendBase = rtrim(env('FRONTEND_URL', 'http://localhost:3000'), '/');
+        $frontendBase = FrontendUrl::base();
 
         return [
             'approve_url' => $frontendBase . '/approval?action=approve&token=' . $approveToken,

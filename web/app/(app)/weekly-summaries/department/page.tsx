@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { adminApi, weeklyReportsApi, type Department, type WeeklyOpsReport } from "@/lib/api";
+import { adminApi, reportsApi, weeklyReportsApi, type Department, type WeeklyOpsReport } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { useToast } from "@/components/ui/Toast";
+import { formatDateShort } from "@/lib/utils";
 
 type PeriodRow = {
   id: number;
@@ -15,18 +16,36 @@ type PeriodRow = {
   start_date?: string | null;
   end_date?: string | null;
   status?: string | null;
+  employee_due_at?: string | null;
 };
 
-type MissingStaff = {
+type StaffRow = {
   id: number;
   name?: string | null;
-  department_id?: number | null;
+  report_id?: number | null;
+  reference?: string | null;
+  status?: string | null;
+  submitted_at?: string | null;
+  employee_due_at?: string | null;
 };
 
-type SubmittedRow = {
-  id: number;
-  label: string;
-  status?: string;
+type RollupCounts = { submitted: number; missing: number; late: number };
+
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Draft",
+  in_progress: "In progress",
+  ready: "Ready",
+  not_started: "Not started",
+  submitted: "Submitted",
+  pending_review: "Pending review",
+  resubmitted: "Resubmitted",
+  returned: "Returned",
+  accepted: "Accepted",
+  published: "Published",
+  exempted: "Exempted",
+  reopened: "Reopened",
+  missing: "Missing",
+  late: "Late",
 };
 
 function unwrapRows<T>(payload: unknown): T[] {
@@ -47,56 +66,71 @@ function errorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function departmentLabel(dept: Department): string {
+function departmentLabel(dept: Pick<Department, "name" | "code">): string {
   const name = dept.name?.trim() || "Unnamed department";
   const code = dept.code?.trim();
   return code ? `${name} (${code})` : name;
 }
 
+function periodRangeLabel(period: Pick<PeriodRow, "start_date" | "end_date">): string {
+  if (period.start_date && period.end_date) {
+    const start = formatDateShort(period.start_date);
+    const end = formatDateShort(period.end_date);
+    if (start === "—" && end === "—") return "";
+    if (start === end || end === "—") return start;
+    if (start === "—") return end;
+    const startParts = start.split(" ");
+    const endParts = end.split(" ");
+    if (
+      startParts.length === 3 &&
+      endParts.length === 3 &&
+      startParts[1] === endParts[1] &&
+      startParts[2] === endParts[2]
+    ) {
+      return `${startParts[0]}–${endParts[0]} ${endParts[1]} ${endParts[2]}`;
+    }
+    if (startParts[2] === endParts[2]) {
+      return `${startParts[0]} ${startParts[1]} – ${endParts[0]} ${endParts[1]} ${endParts[2]}`;
+    }
+    return `${start} – ${end}`;
+  }
+  const single = formatDateShort(period.start_date ?? period.end_date);
+  return single === "—" ? "" : single;
+}
+
 function periodLabel(period: PeriodRow): string {
   const reference = period.reference?.trim();
-  if (period.start_date && period.end_date) {
-    const span = `${period.start_date} → ${period.end_date}`;
-    return reference ? `${reference} · ${span}` : span;
-  }
+  const range = periodRangeLabel(period);
+  if (range) return reference ? `${reference} · ${range}` : range;
   return reference || "Current period";
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === "object" && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
+function humanStatus(status?: string | null): string {
+  if (!status) return "—";
+  return STATUS_LABELS[status] ?? status.replace(/_/g, " ");
 }
 
-function submittedReports(report: WeeklyOpsReport): SubmittedRow[] {
-  const rows = new Map<number, SubmittedRow>();
-  rows.set(report.id, { id: report.id, label: report.reference, status: report.status });
+function staffName(row: StaffRow): string {
+  return row.name?.trim() || "Unknown person";
+}
 
-  for (const item of report.items ?? []) {
-    const rec = asRecord(item);
-    if (!rec) continue;
-    const structured = asRecord(rec.structured);
-    const sourceId = Number(structured?.source_report_id ?? rec.source_report_id);
-    if (!Number.isFinite(sourceId) || sourceId <= 0) continue;
-    const label = String(rec.source_reference_snapshot ?? rec.title ?? `Report ${sourceId}`);
-    const status = rec.source_status_snapshot != null ? String(rec.source_status_snapshot) : undefined;
-    if (!rows.has(sourceId)) rows.set(sourceId, { id: sourceId, label, status });
-  }
+function staffReportId(row: StaffRow): number | null {
+  const id = Number(row.report_id);
+  return Number.isFinite(id) && id > 0 ? id : null;
+}
 
-  const links = (report as WeeklyOpsReport & { consolidation_links?: unknown[] }).consolidation_links;
-  if (Array.isArray(links)) {
-    for (const link of links) {
-      const rec = asRecord(link);
-      if (!rec) continue;
-      const sourceId = Number(rec.source_report_id);
-      if (!Number.isFinite(sourceId) || sourceId <= 0) continue;
-      const label = String(rec.source_reference ?? rec.source_reference_snapshot ?? `Report ${sourceId}`);
-      if (!rows.has(sourceId)) rows.set(sourceId, { id: sourceId, label });
-    }
-  }
+function matchesStaff(row: StaffRow, query: string): boolean {
+  if (!query) return true;
+  return [row.name, row.reference, row.status]
+    .filter((value): value is string => typeof value === "string" && value.trim() !== "")
+    .join(" ")
+    .toLowerCase()
+    .includes(query);
+}
 
-  return Array.from(rows.values());
+function asStaffRows(value: unknown): StaffRow[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((row): row is StaffRow => Boolean(row && typeof row === "object" && "id" in row));
 }
 
 function DepartmentPicker({
@@ -229,6 +263,62 @@ function DepartmentPicker({
   );
 }
 
+function StaffTable({
+  rows,
+  emptyTitle,
+  emptyDescription,
+  dateHeader,
+  dateValue,
+}: {
+  rows: StaffRow[];
+  emptyTitle: string;
+  emptyDescription: string;
+  dateHeader: string;
+  dateValue: (row: StaffRow) => string | null | undefined;
+}) {
+  if (rows.length === 0) {
+    return (
+      <EmptyState icon="person_off" title={emptyTitle} description={emptyDescription} />
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead>
+          <tr className="border-b border-neutral-100 text-neutral-500">
+            <th className="py-2 pr-3 font-medium">Name</th>
+            <th className="py-2 pr-3 font-medium">{dateHeader}</th>
+            <th className="py-2 pr-3 font-medium">Status</th>
+            <th className="py-2 font-medium">Report</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const reportId = staffReportId(row);
+            return (
+              <tr key={row.id} className="border-b border-neutral-50">
+                <td className="py-2 pr-3">{staffName(row)}</td>
+                <td className="py-2 pr-3">{formatDateShort(dateValue(row))}</td>
+                <td className="py-2 pr-3">{humanStatus(row.status)}</td>
+                <td className="py-2">
+                  {reportId ? (
+                    <Link href={`/weekly-summaries/${reportId}`} className="font-medium text-primary hover:underline">
+                      {row.reference?.trim() || "Open"}
+                    </Link>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function WeeklyDepartmentPage() {
   const { toast } = useToast();
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -236,8 +326,11 @@ export default function WeeklyDepartmentPage() {
   const [selectedDept, setSelectedDept] = useState<Department | null>(null);
   const [periodId, setPeriodId] = useState<number | "">("");
   const [report, setReport] = useState<WeeklyOpsReport | null>(null);
-  const [missingStaff, setMissingStaff] = useState<MissingStaff[]>([]);
-  const [counts, setCounts] = useState<{ submitted: number; exempted: number } | null>(null);
+  const [submittedStaff, setSubmittedStaff] = useState<StaffRow[]>([]);
+  const [missingStaff, setMissingStaff] = useState<StaffRow[]>([]);
+  const [lateStaff, setLateStaff] = useState<StaffRow[]>([]);
+  const [counts, setCounts] = useState<RollupCounts>({ submitted: 0, missing: 0, late: 0 });
+  const [staffQuery, setStaffQuery] = useState("");
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [rollupLoading, setRollupLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -247,7 +340,7 @@ export default function WeeklyDepartmentPage() {
     let cancelled = false;
     setCatalogLoading(true);
     setError(null);
-    Promise.all([adminApi.listDepartments(), weeklyReportsApi.periods()])
+    Promise.all([adminApi.listDepartments().catch(() => reportsApi.departments()), weeklyReportsApi.periods()])
       .then(([deptRes, periodRes]) => {
         if (cancelled) return;
         const deptRows = unwrapRows<Department>(deptRes.data);
@@ -272,23 +365,29 @@ export default function WeeklyDepartmentPage() {
     setRollupLoading(true);
     setError(null);
     try {
-      const [{ data: reportRes }, dashRes] = await Promise.all([
-        weeklyReportsApi.department(selectedPeriodId, dept.id),
-        weeklyReportsApi.dashboard().catch(() => null),
-      ]);
-      setReport(reportRes.data);
-      const dash = dashRes?.data.data as Record<string, unknown> | undefined;
-      const missing = unwrapRows<MissingStaff>(dash?.missing_reports ?? []);
-      setMissingStaff(missing.filter((row) => row.department_id == null || row.department_id === dept.id));
-      const compliance = asRecord(dash?.compliance);
+      const { data: reportRes } = await weeklyReportsApi.department(selectedPeriodId, dept.id);
+      const payload = reportRes.data;
+      setReport(payload);
+      const submitted = asStaffRows(payload.submitted_staff);
+      const missing = asStaffRows(payload.missing_staff);
+      const late = asStaffRows(payload.late_staff);
+      setSubmittedStaff(submitted);
+      setMissingStaff(missing);
+      setLateStaff(late);
       setCounts({
-        submitted: Number(compliance?.submitted ?? 0),
-        exempted: Number(compliance?.exempted ?? 0),
+        submitted: Number(payload.counts?.submitted ?? submitted.length),
+        missing: Number(payload.counts?.missing ?? missing.length),
+        late: Number(payload.counts?.late ?? late.length),
       });
+      if (payload.department?.name && !dept.name) {
+        setSelectedDept({ ...dept, name: payload.department.name, code: payload.department.code ?? dept.code });
+      }
     } catch (err: unknown) {
       setReport(null);
+      setSubmittedStaff([]);
       setMissingStaff([]);
-      setCounts(null);
+      setLateStaff([]);
+      setCounts({ submitted: 0, missing: 0, late: 0 });
       setError(errorMessage(err, "Failed to load department summary"));
     } finally {
       setRollupLoading(false);
@@ -305,8 +404,17 @@ export default function WeeklyDepartmentPage() {
     if (selectedDept && nextPeriodId) void loadRollup(selectedDept, Number(nextPeriodId));
   };
 
-  const submitted = report ? submittedReports(report) : [];
   const selectedPeriod = periods.find((period) => period.id === periodId) ?? null;
+  const query = staffQuery.trim().toLowerCase();
+  const submittedRows = submittedStaff.filter((row) => matchesStaff(row, query));
+  const missingRows = missingStaff.filter((row) => matchesStaff(row, query));
+  const lateRows = lateStaff.filter((row) => matchesStaff(row, query));
+  const rollupDepartment = report?.department?.name
+    ? departmentLabel({ name: report.department.name, code: report.department.code ?? selectedDept?.code ?? "" })
+    : selectedDept
+      ? departmentLabel(selectedDept)
+      : "—";
+  const rollupPeriod = report?.period ? periodLabel(report.period) : selectedPeriod ? periodLabel(selectedPeriod) : "—";
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -331,7 +439,9 @@ export default function WeeklyDepartmentPage() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+          {error.startsWith("Failed to load") ? error : `Failed to load department summary: ${error}`}
+        </div>
       ) : null}
 
       <FormSection
@@ -356,7 +466,7 @@ export default function WeeklyDepartmentPage() {
                 disabled={rollupLoading}
               />
             </FormField>
-            <FormField label="Reporting period" htmlFor="department-period">
+            <FormField label="Reporting period" htmlFor="department-period" hint="Shown as a short date range, not a numeric identifier.">
               <select
                 id="department-period"
                 className="form-input"
@@ -429,23 +539,19 @@ export default function WeeklyDepartmentPage() {
         <>
           <FormSection
             title="Department rollup"
-            description={
-              selectedDept
-                ? `${departmentLabel(selectedDept)}${selectedPeriod ? ` · ${periodLabel(selectedPeriod)}` : ""}`
-                : undefined
-            }
+            description={`${rollupDepartment} · ${rollupPeriod}`}
             icon="summarize"
             actions={
               <button
                 type="button"
                 className="btn-secondary text-sm"
-                disabled={publishing}
+                disabled={publishing || report.status === "published" || report.status === "closed"}
                 onClick={async () => {
                   if (publishing) return;
                   setPublishing(true);
                   try {
                     const { data } = await weeklyReportsApi.publish(report.id);
-                    setReport(data.data);
+                    setReport({ ...report, ...data.data });
                   } catch (err: unknown) {
                     toast("error", errorMessage(err, "Failed to publish report"));
                   } finally {
@@ -453,79 +559,77 @@ export default function WeeklyDepartmentPage() {
                   }
                 }}
               >
-                {publishing ? "Publishing..." : "Publish"}
+                {publishing ? "Publishing..." : report.status === "published" ? "Published" : "Publish"}
               </button>
             }
           >
             <LabelledRecord
               value={{
-                period: report.period
-                  ? `${report.period.reference ?? ""} ${report.period.start_date} → ${report.period.end_date}`.trim()
-                  : selectedPeriod
-                    ? periodLabel(selectedPeriod)
-                    : "—",
-                status: report.status,
+                department: rollupDepartment,
+                period: rollupPeriod,
+                status: humanStatus(report.status),
                 reference: report.reference,
-                version: report.version,
-                department: selectedDept ? departmentLabel(selectedDept) : "—",
+                version: `v${report.version}`,
                 items: report.items?.length ?? 0,
                 blockers: report.blockers?.length ?? 0,
-                submitted_in_scope: counts?.submitted ?? submitted.length,
-                missing_staff: missingStaff.length,
               }}
+            />
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-neutral-500">Submitted</p>
+                <p className="mt-1 text-2xl font-semibold text-neutral-900">{counts.submitted}</p>
+              </div>
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-neutral-500">Missing</p>
+                <p className="mt-1 text-2xl font-semibold text-neutral-900">{counts.missing}</p>
+              </div>
+              <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3">
+                <p className="text-xs uppercase tracking-wide text-neutral-500">Late</p>
+                <p className="mt-1 text-2xl font-semibold text-neutral-900">{counts.late}</p>
+              </div>
+            </div>
+          </FormSection>
+
+          <FormSection title="Find staff" description="Filter the submitted, missing, and late tables by staff name." icon="search">
+            <FormField label="Staff name" htmlFor="department-staff-search" hint="Filter is local to this rollup. It does not submit or publish anything.">
+              <input
+                id="department-staff-search"
+                className="form-input max-w-xl"
+                placeholder="Search staff by name"
+                value={staffQuery}
+                onChange={(event) => setStaffQuery(event.target.value)}
+              />
+            </FormField>
+          </FormSection>
+
+          <FormSection title="Submitted staff" description="People in this department who have submitted for the selected period." icon="assignment">
+            <StaffTable
+              rows={submittedRows}
+              emptyTitle="No submitted staff"
+              emptyDescription="Submitted weekly summaries for this department will appear here."
+              dateHeader="Submitted"
+              dateValue={(row) => row.submitted_at}
             />
           </FormSection>
 
           <FormSection title="Missing staff" description="Staff in this department who have not submitted for the selected period." icon="person_off">
-            {missingStaff.length === 0 ? (
-              <p className="text-sm text-neutral-500">No missing staff in this department for the selected period.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-neutral-100 text-neutral-500">
-                      <th className="py-2 pr-3 font-medium">Name</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {missingStaff.map((row) => (
-                      <tr key={row.id} className="border-b border-neutral-50">
-                        <td className="py-2 pr-3">{row.name ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <StaffTable
+              rows={missingRows}
+              emptyTitle="No missing staff"
+              emptyDescription="No missing staff in this department for the selected period."
+              dateHeader="Due"
+              dateValue={(row) => row.employee_due_at}
+            />
           </FormSection>
 
-          <FormSection title="Submitted reports" description="Open a report to review it. Nothing is accepted or submitted from this page." icon="assignment">
-            {submitted.length === 0 ? (
-              <p className="text-sm text-neutral-500">No submitted reports linked to this rollup yet.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-neutral-100 text-neutral-500">
-                      <th className="py-2 pr-3 font-medium">Report</th>
-                      <th className="py-2 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {submitted.map((row) => (
-                      <tr key={row.id} className="border-b border-neutral-50">
-                        <td className="py-2 pr-3">
-                          <Link href={`/weekly-summaries/${row.id}`} className="font-medium text-primary hover:underline">
-                            {row.label}
-                          </Link>
-                        </td>
-                        <td className="py-2 capitalize">{row.status ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+          <FormSection title="Late staff" description="Overdue missing reports and submissions after the employee due date." icon="schedule">
+            <StaffTable
+              rows={lateRows}
+              emptyTitle="No late staff"
+              emptyDescription="Nobody in this department is late for the selected period."
+              dateHeader="Due"
+              dateValue={(row) => row.employee_due_at}
+            />
           </FormSection>
         </>
       ) : null}

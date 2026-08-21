@@ -103,6 +103,9 @@ docker exec sadcpf_php php artisan db:seed --class="Database\\Seeders\\RolesAndP
 docker exec sadcpf_php php artisan db:seed --class="Database\\Seeders\\WorkflowSeeder" --force
 
 log "Rebuilding Laravel caches"
+# config:cache snapshots APP_URL + FRONTEND_URL from the php container.
+# Queue workers read bootstrap/cache/config.php — production must have
+# FRONTEND_URL=https://nexus.sadcpf.org (web) and APP_URL=https://nexus-api.sadcpf.org (API).
 docker exec sadcpf_php php artisan config:clear
 docker exec sadcpf_php php artisan route:clear
 docker exec sadcpf_php php artisan view:clear

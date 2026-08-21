@@ -1,41 +1,17 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { travelApi, programmeApi, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
-import type { Programme, TravelRequest } from "@/lib/api";
+import type { Programme, TravelDestinationCountry, TravelRequest } from "@/lib/api";
+import { TravelDestinationFields, locationLabels } from "@/components/travel/DestinationPickers";
+import { nextTravelLeg, emptyTravelLeg, type TravelLegDraft } from "@/lib/travelLegs";
+import { FormField } from "@/components/ui/FormSection";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 import { getListData } from "@/lib/listPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Stepper } from "@/components/ui/Stepper";
-
-// ─── Country lists ────────────────────────────────────────────────────────────
-const SADC_COUNTRIES = [
-  "Angola", "Botswana", "Comoros", "Democratic Republic of Congo",
-  "Eswatini", "Lesotho", "Madagascar", "Malawi", "Mauritius",
-  "Mozambique", "Namibia", "Seychelles", "South Africa", "Tanzania",
-  "Zambia", "Zimbabwe",
-];
-const OTHER_COUNTRIES = [
-  "Belgium", "China", "Ethiopia", "France", "Germany", "India", "Italy",
-  "Japan", "Kenya", "Nigeria", "Rwanda", "Spain", "Switzerland", "Uganda",
-  "United Kingdom", "United States",
-].sort();
-
-// ─── Common SADC city locations for leg combobox ───────────────────────────
-const COMMON_LOCATIONS = [
-  "Windhoek, Namibia", "Gaborone, Botswana", "Harare, Zimbabwe",
-  "Lusaka, Zambia", "Maputo, Mozambique", "Lilongwe, Malawi",
-  "Dar es Salaam, Tanzania", "Johannesburg, South Africa",
-  "Cape Town, South Africa", "Pretoria, South Africa",
-  "Luanda, Angola", "Mbabane, Eswatini", "Maseru, Lesotho",
-  "Antananarivo, Madagascar", "Port Louis, Mauritius",
-  "Victoria, Seychelles", "Moroni, Comoros", "Kinshasa, DR Congo",
-  "Nairobi, Kenya", "Addis Ababa, Ethiopia", "Kigali, Rwanda",
-  "Abuja, Nigeria", "Brussels, Belgium", "Geneva, Switzerland",
-  "New York, United States", "London, United Kingdom",
-];
 
 // ─── Funding items with icons ─────────────────────────────────────────────────
 const FUNDING_ITEMS: { item: string; icon: string }[] = [
@@ -60,13 +36,7 @@ interface PendingDoc {
 const REQUIRED_ON_SUBMIT = ["invitation", "agenda"] as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface Leg {
-  from_location: string;
-  to_location: string;
-  travel_date: string;
-  transport_mode: string;
-  days_count: number;
-}
+type Leg = TravelLegDraft;
 
 interface FundingRow {
   item: string;
@@ -108,123 +78,23 @@ interface FormData {
   prepared_on_behalf_of: string;
 }
 
-// ─── Country searchable dropdown ─────────────────────────────────────────────
-function CountrySelect({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const sadcFiltered = SADC_COUNTRIES.filter((c) =>
-    c.toLowerCase().includes(query.toLowerCase())
-  );
-  const otherFiltered = OTHER_COUNTRIES.filter((c) =>
-    c.toLowerCase().includes(query.toLowerCase())
-  );
-  const showSections = query === "";
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-left focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-      >
-        <span className={value ? "text-neutral-900" : "text-neutral-400"}>
-          {value || "Select country..."}
-        </span>
-        <span className="material-symbols-outlined text-[16px] text-neutral-400">expand_more</span>
-      </button>
-      {open && (
-        <div className="absolute z-30 mt-1 w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 shadow-lg">
-          <div className="p-2 border-b border-neutral-100">
-            <input
-              autoFocus
-              className="w-full rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs outline-none focus:border-primary"
-              placeholder="Search countries..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-          </div>
-          <div className="max-h-56 overflow-y-auto">
-            {showSections && (
-              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">
-                SADC Member States
-              </div>
-            )}
-            {sadcFiltered.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/5 flex items-center justify-between ${
-                  value === c ? "text-primary font-medium" : "text-neutral-700"
-                }`}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  onChange(c);
-                  setOpen(false);
-                  setQuery("");
-                }}
-              >
-                {c}
-                {value === c && <span className="material-symbols-outlined text-[14px]">check</span>}
-              </button>
-            ))}
-            {showSections && (
-              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold text-neutral-400 uppercase tracking-wider border-t border-neutral-50 mt-1">
-                Other Countries
-              </div>
-            )}
-            {otherFiltered.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`w-full text-left px-3 py-2 text-sm hover:bg-primary/5 flex items-center justify-between ${
-                  value === c ? "text-primary font-medium" : "text-neutral-700"
-                }`}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  onChange(c);
-                  setOpen(false);
-                  setQuery("");
-                }}
-              >
-                {c}
-                {value === c && <span className="material-symbols-outlined text-[14px]">check</span>}
-              </button>
-            ))}
-            {sadcFiltered.length === 0 && otherFiltered.length === 0 && (
-              <div className="px-3 py-4 text-xs text-neutral-400 text-center">No results for "{query}"</div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Location combobox for legs (type or pick from list) ─────────────────────
 function LocationCombobox({
   value,
   onChange,
   placeholder,
+  locations,
 }: {
   value: string;
   onChange: (val: string) => void;
   placeholder?: string;
+  locations: string[];
 }) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const filtered = COMMON_LOCATIONS.filter((l) =>
+  const filtered = locations.filter((l) =>
     l.toLowerCase().includes(query.toLowerCase())
   ).slice(0, 8);
 
@@ -318,6 +188,8 @@ function hydrateFormFromRequest(data: TravelRequest): FormData {
     travel_date: String(leg.travel_date ?? "").slice(0, 10),
     transport_mode: leg.transport_mode ?? "flight",
     days_count: Number(leg.days_count ?? 1) || 1,
+    flight_name: leg.flight_name ?? leg.carrier ?? "",
+    flight_number: leg.flight_number ?? "",
   }));
 
   const hasProgramme = data.programme_id != null;
@@ -335,9 +207,7 @@ function hydrateFormFromRequest(data: TravelRequest): FormData {
     programme_id: data.programme_id != null ? String(data.programme_id) : "",
     justification: data.justification ?? "",
     budget_line_id: (data as { budget_line_id?: number | null }).budget_line_id ?? null,
-    legs: legs.length
-      ? legs
-      : [{ from_location: "", to_location: "", travel_date: "", transport_mode: "flight", days_count: 1 }],
+    legs: legs.length ? legs : [emptyTravelLeg()],
     funding_rows: fundingRows,
     vehicle_type: data.vehicle_type === "sadcpf" || data.vehicle_type === "private" ? data.vehicle_type : "",
     driver_required: Boolean((data as { driver_required?: boolean }).driver_required),
@@ -378,6 +248,9 @@ function TravelCreatePageInner() {
   const [loadingDraft, setLoadingDraft] = useState(Boolean(editId));
   const [programmes, setProgrammes] = useState<Programme[]>([]);
   const [travellers, setTravellers] = useState<Array<{ id: number; name: string; email?: string }>>([]);
+  const [destinations, setDestinations] = useState<TravelDestinationCountry[]>([]);
+  const [addingDestination, setAddingDestination] = useState(false);
+  const catalogLocations = useMemo(() => locationLabels(destinations), [destinations]);
   // Defer localStorage user until after mount to avoid hydration #418 text mismatch.
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
   const [mounted, setMounted] = useState(false);
@@ -401,7 +274,7 @@ function TravelCreatePageInner() {
     programme_id: "",
     justification: "",
     budget_line_id: null,
-    legs: [{ from_location: "", to_location: "", travel_date: "", transport_mode: "flight", days_count: 1 }],
+    legs: [emptyTravelLeg()],
     funding_rows: emptyFundingRows(),
     vehicle_type: "",
     driver_required: false,
@@ -443,6 +316,16 @@ function TravelCreatePageInner() {
       .catch(() => setTravellers([]));
   }, [canPrepareForOthers]);
 
+  const reloadDestinations = () =>
+    travelApi
+      .listDestinations()
+      .then((r) => setDestinations(r.data.data?.countries ?? []))
+      .catch(() => setDestinations([]));
+
+  useEffect(() => {
+    void reloadDestinations();
+  }, []);
+
   useEffect(() => {
     if (!editId) {
       setLoadingDraft(false);
@@ -482,6 +365,30 @@ function TravelCreatePageInner() {
   const updateField = <K extends keyof FormData>(field: K, value: FormData[K]) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
+  const handleAddCountry = async (name: string) => {
+    setAddingDestination(true);
+    try {
+      const res = await travelApi.createCountry({ name });
+      await reloadDestinations();
+      updateField("destination_country", res.data.data.name);
+      updateField("destination_city", "");
+    } finally {
+      setAddingDestination(false);
+    }
+  };
+
+  const handleAddCity = async (country: string, name: string) => {
+    setAddingDestination(true);
+    try {
+      const res = await travelApi.createCity({ country, name });
+      await reloadDestinations();
+      updateField("destination_country", res.data.data.country);
+      updateField("destination_city", res.data.data.name);
+    } finally {
+      setAddingDestination(false);
+    }
+  };
+
   const updateLeg = (index: number, field: keyof Leg, value: string | number) =>
     setForm((prev) => {
       const legs = [...prev.legs];
@@ -492,10 +399,7 @@ function TravelCreatePageInner() {
   const addLeg = () =>
     setForm((prev) => ({
       ...prev,
-      legs: [
-        ...prev.legs,
-        { from_location: "", to_location: "", travel_date: "", transport_mode: "flight", days_count: 1 },
-      ],
+      legs: [...prev.legs, nextTravelLeg(prev.legs[prev.legs.length - 1])],
     }));
 
   const removeLeg = (index: number) =>
@@ -604,6 +508,8 @@ function TravelCreatePageInner() {
         transport_mode: l.transport_mode,
         dsa_rate: 0,
         days_count: l.days_count,
+        flight_name: l.flight_name,
+        flight_number: l.flight_number,
       })),
   });
 
@@ -797,26 +703,16 @@ function TravelCreatePageInner() {
           </div>
 
           {/* Destination */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-700">
-                Destination Country <span className="text-red-500">*</span>
-              </label>
-              <CountrySelect
-                value={form.destination_country}
-                onChange={(v) => updateField("destination_country", v)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-700">City</label>
-              <input
-                className="form-input"
-                placeholder="e.g. Harare"
-                value={form.destination_city}
-                onChange={(e) => updateField("destination_city", e.target.value)}
-              />
-            </div>
-          </div>
+          <TravelDestinationFields
+            country={form.destination_country}
+            city={form.destination_city}
+            countries={destinations}
+            adding={addingDestination}
+            onCountryChange={(v) => updateField("destination_country", v)}
+            onCityChange={(v) => updateField("destination_city", v)}
+            onAddCountry={handleAddCountry}
+            onAddCity={handleAddCity}
+          />
 
           {/* Host Organization */}
           <div className="space-y-1.5">
@@ -954,6 +850,7 @@ function TravelCreatePageInner() {
                 Flight Itinerary
               </h3>
               <button
+                type="button"
                 onClick={addLeg}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-primary/80 transition-colors"
               >
@@ -962,6 +859,9 @@ function TravelCreatePageInner() {
               </button>
             </div>
 
+            <p className="mb-4 text-xs text-neutral-500">
+              Add Leg copies the previous To location into From and keeps the same travel date. Change them if the next hop is later.
+            </p>
             <div className="rounded-lg bg-amber-50 border border-amber-100 p-3 flex items-start gap-2 mb-4">
               <span className="material-symbols-outlined text-amber-500 text-[16px] mt-0.5">calculate</span>
               <p className="text-xs text-amber-700">
@@ -994,6 +894,7 @@ function TravelCreatePageInner() {
                         value={leg.from_location}
                         onChange={(v) => updateLeg(i, "from_location", v)}
                         placeholder="Origin city, country"
+                        locations={catalogLocations}
                       />
                     </div>
                     <div className="space-y-1">
@@ -1004,6 +905,7 @@ function TravelCreatePageInner() {
                         value={leg.to_location}
                         onChange={(v) => updateLeg(i, "to_location", v)}
                         placeholder="Destination city, country"
+                        locations={catalogLocations}
                       />
                     </div>
                     <div className="space-y-1">
@@ -1042,6 +944,30 @@ function TravelCreatePageInner() {
                         onChange={(e) => updateLeg(i, "days_count", parseInt(e.target.value) || 0)}
                       />
                     </div>
+                    {leg.transport_mode === "flight" && (
+                      <>
+                        <FormField label="Flight name" htmlFor={`leg-${i}-flight-name`}>
+                          <input
+                            id={`leg-${i}-flight-name`}
+                            className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                            placeholder="e.g. Air Namibia"
+                            maxLength={120}
+                            value={leg.flight_name}
+                            onChange={(e) => updateLeg(i, "flight_name", e.target.value)}
+                          />
+                        </FormField>
+                        <FormField label="Flight number" htmlFor={`leg-${i}-flight-number`}>
+                          <input
+                            id={`leg-${i}-flight-number`}
+                            className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                            placeholder="e.g. SW 287"
+                            maxLength={32}
+                            value={leg.flight_number}
+                            onChange={(e) => updateLeg(i, "flight_number", e.target.value)}
+                          />
+                        </FormField>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1478,7 +1404,12 @@ function TravelCreatePageInner() {
                 },
                 {
                   label: "Itinerary Legs",
-                  value: `${form.legs.length} leg${form.legs.length !== 1 ? "s" : ""}`,
+                  value: form.legs
+                    .map((l, i) => {
+                      const flight = [l.flight_name, l.flight_number].filter(Boolean).join(" ");
+                      return `Leg ${i + 1}: ${l.from_location || "—"} → ${l.to_location || "—"}${flight ? ` (${flight})` : ""}`;
+                    })
+                    .join("; "),
                 },
                 {
                   label: "Documents",

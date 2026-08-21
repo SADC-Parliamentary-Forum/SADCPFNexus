@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { assignmentsApi, weeklyReportsApi, type WeeklyOpsReport } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -168,7 +169,7 @@ export default function WeeklySummariesPage() {
       {report ? (
         <FormSection
           title="Current period"
-          description={`${report.reference} · ${report.status}${report.period ? ` · ${report.period.start_date} → ${report.period.end_date}` : ""}`}
+          description={`${report.reference} · ${report.status}${report.period ? ` · ${formatDateShort(report.period.start_date)} → ${formatDateShort(report.period.end_date)}` : ""}`}
           icon="edit_calendar"
         >
           <div className="grid gap-3 md:grid-cols-3">
@@ -236,7 +237,7 @@ export default function WeeklySummariesPage() {
       {feed ? (
         <FormSection
           title="Assignment feed"
-          description={`Completed, active, overdue, blocked, and upcoming work for ${feed.period_start ?? "this period"} → ${feed.period_end ?? "now"}.`}
+          description={`Completed, active, overdue, blocked, and upcoming work for ${feed.period_start ? formatDateShort(feed.period_start) : "this period"} → ${feed.period_end ? formatDateShort(feed.period_end) : "now"}.`}
           icon="task_alt"
         >
           <dl className="mb-4 grid gap-2 text-sm sm:grid-cols-5">
@@ -283,7 +284,7 @@ export default function WeeklySummariesPage() {
                             </td>
                             <td className="py-2 pr-3">{row.title ?? "—"}</td>
                             <td className="py-2 pr-3 capitalize">{row.status ?? "—"}</td>
-                            <td className="py-2">{row.due_date ?? "—"}</td>
+                            <td className="py-2">{formatDateShort(row.due_date)}</td>
                           </tr>
                         ))}
                       </tbody>

@@ -169,6 +169,23 @@ export function canIssueProcurementRfq(user: AuthUser | null | undefined): boole
   return hasPermission(user, ["procurement.create", "procurement.approve", "procurement.admin"]);
 }
 
+const WEEKLY_REVIEW_PERMISSIONS = [
+  "weekly-reports.review-team",
+  "weekly-reports.accept",
+  "weekly-reports.admin",
+  "weekly-reports.return",
+];
+
+const WEEKLY_REVIEW_ROLES = ["Secretary General", "HOD", "Director"];
+
+/** Supervisors (HOD/Director/review permission) and the Secretary General — not plain staff. */
+export function canReviewWeeklySummaries(user: AuthUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  if (user.roles?.some((role) => WEEKLY_REVIEW_ROLES.includes(role))) return true;
+  return hasPermission(user, WEEKLY_REVIEW_PERMISSIONS);
+}
+
 /** Routes that require system admin (no permission string; admin-only). */
 const ADMIN_ONLY_PATHS: string[] = [
   "/admin",
@@ -180,6 +197,7 @@ const ADMIN_ONLY_PATHS: string[] = [
 interface RouteAccessRule {
   path: string;
   permission?: string | string[];
+  roles?: string[];
   allowSystemAdmin?: boolean;
 }
 
@@ -189,6 +207,11 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/approvals", permission: ["travel.approve", "leave.approve", "imprest.approve", "procurement.approve", "finance.approve", "governance.approve", "hr.approve"] },
   { path: "/alerts" },
   { path: "/assignments" },
+  {
+    path: "/weekly-summaries/review",
+    permission: WEEKLY_REVIEW_PERMISSIONS,
+    roles: WEEKLY_REVIEW_ROLES,
+  },
   { path: "/weekly-summaries" },
   { path: "/travel/settings", permission: ["travel.admin", "travel.finance-review"] },
   { path: "/travel/reports", permission: ["travel.export", "travel.view", "reports.export"] },
@@ -314,6 +337,7 @@ export function canAccessRoute(user: AuthUser | null | undefined, pathOrId: stri
   if (!entry) return false; // unknown route: deny-default
   if (systemAdmin && entry.allowSystemAdmin !== false) return true;
   if (systemAdmin && entry.allowSystemAdmin === false) return false;
+  if (entry.roles?.some((role) => user.roles?.includes(role))) return true;
   if (!entry.permission) return true;
   return hasPermission(user, entry.permission);
 }

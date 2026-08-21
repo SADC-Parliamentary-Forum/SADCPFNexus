@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Support\FrontendUrl;
 use Illuminate\Database\Eloquent\Collection;
 use InvalidArgumentException;
 
@@ -270,7 +271,7 @@ class InvoiceService
     private function notifySupplierToSubmitFinalInvoice(Invoice $invoice): void
     {
         $invoice->loadMissing(['vendor.portalUsers', 'purchaseOrder']);
-        $portalUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/') . '/supplier/invoices';
+        $portalUrl = FrontendUrl::to('supplier/invoices');
         $amount = number_format((float) $invoice->amount, 2) . ' ' . $invoice->currency;
 
         foreach ($invoice->vendor?->portalUsers ?? [] as $portalUser) {

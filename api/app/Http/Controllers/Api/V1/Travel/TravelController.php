@@ -141,6 +141,8 @@ class TravelController extends Controller
             'itineraries.*.transport_mode' => ['required_with:itineraries', 'string'],
             'itineraries.*.days_count'     => ['nullable', 'integer', 'min:1'],
             'itineraries.*.day_type'       => ['nullable', 'string', 'in:official,personal_extension,personal_stopover'],
+            'itineraries.*.flight_name'    => ['nullable', 'string', 'max:120'],
+            'itineraries.*.flight_number'  => ['nullable', 'string', 'max:32'],
         ]);
 
         $travel = $this->travelService->create($data, $request->user());
@@ -183,6 +185,8 @@ class TravelController extends Controller
             'itineraries.*.transport_mode' => ['required_with:itineraries', 'string'],
             'itineraries.*.days_count'     => ['nullable', 'integer', 'min:1'],
             'itineraries.*.day_type'       => ['nullable', 'string', 'in:official,personal_extension,personal_stopover'],
+            'itineraries.*.flight_name'    => ['nullable', 'string', 'max:120'],
+            'itineraries.*.flight_number'  => ['nullable', 'string', 'max:32'],
             'private_vehicle_reason' => ['nullable', 'string', 'max:2000'],
             'private_vehicle_route'  => ['nullable', 'string', 'max:2000'],
             'estimated_kilometres'   => ['nullable', 'numeric', 'min:0'],

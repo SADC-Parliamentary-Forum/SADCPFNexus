@@ -1181,6 +1181,18 @@ export const workflowEngineApi = {
 
 // ─── Travel ──────────────────────────────────────────────────────────────────
 
+export interface TravelDestinationCity {
+  id: number | null;
+  name: string;
+}
+
+export interface TravelDestinationCountry {
+  id: number | null;
+  name: string;
+  is_sadc: boolean;
+  cities: TravelDestinationCity[];
+}
+
 export interface TravelRequest {
   id: number;
   reference_number: string;
@@ -1298,6 +1310,9 @@ export interface TravelItinerary {
   dsa_rate: number;
   days_count: number;
   calculated_dsa: number;
+  flight_name?: string | null;
+  flight_number?: string | null;
+  carrier?: string | null;
 }
 
 export interface TravelAmendment {
@@ -1483,6 +1498,18 @@ export const travelApi = {
     api.get<PaginatedResponse<unknown>>("/travel/fx-rates", { params }),
   saveFxRate: (data: Record<string, unknown>) =>
     api.post<{ data: unknown; message: string }>("/travel/fx-rates", data),
+  listDestinations: () =>
+    api.get<{ data: { countries: TravelDestinationCountry[] } }>("/travel/destinations"),
+  createCountry: (data: { name: string; is_sadc?: boolean }) =>
+    api.post<{ data: { id: number; name: string; is_sadc: boolean }; message: string }>(
+      "/travel/destinations/countries",
+      data,
+    ),
+  createCity: (data: { country: string; name: string }) =>
+    api.post<{ data: { id: number; name: string; country: string; country_id: number }; message: string }>(
+      "/travel/destinations/cities",
+      data,
+    ),
 };
 
 // ─── Imprest ─────────────────────────────────────────────────────────────────
@@ -7974,11 +8001,41 @@ export interface WeeklyOpsReport {
   decision_requests?: Array<Record<string, unknown>>;
   priorities?: Array<Record<string, unknown>>;
   risks?: Array<Record<string, unknown>>;
-  period?: { id: number; start_date: string; end_date: string; reference: string };
+  period?: { id: number; start_date: string; end_date: string; reference: string; employee_due_at?: string | null };
+  department?: { id?: number; name?: string | null; code?: string | null } | null;
+  submitted_staff?: Array<{
+    id: number;
+    name?: string | null;
+    report_id?: number | null;
+    reference?: string | null;
+    status?: string | null;
+    submitted_at?: string | null;
+    employee_due_at?: string | null;
+  }>;
+  missing_staff?: Array<{
+    id: number;
+    name?: string | null;
+    report_id?: number | null;
+    reference?: string | null;
+    status?: string | null;
+    submitted_at?: string | null;
+    employee_due_at?: string | null;
+  }>;
+  late_staff?: Array<{
+    id: number;
+    name?: string | null;
+    report_id?: number | null;
+    reference?: string | null;
+    status?: string | null;
+    submitted_at?: string | null;
+    employee_due_at?: string | null;
+  }>;
+  counts?: { submitted?: number; missing?: number; late?: number };
 }
 
 export const weeklyReportsApi = {
   dashboard: () => api.get<{ data: Record<string, unknown> }>("/weekly-summaries/dashboard"),
+  reviewQueue: () => api.get<{ data: Record<string, unknown> }>("/weekly-summaries/review-queue"),
   trends: (params?: { from?: string; to?: string }) =>
     api.get<{ data: Record<string, unknown> }>("/weekly-summaries/trends", { params }),
   periods: () => api.get<{ data: Array<Record<string, unknown>> }>("/weekly-summaries/periods"),

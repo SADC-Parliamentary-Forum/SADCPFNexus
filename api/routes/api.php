@@ -545,6 +545,9 @@ Route::prefix('v1')->group(function () {
         // Travel Module
         Route::prefix('travel')->group(function () {
             Route::get('register/export', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'registerExport']);
+            Route::get('destinations', [\App\Http\Controllers\Api\V1\Travel\TravelDestinationController::class, 'index']);
+            Route::post('destinations/countries', [\App\Http\Controllers\Api\V1\Travel\TravelDestinationController::class, 'storeCountry']);
+            Route::post('destinations/cities', [\App\Http\Controllers\Api\V1\Travel\TravelDestinationController::class, 'storeCity']);
             Route::get('dsa-rates', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'dsaRatesIndex']);
             Route::post('dsa-rates', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'dsaRatesStore']);
             Route::get('toil', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilIndex']);
@@ -1907,6 +1910,7 @@ Route::prefix('v1')->group(function () {
         // Weekly Summary Reports (operational progress reporting — PRD Phase 1)
         Route::prefix('weekly-summaries')->group(function () {
             Route::get('dashboard', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'dashboard']);
+            Route::get('review-queue', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'reviewQueue']);
             Route::get('trends', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'trends']);
             Route::get('periods', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'periods']);
             Route::post('periods', [\App\Http\Controllers\Api\V1\WeeklyReports\WeeklyReportController::class, 'storePeriod']);

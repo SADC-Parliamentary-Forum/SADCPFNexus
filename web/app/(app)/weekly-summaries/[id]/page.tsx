@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { weeklyReportsApi, type WeeklyOpsReport } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
@@ -91,7 +92,7 @@ export default function WeeklySummaryDetailPage() {
                 status: report.status,
                 version: report.version,
                 period: report.period
-                  ? `${report.period.reference} · ${report.period.start_date} → ${report.period.end_date}`
+                  ? `${report.period.reference} · ${formatDateShort(report.period.start_date)} → ${formatDateShort(report.period.end_date)}`
                   : "—",
               }}
             />

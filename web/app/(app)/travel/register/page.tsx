@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { travelApi, type TravelRequest } from "@/lib/api";
+import { travelApi, type TravelDestinationCountry, type TravelRequest } from "@/lib/api";
+import { TravelDestinationFields } from "@/components/travel/DestinationPickers";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -111,6 +112,8 @@ export default function TravelRegisterPage() {
   const [editForm, setEditForm] = useState<EditForm | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+  const [destinations, setDestinations] = useState<TravelDestinationCountry[]>([]);
+  const [addingDestination, setAddingDestination] = useState(false);
 
   const [cancelRow, setCancelRow] = useState<TravelRequest | null>(null);
   const [cancelReason, setCancelReason] = useState("");
@@ -135,6 +138,13 @@ export default function TravelRegisterPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    travelApi
+      .listDestinations()
+      .then((r) => setDestinations(r.data.data?.countries ?? []))
+      .catch(() => setDestinations([]));
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -195,6 +205,36 @@ export default function TravelRegisterPage() {
       return_date: String(row.return_date ?? "").slice(0, 10),
       justification: row.justification ?? "",
     });
+  };
+
+  const handleAddCountry = async (name: string) => {
+    if (!editForm) return;
+    setAddingDestination(true);
+    try {
+      const res = await travelApi.createCountry({ name });
+      const list = await travelApi.listDestinations();
+      setDestinations(list.data.data?.countries ?? []);
+      setEditForm({ ...editForm, destination_country: res.data.data.name, destination_city: "" });
+    } finally {
+      setAddingDestination(false);
+    }
+  };
+
+  const handleAddCity = async (country: string, name: string) => {
+    if (!editForm) return;
+    setAddingDestination(true);
+    try {
+      const res = await travelApi.createCity({ country, name });
+      const list = await travelApi.listDestinations();
+      setDestinations(list.data.data?.countries ?? []);
+      setEditForm({
+        ...editForm,
+        destination_country: res.data.data.country,
+        destination_city: res.data.data.name,
+      });
+    } finally {
+      setAddingDestination(false);
+    }
   };
 
   const saveEdit = async () => {
@@ -720,24 +760,16 @@ export default function TravelRegisterPage() {
                   onChange={(e) => setEditForm({ ...editForm, purpose: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-neutral-600">Country</label>
-                  <input
-                    className="form-input text-sm"
-                    value={editForm.destination_country}
-                    onChange={(e) => setEditForm({ ...editForm, destination_country: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-semibold text-neutral-600">City</label>
-                  <input
-                    className="form-input text-sm"
-                    value={editForm.destination_city}
-                    onChange={(e) => setEditForm({ ...editForm, destination_city: e.target.value })}
-                  />
-                </div>
-              </div>
+              <TravelDestinationFields
+                  country={editForm.destination_country}
+                  city={editForm.destination_city}
+                  countries={destinations}
+                  adding={addingDestination}
+                  onCountryChange={(v) => setEditForm({ ...editForm, destination_country: v })}
+                  onCityChange={(v) => setEditForm({ ...editForm, destination_city: v })}
+                  onAddCountry={handleAddCountry}
+                  onAddCity={handleAddCity}
+                />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-semibold text-neutral-600">Departure</label>

@@ -503,8 +503,12 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Secretary General: oversight + reviewer.
             $secretaryGeneral->givePermissionTo(
-                Permission::whereIn('name', ['mande.view', 'mande.review'])
-                    ->where('guard_name', $guard)->get()
+                Permission::whereIn('name', [
+                    'mande.view', 'mande.review',
+                    'weekly-reports.view-own', 'weekly-reports.view-team', 'weekly-reports.review-team',
+                    'weekly-reports.return', 'weekly-reports.accept', 'weekly-reports.view-department',
+                    'weekly-reports.view-management', 'weekly-reports.export',
+                ])->where('guard_name', $guard)->get()
             );
 
             // â”€â”€ New roles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

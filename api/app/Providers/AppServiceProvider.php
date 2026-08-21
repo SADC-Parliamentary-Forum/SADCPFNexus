@@ -26,6 +26,7 @@ use App\Policies\HrPersonnelFileSectionPolicy;
 use App\Policies\HrSalaryScalePolicy;
 use App\Policies\PortfolioPolicy;
 use App\Policies\UserPolicy;
+use App\Support\FrontendUrl;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -55,6 +56,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        if (! function_exists('human_date')) {
+            require_once app_path('Support/helpers.php');
+        }
+
         // Document Service AV — factory selects null (default), clamav, or http from DOCUMENT_AV_DRIVER.
         $this->app->singleton(MalwareScannerFactory::class);
         $this->app->bind(MalwareScannerInterface::class, function ($app) {
@@ -117,7 +122,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         ResetPassword::createUrlUsing(function (User $user, string $token): string {
-            $frontendUrl = rtrim((string) env('FRONTEND_URL', config('app.url')), '/');
+            $frontendUrl = FrontendUrl::base();
             $email = urlencode($user->email);
             $encodedToken = urlencode($token);
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\TokenExpiredException;
 use App\Exceptions\TokenUsedException;
+use App\Support\FrontendUrl;
 use App\Services\SignedTokenService;
 use App\Services\WorkflowService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -30,7 +31,7 @@ class EmailApprovalController extends Controller
         try {
             $record = $this->tokenService->peek($token);
             $approvalRequest = $record->approvalRequest()->with(['workflow.steps', 'definitionVersion', 'approvable'])->first();
-            $frontend = rtrim(env('FRONTEND_URL', 'http://localhost:3000'), '/');
+            $frontend = FrontendUrl::base();
             $highRisk = (bool) ($approvalRequest?->workflow?->steps?->get($approvalRequest->current_step_index)?->high_risk);
             $version = $approvalRequest?->definitionVersion?->version_number
                 ?? $approvalRequest?->workflow?->current_version
@@ -72,7 +73,7 @@ class EmailApprovalController extends Controller
     {
         try {
             $this->tokenService->peek($token);
-            $frontend = rtrim(env('FRONTEND_URL', 'http://localhost:3000'), '/');
+            $frontend = FrontendUrl::base();
 
             return redirect()->away($frontend.'/approval?action=reject&token='.$token.'&auth_required=1');
         } catch (TokenExpiredException $e) {

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { reportsApi, weeklyReportsApi, type WeeklyOpsReport } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -30,8 +31,8 @@ function asRows(value: unknown): Record<string, unknown>[] {
 
 function dateLabel(value: unknown): string {
   if (value == null || value === "") return "";
-  const text = String(value);
-  return text.length >= 10 ? text.slice(0, 10) : text;
+  const formatted = formatDateShort(String(value));
+  return formatted === "—" ? "" : formatted;
 }
 
 function periodLabel(value: unknown): string {

@@ -32,7 +32,8 @@ class WeeklyConsolidationService
         }
 
         if (! $actor->can('weekly-reports.consolidate-department') && ! $actor->hasRole('HOD')
-            && ! $actor->isSystemAdmin() && ! $actor->can('weekly-reports.admin')) {
+            && ! $actor->isSystemAdmin() && ! $actor->can('weekly-reports.admin')
+            && ! $actor->isSecretaryGeneral()) {
             abort(403, 'Not authorised to consolidate department summary.');
         }
 

@@ -1,6 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { formatDateShort } from "@/lib/utils";
+
+const ISO_DATE_VALUE =
+  /^\d{4}-\d{2}-\d{2}(?:[T ][\d:.]+(?:Z|[+-]\d{2}:?\d{2})?)?$/;
 
 function labelFor(key: string): string {
   return key.replace(/_/g, " ");
@@ -16,7 +20,9 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 function primitive(value: unknown): string {
   if (value == null || value === "") return "—";
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  return String(value);
+  const text = String(value);
+  if (ISO_DATE_VALUE.test(text)) return formatDateShort(text);
+  return text;
 }
 
 export function labelledObjectCell(value: unknown): ReactNode {
@@ -29,7 +35,7 @@ export function labelledObjectCell(value: unknown): ReactNode {
     }
     return <LabelledRecord value={value} nested />;
   }
-  return String(value);
+  return primitive(value);
 }
 
 export function LabelledRecord({ value, nested = false }: { value: unknown; nested?: boolean }) {

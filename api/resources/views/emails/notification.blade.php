@@ -44,7 +44,7 @@
 
     <!-- Blue accent bar -->
     <div class="banner">
-        <span class="banner-text">Official notification from the SADC-PF Paperless Management System &nbsp;·&nbsp; {{ now()->format('d M Y') }}</span>
+        <span class="banner-text">Official notification from the SADC-PF Paperless Management System &nbsp;·&nbsp; {{ human_date(now()) }}</span>
     </div>
 
     <!-- Body -->
@@ -86,7 +86,7 @@
             This is an automated notification. Please do not reply to this email.<br>
             Nexus will never ask you to share your password or MFA code by email.<br>
             To manage your email preferences, visit
-            <a href="{{ env('APP_FRONTEND_URL', config('app.url')) }}/profile/security" style="color:#1d85ed">your profile settings</a>.
+            <a href="{{ \App\Support\FrontendUrl::to('profile/security') }}" style="color:#1d85ed">your profile settings</a>.
         </p>
     </div>
 

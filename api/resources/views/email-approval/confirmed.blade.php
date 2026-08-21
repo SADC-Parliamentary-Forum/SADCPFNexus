@@ -39,7 +39,7 @@
         </div>
     </div>
     <div class="banner">
-        <span class="banner-text">Official notification &nbsp;·&nbsp; {{ now()->format('d M Y, H:i') }}</span>
+        <span class="banner-text">Official notification &nbsp;·&nbsp; {{ human_datetime(now()) }}</span>
     </div>
     <div class="body">
         @if($action === 'approved')
@@ -73,7 +73,7 @@
             </div>
             <div class="detail-row">
                 <span class="detail-label">Actioned</span>
-                <span class="detail-value">{{ now()->format('d M Y, H:i') }}</span>
+                <span class="detail-value">{{ human_datetime(now()) }}</span>
             </div>
         </div>
 

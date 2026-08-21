@@ -44,9 +44,17 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
+      APP_URL: ${APP_URL:-https://nexus-api.sadcpf.org}
       FRONTEND_URL: ${FRONTEND_URL:-https://nexus.sadcpf.org}
     volumes:
       - ./api:/var/www/api                   # Keep: entrypoint needs artisan access
+
+  # Queue workers send mail. List form concatenates with docker-compose.yml
+  # (must not use a mapping here — that would replace DB_HOST / CONTAINER_ROLE).
+  queue:
+    environment:
+      - APP_URL=${APP_URL:-https://nexus-api.sadcpf.org}
+      - FRONTEND_URL=${FRONTEND_URL:-https://nexus.sadcpf.org}
 
   # ── MeiliSearch — production mode ────────────────────────────────────────────
   meilisearch:

@@ -102,6 +102,8 @@
                 <th>From</th>
                 <th>To</th>
                 <th>Mode</th>
+                <th>Flight name</th>
+                <th>Flight number</th>
                 <th>Day type</th>
             </tr>
         </thead>
@@ -112,11 +114,13 @@
                     <td>{{ $leg->from_location }}</td>
                     <td>{{ $leg->to_location }}</td>
                     <td>{{ $leg->transport_mode }}</td>
+                    <td>{{ $leg->flight_name ?: '—' }}</td>
+                    <td>{{ $leg->flight_number ?: '—' }}</td>
                     <td>{{ $leg->day_type ?? 'official' }}</td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="5">
+                    <td colspan="7">
                         {{ optional($travel->departure_date)->toDateString() }}
                         → {{ optional($travel->return_date)->toDateString() }}
                         ({{ $travel->destination_city ?? $travel->destination_country }})

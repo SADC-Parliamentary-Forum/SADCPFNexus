@@ -6,6 +6,7 @@ use App\Models\Notifications\NotificationTemplateVersion;
 use App\Models\NotificationTemplate;
 use App\Models\User;
 use App\Services\NotificationService as LegacyNotificationService;
+use App\Support\DateFormat;
 
 class TemplateService
 {
@@ -87,7 +88,7 @@ class TemplateService
     public function replace(string $text, array $vars): string
     {
         foreach ($vars as $key => $value) {
-            $text = str_replace('{{'.$key.'}}', (string) ($value ?? ''), $text);
+            $text = str_replace('{{'.$key.'}}', DateFormat::display($value), $text);
         }
 
         return $text;

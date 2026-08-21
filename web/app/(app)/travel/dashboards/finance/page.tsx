@@ -25,7 +25,7 @@ export default function TravelFinanceDashboardPage() {
       <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Finance Travel Dashboard"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Finance Travel Dashboard" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel", href: "/travel" }, { label: "Finance dashboard" }]} />}
       />
         <Link href="/travel/queues/finance" className="btn-primary">Finance queue</Link>
       </div>

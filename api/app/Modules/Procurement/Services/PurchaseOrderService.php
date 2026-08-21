@@ -7,6 +7,7 @@ use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Support\FrontendUrl;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
 
@@ -171,7 +172,7 @@ class PurchaseOrderService
 
     private function notifySupplierToSubmitProformaInvoice(PurchaseOrder $po): void
     {
-        $portalUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/') . '/supplier/invoices';
+        $portalUrl = FrontendUrl::to('supplier/invoices');
         $deliveryDate = $po->expected_delivery_date?->toDateString() ?? 'Not specified';
         $amount = number_format((float) $po->total_amount, 2) . ' ' . $po->currency;
 

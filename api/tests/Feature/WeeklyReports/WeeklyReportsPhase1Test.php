@@ -367,4 +367,122 @@ class WeeklyReportsPhase1Test extends TestCase
 
         $this->assertSame('pending_review', $resubmitted['status']);
     }
+
+    public function test_dashboard_missing_and_pending_rows_include_staff_and_department_names(): void
+    {
+        [, $dept, $employee, $supervisor] = $this->seedTeam();
+
+        $missing = $this->actingAs($supervisor, 'sanctum')
+            ->getJson('/api/v1/weekly-summaries/dashboard')
+            ->assertOk()
+            ->json('data.missing_reports');
+
+        $this->assertIsArray($missing);
+        $row = collect($missing)->firstWhere('id', $employee->id);
+        $this->assertNotNull($row);
+        $this->assertSame($employee->name, $row['name']);
+        $this->assertSame($dept->name, $row['department_name']);
+        $this->assertSame($dept->name, $row['department']['name'] ?? null);
+
+        $reportId = $this->actingAs($employee, 'sanctum')
+            ->postJson('/api/v1/weekly-summaries/')
+            ->json('data.id');
+
+        $this->actingAs($employee, 'sanctum')
+            ->postJson("/api/v1/weekly-summaries/{$reportId}/items", [
+                'section_type' => 'achievement',
+                'title' => 'Delivered pack',
+            ])->assertCreated();
+
+        $this->actingAs($employee, 'sanctum')
+            ->postJson("/api/v1/weekly-summaries/{$reportId}/submit", [
+                'declaration_confirmed' => true,
+            ])->assertOk();
+
+        $pending = $this->actingAs($supervisor, 'sanctum')
+            ->getJson('/api/v1/weekly-summaries/dashboard')
+            ->assertOk()
+            ->json('data.team_pending_reports');
+
+        $this->assertNotEmpty($pending);
+        $this->assertSame($employee->name, $pending[0]['employee_name']);
+        $this->assertSame($dept->name, $pending[0]['department_name']);
+        $this->assertSame($dept->name, $pending[0]['department']['name'] ?? null);
+    }
+
+    public function test_department_rollup_includes_department_name_period_dates_and_staff_lists(): void
+    {
+        [$tenant, $dept, $employee, $supervisor] = $this->seedTeam();
+
+        $absent = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'department_id' => $dept->id,
+            'name' => 'Absent Officer',
+            'is_active' => true,
+        ]);
+        $absent->assignRole('staff');
+
+        $created = $this->actingAs($employee, 'sanctum')
+            ->postJson('/api/v1/weekly-summaries/')
+            ->assertCreated()
+            ->json('data');
+
+        $this->actingAs($employee, 'sanctum')
+            ->postJson("/api/v1/weekly-summaries/{$created['id']}/submit", [
+                'declaration_confirmed' => true,
+            ])
+            ->assertOk();
+
+        $period = WeeklyReportingPeriod::find($created['period_id']);
+        $period->update(['employee_due_at' => now()->subDay()]);
+
+        $payload = $this->actingAs($supervisor, 'sanctum')
+            ->postJson('/api/v1/weekly-summaries/department', [
+                'period_id' => $period->id,
+                'department_id' => $dept->id,
+            ])
+            ->assertCreated()
+            ->json('data');
+
+        $this->assertSame($dept->name, $payload['department']['name'] ?? null);
+        $this->assertNotEmpty($payload['period']['start_date'] ?? null);
+        $this->assertNotEmpty($payload['period']['end_date'] ?? null);
+        $this->assertTrue(
+            collect($payload['submitted_staff'])->contains(fn ($row) => ($row['name'] ?? null) === $employee->name)
+        );
+        $this->assertTrue(
+            collect($payload['missing_staff'])->contains(fn ($row) => ($row['name'] ?? null) === 'Absent Officer')
+        );
+        $this->assertTrue(
+            collect($payload['late_staff'])->contains(fn ($row) => ($row['name'] ?? null) === 'Absent Officer')
+        );
+        $this->assertSame(1, $payload['counts']['submitted']);
+        $this->assertGreaterThanOrEqual(1, $payload['counts']['missing']);
+        $this->assertGreaterThanOrEqual(1, $payload['counts']['late']);
+        $this->assertArrayNotHasKey('department_id', $payload['submitted_staff'][0] ?? []);
+    }
+
+    public function test_secretary_general_can_open_any_department_rollup(): void
+    {
+        [$tenant, $dept, $employee] = $this->seedTeam();
+
+        $sg = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'department_id' => null,
+            'is_active' => true,
+        ]);
+        $sg->assignRole('Secretary General');
+
+        $periodId = $this->actingAs($employee, 'sanctum')
+            ->postJson('/api/v1/weekly-summaries/')
+            ->json('data.period_id');
+
+        $this->actingAs($sg, 'sanctum')
+            ->postJson('/api/v1/weekly-summaries/department', [
+                'period_id' => $periodId,
+                'department_id' => $dept->id,
+            ])
+            ->assertCreated()
+            ->assertJsonPath('data.department.name', $dept->name);
+    }
 }

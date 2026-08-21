@@ -33,6 +33,11 @@ class WeeklyReportController extends Controller
         return response()->json(['data' => $this->reports->dashboard($request->user())]);
     }
 
+    public function reviewQueue(Request $request): JsonResponse
+    {
+        return response()->json(['data' => $this->reports->reviewQueue($request->user())]);
+    }
+
     public function trends(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -273,7 +278,9 @@ class WeeklyReportController extends Controller
             isset($data['department_id']) ? (int) $data['department_id'] : null
         );
 
-        return response()->json(['data' => $report], 201);
+        $extra = $this->reports->departmentStaffRollup($request->user(), $report);
+
+        return response()->json(['data' => array_merge($report->toArray(), $extra)], 201);
     }
 
     public function institutional(Request $request): JsonResponse

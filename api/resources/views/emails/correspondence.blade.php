@@ -66,7 +66,7 @@
 
     {{-- Blue banner: date left, ref right --}}
     <div class="lh-banner">
-        <span class="lh-banner-date">{{ $correspondence->sent_at?->format('d F Y') ?? now()->format('d F Y') }}</span>
+        <span class="lh-banner-date">{{ human_date($correspondence->sent_at ?? now()) }}</span>
         @if($correspondence->reference_number)
             <span class="lh-banner-ref">Ref: {{ $correspondence->reference_number }}</span>
         @else
@@ -115,7 +115,7 @@
         <p class="lh-footer-disclaimer">
             This correspondence was sent via SADCPFNexus. Please do not reply to this automated message.<br>
             To manage your email preferences, visit
-            <a href="{{ env('APP_FRONTEND_URL', config('app.url')) }}/profile/security" style="color:#1d85ed">your profile settings</a>.
+            <a href="{{ \App\Support\FrontendUrl::to('profile/security') }}" style="color:#1d85ed">your profile settings</a>.
         </p>
     </div>
 

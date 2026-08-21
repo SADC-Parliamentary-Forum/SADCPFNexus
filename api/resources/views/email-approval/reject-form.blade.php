@@ -39,7 +39,7 @@
         </div>
     </div>
     <div class="banner">
-        <span class="banner-text">Official notification &nbsp;·&nbsp; {{ now()->format('d M Y, H:i') }}</span>
+        <span class="banner-text">Official notification &nbsp;·&nbsp; {{ human_datetime(now()) }}</span>
     </div>
     <div class="body">
         <h1 class="page-title">Return Request</h1>

@@ -269,7 +269,11 @@ return [
             '*' => ['notifications.admin', 'notifications.manage-policies'],
         ]],
         ['pattern' => 'api/v1/weekly-summaries*', 'permissions' => [
-            'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team', 'weekly_report.module.view'],
+            'READ' => [
+                'weekly-reports.view-own', 'weekly-reports.view-team', 'weekly_report.module.view',
+                'weekly-reports.review-team', 'weekly-reports.accept', 'weekly-reports.admin',
+                'weekly-reports.view-management',
+            ],
             'WRITE' => ['weekly-reports.create-own', 'weekly-reports.review-team', 'weekly-reports.admin'],
         ]],
         ['pattern' => 'api/v1/weekly-summary*', 'permissions' => [

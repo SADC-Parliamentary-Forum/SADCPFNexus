@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Modules\Budget\Services\BudgetAvailabilityService;
 use App\Modules\Budget\Services\BudgetCommitmentService;
 use App\Services\NotificationService;
+use App\Support\FrontendUrl;
 use App\Services\WorkflowService;
 use Illuminate\Support\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -801,7 +802,7 @@ class ProcurementService
                 ]
             );
 
-            $frontendBase = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/');
+            $frontendBase = FrontendUrl::base();
             $quoteUrl = $frontendBase . '/external-rfq/' . $invitation->response_token;
             $registerUrl = $frontendBase . '/supplier/register';
             $this->notificationService->dispatchExternal(
@@ -838,7 +839,7 @@ class ProcurementService
 
     private function notifySupplierInvitation(ProcurementRequest $request, Vendor $vendor, RfqInvitation $invitation): void
     {
-        $frontendBase = rtrim((string) env('FRONTEND_URL', 'http://localhost:3000'), '/');
+        $frontendBase = FrontendUrl::base();
         $portalUrl = $frontendBase . '/supplier/rfqs/' . $request->id;
 
         foreach ($vendor->portalUsers as $portalUser) {

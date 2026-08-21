@@ -170,7 +170,7 @@ export default function TravelAdminDashboardPage() {
       <ModulePageHeader
         title="Administration Travel Dashboard"
         subtitle="Logistics readiness across itineraries, bookings, visas, and accommodation for approved trips."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Administration Travel Dashboard" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel", href: "/travel" }, { label: "Administration dashboard" }]} />}
         actions={
           <Link href={QUEUE_HREF} className="btn-primary flex items-center gap-1.5 text-sm">
             <span className="material-symbols-outlined text-[16px]">checklist</span>
