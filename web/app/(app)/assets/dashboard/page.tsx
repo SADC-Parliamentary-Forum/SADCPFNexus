@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { ASSETS_HUB_CARDS } from "@/lib/hubs/assets";
 
 type Dash = {
   total: number;
@@ -48,6 +50,7 @@ export default function AssetsDashboardPage() {
         }
         actions={<Link href="/assets/intake" className="btn-primary">Pending intake</Link>}
       />
+      <ModuleHubCards cards={ASSETS_HUB_CARDS} />
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
       ) : null}

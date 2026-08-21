@@ -14,6 +14,8 @@ import {
   RowCheckbox,
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { RISK_HUB_CARDS } from "@/lib/hubs/risk";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -244,6 +246,7 @@ export default function RiskRegisterPage() {
       }
     >
     <div className="space-y-6">
+      <ModuleHubCards cards={RISK_HUB_CARDS} />
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[

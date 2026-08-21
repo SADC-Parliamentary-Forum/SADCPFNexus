@@ -52,7 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       });
-  }, [pathname]);
+    // Session refresh once per mount. Pathname changes were hitting nginx's
+    // /auth rate limit (5/min) and 429ing /auth/me during normal navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = (newUser: AuthUser) => {
     clearEffectiveAccessCache();

@@ -2610,7 +2610,23 @@ export const leaveApi = {
   listLilAccruals: () => api.get<{ data: LilAccrual[] }>("/leave/lil-accruals"),
   listToil: () => api.get<{ data: ToilCredit[] }>("/leave/toil"),
   getBalances: () =>
-    api.get<{ annual_balance_days: number; lil_hours_available: number; sick_leave_used_days: number; period_year: number }>("/leave/balances"),
+    api.get<{
+      annual_balance_days: number;
+      lil_hours_available: number;
+      sick_leave_used_days: number;
+      special_leave_days_used?: number;
+      maternity_leave_days_used?: number;
+      paternity_leave_days_used?: number;
+      period_year: number;
+      data?: Array<{
+        leave_type: string;
+        balance: number;
+        pending: number;
+        approved_future?: number;
+        available: number;
+        source?: string;
+      }>;
+    }>("/leave/balances"),
   recommend: (id: number, data: { action: "recommend" | "not_recommend" | "return"; comment?: string }) =>
     api.post<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}/recommend`, data),
   certify: (id: number, data: { action: "certify" | "certify_with_condition" | "return" | "mark_ineligible"; comment?: string; segments?: Array<Record<string, unknown>> }) =>

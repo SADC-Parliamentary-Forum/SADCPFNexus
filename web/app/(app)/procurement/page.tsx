@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { procurementApi, type ProcurementRequest } from "@/lib/api";
 import { canViewProcurementVendors, getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { PROCUREMENT_HUB_CARDS } from "@/lib/hubs/procurement";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   approved:  { label: "Approved",  cls: "badge-success" },
@@ -75,6 +77,8 @@ export default function ProcurementPage() {
           )}
         </div>
       </div>
+
+      <ModuleHubCards cards={PROCUREMENT_HUB_CARDS} />
 
       {isError && (
         <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">

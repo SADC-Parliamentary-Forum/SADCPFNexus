@@ -7,7 +7,8 @@ import { canManageSalaryAdvanceFinance, getStoredUser } from "@/lib/auth";
 import { formatDate } from "@/lib/utils";
 import { formatSaCurrency, SA_STATUS_CONFIG } from "@/components/salary-advance/AdvanceQueueTable";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { SALARY_ADVANCE_HUB_CARDS } from "@/lib/hubs/salaryAdvances";
 
 export default function SalaryAdvanceEmployeeDashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -72,6 +73,8 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
           </>
         }
       />
+
+      <ModuleHubCards cards={SALARY_ADVANCE_HUB_CARDS} />
 
       {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 

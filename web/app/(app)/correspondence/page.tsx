@@ -5,6 +5,8 @@ import Link from "next/link";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { CORRESPONDENCE_HUB_CARDS } from "@/lib/hubs/correspondence";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   draft: { label: "Draft", cls: "badge-muted" },
@@ -63,6 +65,8 @@ export default function CorrespondencePage() {
           </Link>
         }
       />
+
+      <ModuleHubCards cards={CORRESPONDENCE_HUB_CARDS} />
 
       {error && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

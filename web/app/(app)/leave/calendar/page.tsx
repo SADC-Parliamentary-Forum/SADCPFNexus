@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { leaveApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { LEAVE_TYPE_COLORS } from "@/lib/leaveHub";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -153,6 +154,17 @@ export default function LeaveTeamCalendarPage() {
       )}
 
       {view === "grid" && !isLoading && !isError && (
+        <>
+          <div className="flex flex-wrap gap-2 px-1 text-[11px] text-neutral-500">
+            {["annual", "sick", "lil", "special"].map((code) => (
+              <span
+                key={code}
+                className={`inline-flex items-center rounded-full border px-2 py-0.5 capitalize ${LEAVE_TYPE_COLORS[code]}`}
+              >
+                {code === "lil" ? "Leave in lieu" : code}
+              </span>
+            ))}
+          </div>
         <div className="card grid grid-cols-7 gap-px overflow-hidden border border-neutral-200 bg-neutral-200 p-px">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
             <div
@@ -173,7 +185,7 @@ export default function LeaveTeamCalendarPage() {
                   {dayRows.slice(0, 3).map((row) => (
                     <li
                       key={`${row.id}-${iso}`}
-                      className="truncate rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary"
+                      className={`truncate rounded px-1.5 py-0.5 text-[11px] ${LEAVE_TYPE_COLORS[row.color_key ?? row.leave_type ?? ""] ?? "bg-primary/10 text-primary"}`}
                     >
                       {row.requester?.name?.split(" ")[0]} · {row.display_label ?? row.leave_type}
                       {row.is_masked ? " — private" : ""}
@@ -187,6 +199,7 @@ export default function LeaveTeamCalendarPage() {
             );
           })}
         </div>
+        </>
       )}
 
       {view === "list" && !isLoading && !isError && (

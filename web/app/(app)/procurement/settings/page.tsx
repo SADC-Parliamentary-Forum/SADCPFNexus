@@ -32,7 +32,7 @@ export default function ProcurementSettingsPage() {
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [newProfile, setNewProfile] = useState(emptyProfile);
 
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, error } = useQuery({
     queryKey: ["procurement", "settings"],
     queryFn: () => procurementSettingsApi.get().then((r) => r.data.data),
     staleTime: 30_000,
@@ -112,7 +112,9 @@ export default function ProcurementSettingsPage() {
 
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          Failed to load settings.
+          {(error as { response?: { data?: { message?: string }; status?: number } })?.response?.status === 404
+            ? "This organisation's settings could not be read. Apply pending database migrations, then reload."
+            : ((error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to load settings.")}
         </div>
       )}
 

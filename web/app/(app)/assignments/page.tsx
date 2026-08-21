@@ -6,6 +6,8 @@ import { assignmentsApi, type Assignment, type AssignmentStats } from "@/lib/api
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { ASSIGNMENTS_HUB_CARDS } from "@/lib/hubs/assignments";
 
 const priorityConfig: Record<string, { label: string; cls: string; dot: string }> = {
   low:      { label: "Low",      cls: "badge-muted",    dot: "bg-neutral-400" },
@@ -140,6 +142,8 @@ export default function AssignmentsDashboard() {
           </Link>
         }
       />
+
+      <ModuleHubCards cards={ASSIGNMENTS_HUB_CARDS} />
 
       {/* KPI Cards */}
       {statsLoading ? (

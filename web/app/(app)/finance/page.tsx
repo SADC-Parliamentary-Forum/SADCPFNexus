@@ -5,6 +5,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { financeApi, type SalaryAdvanceRequest, type Payslip, type FinanceSummary, type Budget } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { FINANCE_HUB_CARDS } from "@/lib/hubs/finance";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -175,6 +177,8 @@ export default function FinancePage() {
         subtitle="View your payslips, manage salary advances, and track budget utilization."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Finance" }]} />}
       />
+
+      <ModuleHubCards cards={FINANCE_HUB_CARDS} />
 
       {error && (
         <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">

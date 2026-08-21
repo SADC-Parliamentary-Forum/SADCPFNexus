@@ -1,21 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { FormSection } from "@/components/ui/FormSection";
-
-const LINKS = [
-  { href: "/profile", label: "My Profile", icon: "person", desc: "Personal details and documents" },
-  { href: "/saam", label: "My Signature", icon: "draw", desc: "Enrol and manage your signature" },
-  { href: "/people/directory", label: "Staff Directory", icon: "contacts", desc: "Search institutional staff" },
-  { href: "/organogram", label: "Organisation Chart", icon: "account_tree", desc: "Interactive department canvas" },
-  { href: "/people/authority", label: "Authority Register", icon: "gavel", desc: "Delegated authorities" },
-  { href: "/people/delegations", label: "Delegations", icon: "handshake", desc: "Acting and delegation records" },
-  { href: "/people/acting", label: "Acting Appointments", icon: "supervisor_account", desc: "Temporary acting roles" },
-  { href: "/verify-signature", label: "Verify Signature", icon: "verified_user", desc: "Public signature verification" },
-];
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { PEOPLE_HUB_CARDS } from "@/lib/hubs/people";
 
 export default function PeopleAuthorityHubPage() {
   const { data: me } = useQuery({
@@ -49,23 +38,7 @@ export default function PeopleAuthorityHubPage() {
         </p>
       ) : null}
 
-      <FormSection title="Shortcuts" description="Operational people surfaces only - stub tooling is hidden from production navigation." icon="badge" dense>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white dark:bg-neutral-900 px-4 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-            >
-              <span className="material-symbols-outlined mt-0.5 text-primary">{l.icon}</span>
-              <span>
-                <span className="block text-sm font-semibold text-neutral-900">{l.label}</span>
-                <span className="mt-0.5 block text-xs text-neutral-500">{l.desc}</span>
-              </span>
-            </Link>
-          ))}
-        </div>
-      </FormSection>
+      <ModuleHubCards cards={PEOPLE_HUB_CARDS} />
     </div>
   );
 }

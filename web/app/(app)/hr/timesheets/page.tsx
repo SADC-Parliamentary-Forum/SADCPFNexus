@@ -6,6 +6,8 @@ import { hrApi, adminApi, type Timesheet, type TimesheetEntry, type TimesheetPro
 import { cn, formatDateShort } from "@/lib/utils";
 import { QuickEntrySlideOver } from "@/components/timesheets/QuickEntrySlideOver";
 import { USER_KEY } from "@/lib/constants";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { TIMESHEET_HUB_CARDS } from "@/lib/hubs/timesheets";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -508,6 +510,7 @@ export default function TimesheetsPage() {
 
   return (
     <>
+      <ModuleHubCards cards={TIMESHEET_HUB_CARDS} />
       {/* Week nav bar */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">

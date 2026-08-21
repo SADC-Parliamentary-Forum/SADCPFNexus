@@ -1,11 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { leaveApi, type LeaveRequest } from "@/lib/api";
+import { canAccessRoute, getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
+import { categorizeLeaveBalances, type LeaveBalancesPayload } from "@/lib/leaveBalances";
+import { LEAVE_HUB_CARDS, type LeaveHubCard, type LeaveHubSection } from "@/lib/leaveHub";
+import { LeaveBalanceStrip } from "@/components/leave/LeaveBalanceStrip";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
@@ -22,6 +27,7 @@ import { RegisterMobileCards } from "@/components/ui/RegisterMobileCards";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
+import { FormSection } from "@/components/ui/FormSection";
 
 const TYPE_LABELS: Record<string, string> = {
   annual: "Annual",
@@ -53,13 +59,25 @@ const FILTER_TABS = [
 
 type FilterKey = (typeof FILTER_TABS)[number]["key"];
 
-interface Balances {
-  annual_balance_days: number;
-  lil_hours_available: number;
-  sick_leave_used_days: number;
-  special_leave_days_used?: number;
-  maternity_leave_days_used?: number;
-  paternity_leave_days_used?: number;
+const HUB_SECTIONS: { id: LeaveHubSection; title: string; description: string }[] = [
+  { id: "queues", title: "Work queues", description: "Recommend, certify, and apply." },
+  { id: "views", title: "Registers & views", description: "Your requests, team calendar, and HR register." },
+  { id: "tools", title: "Credits & policy", description: "TOIL credits and workflow settings." },
+];
+
+function FeatureCard({ card }: { card: LeaveHubCard }) {
+  return (
+    <Link
+      href={card.href}
+      className="flex items-start gap-3 rounded-xl border border-neutral-200 bg-white px-4 py-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
+    >
+      <span className="material-symbols-outlined mt-0.5 text-primary">{card.icon}</span>
+      <span>
+        <span className="block text-sm font-semibold text-neutral-900">{card.title}</span>
+        <span className="mt-0.5 block text-xs text-neutral-500">{card.purpose}</span>
+      </span>
+    </Link>
+  );
 }
 
 function unwrapList(payload: unknown): LeaveRequest[] {
@@ -74,7 +92,25 @@ function unwrapList(payload: unknown): LeaveRequest[] {
 }
 
 export default function LeavePage() {
-  const { success, error, info } = useToast();
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-4">
+          <div className="h-10 w-64 animate-pulse rounded-lg bg-neutral-100" />
+          <div className="h-24 animate-pulse rounded-xl bg-neutral-100" />
+        </div>
+      }
+    >
+      <LeavePageInner />
+    </Suspense>
+  );
+}
+
+function LeavePageInner() {
+  const searchParams = useSearchParams();
+  const queue = searchParams.get("queue") || undefined;
+  const user = getStoredUser();
+  const { success, error } = useToast();
   const { confirm } = useConfirm();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -92,16 +128,26 @@ export default function LeavePage() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["leave", "list"],
-    queryFn: () => leaveApi.list({ per_page: 100 }).then((res) => unwrapList(res.data)),
+    queryKey: ["leave", "list", queue],
+    queryFn: () =>
+      leaveApi
+        .list({ per_page: 100, ...(queue ? { queue } : {}) })
+        .then((res) => unwrapList(res.data)),
     staleTime: 30_000,
   });
 
-  const { data: balances = null } = useQuery({
+  const { data: balances = null, isLoading: balancesLoading } = useQuery({
     queryKey: ["leave", "balances"],
-    queryFn: () => leaveApi.getBalances().then((res) => res.data as Balances),
+    queryFn: () => leaveApi.getBalances().then((res) => res.data as LeaveBalancesPayload),
     staleTime: 5 * 60_000,
   });
+
+  const visibleCards = useMemo(
+    () => LEAVE_HUB_CARDS.filter((card) => canAccessRoute(user, card.href)),
+    [user],
+  );
+
+  const balanceCards = useMemo(() => categorizeLeaveBalances(balances), [balances]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -238,8 +284,12 @@ export default function LeavePage() {
 
   return (
     <RegisterShell
-      title="Leave Requests"
-        subtitle="Manage leave applications, balances, and Leave in Lieu linkings."
+      title={queue === "recommend" ? "Recommend inbox" : "Leave"}
+        subtitle={
+          queue === "recommend"
+            ? "Requests waiting for your recommendation."
+            : "Your remaining days by leave type, then requests, calendar, and queues."
+        }
       breadcrumbs={
         <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
           <span className="text-neutral-700">Leave</span>
@@ -264,21 +314,9 @@ export default function LeavePage() {
             <span className="material-symbols-outlined text-[18px]">download</span>
             Export CSV
           </button>
-          <Link href="/leave/calendar" className="btn-secondary text-sm">
-            <span className="material-symbols-outlined text-[18px]">calendar_month</span>
-            Team Calendar
-          </Link>
-          <Link href="/leave/toil" className="btn-secondary text-sm">
-            <span className="material-symbols-outlined text-[18px]">schedule</span>
-            TOIL
-          </Link>
-          <Link href="/leave/queues/certify" className="btn-secondary text-sm">
-            <span className="material-symbols-outlined text-[18px]">fact_check</span>
-            Certify
-          </Link>
           <Link href="/leave/create" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New Request
+            New request
           </Link>
         </div>
       }
@@ -299,71 +337,24 @@ export default function LeavePage() {
               )}
             </div>
           )}
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-            {[
-              {
-                label: "Annual Leave",
-                sub: "days remaining",
-                value: balances ? `${balances.annual_balance_days}` : "—",
-                icon: "event_available",
-                color: "text-green-600",
-                bg: "bg-green-50",
-              },
-              {
-                label: "Leave in Lieu",
-                sub: "hours available",
-                value: balances ? `${balances.lil_hours_available}` : "—",
-                icon: "schedule",
-                color: "text-primary",
-                bg: "bg-primary/10",
-              },
-              {
-                label: "Sick Leave",
-                sub: "days used",
-                value: balances ? `${balances.sick_leave_used_days}` : "—",
-                icon: "sick",
-                color: "text-red-600",
-                bg: "bg-red-50",
-              },
-              {
-                label: "Special Leave",
-                sub: "days used",
-                value: balances ? `${balances.special_leave_days_used ?? 0}` : "—",
-                icon: "star",
-                color: "text-amber-600",
-                bg: "bg-amber-50",
-              },
-              {
-                label: "Maternity Leave",
-                sub: "days used",
-                value: balances ? `${balances.maternity_leave_days_used ?? 0}` : "—",
-                icon: "pregnant_woman",
-                color: "text-neutral-700",
-                bg: "bg-neutral-100",
-              },
-              {
-                label: "Paternity Leave",
-                sub: "days used",
-                value: balances ? `${balances.paternity_leave_days_used ?? 0}` : "—",
-                icon: "man",
-                color: "text-neutral-700",
-                bg: "bg-neutral-100",
-              },
-            ].map((stat) => (
-              <div key={stat.label} className="card p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium text-neutral-700">{stat.label}</p>
-                    <p className="mt-1 text-2xl font-bold text-neutral-900">{stat.value}</p>
-                    <p className="mt-0.5 text-[11px] text-neutral-400">{stat.sub}</p>
-                  </div>
-                  <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${stat.bg}`}>
-                    <span className={`material-symbols-outlined text-[20px] ${stat.color}`}>{stat.icon}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <LeaveBalanceStrip cards={balanceCards} loading={balancesLoading} year={balances?.period_year} />
+          {queue !== "recommend" && visibleCards.length > 0 && (
+            <div className="space-y-4">
+              {HUB_SECTIONS.map((section) => {
+                const cards = visibleCards.filter((card) => card.section === section.id);
+                if (cards.length === 0) return null;
+                return (
+                  <FormSection key={section.id} title={section.title} description={section.description} dense>
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {cards.map((card) => (
+                        <FeatureCard key={`${card.section}-${card.href}-${card.title}`} card={card} />
+                      ))}
+                    </div>
+                  </FormSection>
+                );
+              })}
+            </div>
+          )}
         </>
       }
       filters={

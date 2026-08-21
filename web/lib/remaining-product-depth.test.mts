@@ -1067,5 +1067,518 @@ test("travel settings and calendar breadcrumbs link back to the hub", () => {
   assert.match(calendar, /href:\s*["']\/travel["']/);
 });
 
+function leaveSidebarChildren(source: string): string[] {
+  const start = source.indexOf('label: "Leave"');
+  const next = source.indexOf('label: "Procurement"');
+  assert.ok(start >= 0 && next > start, "Leave nav block not found in Sidebar");
+  const block = source.slice(start, next);
+  const childrenStart = block.indexOf("children:");
+  assert.ok(childrenStart >= 0, "Leave children array not found");
+  return [...block.slice(childrenStart).matchAll(/href:\s*"([^"]+)"/g)].map((m) => m[1]);
+}
+
+test("leave create form shows remaining days by type and labelled fields", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/leave/create/page.tsx"), "utf8");
+  assert.match(source, /LeaveBalanceStrip|categorizeLeaveBalances/);
+  assert.match(source, /leaveApi\.getBalances/);
+  assert.match(source, /FormField/);
+  assert.match(source, /Leave period|What kind of leave/);
+  assert.match(source, /searchParams|edit=/);
+  assert.match(source, /prefillLeaveEndDate/);
+  assert.doesNotMatch(source, /Server preview/);
+  assert.doesNotMatch(source, />Segments</);
+});
+
+test("leave hub shows remaining days per type and labelled destination cards", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/leave/page.tsx"), "utf8");
+  const hub = readFileSync(join(webRoot, "lib/leaveHub.ts"), "utf8");
+  assert.match(page, /LeaveBalanceStrip|categorizeLeaveBalances/);
+  assert.match(page, /LEAVE_HUB_CARDS/);
+  assert.match(page, /queue=recommend|queue === ["']recommend["']/);
+  assert.match(hub, /href:\s*["']\/leave\/create["']/);
+  assert.match(hub, /href:\s*["']\/leave\/calendar["']/);
+  assert.match(hub, /href:\s*["']\/leave\/toil["']/);
+  assert.match(hub, /href:\s*["']\/leave\/queues\/certify["']/);
+  assert.doesNotMatch(page, /days remaining[\s\S]*hours available[\s\S]*days used/);
+});
+
+test("sidebar Leave children are a short primary set not every leaf", () => {
+  const source = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
+  const hrefs = leaveSidebarChildren(source);
+  assert.ok(
+    hrefs.length >= 1 && hrefs.length <= 5,
+    `expected <=5 Leave sidebar children, got ${hrefs.length}: ${hrefs.join(", ")}`,
+  );
+  assert.ok(hrefs.includes("/leave"), "hub remains in the Leave sidebar");
+  assert.ok(hrefs.includes("/leave/create"), "New request remains in the Leave sidebar");
+  assert.ok(!hrefs.includes("/leave/toil"), "TOIL moved off the sidebar");
+  assert.ok(!hrefs.includes("/leave/queues/certify"), "Certify queue moved off the sidebar");
+  assert.ok(!hrefs.includes("/leave?queue=recommend"), "Recommend inbox moved off the sidebar");
+});
+
+test("leave calendar, TOIL, and certify pages keep labelled people and short dates", () => {
+  const calendar = readFileSync(join(webRoot, "app/(app)/leave/calendar/page.tsx"), "utf8");
+  const toil = readFileSync(join(webRoot, "app/(app)/leave/toil/page.tsx"), "utf8");
+  const certify = readFileSync(join(webRoot, "app/(app)/leave/queues/certify/page.tsx"), "utf8");
+  assert.match(calendar, /formatDateShort/);
+  assert.match(calendar, /requester\?\.name/);
+  assert.match(toil, /formatDateShort/);
+  assert.match(certify, /formatDateShort/);
+  assert.match(certify, /requester\?\.name/);
+  assert.match(calendar, /href:\s*["']\/leave["']/);
+});
+
+test("nginx auth rate limit does not wrap GET /auth/me", () => {
+  const source = readFileSync(join(webRoot, "../docker/nginx/api.conf"), "utf8");
+  assert.doesNotMatch(source, /location ~ \^\/api\/v1\/auth \{/);
+  assert.match(source, /location ~ \^\/api\/v1\/auth\/\(login/);
+  assert.match(source, /zone=api_auth/);
+});
+
+test("AuthProvider does not refetch /auth/me on every pathname change", () => {
+  const source = readFileSync(join(webRoot, "components/providers/AuthProvider.tsx"), "utf8");
+  assert.match(source, /authApi\.me\(/);
+  assert.doesNotMatch(source, /authApi\.me\([\s\S]*\}, \[pathname\]\)/);
+});
+
+test("QueryClient does not retry client 4xx failures", () => {
+  const source = readFileSync(join(webRoot, "components/providers/QueryProvider.tsx"), "utf8");
+  assert.match(source, /retry:/);
+  assert.match(source, /status < 500|status >= 500/);
+});
+
+function navChildrenBetween(source: string, startLabel: string, nextLabel: string | null): string[] {
+  const start = source.indexOf(`label: "${startLabel}"`);
+  assert.ok(start >= 0, `${startLabel} nav block not found`);
+  const next = nextLabel ? source.indexOf(`label: "${nextLabel}"`, start + 1) : source.indexOf("const MANIFEST_I18N_KEYS");
+  assert.ok(next > start, `${startLabel} nav end marker not found`);
+  const block = source.slice(start, next);
+  const childrenStart = block.indexOf("children:");
+  assert.ok(childrenStart >= 0, `${startLabel} children array not found`);
+  return [...block.slice(childrenStart).matchAll(/href:\s*"([^"]+)"/g)].map((m) => m[1]);
+}
+
+const OVERCROWDED_SIDEBARS: {
+  label: string;
+  next: string | null;
+  max: number;
+  hubFile: string;
+  page: string;
+  mustInclude: string[];
+  mustExclude: string[];
+  formerHrefs: string[];
+}[] = [
+  {
+    label: "Salary Advances",
+    next: "Programmes",
+    max: 5,
+    hubFile: "lib/hubs/salaryAdvances.ts",
+    page: "app/(app)/salary-advances/page.tsx",
+    mustInclude: ["/salary-advances", "/salary-advances/create", "/salary-advances/applications"],
+    mustExclude: [
+      "/salary-advances/queues/certify",
+      "/salary-advances/queues/payment",
+      "/salary-advances/queues/recovery",
+      "/salary-advances/reconciliation",
+      "/salary-advances/outstanding",
+    ],
+    formerHrefs: [
+      "/salary-advances/create",
+      "/salary-advances/applications",
+      "/salary-advances/history",
+      "/salary-advances/finance",
+      "/salary-advances/queues/certify",
+      "/salary-advances/pending-approval",
+      "/salary-advances/queues/payment",
+      "/salary-advances/queues/recovery",
+      "/salary-advances/outstanding",
+      "/salary-advances/reconciliation",
+      "/salary-advances/register",
+      "/salary-advances/reports",
+      "/salary-advances/settings",
+    ],
+  },
+  {
+    label: "Assignments",
+    next: "Weekly Summaries",
+    max: 6,
+    hubFile: "lib/hubs/assignments.ts",
+    page: "app/(app)/assignments/page.tsx",
+    mustInclude: ["/assignments", "/assignments/create", "/assignments/mine"],
+    mustExclude: ["/assignments/overdue", "/assignments/blocked", "/assignments/escalations", "/assignments/unassigned"],
+    formerHrefs: [
+      "/assignments/mine",
+      "/assignments/assigned-by-me",
+      "/assignments/review",
+      "/assignments/team",
+      "/assignments/create",
+      "/assignments/register",
+      "/assignments/unassigned",
+      "/assignments/pending",
+      "/assignments/overdue",
+      "/assignments/blocked",
+      "/assignments/escalations",
+      "/assignments/recurring",
+      "/assignments/completed",
+      "/assignments/reports",
+      "/assignments/calendar",
+      "/assignments/capacity",
+    ],
+  },
+  {
+    label: "Procurement",
+    next: "Supplier Portal",
+    max: 6,
+    hubFile: "lib/hubs/procurement.ts",
+    page: "app/(app)/procurement/page.tsx",
+    mustInclude: ["/procurement", "/procurement/create", "/procurement/settings"],
+    mustExclude: ["/procurement/tender-committee", "/procurement/bid-submissions", "/procurement/receipts"],
+    formerHrefs: [
+      "/procurement/analytics",
+      "/procurement/create",
+      "/procurement/intake",
+      "/procurement/budget",
+      "/procurement/rfq",
+      "/procurement/tenders",
+      "/procurement/notices",
+      "/procurement/bid-submissions",
+      "/procurement/evaluations",
+      "/procurement/tender-committee",
+      "/procurement/planning",
+      "/procurement/catalogue",
+      "/procurement/vendors",
+      "/procurement/purchase-orders",
+      "/procurement/receipts",
+      "/procurement/invoices",
+      "/procurement/contracts",
+      "/procurement/register",
+      "/procurement/settings",
+    ],
+  },
+  {
+    label: "Finance",
+    next: "Salary Advances",
+    max: 6,
+    hubFile: "lib/hubs/finance.ts",
+    page: "app/(app)/finance/page.tsx",
+    mustInclude: ["/finance", "/budget", "/imprest"],
+    mustExclude: ["/budget/contribution-schedules", "/budget/fx-rates", "/finance/payroll-imports"],
+    formerHrefs: [
+      "/budget",
+      "/budget/cycles",
+      "/budget/changes",
+      "/budget/variance",
+      "/budget/reports",
+      "/budget/cashflow",
+      "/budget/fx-rates",
+      "/budget/contribution-schedules",
+      "/finance/budget",
+      "/finance/payslips",
+      "/finance/payroll-imports",
+      "/imprest",
+      "/finance/balance-register",
+    ],
+  },
+  {
+    label: "Timesheets",
+    next: "HR",
+    max: 5,
+    hubFile: "lib/hubs/timesheets.ts",
+    page: "app/(app)/hr/timesheets/page.tsx",
+    mustInclude: ["/hr/timesheets", "/hr/timesheets/monthly"],
+    mustExclude: ["/hr/timesheets/payroll", "/hr/timesheets/history", "/hr/timesheets/overtime"],
+    formerHrefs: [
+      "/hr/timesheets/monthly",
+      "/hr/timesheets/overtime",
+      "/hr/timesheets/team",
+      "/hr/timesheets/schedules",
+      "/hr/timesheets/payroll",
+      "/hr/timesheets/templates",
+      "/hr/timesheets/history",
+    ],
+  },
+  {
+    label: "HR",
+    next: "Risk Register",
+    max: 6,
+    hubFile: "lib/hubs/hr.ts",
+    page: "app/(app)/hr/page.tsx",
+    mustInclude: ["/hr", "/hr/leave", "/hr/files"],
+    mustExclude: ["/hr/profile-requests", "/hr/incidents", "/leave/toil"],
+    formerHrefs: [
+      "/hr/leave",
+      "/hr/leave/balances",
+      "/leave/queues/certify",
+      "/leave/toil",
+      "/hr/appraisals",
+      "/hr/conduct",
+      "/hr/performance",
+      "/hr/incidents",
+      "/hr/files",
+      "/hr/documents",
+      "/hr/profile-requests",
+      "/hr/payslips",
+      "/hr/departments",
+      "/hr/positions",
+    ],
+  },
+  {
+    label: "Risk Register",
+    next: "Audit Management",
+    max: 5,
+    hubFile: "lib/hubs/risk.ts",
+    page: "app/(app)/risk/page.tsx",
+    mustInclude: ["/risk", "/risk/create", "/risk/dashboard"],
+    mustExclude: ["/risk/kri", "/risk/control-testing", "/risk/bcp"],
+    formerHrefs: [
+      "/risk/dashboard",
+      "/risk/analytics",
+      "/risk/controls",
+      "/risk/incidents",
+      "/risk/appetite",
+      "/risk/audit-trail",
+      "/risk/policies",
+      "/risk/create",
+      "/risk/kri",
+      "/risk/control-testing",
+      "/risk/bcp",
+    ],
+  },
+  {
+    label: "Audit Management",
+    next: "People & Authority",
+    max: 5,
+    hubFile: "lib/hubs/audit.ts",
+    page: "app/(app)/audit/page.tsx",
+    mustInclude: ["/audit", "/audit/engagements", "/audit/settings"],
+    mustExclude: ["/audit/ai", "/audit/qa", "/audit/campaigns"],
+    formerHrefs: [
+      "/audit/analytics",
+      "/audit/universe",
+      "/audit/plans",
+      "/audit/engagements",
+      "/audit/findings",
+      "/audit/corrective-actions",
+      "/audit/campaigns",
+      "/audit/resources",
+      "/audit/qa",
+      "/audit/templates",
+      "/audit/governance-packs",
+      "/audit/appointments",
+      "/audit/external",
+      "/audit/ai",
+      "/audit/settings",
+    ],
+  },
+  {
+    label: "People & Authority",
+    next: "M&E / Results Monitoring",
+    max: 5,
+    hubFile: "lib/hubs/people.ts",
+    page: "app/(app)/people/page.tsx",
+    mustInclude: ["/people", "/people/directory"],
+    mustExclude: ["/people/acting", "/saam", "/verify-signature"],
+    formerHrefs: [
+      "/profile",
+      "/saam",
+      "/people/directory",
+      "/organogram",
+      "/people/authority",
+      "/people/delegations",
+      "/people/acting",
+      "/verify-signature",
+    ],
+  },
+  {
+    label: "M&E / Results Monitoring",
+    next: "Reports",
+    max: 6,
+    hubFile: "lib/hubs/mande.ts",
+    page: "app/(app)/mande/page.tsx",
+    mustInclude: ["/mande", "/mande/activity-reports/mine", "/mande/settings"],
+    mustExclude: ["/mande/import", "/mande/data-quality", "/mande/pm-review"],
+    formerHrefs: [
+      "/mande/intake",
+      "/mande/activity-reports/mine",
+      "/mande/activity-reports",
+      "/mande/review-queue",
+      "/mande/pm-review",
+      "/mande/strategic-plan",
+      "/mande/results",
+      "/mande/indicators",
+      "/mande/calendar",
+      "/mande/reports",
+      "/mande/data-quality",
+      "/mande/import",
+      "/mande/settings",
+    ],
+  },
+  {
+    label: "Fixed Assets",
+    next: "Consumables / Stock",
+    max: 6,
+    hubFile: "lib/hubs/assets.ts",
+    page: "app/(app)/assets/dashboard/page.tsx",
+    mustInclude: ["/assets/dashboard", "/assets", "/assets/settings"],
+    mustExclude: ["/assets/revaluation", "/assets/insurance", "/assets/depreciation"],
+    formerHrefs: [
+      "/assets",
+      "/fleet",
+      "/fleet/utilisation",
+      "/assets/intake",
+      "/assets/mine",
+      "/assets/transfers",
+      "/assets/verification",
+      "/assets/maintenance",
+      "/assets/depreciation",
+      "/assets/disposal",
+      "/assets/revaluation",
+      "/assets/reports",
+      "/assets/settings",
+      "/assets/categories",
+      "/assets/requests",
+      "/assets/insurance",
+    ],
+  },
+  {
+    label: "Consumables / Stock",
+    next: "Governance",
+    max: 6,
+    hubFile: "lib/hubs/stock.ts",
+    page: "app/(app)/stock/dashboard/page.tsx",
+    mustInclude: ["/stock/dashboard", "/stock", "/stock/requests"],
+    mustExclude: ["/stock/write-offs", "/stock/batches", "/stock/phase2/forecasting"],
+    formerHrefs: [
+      "/stock",
+      "/stock/requests",
+      "/stock/issues",
+      "/stock/returns",
+      "/stock/transfers",
+      "/stock/movements",
+      "/stock/stocktakes",
+      "/stock/scan",
+      "/stock/write-offs",
+      "/stock/replenishments",
+      "/stock/low-stock",
+      "/stock/batches",
+      "/stock/reports",
+      "/stock/locations",
+      "/stock/units",
+      "/stock/categories",
+      "/stock/phase2/forecasting",
+    ],
+  },
+  {
+    label: "Correspondence",
+    next: "Analytics",
+    max: 6,
+    hubFile: "lib/hubs/correspondence.ts",
+    page: "app/(app)/correspondence/page.tsx",
+    mustInclude: ["/correspondence", "/correspondence/incoming", "/correspondence/create"],
+    mustExclude: ["/correspondence/subject-files", "/correspondence/retention", "/correspondence/letterhead"],
+    formerHrefs: [
+      "/correspondence/incoming",
+      "/correspondence/registry?direction=incoming",
+      "/correspondence/create",
+      "/correspondence/mail-merge",
+      "/correspondence/registry?direction=outgoing",
+      "/correspondence/my-actions",
+      "/correspondence/pending-routing",
+      "/correspondence/master-register",
+      "/correspondence/subject-files",
+      "/correspondence/retention",
+      "/correspondence/contacts",
+      "/correspondence/letterhead",
+      "/correspondence/reports",
+      "/correspondence/mailbox",
+    ],
+  },
+];
+
+const ADMIN_SIDEBAR_HREFS = [
+  "/admin",
+  "/admin/operations",
+  "/admin/users",
+  "/admin/access/roles",
+  "/admin/access",
+  "/admin/departments",
+  "/admin/positions",
+  "/admin/portfolios",
+  "/admin/workflows",
+  "/admin/workflows/designer",
+  "/admin/workflows/simulate",
+  "/admin/workflows/analytics",
+  "/admin/workflows/ai",
+  "/admin/settings",
+  "/settings/hr",
+  "/admin/governance",
+  "/admin/notifications",
+  "/admin/timesheet-projects",
+  "/admin/calendar",
+  "/admin/payslips",
+  "/admin/salary-assignments",
+  "/admin/audit-trail",
+  "/admin/documents",
+  "/admin/ledger",
+  "/admin/data-scope",
+  "/admin/weekly-summary",
+  "/admin/correspondence",
+];
+
+test("overcrowded sidebars are shortened and hub cards keep every former destination", () => {
+  const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
+  const hubCards = readFileSync(join(webRoot, "components/ui/ModuleHubCards.tsx"), "utf8");
+  assert.match(hubCards, /data-testid=["']module-hub-cards["']/);
+  assert.match(hubCards, /FormSection/);
+  assert.match(hubCards, /canAccessRoute/);
+
+  for (const mod of OVERCROWDED_SIDEBARS) {
+    const hrefs = navChildrenBetween(sidebar, mod.label, mod.next);
+    assert.ok(
+      hrefs.length >= 1 && hrefs.length <= mod.max,
+      `${mod.label}: expected <=${mod.max} sidebar children, got ${hrefs.length}: ${hrefs.join(", ")}`,
+    );
+    for (const href of mod.mustInclude) {
+      assert.ok(hrefs.includes(href), `${mod.label} sidebar missing ${href}`);
+    }
+    for (const href of mod.mustExclude) {
+      assert.ok(!hrefs.includes(href), `${mod.label} sidebar still lists ${href}`);
+    }
+
+    const hubPath = join(webRoot, mod.hubFile);
+    assert.ok(existsSync(hubPath), `missing hub file ${mod.hubFile}`);
+    const hub = readFileSync(hubPath, "utf8");
+    const page = readFileSync(join(webRoot, mod.page), "utf8");
+    assert.match(page, /ModuleHubCards/);
+    assert.match(page, /_HUB_CARDS/);
+    for (const href of mod.formerHrefs) {
+      const escaped = href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      assert.match(hub, new RegExp(escaped), `${mod.hubFile} missing former destination ${href}`);
+    }
+  }
+});
+
+test("Administration sidebar and hub keep every control-plane destination", () => {
+  const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
+  const hrefs = navChildrenBetween(sidebar, "Administration", null);
+  for (const href of ADMIN_SIDEBAR_HREFS) {
+    assert.ok(hrefs.includes(href), `Administration sidebar missing ${href}`);
+  }
+  const page = readFileSync(join(webRoot, "app/(app)/admin/page.tsx"), "utf8");
+  const hub = readFileSync(join(webRoot, "lib/hubs/admin.ts"), "utf8");
+  assert.match(page, /ModuleHubCards/);
+  assert.match(page, /ADMIN_HUB_CARDS/);
+  for (const href of [
+    "/admin/users",
+    "/admin/access/roles",
+    "/admin/workflows",
+    "/admin/settings",
+    "/admin/documents",
+    "/admin/notifications",
+  ]) {
+    assert.match(hub, new RegExp(href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+});
+
 
 

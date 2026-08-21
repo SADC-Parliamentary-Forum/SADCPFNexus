@@ -5,6 +5,8 @@ import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { hrApi, type Timesheet } from "@/lib/api";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { HR_HUB_CARDS } from "@/lib/hubs/hr";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   approved: { label: "Approved", cls: "badge-success" },
@@ -222,6 +224,8 @@ function HRPageContent() {
       {/* Overview tab (default) */}
       {(activeTab === "overview" || !["leave", "payroll", "timesheets", "performance", "appraisals", "conduct", "files"].includes(activeTab)) && (
         <>
+
+          <ModuleHubCards cards={HR_HUB_CARDS} />
 
           {/* Summary stats */}
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { mandeApi, type MeDashboardData } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { MANDE_HUB_CARDS } from "@/lib/hubs/mande";
 
 const STATUS_BADGE: Record<string, string> = {
   not_submitted: "badge-muted",
@@ -75,6 +77,8 @@ export default function MandeDashboardPage() {
           </Link>
         </div>
       </div>
+
+      <ModuleHubCards cards={MANDE_HUB_CARDS} />
 
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">Failed to load M&amp;E dashboard.</div>

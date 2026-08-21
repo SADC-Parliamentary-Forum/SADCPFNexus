@@ -4,6 +4,8 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { stockDashboardApi, type StockDashboard } from "@/lib/api";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { STOCK_HUB_CARDS } from "@/lib/hubs/stock";
 
 function fmtMoney(n: number | string | null | undefined): string {
   if (n === null || n === undefined || n === "") return "—";
@@ -43,6 +45,8 @@ export default function StockDashboardPage() {
         subtitle="Stores KPIs for paper, toner, stationery and other consumables — separate from fixed assets."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Consumables dashboard" }]} />}
       />
+
+      <ModuleHubCards cards={STOCK_HUB_CARDS} />
 
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {cards.map((c) => (

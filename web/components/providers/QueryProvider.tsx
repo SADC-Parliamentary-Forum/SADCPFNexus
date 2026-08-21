@@ -12,7 +12,11 @@ export function QueryProvider({ children }: { children: ReactNode }) {
           queries: {
             staleTime: 30_000,        // data stays fresh 30 s — avoids refetch on every nav
             gcTime: 5 * 60_000,       // keep unused cache entries for 5 min
-            retry: 1,
+            retry: (failureCount, error) => {
+              const status = (error as { response?: { status?: number } })?.response?.status;
+              if (status && status < 500) return false;
+              return failureCount < 1;
+            },
             refetchOnWindowFocus: false,
           },
         },

@@ -1,6 +1,8 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { ADMIN_HUB_CARDS } from "@/lib/hubs/admin";
 import { adminConsoleApi, type AdminConsoleDashboard } from "@/lib/api";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -166,6 +168,8 @@ export default function AdminPage() {
         subtitle="System configuration, user management, and organisational settings."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Admin" }]} />}
       />
+
+      <ModuleHubCards cards={ADMIN_HUB_CARDS} />
 
       {dashboard ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
