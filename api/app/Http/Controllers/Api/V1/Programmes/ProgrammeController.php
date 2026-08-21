@@ -139,6 +139,7 @@ class ProgrammeController extends Controller
             'rapporteurs_rate'                   => ['nullable', 'numeric', 'min:0'],
             'media_liaison_required'             => ['nullable', 'boolean'],
             'media_liaison_count'                => ['nullable', 'integer', 'min:0'],
+            'media_liaison_rate'                 => ['nullable', 'numeric', 'min:0'],
             'local_support_required'             => ['nullable', 'boolean'],
             'local_support_count'                => ['nullable', 'integer', 'min:0'],
             'local_support_rate'                 => ['nullable', 'numeric', 'min:0'],

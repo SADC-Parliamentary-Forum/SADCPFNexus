@@ -26,6 +26,7 @@ import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner
 import { unwrapEntity } from "@/lib/unwrapEntity";
 import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { useToast } from "@/components/ui/Toast";
+import { personLabel } from "@/lib/pifForm";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -522,7 +523,7 @@ export default function PifDetailPage() {
       <WorkflowStatusBanner
         status={programme.status}
         currentStage={STATUS_LABEL[programme.status] ?? programme.status}
-        currentHolder={programme.responsible_officer ?? "Responsible officer"}
+        currentHolder={personLabel(programme.responsible_officer, "Responsible officer")}
         extras={[
           { label: "M&E", value: ME_STATUS_LABEL[programme.me_status] ?? programme.me_status ?? "—" },
         ]}
@@ -551,14 +552,14 @@ export default function PifDetailPage() {
             <p className="text-sm font-semibold text-neutral-800 mt-0.5">
               {(() => {
                 const ids = programme.responsible_officer_ids;
-                const ro = programme.responsible_officer_user;
-                if (ids && ids.length > 0) {
-                  const first = ro && typeof ro === "object" && "name" in ro ? ro.name : (typeof programme.responsible_officer === "string" && programme.responsible_officer ? programme.responsible_officer : null);
-                  return first ? (ids.length > 1 ? `${first}, +${ids.length - 1} more` : first) : `${ids.length} assigned`;
+                const named = personLabel(
+                  programme.responsible_officer_user ?? programme.responsible_officer,
+                  ""
+                );
+                if (ids && ids.length > 1) {
+                  return named ? `${named}, +${ids.length - 1} more` : `${ids.length} assigned`;
                 }
-                if (ro && typeof ro === "object" && "name" in ro) return ro.name;
-                if (typeof programme.responsible_officer === "string" && programme.responsible_officer) return programme.responsible_officer;
-                return "—";
+                return named || "—";
               })()}
             </p>
           </div>

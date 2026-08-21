@@ -14,6 +14,7 @@ import {
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { personLabel } from "@/lib/pifForm";
 
 const STATUS_BADGE: Record<string, string> = {
   draft: "badge-muted",
@@ -36,16 +37,6 @@ function formatBudget(currency: string | null | undefined, amount: number | null
 function statusLabel(status: string | null | undefined): string {
   if (!status) return "unknown";
   return status.replace(/_/g, " ");
-}
-
-function responsibleOfficerLabel(programme: Programme): string {
-  const value = (programme as Programme & { responsible_officer?: unknown }).responsible_officer;
-  if (typeof value === "string" && value.trim()) return value;
-  if (value && typeof value === "object" && "name" in value) {
-    const name = (value as { name?: unknown }).name;
-    if (typeof name === "string" && name.trim()) return name;
-  }
-  return "—";
 }
 
 export default function PifPage() {
@@ -92,7 +83,7 @@ export default function PifPage() {
         row.title,
         row.status,
         row.funding_source,
-        responsibleOfficerLabel(row),
+        personLabel(row.responsible_officer),
       ]
         .filter(Boolean)
         .join(" ")
@@ -124,7 +115,7 @@ export default function PifPage() {
         funding_source: p.funding_source ?? "",
         currency: p.primary_currency ?? "",
         total_budget: p.total_budget ?? "",
-        responsible_officer: responsibleOfficerLabel(p),
+        responsible_officer: personLabel(p.responsible_officer),
         end_date: p.end_date ?? "",
       })),
       [
@@ -275,7 +266,7 @@ export default function PifPage() {
                   <td className="font-medium text-neutral-700">
                     {formatBudget(p.primary_currency, p.total_budget)}
                   </td>
-                  <td className="text-neutral-600">{responsibleOfficerLabel(p)}</td>
+                  <td className="text-neutral-600">{personLabel(p.responsible_officer)}</td>
                   <td className="text-xs text-neutral-500">{formatDateShort(p.end_date)}</td>
                   <td>
                     <div className="flex flex-wrap gap-2">

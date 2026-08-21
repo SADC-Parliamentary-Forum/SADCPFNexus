@@ -1558,6 +1558,33 @@ test("overcrowded sidebars are shortened and hub cards keep every former destina
   }
 });
 
+test("PIF detail does not render a responsible-officer user object as a React child", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/pif/[id]/page.tsx"), "utf8");
+  assert.match(source, /personLabel\(/);
+  assert.doesNotMatch(source, /currentHolder=\{programme\.responsible_officer\s*\?\?/);
+  const banner = readFileSync(join(webRoot, "components/workflow/WorkflowStatusBanner.tsx"), "utf8");
+  assert.match(banner, /function bannerText/);
+});
+
+test("PIF edit uses labelled sections, catalogues, need-toggles, and a sticky save bar", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/pif/[id]/edit/page.tsx"), "utf8");
+  assert.match(source, /FormSection/);
+  assert.match(source, /FormField/);
+  assert.match(source, /NeedToggle/);
+  assert.match(source, /Media liaison rate/);
+  assert.match(source, /media_liaison_rate/);
+  assert.match(source, /PIF_STRATEGIC_PILLARS/);
+  assert.match(source, /DEPARTMENTS/);
+  assert.match(source, /CURRENCIES/);
+  assert.match(source, /listDestinations/);
+  assert.match(source, /formatDateRange/);
+  assert.match(source, /Save this page/);
+  assert.match(source, /data-testid=["']pif-edit-actions["']/);
+  assert.match(source, /sticky/);
+  const toggle = readFileSync(join(webRoot, "app/(app)/pif/[id]/edit/NeedToggle.tsx"), "utf8");
+  assert.match(toggle, /data-testid=["']pif-need-toggle["']/);
+});
+
 test("Administration sidebar and hub keep every control-plane destination", () => {
   const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
   const hrefs = navChildrenBetween(sidebar, "Administration", null);

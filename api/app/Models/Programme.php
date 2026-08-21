@@ -40,7 +40,7 @@ class Programme extends Model
         'consultants_required', 'consultants_count', 'consultants_rate',
         'resource_persons_required', 'resource_persons_count', 'resource_persons_rate',
         'rapporteurs_required', 'rapporteurs_count', 'rapporteurs_rate',
-        'media_liaison_required', 'media_liaison_count',
+        'media_liaison_required', 'media_liaison_count', 'media_liaison_rate',
         'local_support_required', 'local_support_count', 'local_support_rate',
         'personnel_comments',
         // Interpretation
@@ -102,6 +102,7 @@ class Programme extends Model
         'rapporteurs_required'          => 'boolean',
         'rapporteurs_rate'              => 'decimal:2',
         'media_liaison_required'        => 'boolean',
+        'media_liaison_rate'            => 'decimal:2',
         'local_support_required'        => 'boolean',
         'local_support_rate'            => 'decimal:2',
         'interpretation_required'       => 'boolean',
@@ -336,4 +337,34 @@ class Programme extends Model
      * "approved via an amendment".
      */
     public function isApprovedOrAmended(): bool { return in_array($this->status, ['approved', 'amended'], true); }
+
+    /**
+     * `responsibleOfficer()` serializes as `responsible_officer`, which collides
+     * with the legacy name column. Keep the JSON field a display string so the
+     * PIF UI never tries to render a User row as a React child.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(): array
+    {
+        $array = parent::toArray();
+        $officer = $this->relationLoaded('responsibleOfficer')
+            ? $this->getRelation('responsibleOfficer')
+            : null;
+
+        if ($officer instanceof User) {
+            $array['responsible_officer_user'] = $officer->toArray();
+            $array['responsible_officer'] = $officer->name;
+
+            return $array;
+        }
+
+        $legacy = $this->getAttributes()['responsible_officer'] ?? null;
+        $array['responsible_officer'] = is_string($legacy) && $legacy !== '' ? $legacy : null;
+        if ($this->relationLoaded('responsibleOfficer')) {
+            $array['responsible_officer_user'] = null;
+        }
+
+        return $array;
+    }
 }

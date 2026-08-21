@@ -13,7 +13,7 @@ const UNIQUE = `E2E-PIF-${Date.now()}`;
  * exactly. Several field labels repeat across sections, so section-scoping
  * avoids strict-mode ambiguity. */
 function sectionByHeading(page: Page, heading: string) {
-  return page.getByRole("heading", { name: heading, exact: true }).locator("xpath=..");
+  return page.getByRole("heading", { name: heading, exact: true }).locator("xpath=ancestor::section[1]");
 }
 
 function isoDate(daysFromNow: number): string {
@@ -52,43 +52,43 @@ test.describe("PIF — full section-completion happy path", () => {
     await page.waitForLoadState("networkidle");
 
     // ── Overview ────────────────────────────────────────────────────────────
-    await page.locator('label:text-is("Background") + textarea').fill(
+    await page.getByLabel("Background", { exact: true }).fill(
       `${UNIQUE} background: a regional coordination workshop for member parliaments.`
     );
-    await page.locator('label:text-is("Overall objective") + textarea').fill(
+    await page.getByLabel("Overall objective", { exact: true }).fill(
       "Improve regional coordination and information-sharing among member parliaments."
     );
-    await page.locator('label:text-is("Start date") + input').fill(isoDate(30));
-    await page.locator('label:text-is("End date") + input').fill(isoDate(33));
+    await page.getByLabel("Start date").fill(isoDate(30));
+    await page.getByLabel("End date").fill(isoDate(33));
     await saveAndContinue(page);
 
     // ── Venue ────────────────────────────────────────────────────────────────
     const venue = sectionByHeading(page, "Venue");
-    await venue.locator('label:text-is("Venue country") + input').fill("South Africa");
-    await venue.locator('label:text-is("Venue city") + input').fill("Cape Town");
-    await venue.locator('label:text-is("Proposed hotel") + input').fill("Test Conference Hotel");
+    await venue.getByLabel("Venue country").fill("South Africa");
+    await venue.getByLabel("Venue city").fill("Cape Town");
+    await venue.getByLabel("Proposed hotel").fill("Test Conference Hotel");
     await venue.getByLabel("Accommodation required").check();
-    await venue.locator('label:text-is("Accommodation count") + input').fill("5");
-    await venue.locator('label:text-is("Venue comments") + textarea').fill(
+    await venue.getByLabel("Accommodation count").fill("5");
+    await venue.getByLabel("Venue comments").fill(
       "Venue confirmed pending signed contract."
     );
     await saveAndContinue(page);
 
     // ── Budget (+ variance) ──────────────────────────────────────────────────
-    await page.locator('label:text-is("Total budget") + input').fill("10000");
-    await page.locator('label:text-is("Funding source") + input').fill("SADC Core Fund");
+    await page.getByLabel("Total budget").fill("10000");
+    await page.getByLabel("Funding source").fill("SADC Core Fund");
     const budget = sectionByHeading(page, "Budget variance");
-    await budget.locator('label:text-is("Proposed DSA rate") + input').fill("150");
-    await budget.locator('label:text-is("Original budget rate") + input').fill("150");
-    await budget.locator('label:text-is("Proposed participants") + input').fill("20");
-    await budget.locator('label:text-is("Budgeted participants") + input').fill("20");
+    await budget.getByLabel("Proposed DSA rate").fill("150");
+    await budget.getByLabel("Original budget rate").fill("150");
+    await budget.getByLabel("Proposed participants").fill("20");
+    await budget.getByLabel("Budgeted participants").fill("20");
     await saveAndContinue(page);
 
     // ── Personnel & consultants ─────────────────────────────────────────────
     const personnel = sectionByHeading(page, "Personnel & consultants");
     await personnel.getByLabel("Secretariat staff required").check();
-    await personnel.locator('label:text-is("Staff count") + input').fill("3");
-    await personnel.locator('label:text-is("Personnel comments") + textarea').fill(
+    await personnel.getByLabel("Staff count").fill("3");
+    await personnel.getByLabel("Personnel comments").fill(
       "3 secretariat staff required for registration and delegate support."
     );
     await saveAndContinue(page);
@@ -97,8 +97,8 @@ test.describe("PIF — full section-completion happy path", () => {
     const interpretation = sectionByHeading(page, "Interpretation & translation");
     await interpretation.getByLabel("Interpretation required").check();
     await interpretation.getByLabel("English ↔ French interpreters required").check();
-    await interpretation.locator('label:text-is("EN/FR interpreters count") + input').fill("2");
-    await interpretation.locator('label:text-is("Interpretation comments") + textarea').fill(
+    await interpretation.getByLabel("EN/FR interpreters count").fill("2");
+    await interpretation.getByLabel("Interpretation comments").fill(
       "Simultaneous EN/FR interpretation required in plenary sessions."
     );
     await saveAndContinue(page);
@@ -108,10 +108,10 @@ test.describe("PIF — full section-completion happy path", () => {
     await support.getByLabel("Ground Transport").check();
     const conflict = sectionByHeading(page, "Conflict of interest");
     await conflict.getByLabel("A conflict of interest is declared for this programme").check();
-    await conflict.locator('label:text-is("Conflict details") + textarea').fill(
+    await conflict.getByLabel("Conflict details").fill(
       "A proposed resource person is a relative of a secretariat staff member."
     );
-    await conflict.locator('label:text-is("Mitigation measures") + textarea').fill(
+    await conflict.getByLabel("Mitigation measures").fill(
       "Selection of the resource person will be independently reviewed by a second officer."
     );
     await saveAndContinue(page);

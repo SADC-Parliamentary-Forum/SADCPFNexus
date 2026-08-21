@@ -102,6 +102,31 @@ class ProgrammesTest extends TestCase
         $http->getJson("/api/v1/programmes/{$programme->id}")->assertOk();
     }
 
+    public function test_programme_json_exposes_responsible_officer_as_a_name_not_a_user_object(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeUser('staff', $tenant);
+
+        $programme = Programme::create([
+            'tenant_id'              => $tenant->id,
+            'created_by'             => $user->id,
+            'reference_number'       => 'PIF-' . uniqid(),
+            'title'                  => 'Officer collision PIF',
+            'status'                 => 'draft',
+            'responsible_officer_id' => $user->id,
+        ]);
+
+        $payload = app(\App\Modules\Programmes\Services\ProgrammeService::class)
+            ->get($programme)
+            ->toArray();
+
+        $this->assertIsString($payload['responsible_officer']);
+        $this->assertSame($user->name, $payload['responsible_officer']);
+        $this->assertIsArray($payload['responsible_officer_user']);
+        $this->assertSame($user->id, $payload['responsible_officer_user']['id']);
+        $this->assertSame($user->name, $payload['responsible_officer_user']['name']);
+    }
+
     public function test_staff_can_update_draft_programme(): void
     {
         $tenant = Tenant::factory()->create();

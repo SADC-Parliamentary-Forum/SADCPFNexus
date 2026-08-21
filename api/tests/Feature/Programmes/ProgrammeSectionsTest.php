@@ -26,7 +26,7 @@ class ProgrammeSectionsTest extends TestCase
             'consultants_required', 'consultants_count', 'consultants_rate',
             'resource_persons_required', 'resource_persons_count', 'resource_persons_rate',
             'rapporteurs_required', 'rapporteurs_count', 'rapporteurs_rate',
-            'media_liaison_required', 'media_liaison_count',
+            'media_liaison_required', 'media_liaison_count', 'media_liaison_rate',
             'local_support_required', 'local_support_count', 'local_support_rate',
             'personnel_comments',
             // Interpretation

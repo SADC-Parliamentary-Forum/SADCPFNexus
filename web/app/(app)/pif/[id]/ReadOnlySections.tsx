@@ -159,7 +159,12 @@ export default function ReadOnlySections({
             </>
           )}
           <Field label="Media liaison required" value={yesNo(programme.media_liaison_required)} />
-          {programme.media_liaison_required && <Field label="Media liaison count" value={programme.media_liaison_count} />}
+          {programme.media_liaison_required && (
+            <>
+              <Field label="Media liaison count" value={programme.media_liaison_count} />
+              <Field label="Media liaison rate" value={programme.media_liaison_rate != null ? `${programme.primary_currency} ${Number(programme.media_liaison_rate).toLocaleString()}` : null} />
+            </>
+          )}
           <Field label="Local support required" value={yesNo(programme.local_support_required)} />
           {programme.local_support_required && (
             <>

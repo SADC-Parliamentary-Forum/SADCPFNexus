@@ -4992,6 +4992,7 @@ export interface Programme {
   rapporteurs_rate: number | null;
   media_liaison_required: boolean | null;
   media_liaison_count: number | null;
+  media_liaison_rate: number | null;
   local_support_required: boolean | null;
   local_support_count: number | null;
   local_support_rate: number | null;

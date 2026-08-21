@@ -18,6 +18,18 @@ type Snapshot = {
   } | null;
 };
 
+function bannerText(value: unknown): string {
+  if (value == null || value === "") return "—";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (typeof value === "object" && "name" in value) {
+    const name = (value as { name?: unknown }).name;
+    if (typeof name === "string" && name.trim()) return name.trim();
+  }
+  return "—";
+}
+
 interface WorkflowStatusBannerProps {
   /** Prefer a full workflow snapshot when available (Approvals / Travel). */
   snapshot?: Snapshot | null;
@@ -54,10 +66,10 @@ export function WorkflowStatusBanner({
   }
 
   const cells = [
-    { label: "Status", value: status ?? "—" },
-    { label: "Current stage", value: currentStage ?? "—" },
-    { label: "Currently with", value: currentHolder ?? "—" },
-    ...extras,
+    { label: "Status", value: bannerText(status) },
+    { label: "Current stage", value: bannerText(currentStage) },
+    { label: "Currently with", value: bannerText(currentHolder) },
+    ...extras.map((extra) => ({ label: extra.label, value: bannerText(extra.value) })),
   ];
 
   return (
