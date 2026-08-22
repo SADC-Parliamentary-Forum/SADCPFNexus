@@ -49,6 +49,7 @@ class DatabaseSeeder extends Seeder
             DefaultLeavePolicySeeder::class,
             WorkplanEventTypeSeeder::class,
             HrSettingsSeeder::class,
+            LifecycleJourneyTemplateSeeder::class,
             PositionsSeeder::class,
 
             // ── Core Module Demo Data ──────────────────────

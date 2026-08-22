@@ -76,16 +76,59 @@ test("people acting page can create and approve", () => {
   assert.match(source, /approveActing/);
 });
 
-test("people onboarding page uses createOnboarding instead of an API hint", () => {
+test("people onboarding page redirects to lifecycle onboarding create", () => {
   const source = readFileSync(join(webRoot, "app/(app)/people/onboarding/page.tsx"), "utf8");
-  assert.match(source, /createOnboarding/);
-  assert.doesNotMatch(source, /Use API POST/);
+  assert.match(source, /router\.replace\(["']\/lifecycle\/onboarding\/create["']\)/);
+  assert.doesNotMatch(source, /createOnboarding/);
 });
 
-test("people offboarding page uses createOffboarding instead of an API hint", () => {
+test("people offboarding page redirects to lifecycle separation create", () => {
   const source = readFileSync(join(webRoot, "app/(app)/people/offboarding/page.tsx"), "utf8");
-  assert.match(source, /createOffboarding/);
-  assert.doesNotMatch(source, /Use API POST/);
+  assert.match(source, /router\.replace\(["']\/lifecycle\/separation\/create["']\)/);
+  assert.doesNotMatch(source, /createOffboarding/);
+});
+
+test("lifecycle hub uses ModulePageHeader, FormSection, and formatDateShort", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/lifecycle/page.tsx"), "utf8");
+  const hub = readFileSync(join(webRoot, "lib/hubs/lifecycle.ts"), "utf8");
+  assert.match(page, /ModulePageHeader/);
+  assert.match(page, /FormSection/);
+  assert.match(page, /formatDateShort/);
+  assert.match(page, /ModuleHubCards/);
+  assert.match(page, /LIFECYCLE_HUB_CARDS/);
+  assert.match(hub, /href:\s*["']\/lifecycle\/onboarding["']/);
+  assert.match(hub, /href:\s*["']\/lifecycle\/separation["']/);
+  assert.match(hub, /href:\s*["']\/lifecycle\/admin\/templates["']/);
+});
+
+test("lifecycle sidebar is a short primary set with hub cards for specialist destinations", () => {
+  const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
+  const hub = readFileSync(join(webRoot, "lib/hubs/lifecycle.ts"), "utf8");
+  const auth = readFileSync(join(webRoot, "lib/auth.ts"), "utf8");
+  const start = sidebar.indexOf('label: "Employee Lifecycle"');
+  const next = sidebar.indexOf('label: "M&E / Results Monitoring"', start + 1);
+  assert.ok(start >= 0 && next > start);
+  const block = sidebar.slice(start, next);
+  const hrefs = [...block.matchAll(/href:\s*"([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(hrefs.length >= 1 && hrefs.length <= 5, `expected <=5 lifecycle sidebar children, got ${hrefs.length}`);
+  assert.ok(hrefs.includes("/lifecycle"));
+  assert.ok(hrefs.includes("/lifecycle/my-tasks"));
+  assert.ok(!hrefs.includes("/lifecycle/admin/templates"));
+  assert.match(auth, /\/lifecycle\/admin\/templates/);
+  assert.match(auth, /\/lifecycle\/onboarding\/create/);
+  assert.match(hub, /permission:/);
+  assert.match(hub, /href:\s*["']\/lifecycle\/reports["']/);
+});
+
+test("lifecycle API client exposes onboarding and separation endpoints", () => {
+  const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const lifecycle = source.slice(source.indexOf("export const lifecycleApi"), source.indexOf("export interface LifecycleCaseSummary") > 0 ? source.length : source.indexOf("export interface LifecycleCaseSummary"));
+  assert.match(source, /export const lifecycleApi/);
+  assert.match(source, /initiateOnboarding/);
+  assert.match(source, /\/lifecycle\/onboarding/);
+  assert.match(source, /initiateSeparation/);
+  assert.match(source, /\/lifecycle\/separation/);
+  assert.match(source, /\/lifecycle\/my-tasks/);
 });
 
 test("people access reviews page uses createAccessReview instead of an API hint", () => {
@@ -1439,8 +1482,26 @@ const OVERCROWDED_SIDEBARS: {
     ],
   },
   {
-    label: "People & Authority",
+    label: "Employee Lifecycle",
     next: "M&E / Results Monitoring",
+    max: 5,
+    hubFile: "lib/hubs/lifecycle.ts",
+    page: "app/(app)/lifecycle/page.tsx",
+    mustInclude: ["/lifecycle", "/lifecycle/my-tasks"],
+    mustExclude: ["/lifecycle/admin/templates", "/lifecycle/reports", "/lifecycle/onboarding/create"],
+    formerHrefs: [
+      "/lifecycle/onboarding/create",
+      "/lifecycle/separation/create",
+      "/lifecycle/onboarding",
+      "/lifecycle/separation",
+      "/lifecycle/my-tasks",
+      "/lifecycle/reports",
+      "/lifecycle/admin/templates",
+    ],
+  },
+  {
+    label: "People & Authority",
+    next: "Employee Lifecycle",
     max: 5,
     hubFile: "lib/hubs/people.ts",
     page: "app/(app)/people/page.tsx",

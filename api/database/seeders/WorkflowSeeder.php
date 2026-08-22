@@ -150,6 +150,15 @@ class WorkflowSeeder extends Seeder
             ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'Secretary General Approval', 'authority_action' => 'sg.approve', 'requires_signature' => true, 'sla_hours' => 72]] : []),
         ]);
 
+        // Employee Lifecycle — approval gates only (operational tasks use Assignments)
+        $this->makeWorkflow($tenant, 'Lifecycle Appointment Authorisation', 'lifecycle_appointment_authorise', [
+            ...($hrRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $hrRole->id, 'stage_type' => 'authorise', 'step_name' => 'HR Authorise Appointment', 'sla_hours' => 72]] : []),
+        ]);
+
+        $this->makeWorkflow($tenant, 'Lifecycle Final HR Clearance', 'lifecycle_final_hr_clearance', [
+            ...($hrRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $hrRole->id, 'stage_type' => 'approve', 'step_name' => 'Final HR Clearance', 'sla_hours' => 72]] : []),
+        ]);
+
         // Publish version snapshots for active workflows
         $publisher = User::role('System Admin')->where('tenant_id', $tenant->id)->first()
             ?? User::where('tenant_id', $tenant->id)->first();

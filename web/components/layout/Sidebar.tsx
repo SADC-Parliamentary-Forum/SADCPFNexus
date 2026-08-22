@@ -214,6 +214,18 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    label: "Employee Lifecycle",
+    href: "/lifecycle",
+    icon: "cycle",
+    section: "Governance",
+    children: [
+      { label: "Dashboard", href: "/lifecycle", icon: "dashboard" },
+      { label: "My tasks", href: "/lifecycle/my-tasks", icon: "task_alt" },
+      { label: "Onboarding", href: "/lifecycle/onboarding", icon: "person_add" },
+      { label: "Separation", href: "/lifecycle/separation", icon: "logout" },
+    ],
+  },
+  {
     label: "M&E / Results Monitoring",
     href: "/mande",
     icon: "monitoring",

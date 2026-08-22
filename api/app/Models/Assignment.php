@@ -30,6 +30,7 @@ class Assignment extends Model
         'audit_finding',
         'weekly_summary',
         'management_instruction',
+        'lifecycle',
     ];
 
     public const BLOCKER_TYPES = [

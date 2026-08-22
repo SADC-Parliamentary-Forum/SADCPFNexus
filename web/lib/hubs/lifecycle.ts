@@ -1,0 +1,74 @@
+import type { HubCard } from "@/components/ui/ModuleHubCards";
+
+export const LIFECYCLE_SIDEBAR_CHILDREN = [
+  { label: "Dashboard", href: "/lifecycle", icon: "dashboard" },
+  { label: "My tasks", href: "/lifecycle/my-tasks", icon: "task_alt" },
+  { label: "Onboarding", href: "/lifecycle/onboarding", icon: "person_add" },
+  { label: "Separation", href: "/lifecycle/separation", icon: "logout" },
+] as const;
+
+export const LIFECYCLE_HUB_CARDS: HubCard[] = [
+  {
+    href: "/lifecycle/onboarding/create",
+    title: "Start onboarding",
+    purpose: "Open a versioned onboarding case for a new appointee.",
+    icon: "person_add",
+    section: "queues",
+    permission: ["lifecycle.manage-onboarding", "lifecycle.admin"],
+  },
+  {
+    href: "/lifecycle/separation/create",
+    title: "Start separation",
+    purpose: "Initiate resignation or end-of-contract clearance.",
+    icon: "logout",
+    section: "queues",
+    permission: ["lifecycle.manage-separation", "lifecycle.admin"],
+  },
+  {
+    href: "/lifecycle/onboarding",
+    title: "Onboarding queue",
+    purpose: "Open onboarding cases awaiting department tasks.",
+    icon: "groups",
+    section: "queues",
+    permission: ["lifecycle.view", "lifecycle.manage-onboarding"],
+  },
+  {
+    href: "/lifecycle/separation",
+    title: "Separation queue",
+    purpose: "Cases awaiting departmental clearance.",
+    icon: "fact_check",
+    section: "queues",
+    permission: ["lifecycle.view", "lifecycle.manage-separation"],
+  },
+  {
+    href: "/lifecycle/my-tasks",
+    title: "My lifecycle tasks",
+    purpose: "Tasks assigned to you across open cases.",
+    icon: "assignment_ind",
+    section: "views",
+  },
+  {
+    href: "/lifecycle/cases/1",
+    title: "Case detail",
+    purpose: "Tasks, clearance, timeline, and readiness for one lifecycle case.",
+    icon: "folder_open",
+    section: "views",
+    permission: ["lifecycle.view", "lifecycle.view-own", "lifecycle.admin"],
+  },
+  {
+    href: "/lifecycle/reports",
+    title: "Reports",
+    purpose: "Case lists and readiness — analytics deferred to Phase 2.",
+    icon: "analytics",
+    section: "tools",
+    permission: ["lifecycle.view", "lifecycle.admin"],
+  },
+  {
+    href: "/lifecycle/admin/templates",
+    title: "Journey templates",
+    purpose: "Draft and publish operational journey versions.",
+    icon: "route",
+    section: "tools",
+    permission: ["lifecycle.templates.view", "lifecycle.templates.edit"],
+  },
+];

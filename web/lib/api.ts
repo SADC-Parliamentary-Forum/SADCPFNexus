@@ -8994,3 +8994,44 @@ export const platformAuditApi = {
   migrateLegacy: (limit?: number) =>
     api.post<{ data: Record<string, number> }>("/audit-admin/migrate-legacy", { limit }),
 };
+
+export interface LifecycleCaseSummary {
+  id: number;
+  reference: string;
+  lifecycle_type: string;
+  status: string;
+  employee_name?: string;
+  start_date?: string;
+  readiness?: { ready?: boolean };
+  clearance_status?: string;
+}
+
+export interface LifecycleDashboard {
+  onboarding_open: number;
+  separation_open: number;
+  awaiting_clearance: number;
+  ready_onboarding: number;
+}
+
+export const lifecycleApi = {
+  dashboard: () => api.get<{ data: LifecycleDashboard }>("/lifecycle/dashboard"),
+  listCases: (params?: Record<string, string>) => api.get<{ data: LifecycleCaseSummary[] }>("/lifecycle/cases", { params }),
+  myTasks: () => api.get<{ data: Array<Record<string, unknown>> }>("/lifecycle/my-tasks"),
+  showCase: (id: number) => api.get<{ data: Record<string, unknown> }>(`/lifecycle/cases/${id}`),
+  timeline: (id: number) => api.get<{ data: Array<Record<string, unknown>> }>(`/lifecycle/cases/${id}/timeline`),
+  initiateOnboarding: (data: Record<string, unknown>) => api.post("/lifecycle/onboarding", data),
+  initiateSeparation: (data: Record<string, unknown>) => api.post("/lifecycle/separation", data),
+  completeTask: (id: number, revision: number) =>
+    api.post(`/lifecycle/tasks/${id}/complete`, { revision }),
+  updateClearance: (id: number, data: { clearance_status: string; revision: number }) =>
+    api.post(`/lifecycle/tasks/${id}/clearance`, data),
+  requestException: (id: number, reason: string) =>
+    api.post(`/lifecycle/tasks/${id}/exceptions`, { reason }),
+  approveException: (id: number, notes?: string) =>
+    api.post(`/lifecycle/exceptions/${id}/approve`, { resolution_notes: notes }),
+  assertTerminalPayment: (caseId: number) =>
+    api.get<{ allowed: boolean; message?: string }>(`/lifecycle/cases/${caseId}/terminal-payment`),
+  listTemplates: (params?: Record<string, string>) =>
+    api.get<{ data: Array<Record<string, unknown>> }>("/lifecycle/templates", { params }),
+  publishTemplate: (id: number) => api.post(`/lifecycle/templates/${id}/publish`),
+};

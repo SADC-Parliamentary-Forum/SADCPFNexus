@@ -135,6 +135,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'delegations.create', 'delegations.approve', 'delegations.revoke',
             'signatures.enrol', 'signatures.verify', 'signatures.administer', 'documents.sign',
             'access-reviews.manage', 'onboarding.manage', 'offboarding.manage',
+            // Employee Lifecycle (Phase 1)
+            'lifecycle.view', 'lifecycle.view-own', 'lifecycle.manage-onboarding', 'lifecycle.manage-separation',
+            'lifecycle.complete-own-tasks', 'lifecycle.complete-department-tasks', 'lifecycle.view-confidential',
+            'lifecycle.templates.view', 'lifecycle.templates.edit', 'lifecycle.templates.publish',
+            'lifecycle.approve-exceptions', 'lifecycle.finalise-separation', 'lifecycle.admin',
             'people.export', 'identity.audit',
             // People & Authority Phase 2 / 3
             'people.certificate.enrol', 'people.esign.manage', 'people.m365.sync',
@@ -233,6 +238,10 @@ class RolesAndPermissionsSeeder extends Seeder
                     'delegations.create', 'delegations.approve', 'delegations.revoke',
                     'signatures.enrol', 'signatures.verify', 'signatures.administer', 'documents.sign',
                     'access-reviews.manage', 'onboarding.manage', 'offboarding.manage',
+                    'lifecycle.view', 'lifecycle.manage-onboarding', 'lifecycle.manage-separation',
+                    'lifecycle.complete-own-tasks', 'lifecycle.complete-department-tasks', 'lifecycle.view-confidential',
+                    'lifecycle.templates.view', 'lifecycle.templates.edit', 'lifecycle.templates.publish',
+                    'lifecycle.approve-exceptions', 'lifecycle.finalise-separation', 'lifecycle.admin',
                     'people.export', 'identity.audit',
                     'people.certificate.enrol', 'people.esign.manage', 'people.m365.sync',
                     'people.recertification.manage', 'people.sod.analyse', 'people.org-scenarios.manage',
@@ -333,6 +342,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'roles.view',
                     'workflows.view-own', 'workflows.submit', 'workflows.act', 'workflows.withdraw',
                     'notifications.view-own', 'notifications.manage-own-preferences', 'notifications.acknowledge',
+                    'lifecycle.view-own', 'lifecycle.complete-own-tasks',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -394,6 +404,10 @@ class RolesAndPermissionsSeeder extends Seeder
                     'delegations.create', 'delegations.approve',
                     'signatures.enrol', 'signatures.administer', 'documents.sign',
                     'onboarding.manage', 'offboarding.manage', 'identity.audit',
+                    'lifecycle.view', 'lifecycle.manage-onboarding', 'lifecycle.manage-separation',
+                    'lifecycle.complete-own-tasks', 'lifecycle.complete-department-tasks', 'lifecycle.view-confidential',
+                    'lifecycle.templates.view', 'lifecycle.templates.edit', 'lifecycle.templates.publish',
+                    'lifecycle.approve-exceptions', 'lifecycle.finalise-separation', 'lifecycle.admin',
                 ])->where('guard_name', $guard)->get()
             );
 

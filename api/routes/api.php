@@ -2125,6 +2125,39 @@ Route::prefix('v1')->group(function () {
             Route::middleware('can:people.ai.apply')->post('ai/suggestions/{suggestion}/apply', [$pa23, 'aiApply']);
         });
 
+        // Employee Lifecycle Module (Phase 1)
+        Route::prefix('lifecycle')->group(function () {
+            $lc = \App\Http\Controllers\Api\V1\Lifecycle\LifecycleController::class;
+            $lt = \App\Http\Controllers\Api\V1\Lifecycle\LifecycleTemplateController::class;
+
+            Route::middleware('can:lifecycle.view')->get('dashboard', [$lc, 'dashboard']);
+            Route::middleware('can:lifecycle.view')->get('cases', [$lc, 'listCases']);
+            Route::get('my-tasks', [$lc, 'myTasks']);
+
+            Route::middleware('can:lifecycle.manage-onboarding')->post('onboarding', [$lc, 'initiateOnboarding']);
+            Route::middleware('can:lifecycle.manage-separation')->post('separation', [$lc, 'initiateSeparation']);
+
+            Route::middleware('can:lifecycle.view')->get('cases/{lifecycleCase}', [$lc, 'show']);
+            Route::middleware('can:lifecycle.view')->get('cases/{lifecycleCase}/tasks', [$lc, 'tasks']);
+            Route::middleware('can:lifecycle.view')->get('cases/{lifecycleCase}/timeline', [$lc, 'timeline']);
+
+            Route::post('tasks/{lifecycleTask}/complete', [$lc, 'completeTask']);
+            Route::middleware('can:lifecycle.admin')->post('tasks/{lifecycleTask}/reopen', [$lc, 'reopenTask']);
+
+            Route::middleware('can:lifecycle.complete-department-tasks')->post('tasks/{lifecycleTask}/clearance', [$lc, 'updateClearance']);
+            Route::middleware('can:lifecycle.complete-department-tasks')->post('tasks/{lifecycleTask}/exceptions', [$lc, 'requestException']);
+            Route::middleware('can:lifecycle.approve-exceptions')->post('exceptions/{lifecycleException}/approve', [$lc, 'approveException']);
+
+            Route::middleware('can:lifecycle.manage-separation')->get('cases/{lifecycleCase}/terminal-payment', [$lc, 'assertTerminalPayment']);
+            Route::middleware('can:lifecycle.manage-separation')->post('cases/{lifecycleCase}/terminal-payment', [$lc, 'approveTerminalPayment']);
+            Route::middleware('can:lifecycle.finalise-separation')->post('cases/{lifecycleCase}/finalise', [$lc, 'finaliseSeparation']);
+
+            Route::middleware('can:lifecycle.templates.view')->get('templates', [$lt, 'index']);
+            Route::middleware('can:lifecycle.templates.edit')->post('templates', [$lt, 'store']);
+            Route::middleware('can:lifecycle.templates.view')->get('templates/{lifecycleTemplateVersion}', [$lt, 'show']);
+            Route::middleware('can:lifecycle.templates.publish')->post('templates/{lifecycleTemplateVersion}/publish', [$lt, 'publish']);
+        });
+
         // Admin Workflows
         Route::prefix('admin/workflows')->group(function () {
              Route::get('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'index']);

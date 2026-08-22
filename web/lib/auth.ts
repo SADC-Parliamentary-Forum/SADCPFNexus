@@ -342,6 +342,15 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/audit", permission: ["audit.view", "audit.findings.view", "audit.dashboard.auditor", "audit.dashboard.management", "audit.dashboard.sg", "audit.admin"] },
   // People & Authority Module (Phase 1)
   { path: "/people", permission: ["people.view-directory", "people.view-profile", "people.manage", "organisation.view"] },
+  // Employee Lifecycle (Phase 1)
+  { path: "/lifecycle/admin/templates", permission: ["lifecycle.templates.view", "lifecycle.templates.edit", "lifecycle.admin"] },
+  { path: "/lifecycle/onboarding/create", permission: ["lifecycle.manage-onboarding", "lifecycle.admin"] },
+  { path: "/lifecycle/separation/create", permission: ["lifecycle.manage-separation", "lifecycle.admin"] },
+  { path: "/lifecycle/onboarding", permission: ["lifecycle.view", "lifecycle.manage-onboarding", "lifecycle.admin"] },
+  { path: "/lifecycle/separation", permission: ["lifecycle.view", "lifecycle.manage-separation", "lifecycle.admin"] },
+  { path: "/lifecycle/reports", permission: ["lifecycle.view", "lifecycle.admin"] },
+  { path: "/lifecycle/my-tasks" },
+  { path: "/lifecycle", permission: ["lifecycle.view", "lifecycle.view-own", "lifecycle.manage-onboarding", "lifecycle.manage-separation", "lifecycle.admin"] },
 ];
 
 /**
