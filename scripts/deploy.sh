@@ -14,6 +14,7 @@
 #   9. Clears + rebuilds Laravel config/route caches, restarts php + queue containers
 #  10. Rebuilds the web (Next.js) image with --no-cache and restarts it
 #  11. Runs post-deploy health checks and reports pass/fail
+#  12. Starts all compose services so every image is up when deploy finishes
 #
 # Safety notes:
 #   - Refuses to run outside a git repo whose remote matches SADCPFNexus, to avoid
@@ -157,5 +158,13 @@ if [ "$WEB_STATUS" != "200" ] && [ "$WEB_STATUS" != "307" ]; then
   die "Web health check failed (expected 200 or 307, got $WEB_STATUS). Check 'docker logs sadcpf_web'."
 fi
 
+# --- 12. Ensure all stack images are running --------------------------------
+
+log "Starting all compose services (up -d --no-recreate — no image rebuild)"
+$COMPOSE up -d --no-recreate
+
+sleep 3
+
 log "Deploy complete. Now at $(git rev-parse --short HEAD) ($(git log -1 --format=%s))"
 echo "Backup for this deploy: $BACKUP_FILE"
+$COMPOSE ps
