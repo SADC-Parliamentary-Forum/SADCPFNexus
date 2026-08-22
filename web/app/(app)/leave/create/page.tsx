@@ -129,7 +129,7 @@ function LeaveCreatePageInner() {
 
   const dateValidationError = useMemo(() => {
     const invalidIndex = segments.findIndex(hasInvalidDateRange);
-    return invalidIndex >= 0 ? `Period ${invalidIndex + 1} ends before it starts.` : null;
+    return invalidIndex >= 0 ? `Segment ${invalidIndex + 1} ends before it starts.` : null;
   }, [segments]);
 
   const completeForPreview = useMemo(

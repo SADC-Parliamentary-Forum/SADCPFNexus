@@ -690,7 +690,9 @@ test("UX-076 cited widget accents are not purple", () => {
 
 test("UX-292 audit hub shortcuts use icon tiles not underlined links", () => {
   const source = readFileSync(join(webRoot, "app/(app)/audit/page.tsx"), "utf8");
-  assert.match(source, /material-symbols-outlined/);
+  const hubCards = readFileSync(join(webRoot, "components/ui/ModuleHubCards.tsx"), "utf8");
+  assert.match(source, /ModuleHubCards/);
+  assert.match(hubCards, /material-symbols-outlined/);
   assert.doesNotMatch(source, /<Link className="underline"/);
 });
 
