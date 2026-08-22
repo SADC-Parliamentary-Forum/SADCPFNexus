@@ -74,8 +74,6 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
         }
       />
 
-      <ModuleHubCards cards={SALARY_ADVANCE_HUB_CARDS} />
-
       {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -177,6 +175,13 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
           </ul>
         )}
       </div>
+
+      <details className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
+        <summary className="cursor-pointer text-sm font-semibold text-neutral-700">More salary-advance tools</summary>
+        <div className="mt-3">
+          <ModuleHubCards cards={SALARY_ADVANCE_HUB_CARDS.filter((card) => card.href !== "/salary-advances/create")} />
+        </div>
+      </details>
     </div>
   );
 }

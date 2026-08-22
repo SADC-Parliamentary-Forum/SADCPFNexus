@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Workplan;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Models\WorkplanEventType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,10 +19,7 @@ class WorkplanEventTypeController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $user = $request->user();
-        if (!$user->isSystemAdmin() && !$user->hasAnyRole(['System Admin', 'Governance Officer', 'HR Administrator'])) {
-            abort(403);
-        }
+        $this->authorizeManage($request->user());
 
         $data = $request->validate([
             'name'       => ['required', 'string', 'max:64'],
@@ -78,16 +76,21 @@ class WorkplanEventTypeController extends Controller
 
     public function destroy(Request $request, WorkplanEventType $eventType): JsonResponse
     {
+        $this->authorizeManage($request->user());
+
         if ((int) $eventType->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
-        if ($eventType->is_system) {
-            return response()->json(['message' => 'System event types cannot be deleted.'], 422);
-        }
-        if ($eventType->isInUse()) {
-            return response()->json(['message' => 'Cannot delete an event type that is in use by existing events.'], 422);
-        }
+
         $eventType->delete();
+
         return response()->json(['message' => 'Event type deleted.']);
+    }
+
+    private function authorizeManage(?User $user): void
+    {
+        if (! $user || (! $user->isSystemAdmin() && ! $user->hasAnyRole(['System Admin', 'Governance Officer', 'HR Administrator']))) {
+            abort(403);
+        }
     }
 }

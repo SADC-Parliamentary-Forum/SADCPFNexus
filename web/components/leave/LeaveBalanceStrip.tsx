@@ -10,18 +10,26 @@ export function LeaveBalanceStrip({
   year,
   selectedCode,
   onSelect,
+  compact = false,
 }: {
   cards: LeaveBalanceCard[];
   loading?: boolean;
   year?: number;
   selectedCode?: string;
   onSelect?: (code: string) => void;
+  compact?: boolean;
 }) {
   if (loading) {
     return (
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5" data-testid="leave-balance-strip">
+      <div
+        className={compact ? "flex flex-wrap gap-2" : "grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5"}
+        data-testid="leave-balance-strip"
+      >
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-24 animate-pulse rounded-xl bg-neutral-100" />
+          <div
+            key={i}
+            className={compact ? "h-9 w-28 animate-pulse rounded-full bg-neutral-100" : "h-24 animate-pulse rounded-xl bg-neutral-100"}
+          />
         ))}
       </div>
     );
@@ -35,13 +43,52 @@ export function LeaveBalanceStrip({
     );
   }
 
+  if (compact) {
+    return (
+      <div className="flex flex-wrap gap-2" data-testid="leave-balance-strip">
+        {cards.map((card) => {
+          const color = LEAVE_TYPE_COLORS[card.code] ?? "text-neutral-700 bg-neutral-50 border-neutral-200";
+          const selected = selectedCode === card.code;
+          const value = card.headline === "used" ? card.used : card.remaining;
+          const className = cn(
+            "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold",
+            color,
+            selected && "ring-2 ring-primary ring-offset-1",
+            onSelect && "hover:border-primary/40",
+            !onSelect && "cursor-default",
+          );
+          const inner = (
+            <>
+              {card.name}
+              <span className="font-normal tabular-nums text-neutral-600">{formatLeaveDays(value)}</span>
+            </>
+          );
+          return onSelect ? (
+            <button
+              key={card.code}
+              type="button"
+              data-testid={`leave-balance-${card.code}`}
+              className={className}
+              onClick={() => onSelect(card.code)}
+            >
+              {inner}
+            </button>
+          ) : (
+            <div key={card.code} data-testid={`leave-balance-${card.code}`} className={className}>
+              {inner}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2" data-testid="leave-balance-strip">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
           Days by leave type{year ? ` · ${year}` : ""}
         </p>
-        <p className="text-[11px] text-neutral-400">Remaining unless marked as used</p>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {cards.map((card) => {

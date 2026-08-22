@@ -182,12 +182,8 @@ function ManageTypesModal({
                   <>
                     <span className="flex-1 text-sm font-medium text-neutral-800">{item.name}</span>
                     {item.locked && <span className="text-[10px] text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">system</span>}
-                    {!item.locked && (
-                      <>
-                        <button type="button" onClick={() => { setEditId(item.id); setEditName(item.name); }} className="text-xs text-primary hover:underline">Edit</button>
-                        <button type="button" disabled={busy} onClick={() => doDelete(item.id)} className="text-xs text-red-500 hover:underline disabled:opacity-50">Delete</button>
-                      </>
-                    )}
+                    <button type="button" onClick={() => { setEditId(item.id); setEditName(item.name); }} className="text-xs text-primary hover:underline">Edit</button>
+                    <button type="button" disabled={busy} onClick={() => doDelete(item.id)} className="text-xs text-red-500 hover:underline disabled:opacity-50">Delete</button>
                   </>
                 )}
               </div>

@@ -7,6 +7,7 @@ import { cn, formatDateShort } from "@/lib/utils";
 import { QuickEntrySlideOver } from "@/components/timesheets/QuickEntrySlideOver";
 import { USER_KEY } from "@/lib/constants";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { TIMESHEET_HUB_CARDS } from "@/lib/hubs/timesheets";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
@@ -68,7 +69,6 @@ const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }
 interface SummaryPanelProps {
   timesheet: Timesheet | null;
   entries: TimesheetEntry[];
-  projects: TimesheetProject[];
   saving: boolean;
   isAdmin: boolean;
   onSave: () => void;
@@ -77,70 +77,35 @@ interface SummaryPanelProps {
   onReject: () => void;
 }
 
-function SummaryPanel({ timesheet, entries, projects, saving, isAdmin, onSave, onSubmit, onApprove, onReject }: SummaryPanelProps) {
+function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, onApprove, onReject }: SummaryPanelProps) {
   const totalHours = entries.reduce((s, e) => s + e.hours, 0);
   const overtimeHours = entries.reduce((s, e) => s + (e.overtime_hours ?? 0), 0);
   const expectedHours = 40;
   const missingHours = Math.max(0, expectedHours - totalHours);
 
-  // Hours by project
-  const byProject: Record<string, { label: string; hours: number }> = {};
-  for (const entry of entries) {
-    const key = entry.project_id ? String(entry.project_id) : "__none__";
-    const label = entry.project?.label ?? projects.find((p) => p.id === entry.project_id)?.label ?? "No Project";
-    if (!byProject[key]) byProject[key] = { label, hours: 0 };
-    byProject[key].hours += entry.hours;
-  }
-
   const status = timesheet?.status ?? "draft";
-  const sc = STATUS_CONFIG[status] ?? STATUS_CONFIG.draft;
   const isDraft = status === "draft";
   const isSubmitted = status === "submitted";
 
   return (
     <div className="space-y-4">
-      {/* Status card */}
-      <div className="card p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px] text-neutral-400">info</span>
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Status</span>
+      {status === "rejected" && timesheet?.rejection_reason ? (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+          <p className="text-xs font-medium text-red-700">Returned</p>
+          <p className="mt-0.5 text-xs text-red-600">{timesheet.rejection_reason}</p>
         </div>
-        <div className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold", sc.cls)}>
-          <span className="material-symbols-outlined text-[14px]">{sc.icon}</span>
-          {sc.label}
-        </div>
-        {timesheet?.submitted_at && (
-          <p className="text-xs text-neutral-500">
-            Submitted {formatDateShort(timesheet.submitted_at)}
-          </p>
-        )}
-        {timesheet?.approved_at && (
-          <p className="text-xs text-neutral-500">
-            Approved {formatDateShort(timesheet.approved_at)}
-          </p>
-        )}
-        {status === "rejected" && timesheet?.rejection_reason && (
-          <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2">
-            <p className="text-xs font-medium text-red-700">Rejection reason:</p>
-            <p className="text-xs text-red-600 mt-0.5">{timesheet.rejection_reason}</p>
-          </div>
-        )}
-      </div>
+      ) : null}
 
-      {/* Hours summary */}
-      <div className="card p-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px] text-neutral-400">schedule</span>
-          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Hours</span>
-        </div>
+      <div className="card space-y-3 p-4">
         <div className="flex items-end justify-between">
           <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">This week</p>
             <span className="text-2xl font-bold text-neutral-900">{totalHours.toFixed(1)}</span>
             <span className="text-sm text-neutral-400">h / {expectedHours}h</span>
           </div>
-          {overtimeHours > 0 && (
+          {overtimeHours > 0 ? (
             <span className="badge-warning text-xs">+{overtimeHours.toFixed(1)}h OT</span>
-          )}
+          ) : null}
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
           <div
@@ -148,39 +113,13 @@ function SummaryPanel({ timesheet, entries, projects, saving, isAdmin, onSave, o
             style={{ width: `${Math.min(100, (totalHours / expectedHours) * 100)}%` }}
           />
         </div>
-        {missingHours > 0 && isDraft && (
-          <div className="flex items-center gap-1.5 rounded-lg bg-red-50 border border-red-200 px-2.5 py-2">
-            <span className="material-symbols-outlined text-[14px] text-red-500">warning</span>
-            <span className="text-xs text-red-600">{missingHours.toFixed(1)}h missing this week</span>
-          </div>
-        )}
+        {missingHours > 0 && isDraft ? (
+          <p className="text-xs text-neutral-500">{missingHours.toFixed(1)}h still to record</p>
+        ) : null}
+        {timesheet?.submitted_at ? (
+          <p className="text-xs text-neutral-500">Submitted {formatDateShort(timesheet.submitted_at)}</p>
+        ) : null}
       </div>
-
-      {/* Hours by project */}
-      {Object.keys(byProject).length > 0 && (
-        <div className="card p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-neutral-400">pie_chart</span>
-            <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">By Project</span>
-          </div>
-          <div className="space-y-2">
-            {Object.values(byProject).map((p) => (
-              <div key={p.label} className="space-y-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-neutral-600 truncate max-w-[140px]">{p.label}</span>
-                  <span className="text-xs font-medium text-neutral-800">{p.hours.toFixed(1)}h</span>
-                </div>
-                <div className="h-1 w-full overflow-hidden rounded-full bg-neutral-100">
-                  <div
-                    className="h-full rounded-full bg-primary/60"
-                    style={{ width: totalHours > 0 ? `${(p.hours / totalHours) * 100}%` : "0%" }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Action buttons */}
       <div className="space-y-2">
@@ -510,49 +449,48 @@ export default function TimesheetsPage() {
 
   return (
     <>
-      <ModuleHubCards cards={TIMESHEET_HUB_CARDS} />
+      <ModulePageHeader
+        title="My timesheet"
+        subtitle={weekStartDate ? formatWeekLabel(weekStartDate, addDays(weekStartDate, 4)) : "This week"}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Timesheets" }]} />}
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={handlePrevWeek}
+              disabled={!weekStartDate}
+              aria-label="Previous week"
+              className="btn-secondary text-sm"
+            >
+              Previous
+            </button>
+            <button
+              type="button"
+              onClick={handleNextWeek}
+              disabled={!weekStartDate}
+              aria-label="Next week"
+              className="btn-secondary text-sm"
+            >
+              Next
+            </button>
+          </>
+        }
+      />
+
       {/* Week nav bar */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handlePrevWeek}
-            disabled={!weekStartDate}
-            aria-label="Previous week"
-            title="Previous week"
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40"
-          >
-            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-          </button>
-          <div>
-            <h1 className="page-title">
-              {weekStartDate ? `Week of ${formatWeekLabel(weekStartDate, addDays(weekStartDate, 4))}` : "Loading…"}
-            </h1>
-            {timesheet && (
-              <p className="text-xs text-neutral-500 mt-0.5">Timesheet #{timesheet.id}</p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={handleNextWeek}
-            disabled={!weekStartDate}
-            aria-label="Next week"
-            title="Next week"
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40"
-          >
-            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-          </button>
-        </div>
-        <div className="flex items-center gap-2">
-          {timesheet && (
-            <span className={cn("px-2.5 py-1 rounded-full text-xs font-semibold", STATUS_CONFIG[timesheet.status]?.cls ?? "badge-muted")}>
-              {STATUS_CONFIG[timesheet.status]?.label ?? timesheet.status}
-            </span>
-          )}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        {timesheet ? (
+          <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", STATUS_CONFIG[timesheet.status]?.cls ?? "badge-muted")}>
+            {STATUS_CONFIG[timesheet.status]?.label ?? timesheet.status}
+          </span>
+        ) : (
+          <span className="badge-muted rounded-full px-2.5 py-1 text-xs font-semibold">Draft</span>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
           {isDraft && templates.length > 0 && (
             <>
               <select
-                className="form-input text-sm py-1.5 max-w-[200px]"
+                className="form-input max-w-[200px] py-1.5 text-sm"
                 value={selectedTemplateId}
                 onChange={(e) => setSelectedTemplateId(e.target.value)}
                 aria-label="Donor or project template"
@@ -647,10 +585,8 @@ export default function TimesheetsPage() {
                 <div>
                   <p className="text-sm font-semibold text-neutral-900">Draft entry grid</p>
                   <p className="text-xs text-neutral-500">
-                    Tab through fields · totals {weekTotal}h ordinary
-                    {otTotal > 0
-                      ? ` · ${otTotal}h OT (pay XOR TOIL settled separately — no rates invented)`
-                      : ""}
+                    Tab through fields · {weekTotal}h
+                    {otTotal > 0 ? ` · ${otTotal}h overtime` : ""}
                   </p>
                 </div>
                 {hasRowErrors && (
@@ -820,7 +756,6 @@ export default function TimesheetsPage() {
                                     updateEntryField(idx, "overtime_hours", Number(e.target.value) || 0)
                                   }
                                   aria-label={`Row ${idx + 1} overtime hours`}
-                                  title="OT hours only — settlement is pay XOR TOIL elsewhere; no rates"
                                 />
                               ) : (
                                 <span className="tabular-nums text-neutral-600">
@@ -895,21 +830,6 @@ export default function TimesheetsPage() {
                 </div>
               )}
             </div>
-
-            {/* Navigation links */}
-            <div className="mt-4 flex justify-between">
-              <Link href="/hr/timesheets/monthly" className="text-xs text-primary hover:underline">
-                ← Monthly view
-              </Link>
-              <div className="flex gap-3">
-                <Link href="/hr/timesheets/templates" className="text-xs text-primary hover:underline">
-                  Manage templates
-                </Link>
-                <Link href="/hr/timesheets/history" className="text-xs text-primary hover:underline">
-                  View all timesheets →
-                </Link>
-              </div>
-            </div>
           </div>
 
           {/* RIGHT — Summary Panel */}
@@ -917,7 +837,6 @@ export default function TimesheetsPage() {
             <SummaryPanel
               timesheet={timesheet}
               entries={entries}
-              projects={projects}
               saving={saving}
               isAdmin={isAdmin}
               onSave={handleSaveGuarded}
@@ -928,6 +847,13 @@ export default function TimesheetsPage() {
           </div>
         </div>
       )}
+
+      <details className="mt-6 rounded-xl border border-neutral-200 bg-white px-4 py-3">
+        <summary className="cursor-pointer text-sm font-semibold text-neutral-700">More timesheet tools</summary>
+        <div className="mt-3">
+          <ModuleHubCards cards={TIMESHEET_HUB_CARDS.filter((card) => card.href !== "/hr/timesheets")} />
+        </div>
+      </details>
 
       {/* Quick Entry Slide-over */}
       <QuickEntrySlideOver

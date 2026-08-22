@@ -55,11 +55,6 @@ const NAV_ITEMS: NavItem[] = [
     section: "Accountability",
     children: [
       { label: "My Weekly Summary", href: "/weekly-summaries", icon: "edit_note" },
-      { label: "Team Review", href: "/weekly-summaries/review", icon: "rate_review" },
-      { label: "Department Summary", href: "/weekly-summaries/department", icon: "corporate_fare" },
-      { label: "Institutional Summary", href: "/weekly-summaries/institutional", icon: "account_balance" },
-      { label: "Compliance", href: "/weekly-summaries/compliance", icon: "rule" },
-      { label: "Email Digest", href: "/reports/weekly", icon: "mail" },
     ],
   },
   {
@@ -135,7 +130,6 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Salary Advances", href: "/salary-advances", icon: "dashboard" },
       { label: "Apply", href: "/salary-advances/create", icon: "add_circle" },
       { label: "My Applications", href: "/salary-advances/applications", icon: "list_alt" },
-      { label: "Settings", href: "/salary-advances/settings", icon: "settings" },
     ],
   },
   { label: "Programmes", href: "/pif", icon: "account_tree", section: "Management" },
@@ -168,8 +162,6 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { label: "My Timesheet", href: "/hr/timesheets", icon: "edit_note" },
       { label: "Monthly View", href: "/hr/timesheets/monthly", icon: "calendar_month" },
-      { label: "Team View", href: "/hr/timesheets/team", icon: "groups" },
-      { label: "Templates", href: "/hr/timesheets/templates", icon: "description" },
     ],
   },
   {

@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   leaveApi,
@@ -21,7 +20,6 @@ import {
   prefillLeaveEndDate,
   type LeaveBalancesPayload,
 } from "@/lib/leaveBalances";
-import { LEAVE_TYPE_COLORS, LEAVE_TYPE_ICONS } from "@/lib/leaveHub";
 import { LeaveBalanceStrip } from "@/components/leave/LeaveBalanceStrip";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
@@ -68,6 +66,7 @@ function LeaveCreatePageInner() {
   const [contactNumber, setContactNumber] = useState("");
   const [handoverRequired, setHandoverRequired] = useState(false);
   const [handoverNotes, setHandoverNotes] = useState("");
+  const [showAwayDetails, setShowAwayDetails] = useState(false);
   const [preview, setPreview] = useState<LeavePreviewResponse | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [loadingLookups, setLoadingLookups] = useState(true);
@@ -96,6 +95,9 @@ function LeaveCreatePageInner() {
         setContactNumber(entity.contact_number ?? "");
         setHandoverRequired(Boolean(entity.handover_required));
         setHandoverNotes(entity.handover_notes ?? "");
+        if (entity.leave_address || entity.contact_number || entity.handover_required) {
+          setShowAwayDetails(true);
+        }
         if (entity.segments && entity.segments.length > 0) {
           setSegments(
             entity.segments.map((segment) => ({
@@ -213,6 +215,7 @@ function LeaveCreatePageInner() {
   const removeSegment = (uid: string) => setSegments((current) => current.filter((segment) => segment.uid !== uid));
 
   const canSubmit = completeForPreview && !dateValidationError && !previewError && !submitting;
+  const holidaysExcluded = Number(preview?.segments.reduce((sum, row) => sum + Number(row.public_holidays_excluded ?? 0), 0) ?? 0);
 
   const submit = async (asDraft: boolean) => {
     if (dateValidationError) {
@@ -253,29 +256,15 @@ function LeaveCreatePageInner() {
   const primaryType = segments[0]?.leave_type;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="mx-auto max-w-3xl space-y-5">
       <ModulePageHeader
         title={editing ? "Edit leave request" : "New leave request"}
-        subtitle="Pick a leave type, then the days you need. Remaining balances are shown before you submit."
+        subtitle="Choose the type, then the dates."
         breadcrumbs={
           <PageBreadcrumbs
             items={[{ label: "Leave", href: "/leave" }, { label: editing ? "Edit request" : "New request" }]}
           />
         }
-        actions={
-          <Link href="/leave" className="btn-secondary text-sm">
-            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            Back
-          </Link>
-        }
-      />
-
-      <LeaveBalanceStrip
-        cards={balanceCards}
-        loading={loadingLookups}
-        year={balances?.period_year}
-        selectedCode={primaryType}
-        onSelect={setPrimaryType}
       />
 
       {(previewError || submitError || dateValidationError) && (
@@ -284,368 +273,260 @@ function LeaveCreatePageInner() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="space-y-5">
-          <FormSection
-            title="What kind of leave?"
-            description="Your remaining days for that type stay visible above. Choose one type per period."
-            icon="category"
-          >
-            <div className="flex flex-wrap gap-2">
-              {(leaveTypes.length > 0
-                ? leaveTypes.map((type) => ({ code: String(type.code), name: type.name }))
-                : balanceCards.map((card) => ({ code: card.code, name: card.name }))
-              ).map((type) => {
-                const code = type.code;
-                const name = type.name;
-                const selected = primaryType === code && segments.length === 1;
-                const remaining = balanceCards.find((card) => card.code === code);
-                const color = LEAVE_TYPE_COLORS[code] ?? "text-neutral-700 bg-neutral-50 border-neutral-200";
-                return (
-                  <button
-                    key={code}
-                    type="button"
-                    disabled={loadingLookups || segments.length > 1}
-                    onClick={() => setPrimaryType(code)}
-                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${color} ${
-                      selected ? "ring-2 ring-primary ring-offset-1" : ""
-                    } disabled:opacity-60`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">
-                      {LEAVE_TYPE_ICONS[code] ?? "event_available"}
-                    </span>
-                    {name}
-                    {remaining ? (
-                      <span className="font-normal text-neutral-500">
-                        {remaining.headline === "used"
-                          ? `${formatLeaveDays(remaining.used)} used`
-                          : formatLeaveDays(remaining.remaining)}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-            {segments.length > 1 ? (
-              <p className="mt-3 text-xs text-neutral-500">
-                Several periods are on this request — pick the type on each period below.
-              </p>
-            ) : null}
-          </FormSection>
+      <FormSection title="What kind of leave?" icon="category">
+        <LeaveBalanceStrip
+          compact
+          cards={balanceCards}
+          loading={loadingLookups}
+          year={balances?.period_year}
+          selectedCode={segments.length === 1 ? primaryType : undefined}
+          onSelect={segments.length === 1 ? setPrimaryType : undefined}
+        />
+        {segments.length > 1 ? (
+          <p className="mt-3 text-xs text-neutral-500">Pick the type on each period below.</p>
+        ) : null}
+      </FormSection>
 
-          <FormSection
-            title="Leave period"
-            description="Working days exclude weekends and public holidays. A single day is From and To on the same date."
-            icon="date_range"
-            actions={
-              <button type="button" onClick={addSegment} className="btn-secondary py-2 text-xs">
-                <span className="material-symbols-outlined text-[16px]">add</span>
-                Add another period
-              </button>
-            }
-          >
-            <div className="space-y-4">
-              {segments.map((segment, index) => {
-                const previewSegment = preview?.segments[index];
-                const color = LEAVE_TYPE_COLORS[segment.leave_type] ?? "text-neutral-700 bg-neutral-50 border-neutral-200";
-                const remaining = balanceCards.find((card) => card.code === segment.leave_type);
-                return (
-                  <div key={segment.uid} className="rounded-lg border border-neutral-200 bg-white p-4">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold ${color}`}>
-                        <span className="material-symbols-outlined text-[14px]">
-                          {LEAVE_TYPE_ICONS[segment.leave_type] ?? "event_available"}
-                        </span>
-                        Period {index + 1}
-                      </span>
-                      {segments.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeSegment(segment.uid)}
-                          className="flex h-8 w-8 items-center justify-center rounded-lg text-neutral-400 hover:bg-red-50 hover:text-red-600"
-                          aria-label={`Remove period ${index + 1}`}
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      )}
-                    </div>
+      <FormSection title="Leave period" icon="date_range">
+        <div className="space-y-4">
+          {segments.map((segment, index) => {
+            const singleDay = Boolean(segment.start_date && segment.start_date === segment.end_date);
+            const halfDay = segment.day_part === "morning" || segment.day_part === "afternoon";
+            return (
+              <div
+                key={segment.uid}
+                className={segments.length > 1 ? "rounded-lg border border-neutral-200 p-4" : undefined}
+              >
+                {segments.length > 1 ? (
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-neutral-800">Period {index + 1}</p>
+                    <button
+                      type="button"
+                      onClick={() => removeSegment(segment.uid)}
+                      className="text-xs font-semibold text-neutral-500 hover:text-red-600"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : null}
 
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {segments.length > 1 ? (
-                        <FormField label="Leave type" required>
-                          <select
-                            className="form-input"
-                            value={segment.leave_type}
-                            disabled={loadingLookups}
-                            onChange={(event) => updateSegment(segment.uid, { leave_type: event.target.value })}
-                          >
-                            {leaveTypes.map((type) => (
-                              <option key={type.id} value={type.code}>
-                                {type.name}
-                              </option>
-                            ))}
-                          </select>
-                        </FormField>
-                      ) : (
-                        <div className="rounded-lg bg-neutral-50 px-3 py-2 md:col-span-2">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-400">Selected type</p>
-                          <p className="text-sm font-semibold text-neutral-900">
-                            {leaveTypeName(segment.leave_type, leaveTypes)}
-                            {remaining?.headline === "remaining"
-                              ? ` · ${formatLeaveDays(remaining.remaining)} remaining`
-                              : remaining?.headline === "used"
-                                ? ` · ${formatLeaveDays(remaining.used)} used this year`
-                                : ""}
-                          </p>
-                        </div>
-                      )}
-
-                      <FormField label="From" required>
-                        <input
-                          type="date"
-                          className="form-input"
-                          value={segment.start_date}
-                          onChange={(event) => updateSegment(segment.uid, { start_date: event.target.value })}
-                        />
-                      </FormField>
-
-                      <FormField
-                        label="To and including"
-                        required
-                        error={hasInvalidDateRange(segment) ? "End date cannot be before start date." : undefined}
-                        hint="Same as From for a single day."
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {segments.length > 1 ? (
+                    <FormField label="Leave type" required className="sm:col-span-2">
+                      <select
+                        className="form-input"
+                        value={segment.leave_type}
+                        disabled={loadingLookups}
+                        onChange={(event) => updateSegment(segment.uid, { leave_type: event.target.value })}
                       >
-                        <input
-                          type="date"
-                          className="form-input"
-                          value={segment.end_date}
-                          min={segment.start_date || undefined}
-                          onChange={(event) => updateSegment(segment.uid, { end_date: event.target.value })}
-                          aria-invalid={hasInvalidDateRange(segment) || undefined}
-                        />
-                      </FormField>
-
-                      <FormField label="Day part">
-                        <select
-                          className="form-input"
-                          value={segment.day_part ?? "full"}
-                          onChange={(event) =>
-                            updateSegment(segment.uid, { day_part: event.target.value as SegmentDraft["day_part"] })
-                          }
-                        >
-                          <option value="full">Full day</option>
-                          <option value="morning">Morning half-day</option>
-                          <option value="afternoon">Afternoon half-day</option>
-                        </select>
-                      </FormField>
-                    </div>
-
-                    {segment.leave_type === "lil" && (
-                      <FormField
-                        label="TOIL credit"
-                        className="mt-4"
-                        hint="Leave in lieu draws down an available credit."
-                      >
-                        <select
-                          className="form-input"
-                          value={segment.source_id ?? ""}
-                          onChange={(event) =>
-                            updateSegment(segment.uid, {
-                              source_type: TOIL_CREDIT_SOURCE,
-                              source_id: event.target.value ? Number(event.target.value) : null,
-                            })
-                          }
-                        >
-                          <option value="">Select available TOIL credit</option>
-                          {availableToilCredits.map((credit) => (
-                            <option key={credit.id} value={credit.id}>
-                              {credit.credit_reference} — {numberText(credit.remaining_balance)} days, expires{" "}
-                              {credit.expiry_date ? formatDateShort(credit.expiry_date) : "not set"}
-                            </option>
-                          ))}
-                        </select>
-                      </FormField>
-                    )}
-
-                    {segment.leave_type === "sick" && (
-                      <FormField
-                        label="Medical certificate"
-                        className="mt-4"
-                        hint="HR may ask for a certificate depending on the number of days."
-                      >
-                        <select
-                          className="form-input"
-                          value={segment.document_status ?? ""}
-                          onChange={(event) =>
-                            updateSegment(segment.uid, { document_status: event.target.value || null })
-                          }
-                        >
-                          <option value="">Not recorded yet</option>
-                          <option value="not_required">Not required</option>
-                          <option value="complete">Provided</option>
-                          <option value="restricted">Provided — restricted</option>
-                          <option value="missing">Missing</option>
-                        </select>
-                      </FormField>
-                    )}
-
-                    <FormField label="Notes for this period" className="mt-4">
-                      <textarea
-                        rows={2}
-                        className="form-input resize-none"
-                        value={segment.comments ?? ""}
-                        onChange={(event) => updateSegment(segment.uid, { comments: event.target.value || null })}
-                      />
-                    </FormField>
-
-                    {previewSegment && (
-                      <div className="mt-4 grid gap-2 border-t border-neutral-100 pt-4 sm:grid-cols-4">
-                        {[
-                          { label: "Calendar days", value: numberText(previewSegment.calendar_days) },
-                          { label: "Working days", value: numberText(previewSegment.amount_requested) },
-                          { label: "Holidays excluded", value: numberText(previewSegment.public_holidays_excluded) },
-                          { label: "Balance after", value: numberText(previewSegment.balance_after) },
-                        ].map((item) => (
-                          <div key={item.label} className="rounded-lg bg-neutral-50 px-3 py-2">
-                            <p className="text-[10px] font-bold uppercase tracking-wide text-neutral-400">{item.label}</p>
-                            <p className="mt-0.5 text-sm font-bold text-neutral-900">{item.value}</p>
-                          </div>
+                        {leaveTypes.map((type) => (
+                          <option key={type.id} value={type.code}>
+                            {type.name}
+                          </option>
                         ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </FormSection>
+                      </select>
+                    </FormField>
+                  ) : null}
 
-          <FormSection title="While you are away" icon="description">
-            <div className="grid gap-4 md:grid-cols-2">
-              <FormField label="Reason" className="md:col-span-2">
-                <textarea
-                  rows={3}
-                  className="form-input resize-none"
-                  value={reason}
-                  onChange={(event) => setReason(event.target.value)}
-                />
-              </FormField>
-              <FormField label="Contact number while on leave">
-                <input
-                  className="form-input"
-                  value={contactNumber}
-                  onChange={(event) => setContactNumber(event.target.value)}
-                />
-              </FormField>
-              <FormField label="Address while on leave">
-                <input
-                  className="form-input"
-                  value={leaveAddress}
-                  onChange={(event) => setLeaveAddress(event.target.value)}
-                />
-              </FormField>
-              <label className="flex items-center gap-2 text-sm font-medium text-neutral-700">
-                <input
-                  type="checkbox"
-                  checked={handoverRequired}
-                  onChange={(event) => setHandoverRequired(event.target.checked)}
-                  className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
-                />
-                Handover required
-              </label>
-              {handoverRequired && (
-                <FormField label="Handover notes" className="md:col-span-2">
-                  <textarea
-                    rows={2}
-                    className="form-input resize-none"
-                    value={handoverNotes}
-                    onChange={(event) => setHandoverNotes(event.target.value)}
-                  />
-                </FormField>
-              )}
-            </div>
-          </FormSection>
-        </div>
+                  <FormField label="From" required>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={segment.start_date}
+                      onChange={(event) => updateSegment(segment.uid, { start_date: event.target.value })}
+                    />
+                  </FormField>
 
-        <aside className="space-y-4 lg:sticky lg:top-6">
-          <FormSection
-            title="This request"
-            description={
-              preview
-                ? `${preview.segments.length} period${preview.segments.length !== 1 ? "s" : ""}`
-                : "Enter dates to see working days"
-            }
-            icon="fact_check"
-            dense
-          >
-            <div className="space-y-3">
-              {preview?.segments.map((segment, index) => (
-                <div key={`${segment.leave_type}-${index}`} className="rounded-lg border border-neutral-100 bg-neutral-50 p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-neutral-900">{leaveTypeName(segment.leave_type, leaveTypes)}</p>
-                      <p className="mt-0.5 text-xs text-neutral-500">
-                        {formatDateShort(segment.start_date)} – {formatDateShort(segment.end_date)}
-                      </p>
-                    </div>
-                    <span className="text-sm font-bold text-primary">
-                      {formatLeaveDays(Number(segment.amount_requested))}
-                    </span>
-                  </div>
+                  <FormField
+                    label="To"
+                    required
+                    error={hasInvalidDateRange(segment) ? "End date cannot be before start date." : undefined}
+                  >
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={segment.end_date}
+                      min={segment.start_date || undefined}
+                      onChange={(event) => updateSegment(segment.uid, { end_date: event.target.value })}
+                      aria-invalid={hasInvalidDateRange(segment) || undefined}
+                    />
+                  </FormField>
                 </div>
-              ))}
 
-              <div className="rounded-lg bg-primary/5 px-3 py-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-neutral-600">Total working days</span>
-                  <span className="text-xl font-bold text-primary">
-                    {formatLeaveDays(Number(preview?.total_working_days ?? 0))}
-                  </span>
-                </div>
+                {singleDay ? (
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <label className="flex items-center gap-2 text-sm text-neutral-700">
+                      <input
+                        type="checkbox"
+                        checked={halfDay}
+                        onChange={(event) =>
+                          updateSegment(segment.uid, { day_part: event.target.checked ? "morning" : "full" })
+                        }
+                        className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+                      />
+                      Half day
+                    </label>
+                    {halfDay ? (
+                      <select
+                        className="form-input w-auto"
+                        value={segment.day_part ?? "morning"}
+                        onChange={(event) =>
+                          updateSegment(segment.uid, { day_part: event.target.value as SegmentDraft["day_part"] })
+                        }
+                        aria-label="Half-day part"
+                      >
+                        <option value="morning">Morning</option>
+                        <option value="afternoon">Afternoon</option>
+                      </select>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {segment.leave_type === "lil" ? (
+                  <FormField label="TOIL credit" className="mt-4" hint="Leave in lieu draws down an available credit.">
+                    <select
+                      className="form-input"
+                      value={segment.source_id ?? ""}
+                      onChange={(event) =>
+                        updateSegment(segment.uid, {
+                          source_type: TOIL_CREDIT_SOURCE,
+                          source_id: event.target.value ? Number(event.target.value) : null,
+                        })
+                      }
+                    >
+                      <option value="">Select available TOIL credit</option>
+                      {availableToilCredits.map((credit) => (
+                        <option key={credit.id} value={credit.id}>
+                          {credit.credit_reference} — {numberText(credit.remaining_balance)} days, expires{" "}
+                          {credit.expiry_date ? formatDateShort(credit.expiry_date) : "not set"}
+                        </option>
+                      ))}
+                    </select>
+                  </FormField>
+                ) : null}
+
+                {segment.leave_type === "sick" ? (
+                  <FormField
+                    label="Medical certificate"
+                    className="mt-4"
+                    hint="HR may ask for a certificate depending on the number of days."
+                  >
+                    <select
+                      className="form-input"
+                      value={segment.document_status ?? ""}
+                      onChange={(event) =>
+                        updateSegment(segment.uid, { document_status: event.target.value || null })
+                      }
+                    >
+                      <option value="">Not recorded yet</option>
+                      <option value="not_required">Not required</option>
+                      <option value="complete">Provided</option>
+                      <option value="restricted">Provided — restricted</option>
+                      <option value="missing">Missing</option>
+                    </select>
+                  </FormField>
+                ) : null}
               </div>
-            </div>
-          </FormSection>
+            );
+          })}
 
-          <FormSection title="Available TOIL" icon="schedule" dense>
-            <div className="space-y-2">
-              {availableToilCredits.length === 0 ? (
-                <p className="text-xs text-neutral-400">No available TOIL credits.</p>
-              ) : (
-                availableToilCredits.slice(0, 4).map((credit) => (
-                  <div key={credit.id} className="rounded-lg border border-primary/15 bg-primary/5 px-3 py-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-primary">{credit.credit_reference}</span>
-                      <span className="text-xs font-semibold text-neutral-800">
-                        {formatLeaveDays(Number(credit.remaining_balance))}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-[11px] text-neutral-500">
-                      Expires {credit.expiry_date ? formatDateShort(credit.expiry_date) : "not set"}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </FormSection>
+          <button type="button" onClick={addSegment} className="text-sm font-semibold text-primary hover:underline">
+            Add another period
+          </button>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              disabled={!canSubmit}
-              onClick={() => void submit(true)}
-              className="btn-secondary flex-1 justify-center disabled:opacity-50"
-            >
-              Save draft
-            </button>
-            <button
-              type="button"
-              disabled={!canSubmit}
-              onClick={() => void submit(false)}
-              className="btn-primary flex-1 justify-center disabled:opacity-50"
-            >
-              {submitting ? "Submitting…" : "Submit"}
-            </button>
+          {preview ? (
+            <p className="text-sm text-neutral-600">
+              {formatLeaveDays(Number(preview.total_working_days ?? 0))}
+              {holidaysExcluded > 0 ? ` · ${holidaysExcluded} ${holidaysExcluded === 1 ? "holiday" : "holidays"} excluded` : ""}
+              {segments.length > 1
+                ? ` · ${preview.segments.map((row) => leaveTypeName(row.leave_type, leaveTypes)).join(", ")}`
+                : ""}
+            </p>
+          ) : completeForPreview ? null : (
+            <p className="text-sm text-neutral-400">Working days appear after both dates are set.</p>
+          )}
+        </div>
+      </FormSection>
+
+      <FormSection title="While you are away" icon="description">
+        <FormField label="Reason">
+          <textarea
+            rows={2}
+            className="form-input resize-none"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+          />
+        </FormField>
+
+        {showAwayDetails ? (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <FormField label="Contact number">
+              <input
+                className="form-input"
+                value={contactNumber}
+                onChange={(event) => setContactNumber(event.target.value)}
+              />
+            </FormField>
+            <FormField label="Address while on leave">
+              <input
+                className="form-input"
+                value={leaveAddress}
+                onChange={(event) => setLeaveAddress(event.target.value)}
+              />
+            </FormField>
+            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 sm:col-span-2">
+              <input
+                type="checkbox"
+                checked={handoverRequired}
+                onChange={(event) => setHandoverRequired(event.target.checked)}
+                className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+              />
+              Handover required
+            </label>
+            {handoverRequired ? (
+              <FormField label="Handover notes" className="sm:col-span-2">
+                <textarea
+                  rows={2}
+                  className="form-input resize-none"
+                  value={handoverNotes}
+                  onChange={(event) => setHandoverNotes(event.target.value)}
+                />
+              </FormField>
+            ) : null}
           </div>
-        </aside>
+        ) : (
+          <button
+            type="button"
+            className="mt-3 text-sm font-semibold text-primary hover:underline"
+            onClick={() => setShowAwayDetails(true)}
+          >
+            Add contact and handover
+          </button>
+        )}
+      </FormSection>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 pt-4">
+        <p className="text-sm text-neutral-600">
+          {preview ? formatLeaveDays(Number(preview.total_working_days ?? 0)) : "Set the dates to submit"}
+        </p>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={() => void submit(true)}
+            className="btn-secondary disabled:opacity-50"
+          >
+            Save draft
+          </button>
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={() => void submit(false)}
+            className="btn-primary disabled:opacity-50"
+          >
+            {submitting ? "Submitting…" : "Submit"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -655,7 +536,7 @@ export default function LeaveCreatePage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-6xl space-y-4">
+        <div className="mx-auto max-w-3xl space-y-4">
           <div className="h-10 w-64 animate-pulse rounded-lg bg-neutral-100" />
           <div className="h-24 animate-pulse rounded-xl bg-neutral-100" />
         </div>

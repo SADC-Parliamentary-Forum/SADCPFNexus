@@ -303,6 +303,14 @@ test("weekly summary shows assignment feed and Word export", () => {
   const source = readFileSync(join(webRoot, "app/(app)/weekly-summaries/page.tsx"), "utf8");
   assert.match(source, /weeklySummaryFeed/);
   assert.match(source, /exportUrl\(report\.id, "word"\)/);
+  assert.match(source, /htmlFor="weekly-item-title"/);
+  assert.match(source, /htmlFor="weekly-item-section"/);
+  assert.match(source, /excludeSuggestion/);
+  assert.match(source, /additional_notes/);
+  assert.match(source, /I confirm that this weekly summary/);
+  assert.match(source, /data-testid="weekly-assignment-feed"/);
+  assert.match(source, /data-testid="weekly-submit"/);
+  assert.match(source, /labelledObjectCell/);
 });
 
 test("notifications inbox can run NL search without auto-send", () => {
@@ -515,11 +523,17 @@ test("canReviewWeeklySummaries allows supervisors and SG, not plain staff", asyn
   };
   assert.equal(canReviewWeeklySummaries(staff), false);
   assert.equal(canAccessRoute(staff, "/weekly-summaries/review"), false);
+  assert.equal(canAccessRoute(staff, "/weekly-summaries/department"), false);
+  assert.equal(canAccessRoute(staff, "/weekly-summaries/institutional"), false);
+  assert.equal(canAccessRoute(staff, "/weekly-summaries/compliance"), false);
   assert.equal(canAccessRoute(staff, "/weekly-summaries"), true);
   assert.equal(canReviewWeeklySummaries(hod), true);
   assert.equal(canAccessRoute(hod, "/weekly-summaries/review"), true);
+  assert.equal(canAccessRoute(hod, "/weekly-summaries/department"), true);
+  assert.equal(canAccessRoute(hod, "/weekly-summaries/institutional"), false);
   assert.equal(canReviewWeeklySummaries(sg), true);
   assert.equal(canAccessRoute(sg, "/weekly-summaries/review"), true);
+  assert.equal(canAccessRoute(sg, "/weekly-summaries/institutional"), true);
 });
 
 test("weekly reports API exposes a gated review-queue endpoint", () => {
@@ -1067,6 +1081,16 @@ test("travel settings and calendar breadcrumbs link back to the hub", () => {
   assert.match(calendar, /href:\s*["']\/travel["']/);
 });
 
+test("travel calendar is a month grid with human dates, not ISO day headings", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/calendar/page.tsx"), "utf8");
+  assert.match(source, /grid-cols-7/);
+  assert.match(source, /Month grid/);
+  assert.match(source, /formatDateShort/);
+  assert.match(source, /data-testid=["']travel-calendar["']/);
+  assert.match(source, /EmptyState/);
+  assert.doesNotMatch(source, /<h2[^>]*>\{date\}<\/h2>/);
+});
+
 function leaveSidebarChildren(source: string): string[] {
   const start = source.indexOf('label: "Leave"');
   const next = source.indexOf('label: "Procurement"');
@@ -1076,6 +1100,14 @@ function leaveSidebarChildren(source: string): string[] {
   assert.ok(childrenStart >= 0, "Leave children array not found");
   return [...block.slice(childrenStart).matchAll(/href:\s*"([^"]+)"/g)].map((m) => m[1]);
 }
+
+test("workplan event types page can delete system types", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/workplan/event-types/page.tsx"), "utf8");
+  assert.match(source, /workplanEventTypesApi\.delete/);
+  assert.match(source, />\s*Delete\s*</);
+  assert.doesNotMatch(source, /!et\.is_system/);
+  assert.doesNotMatch(source, /System types cannot be deleted/);
+});
 
 test("leave create form shows remaining days by type and labelled fields", () => {
   const source = readFileSync(join(webRoot, "app/(app)/leave/create/page.tsx"), "utf8");
@@ -1087,6 +1119,19 @@ test("leave create form shows remaining days by type and labelled fields", () =>
   assert.match(source, /prefillLeaveEndDate/);
   assert.doesNotMatch(source, /Server preview/);
   assert.doesNotMatch(source, />Segments</);
+});
+
+test("leave create is a single-column request without duplicate pickers or a TOIL sidebar", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/leave/create/page.tsx"), "utf8");
+  assert.match(source, /LeaveBalanceStrip/);
+  assert.match(source, /compact/);
+  assert.match(source, /total_working_days/);
+  assert.doesNotMatch(source, /lg:grid-cols-\[minmax\(0,1fr\)_340px\]/);
+  assert.doesNotMatch(source, /Available TOIL/);
+  assert.doesNotMatch(source, /Selected type/);
+  assert.doesNotMatch(source, /Calendar days/);
+  assert.doesNotMatch(source, /Holidays excluded/);
+  assert.doesNotMatch(source, /Notes for this period/);
 });
 
 test("leave hub shows remaining days per type and labelled destination cards", () => {
@@ -1196,6 +1241,29 @@ const OVERCROWDED_SIDEBARS: {
       "/salary-advances/register",
       "/salary-advances/reports",
       "/salary-advances/settings",
+    ],
+  },
+  {
+    label: "Weekly Summaries",
+    next: "Travel",
+    max: 3,
+    hubFile: "lib/hubs/weeklySummaries.ts",
+    page: "app/(app)/weekly-summaries/page.tsx",
+    mustInclude: ["/weekly-summaries"],
+    mustExclude: [
+      "/weekly-summaries/review",
+      "/weekly-summaries/department",
+      "/weekly-summaries/institutional",
+      "/weekly-summaries/compliance",
+      "/reports/weekly",
+    ],
+    formerHrefs: [
+      "/weekly-summaries/review",
+      "/weekly-summaries/department",
+      "/weekly-summaries/institutional",
+      "/weekly-summaries/compliance",
+      "/weekly-summaries/trends",
+      "/reports/weekly",
     ],
   },
   {
@@ -1556,6 +1624,73 @@ test("overcrowded sidebars are shortened and hub cards keep every former destina
       assert.match(hub, new RegExp(escaped), `${mod.hubFile} missing former destination ${href}`);
     }
   }
+});
+
+test("timesheet capture collapses extra tools and hides specialist destinations from staff", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/hr/timesheets/page.tsx"), "utf8");
+  const hub = readFileSync(join(webRoot, "lib/hubs/timesheets.ts"), "utf8");
+  const auth = readFileSync(join(webRoot, "lib/auth.ts"), "utf8");
+  const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
+  const cards = readFileSync(join(webRoot, "components/ui/ModuleHubCards.tsx"), "utf8");
+  assert.match(page, /ModulePageHeader/);
+  assert.match(page, /More timesheet tools/);
+  assert.match(page, /<details/);
+  assert.doesNotMatch(page, /Timesheet #\{timesheet\.id\}/);
+  assert.doesNotMatch(page, /pay XOR TOIL/);
+  assert.match(hub, /href:\s*["']\/hr\/timesheets\/payroll["'][\s\S]*permission:/);
+  assert.match(hub, /OT validation[\s\S]*permission:/);
+  assert.match(auth, /\/hr\/timesheets\/payroll/);
+  assert.match(auth, /\/hr\/timesheets\/schedules/);
+  assert.match(cards, /card\.permission/);
+  const hrefs = navChildrenBetween(sidebar, "Timesheets", "HR");
+  assert.ok(!hrefs.includes("/hr/timesheets/team"), "Team view stays off the short Timesheets sidebar");
+  assert.ok(!hrefs.includes("/hr/timesheets/templates"), "Templates stay off the short Timesheets sidebar");
+});
+
+test("assignment dashboard collapses extra tools and hides specialist queues from staff", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/assignments/page.tsx"), "utf8");
+  const hub = readFileSync(join(webRoot, "lib/hubs/assignments.ts"), "utf8");
+  const auth = readFileSync(join(webRoot, "lib/auth.ts"), "utf8");
+  assert.match(page, /More assignment tools/);
+  assert.match(page, /<details/);
+  assert.match(hub, /Unassigned queue[\s\S]*permission:/);
+  assert.match(hub, /Escalations[\s\S]*permission:/);
+  assert.match(auth, /\/assignments\/unassigned/);
+  assert.match(auth, /\/assignments\/escalations/);
+  assert.match(auth, /\/assignments\/review/);
+  assert.match(auth, /\/assignments\/pending/);
+});
+
+test("salary advance dashboard collapses finance tools away from the employee summary", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/salary-advances/page.tsx"), "utf8");
+  const hub = readFileSync(join(webRoot, "lib/hubs/salaryAdvances.ts"), "utf8");
+  const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
+  assert.match(page, /More salary-advance tools/);
+  assert.match(page, /<details/);
+  assert.match(page, /ModuleHubCards/);
+  assert.match(hub, /Finance dashboard[\s\S]*permission:/);
+  assert.match(hub, /Pending finance certification[\s\S]*permission:/);
+  const hrefs = navChildrenBetween(sidebar, "Salary Advances", "Programmes");
+  assert.ok(!hrefs.includes("/salary-advances/settings"), "Settings stays off the short Salary Advances sidebar");
+  assert.ok(!hrefs.includes("/salary-advances/finance"), "Finance dashboard stays off the short Salary Advances sidebar");
+});
+
+test("weekly summary compose collapses specialist tools and hides them from staff", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/weekly-summaries/page.tsx"), "utf8");
+  const hub = readFileSync(join(webRoot, "lib/hubs/weeklySummaries.ts"), "utf8");
+  const auth = readFileSync(join(webRoot, "lib/auth.ts"), "utf8");
+  const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
+  assert.match(page, /More weekly-summary tools/);
+  assert.match(page, /<details/);
+  assert.match(hub, /title:\s*["']Team review["']/);
+  assert.match(hub, /title:\s*["']Department summary["']/);
+  assert.match(hub, /title:\s*["']Institutional summary["']/);
+  assert.match(auth, /\/weekly-summaries\/department/);
+  assert.match(auth, /\/weekly-summaries\/institutional/);
+  assert.match(auth, /\/weekly-summaries\/compliance/);
+  const hrefs = navChildrenBetween(sidebar, "Weekly Summaries", "Travel");
+  assert.ok(!hrefs.includes("/weekly-summaries/review"), "Team review stays off the short Weekly Summaries sidebar");
+  assert.ok(!hrefs.includes("/weekly-summaries/department"), "Department summary stays off the short Weekly Summaries sidebar");
 });
 
 test("PIF detail does not render a responsible-officer user object as a React child", () => {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment, type AssignmentStats } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
@@ -128,6 +129,9 @@ export default function AssignmentsDashboard() {
   });
 
   const recent = recentRes ?? [];
+  const user = getStoredUser();
+  const canOversee =
+    isSystemAdmin(user) || hasPermission(user, ["assignments.team", "assignments.admin", "assignments.review"]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -143,25 +147,25 @@ export default function AssignmentsDashboard() {
         }
       />
 
-      <ModuleHubCards cards={ASSIGNMENTS_HUB_CARDS} />
-
       {/* KPI Cards */}
       {statsLoading ? (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="card h-20 animate-pulse bg-neutral-100 p-5" />
           ))}
         </div>
       ) : stats ? (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <KpiCard label="Total Assignments"  value={stats.total}      icon="assignment"          color="bg-blue-50 text-blue-600"   href="/assignments/all" />
-          <KpiCard label="Active"             value={stats.active}     icon="play_circle"         color="bg-green-50 text-green-600" href="/assignments/all?status=active" />
-          <KpiCard label="Overdue"            value={stats.overdue}    icon="event_busy"          color="bg-red-50 text-red-600"     href="/assignments/overdue" />
-          <KpiCard label="Due This Week"      value={stats.due_soon}   icon="schedule"            color="bg-amber-50 text-amber-600" />
-          <KpiCard label="Awaiting Acceptance" value={stats.awaiting}  icon="pending_actions"     color="bg-primary/10 text-primary" href="/assignments/pending" />
-          <KpiCard label="Blocked"            value={stats.blocked}    icon="block"               color="bg-red-50 text-red-600"     href="/assignments/blocked" />
-          <KpiCard label="My Pending"         value={stats.my_pending} icon="assignment_late"     color="bg-orange-50 text-orange-600" />
-          <KpiCard label="Closed"             value={stats.completed}  icon="check_circle"        color="bg-neutral-50 text-neutral-500" />
+          <KpiCard label="My pending" value={stats.my_pending} icon="assignment_late" color="bg-orange-50 text-orange-600" href="/assignments/mine" />
+          <KpiCard label="Active" value={stats.active} icon="play_circle" color="bg-green-50 text-green-600" href="/assignments/all?status=active" />
+          <KpiCard label="Due this week" value={stats.due_soon} icon="schedule" color="bg-amber-50 text-amber-600" />
+          {canOversee ? (
+            <>
+              <KpiCard label="Overdue" value={stats.overdue} icon="event_busy" color="bg-red-50 text-red-600" href="/assignments/overdue" />
+              <KpiCard label="Awaiting acceptance" value={stats.awaiting} icon="pending_actions" color="bg-primary/10 text-primary" href="/assignments/pending" />
+              <KpiCard label="Blocked" value={stats.blocked} icon="block" color="bg-red-50 text-red-600" href="/assignments/blocked" />
+            </>
+          ) : null}
         </div>
       ) : null}
 
@@ -201,6 +205,13 @@ export default function AssignmentsDashboard() {
           </div>
         )}
       </div>
+
+      <details className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
+        <summary className="cursor-pointer text-sm font-semibold text-neutral-700">More assignment tools</summary>
+        <div className="mt-3">
+          <ModuleHubCards cards={ASSIGNMENTS_HUB_CARDS.filter((card) => card.href !== "/assignments/create")} />
+        </div>
+      </details>
     </div>
   );
 }

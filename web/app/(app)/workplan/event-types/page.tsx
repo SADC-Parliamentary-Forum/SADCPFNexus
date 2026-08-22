@@ -105,7 +105,7 @@ export default function WorkplanEventTypesPage() {
     if (
       !(await confirm({
         title: "Delete event type",
-        message: `Delete event type "${et.name}"?`,
+        message: `Delete event type "${et.name}"? Existing events keep this type.`,
         variant: "danger",
       }))
     ) return; // ship-safe-ignore
@@ -114,7 +114,7 @@ export default function WorkplanEventTypesPage() {
       await workplanEventTypesApi.delete(et.id);
       loadList();
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Cannot delete (may be in use).");
+      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to delete event type.");
     }
   };
 
@@ -127,7 +127,7 @@ export default function WorkplanEventTypesPage() {
           </Link>
           <h1 className="page-title">Event types</h1>
           <p className="page-subtitle">
-            Define the categories used when creating workplan events. System types cannot be deleted.
+            Categories used when creating workplan events. Existing events keep a deleted type.
           </p>
         </div>
         <button
@@ -234,8 +234,7 @@ export default function WorkplanEventTypesPage() {
                         <div className={`h-2 w-2 rounded-full ${COLOR_DOT[et.color] ?? "bg-neutral-400"}`} />
                         <span className="font-medium text-neutral-900">{et.name}</span>
                         {et.is_system && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5">
-                            <span className="material-symbols-outlined text-[11px]">lock</span>
+                          <span className="text-[10px] font-semibold text-neutral-400 bg-neutral-100 rounded px-1.5 py-0.5">
                             system
                           </span>
                         )}
@@ -251,11 +250,9 @@ export default function WorkplanEventTypesPage() {
                       <button type="button" onClick={() => handleEdit(et)} className="text-sm font-semibold text-primary hover:underline mr-3">
                         Edit
                       </button>
-                      {!et.is_system && (
-                        <button type="button" onClick={() => handleDelete(et)} className="text-sm font-semibold text-red-600 hover:underline">
-                          Delete
-                        </button>
-                      )}
+                      <button type="button" onClick={() => handleDelete(et)} className="text-sm font-semibold text-red-600 hover:underline">
+                        Delete
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo } from "react";
-import { canAccessRoute, getStoredUser } from "@/lib/auth";
+import { canAccessRoute, getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { FormSection } from "@/components/ui/FormSection";
 
 export type HubSectionId = "queues" | "views" | "tools";
@@ -13,6 +13,8 @@ export type HubCard = {
   purpose: string;
   icon: string;
   section: HubSectionId;
+  /** Extra permission beyond the route map — hides specialist tools from staff. */
+  permission?: string | string[];
 };
 
 export type HubSection = {
@@ -38,7 +40,13 @@ export function ModuleHubCards({
 }) {
   const user = getStoredUser();
   const visible = useMemo(
-    () => cards.filter((card) => canAccessRoute(user, card.href)),
+    () =>
+      cards.filter((card) => {
+        if (!canAccessRoute(user, card.href)) return false;
+        if (!card.permission) return true;
+        if (isSystemAdmin(user)) return true;
+        return hasPermission(user, card.permission);
+      }),
     [cards, user],
   );
 
