@@ -25,6 +25,7 @@ class ProductionSeeder extends Seeder
             AssetCategorySeeder::class,
             WorkflowSeeder::class,
             DefaultLeavePolicySeeder::class,
+            DsaRateSeeder::class,
             SupplierCategorySeeder::class,
         ]);
 

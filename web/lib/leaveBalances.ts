@@ -78,6 +78,38 @@ export function leaveTypeName(code: string, types: LeaveTypeMeta[] = []): string
   return types.find((type) => type.code === code)?.name ?? FALLBACK_NAMES[code] ?? code.replace(/_/g, " ");
 }
 
+const NO_BALANCE_LIMIT_TYPES = new Set(["unpaid", "compassionate", "study", "home"]);
+
+export function leaveTypeEligibleSummary(
+  card: LeaveBalanceCard | undefined,
+  code: string,
+): string {
+  if (NO_BALANCE_LIMIT_TYPES.has(code)) {
+    return "no balance limit";
+  }
+  if (!card) {
+    return "balance unavailable";
+  }
+  if (card.headline === "used") {
+    return `${formatLeaveDays(card.used)} used this year`;
+  }
+  let summary = `${formatLeaveDays(card.remaining)} available`;
+  if (card.pending > 0) {
+    summary += ` · ${formatLeaveDays(card.pending)} pending`;
+  }
+  return summary;
+}
+
+/** Dropdown label: "Annual Leave — 19 days available" */
+export function leaveTypeOptionLabel(
+  code: string,
+  name: string,
+  cards: LeaveBalanceCard[] = [],
+): string {
+  const card = cards.find((entry) => entry.code === code);
+  return `${name} — ${leaveTypeEligibleSummary(card, code)}`;
+}
+
 export function prefillLeaveEndDate(start: string, end: string): string {
   if (start && !end) return start;
   return end;

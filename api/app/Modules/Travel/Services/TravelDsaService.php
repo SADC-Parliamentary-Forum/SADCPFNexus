@@ -129,20 +129,7 @@ class TravelDsaService
     public function buildDefaultLines(TravelRequest $travel, int $rateType = 1): array
     {
         $personal = array_flip($travel->personalDayDates());
-        $rate = DsaRate::where('tenant_id', $travel->tenant_id)
-            ->where('country', $travel->destination_country)
-            ->where('rate_type', $rateType)
-            ->where('is_active', true)
-            ->where(function ($q) use ($travel) {
-                $q->whereNull('effective_from')
-                    ->orWhere('effective_from', '<=', $travel->departure_date);
-            })
-            ->where(function ($q) use ($travel) {
-                $q->whereNull('effective_to')
-                    ->orWhere('effective_to', '>=', $travel->departure_date);
-            })
-            ->orderByDesc('version')
-            ->first();
+        $rate = $this->resolveActiveRate($travel, $rateType);
 
         $daily = $rate ? $rate->dailyTotal() : 0.0;
         $mealComponent = $rate ? (float) ($rate->meal_component ?? 0) : 0.0;
@@ -206,6 +193,35 @@ class TravelDsaService
         }
 
         return $count;
+    }
+
+    public function resolveActiveRate(TravelRequest $travel, int $rateType): ?DsaRate
+    {
+        $baseQuery = fn () => DsaRate::where('tenant_id', $travel->tenant_id)
+            ->where('country', $travel->destination_country)
+            ->where('rate_type', $rateType)
+            ->where('is_active', true)
+            ->where(function ($q) use ($travel) {
+                $q->whereNull('effective_from')
+                    ->orWhere('effective_from', '<=', $travel->departure_date);
+            })
+            ->where(function ($q) use ($travel) {
+                $q->whereNull('effective_to')
+                    ->orWhere('effective_to', '>=', $travel->departure_date);
+            })
+            ->orderByDesc('version');
+
+        $city = trim((string) ($travel->destination_city ?? ''));
+        if ($city !== '') {
+            $cityRate = $baseQuery()->where('city', $city)->first();
+            if ($cityRate) {
+                return $cityRate;
+            }
+        }
+
+        return $baseQuery()->where(function ($q) {
+            $q->whereNull('city')->orWhere('city', '');
+        })->first();
     }
 
     public function listRates(int $tenantId, array $filters = [])

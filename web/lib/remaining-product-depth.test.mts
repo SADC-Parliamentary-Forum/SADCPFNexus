@@ -1121,6 +1121,8 @@ test("travel settings and calendar breadcrumbs link back to the hub", () => {
   const settings = readFileSync(join(webRoot, "app/(app)/travel/settings/page.tsx"), "utf8");
   const calendar = readFileSync(join(webRoot, "app/(app)/travel/calendar/page.tsx"), "utf8");
   assert.match(settings, /href:\s*["']\/travel["']/);
+  assert.match(settings, /data-testid=["']travel-dsa-settings["']/);
+  assert.match(settings, /Type 1 — Acc \+ meals \+ incidentals/);
   assert.match(calendar, /href:\s*["']\/travel["']/);
 });
 
@@ -1155,6 +1157,7 @@ test("workplan event types page can delete system types", () => {
 test("leave create form shows remaining days by type and labelled fields", () => {
   const source = readFileSync(join(webRoot, "app/(app)/leave/create/page.tsx"), "utf8");
   assert.match(source, /LeaveBalanceStrip|categorizeLeaveBalances/);
+  assert.match(source, /leaveTypeOptionLabel/);
   assert.match(source, /leaveApi\.getBalances/);
   assert.match(source, /FormField/);
   assert.match(source, /Leave period|What kind of leave/);
@@ -1803,5 +1806,22 @@ test("Administration sidebar and hub keep every control-plane destination", () =
   }
 });
 
+test("workflow analytics page normalizes API payload and offers reload on failure", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/admin/workflows/analytics/page.tsx"), "utf8");
+  assert.match(source, /data-testid="workflow-analytics-page"/);
+  assert.match(source, /normalizeAnalyticsSummary/);
+  assert.match(source, /workflowEngineApi/);
+  assert.match(source, /\.analytics\(/);
+  assert.match(source, /Reload/);
+  assert.doesNotMatch(source, /JSON\.stringify/);
+});
 
+test("travel settings exposes DSA rate register with edit and rate type labels", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/settings/page.tsx"), "utf8");
+  assert.match(source, /data-testid="travel-dsa-settings"/);
+  assert.match(source, /RATE_TYPE_LABELS/);
+  assert.match(source, /saveDsaRate/);
+  assert.match(source, /startEdit/);
+  assert.match(source, /effective_from/);
+});
 

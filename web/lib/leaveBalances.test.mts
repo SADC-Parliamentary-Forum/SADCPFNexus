@@ -4,6 +4,7 @@ import {
   categorizeLeaveBalances,
   formatLeaveDays,
   leaveTypeName,
+  leaveTypeOptionLabel,
   prefillLeaveEndDate,
 } from "./leaveBalances.ts";
 
@@ -70,6 +71,18 @@ test("categorizeLeaveBalances falls back to annual remaining without converting 
   assert.equal(byCode.sick.used, 4);
   assert.equal(byCode.special.headline, "used");
   assert.equal(byCode.special.used, 1);
+});
+
+test("leaveTypeOptionLabel includes eligible days for dropdown options", () => {
+  const cards = categorizeLeaveBalances({
+    annual_balance_days: 18,
+    data: [{ leave_type: "annual", available: 16, pending: 2 }],
+  });
+  assert.equal(
+    leaveTypeOptionLabel("annual", "Annual Leave", cards),
+    "Annual Leave — 16 days available · 2 days pending",
+  );
+  assert.equal(leaveTypeOptionLabel("unpaid", "Unpaid Leave", cards), "Unpaid Leave — no balance limit");
 });
 
 test("prefillLeaveEndDate copies start when the end date is still blank", () => {

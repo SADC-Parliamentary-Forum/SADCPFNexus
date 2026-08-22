@@ -17,6 +17,7 @@ import {
   categorizeLeaveBalances,
   formatLeaveDays,
   leaveTypeName,
+  leaveTypeOptionLabel,
   prefillLeaveEndDate,
   type LeaveBalancesPayload,
 } from "@/lib/leaveBalances";
@@ -279,12 +280,25 @@ function LeaveCreatePageInner() {
           cards={balanceCards}
           loading={loadingLookups}
           year={balances?.period_year}
-          selectedCode={segments.length === 1 ? primaryType : undefined}
-          onSelect={segments.length === 1 ? setPrimaryType : undefined}
         />
-        {segments.length > 1 ? (
+        {segments.length === 1 ? (
+          <FormField label="Leave type" required className="mt-4">
+            <select
+              className="form-input"
+              value={primaryType ?? "annual"}
+              disabled={loadingLookups}
+              onChange={(event) => setPrimaryType(event.target.value)}
+            >
+              {leaveTypes.map((type) => (
+                <option key={type.id} value={type.code}>
+                  {leaveTypeOptionLabel(String(type.code), type.name, balanceCards)}
+                </option>
+              ))}
+            </select>
+          </FormField>
+        ) : (
           <p className="mt-3 text-xs text-neutral-500">Pick the type on each period below.</p>
-        ) : null}
+        )}
       </FormSection>
 
       <FormSection title="Leave period" icon="date_range">
@@ -321,7 +335,7 @@ function LeaveCreatePageInner() {
                       >
                         {leaveTypes.map((type) => (
                           <option key={type.id} value={type.code}>
-                            {type.name}
+                            {leaveTypeOptionLabel(String(type.code), type.name, balanceCards)}
                           </option>
                         ))}
                       </select>
