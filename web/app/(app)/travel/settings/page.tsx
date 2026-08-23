@@ -14,6 +14,7 @@ type DsaRate = {
   accommodation_component?: number | null;
   meal_component?: number | null;
   incidentals_component?: number | null;
+  effective_from?: string | null;
   is_active: boolean;
 };
 
@@ -27,22 +28,44 @@ type FxRate = {
   notes?: string | null;
 };
 
+const RATE_TYPE_LABELS: Record<number, string> = {
+  1: "Type 1 — Acc + meals + incidentals",
+  2: "Type 2 — Meals + incidentals",
+  3: "Type 3 — Incidentals only",
+};
+
+const defaultDsaForm = {
+  country: "Namibia",
+  city: "",
+  rate_type: 1,
+  rate_per_day: 100,
+  currency: "USD",
+  accommodation_component: 60,
+  meal_component: 30,
+  incidentals_component: 10,
+  effective_from: "2026-01-01",
+  is_active: true,
+};
+
 const nonNegativeNumber = (value: string) => Math.max(0, Number(value));
+
+const formatDate = (value?: string | null) => (value ? String(value).slice(0, 10) : "—");
+
+const componentSummary = (rate: DsaRate) => {
+  const parts = [
+    rate.accommodation_component != null ? `Acc ${rate.accommodation_component}` : null,
+    rate.meal_component != null ? `Meals ${rate.meal_component}` : null,
+    rate.incidentals_component != null ? `Inc ${rate.incidentals_component}` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "—";
+};
 
 export default function TravelSettingsPage() {
   const [rates, setRates] = useState<DsaRate[]>([]);
   const [fxRates, setFxRates] = useState<FxRate[]>([]);
   const [sponsoredRates, setSponsoredRates] = useState<Array<Record<string, unknown>>>([]);
-  const [form, setForm] = useState({
-    country: "Namibia",
-    city: "",
-    rate_type: 1,
-    rate_per_day: 100,
-    currency: "USD",
-    accommodation_component: 60,
-    meal_component: 30,
-    incidentals_component: 10,
-  });
+  const [form, setForm] = useState({ ...defaultDsaForm });
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [fxForm, setFxForm] = useState({
     from_currency: "USD",
     to_currency: "NAD",
@@ -67,12 +90,43 @@ export default function TravelSettingsPage() {
 
   useEffect(() => { load(); }, []);
 
+  const resetForm = () => {
+    setForm({ ...defaultDsaForm });
+    setEditingId(null);
+  };
+
+  const startEdit = (rate: DsaRate) => {
+    setEditingId(rate.id);
+    setForm({
+      country: rate.country,
+      city: rate.city ?? "",
+      rate_type: rate.rate_type,
+      rate_per_day: Number(rate.rate_per_day),
+      currency: rate.currency,
+      accommodation_component: Number(rate.accommodation_component ?? 0),
+      meal_component: Number(rate.meal_component ?? 0),
+      incidentals_component: Number(rate.incidentals_component ?? 0),
+      effective_from: formatDate(rate.effective_from) === "—" ? defaultDsaForm.effective_from : formatDate(rate.effective_from),
+      is_active: rate.is_active,
+    });
+    setMsg(null);
+  };
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      await travelApi.saveDsaRate(form);
-      setMsg("DSA rate saved (Rate Types 1/2/3 register).");
+      await travelApi.saveDsaRate({
+        ...form,
+        ...(editingId ? { id: editingId } : {}),
+      });
+      setMsg(editingId ? "DSA rate updated." : "DSA rate saved (Rate Types 1/2/3 register).");
       load();
+      if (!editingId) {
+        resetForm();
+      } else {
+        setEditingId(null);
+        setForm({ ...defaultDsaForm });
+      }
     } catch {
       setMsg("Failed to save DSA rate.");
     }
@@ -96,60 +150,87 @@ export default function TravelSettingsPage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Travel", href: "/travel" }, { label: "Settings" }]} />}
       />
       {msg && <p className="text-sm text-primary">{msg}</p>}
-      <form onSubmit={onSubmit} className="grid grid-cols-2 gap-3 bg-neutral-50 border rounded-lg p-4">
-        <label className="text-xs font-semibold">Country
-          <input className="form-input w-full mt-1" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
-        </label>
-        <label className="text-xs font-semibold">City
-          <input className="form-input w-full mt-1" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-        </label>
-        <label className="text-xs font-semibold">Rate type
-          <select className="form-input w-full mt-1" value={form.rate_type} onChange={(e) => setForm({ ...form, rate_type: Number(e.target.value) })}>
-            <option value={1}>Type 1</option>
-            <option value={2}>Type 2</option>
-            <option value={3}>Type 3</option>
-          </select>
-        </label>
-        <label className="text-xs font-semibold">Rate / day
-          <input type="number" min={0} className="form-input w-full mt-1" value={form.rate_per_day} onChange={(e) => setForm({ ...form, rate_per_day: nonNegativeNumber(e.target.value) })} />
-        </label>
-        <label className="text-xs font-semibold">Accommodation
-          <input type="number" min={0} className="form-input w-full mt-1" value={form.accommodation_component} onChange={(e) => setForm({ ...form, accommodation_component: nonNegativeNumber(e.target.value) })} />
-        </label>
-        <label className="text-xs font-semibold">Meals
-          <input type="number" min={0} className="form-input w-full mt-1" value={form.meal_component} onChange={(e) => setForm({ ...form, meal_component: nonNegativeNumber(e.target.value) })} />
-        </label>
-        <label className="text-xs font-semibold">Incidentals
-          <input type="number" min={0} className="form-input w-full mt-1" value={form.incidentals_component} onChange={(e) => setForm({ ...form, incidentals_component: nonNegativeNumber(e.target.value) })} />
-        </label>
-        <div className="col-span-2 flex justify-end">
-          <button type="submit" className="btn-primary py-2 px-4 text-sm">Save DSA rate</button>
-        </div>
-      </form>
-      <table className="data-table w-full">
-        <thead>
-          <tr>
-            <th>Country</th>
-            <th>City</th>
-            <th>Type</th>
-            <th>Rate/day</th>
-            <th>Active</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rates.length === 0 ? (
-            <tr><td colSpan={5} className="py-8 text-center text-neutral-400">No rates yet.</td></tr>
-          ) : rates.map((r) => (
-            <tr key={r.id}>
-              <td>{r.country}</td>
-              <td>{r.city ?? "—"}</td>
-              <td>{r.rate_type}</td>
-              <td>{r.rate_per_day} {r.currency}</td>
-              <td>{r.is_active ? "Yes" : "No"}</td>
+
+      <section data-testid="travel-dsa-settings">
+        <h2 className="text-lg font-semibold text-neutral-900">DSA rate register</h2>
+        <form onSubmit={onSubmit} className="grid grid-cols-2 gap-3 bg-neutral-50 border rounded-lg p-4 mt-3">
+          <label className="text-xs font-semibold">Country
+            <input className="form-input w-full mt-1" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} />
+          </label>
+          <label className="text-xs font-semibold">City
+            <input className="form-input w-full mt-1" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Leave blank for country-level rate" />
+          </label>
+          <label className="text-xs font-semibold">Rate type
+            <select className="form-input w-full mt-1" value={form.rate_type} onChange={(e) => setForm({ ...form, rate_type: Number(e.target.value) })}>
+              <option value={1}>{RATE_TYPE_LABELS[1]}</option>
+              <option value={2}>{RATE_TYPE_LABELS[2]}</option>
+              <option value={3}>{RATE_TYPE_LABELS[3]}</option>
+            </select>
+          </label>
+          <label className="text-xs font-semibold">Rate / day
+            <input type="number" min={0} className="form-input w-full mt-1" value={form.rate_per_day} onChange={(e) => setForm({ ...form, rate_per_day: nonNegativeNumber(e.target.value) })} />
+          </label>
+          <label className="text-xs font-semibold">Currency
+            <input className="form-input w-full mt-1" maxLength={3} value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value.toUpperCase() })} />
+          </label>
+          <label className="text-xs font-semibold">Effective from
+            <input type="date" className="form-input w-full mt-1" value={form.effective_from} onChange={(e) => setForm({ ...form, effective_from: e.target.value })} />
+          </label>
+          <label className="text-xs font-semibold">Accommodation
+            <input type="number" min={0} className="form-input w-full mt-1" value={form.accommodation_component} onChange={(e) => setForm({ ...form, accommodation_component: nonNegativeNumber(e.target.value) })} />
+          </label>
+          <label className="text-xs font-semibold">Meals
+            <input type="number" min={0} className="form-input w-full mt-1" value={form.meal_component} onChange={(e) => setForm({ ...form, meal_component: nonNegativeNumber(e.target.value) })} />
+          </label>
+          <label className="text-xs font-semibold">Incidentals
+            <input type="number" min={0} className="form-input w-full mt-1" value={form.incidentals_component} onChange={(e) => setForm({ ...form, incidentals_component: nonNegativeNumber(e.target.value) })} />
+          </label>
+          <label className="text-xs font-semibold flex items-center gap-2 mt-5">
+            <input type="checkbox" checked={form.is_active} onChange={(e) => setForm({ ...form, is_active: e.target.checked })} />
+            Active rate
+          </label>
+          <div className="col-span-2 flex justify-end gap-2">
+            {editingId && (
+              <button type="button" className="btn-secondary py-2 px-4 text-sm" onClick={resetForm}>Cancel edit</button>
+            )}
+            <button type="submit" className="btn-primary py-2 px-4 text-sm" data-testid="travel-save-dsa">
+              {editingId ? "Update DSA rate" : "Save DSA rate"}
+            </button>
+          </div>
+        </form>
+        <table className="data-table w-full mt-3">
+          <thead>
+            <tr>
+              <th>Country</th>
+              <th>City</th>
+              <th>Type</th>
+              <th>Components</th>
+              <th>Rate/day</th>
+              <th>Effective</th>
+              <th>Active</th>
+              <th />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rates.length === 0 ? (
+              <tr><td colSpan={8} className="py-8 text-center text-neutral-400">No rates yet.</td></tr>
+            ) : rates.map((r) => (
+              <tr key={r.id}>
+                <td>{r.country}</td>
+                <td>{r.city ?? "—"}</td>
+                <td>{RATE_TYPE_LABELS[r.rate_type] ?? r.rate_type}</td>
+                <td className="text-xs text-neutral-600">{componentSummary(r)}</td>
+                <td>{r.rate_per_day} {r.currency}</td>
+                <td>{formatDate(r.effective_from)}</td>
+                <td>{r.is_active ? "Yes" : "No"}</td>
+                <td>
+                  <button type="button" className="text-primary text-xs font-semibold" onClick={() => startEdit(r)}>Edit</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
 
       <div data-testid="travel-fx-settings">
         <h2 className="text-lg font-semibold text-neutral-900 mt-8">FX rate register</h2>

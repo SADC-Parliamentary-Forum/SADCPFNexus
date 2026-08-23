@@ -46,6 +46,7 @@ class DatabaseSeeder extends Seeder
             // ── Configuration ──────────────────────────────
             WorkflowSeeder::class,
             SalaryAdvancePolicySeeder::class,
+            DsaRateSeeder::class,
             DefaultLeavePolicySeeder::class,
             WorkplanEventTypeSeeder::class,
             HrSettingsSeeder::class,

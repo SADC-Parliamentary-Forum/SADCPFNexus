@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { workflowEngineApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
@@ -30,6 +30,44 @@ type AnalyticsSummary = {
   acting_authority_approvals: number;
   note: string;
 };
+
+function asStageStats(value: unknown): StageStat[] {
+  if (Array.isArray(value)) {
+    return value.map((row) => ({
+      step_index: Number((row as StageStat).step_index ?? 0),
+      stage_type: String((row as StageStat).stage_type ?? "unknown"),
+      avg_hours:
+        (row as StageStat).avg_hours === null || (row as StageStat).avg_hours === undefined
+          ? null
+          : Number((row as StageStat).avg_hours),
+      task_count: Number((row as StageStat).task_count ?? 0),
+      overdue_count: Number((row as StageStat).overdue_count ?? 0),
+    }));
+  }
+  if (value && typeof value === "object") {
+    return asStageStats(Object.values(value));
+  }
+  return [];
+}
+
+function normalizeAnalyticsSummary(raw: Record<string, unknown>): AnalyticsSummary {
+  return {
+    window_since: String(raw.window_since ?? new Date().toISOString()),
+    completed_count: Number(raw.completed_count ?? 0),
+    avg_cycle_hours: Number(raw.avg_cycle_hours ?? 0),
+    median_cycle_hours: Number(raw.median_cycle_hours ?? 0),
+    stage_cycle_times: asStageStats(raw.stage_cycle_times),
+    bottlenecks: asStageStats(raw.bottlenecks ?? raw.stage_cycle_times),
+    overdue_rate: Number(raw.overdue_rate ?? 0),
+    return_rate: Number(raw.return_rate ?? 0),
+    reject_rate: Number(raw.reject_rate ?? 0),
+    delegation_usage: Number(raw.delegation_usage ?? 0),
+    exceptions_held: Number(raw.exceptions_held ?? 0),
+    self_approved_count: Number(raw.self_approved_count ?? 0),
+    acting_authority_approvals: Number(raw.acting_authority_approvals ?? 0),
+    note: String(raw.note ?? "Aggregate process metrics only."),
+  };
+}
 
 function MetricCard({
   label,
@@ -72,20 +110,40 @@ function rateTone(rate: number): "good" | "warn" | "bad" {
 export default function WorkflowAnalyticsPage() {
   const [data, setData] = useState<AnalyticsSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
     workflowEngineApi
       .analytics()
-      .then((res) => setData(res.data.data as unknown as AnalyticsSummary))
-      .catch(() => setError(true))
+      .then((res) => {
+        const payload = res.data?.data;
+        if (!payload || typeof payload !== "object") {
+          throw new Error("Analytics response was empty.");
+        }
+        setData(normalizeAnalyticsSummary(payload as Record<string, unknown>));
+      })
+      .catch((err: unknown) => {
+        const message =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          "Workflow analytics could not be loaded.";
+        setData(null);
+        setError(message);
+      })
       .finally(() => setLoading(false));
   }, []);
 
-  const maxBottleneckHours = Math.max(1, ...(data?.bottlenecks ?? []).map((b) => b.avg_hours ?? 0));
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const bottlenecks = data?.bottlenecks ?? [];
+  const stageCycleTimes = data?.stage_cycle_times ?? [];
+  const maxBottleneckHours = Math.max(1, ...bottlenecks.map((b) => b.avg_hours ?? 0));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="mx-auto max-w-5xl space-y-5" data-testid="workflow-analytics-page">
       <ModulePageHeader
         title="Workflow Analytics"
         subtitle="Cycle time, bottlenecks, overdue work, return rates, delegation usage, and exceptions."
@@ -112,7 +170,17 @@ export default function WorkflowAnalyticsPage() {
           ))}
         </div>
       ) : error || !data ? (
-        <div className="card p-6 text-sm text-neutral-500">Could not load workflow analytics.</div>
+        <div className="card space-y-3 p-6 text-sm text-neutral-600">
+          <p>{error ?? "Workflow analytics could not be loaded."}</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-primary text-sm" onClick={load}>
+              Reload
+            </button>
+            <Link href="/admin/workflows" className="btn-secondary text-sm">
+              Back to workflows
+            </Link>
+          </div>
+        </div>
       ) : (
         <>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -154,7 +222,7 @@ export default function WorkflowAnalyticsPage() {
               label="Self-authorised"
               value={data.self_approved_count}
               tone={data.self_approved_count > 0 ? "warn" : "neutral"}
-              hint="Decisions where the approver was also the applicant (PRD §10)."
+              hint="Decisions where the approver was also the applicant."
             />
             <MetricCard
               label="Acting-authority approvals"
@@ -164,11 +232,11 @@ export default function WorkflowAnalyticsPage() {
           </div>
 
           <FormSection title="Bottlenecks — slowest stages" icon="hourglass_top">
-            {data.bottlenecks.length === 0 ? (
+            {bottlenecks.length === 0 ? (
               <p className="text-sm text-neutral-500">No stage activity in this window.</p>
             ) : (
               <div className="space-y-2">
-                {data.bottlenecks.map((stage, i) => (
+                {bottlenecks.map((stage, i) => (
                   <div key={`${stage.step_index}-${stage.stage_type}-${i}`} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium capitalize">
@@ -195,7 +263,7 @@ export default function WorkflowAnalyticsPage() {
           </FormSection>
 
           <FormSection title="Stage cycle times — all stages" icon="timeline">
-            {data.stage_cycle_times.length === 0 ? (
+            {stageCycleTimes.length === 0 ? (
               <p className="text-sm text-neutral-500">No stage activity in this window.</p>
             ) : (
               <div className="overflow-x-auto">
@@ -210,7 +278,7 @@ export default function WorkflowAnalyticsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.stage_cycle_times.map((stage, i) => (
+                    {stageCycleTimes.map((stage, i) => (
                       <tr key={`${stage.step_index}-${stage.stage_type}-${i}`} className="border-t border-neutral-100 dark:border-neutral-800">
                         <td className="px-3 py-2 tabular-nums">{stage.step_index + 1}</td>
                         <td className="px-3 py-2 capitalize">{stage.stage_type}</td>

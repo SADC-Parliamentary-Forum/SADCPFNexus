@@ -104,7 +104,7 @@ test("lifecycle hub uses ModulePageHeader, FormSection, and formatDateShort", ()
 test("lifecycle sidebar is a short primary set with hub cards for specialist destinations", () => {
   const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
   const hub = readFileSync(join(webRoot, "lib/hubs/lifecycle.ts"), "utf8");
-  const auth = readFileSync(join(webRoot, "lib/auth.ts"), "utf8");
+  const auth = readFileSync(join(webRoot, "lib/authAccess.ts"), "utf8");
   const start = sidebar.indexOf('label: "Employee Lifecycle"');
   const next = sidebar.indexOf('label: "M&E / Results Monitoring"', start + 1);
   assert.ok(start >= 0 && next > start);
@@ -530,7 +530,7 @@ test("weekly summaries review page is a labelled supervisor queue with filters a
 });
 
 test("weekly summaries review nav is hidden from staff who cannot review", () => {
-  const auth = readFileSync(join(webRoot, "lib/auth.ts"), "utf8");
+  const auth = readFileSync(join(webRoot, "lib/authAccess.ts"), "utf8");
   const reviewRule = auth.slice(0, auth.indexOf('{ path: "/weekly-summaries" }'));
   assert.match(reviewRule, /\/weekly-summaries\/review/);
   assert.match(auth, /weekly-reports\.review-team|weekly-reports\.accept/);
@@ -538,7 +538,7 @@ test("weekly summaries review nav is hidden from staff who cannot review", () =>
 });
 
 test("canReviewWeeklySummaries allows supervisors and SG, not plain staff", async () => {
-  const { canReviewWeeklySummaries, canAccessRoute } = await import("./auth.ts");
+  const { canReviewWeeklySummaries, canAccessRoute } = await import("./authAccess.ts");
   const staff = {
     id: 1,
     name: "Staff",
@@ -1121,6 +1121,8 @@ test("travel settings and calendar breadcrumbs link back to the hub", () => {
   const settings = readFileSync(join(webRoot, "app/(app)/travel/settings/page.tsx"), "utf8");
   const calendar = readFileSync(join(webRoot, "app/(app)/travel/calendar/page.tsx"), "utf8");
   assert.match(settings, /href:\s*["']\/travel["']/);
+  assert.match(settings, /data-testid=["']travel-dsa-settings["']/);
+  assert.match(settings, /Type 1 — Acc \+ meals \+ incidentals/);
   assert.match(calendar, /href:\s*["']\/travel["']/);
 });
 
@@ -1155,6 +1157,7 @@ test("workplan event types page can delete system types", () => {
 test("leave create form shows remaining days by type and labelled fields", () => {
   const source = readFileSync(join(webRoot, "app/(app)/leave/create/page.tsx"), "utf8");
   assert.match(source, /LeaveBalanceStrip|categorizeLeaveBalances/);
+  assert.match(source, /leaveTypeOptionLabel/);
   assert.match(source, /leaveApi\.getBalances/);
   assert.match(source, /FormField/);
   assert.match(source, /Leave period|What kind of leave/);
@@ -1690,7 +1693,7 @@ test("overcrowded sidebars are shortened and hub cards keep every former destina
 test("timesheet capture collapses extra tools and hides specialist destinations from staff", () => {
   const page = readFileSync(join(webRoot, "app/(app)/hr/timesheets/page.tsx"), "utf8");
   const hub = readFileSync(join(webRoot, "lib/hubs/timesheets.ts"), "utf8");
-  const auth = readFileSync(join(webRoot, "lib/auth.ts"), "utf8");
+  const auth = readFileSync(join(webRoot, "lib/authAccess.ts"), "utf8");
   const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
   const cards = readFileSync(join(webRoot, "components/ui/ModuleHubCards.tsx"), "utf8");
   assert.match(page, /ModulePageHeader/);
@@ -1711,7 +1714,7 @@ test("timesheet capture collapses extra tools and hides specialist destinations 
 test("assignment dashboard collapses extra tools and hides specialist queues from staff", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assignments/page.tsx"), "utf8");
   const hub = readFileSync(join(webRoot, "lib/hubs/assignments.ts"), "utf8");
-  const auth = readFileSync(join(webRoot, "lib/auth.ts"), "utf8");
+  const auth = readFileSync(join(webRoot, "lib/authAccess.ts"), "utf8");
   assert.match(page, /More assignment tools/);
   assert.match(page, /<details/);
   assert.match(hub, /Unassigned queue[\s\S]*permission:/);
@@ -1739,7 +1742,7 @@ test("salary advance dashboard collapses finance tools away from the employee su
 test("weekly summary compose collapses specialist tools and hides them from staff", () => {
   const page = readFileSync(join(webRoot, "app/(app)/weekly-summaries/page.tsx"), "utf8");
   const hub = readFileSync(join(webRoot, "lib/hubs/weeklySummaries.ts"), "utf8");
-  const auth = readFileSync(join(webRoot, "lib/auth.ts"), "utf8");
+  const auth = readFileSync(join(webRoot, "lib/authAccess.ts"), "utf8");
   const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
   assert.match(page, /More weekly-summary tools/);
   assert.match(page, /<details/);
@@ -1803,5 +1806,22 @@ test("Administration sidebar and hub keep every control-plane destination", () =
   }
 });
 
+test("workflow analytics page normalizes API payload and offers reload on failure", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/admin/workflows/analytics/page.tsx"), "utf8");
+  assert.match(source, /data-testid="workflow-analytics-page"/);
+  assert.match(source, /normalizeAnalyticsSummary/);
+  assert.match(source, /workflowEngineApi/);
+  assert.match(source, /\.analytics\(/);
+  assert.match(source, /Reload/);
+  assert.doesNotMatch(source, /JSON\.stringify/);
+});
 
+test("travel settings exposes DSA rate register with edit and rate type labels", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/settings/page.tsx"), "utf8");
+  assert.match(source, /data-testid="travel-dsa-settings"/);
+  assert.match(source, /RATE_TYPE_LABELS/);
+  assert.match(source, /saveDsaRate/);
+  assert.match(source, /startEdit/);
+  assert.match(source, /effective_from/);
+});
 

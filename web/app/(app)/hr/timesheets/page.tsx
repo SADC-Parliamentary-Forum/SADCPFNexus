@@ -460,6 +460,7 @@ export default function TimesheetsPage() {
               onClick={handlePrevWeek}
               disabled={!weekStartDate}
               aria-label="Previous week"
+              title="Previous week"
               className="btn-secondary text-sm"
             >
               Previous
@@ -469,6 +470,7 @@ export default function TimesheetsPage() {
               onClick={handleNextWeek}
               disabled={!weekStartDate}
               aria-label="Next week"
+              title="Next week"
               className="btn-secondary text-sm"
             >
               Next
