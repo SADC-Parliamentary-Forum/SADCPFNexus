@@ -145,6 +145,68 @@ class LifecycleCaseService
         });
     }
 
+    public function initiateInternal(User $actor, string $lifecycleType, array $data): LifecycleCase
+    {
+        if (! in_array($lifecycleType, ['transfer', 'promotion', 'probation'], true)) {
+            throw ValidationException::withMessages(['lifecycle_type' => 'Unsupported journey type.']);
+        }
+
+        $employee = User::where('tenant_id', $actor->tenant_id)->findOrFail($data['employee_id']);
+
+        $defaultCodes = [
+            'transfer' => 'transfer-internal',
+            'promotion' => 'promotion',
+            'probation' => 'probation-review',
+        ];
+        $prefixes = [
+            'transfer' => 'TRF',
+            'promotion' => 'PRM',
+            'probation' => 'PRB',
+        ];
+
+        $templateCode = $data['template_code'] ?? $defaultCodes[$lifecycleType];
+        $version = isset($data['template_version_id'])
+            ? \App\Models\Lifecycle\LifecycleJourneyTemplateVersion::where('tenant_id', $actor->tenant_id)
+                ->where('id', $data['template_version_id'])
+                ->where('status', 'published')
+                ->firstOrFail()
+            : $this->templates->resolvePublishedVersion($actor, $templateCode, $lifecycleType);
+
+        $hrFile = HrPersonalFile::where('tenant_id', $actor->tenant_id)
+            ->where('employee_id', $employee->id)
+            ->first();
+
+        return DB::transaction(function () use ($actor, $employee, $version, $data, $hrFile, $lifecycleType, $prefixes) {
+            $case = LifecycleCase::create([
+                'tenant_id' => $actor->tenant_id,
+                'reference' => $this->nextReference($prefixes[$lifecycleType]),
+                'employee_id' => $employee->id,
+                'person_id' => $data['person_id'] ?? null,
+                'hr_file_id' => $hrFile?->id,
+                'lifecycle_type' => $lifecycleType,
+                'template_version_id' => $version->id,
+                'status' => 'in_progress',
+                'start_date' => $data['start_date'] ?? now()->toDateString(),
+                'readiness' => [
+                    'employee_tasks_complete' => false,
+                    'department_tasks_complete' => false,
+                    'ready' => false,
+                ],
+                'created_by' => $actor->id,
+            ]);
+
+            $this->taskEngine->spawnFromTemplate($case, $version->definition, $actor, [
+                'lifecycle_type' => $lifecycleType,
+            ]);
+            $this->events->record($case, 'case.initiated', $actor, [
+                'lifecycle_type' => $lifecycleType,
+                'template_version_id' => $version->id,
+            ]);
+
+            return $case->fresh(['stages.tasks', 'employee', 'templateVersion']);
+        });
+    }
+
     public function show(LifecycleCase $case, User $viewer): array
     {
         $this->rbac->assertViewCase($viewer, $case);
@@ -236,7 +298,8 @@ class LifecycleCaseService
 
             $case = $task->lifecycleCase;
             $this->recalculateReadiness($case);
-            $this->events->record($case, 'task.completed', $actor, ['task_key' => $task->task_key]);
+            $this->maybeCompleteInternal($case, $actor);
+            $this->events->record($case->fresh(), 'task.completed', $actor, ['task_key' => $task->task_key]);
 
             return $task->fresh();
         });
@@ -259,6 +322,7 @@ class LifecycleCaseService
             ]);
 
             $this->recalculateReadiness($task->lifecycleCase);
+            $this->reopenInternalIfCompleted($task->lifecycleCase, $actor);
             $this->events->record($task->lifecycleCase, 'task.reopened', $actor, ['task_key' => $task->task_key]);
 
             return $task->fresh();
@@ -272,6 +336,8 @@ class LifecycleCaseService
         return [
             'onboarding_open' => (clone $base)->where('lifecycle_type', 'onboarding')->where('status', 'in_progress')->count(),
             'separation_open' => (clone $base)->where('lifecycle_type', 'separation')->where('status', 'in_progress')->count(),
+            'internal_open' => (clone $base)->whereIn('lifecycle_type', ['transfer', 'promotion', 'probation'])
+                ->where('status', 'in_progress')->count(),
             'awaiting_clearance' => (clone $base)->where('lifecycle_type', 'separation')
                 ->where('terminal_payment_blocked', true)->count(),
             'ready_onboarding' => (clone $base)->where('lifecycle_type', 'onboarding')
@@ -412,6 +478,51 @@ class LifecycleCaseService
             'assignment_id' => $task->assignment_id,
             'revision' => $task->revision,
         ];
+    }
+
+    private function maybeCompleteInternal(LifecycleCase $case, User $actor): void
+    {
+        $case->refresh();
+        if (! in_array($case->lifecycle_type, ['transfer', 'promotion', 'probation'], true)) {
+            return;
+        }
+        if ($case->status !== 'in_progress') {
+            return;
+        }
+
+        $mandatory = $case->tasks()->where('mandatory', true)->get();
+        if ($mandatory->isEmpty() || $mandatory->contains(fn ($t) => $t->status !== 'completed')) {
+            return;
+        }
+
+        $case->update([
+            'status' => 'completed',
+            'completed_at' => now(),
+            'revision' => $case->revision + 1,
+        ]);
+        $this->events->record($case, 'case.completed', $actor, [
+            'lifecycle_type' => $case->lifecycle_type,
+        ]);
+    }
+
+    private function reopenInternalIfCompleted(LifecycleCase $case, User $actor): void
+    {
+        $case->refresh();
+        if (! in_array($case->lifecycle_type, ['transfer', 'promotion', 'probation'], true)) {
+            return;
+        }
+        if ($case->status !== 'completed') {
+            return;
+        }
+
+        $case->update([
+            'status' => 'in_progress',
+            'completed_at' => null,
+            'revision' => $case->revision + 1,
+        ]);
+        $this->events->record($case, 'case.reopened', $actor, [
+            'lifecycle_type' => $case->lifecycle_type,
+        ]);
     }
 
     private function nextReference(string $prefix): string

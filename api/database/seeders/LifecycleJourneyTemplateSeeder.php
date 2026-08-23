@@ -45,6 +45,24 @@ class LifecycleJourneyTemplateSeeder extends Seeder
                 'lifecycle_type' => 'separation',
                 'definition' => self::buildSeparationDefinition('end_of_contract'),
             ],
+            [
+                'code' => 'transfer-internal',
+                'name' => 'Internal transfer',
+                'lifecycle_type' => 'transfer',
+                'definition' => self::buildInternalDefinition('transfer', 'internal'),
+            ],
+            [
+                'code' => 'promotion',
+                'name' => 'Promotion',
+                'lifecycle_type' => 'promotion',
+                'definition' => self::buildInternalDefinition('promotion', 'standard'),
+            ],
+            [
+                'code' => 'probation-review',
+                'name' => 'Probation review',
+                'lifecycle_type' => 'probation',
+                'definition' => self::buildInternalDefinition('probation', 'standard'),
+            ],
         ];
 
         foreach ($templates as $tpl) {
@@ -258,6 +276,57 @@ class LifecycleJourneyTemplateSeeder extends Seeder
                             'mandatory' => true,
                             'due_offset_days' => 1,
                             'due_anchor' => 'last_working_day',
+                            'spawn_assignment' => true,
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    public static function buildInternalDefinition(string $lifecycleType, string $category): array
+    {
+        $titles = [
+            'transfer' => ['hr_transfer_letter' => 'Issue transfer letter', 'receiving_manager' => 'Receiving manager checklist'],
+            'promotion' => ['hr_promotion_letter' => 'Issue promotion letter', 'grade_update' => 'Update grade and payroll'],
+            'probation' => ['probation_review' => 'Complete probation review', 'confirm_appointment' => 'Confirm or extend appointment'],
+        ];
+        $pair = $titles[$lifecycleType] ?? $titles['transfer'];
+        $keys = array_keys($pair);
+
+        return [
+            'employee_category' => $category,
+            'stages' => [
+                [
+                    'key' => 'hr',
+                    'name' => 'HR',
+                    'sort_order' => 1,
+                    'tasks' => [
+                        [
+                            'key' => $keys[0],
+                            'title' => $pair[$keys[0]],
+                            'assignee_role' => 'hr',
+                            'department_slug' => 'hr',
+                            'mandatory' => true,
+                            'due_offset_days' => 5,
+                            'due_anchor' => 'case_start',
+                            'spawn_assignment' => true,
+                        ],
+                    ],
+                ],
+                [
+                    'key' => 'follow_up',
+                    'name' => 'Follow-up',
+                    'sort_order' => 2,
+                    'tasks' => [
+                        [
+                            'key' => $keys[1],
+                            'title' => $pair[$keys[1]],
+                            'assignee_role' => 'hr',
+                            'department_slug' => 'hr',
+                            'mandatory' => true,
+                            'due_offset_days' => 10,
+                            'due_anchor' => 'case_start',
                             'spawn_assignment' => true,
                         ],
                     ],

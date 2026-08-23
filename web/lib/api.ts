@@ -9009,18 +9009,28 @@ export interface LifecycleCaseSummary {
 export interface LifecycleDashboard {
   onboarding_open: number;
   separation_open: number;
+  internal_open: number;
   awaiting_clearance: number;
   ready_onboarding: number;
 }
 
+export interface LifecycleAnalytics {
+  by_type: Record<string, { open: number; completed: number; avg_cycle_days: number | null }>;
+  bottlenecks: Array<{ task_key: string; title: string; open_count: number; avg_age_days: number }>;
+  clearance_aging: { "0_7": number; "8_14": number; "15_plus": number };
+  exceptions_open: number;
+}
+
 export const lifecycleApi = {
   dashboard: () => api.get<{ data: LifecycleDashboard }>("/lifecycle/dashboard"),
+  analytics: () => api.get<{ data: LifecycleAnalytics }>("/lifecycle/analytics"),
   listCases: (params?: Record<string, string>) => api.get<{ data: LifecycleCaseSummary[] }>("/lifecycle/cases", { params }),
   myTasks: () => api.get<{ data: Array<Record<string, unknown>> }>("/lifecycle/my-tasks"),
   showCase: (id: number) => api.get<{ data: Record<string, unknown> }>(`/lifecycle/cases/${id}`),
   timeline: (id: number) => api.get<{ data: Array<Record<string, unknown>> }>(`/lifecycle/cases/${id}/timeline`),
   initiateOnboarding: (data: Record<string, unknown>) => api.post("/lifecycle/onboarding", data),
   initiateSeparation: (data: Record<string, unknown>) => api.post("/lifecycle/separation", data),
+  initiateJourney: (data: Record<string, unknown>) => api.post("/lifecycle/journeys", data),
   completeTask: (id: number, revision: number) =>
     api.post(`/lifecycle/tasks/${id}/complete`, { revision }),
   updateClearance: (id: number, data: { clearance_status: string; revision: number }) =>

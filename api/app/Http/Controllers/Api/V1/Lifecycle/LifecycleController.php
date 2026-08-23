@@ -7,6 +7,7 @@ use App\Models\Lifecycle\LifecycleCase;
 use App\Models\Lifecycle\LifecycleException;
 use App\Models\Lifecycle\LifecycleJourneyTemplateVersion;
 use App\Models\Lifecycle\LifecycleTaskInstance;
+use App\Modules\Lifecycle\Services\LifecycleAnalyticsService;
 use App\Modules\Lifecycle\Services\LifecycleCaseService;
 use App\Modules\Lifecycle\Services\LifecycleClearanceService;
 use App\Modules\Lifecycle\Services\LifecycleTemplateService;
@@ -19,7 +20,13 @@ class LifecycleController extends Controller
         private readonly LifecycleCaseService $cases,
         private readonly LifecycleClearanceService $clearance,
         private readonly LifecycleTemplateService $templates,
+        private readonly LifecycleAnalyticsService $analytics,
     ) {}
+
+    public function analytics(Request $request): JsonResponse
+    {
+        return response()->json(['data' => $this->analytics->snapshot($request->user())]);
+    }
 
     public function dashboard(Request $request): JsonResponse
     {
@@ -29,7 +36,7 @@ class LifecycleController extends Controller
     public function listCases(Request $request): JsonResponse
     {
         $filters = $request->validate([
-            'lifecycle_type' => ['nullable', 'in:onboarding,separation'],
+            'lifecycle_type' => ['nullable', 'in:onboarding,separation,transfer,promotion,probation'],
             'status' => ['nullable', 'string'],
         ]);
 
@@ -76,6 +83,24 @@ class LifecycleController extends Controller
         ]);
 
         $case = $this->cases->initiateSeparation($request->user(), $data);
+
+        return response()->json(['data' => $this->cases->show($case, $request->user())], 201);
+    }
+
+    public function initiateJourney(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'lifecycle_type' => ['required', 'in:transfer,promotion,probation'],
+            'employee_id' => ['required', 'integer', 'exists:users,id'],
+            'person_id' => ['nullable', 'integer'],
+            'template_code' => ['nullable', 'string', 'max:64'],
+            'template_version_id' => ['nullable', 'integer'],
+            'start_date' => ['nullable', 'date'],
+        ]);
+
+        $type = $data['lifecycle_type'];
+        unset($data['lifecycle_type']);
+        $case = $this->cases->initiateInternal($request->user(), $type, $data);
 
         return response()->json(['data' => $this->cases->show($case, $request->user())], 201);
     }

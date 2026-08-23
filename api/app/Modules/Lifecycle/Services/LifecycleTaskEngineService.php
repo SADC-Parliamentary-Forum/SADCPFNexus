@@ -74,12 +74,15 @@ class LifecycleTaskEngineService
                     if ($taskDef['spawn_assignment'] ?? true) {
                         $assignment = $this->assignments->createFromSource([
                             'title' => $task->title,
-                            'description' => $task->description,
+                            'description' => $task->description ?: $task->title,
                             'source_type' => 'lifecycle',
                             'source_id' => $task->id,
                             'source_purpose' => $task->task_key,
                             'source_reference' => $case->reference,
                             'due_date' => $dueDate?->toDateString(),
+                            'assigned_to' => ($taskDef['assignee_role'] ?? 'employee') === 'employee'
+                                ? $case->employee_id
+                                : $actor->id,
                             'department_id' => null,
                             'priority' => ($taskDef['priority'] ?? 'medium'),
                             'status' => 'issued',

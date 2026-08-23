@@ -345,6 +345,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   // Employee Lifecycle (Phase 1)
   { path: "/lifecycle/admin/templates", permission: ["lifecycle.templates.view", "lifecycle.templates.edit", "lifecycle.admin"] },
   { path: "/lifecycle/onboarding/create", permission: ["lifecycle.manage-onboarding", "lifecycle.admin"] },
+  { path: "/lifecycle/journeys/new", permission: ["lifecycle.manage-onboarding", "lifecycle.admin"] },
+  { path: "/lifecycle/journeys", permission: ["lifecycle.view", "lifecycle.manage-onboarding", "lifecycle.admin"] },
   { path: "/lifecycle/separation/create", permission: ["lifecycle.manage-separation", "lifecycle.admin"] },
   { path: "/lifecycle/onboarding", permission: ["lifecycle.view", "lifecycle.manage-onboarding", "lifecycle.admin"] },
   { path: "/lifecycle/separation", permission: ["lifecycle.view", "lifecycle.manage-separation", "lifecycle.admin"] },

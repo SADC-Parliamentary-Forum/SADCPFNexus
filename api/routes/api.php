@@ -2131,7 +2131,9 @@ Route::prefix('v1')->group(function () {
             $lt = \App\Http\Controllers\Api\V1\Lifecycle\LifecycleTemplateController::class;
 
             Route::middleware('can:lifecycle.view')->get('dashboard', [$lc, 'dashboard']);
+            Route::middleware('can:lifecycle.view')->get('analytics', [$lc, 'analytics']);
             Route::middleware('can:lifecycle.view')->get('cases', [$lc, 'listCases']);
+            Route::middleware('can:lifecycle.manage-onboarding')->post('journeys', [$lc, 'initiateJourney']);
             Route::get('my-tasks', [$lc, 'myTasks']);
 
             Route::middleware('can:lifecycle.manage-onboarding')->post('onboarding', [$lc, 'initiateOnboarding']);

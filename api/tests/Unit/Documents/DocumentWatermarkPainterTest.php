@@ -3,7 +3,7 @@
 namespace Tests\Unit\Documents;
 
 use App\Modules\Documents\Services\DocumentWatermarkPainter;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 class DocumentWatermarkPainterTest extends TestCase
 {
@@ -35,6 +35,42 @@ class DocumentWatermarkPainterTest extends TestCase
 
         $this->assertNotSame($png, $out);
         $this->assertSame("\x89PNG", substr($out, 0, 4));
+    }
+
+    public function test_stamps_visible_text_into_a_flate_encoded_pdf(): void
+    {
+        $pdf = $this->flatePdf('Hello');
+        $this->assertStringContainsString('/FlateDecode', $pdf);
+        $this->assertStringNotContainsString('SADC-PF-NEXUS-WATERMARK', $pdf);
+
+        $out = (new DocumentWatermarkPainter)->apply($pdf, 'application/pdf', 'SADC-PF-NEXUS-WATERMARK');
+
+        $this->assertNotSame($pdf, $out);
+        $this->assertStringContainsString('%PDF', $out);
+        $this->assertTrue(
+            preg_match('/stream\r?\n(.*)\nendstream/s', $out, $m) === 1,
+            'stamped PDF must still contain a content stream'
+        );
+        $plain = @gzuncompress(rtrim($m[1], "\r\n"));
+        $this->assertNotFalse($plain);
+        $this->assertStringContainsString('SADC-PF-NEXUS-WATERMARK', (string) $plain);
+        $this->assertStringContainsString('Hello', (string) $plain);
+    }
+
+    private function flatePdf(string $text): string
+    {
+        $escaped = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], $text);
+        $plain = "BT /F1 12 Tf 72 720 Td ({$escaped}) Tj ET";
+        $stream = gzcompress($plain);
+        $len = strlen($stream);
+
+        return "%PDF-1.4\n".
+            "1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj\n".
+            "2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj\n".
+            "3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources<< /Font<< /F1 5 0 R >> >> >>endobj\n".
+            "4 0 obj<< /Length {$len} /Filter /FlateDecode >>stream\n{$stream}\nendstream\nendobj\n".
+            "5 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj\n".
+            "trailer<< /Root 1 0 R >>\n%%EOF\n";
     }
 
     private function minimalPdf(string $text): string

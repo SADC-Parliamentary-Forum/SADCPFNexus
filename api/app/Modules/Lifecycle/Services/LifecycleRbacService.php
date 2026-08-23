@@ -37,7 +37,8 @@ class LifecycleRbacService
             return true;
         }
 
-        if ($case->lifecycle_type === 'onboarding' && $user->can('lifecycle.manage-onboarding')) {
+        if (in_array($case->lifecycle_type, ['onboarding', 'transfer', 'promotion', 'probation'], true)
+            && $user->can('lifecycle.manage-onboarding')) {
             return true;
         }
 

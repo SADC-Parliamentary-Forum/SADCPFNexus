@@ -31,9 +31,10 @@ class LifecycleFeatureTest extends TestCase
             ['code' => 'onboarding-regional', 'name' => 'Regional staff onboarding', 'lifecycle_type' => 'onboarding', 'category' => 'regional'],
             ['code' => 'separation-resignation', 'name' => 'Resignation separation', 'lifecycle_type' => 'separation', 'category' => 'resignation'],
             ['code' => 'separation-end-of-contract', 'name' => 'End of contract separation', 'lifecycle_type' => 'separation', 'category' => 'end_of_contract'],
+            ['code' => 'transfer-internal', 'name' => 'Internal transfer', 'lifecycle_type' => 'transfer', 'category' => 'internal'],
+            ['code' => 'promotion', 'name' => 'Promotion', 'lifecycle_type' => 'promotion', 'category' => 'standard'],
+            ['code' => 'probation-review', 'name' => 'Probation review', 'lifecycle_type' => 'probation', 'category' => 'standard'],
         ];
-
-        $seeder = new \Database\Seeders\LifecycleJourneyTemplateSeeder;
 
         foreach ($definitions as $def) {
             $template = LifecycleJourneyTemplate::firstOrCreate(
@@ -50,9 +51,11 @@ class LifecycleFeatureTest extends TestCase
                 continue;
             }
 
-            $definition = $def['lifecycle_type'] === 'onboarding'
-                ? \Database\Seeders\LifecycleJourneyTemplateSeeder::buildOnboardingDefinition($def['category'])
-                : \Database\Seeders\LifecycleJourneyTemplateSeeder::buildSeparationDefinition($def['category']);
+            $definition = match ($def['lifecycle_type']) {
+                'onboarding' => \Database\Seeders\LifecycleJourneyTemplateSeeder::buildOnboardingDefinition($def['category']),
+                'separation' => \Database\Seeders\LifecycleJourneyTemplateSeeder::buildSeparationDefinition($def['category']),
+                default => \Database\Seeders\LifecycleJourneyTemplateSeeder::buildInternalDefinition($def['lifecycle_type'], $def['category']),
+            };
 
             LifecycleJourneyTemplateVersion::create([
                 'tenant_id' => $tenant->id,
@@ -512,5 +515,130 @@ class LifecycleFeatureTest extends TestCase
 
         $task->refresh();
         $this->assertSame('exception_approved', $task->clearance_status);
+    }
+
+    public function test_phase2_analytics_reports_cycle_time_and_bottlenecks(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->seedLifecycleTemplates($tenant);
+        [$http, $hr] = $this->asHrManager($tenant);
+        $this->grantLifecycle($hr, ['lifecycle.manage-onboarding', 'lifecycle.view']);
+
+        $employee = User::factory()->create(['tenant_id' => $tenant->id]);
+        $http->postJson('/api/v1/lifecycle/onboarding', [
+            'employee_id' => $employee->id,
+            'template_code' => 'onboarding-local',
+        ])->assertCreated();
+
+        $case = LifecycleCase::where('employee_id', $employee->id)->firstOrFail();
+        $case->forceFill([
+            'start_date' => now()->subDays(10)->toDateString(),
+            'status' => 'completed',
+            'completed_at' => now()->subDays(2),
+        ])->save();
+
+        $openEmployee = User::factory()->create(['tenant_id' => $tenant->id]);
+        $http->postJson('/api/v1/lifecycle/onboarding', [
+            'employee_id' => $openEmployee->id,
+            'template_code' => 'onboarding-local',
+        ])->assertCreated();
+
+        $openTask = LifecycleTaskInstance::where('task_key', 'payroll_setup')
+            ->whereHas('lifecycleCase', fn ($q) => $q->where('employee_id', $openEmployee->id))
+            ->firstOrFail();
+        $openTask->forceFill(['due_date' => now()->subDays(9)->toDateString()])->save();
+
+        $response = $http->getJson('/api/v1/lifecycle/analytics');
+        $response->assertOk()
+            ->assertJsonPath('data.by_type.onboarding.completed', 1)
+            ->assertJsonPath('data.by_type.onboarding.open', 1);
+
+        $this->assertEqualsWithDelta(8.0, (float) $response->json('data.by_type.onboarding.avg_cycle_days'), 1.0);
+        $this->assertNotEmpty($response->json('data.bottlenecks'));
+        $this->assertSame('payroll_setup', $response->json('data.bottlenecks.0.task_key'));
+        $this->assertArrayHasKey('0_7', $response->json('data.clearance_aging'));
+        $this->assertIsInt($response->json('data.exceptions_open'));
+    }
+
+    public function test_phase2_hr_initiates_transfer_journey(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->seedLifecycleTemplates($tenant);
+        [$http, $hr] = $this->asHrManager($tenant);
+        $this->grantLifecycle($hr, ['lifecycle.manage-onboarding', 'lifecycle.view']);
+
+        $employee = User::factory()->create(['tenant_id' => $tenant->id]);
+
+        $http->postJson('/api/v1/lifecycle/journeys', [
+            'lifecycle_type' => 'transfer',
+            'employee_id' => $employee->id,
+            'template_code' => 'transfer-internal',
+        ])->assertCreated()
+            ->assertJsonPath('data.lifecycle_type', 'transfer');
+
+        $this->assertDatabaseHas('lifecycle_cases', [
+            'employee_id' => $employee->id,
+            'lifecycle_type' => 'transfer',
+        ]);
+        $this->assertStringStartsWith('TRF-', LifecycleCase::where('employee_id', $employee->id)->value('reference'));
+    }
+
+    public function test_phase2_hr_initiates_promotion_and_probation_journeys(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->seedLifecycleTemplates($tenant);
+        [$http, $hr] = $this->asHrManager($tenant);
+        $this->grantLifecycle($hr, ['lifecycle.manage-onboarding', 'lifecycle.view']);
+
+        $promotionEmployee = User::factory()->create(['tenant_id' => $tenant->id]);
+        $probationEmployee = User::factory()->create(['tenant_id' => $tenant->id]);
+
+        $http->postJson('/api/v1/lifecycle/journeys', [
+            'lifecycle_type' => 'promotion',
+            'employee_id' => $promotionEmployee->id,
+        ])->assertCreated()->assertJsonPath('data.lifecycle_type', 'promotion');
+
+        $http->postJson('/api/v1/lifecycle/journeys', [
+            'lifecycle_type' => 'probation',
+            'employee_id' => $probationEmployee->id,
+        ])->assertCreated()->assertJsonPath('data.lifecycle_type', 'probation');
+    }
+
+    public function test_phase2_transfer_completes_when_mandatory_tasks_done(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->seedLifecycleTemplates($tenant);
+        [$http, $hr] = $this->asHrManager($tenant);
+        $this->grantLifecycle($hr, [
+            'lifecycle.manage-onboarding',
+            'lifecycle.view',
+            'lifecycle.complete-department-tasks',
+        ]);
+
+        $employee = User::factory()->create(['tenant_id' => $tenant->id]);
+        $http->postJson('/api/v1/lifecycle/journeys', [
+            'lifecycle_type' => 'transfer',
+            'employee_id' => $employee->id,
+        ])->assertCreated();
+
+        $case = LifecycleCase::where('employee_id', $employee->id)->firstOrFail();
+        foreach ($case->tasks as $task) {
+            $http->postJson("/api/v1/lifecycle/tasks/{$task->id}/complete", [
+                'revision' => $task->revision,
+            ])->assertOk();
+            $task->refresh();
+        }
+
+        $case->refresh();
+        $this->assertSame('completed', $case->status);
+        $this->assertNotNull($case->completed_at);
+    }
+
+    public function test_phase2_staff_cannot_read_analytics(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+
+        $http->getJson('/api/v1/lifecycle/analytics')->assertForbidden();
     }
 }

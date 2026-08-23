@@ -5,6 +5,7 @@ namespace App\Modules\Documents\Services;
 /**
  * Paints a visible watermark onto download bytes.
  * Uncompressed PDFs get a text operator injected into the first content stream.
+ * FlateDecode streams are inflated, stamped, and recompressed.
  * Raster images are stamped with GD. Other binaries are returned unchanged
  * (headers still mark the download as watermarked).
  */
@@ -40,12 +41,58 @@ class DocumentWatermarkPainter
 
         $insertAt = (int) $match[0][1] + strlen($match[0][0]);
         $prefix = substr($bytes, 0, $insertAt);
-        if (preg_match('/\/Filter\b/', substr($prefix, max(0, strlen($prefix) - 500))) === 1) {
-            // Compressed content streams cannot take a raw text operator.
+        $dictWindow = substr($prefix, max(0, strlen($prefix) - 500));
+
+        if (preg_match('/\/Filter\s*\/FlateDecode/', $dictWindow) === 1) {
+            return $this->stampFlateStream($bytes, $insertAt, $operator) ?? $bytes;
+        }
+
+        if (preg_match('/\/Filter\b/', $dictWindow) === 1) {
             return $bytes;
         }
 
         return $prefix.$operator.substr($bytes, $insertAt);
+    }
+
+    /**
+     * Inflate a FlateDecode content stream, inject a visible text operator, and
+     * rewrite /Length so compressed PDFs are not a silent passthrough.
+     */
+    private function stampFlateStream(string $bytes, int $streamStart, string $operator): ?string
+    {
+        $endPos = strpos($bytes, 'endstream', $streamStart);
+        if ($endPos === false) {
+            return null;
+        }
+
+        $compressed = substr($bytes, $streamStart, $endPos - $streamStart);
+        $compressed = rtrim($compressed, "\r\n");
+        $plain = @gzuncompress($compressed);
+        if ($plain === false) {
+            $plain = @gzinflate($compressed);
+        }
+        if ($plain === false) {
+            return null;
+        }
+
+        $recompressed = gzcompress($operator.$plain);
+        if ($recompressed === false) {
+            return null;
+        }
+
+        $newLen = strlen($recompressed);
+        $dictStart = strrpos(substr($bytes, 0, $streamStart), '<<');
+        if ($dictStart === false) {
+            return null;
+        }
+
+        $objectHead = substr($bytes, $dictStart, $streamStart - $dictStart);
+        $objectHead = preg_replace('/\/Length\s+\d+/', '/Length '.$newLen, $objectHead, 1);
+        if (! is_string($objectHead)) {
+            return null;
+        }
+
+        return substr($bytes, 0, $dictStart).$objectHead.$recompressed."\n".substr($bytes, $endPos);
     }
 
     private function stampRaster(string $bytes, string $stamp): string

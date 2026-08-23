@@ -27,13 +27,14 @@ export default function LifecycleDashboardPage() {
     <div className="mx-auto max-w-6xl space-y-5">
       <ModulePageHeader
         title="Employee Lifecycle"
-        subtitle="Onboarding and separation journeys with departmental tasks, clearance, and audit trail."
+        subtitle="Onboarding, separation, and internal journeys with departmental tasks, clearance, and audit trail."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Employee Lifecycle" }]} />}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {[
           { label: "Open onboarding", value: stats?.onboarding_open ?? 0, href: "/lifecycle/onboarding" },
+          { label: "Open internal journeys", value: stats?.internal_open ?? 0, href: "/lifecycle/journeys" },
           { label: "Open separation", value: stats?.separation_open ?? 0, href: "/lifecycle/separation" },
           { label: "Awaiting clearance", value: stats?.awaiting_clearance ?? 0, href: "/lifecycle/separation" },
           { label: "Ready onboarding", value: stats?.ready_onboarding ?? 0, href: "/lifecycle/onboarding" },
@@ -52,11 +53,11 @@ export default function LifecycleDashboardPage() {
         </div>
       </details>
 
-      <FormSection title="Recent cases" description="Latest onboarding and separation cases.">
+      <FormSection title="Recent cases" description="Latest onboarding, separation, and internal journey cases.">
         {casesQuery.isLoading ? <p className="text-sm text-neutral-500">Loading cases…</p> : null}
         {casesQuery.isError ? <p className="text-sm text-red-600">Failed to load cases.</p> : null}
         {!casesQuery.isLoading && cases.length === 0 ? (
-          <EmptyState title="No lifecycle cases yet" description="Start onboarding or separation from the tools above." />
+          <EmptyState title="No lifecycle cases yet" description="Start onboarding, an internal journey, or separation from the tools above." />
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
