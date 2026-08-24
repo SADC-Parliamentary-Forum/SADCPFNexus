@@ -405,7 +405,7 @@ class MeetingDecisionService
             'source_purpose' => $data['source_purpose'] ?? 'implementation',
         ]);
 
-        if ($decision->status === 'adopted') {
+        if ($decision->status === 'adopted' && empty($data['preserve_status'])) {
             $decision->update(['status' => 'in_progress']);
             $this->recordHistory($decision, 'started', $user, 'adopted', 'in_progress', [], [
                 'reason' => 'assignment_created',

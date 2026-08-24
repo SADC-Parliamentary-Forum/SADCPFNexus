@@ -69,6 +69,7 @@ class DecisionAssignmentPromoteService
                     'source_purpose' => 'weekly_promote',
                     'title' => 'Decision: '.$decision->title,
                     'description' => $decision->body ?: ('Implement '.$decision->reference_number),
+                    'preserve_status' => $minutesId !== null,
                 ]);
 
                 $decision->update(['last_promoted_at' => now()]);
