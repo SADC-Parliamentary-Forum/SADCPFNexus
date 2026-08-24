@@ -4,9 +4,7 @@ export const LIFECYCLE_SIDEBAR_CHILDREN = [
   { label: "Dashboard", href: "/lifecycle", icon: "dashboard" },
   { label: "My tasks", href: "/lifecycle/my-tasks", icon: "task_alt" },
   { label: "Onboarding", href: "/lifecycle/onboarding", icon: "person_add" },
-  { label: "Internal journeys", href: "/lifecycle/journeys", icon: "swap_horiz" },
   { label: "Separation", href: "/lifecycle/separation", icon: "logout" },
-  { label: "Reports", href: "/lifecycle/reports", icon: "analytics" },
 ] as const;
 
 export const LIFECYCLE_HUB_CARDS: HubCard[] = [
