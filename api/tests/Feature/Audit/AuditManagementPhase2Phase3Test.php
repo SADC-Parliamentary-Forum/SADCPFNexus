@@ -284,4 +284,43 @@ class AuditManagementPhase2Phase3Test extends TestCase
         $this->assertNotEmpty($pack->json('data.payload.critical_high_findings'));
         $this->assertSame('Critical control failure', $pack->json('data.payload.critical_high_findings.0.title'));
     }
+
+    public function test_investigation_pack_is_advisory_and_never_closes(): void
+    {
+        config(['audit.ai_provider' => 'stub']);
+        config(['access_control.endpoint_enforcement_mode' => 'off']);
+
+        [, $auditor] = $this->asAdmin();
+        $engagement = $this->seedEngagement($auditor);
+
+        $findingId = $this->asUser($auditor)->postJson('/api/v1/audit-management/findings', [
+            'engagement_id' => $engagement->id,
+            'title' => 'Imprest float undocumented',
+            'rating' => 'high',
+        ])->json('data.id');
+
+        $res = $this->asUser($auditor)->postJson('/api/v1/audit-management/ai/suggestions', [
+            'kind' => 'investigation_pack',
+            'engagement_id' => $engagement->id,
+            'context' => ['finding_id' => $findingId],
+        ])->assertCreated();
+
+        $this->assertSame('pending_confirmation', $res->json('data.status'));
+        $this->assertFalse((bool) $res->json('data.auto_applied'));
+        $this->assertTrue((bool) $res->json('data.suggestion.requires_human_confirm'));
+        $this->assertFalse((bool) $res->json('data.suggestion.auto_close'));
+        $this->assertTrue((bool) $res->json('data.suggestion.never_auto_closes'));
+        $this->assertNotEmpty($res->json('data.suggestion.findings'));
+        $this->assertNotEmpty($res->json('data.suggestion.next_questions'));
+        $this->assertSame($engagement->id, $res->json('data.suggestion.engagement_id'));
+
+        $this->asUser($auditor)->postJson('/api/v1/audit-management/ai/suggestions/'.$res->json('data.id').'/apply', [
+            'action' => 'close_finding',
+            'confirmed' => true,
+        ])->assertUnprocessable();
+
+        $finding = AuditFinding::findOrFail($findingId);
+        $this->assertNotSame('closed', $finding->status);
+        $this->assertSame($engagement->status, AuditEngagement::findOrFail($engagement->id)->status);
+    }
 }

@@ -9,10 +9,22 @@ export default function DecisionsDashboardPage() {
   const qc = useQueryClient();
   const [promoteMsg, setPromoteMsg] = useState<string | null>(null);
   const [promoteErr, setPromoteErr] = useState<string | null>(null);
+  const [riskMsg, setRiskMsg] = useState<string | null>(null);
+  const [riskErr, setRiskErr] = useState<string | null>(null);
+  const [packMsg, setPackMsg] = useState<string | null>(null);
+  const [packErr, setPackErr] = useState<string | null>(null);
+  const [minutesId, setMinutesId] = useState("");
+  const [minutesMsg, setMinutesMsg] = useState<string | null>(null);
+  const [minutesErr, setMinutesErr] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["decisions", "dashboard"],
     queryFn: async () => (await decisionsApi.dashboard()).data.data,
+  });
+
+  const minutes = useQuery({
+    queryKey: ["decisions", "minutes-options"],
+    queryFn: async () => (await decisionsApi.listMinutesOptions()).data.data,
   });
 
   const promote = useMutation({
@@ -32,6 +44,56 @@ export default function DecisionsDashboardPage() {
     },
   });
 
+  const promoteRisks = useMutation({
+    mutationFn: () => decisionsApi.promoteRisks(),
+    onSuccess: (res) => {
+      const row = res.data.data;
+      setRiskErr(null);
+      setRiskMsg(
+        `Promoted ${row.promoted} risk-like decisions into draft risk proposals; skipped ${row.skipped}. Decisions stay open.`,
+      );
+      qc.invalidateQueries({ queryKey: ["decisions"] });
+    },
+    onError: () => {
+      setRiskMsg(null);
+      setRiskErr("Could not promote risks. Governance write access is required.");
+    },
+  });
+
+  const promotePack = useMutation({
+    mutationFn: () => decisionsApi.promoteMeetingPack(),
+    onSuccess: (res) => {
+      const row = res.data.data;
+      setPackErr(null);
+      setPackMsg(
+        `Meeting pack: ${row.assignments.promoted} assignment drafts, ${row.risks.promoted} risk drafts. Decisions stay open.`,
+      );
+      qc.invalidateQueries({ queryKey: ["decisions"] });
+      qc.invalidateQueries({ queryKey: ["assignments"] });
+    },
+    onError: () => {
+      setPackMsg(null);
+      setPackErr("Could not promote the meeting pack. Governance write access is required.");
+    },
+  });
+
+  const promoteMinutes = useMutation({
+    mutationFn: () => decisionsApi.promoteFromMinutes(Number(minutesId)),
+    onSuccess: (res) => {
+      const row = res.data.data;
+      setMinutesErr(null);
+      setMinutesMsg(
+        `Minutes ${row.meeting_minutes_id}: ${row.assignments.promoted} assignment drafts, ${row.risks.promoted} risk drafts. Decisions stay open.`,
+      );
+      qc.invalidateQueries({ queryKey: ["decisions"] });
+      qc.invalidateQueries({ queryKey: ["assignments"] });
+    },
+    onError: () => {
+      setMinutesMsg(null);
+      setMinutesErr("Could not promote from minutes. Governance write access is required.");
+    },
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
@@ -48,16 +110,62 @@ export default function DecisionsDashboardPage() {
           >
             {promote.isPending ? "Promoting…" : "Promote weekly assignments"}
           </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={promoteRisks.isPending}
+            onClick={() => promoteRisks.mutate()}
+          >
+            {promoteRisks.isPending ? "Promoting…" : "Promote risk drafts"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            data-testid="promote-meeting-pack"
+            disabled={promotePack.isPending}
+            onClick={() => promotePack.mutate()}
+          >
+            {promotePack.isPending ? "Promoting…" : "Promote meeting pack"}
+          </button>
           <Link href="/decisions/create" className="btn-primary">New decision</Link>
         </div>
       </div>
 
+      <form
+        className="flex flex-wrap items-end gap-2"
+        data-testid="promote-from-minutes"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (minutesId) promoteMinutes.mutate();
+        }}
+      >
+        <label className="text-sm">
+          Minutes
+          <select className="form-input mt-1 min-w-[16rem]" value={minutesId} onChange={(e) => setMinutesId(e.target.value)}>
+            <option value="">Select minutes</option>
+            {(minutes.data ?? []).map((row) => (
+              <option key={row.id} value={row.id}>{row.title}{row.meeting_date ? ` · ${row.meeting_date}` : ""}</option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" className="btn-secondary" disabled={!minutesId || promoteMinutes.isPending}>
+          {promoteMinutes.isPending ? "Promoting…" : "Promote this meeting"}
+        </button>
+      </form>
+
       <p className="text-sm text-neutral-600">
         Weekly promote creates assignment drafts from adopted decisions that already have an owner and due date.
-        It never auto-completes or auto-closes the assignment.
+        Risk promote creates draft/proposed risks from adopted decisions whose title or body mentions risk.
+        Neither action auto-completes work.
       </p>
       {promoteMsg && <p className="text-sm text-green-700">{promoteMsg}</p>}
       {promoteErr && <p className="text-sm text-red-600">{promoteErr}</p>}
+      {riskMsg && <p className="text-sm text-green-700">{riskMsg}</p>}
+      {riskErr && <p className="text-sm text-red-600">{riskErr}</p>}
+      {packMsg && <p className="text-sm text-green-700">{packMsg}</p>}
+      {packErr && <p className="text-sm text-red-600">{packErr}</p>}
+      {minutesMsg && <p className="text-sm text-green-700">{minutesMsg}</p>}
+      {minutesErr && <p className="text-sm text-red-600">{minutesErr}</p>}
 
       {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
       {isError && <p className="text-sm text-red-600">Failed to load dashboard.</p>}

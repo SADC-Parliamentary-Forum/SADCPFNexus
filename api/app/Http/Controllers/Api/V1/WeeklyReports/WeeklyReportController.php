@@ -395,6 +395,7 @@ class WeeklyReportController extends Controller
             'excel', 'csv' => $this->exports->excelCsv($weeklySummary, $request->user()),
             'word', 'doc' => $this->exports->wordDoc($weeklySummary, $request->user()),
             'docx' => $this->exports->wordDocx($weeklySummary, $request->user()),
+            'management-pack' => $this->exports->managementPackDocx($weeklySummary, $request->user()),
             default => response()->json(['message' => 'Unsupported format'], 422),
         };
     }

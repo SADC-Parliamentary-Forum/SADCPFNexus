@@ -193,7 +193,7 @@ export default function WeeklySummaryDetailPage() {
             </div>
           </FormSection>
 
-          <FormSection title="Export" description="Download this digest. Exports do not change status." icon="download">
+          <FormSection title="Export" description="Download this digest. The management pack includes the assignment feed and emerging-risk counts. Exports do not change status and are not auto-sent." icon="download">
             <div className="flex flex-wrap gap-2">
               <a className="btn-secondary text-sm" href={weeklyReportsApi.exportUrl(report.id, "pdf")}>
                 PDF
@@ -203,6 +203,9 @@ export default function WeeklySummaryDetailPage() {
               </a>
               <a className="btn-secondary text-sm" href={weeklyReportsApi.exportUrl(report.id, "word")}>
                 Word
+              </a>
+              <a className="btn-secondary text-sm" href={weeklyReportsApi.exportUrl(report.id, "management-pack")}>
+                Management pack
               </a>
             </div>
           </FormSection>

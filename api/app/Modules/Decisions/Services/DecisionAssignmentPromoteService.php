@@ -19,7 +19,7 @@ class DecisionAssignmentPromoteService
         private readonly MeetingDecisionService $decisions,
     ) {}
 
-    public function promoteTenant(int $tenantId): array
+    public function promoteTenant(int $tenantId, ?int $minutesId = null): array
     {
         $systemActor = User::query()
             ->where('tenant_id', $tenantId)
@@ -40,6 +40,7 @@ class DecisionAssignmentPromoteService
             ->whereIn('status', ['adopted', 'in_progress'])
             ->whereNotNull('owner_id')
             ->whereNotNull('due_date')
+            ->when($minutesId, fn ($q) => $q->where('meeting_minutes_id', $minutesId))
             ->get();
 
         $promoted = 0;

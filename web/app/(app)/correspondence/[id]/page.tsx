@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { correspondenceApi, saamApi, type CorrespondenceLetter, type CorrespondenceContact, type SignatureEvent } from "@/lib/api";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { SigningModal } from "@/components/saam/SigningModal";
 import { CreateAssignmentFromSourceModal } from "@/components/assignments/CreateAssignmentFromSourceModal";
@@ -53,6 +54,7 @@ export default function CorrespondenceDetailPage() {
   const [notes, setNotes] = useState<Array<{ id: number; body: string; author?: { name: string } }>>([]);
   const [noteBody, setNoteBody] = useState("");
   const [ackStatus, setAckStatus] = useState<"viewed" | "accepted" | "misrouted">("viewed");
+  const [registryPack, setRegistryPack] = useState<Record<string, unknown> | null>(null);
 
   const loadLetter = () =>
     correspondenceApi
@@ -71,6 +73,10 @@ export default function CorrespondenceDetailPage() {
       .listNotes(Number(id))
       .then((res) => setNotes(res.data.data ?? []))
       .catch(() => setNotes([]));
+    correspondenceApi
+      .registryPack(Number(id))
+      .then((res) => setRegistryPack(res.data.data))
+      .catch(() => setRegistryPack(null));
   }, [id]);
 
   useEffect(() => {
@@ -422,6 +428,25 @@ export default function CorrespondenceDetailPage() {
           )}
         </div>
       </div>
+
+      {registryPack && (
+        <div className="card p-5 space-y-3" data-testid="correspondence-registry-pack">
+          <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Registry pack</h3>
+          <p className="text-xs text-neutral-500">{String(registryPack.note ?? "Filing checklist. Courier URL stays operator-owned.")}</p>
+          <ul className="space-y-1 text-sm">
+            {((registryPack.checklist as Array<{ key: string; label: string; detected: boolean }>) ?? []).map((row) => (
+              <li key={row.key} className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px]">{row.detected ? "check_circle" : "radio_button_unchecked"}</span>
+                <span>{row.label}</span>
+              </li>
+            ))}
+          </ul>
+          <LabelledRecord value={{ live_courier: registryPack.live_courier, courier_is_stub: registryPack.courier_is_stub }} />
+          {Array.isArray(registryPack.subject_files) && (registryPack.subject_files as Array<Record<string, unknown>>).length > 0 ? (
+            <LabelledRecord value={{ subject_files: registryPack.subject_files }} />
+          ) : null}
+        </div>
+      )}
 
       <div className="card p-5 space-y-3">
         <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Courier tracking</h3>

@@ -99,12 +99,7 @@ export const ASSIGNMENTS_HUB_CARDS: HubCard[] = [
     section: "tools",
     permission: [...ASSIGNMENT_REPORTS],
   },
-  {
-    href: "/assignments/capacity",
-    title: "Capacity",
-    purpose: "Load across people in your unit.",
-    icon: "group_work",
-    section: "tools",
-    permission: [...ASSIGNMENT_TEAM],
-  },
+  { href: "/assignments/capacity", title: "Capacity", purpose: "Load across people in your unit.", icon: "group_work", section: "tools", permission: [...ASSIGNMENT_TEAM] },
+  { href: "/assignments/workload", title: "Workload forecast", purpose: "Estimated hours vs available. Not a ranking.", icon: "trending_up", section: "tools", permission: [...ASSIGNMENT_TEAM] },
+  { href: "/assignments/handover", title: "Handover pack", purpose: "Open work for an outgoing owner. Not a ranking.", icon: "handshake", section: "tools", permission: [...ASSIGNMENT_TEAM] },
 ];

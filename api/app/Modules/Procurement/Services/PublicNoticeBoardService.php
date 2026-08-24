@@ -25,6 +25,20 @@ class PublicNoticeBoardService
         return $query->get()->map(fn (Tender $t) => $this->toPublicArray($t));
     }
 
+    public function staffNotices(int $tenantId): Collection
+    {
+        return Tender::query()
+            ->where('tenant_id', $tenantId)
+            ->where('status', Tender::STATUS_PUBLISHED)
+            ->whereNotNull('published_at')
+            ->orderBy('submission_deadline')
+            ->orderByDesc('published_at')
+            ->get()
+            ->map(fn (Tender $t) => array_merge($this->toPublicArray($t), [
+                'id' => $t->id,
+            ]));
+    }
+
     public function toPublicArray(Tender $tender): array
     {
         return [

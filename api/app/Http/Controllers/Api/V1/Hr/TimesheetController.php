@@ -27,6 +27,7 @@ class TimesheetController extends Controller
         private readonly TimesheetExportService $exportService,
         private readonly TimesheetPayrollExportService $payrollExportService,
         private readonly WorkflowService  $workflowService,
+        private readonly \App\Modules\Timesheets\Services\TimesheetCapacityAnalyticsService $capacityAnalytics,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -387,6 +388,24 @@ class TimesheetController extends Controller
         $paginated = $query->paginate($filters['per_page'] ?? 20);
 
         return response()->json($paginated);
+    }
+
+    public function capacityAnalytics(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'week_start' => ['required', 'date'],
+            'week_end' => ['required', 'date', 'after_or_equal:week_start'],
+            'department_id' => ['nullable', 'integer'],
+        ]);
+
+        return response()->json([
+            'data' => $this->capacityAnalytics->analytics(
+                $request->user(),
+                $data['week_start'],
+                $data['week_end'],
+                isset($data['department_id']) ? (int) $data['department_id'] : null
+            ),
+        ]);
     }
 
     /**

@@ -155,6 +155,11 @@ export default function AssignmentDetailPage() {
     enabled: Number.isFinite(numericId) && numericId > 0,
     queryFn: () => assignmentsApi.dependencies(numericId).then((r) => r.data.data),
   });
+  const hoursQuery = useQuery({
+    queryKey: ["assignments", id, "timesheet-hours"],
+    enabled: Number.isFinite(numericId) && numericId > 0,
+    queryFn: () => assignmentsApi.timesheetHours(numericId).then((r) => r.data.data),
+  });
   const peersQuery = useQuery({
     queryKey: ["assignments", "dep-peers"],
     queryFn: async () => {
@@ -508,6 +513,17 @@ export default function AssignmentDetailPage() {
             )}
             <InfoRow icon="category" label="Type" value={assignment.type} />
           </div>
+        </div>
+
+        <div className="card p-5" data-testid="assignment-timesheet-hours">
+          <SectionIcon icon="schedule" color="bg-sky-50 text-sky-700" label="Timesheet hours" />
+          <p className="mb-2 text-xs text-neutral-500">
+            Logged hours coupled from timesheet entries. Informational only — this does not complete the assignment.
+          </p>
+          <p className="text-sm">
+            Logged {hoursQuery.data?.logged_hours ?? 0}
+            {hoursQuery.data?.estimated_hours != null ? ` of ${hoursQuery.data.estimated_hours} estimated` : ""}.
+          </p>
         </div>
 
         <div className="card p-5">

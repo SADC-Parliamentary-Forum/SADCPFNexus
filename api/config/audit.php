@@ -47,6 +47,7 @@ return [
         'draft_report',
         'evidence_index',
         'nl_search',
+        'investigation_pack',
     ],
 
     'allowed_apply_actions' => [

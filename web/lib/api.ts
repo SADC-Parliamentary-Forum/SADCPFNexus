@@ -2226,6 +2226,18 @@ export const stocktakesApi = {
     }>(`/stock/stocktakes/${id}/sync-offline`, { lines, force }),
 };
 
+export const stockEventPacksApi = {
+  list: () => api.get<{ data: Array<Record<string, unknown>> }>("/stock/event-packs"),
+  create: (data: { name: string; event_type?: string; notes?: string; lines: Array<{ stock_item_id: number; quantity: number }> }) =>
+    api.post<{ data: Record<string, unknown>; message: string }>("/stock/event-packs", data),
+  instantiate: (id: number, data?: { purpose?: string }) =>
+    api.post<{ data: Record<string, unknown>; message: string }>(`/stock/event-packs/${id}/instantiate`, data ?? {}),
+  duplicate: (id: number) =>
+    api.post<{ data: Record<string, unknown>; message: string }>(`/stock/event-packs/${id}/duplicate`),
+  barcodeLookup: (barcodes: string[]) =>
+    api.post<{ data: { matched: Array<Record<string, unknown>>; missing: string[] } }>("/stock/items/barcode-lookup", { barcodes }),
+};
+
 export interface StockRequestLine {
   id: number;
   stock_item_id: number;
@@ -4009,6 +4021,16 @@ export const policyProfilesApi = {
 export const noticeBoardApi = {
   public: () => api.get<{ data: TenderNotice[] }>("/procurement/notices"),
   staff: () => api.get<{ data: TenderNotice[] }>("/procurement/notice-board"),
+  newspaperTemplates: () =>
+    api.get<{ data: { auto_award: boolean; requires_human_publication: boolean; templates: Array<Record<string, unknown>> } }>(
+      "/procurement/newspaper-notice-templates",
+    ),
+  newspaperPack: (tenderId: number, templateKey?: string) =>
+    api.get<{ data: Record<string, unknown> }>(`/procurement/tenders/${tenderId}/newspaper-notice`, {
+      params: templateKey ? { template_key: templateKey } : undefined,
+    }),
+  saveNewspaperChecklist: (tenderId: number, data: { template_key?: string; ticks?: Record<string, boolean> }) =>
+    api.patch<{ data: Record<string, unknown> }>(`/procurement/tenders/${tenderId}/newspaper-notice-checklist`, data),
 };
 
 export const tenderCommitteesApi = {
@@ -4654,6 +4676,8 @@ export const hrApi = {
   getSummary: () => api.get<HrSummary>("/hr/summary"),
   listTimesheets: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Timesheet>>("/hr/timesheets", { params }),
+  capacityAnalytics: (params: { week_start: string; week_end: string; department_id?: number }) =>
+    api.get<{ data: Record<string, unknown> }>("/hr/timesheets/capacity-analytics", { params }),
   getTimesheet: (id: number) => api.get<Timesheet>(`/hr/timesheets/${id}`),
   createTimesheet: (data: { week_start: string; week_end: string; entries: TimesheetEntry[] }) =>
     api.post<{ data: Timesheet; message: string }>("/hr/timesheets", data),
@@ -6278,6 +6302,17 @@ export const assignmentsApi = {
     api.get<{ data: { department_id?: number | null; assignees: Array<Record<string, unknown>>; summary: Record<string, number> } }>("/assignments/capacity", { params }),
   workloadForecast: (params?: { weeks?: number; department_id?: number }) =>
     api.get<{ data: { weeks: number; assignees: Array<Record<string, unknown>>; summary: Record<string, number> } }>("/assignments/workload-forecast", { params }),
+  handoverPack: (params: { from_user_id: number; to_user_id?: number }) =>
+    api.get<{ data: Record<string, unknown> }>("/assignments/handover-pack", { params }),
+  handoverPackDocxUrl: (params: { from_user_id: number; to_user_id?: number }) => {
+    const q = new URLSearchParams({ from_user_id: String(params.from_user_id) });
+    if (params.to_user_id) q.set("to_user_id", String(params.to_user_id));
+    return `/api/v1/assignments/handover-pack.docx?${q.toString()}`;
+  },
+  nlSearch: (q: string) =>
+    api.get<{ data: { filter_suggest_only: boolean; suggested_filters: Record<string, unknown>; apply_hrefs?: Array<{ label: string; href: string }>; note?: string } }>("/assignments/nl-search", { params: { q } }),
+  timesheetHours: (id: number) =>
+    api.get<{ data: { logged_hours: number; estimated_hours: number | null; auto_complete: boolean } }>(`/assignments/${id}/timesheet-hours`),
   importIcs: (data: { ics: string }) =>
     api.post<{ data: { created: Array<Record<string, unknown>>; skipped: number }; message: string }>("/assignments/calendar/import-ics", data),
   dependencies: (id: number) =>
@@ -6800,6 +6835,8 @@ export const correspondenceApi = {
     }),
   get: (id: number) =>
     api.get<{ data: CorrespondenceLetter; can_view_content?: boolean }>("/correspondence/letters/" + id),
+  registryPack: (id: number) =>
+    api.get<{ data: Record<string, unknown> }>(`/correspondence/letters/${id}/registry-pack`),
   update: (id: number, data: FormData | Partial<CorrespondenceLetter>) =>
     api.put<{ data: CorrespondenceLetter }>(`/correspondence/letters/${id}`, data),
   delete: (id: number) => api.delete(`/correspondence/letters/${id}`),
@@ -8096,7 +8133,7 @@ export const weeklyReportsApi = {
   consolidateItem: (id: number, data: Record<string, unknown>) =>
     api.post(`/weekly-summaries/${id}/consolidate-item`, data),
   publish: (id: number) => api.post<{ data: WeeklyOpsReport }>(`/weekly-summaries/${id}/publish`),
-  exportUrl: (id: number, format: "pdf" | "csv" | "word") =>
+  exportUrl: (id: number, format: "pdf" | "csv" | "word" | "management-pack") =>
     `/api/v1/weekly-summaries/${id}/export/${format}`,
 };
 
@@ -8398,6 +8435,12 @@ export const mandeApi = {
   // Dashboard & reporting
   getDashboard: (params?: Record<string, string | number>) =>
     api.get<{ data: MeDashboardData }>("/mande/dashboard", { params }),
+  aiAssist: (data: { scope?: string; context?: unknown }) =>
+    api.post<{ data: Record<string, unknown> }>("/mande/ai-assist", data),
+  confirmAiAssist: (draft: string) =>
+    api.post<{ data: Record<string, unknown> }>("/mande/ai-assist/confirm", { draft }),
+  indicatorAggregation: (params?: { results_framework_id?: number }) =>
+    api.get<{ data: Record<string, unknown> }>("/mande/indicators/aggregation", { params }),
   getStrategicReport: (params?: Record<string, string | number>) =>
     api.get<{ data: MeStrategicReport }>("/mande/reports/strategic", { params }),
   getDonorReport: (params?: Record<string, string | number>) =>
@@ -8693,6 +8736,12 @@ export const decisionsApi = {
     api.post<{ message: string; data: MeetingAgendaItem }>(`/decisions/agenda-items/${agendaId}/link-decision`, { meeting_decision_id }),
   promoteWeeklyAssignments: () =>
     api.post<{ message: string; data: { promoted: number; skipped: number } }>("/decisions/promote-weekly-assignments"),
+  promoteRisks: () =>
+    api.post<{ message: string; data: { promoted: number; skipped: number } }>("/decisions/promote-risks"),
+  promoteMeetingPack: () =>
+    api.post<{ message: string; data: { assignments: { promoted: number; skipped: number }; risks: { promoted: number; skipped: number }; auto_complete: boolean; auto_close_decisions: boolean } }>("/decisions/promote-meeting-pack"),
+  promoteFromMinutes: (meeting_minutes_id: number) =>
+    api.post<{ message: string; data: { meeting_minutes_id: number; assignments: { promoted: number; skipped: number }; risks: { promoted: number; skipped: number }; auto_complete: boolean; auto_close_decisions: boolean } }>("/decisions/promote-from-minutes", { meeting_minutes_id }),
 };
 
 export interface MeetingAgendaItem {

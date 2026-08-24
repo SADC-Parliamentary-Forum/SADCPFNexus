@@ -780,6 +780,9 @@ Route::prefix('v1')->group(function () {
             Route::get('evaluations', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'evaluations']);
             Route::get('bid-submissions', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'bidSubmissions']);
             Route::get('notice-board', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'staffIndex']);
+            Route::get('newspaper-notice-templates', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'newspaperTemplates']);
+            Route::get('tenders/{tender}/newspaper-notice', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'newspaperPack']);
+            Route::patch('tenders/{tender}/newspaper-notice-checklist', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'newspaperChecklist']);
 
             Route::get('policy-profiles', [\App\Http\Controllers\Api\V1\Procurement\ProcurementPolicyProfileController::class, 'index']);
             Route::post('policy-profiles', [\App\Http\Controllers\Api\V1\Procurement\ProcurementPolicyProfileController::class, 'store']);
@@ -1035,6 +1038,7 @@ Route::prefix('v1')->group(function () {
             Route::post('timesheets/templates/{template}/deactivate', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'deactivateTemplate']);
             Route::post('timesheets/templates/{template}/apply', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'applyTemplate']);
             Route::get('timesheets/expected-hours', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'expectedHours']);
+            Route::get('timesheets/capacity-analytics', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'capacityAnalytics']);
             Route::get('timesheets/periods', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'periods']);
             Route::post('timesheets/periods/{timesheetPeriod}/close', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'closePeriod']);
             Route::get('timesheets/schedules', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'index']);
@@ -1502,6 +1506,11 @@ Route::prefix('v1')->group(function () {
             Route::get('stock/batches', [$stores, 'indexBatches']);
             Route::post('stock/batches', [$stores, 'storeBatch']);
             Route::get('stock/demand-forecast', [$stores, 'demandForecast']);
+            Route::get('stock/event-packs', [\App\Http\Controllers\Api\V1\Stock\StockEventPackController::class, 'index']);
+            Route::post('stock/event-packs', [\App\Http\Controllers\Api\V1\Stock\StockEventPackController::class, 'store']);
+            Route::post('stock/event-packs/{eventPack}/instantiate', [\App\Http\Controllers\Api\V1\Stock\StockEventPackController::class, 'instantiate']);
+            Route::post('stock/event-packs/{eventPack}/duplicate', [\App\Http\Controllers\Api\V1\Stock\StockEventPackController::class, 'duplicate']);
+            Route::post('stock/items/barcode-lookup', [\App\Http\Controllers\Api\V1\Stock\StockEventPackController::class, 'barcodeLookup']);
 
             // Stock items (§17.2)
             Route::get('stock/items', [\App\Http\Controllers\Api\V1\Stock\StockItemController::class, 'index']);
@@ -1527,6 +1536,10 @@ Route::prefix('v1')->group(function () {
             Route::get('calendar-feed', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendarFeed']);
             Route::get('capacity', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'capacity']);
             Route::get('workload-forecast', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'workloadForecast']);
+            Route::get('handover-pack.docx', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'handoverPackDocx']);
+            Route::get('handover-pack', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'handoverPack']);
+            Route::get('nl-search', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'nlSearch']);
+            Route::post('nl-search', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'nlSearch']);
             Route::get('review-queue', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reviewQueue']);
             Route::get('reports/summary', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reportsSummary']);
             Route::get('weekly-summary-feed', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'weeklySummaryFeed']);
@@ -1554,6 +1567,7 @@ Route::prefix('v1')->group(function () {
             Route::post('{assignment}/checklist/{checklistItem}/toggle', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'toggleChecklistItem']);
             Route::post('{assignment}/subtasks', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'createSubtask']);
             Route::get('{assignment}/dependencies', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'dependencies']);
+            Route::get('{assignment}/timesheet-hours', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'timesheetHours']);
             Route::post('{assignment}/dependencies', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'addDependency']);
             Route::delete('{assignment}/dependencies/{dependency}', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'removeDependency']);
             Route::post('{assignment}/generate', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'generateFromTemplate']);
@@ -1603,6 +1617,9 @@ Route::prefix('v1')->group(function () {
             Route::post('agenda-items', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'store']);
             Route::post('agenda-items/{agendaItem}/link-decision', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'linkDecision']);
             Route::post('promote-weekly-assignments', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'promoteWeekly']);
+            Route::post('promote-risks', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'promoteRisks']);
+            Route::post('promote-meeting-pack', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'promoteMeetingPack']);
+            Route::post('promote-from-minutes', [\App\Http\Controllers\Api\V1\Decisions\MeetingAgendaController::class, 'promoteFromMinutes']);
             Route::get('/', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'index']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'store']);
             Route::get('{decision}', [\App\Http\Controllers\Api\V1\Decisions\MeetingDecisionController::class, 'show']);
@@ -1629,6 +1646,7 @@ Route::prefix('v1')->group(function () {
             Route::get('letters', [$letters, 'index']);
             Route::post('letters', [$letters, 'store']);
             Route::post('letters/incoming/register', [$register, 'registerIncoming']);
+            Route::get('letters/{correspondence}/registry-pack', [$register, 'registryPack']);
             Route::get('letters/{correspondence}', [$letters, 'show']);
             Route::put('letters/{correspondence}', [$letters, 'update']);
             Route::delete('letters/{correspondence}', [$letters, 'destroy']);

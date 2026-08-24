@@ -3,12 +3,14 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { assignmentsApi } from "@/lib/api";
 
 export default function AssignmentsWorkloadPage() {
+  const [weeks, setWeeks] = useState(4);
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["assignments-workload"],
-    queryFn: () => assignmentsApi.workloadForecast({ weeks: 4 }).then((r) => r.data.data),
+    queryKey: ["assignments-workload", weeks],
+    queryFn: () => assignmentsApi.workloadForecast({ weeks }).then((r) => r.data.data),
   });
 
   const assignees = (data?.assignees ?? []) as Array<Record<string, unknown>>;
@@ -18,11 +20,19 @@ export default function AssignmentsWorkloadPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <ModulePageHeader
         title="Workload forecast"
-        subtitle="Hours/capacity projection (estimated hours; default 8h when unset)."
+        subtitle="Hours versus available capacity from estimated hours (8h default when unset). Not a surveillance ranking."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Workload forecast" }]} />}
       />
         <Link href="/assignments/capacity" className="btn-secondary text-sm">Capacity bands</Link>
       </div>
+      <label className="card inline-flex items-center gap-2 p-3 text-sm" data-testid="workload-weeks">
+        Weeks
+        <select className="form-input" value={weeks} onChange={(e) => setWeeks(Number(e.target.value))}>
+          {[2, 4, 8, 12].map((n) => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+      </label>
       {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
       {isError && <p className="text-sm text-red-700">Failed to load forecast.</p>}
       <div className="card overflow-x-auto">

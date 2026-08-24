@@ -4,6 +4,8 @@ namespace App\Modules\WeeklyReports\Services;
 
 use App\Models\User;
 use App\Models\WeeklyReport;
+use App\Modules\Assignments\Services\AssignmentService;
+use App\Support\NativeDocx;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -49,47 +51,52 @@ class WeeklyExportService
         $payload = $this->safePayload($report, $viewer);
 
         $paras = [];
-        $paras[] = $this->wPara($report->reference.' — Weekly Summary');
+        $paras[] = $report->reference.' — Weekly Summary';
         foreach ($payload['rows'] as $row) {
-            $paras[] = $this->wPara(($row['section'] ?? '').': '.($row['title'] ?? ''));
+            $paras[] = ($row['section'] ?? '').': '.($row['title'] ?? '');
             if (! empty($row['narrative'])) {
-                $paras[] = $this->wPara((string) $row['narrative']);
+                $paras[] = (string) $row['narrative'];
             }
         }
-        $documentXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-            .'<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
-            .'<w:body>'.implode('', $paras).'</w:body></w:document>';
 
-        $tmp = tempnam(sys_get_temp_dir(), 'docx');
-        $zip = new \ZipArchive();
-        $zip->open($tmp, \ZipArchive::OVERWRITE | \ZipArchive::CREATE);
-        $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8"?>'
-            .'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
-            .'<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
-            .'<Default Extension="xml" ContentType="application/xml"/>'
-            .'<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
-            .'</Types>');
-        $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8"?>'
-            .'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
-            .'<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>'
-            .'</Relationships>');
-        $zip->addFromString('word/document.xml', $documentXml);
-        $zip->close();
-
-        $binary = file_get_contents($tmp);
-        @unlink($tmp);
-
-        return response($binary, 200, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'Content-Disposition' => 'attachment; filename="'.$report->reference.'.docx"',
-        ]);
+        return NativeDocx::download($paras, $report->reference.'.docx');
     }
 
-    private function wPara(string $text): string
+    public function managementPackDocx(WeeklyReport $report, User $viewer): Response
     {
-        $safe = htmlspecialchars($text, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+        $report = $this->reports->show($report, $viewer);
+        $payload = $this->safePayload($report, $viewer);
+        $report->loadMissing('period');
 
-        return '<w:p><w:r><w:t xml:space="preserve">'.$safe.'</w:t></w:r></w:p>';
+        $start = optional($report->period)->start_date?->toDateString();
+        $end = optional($report->period)->end_date?->toDateString();
+        $feed = app(AssignmentService::class)->weeklySummaryFeed($viewer, $start, $end);
+        $riskCount = count(array_filter($payload['rows'], fn ($row) => ($row['section'] ?? '') === 'risk'));
+        $blockerCount = count(array_filter($payload['rows'], fn ($row) => ($row['section'] ?? '') === 'blocker'));
+
+        $paras = [];
+        $paras[] = 'SADC PF Nexus — Weekly management pack';
+        $paras[] = $report->reference.' · '.$report->report_type.' · '.$report->status;
+        $paras[] = 'This pack is generated for human review. It is not auto-sent to email, donors, or AI.';
+        $paras[] = 'Cover: achievements, blockers, decision requests, and emerging risks from the selected digest.';
+        $paras[] = 'Assignment feed (not auto-completed): completed '.($feed['counts']['completed'] ?? 0)
+            .', active '.($feed['counts']['active'] ?? 0)
+            .', overdue '.($feed['counts']['overdue'] ?? 0)
+            .', blocked '.($feed['counts']['blocked'] ?? 0)
+            .', upcoming '.($feed['counts']['upcoming'] ?? 0)
+            .'. Period '.$feed['period_start'].' to '.$feed['period_end'].'.';
+        $paras[] = 'Emerging risks in this digest: '.$riskCount.'. Blockers: '.$blockerCount.'. Not auto-escalated.';
+        foreach ($payload['rows'] as $row) {
+            $paras[] = strtoupper((string) ($row['section'] ?? 'item')).' — '.($row['title'] ?? '');
+            if (! empty($row['narrative'])) {
+                $paras[] = (string) $row['narrative'];
+            }
+            if (! empty($row['source'])) {
+                $paras[] = 'Source: '.(string) $row['source'];
+            }
+        }
+
+        return NativeDocx::download($paras, $report->reference.'-management-pack.docx');
     }
     public function wordDoc(WeeklyReport $report, User $viewer): Response
     {

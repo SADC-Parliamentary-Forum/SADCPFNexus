@@ -7,9 +7,12 @@ use App\Models\Assignment;
 use App\Models\AssignmentChecklistItem;
 use App\Modules\Assignments\Services\AssignmentCapacityService;
 use App\Modules\Assignments\Services\AssignmentDependencyService;
+use App\Modules\Assignments\Services\AssignmentHandoverPackService;
 use App\Modules\Assignments\Services\AssignmentIcsExportService;
 use App\Modules\Assignments\Services\AssignmentIcsImportService;
+use App\Modules\Assignments\Services\AssignmentNlSearchService;
 use App\Modules\Assignments\Services\AssignmentService;
+use App\Modules\Assignments\Services\AssignmentTimesheetCouplingService;
 use App\Modules\Assignments\Services\AssignmentWorkloadForecastService;
 use App\Models\AssignmentDependency;
 use Illuminate\Http\JsonResponse;
@@ -25,6 +28,9 @@ class AssignmentController extends Controller
         private readonly AssignmentWorkloadForecastService $workload,
         private readonly AssignmentDependencyService $dependencies,
         private readonly AssignmentIcsImportService $icsImport,
+        private readonly AssignmentHandoverPackService $handover,
+        private readonly AssignmentNlSearchService $nlSearch,
+        private readonly AssignmentTimesheetCouplingService $timesheetHours,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -180,6 +186,50 @@ class AssignmentController extends Controller
                 $data['department_id'] ?? null
             ),
         ]);
+    }
+
+    public function handoverPack(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'from_user_id' => ['required', 'integer'],
+            'to_user_id' => ['nullable', 'integer'],
+        ]);
+
+        return response()->json([
+            'data' => $this->handover->pack(
+                $request->user(),
+                (int) $data['from_user_id'],
+                isset($data['to_user_id']) ? (int) $data['to_user_id'] : null
+            ),
+        ]);
+    }
+
+    public function handoverPackDocx(Request $request): Response
+    {
+        $data = $request->validate([
+            'from_user_id' => ['required', 'integer'],
+            'to_user_id' => ['nullable', 'integer'],
+        ]);
+
+        return $this->handover->docx(
+            $request->user(),
+            (int) $data['from_user_id'],
+            isset($data['to_user_id']) ? (int) $data['to_user_id'] : null
+        );
+    }
+
+    public function nlSearch(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'q' => ['required', 'string', 'max:500'],
+        ]);
+
+        return response()->json(['data' => $this->nlSearch->suggest($data['q'])]);
+    }
+
+    public function timesheetHours(Request $request, Assignment $assignment): JsonResponse
+    {
+        return response()->json(['data' => $this->timesheetHours->hours($assignment, $request->user())]);
     }
 
     public function importIcs(Request $request): JsonResponse

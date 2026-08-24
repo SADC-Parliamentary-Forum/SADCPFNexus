@@ -20,6 +20,7 @@ export const MANDE_HUB_CARDS: HubCard[] = [
   { href: "/mande/calendar", title: "Calendar", purpose: "Reporting calendar.", icon: "calendar_month", section: "views" },
   { href: "/mande/reports", title: "Reports", purpose: "M&E report packs.", icon: "assessment", section: "views" },
   { href: "/mande/data-quality", title: "Data quality", purpose: "Completeness and evidence checks.", icon: "fact_check", section: "tools" },
+  { href: "/mande/ai-assist", title: "Narrative assist", purpose: "Human-confirm drafts. Never auto-mutates.", icon: "smart_toy", section: "tools" },
   { href: "/mande/import", title: "Import", purpose: "Bulk import of indicator data.", icon: "upload_file", section: "tools" },
   { href: "/mande/settings", title: "Settings", purpose: "M&E configuration.", icon: "settings", section: "tools" },
 ];

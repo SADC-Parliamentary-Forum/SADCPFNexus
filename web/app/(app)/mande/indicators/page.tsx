@@ -7,6 +7,7 @@ import { mandeApi, type Indicator, type ResultLevel } from "@/lib/api";
 import { exportToXls } from "@/lib/csvExport";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { useSearchParams } from "next/navigation";
 
 const RESULT_LEVELS: { value: ResultLevel; label: string; cls: string }[] = [
   { value: "impact",   label: "Impact",   cls: "badge-danger"  },
@@ -27,8 +28,10 @@ export default function IndicatorsPage() {
   const qc = useQueryClient();
   const { confirm } = useConfirm();
   const { success, error } = useToast();
+  const searchParams = useSearchParams();
+  const missingActuals = searchParams.get("missing_actuals") === "1";
   const [levelFilter, setLevelFilter] = useState<string>("All");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [modal, setModal] = useState<Partial<Indicator> | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -56,7 +59,10 @@ export default function IndicatorsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["mande", "indicators"] }),
   });
 
-  const indicators = data ?? [];
+  const indicators = (data ?? []).filter((row) => {
+    if (!missingActuals) return true;
+    return row.pivot?.actual_value == null;
+  });
 
   function toggleDisagg(v: string) {
     if (!modal) return;
@@ -88,6 +94,12 @@ export default function IndicatorsPage() {
           </button>
         </div>
       </div>
+
+      {missingActuals ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950" data-testid="mande-assist-filter-banner">
+          Filter applied from narrative assist: indicators without actuals. Confirm this is what you wanted — nothing was auto-mutated.
+        </p>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
         {["All", ...RESULT_LEVELS.map((l) => l.value)].map((f) => (

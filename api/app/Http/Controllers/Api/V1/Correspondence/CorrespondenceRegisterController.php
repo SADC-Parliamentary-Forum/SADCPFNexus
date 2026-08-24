@@ -8,6 +8,7 @@ use App\Models\CorrespondenceDispatch;
 use App\Models\CorrespondenceNumberingPolicy;
 use App\Models\CorrespondenceSubjectFile;
 use App\Modules\Correspondence\Services\CorrespondenceRegisterService;
+use App\Modules\Correspondence\Services\CorrespondenceRegistryPackService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,6 +16,7 @@ class CorrespondenceRegisterController extends Controller
 {
     public function __construct(
         private readonly CorrespondenceRegisterService $register,
+        private readonly CorrespondenceRegistryPackService $registryPack,
     ) {}
 
     private function checkPerm(Request $request, string $permission): void
@@ -214,6 +216,16 @@ class CorrespondenceRegisterController extends Controller
         $dispatch = $this->register->dispatchRecord($correspondence, $request->user(), $data);
 
         return response()->json(['message' => 'Dispatch recorded.', 'data' => $dispatch], 201);
+    }
+
+    public function registryPack(Request $request, Correspondence $correspondence): JsonResponse
+    {
+        $this->checkPerm($request, 'correspondence.view');
+        $this->register->assertCanAccess($correspondence, $request->user());
+
+        return response()->json([
+            'data' => $this->registryPack->pack($correspondence, $request->user()),
+        ]);
     }
 
     public function updateDelivery(Request $request, CorrespondenceDispatch $dispatch): JsonResponse

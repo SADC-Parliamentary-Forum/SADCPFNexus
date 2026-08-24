@@ -139,6 +139,9 @@ return [
         ['pattern' => 'api/v1/admin/*', 'permissions' => [
             '*' => ['admin.platform.manage', 'system.admin'],
         ]],
+        ['pattern' => 'api/v1/procurement/newspaper-notice-templates', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.admin'],
+        ]],
         ['pattern' => 'api/v1/procurement/vendors*', 'permissions' => [
             'GET' => ['procurement.view', 'procurement.admin', 'procurement.manage_vendors', 'procurement.supplier.read'],
             'WRITE' => ['procurement.manage_vendors', 'procurement.admin', 'procurement.supplier.approve', 'procurement.create'],
@@ -149,6 +152,9 @@ return [
             'PUT' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
             'PATCH' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
             'DELETE' => ['procurement.admin'],
+        ]],
+        ['pattern' => 'api/v1/hr/timesheets/capacity-analytics', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'hr.approve', 'hr.edit', 'timesheets.view'],
         ]],
         ['pattern' => 'api/v1/hr*', 'permissions' => [
             'READ' => ['hr.view', 'hr.admin'],
@@ -228,6 +234,16 @@ return [
             'PATCH' => ['stock.edit', 'stock.transfer', 'stock.admin'],
             'DELETE' => ['stock.admin'],
         ]],
+        ['pattern' => 'api/v1/assignments/nl-search', 'permissions' => [
+            'READ' => ['assignments.view', 'assignment.read.assigned', 'assignments.create', 'assignments.admin'],
+            'WRITE' => ['assignments.view', 'assignment.read.assigned', 'assignments.create', 'assignments.admin'],
+        ]],
+        ['pattern' => 'api/v1/assignments/handover-pack.docx', 'permissions' => [
+            'READ' => ['assignments.view', 'assignments.team', 'assignments.admin', 'assignment.read.assigned'],
+        ]],
+        ['pattern' => 'api/v1/assignments/workload-forecast', 'permissions' => [
+            'READ' => ['assignments.view', 'assignments.team', 'assignments.admin'],
+        ]],
         ['pattern' => 'api/v1/assignments*', 'permissions' => [
             'READ' => ['assignments.view', 'assignment.read.assigned', 'assignments.admin'],
             'WRITE' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin'],
@@ -287,6 +303,12 @@ return [
         ['pattern' => 'api/v1/srhr*', 'permissions' => [
             'READ' => ['srhr.view', 'srhr.admin'],
             'WRITE' => ['srhr.create', 'srhr.manage', 'srhr.admin'],
+        ]],
+        ['pattern' => 'api/v1/decisions/promote-meeting-pack', 'permissions' => [
+            'WRITE' => ['decisions.manage', 'decisions.admin', 'governance.admin'],
+        ]],
+        ['pattern' => 'api/v1/decisions/promote-from-minutes', 'permissions' => [
+            'WRITE' => ['decisions.manage', 'decisions.admin', 'governance.admin'],
         ]],
         ['pattern' => 'api/v1/decisions*', 'permissions' => [
             'READ' => ['decisions.view', 'decisions.admin'],

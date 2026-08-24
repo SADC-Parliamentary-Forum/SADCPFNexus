@@ -66,6 +66,7 @@ class AssignmentWorkloadForecastService
         return [
             'weeks' => $weeks,
             'department_id' => $deptId,
+            'surveillance_ranking' => false,
             'assignees' => $assignees,
             'summary' => [
                 'assignee_count' => count($assignees),

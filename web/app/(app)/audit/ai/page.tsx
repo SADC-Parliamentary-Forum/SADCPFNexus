@@ -8,11 +8,18 @@ import { LabelledRecord } from "@/components/ui/LabelledRecord";
 export default function AuditAiAssistPage() {
   const qc = useQueryClient();
   const [kind, setKind] = useState("duplicate_findings");
+  const [engagementId, setEngagementId] = useState("");
   const [last, setLast] = useState<Record<string, unknown> | null>(null);
   const [note, setNote] = useState("");
 
+  const suggestion = (last?.suggestion ?? null) as Record<string, unknown> | null;
+  const nextQuestions = Array.isArray(suggestion?.next_questions) ? suggestion.next_questions as string[] : [];
+
   const suggest = useMutation({
-    mutationFn: async () => (await auditApi.aiSuggest({ kind })).data.data as Record<string, unknown>,
+    mutationFn: async () => (await auditApi.aiSuggest({
+      kind,
+      engagement_id: engagementId ? Number(engagementId) : undefined,
+    })).data.data as Record<string, unknown>,
     onSuccess: (row) => setLast(row),
   });
 
@@ -37,6 +44,7 @@ export default function AuditAiAssistPage() {
       <div className="border border-amber-300 bg-amber-50 text-amber-950 text-sm p-3 rounded space-y-1">
         <p>Suggestions only. Human confirmation is required before apply.</p>
         <p>AI must never issue findings, assign blame, approve management responses, close findings, verify implementation, determine misconduct, or modify final conclusions.</p>
+        <p>Investigation packs never auto-closes.</p>
       </div>
 
       <div className="border rounded p-4 bg-white space-y-3 text-sm">
@@ -49,7 +57,18 @@ export default function AuditAiAssistPage() {
             <option value="draft_report">Draft report assistance</option>
             <option value="evidence_index">Evidence indexing hints</option>
             <option value="nl_search">NL search suggestions</option>
+            <option value="investigation_pack">Investigation pack (never auto-closes)</option>
           </select>
+        </label>
+        <label className="block">
+          Engagement id (optional, used by investigation pack)
+          <input
+            className="mt-1 border rounded px-2 py-1 w-full"
+            data-testid="audit-engagement-id"
+            value={engagementId}
+            onChange={(e) => setEngagementId(e.target.value)}
+            inputMode="numeric"
+          />
         </label>
         <button type="button" className="px-3 py-1.5 bg-neutral-900 text-white rounded" onClick={() => suggest.mutate()} disabled={suggest.isPending}>
           Generate suggestion
@@ -59,6 +78,11 @@ export default function AuditAiAssistPage() {
       {last && (
         <div className="border rounded p-4 bg-white space-y-3 text-sm">
           <div>Status: <strong>{String(last.status)}</strong> · Provider: {String(last.provider)}</div>
+          {nextQuestions.length > 0 ? (
+            <ul className="list-disc pl-5" data-testid="audit-next-questions">
+              {nextQuestions.map((q) => <li key={q}>{q}</li>)}
+            </ul>
+          ) : null}
           <LabelledRecord value={last.suggestion} />
           {last.status === "pending_confirmation" && (
             <>

@@ -22,6 +22,7 @@ export const STOCK_HUB_CARDS: HubCard[] = [
   { href: "/stock/batches", title: "Batches / expiry", purpose: "Lot and expiry tracking.", icon: "qr_code_2", section: "views" },
   { href: "/stock/reports", title: "Reports", purpose: "Stock value and movement packs.", icon: "summarize", section: "views" },
   { href: "/stock/scan", title: "Barcode scan", purpose: "Scan to issue or count.", icon: "qr_code_scanner", section: "tools" },
+  { href: "/stock/event-packs", title: "Event packs", purpose: "Reusable kits that draft stock requests only.", icon: "inventory_2", section: "tools" },
   { href: "/stock/locations", title: "Locations", purpose: "Stores and bins.", icon: "warehouse", section: "tools" },
   { href: "/stock/units", title: "Units", purpose: "Units of measure.", icon: "straighten", section: "tools" },
   { href: "/stock/categories", title: "Categories", purpose: "Stock categories.", icon: "category", section: "tools" },

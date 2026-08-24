@@ -1,7 +1,7 @@
 # SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-08-21  
-**Baseline tip:** `feat/remaining-product-depth` (from `4843c98` on `main`).
+**Last updated:** 2026-08-24  
+**Baseline tip:** `feat/remaining-module-depth` (from `df32c9d` on `main`).
 
 ---
 
@@ -14,6 +14,7 @@
 | Honest WORM / support-health copy | Shipped — no fake “WORM Operational” |
 | Validation pack (conditional) | `docs/validation/01-executive-summary.md` |
 | Restore drill script | `scripts/ops/restore-drill.sh` (not executed here) |
+| Secret-free module depth (MD-1/5/6/8/9/10/11/13/14) | Deeper on `feat/remaining-module-depth` — templates/copy, multi-line event packs, registry pack, capacity week/CSV, management pack feed, handover Word/NL hrefs, investigation pack, minutes promote, M&E filter apply |
 
 ---
 
@@ -74,8 +75,8 @@ Shipped in `feat/remaining-product-depth` (over existing APIs):
 
 Still later-phase (secrets / vendor / OOS):
 
-- Newspaper notices (live LLM is remaining go-live, not later-phase)
-- Stock forecasting, live courier HTTP, biometric attendance
+- Newspaper notices live LLM (CR-8) and auto-award remain out of this pack
+- Stock ML forecasting, live courier HTTP, biometric attendance
 - Salary-advance instalments remain v1-locked to `full_eom`
 - 135 deferred UX IA tickets (dual surfaces, calendars, settings IA)
 
@@ -124,6 +125,18 @@ Shipped on this branch (People labelled forms + watermark + remaining inventable
 - Travel amendment proposed_changes labelled diff (PR-20)
 - Risk audit-trail old/new labelled change rows (PR-21)
 - HR settings dead “Coming Soon” branch removed (PR-22)
+
+Shipped in `feat/remaining-module-depth` (secret-free module depth over existing APIs):
+
+- MD-1 Procurement newspaper-notice **templates and human checklists** (never auto-award; live LLM remains CR-8). Filled notice copy/print + template picker.
+- MD-5 Stock **event packs** (instantiate drafts a stock request only) plus **bulk barcode lookup**, **multi-line editor**, **barcode-add**, and **duplicate** (still never issues).
+- MD-6 Correspondence **registry/filing pack** (labelled checklist + subject files; courier URL stays stub — not live carrier proof)
+- MD-8 Timesheet **capacity analytics** from recorded vs expected hours with week picker and CSV (no invented OT rates, no biometric)
+- MD-9 Weekly summary **management-pack** Word export with assignment feed + emerging-risk counts (not auto-sent)
+- MD-10 Assignment **handover pack** (Word download, logged hours, NL apply-hrefs), **workload forecast** weeks selector, **NL filter suggest**, and **timesheet hour coupling** (no surveillance rankings)
+- MD-11 Internal Audit **investigation pack** suggestion kind with engagement id / next questions (never auto-closes)
+- MD-13 Meetings **promote risk drafts**, **promote meeting pack**, and **promote from minutes** (assignments + risks; decisions stay open)
+- MD-14 M&E **narrative / NL assist** with human confirm and query-string filter apply (stub provider; no auto-mutate)
 
 Not done in code (operator-owned, and not marked Done): UAT signatures, AC-8/9/10 execution, restore-drill RTO/RPO, staging IDOR result columns, Admin governance Pending rows, and live IMAP/AV/FCM/SMS/WhatsApp/LLM/SIEM credentials. The table above is the complete remaining list. Do not invent secrets or tick those rows.
 

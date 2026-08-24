@@ -43,6 +43,7 @@ class CourierTrackingService
             'mode' => 'stub',
             'tracking' => $tracking,
             'carrier' => $dispatch->courier_carrier,
+            'live_carrier_proof' => false,
         ];
         $dispatch->save();
 

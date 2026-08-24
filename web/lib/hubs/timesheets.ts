@@ -61,4 +61,12 @@ export const TIMESHEET_HUB_CARDS: HubCard[] = [
     section: "tools",
     permission: [...HR_TIMESHEET_ADMIN],
   },
+  {
+    href: "/hr/timesheets/capacity",
+    title: "Capacity analytics",
+    purpose: "Recorded vs expected hours. Not OT rates.",
+    icon: "group_work",
+    section: "tools",
+    permission: [...TIMESHEET_APPROVER],
+  },
 ];

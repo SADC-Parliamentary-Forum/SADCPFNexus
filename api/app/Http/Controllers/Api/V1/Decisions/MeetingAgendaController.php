@@ -81,4 +81,73 @@ class MeetingAgendaController extends Controller
 
         return response()->json(['message' => 'Weekly decision promotion complete.', 'data' => $result]);
     }
+
+    public function promoteRisks(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->can('decisions.manage')
+            || $user->hasAnyRole(['System Admin', 'Governance Officer', 'Director']),
+            403
+        );
+
+        $result = app(\App\Modules\Decisions\Services\DecisionRiskPromoteService::class)
+            ->promoteTenant((int) $user->tenant_id);
+
+        return response()->json(['message' => 'Risk promotion complete. Draft risks only; decisions stay open.', 'data' => $result]);
+    }
+
+    public function promoteMeetingPack(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->can('decisions.manage')
+            || $user->hasAnyRole(['System Admin', 'Governance Officer', 'Director']),
+            403
+        );
+
+        $tenantId = (int) $user->tenant_id;
+
+        return response()->json([
+            'message' => 'Meeting pack promotion complete. Assignments and risks stay human-owned.',
+            'data' => [
+                'assignments' => $this->promote->promoteTenant($tenantId),
+                'risks' => app(\App\Modules\Decisions\Services\DecisionRiskPromoteService::class)->promoteTenant($tenantId),
+                'auto_complete' => false,
+                'auto_close_decisions' => false,
+            ],
+        ]);
+    }
+
+    public function promoteFromMinutes(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->can('decisions.manage')
+            || $user->hasAnyRole(['System Admin', 'Governance Officer', 'Director']),
+            403
+        );
+
+        $data = $request->validate([
+            'meeting_minutes_id' => ['required', 'integer'],
+        ]);
+
+        $minutes = \App\Models\MeetingMinutes::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->findOrFail((int) $data['meeting_minutes_id']);
+
+        $tenantId = (int) $user->tenant_id;
+        $minutesId = (int) $minutes->id;
+
+        return response()->json([
+            'message' => 'Minutes promotion complete. Decisions stay open.',
+            'data' => [
+                'meeting_minutes_id' => $minutesId,
+                'assignments' => $this->promote->promoteTenant($tenantId, $minutesId),
+                'risks' => app(\App\Modules\Decisions\Services\DecisionRiskPromoteService::class)->promoteTenant($tenantId, $minutesId),
+                'auto_complete' => false,
+                'auto_close_decisions' => false,
+            ],
+        ]);
+    }
 }

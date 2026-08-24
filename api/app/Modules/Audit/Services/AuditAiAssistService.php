@@ -166,6 +166,7 @@ class AuditAiAssistService
                 ],
                 'requires_human_confirm' => true,
             ],
+            'investigation_pack' => $this->investigationPack($user, $data),
             default => ['message' => 'No suggestion', 'requires_human_confirm' => true],
         };
     }
@@ -212,6 +213,54 @@ class AuditAiAssistService
 
             return ['message' => 'Provider error', 'requires_human_confirm' => true];
         }
+    }
+
+    private function investigationPack(User $user, array $data): array
+    {
+        $engagementId = $data['engagement_id'] ?? null;
+        $findings = AuditFinding::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->when($engagementId, fn ($q) => $q->where('engagement_id', $engagementId))
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get(['id', 'title', 'rating', 'status', 'engagement_id']);
+
+        $workpapers = AuditWorkpaper::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->when($engagementId, fn ($q) => $q->where('engagement_id', $engagementId))
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get(['id', 'reference', 'title', 'status']);
+
+        $openHigh = $findings->filter(function ($finding) {
+            return in_array((string) $finding->rating, ['high', 'critical'], true)
+                && ! in_array((string) $finding->status, ['closed', 'verified', 'implemented'], true);
+        });
+
+        return [
+            'engagement_id' => $engagementId,
+            'findings' => $findings->toArray(),
+            'workpapers' => $workpapers->toArray(),
+            'status_counts' => $findings->groupBy('status')->map->count()->all(),
+            'open_high_critical' => $openHigh->values()->toArray(),
+            'next_questions' => [
+                'Which finding still lacks corroborating workpapers?',
+                'What management response is overdue, and who owns it?',
+                'Is any item ready to recommend for close — without closing it here?',
+            ],
+            'evidence_gaps' => $workpapers->isEmpty()
+                ? ['No workpapers indexed for this engagement yet.']
+                : [],
+            'checklist' => [
+                'Review related findings and workpapers',
+                'Record notes after human confirmation',
+                'Never close, issue, or verify from this pack',
+            ],
+            'auto_close' => false,
+            'never_auto_closes' => true,
+            'disclaimer' => 'Investigation assistant only. Does not close findings, engagements, or corrective actions.',
+            'requires_human_confirm' => true,
+        ];
     }
 
     private function duplicateHints(User $user, array $context): array

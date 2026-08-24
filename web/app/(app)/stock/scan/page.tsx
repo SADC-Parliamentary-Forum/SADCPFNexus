@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import api from "@/lib/api";
+import api, { stockEventPacksApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 type StockItem = {
@@ -31,6 +31,8 @@ export default function StockBarcodeScanPage() {
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [count, setCount] = useState("1");
+  const [bulk, setBulk] = useState("");
+  const [bulkResult, setBulkResult] = useState<{ matched: Array<Record<string, unknown>>; missing: string[] } | null>(null);
   const [queue, setQueue] = useState<OfflineLine[]>(() => {
     if (typeof window === "undefined") return [];
     try {
@@ -82,7 +84,10 @@ export default function StockBarcodeScanPage() {
         subtitle="Scan-to-find stock items. Queue counts offline-friendly for later stocktake sync."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Barcode scan" }]} />}
         actions={
-          <Link href="/stock/stocktakes" className="btn-secondary btn-sm">Open stocktake to Apply browser queue</Link>
+          <>
+            <Link href="/stock/event-packs" className="btn-secondary btn-sm">Event packs</Link>
+            <Link href="/stock/stocktakes" className="btn-secondary btn-sm">Open stocktake to Apply browser queue</Link>
+          </>
         }
       />
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
@@ -137,6 +142,26 @@ export default function StockBarcodeScanPage() {
           {queue.length === 0 && <li className="text-neutral-500">Queue empty.</li>}
         </ul>
       </div>
+
+      <form
+        className="card space-y-3 p-4"
+        data-testid="barcode-bulk-lookup"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          const codes = bulk.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+          const r = await stockEventPacksApi.barcodeLookup(codes);
+          setBulkResult(r.data.data);
+        }}
+      >
+        <h2 className="text-sm font-semibold text-neutral-900">Bulk barcode lookup</h2>
+        <textarea className="form-input min-h-[90px]" value={bulk} onChange={(e) => setBulk(e.target.value)} placeholder="One barcode per line" />
+        <button type="submit" className="btn-secondary text-sm">Look up batch</button>
+        {bulkResult && (
+          <p className="text-sm text-neutral-700">
+            Matched {bulkResult.matched.length}. Missing: {bulkResult.missing.join(", ") || "none"}.
+          </p>
+        )}
+      </form>
     </div>
   );
 }
