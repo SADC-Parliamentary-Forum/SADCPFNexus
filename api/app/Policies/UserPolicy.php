@@ -19,7 +19,10 @@ class UserPolicy
      */
     public function view(User $authUser, User $user): bool
     {
-        if ($authUser->id === $user->id) return true;
+        if ($authUser->id === $user->id) {
+            return true;
+        }
+
         return ($authUser->isSystemAdmin() || $authUser->hasAnyRole(['HR Manager']))
             && $authUser->tenant_id === $user->tenant_id;
     }
@@ -46,10 +49,18 @@ class UserPolicy
 
     /**
      * Only System Admins can deactivate users.
+     * System Admin accounts cannot be deactivated through this path
+     * (including peer System Admins in the same tenant).
      */
     public function delete(User $authUser, User $user): bool
     {
-        if ($authUser->id === $user->id) return false; // Cannot deactivate self
+        if ($authUser->id === $user->id) {
+            return false; // Cannot deactivate self
+        }
+        if ($user->isSystemAdmin()) {
+            return false;
+        }
+
         return $authUser->isSystemAdmin() && $authUser->tenant_id === $user->tenant_id;
     }
 
