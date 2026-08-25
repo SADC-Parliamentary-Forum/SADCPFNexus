@@ -211,7 +211,13 @@ class LifecycleCaseService
     {
         $this->rbac->assertViewCase($viewer, $case);
 
-        $case->load(['employee', 'stages.tasks', 'templateVersion.template', 'events' => fn ($q) => $q->latest('created_at')]);
+        $case->load([
+            'employee',
+            'stages.tasks',
+            'templateVersion.template',
+            'exceptions',
+            'events' => fn ($q) => $q->latest('created_at'),
+        ]);
 
         $payload = [
             'id' => $case->id,
@@ -228,6 +234,14 @@ class LifecycleCaseService
             'clearance_status' => $case->clearance_status,
             'terminal_payment_blocked' => $case->terminal_payment_blocked,
             'terminal_payment_approved_at' => $case->terminal_payment_approved_at?->toIso8601String(),
+            'exceptions' => $case->exceptions->map(fn ($e) => [
+                'id' => $e->id,
+                'task_instance_id' => $e->task_instance_id,
+                'exception_type' => $e->exception_type,
+                'reason' => $e->reason,
+                'status' => $e->status,
+                'resolution_notes' => $e->resolution_notes,
+            ])->values(),
             'revision' => $case->revision,
             'template' => [
                 'code' => $case->templateVersion?->template?->code,

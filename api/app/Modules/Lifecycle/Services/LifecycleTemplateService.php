@@ -12,24 +12,35 @@ class LifecycleTemplateService
 {
     public function list(User $user, ?string $lifecycleType = null): array
     {
-        $q = LifecycleJourneyTemplate::with(['publishedVersion'])
-            ->where('tenant_id', $user->tenant_id);
+        $q = LifecycleJourneyTemplate::with([
+            'publishedVersion',
+            'versions' => fn ($rel) => $rel->orderByDesc('version_number'),
+        ])->where('tenant_id', $user->tenant_id);
 
         if ($lifecycleType) {
             $q->where('lifecycle_type', $lifecycleType);
         }
 
-        return $q->orderBy('name')->get()->map(fn ($t) => [
-            'id' => $t->id,
-            'code' => $t->code,
-            'name' => $t->name,
-            'lifecycle_type' => $t->lifecycle_type,
-            'published_version' => $t->publishedVersion ? [
-                'id' => $t->publishedVersion->id,
-                'version_number' => $t->publishedVersion->version_number,
-                'published_at' => $t->publishedVersion->published_at?->toIso8601String(),
-            ] : null,
-        ])->all();
+        return $q->orderBy('name')->get()->map(function ($t) {
+            $draft = $t->versions->firstWhere('status', 'draft');
+
+            return [
+                'id' => $t->id,
+                'code' => $t->code,
+                'name' => $t->name,
+                'lifecycle_type' => $t->lifecycle_type,
+                'published_version' => $t->publishedVersion ? [
+                    'id' => $t->publishedVersion->id,
+                    'version_number' => $t->publishedVersion->version_number,
+                    'published_at' => $t->publishedVersion->published_at?->toIso8601String(),
+                ] : null,
+                'draft_version' => $draft ? [
+                    'id' => $draft->id,
+                    'version_number' => $draft->version_number,
+                    'status' => $draft->status,
+                ] : null,
+            ];
+        })->all();
     }
 
     public function resolvePublishedVersion(User $user, string $templateCode, string $lifecycleType): LifecycleJourneyTemplateVersion

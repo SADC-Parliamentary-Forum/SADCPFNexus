@@ -1,7 +1,7 @@
 # SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-08-24  
-**Baseline tip:** `feat/remaining-module-depth` (from `df32c9d` on `main`).
+**Last updated:** 2026-08-25  
+**Baseline tip:** `cursor/lifecycle-closeout-248a` (from `6b09e6af` on `main`).
 
 ---
 
@@ -125,6 +125,16 @@ Shipped on this branch (People labelled forms + watermark + remaining inventable
 - Travel amendment proposed_changes labelled diff (PR-20)
 - Risk audit-trail old/new labelled change rows (PR-21)
 - HR settings dead “Coming Soon” branch removed (PR-22)
+
+Shipped this continuation (lifecycle closeout + unused audit/handover APIs):
+
+- Lifecycle case detail **clearance**, **exception request/approve**, **reopen**, **terminal-payment assert/approve**, and **finalise** (no payroll posting)
+- Case payload includes labelled **exceptions[]**
+- My-tasks queue **complete** and **clearance** without leaving the list
+- Journey template admin **clone draft from published** and **publish** (list includes `draft_version`; createDraft accepts internal journey types)
+- Audit findings **create/issue** plus finding detail **respond / create corrective action** (never auto-closes)
+- Corrective-action queue **complete / verify**; findings list accepts comma-separated status and includes nested actions
+- Assignment handover **from/to staff pickers** (`tenantUsersApi`) instead of hardcoding the current user
 
 Shipped in `feat/remaining-module-depth` (secret-free module depth over existing APIs):
 

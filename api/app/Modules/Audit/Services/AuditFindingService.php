@@ -28,9 +28,17 @@ class AuditFindingService
 
     public function list(array $filters, User $user): LengthAwarePaginator
     {
-        $q = AuditFinding::query()->where('tenant_id', $user->tenant_id)->orderByDesc('id');
+        $q = AuditFinding::query()
+            ->with(['correctiveActions'])
+            ->where('tenant_id', $user->tenant_id)
+            ->orderByDesc('id');
         if (! empty($filters['status'])) {
-            $q->where('status', $filters['status']);
+            $statuses = array_values(array_filter(array_map('trim', explode(',', (string) $filters['status']))));
+            if (count($statuses) > 1) {
+                $q->whereIn('status', $statuses);
+            } elseif ($statuses !== []) {
+                $q->where('status', $statuses[0]);
+            }
         }
         if (! empty($filters['engagement_id'])) {
             $q->where('engagement_id', $filters['engagement_id']);

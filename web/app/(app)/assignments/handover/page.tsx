@@ -3,18 +3,38 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { assignmentsApi } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { assignmentsApi, tenantUsersApi } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { FormField } from "@/components/ui/FormSection";
 
 export default function AssignmentHandoverPage() {
   const me = getStoredUser();
   const [q, setQ] = useState("overdue high mine");
+  const [fromUserId, setFromUserId] = useState<string>(me?.id ? String(me.id) : "");
+  const [toUserId, setToUserId] = useState("");
+
+  const usersQuery = useQuery({
+    queryKey: ["tenant-users", "handover"],
+    queryFn: async () => (await tenantUsersApi.list()).data.data ?? [],
+  });
+  const users = usersQuery.data ?? [];
+
+  const packParams = useMemo(() => {
+    const from = Number(fromUserId);
+    if (!Number.isFinite(from) || from <= 0) return null;
+    const to = Number(toUserId);
+    return {
+      from_user_id: from,
+      ...(Number.isFinite(to) && to > 0 ? { to_user_id: to } : {}),
+    };
+  }, [fromUserId, toUserId]);
+
   const pack = useQuery({
-    queryKey: ["assignments-handover", me?.id],
-    enabled: Boolean(me?.id),
-    queryFn: () => assignmentsApi.handoverPack({ from_user_id: Number(me?.id) }).then((r) => r.data.data),
+    queryKey: ["assignments-handover", packParams],
+    enabled: Boolean(packParams),
+    queryFn: () => assignmentsApi.handoverPack(packParams!).then((r) => r.data.data),
   });
   const suggest = useQuery({
     queryKey: ["assignments-nl", q],
@@ -24,7 +44,7 @@ export default function AssignmentHandoverPage() {
 
   const open = (pack.data?.open_assignments ?? []) as Array<Record<string, unknown>>;
   const applyHrefs = (suggest.data?.apply_hrefs ?? []) as Array<{ label: string; href: string }>;
-  const docxHref = me?.id ? assignmentsApi.handoverPackDocxUrl({ from_user_id: Number(me.id) }) : null;
+  const docxHref = packParams ? assignmentsApi.handoverPackDocxUrl(packParams) : null;
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
@@ -39,6 +59,41 @@ export default function AssignmentHandoverPage() {
             Download Word pack
           </a>
         ) : null}
+      </div>
+
+      <div className="card grid gap-3 p-4 sm:grid-cols-2">
+        <FormField label="From staff member" htmlFor="handover-from-user">
+          <select
+            id="handover-from-user"
+            data-testid="handover-from-user"
+            className="input w-full"
+            value={fromUserId}
+            onChange={(e) => setFromUserId(e.target.value)}
+          >
+            <option value="">Select departing owner</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+        </FormField>
+        <FormField label="Incoming owner (optional)" htmlFor="handover-to-user">
+          <select
+            id="handover-to-user"
+            data-testid="handover-to-user"
+            className="input w-full"
+            value={toUserId}
+            onChange={(e) => setToUserId(e.target.value)}
+          >
+            <option value="">No incoming owner</option>
+            {users.map((user) => (
+              <option key={user.id} value={user.id}>
+                {user.name}
+              </option>
+            ))}
+          </select>
+        </FormField>
       </div>
 
       <form

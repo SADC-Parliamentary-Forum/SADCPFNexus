@@ -29,7 +29,7 @@ class LifecycleTemplateController extends Controller
         $data = $request->validate([
             'code' => ['required', 'string', 'max:64'],
             'name' => ['required', 'string', 'max:255'],
-            'lifecycle_type' => ['required', 'in:onboarding,separation'],
+            'lifecycle_type' => ['required', 'in:onboarding,separation,transfer,promotion,probation'],
             'definition' => ['required', 'array'],
         ]);
 

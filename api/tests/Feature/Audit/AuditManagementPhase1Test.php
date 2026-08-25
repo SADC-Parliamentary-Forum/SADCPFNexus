@@ -318,4 +318,41 @@ class AuditManagementPhase1Test extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['sod']);
     }
+
+    public function test_findings_list_filters_comma_separated_status_and_includes_corrective_actions(): void
+    {
+        [, $auditor] = $this->asInternalAuditor();
+        [, $manager] = $this->asStaff($auditor->tenant);
+        $engagement = $this->seedEngagement($auditor);
+
+        $openId = $this->asUser($auditor)->postJson('/api/v1/audit-management/findings', [
+            'engagement_id' => $engagement->id,
+            'title' => 'Open finding',
+        ])->json('data.id');
+        $this->asUser($auditor)->postJson("/api/v1/audit-management/findings/{$openId}/issue")->assertOk();
+
+        $caFindingId = $this->asUser($auditor)->postJson('/api/v1/audit-management/findings', [
+            'engagement_id' => $engagement->id,
+            'title' => 'CA finding',
+        ])->json('data.id');
+        $this->asUser($auditor)->postJson("/api/v1/audit-management/findings/{$caFindingId}/issue")->assertOk();
+        $this->asUser($manager)->postJson("/api/v1/audit-management/findings/{$caFindingId}/corrective-actions", [
+            'title' => 'Fix control',
+            'owner_user_id' => $manager->id,
+        ])->assertCreated();
+
+        $list = $this->asUser($auditor)->getJson(
+            '/api/v1/audit-management/findings?status=corrective_in_progress,due_for_verification,reopened&per_page=50'
+        )->assertOk();
+
+        $rows = $list->json('data') ?? [];
+        if (isset($rows['data'])) {
+            $rows = $rows['data'];
+        }
+        $titles = collect($rows)->pluck('title');
+        $this->assertTrue($titles->contains('CA finding'));
+        $this->assertFalse($titles->contains('Open finding'));
+        $caRow = collect($rows)->firstWhere('title', 'CA finding');
+        $this->assertNotEmpty($caRow['corrective_actions'] ?? []);
+    }
 }
