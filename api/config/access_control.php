@@ -177,7 +177,7 @@ return [
             'POST' => ['audit.corrective.manage', 'audit.admin', 'audit.engagement.manage', 'my_work.view'],
         ]],
         ['pattern' => 'api/v1/audit-management/corrective-actions/{correctiveAction}/complete', 'permissions' => [
-            'POST' => ['audit.corrective.manage', 'audit.admin', 'my_work.view'],
+            'POST' => ['audit.corrective.manage', 'audit.admin', 'audit.engagement.manage', 'audit.corrective.verify', 'my_work.view'],
         ]],
         ['pattern' => 'api/v1/audit-management/corrective-actions/{correctiveAction}/verify', 'permissions' => [
             'POST' => ['audit.corrective.verify', 'audit.admin', 'audit.engagement.manage'],
