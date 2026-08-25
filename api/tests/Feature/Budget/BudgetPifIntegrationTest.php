@@ -39,17 +39,27 @@ class BudgetPifIntegrationTest extends TestCase
         ]);
     }
 
+    private function createProgramme(Tenant $tenant, array $payload): int
+    {
+        $officer = $this->makeUser('Programme Officer', $tenant);
+        $id = $this->asUser($officer)
+            ->postJson('/api/v1/programmes', $payload)
+            ->assertCreated()
+            ->json('data.id');
+
+        return (int) $id;
+    }
+
     public function test_finance_certification_creates_pif_commitment(): void
     {
         $tenant = Tenant::factory()->create();
         $finance = $this->makeFinanceController($tenant);
-        [$http] = $this->asStaff($tenant);
         $line = $this->seedLine($tenant, $finance);
 
-        $programmeId = $http->postJson('/api/v1/programmes', [
+        $programmeId = $this->createProgramme($tenant, [
             'title' => 'Budget Cert PIF',
             'total_budget' => 75000,
-        ])->json('data.id');
+        ]);
 
         Programme::whereKey($programmeId)->update(['total_budget' => 75000]);
 
@@ -76,13 +86,12 @@ class BudgetPifIntegrationTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $finance = $this->makeFinanceController($tenant);
-        [$http] = $this->asStaff($tenant);
         $line = $this->seedLine($tenant, $finance, 'PROG-2');
 
-        $programmeId = $http->postJson('/api/v1/programmes', [
+        $programmeId = $this->createProgramme($tenant, [
             'title' => 'Budget Release PIF',
             'total_budget' => 40000,
-        ])->json('data.id');
+        ]);
 
         Programme::whereKey($programmeId)->update(['total_budget' => 40000]);
 

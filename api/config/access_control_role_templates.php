@@ -62,6 +62,7 @@ return [
             'finance.create',
             'finance.approve',
             'finance.export',
+            'programme.finance-review',
             'programme.finance_review.read.assigned',
             'programme.finance_review.update.assigned',
             'programme.budget_availability.confirm.assigned',

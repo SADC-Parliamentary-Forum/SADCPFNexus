@@ -26,7 +26,7 @@ class AccessControlPersonaSmokeTest extends TestCase
             ['staff', ['leave.create', 'leave.view'], ['admin.roles.manage', 'salary_advance.report.export']],
             ['HOD', ['leave.view', 'travel.view'], ['admin.roles.assign']],
             ['HR Manager', ['leave.approve'], ['admin.roles.assign']],
-            ['Finance Controller', ['programme.finance_review.update.assigned', 'finance.view', 'finance.create'], ['procurement.evaluation.score.assigned']],
+            ['Finance Controller', ['programme.finance_review.update.assigned', 'programme.finance-review', 'finance.view', 'finance.create'], ['procurement.evaluation.score.assigned']],
             ['Programme Officer', ['programme.module.view', 'programme.request.create'], ['programme.finance_review.update.assigned']],
             ['Procurement Evaluation Committee Member', ['procurement.evaluation.read.assigned', 'my_work.view'], ['procurement.module.view', 'procurement.approve']],
             ['Administration Officer', ['travel.view'], ['admin.roles.assign', 'leave.request.authorise.assigned']],

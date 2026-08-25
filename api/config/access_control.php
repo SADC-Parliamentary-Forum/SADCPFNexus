@@ -290,8 +290,8 @@ return [
         ['pattern' => 'api/v1/programmes*', 'permissions' => [
             'READ' => ['pif.view', 'programme.request.read.created', 'programme.request.read.assigned'],
             'POST' => ['pif.create', 'programme.request.create', 'pif.approve', 'pif.admin'],
-            'PUT' => ['pif.create', 'pif.approve', 'programme.finance-review', 'pif.admin'],
-            'PATCH' => ['pif.create', 'pif.approve', 'programme.finance-review', 'pif.admin'],
+            'PUT' => ['pif.create', 'pif.approve', 'programme.finance-review', 'programme.finance_review.update.assigned', 'pif.admin'],
+            'PATCH' => ['pif.create', 'pif.approve', 'programme.finance-review', 'programme.finance_review.update.assigned', 'pif.admin'],
             'DELETE' => ['pif.admin'],
         ]],
         ['pattern' => 'api/v1/leave*', 'permissions' => [
