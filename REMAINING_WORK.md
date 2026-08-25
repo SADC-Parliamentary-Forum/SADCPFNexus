@@ -136,6 +136,12 @@ Shipped this continuation (lifecycle closeout + unused audit/handover APIs):
 - Corrective-action queue **complete / verify**; findings list accepts comma-separated status and includes nested actions
 - Assignment handover **from/to staff pickers** (`tenantUsersApi`) instead of hardcoding the current user
 
+CI alignment on this branch (so PHPUnit and the web security audit actually run):
+
+- GitHub Actions PHP **8.4** (matches `docker/php/Dockerfile` and `composer.lock`; 8.2/8.3 cannot install openspout / Symfony 8)
+- Web `npm audit --audit-level=high` clean: Next.js 16.3.3, axios 1.19, patched overrides, unused `next-auth` removed
+- Gitleaks remains operator-owned (`GITLEAKS_LICENSE` org secret) — not marked Done
+
 Shipped in `feat/remaining-module-depth` (secret-free module depth over existing APIs):
 
 - MD-1 Procurement newspaper-notice **templates and human checklists** (never auto-award; live LLM remains CR-8). Filled notice copy/print + template picker.
