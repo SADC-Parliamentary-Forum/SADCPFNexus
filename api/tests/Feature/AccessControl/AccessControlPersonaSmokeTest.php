@@ -33,8 +33,8 @@ class AccessControlPersonaSmokeTest extends TestCase
             ['ICT Platform Administrator', ['admin.platform.manage'], ['leave.request.authorise.assigned', 'salary_advance.report.export', 'programme.finance_review.update.assigned']],
             ['Security and Access Administrator', ['admin.roles.view', 'admin.access.simulate'], ['leave.request.authorise.assigned']],
             // Canonical Internal Auditor is report/assurance scoped, not self-service leave.view.
-            ['Internal Auditor', ['leave.report.view', 'audit.view'], ['leave.view', 'leave.request.authorise.assigned', 'admin.roles.assign']],
-            ['Secretary General', ['leave.request.authorise.assigned'], ['admin.roles.manage']],
+            ['Internal Auditor', ['leave.report.view', 'audit.view', 'audit.plan.manage'], ['leave.view', 'leave.request.authorise.assigned', 'admin.roles.assign']],
+            ['Secretary General', ['leave.request.authorise.assigned', 'audit.plan.approve'], ['admin.roles.manage']],
         ];
     }
 

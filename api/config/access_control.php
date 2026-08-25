@@ -170,9 +170,40 @@ return [
             'READ' => ['people.view-directory', 'people.view-profile', 'people.manage'],
             'WRITE' => ['people.manage', 'roles.assign', 'authorities.manage'],
         ]],
+        ['pattern' => 'api/v1/audit-management/findings/{finding}/responses', 'permissions' => [
+            'POST' => ['audit.response.manage', 'audit.admin', 'audit.engagement.manage', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/audit-management/findings/{finding}/corrective-actions', 'permissions' => [
+            'POST' => ['audit.corrective.manage', 'audit.admin', 'audit.engagement.manage', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/audit-management/corrective-actions/{correctiveAction}/complete', 'permissions' => [
+            'POST' => ['audit.corrective.manage', 'audit.admin', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/audit-management/corrective-actions/{correctiveAction}/verify', 'permissions' => [
+            'POST' => ['audit.corrective.verify', 'audit.admin', 'audit.engagement.manage'],
+        ]],
+        ['pattern' => 'api/v1/audit-management/findings/{finding}', 'permissions' => [
+            'GET' => ['audit.view', 'audit.findings.view', 'audit.admin', 'my_work.view'],
+            'PUT' => ['audit.findings.issue', 'audit.engagement.manage', 'audit.admin', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/audit-management/findings', 'permissions' => [
+            'GET' => ['audit.view', 'audit.findings.view', 'audit.admin', 'my_work.view'],
+            'POST' => ['audit.findings.issue', 'audit.engagement.manage', 'audit.admin'],
+        ]],
         ['pattern' => 'api/v1/audit-management*', 'permissions' => [
-            'READ' => ['audit.view', 'audit.events.view', 'audit.admin'],
-            'WRITE' => ['audit.admin', 'audit.plan.manage', 'audit.engagement.manage'],
+            'READ' => ['audit.view', 'audit.events.view', 'audit.findings.view', 'audit.admin'],
+            'WRITE' => [
+                'audit.admin',
+                'audit.plan.manage',
+                'audit.plan.approve',
+                'audit.engagement.manage',
+                'audit.universe.manage',
+                'audit.findings.issue',
+                'audit.report.draft',
+                'audit.report.issue',
+                'audit.corrective.verify',
+                'audit.engagement.fieldwork',
+            ],
         ]],
         ['pattern' => 'api/v1/audit-admin*', 'permissions' => [
             '*' => ['audit-trail.admin', 'audit.view', 'system.admin'],
