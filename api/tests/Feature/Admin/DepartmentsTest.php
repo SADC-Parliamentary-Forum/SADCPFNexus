@@ -2,9 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
-use App\Models\Department;
 use App\Models\Tenant;
-use App\Models\User;
 use Tests\TestCase;
 
 class DepartmentsTest extends TestCase
@@ -16,10 +14,17 @@ class DepartmentsTest extends TestCase
         $this->getJson('/api/v1/admin/departments')->assertUnauthorized();
     }
 
-    public function test_authenticated_user_can_list_departments(): void
+    public function test_staff_cannot_list_departments(): void
+    {
+        [$http] = $this->asStaff();
+
+        $http->getJson('/api/v1/admin/departments')->assertForbidden();
+    }
+
+    public function test_admin_can_list_departments(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http] = $this->asStaff($tenant);
+        [$http] = $this->asAdmin($tenant);
 
         $this->makeDepartment($tenant);
         $this->makeDepartment($tenant);
@@ -27,17 +32,17 @@ class DepartmentsTest extends TestCase
         $response = $http->getJson('/api/v1/admin/departments');
 
         $response->assertOk()
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
 
         $this->assertGreaterThanOrEqual(2, count($response->json('data')));
     }
 
-    public function test_user_only_sees_departments_in_own_tenant(): void
+    public function test_admin_only_sees_departments_in_own_tenant(): void
     {
         $tenantA = Tenant::factory()->create();
         $tenantB = Tenant::factory()->create();
 
-        [$http] = $this->asStaff($tenantA);
+        [$http] = $this->asAdmin($tenantA);
         $this->makeDepartment($tenantA);
         $this->makeDepartment($tenantB);
 
@@ -61,8 +66,8 @@ class DepartmentsTest extends TestCase
         ]);
 
         $response->assertCreated()
-                 ->assertJsonPath('data.name', 'Programme Management')
-                 ->assertJsonPath('data.code', 'PM');
+            ->assertJsonPath('data.name', 'Programme Management')
+            ->assertJsonPath('data.code', 'PM');
 
         $this->assertDatabaseHas('departments', ['name' => 'Programme Management', 'code' => 'PM']);
     }
@@ -72,8 +77,8 @@ class DepartmentsTest extends TestCase
         [$http] = $this->asAdmin();
 
         $http->postJson('/api/v1/admin/departments', [])
-             ->assertUnprocessable()
-             ->assertJsonValidationErrors(['name', 'code']);
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name', 'code']);
     }
 
     public function test_admin_can_create_child_department(): void
@@ -84,13 +89,13 @@ class DepartmentsTest extends TestCase
         $parent = $this->makeDepartment($tenant);
 
         $response = $http->postJson('/api/v1/admin/departments', [
-            'name'      => 'Sub Unit',
-            'code'      => 'SUB',
+            'name' => 'Sub Unit',
+            'code' => 'SUB',
             'parent_id' => $parent->id,
         ]);
 
         $response->assertCreated()
-                 ->assertJsonPath('data.parent_id', $parent->id);
+            ->assertJsonPath('data.parent_id', $parent->id);
     }
 
     public function test_staff_cannot_create_department(): void
@@ -114,7 +119,7 @@ class DepartmentsTest extends TestCase
 
         $response = $http->getJson("/api/v1/admin/departments/{$dept->id}");
         $response->assertOk()
-                 ->assertJsonPath('data.id', $dept->id);
+            ->assertJsonPath('data.id', $dept->id);
     }
 
     // ── Update ───────────────────────────────────────────────────────────────
@@ -132,7 +137,7 @@ class DepartmentsTest extends TestCase
         ]);
 
         $response->assertOk()
-                 ->assertJsonPath('data.name', 'Updated Name');
+            ->assertJsonPath('data.name', 'Updated Name');
 
         $this->assertDatabaseHas('departments', ['id' => $dept->id, 'name' => 'Updated Name']);
     }
@@ -143,16 +148,16 @@ class DepartmentsTest extends TestCase
         [$http] = $this->asAdmin($tenant);
 
         $parent = $this->makeDepartment($tenant);
-        $child  = $this->makeDepartment($tenant);
+        $child = $this->makeDepartment($tenant);
 
         $response = $http->putJson("/api/v1/admin/departments/{$child->id}", [
-            'name'      => $child->name,
-            'code'      => $child->code,
+            'name' => $child->name,
+            'code' => $child->code,
             'parent_id' => $parent->id,
         ]);
 
         $response->assertOk()
-                 ->assertJsonPath('data.parent_id', $parent->id);
+            ->assertJsonPath('data.parent_id', $parent->id);
     }
 
     // ── Delete ───────────────────────────────────────────────────────────────
@@ -165,7 +170,7 @@ class DepartmentsTest extends TestCase
         $dept = $this->makeDepartment($tenant);
 
         $http->deleteJson("/api/v1/admin/departments/{$dept->id}")
-             ->assertOk();
+            ->assertOk();
 
         $this->assertDatabaseMissing('departments', ['id' => $dept->id]);
     }
@@ -175,6 +180,6 @@ class DepartmentsTest extends TestCase
         [$http] = $this->asAdmin();
 
         $http->getJson('/api/v1/admin/departments/99999')
-             ->assertNotFound();
+            ->assertNotFound();
     }
 }
