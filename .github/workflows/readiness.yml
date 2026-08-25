@@ -88,7 +88,6 @@ jobs:
           BCRYPT_ROUNDS: '4'
         run: |
           test -f .env || cp .env.example .env
-          php artisan key:generate --force
           php artisan migrate:fresh --seed --force
 
       - name: Start API

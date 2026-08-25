@@ -396,7 +396,7 @@ class LifecycleCaseService
         $tasks = LifecycleTaskInstance::with(['lifecycleCase.employee:id,name'])
             ->where('tenant_id', $user->tenant_id)
             ->where('status', '!=', 'completed')
-            ->whereHas('lifecycleCase', function ($q) use ($user) {
+            ->whereHas('lifecycleCase', function ($q) {
                 $q->where('status', 'in_progress');
             })
             ->orderBy('due_date')

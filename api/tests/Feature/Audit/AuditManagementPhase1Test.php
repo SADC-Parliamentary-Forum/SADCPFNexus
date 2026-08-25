@@ -3,7 +3,6 @@
 namespace Tests\Feature\Audit;
 
 use App\Models\Assignment;
-use App\Models\AuditCorrectiveAction;
 use App\Models\AuditEngagement;
 use App\Models\AuditFinding;
 use App\Models\AuditIndependenceDeclaration;

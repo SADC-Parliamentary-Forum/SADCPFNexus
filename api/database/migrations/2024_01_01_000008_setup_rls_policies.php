@@ -7,6 +7,24 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
+        // Docker init.sql creates this role; GitHub Actions Postgres does not.
+        DB::statement(<<<'SQL'
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN
+                    CREATE ROLE app_user NOLOGIN;
+                END IF;
+            END
+            $$;
+        SQL);
+        $database = str_replace('"', '""', (string) DB::getDatabaseName());
+        DB::statement("GRANT CONNECT ON DATABASE \"{$database}\" TO app_user");
+        DB::statement('GRANT USAGE ON SCHEMA public TO app_user');
+
         // Grant app_user access to tables
         $tables = [
             'tenants', 'departments', 'users', 'audit_logs', 'attachments',

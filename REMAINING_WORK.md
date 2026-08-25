@@ -142,6 +142,7 @@ CI alignment on this branch (so PHPUnit and the web security audit actually run)
 - Web `npm audit --audit-level=high` clean: Next.js 16.3.3, axios 1.19, patched overrides, unused `next-auth` removed
 - CI env bootstrap: `api/.env.testing.example` for PHPUnit; E2E/readiness copy `.env.example` before `key:generate`
 - Pint checks PHP files changed vs base (the tree was never repo-wide Pint-clean)
+- CI Postgres now gets `app_user` from the first RLS migration (Docker `init.sql` already created it)
 - Gitleaks remains operator-owned (`GITLEAKS_LICENSE` org secret) — not marked Done
 - Composer `audit` still reports lockfile advisories (Laravel/Guzzle/Symfony/dompdf) — needs `composer update` on PHP 8.4; gate is not ignored
 
