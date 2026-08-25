@@ -279,6 +279,9 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr/timesheets", permission: ["timesheets.view", "timesheets.create", "timesheet.module.view", "timesheet.create.self", "timesheet.read.self", "hr.view", "hr.admin"] },
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
+  // My Requests is staff self-service; the register stays assets.view.
+  { path: "/assets/requests", permission: ["assets.view", "assets.admin", "my_work.view"] },
+  { path: "/assets/request", permission: ["assets.view", "assets.admin", "my_work.view"] },
   { path: "/assets", permission: "assets.view" },
   { path: "/fleet", permission: "assets.view" },
   { path: "/stock", permission: "stock.view" },

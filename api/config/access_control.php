@@ -249,7 +249,12 @@ return [
         ]],
         ['pattern' => 'api/v1/assignments*', 'permissions' => [
             'READ' => ['assignments.view', 'assignment.read.assigned', 'assignments.admin'],
-            'WRITE' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin'],
+            // POST/PUT cover assignee actions (complete/start/block) as well as
+            // create/issue. AssignmentController still forbids staff create.
+            'POST' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin', 'assignment.read.assigned'],
+            'PUT' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin', 'assignment.read.assigned'],
+            'PATCH' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin', 'assignment.read.assigned'],
+            'DELETE' => ['assignments.admin', 'assignments.create'],
         ]],
         ['pattern' => 'api/v1/programmes*', 'permissions' => [
             'READ' => ['pif.view', 'programme.request.read.created', 'programme.request.read.assigned'],
@@ -332,6 +337,14 @@ return [
         ['pattern' => 'api/v1/assets-meta*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin'],
             'WRITE' => ['assets.manage', 'assets.admin'],
+        ]],
+        // Must precede api/v1/asset-* so staff My Requests is not gated on assets.view.
+        ['pattern' => 'api/v1/asset-requests*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin', 'my_work.view'],
+            'POST' => ['assets.create', 'assets.admin', 'my_work.view'],
+            'PUT' => ['assets.edit', 'assets.manage', 'assets.admin', 'my_work.view'],
+            'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin', 'my_work.view'],
+            'DELETE' => ['assets.admin', 'my_work.view'],
         ]],
         ['pattern' => 'api/v1/asset-*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin'],

@@ -1848,6 +1848,7 @@ test("General Employee canonical permissions open staff self-service routes", as
       "timesheet.module.view",
       "timesheet.create.self",
       "timesheet.read.self",
+      "my_work.view",
       "notifications.view.own",
       "approvals.inbox.view",
     ],
@@ -1863,7 +1864,10 @@ test("General Employee canonical permissions open staff self-service routes", as
   assert.equal(canAccessRoute(staff, "/notifications"), true);
   assert.equal(canAccessRoute(staff, "/approvals"), true);
   assert.equal(canAccessRoute(staff, "/hr/timesheets"), true);
+  assert.equal(canAccessRoute(staff, "/assets/requests"), true);
+  assert.equal(canAccessRoute(staff, "/assets/requests/new"), true);
 
+  assert.equal(canAccessRoute(staff, "/assets"), false);
   assert.equal(canAccessRoute(staff, "/procurement"), false);
   assert.equal(canAccessRoute(staff, "/procurement/create"), false);
   assert.equal(canAccessRoute(staff, "/travel/settings"), false);
