@@ -51,7 +51,12 @@ export async function skipIfAccessDenied(
   page: import("@playwright/test").Page,
   reason = "Current fixture cannot open this route"
 ): Promise<void> {
-  const denied = page.getByText(/Access denied/i);
+  // AppShell shows "Loading…" until effective permissions resolve. Checking
+  // AccessDenied during that window races and lets gated pages fail later.
+  const loading = page.getByText(/^Loading…$/);
+  await loading.waitFor({ state: "hidden", timeout: 15_000 }).catch(() => undefined);
+
+  const denied = page.getByText(/Access denied|You cannot open this page/i);
   if (await denied.isVisible({ timeout: 1_500 }).catch(() => false)) {
     test.skip(true, reason);
   }

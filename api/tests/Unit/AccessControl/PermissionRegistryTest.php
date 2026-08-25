@@ -35,4 +35,21 @@ class PermissionRegistryTest extends TestCase
 
         $this->assertSame(['a.read', 'b.read'], $permissions);
     }
+
+    public function test_legacy_travel_view_maps_to_self_read(): void
+    {
+        $keys = app(PermissionRegistry::class)->resolveEquivalents('travel.view');
+
+        $this->assertContains('travel.view', $keys);
+        $this->assertContains('travel.request.read.self', $keys);
+        $this->assertContains('travel.module.view', $keys);
+    }
+
+    public function test_legacy_leave_approve_maps_to_authorise(): void
+    {
+        $keys = app(PermissionRegistry::class)->resolveEquivalents('leave.approve');
+
+        $this->assertContains('leave.request.authorise.assigned', $keys);
+        $this->assertContains('leave.request.reject.assigned', $keys);
+    }
 }

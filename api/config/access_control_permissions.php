@@ -1008,7 +1008,10 @@ return [
         'data_classification' => 'Confidential',
         'mfa_required' => true,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'POST /api/v1/leave/requests/{id}/certify',
+            'POST /api/v1/leave/requests/{leaveRequest}/certify',
+        ],
     ],
     'leave.balance.export' => [
         'display_name' => 'Export balances',
@@ -1138,7 +1141,10 @@ return [
         'data_classification' => 'Internal',
         'mfa_required' => true,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'POST /api/v1/leave/requests/{id}/approve',
+            'POST /api/v1/leave/requests/{leaveRequest}/approve',
+        ],
     ],
     'leave.request.cancel.created' => [
         'display_name' => 'Cancel leave',
@@ -1216,7 +1222,10 @@ return [
         'data_classification' => 'Internal',
         'mfa_required' => false,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'POST /api/v1/leave/requests/{id}/recommend',
+            'POST /api/v1/leave/requests/{leaveRequest}/recommend',
+        ],
     ],
     'leave.request.reject.assigned' => [
         'display_name' => 'Reject leave',

@@ -213,10 +213,10 @@ return [
             'WRITE' => ['mande.create', 'mande.review', 'mande.admin'],
         ]],
         ['pattern' => 'api/v1/travel*', 'permissions' => [
-            'READ' => ['travel.view', 'travel.admin'],
-            'POST' => ['travel.create', 'travel.approve', 'travel.admin'],
-            'PUT' => ['travel.create', 'travel.approve', 'travel.admin'],
-            'PATCH' => ['travel.create', 'travel.approve', 'travel.admin'],
+            'READ' => ['travel.view', 'travel.admin', 'travel.module.view', 'travel.request.read.self'],
+            'POST' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self', 'travel.request.approve.assigned'],
+            'PUT' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
+            'PATCH' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
             'DELETE' => ['travel.admin'],
         ]],
         ['pattern' => 'api/v1/finance*', 'permissions' => [
@@ -260,7 +260,19 @@ return [
         ]],
         ['pattern' => 'api/v1/leave*', 'permissions' => [
             'READ' => ['leave.view', 'leave.approve', 'leave.admin', 'leave.module.view', 'leave.request.read.self'],
-            'POST' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.create.self', 'leave.request.submit.created', 'leave.request.withdraw.created'],
+            'POST' => [
+                'leave.create',
+                'leave.approve',
+                'leave.admin',
+                'leave.request.create.self',
+                'leave.request.submit.created',
+                'leave.request.withdraw.created',
+                'leave.request.recommend.assigned',
+                'leave.request.authorise.assigned',
+                'leave.request.reject.assigned',
+                'leave.request.return.assigned',
+                'leave.balance.certify.assigned',
+            ],
             'PUT' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.edit.created'],
             'PATCH' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.edit.created'],
             'DELETE' => ['leave.admin'],
@@ -592,6 +604,18 @@ return [
             'mande.evidence.validate.assigned',
         ],
         'mande.admin' => ['mande.module.view', 'mande.configuration.manage', 'mande.strategic_plan.manage'],
+        'travel.view' => [
+            'travel.request.read.self',
+            'travel.module.view',
+        ],
+        'travel.create' => [
+            'travel.request.create.self',
+            'travel.module.view',
+        ],
+        'travel.approve' => [
+            'travel.request.approve.assigned',
+            'travel.module.view',
+        ],
     ],
 
     /**

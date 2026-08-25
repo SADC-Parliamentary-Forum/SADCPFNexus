@@ -71,6 +71,25 @@ class EndpointPermissionMapTest extends TestCase
         );
     }
 
+    public function test_leave_authorise_maps_approve_endpoint_with_named_parameter(): void
+    {
+        $map = new EndpointPermissionMap($this->registry([
+            'leave.request.authorise.assigned' => [
+                'linked_endpoints' => [
+                    'POST /api/v1/leave/requests/{id}/approve',
+                ],
+            ],
+        ]), []);
+
+        $route = new LaravelRoute(
+            ['POST'],
+            'api/v1/leave/requests/{leaveRequest}/approve',
+            ['uses' => fn () => null]
+        );
+
+        $this->assertSame(['leave.request.authorise.assigned'], $map->permissionsForRoute($route));
+    }
+
     public function test_extracts_route_middleware_permission_groups_without_losing_and_semantics(): void
     {
         $map = new EndpointPermissionMap($this->registry([]), []);

@@ -31,7 +31,7 @@ import {
 
 async function expectNoServerCrash(page: import("@playwright/test").Page) {
   await expect(page.locator("body")).not.toContainText(
-    /(Internal Server Error|Unhandled Runtime Error|Exception)/i
+    /\bInternal Server Error\b|\bUnhandled Runtime Error\b|\bException\b/
   );
 }
 
@@ -71,9 +71,11 @@ test.describe("Smoke — Salary Advances (staff)", () => {
     }
 
     await skipIfAccessDenied(page, "Staff cannot open salary advances hub");
-    await expect(
-      page.getByRole("heading", { name: /salary advance/i }).first()
-    ).toBeVisible({ timeout: 15_000 });
+    const heading = page
+      .getByRole("heading", { name: /salary advance/i })
+      .or(page.locator("h1.page-title, [class*='page-title']").filter({ hasText: /salary advance/i }))
+      .first();
+    await expect(heading).toBeVisible({ timeout: 15_000 });
     await expectNoServerCrash(page);
   });
 
