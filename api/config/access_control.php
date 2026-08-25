@@ -228,6 +228,9 @@ return [
         ['pattern' => 'api/v1/records*', 'permissions' => [
             'READ' => ['audit-trail.view-record-history', 'audit.view'],
         ]],
+        ['pattern' => 'api/v1/budget/variance/{variance}/explanation', 'permissions' => [
+            'POST' => ['finance.create', 'finance.approve', 'finance.admin', 'my_work.view'],
+        ]],
         ['pattern' => 'api/v1/budget*', 'permissions' => [
             'READ' => ['finance.view', 'finance.admin'],
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
