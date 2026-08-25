@@ -353,6 +353,13 @@ return [
             'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin'],
             'DELETE' => ['assets.admin'],
         ]],
+        // Must precede api/v1/assets* so assigned custodians can acknowledge/return.
+        ['pattern' => 'api/v1/assets/{asset}/acknowledge', 'permissions' => [
+            'POST' => ['assets.admin', 'assets.manage', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/return', 'permissions' => [
+            'POST' => ['assets.admin', 'assets.manage', 'my_work.view'],
+        ]],
         ['pattern' => 'api/v1/assets*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin'],
             'POST' => ['assets.create', 'assets.manage', 'assets.admin'],

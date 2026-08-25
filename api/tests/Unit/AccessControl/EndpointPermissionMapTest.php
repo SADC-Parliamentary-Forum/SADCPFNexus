@@ -137,6 +137,25 @@ class EndpointPermissionMapTest extends TestCase
         $this->assertSame([['admin.platform.manage']], $map->fallbackPermissionGroupsForRoute($settingsRoute));
     }
 
+    public function test_exact_route_parameter_pattern_beats_module_prefix(): void
+    {
+        $rules = [
+            ['pattern' => 'api/v1/assets/{asset}/acknowledge', 'permissions' => [
+                'POST' => ['assets.admin', 'my_work.view'],
+            ]],
+            ['pattern' => 'api/v1/assets*', 'permissions' => [
+                'POST' => ['assets.create', 'assets.admin'],
+            ]],
+        ];
+
+        $map = new EndpointPermissionMap($this->registry([]), $rules);
+        $acknowledge = new LaravelRoute(['POST'], 'api/v1/assets/{asset}/acknowledge', ['uses' => fn () => null]);
+        $capitalise = new LaravelRoute(['POST'], 'api/v1/assets/{asset}/capitalise', ['uses' => fn () => null]);
+
+        $this->assertSame([['assets.admin', 'my_work.view']], $map->fallbackPermissionGroupsForRoute($acknowledge));
+        $this->assertSame([['assets.create', 'assets.admin']], $map->fallbackPermissionGroupsForRoute($capitalise));
+    }
+
     private function registry(array $permissions): PermissionRegistry
     {
         return new class($permissions) extends PermissionRegistry
