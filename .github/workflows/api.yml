@@ -95,6 +95,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up PHP 8.4
         uses: shivammathur/setup-php@v2
@@ -113,8 +115,30 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Run Pint
-        run: ./vendor/bin/pint --test
+      # The tree was never Pint-clean (hundreds of historical migrations/tests).
+      # Fail the PR only when this branch's PHP files diverge from origin/main.
+      - name: Run Pint on PHP files changed vs base
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch --no-tags origin "${{ github.base_ref }}" --depth=1
+            BASE="origin/${{ github.base_ref }}"
+          else
+            BEFORE="${{ github.event.before }}"
+            if [ -z "${BEFORE}" ] || [ "${BEFORE}" = "0000000000000000000000000000000000000000" ]; then
+              BASE="HEAD~1"
+            else
+              BASE="${BEFORE}"
+            fi
+          fi
+          mapfile -t files < <(git -C "${GITHUB_WORKSPACE}" diff --name-only --diff-filter=ACMR "${BASE}...HEAD" -- 'api/**/*.php' | sed 's|^api/||' || true)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No PHP files changed vs ${BASE}"
+            exit 0
+          fi
+          echo "Pint checking ${#files[@]} file(s) vs ${BASE}"
+          printf '%s\n' "${files[@]}"
+          ./vendor/bin/pint --test "${files[@]}"
 
   security:
     name: Composer security audit

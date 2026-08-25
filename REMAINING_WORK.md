@@ -140,7 +140,10 @@ CI alignment on this branch (so PHPUnit and the web security audit actually run)
 
 - GitHub Actions PHP **8.4** (matches `docker/php/Dockerfile` and `composer.lock`; 8.2/8.3 cannot install openspout / Symfony 8)
 - Web `npm audit --audit-level=high` clean: Next.js 16.3.3, axios 1.19, patched overrides, unused `next-auth` removed
+- CI env bootstrap: `api/.env.testing.example` for PHPUnit; E2E/readiness copy `.env.example` before `key:generate`
+- Pint checks PHP files changed vs base (the tree was never repo-wide Pint-clean)
 - Gitleaks remains operator-owned (`GITLEAKS_LICENSE` org secret) — not marked Done
+- Composer `audit` still reports lockfile advisories (Laravel/Guzzle/Symfony/dompdf) — needs `composer update` on PHP 8.4; gate is not ignored
 
 Shipped in `feat/remaining-module-depth` (secret-free module depth over existing APIs):
 
