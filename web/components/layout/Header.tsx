@@ -161,7 +161,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
         </span>
         <div className="hidden md:block">
           <h2 className="text-lg font-bold leading-tight tracking-tight text-neutral-900 dark:text-neutral-100">SADC PF Nexus</h2>
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 leading-none">Institutional Operations Platform</p>
+          <p className="text-xs font-medium text-neutral-700 dark:text-neutral-300 leading-none">Institutional Operations Platform</p>
         </div>
       </Link>
       </div>
@@ -194,7 +194,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
             aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
             aria-expanded={showNotifications}
           >
-            <span className="material-symbols-outlined text-[20px]">notifications</span>
+            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">notifications</span>
             {unreadCount > 0 && (
               <span className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white ring-2 ring-white dark:ring-neutral-900">
                 {unreadCount > 9 ? "9+" : unreadCount}

@@ -117,10 +117,9 @@ class AccessControlNegativeAccessTest extends TestCase
         $this->getJson("/api/v1/procurement/committee-evaluations/{$assigned->id}")->assertOk();
         $this->getJson("/api/v1/procurement/committee-evaluations/{$other->id}")->assertStatus(404);
 
-        $list = $this->getJson('/api/v1/procurement/requests')->assertOk()->json();
-        $ids = collect($list['data'] ?? [])->pluck('id')->all();
-        $this->assertNotContains($other->id, $ids);
-        $this->assertNotContains($assigned->id, $ids);
+        // Feature-only evaluators have procurement.evaluation.read.assigned, not
+        // procurement.view. The register is denied (403), not an empty 200 list.
+        $this->getJson('/api/v1/procurement/requests')->assertForbidden();
     }
 
     public function test_ict_admin_cannot_export_salary_advances(): void

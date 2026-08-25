@@ -66,6 +66,26 @@ jobs:
       - name: Copy .env.testing
         run: cp .env.testing.example .env.testing
 
+      - name: Raise Postgres lock limits for large-schema RefreshDatabase
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: sadcpfnexus_test
+          DB_USERNAME: sadcpf
+          DB_PASSWORD: secret
+        run: |
+          php -r '
+            $pdo = new PDO(
+              sprintf("pgsql:host=%s;port=%s;dbname=%s", getenv("DB_HOST"), getenv("DB_PORT"), getenv("DB_DATABASE")),
+              getenv("DB_USERNAME"),
+              getenv("DB_PASSWORD")
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $pdo->exec("ALTER SYSTEM SET max_locks_per_transaction = 1024");
+            $pdo->exec("ALTER SYSTEM SET max_pred_locks_per_transaction = 1024");
+            $pdo->query("SELECT pg_reload_conf()");
+          '
+
       - name: Run PHPUnit tests
         run: php artisan test --stop-on-failure
         env:

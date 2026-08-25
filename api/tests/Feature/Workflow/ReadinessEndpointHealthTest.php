@@ -7,6 +7,15 @@ use Tests\TestCase;
 
 class ReadinessEndpointHealthTest extends TestCase
 {
+    /**
+     * Do not wrap the full GET probe in one RefreshDatabase transaction.
+     * Hundreds of routes × table locks exhausts Postgres shared memory
+     * (SQLSTATE 53200) on GitHub Actions' default lock limits.
+     *
+     * @var list<string|null>
+     */
+    protected $connectionsToTransact = [];
+
     public function test_all_api_v1_get_endpoints_do_not_throw_unhandled_500_when_unauthenticated(): void
     {
         $rows = collect(Route::getRoutes()->getRoutes())
@@ -37,7 +46,7 @@ class ReadinessEndpointHealthTest extends TestCase
                 continue;
             }
 
-            $path = '/' . preg_replace('/\{[^}]+\}/', '1', $uri);
+            $path = '/'.preg_replace('/\{[^}]+\}/', '1', $uri);
             try {
                 $response = $this->getJson($path);
                 $status = $response->getStatusCode();

@@ -153,6 +153,7 @@ class EndpointPermissionMap
                 if ($permission !== '') {
                     $groups[] = [$permission];
                 }
+
                 continue;
             }
 

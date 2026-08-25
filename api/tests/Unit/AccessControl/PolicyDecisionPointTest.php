@@ -5,7 +5,6 @@ namespace Tests\Unit\AccessControl;
 use App\Models\AccessControl\UserPermissionDenial;
 use App\Models\AccessControl\UserPermissionGrant;
 use App\Models\LeaveRequest;
-use App\Models\User;
 use App\Modules\AccessControl\Services\AccessCacheInvalidator;
 use App\Modules\AccessControl\Services\AccessScopeResolver;
 use App\Modules\AccessControl\Services\PolicyDecisionPoint;

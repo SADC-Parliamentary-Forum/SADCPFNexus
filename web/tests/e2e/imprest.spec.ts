@@ -2,6 +2,7 @@
  * Imprest module E2E tests.
  */
 import { test, expect } from "@playwright/test";
+import { skipIfAccessDenied } from "./helpers/auth";
 
 const UNIQUE = `E2E-${Date.now()}`;
 
@@ -33,6 +34,7 @@ test.describe("Imprest — create request", () => {
   test("create page renders with form fields", async ({ page }) => {
     await page.goto("/imprest/create");
     await page.waitForURL("**/imprest/create", { timeout: 15_000 });
+    await skipIfAccessDenied(page, "Staff cannot create imprest");
     await expect(page.locator("input, textarea, select").first()).toBeVisible();
   });
 

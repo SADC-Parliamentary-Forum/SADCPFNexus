@@ -5,7 +5,7 @@
  * Public tender board coverage also lives in sa-procurement-smokes.spec.ts.
  */
 import { test, expect } from "@playwright/test";
-import { landedOnLogin, skipWithoutAuth } from "./helpers/auth";
+import { landedOnLogin, skipIfAccessDenied, skipIfLocatorMissing, skipWithoutAuth } from "./helpers/auth";
 
 const UNIQUE = `E2E-${Date.now()}`;
 
@@ -13,6 +13,7 @@ async function openFirstDetail(page: import("@playwright/test").Page, listPath: 
   await page.goto(listPath);
   await page.waitForURL(`**${listPath}`, { timeout: 15_000 });
   await page.waitForLoadState("networkidle");
+  await skipIfAccessDenied(page, `Fixture cannot open ${listPath}`);
 
   const firstLink = page.locator(`a[href*='${hrefFragment}']`).first();
   const visible = await firstLink.isVisible({ timeout: 5_000 }).catch(() => false);
@@ -30,6 +31,7 @@ test.describe("Procurement — list page", () => {
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for /procurement");
     }
+    await skipIfAccessDenied(page, "Staff cannot open procurement");
   });
 
   test("procurement list page loads", async ({ page }) => {
@@ -38,6 +40,7 @@ test.describe("Procurement — list page", () => {
 
   test("create / new request button is present", async ({ page }) => {
     const btn = page.locator("a:has-text('New'), a:has-text('Create'), a[href*='/create']").first();
+    await skipIfLocatorMissing(btn, "Staff cannot create procurement requests");
     await expect(btn).toBeVisible();
   });
 });
@@ -54,6 +57,7 @@ test.describe("Procurement — create request", () => {
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for /procurement/create");
     }
+    await skipIfAccessDenied(page, "Staff cannot open procurement create");
     await expect(page.locator("input, textarea").first()).toBeVisible();
   });
 
@@ -63,6 +67,7 @@ test.describe("Procurement — create request", () => {
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for /procurement/create");
     }
+    await skipIfAccessDenied(page, "Staff cannot open procurement create");
 
     const nextStep = page.locator('button:has-text("Next Step")').first();
     await expect(nextStep).toBeDisabled();

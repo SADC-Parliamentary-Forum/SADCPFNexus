@@ -316,7 +316,7 @@ export default function DashboardPage() {
                 <p className="mt-1 text-xs text-neutral-700 group-hover:text-primary transition-colors">View →</p>
               </div>
               <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${bg}`}>
-                <span className={`material-symbols-outlined ${color} text-[22px]`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+                <span className={`material-symbols-outlined ${color} text-[22px]`} style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">{icon}</span>
               </div>
             </div>
           </Link>
@@ -521,9 +521,9 @@ export default function DashboardPage() {
           {quickActionsToShow.map((action) => (
             <Link key={action.href} href={action.href} className="flex flex-col items-center gap-2.5 p-5 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors group">
               <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${action.bg} group-hover:scale-105 transition-transform`}>
-                <span className={`material-symbols-outlined ${action.color} text-[22px]`}>{action.icon}</span>
+                <span className={`material-symbols-outlined ${action.color} text-[22px]`} aria-hidden="true">{action.icon}</span>
               </div>
-              <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 text-center leading-tight">{action.label}</span>
+              <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 text-center leading-tight">{action.label}</span>
             </Link>
           ))}
         </div>
@@ -536,7 +536,7 @@ export default function DashboardPage() {
           {modulesToShow.map((m) => (
             <Link key={m.href} href={m.href} className="card p-4 flex flex-col items-center gap-2 text-center hover:border-primary/30 hover:shadow-elevated transition-all group">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-700/40 group-hover:bg-primary/10 transition-colors">
-                <span className="material-symbols-outlined text-neutral-500 group-hover:text-primary text-[20px] transition-colors">{m.icon}</span>
+                <span className="material-symbols-outlined text-neutral-700 group-hover:text-primary-800 text-[20px] transition-colors" aria-hidden="true">{m.icon}</span>
               </div>
               <div>
                 <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{m.label}</p>

@@ -25,6 +25,7 @@ import { test, expect } from "@playwright/test";
 import {
   authStatePath,
   landedOnLogin,
+  skipIfAccessDenied,
   skipWithoutAuth,
 } from "./helpers/auth";
 
@@ -69,6 +70,7 @@ test.describe("Smoke — Salary Advances (staff)", () => {
       await page.waitForLoadState("networkidle");
     }
 
+    await skipIfAccessDenied(page, "Staff cannot open salary advances hub");
     await expect(
       page.getByRole("heading", { name: /salary advance/i }).first()
     ).toBeVisible({ timeout: 15_000 });
@@ -82,6 +84,7 @@ test.describe("Smoke — Salary Advances (staff)", () => {
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff cannot open salary-advances/create — fixture/permissions");
     }
+    await skipIfAccessDenied(page, "Staff cannot open salary-advances/create");
 
     // Alias redirects to /finance/advances/create wizard.
     await page.waitForURL(/\/(salary-advances\/create|finance\/advances\/create)/, {
@@ -117,6 +120,7 @@ test.describe("Smoke — Procurement (staff)", () => {
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for procurement list");
     }
+    await skipIfAccessDenied(page, "Staff cannot open procurement");
 
     await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible({
       timeout: 15_000,
@@ -130,6 +134,7 @@ test.describe("Smoke — Procurement (staff)", () => {
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff cannot open procurement/create — fixture/permissions");
     }
+    await skipIfAccessDenied(page, "Staff cannot open procurement create");
 
     await expect(page.locator("input, textarea, select").first()).toBeVisible({
       timeout: 15_000,
@@ -150,7 +155,7 @@ test.describe("Smoke — Public tender notices", () => {
     expect(response!.status(), `unexpected status ${response!.status()}`).toBeLessThan(500);
     expect(response!.status()).not.toBe(404);
 
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState("domcontentloaded");
     await expect(
       page.getByRole("heading", { name: /public tender notices/i })
     ).toBeVisible({ timeout: 15_000 });

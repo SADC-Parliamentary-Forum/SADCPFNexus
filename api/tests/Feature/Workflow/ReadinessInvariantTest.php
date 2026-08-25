@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Workflow;
 
-use App\Models\LeaveRequest;
 use App\Models\LeaveBalance;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\Tenant;

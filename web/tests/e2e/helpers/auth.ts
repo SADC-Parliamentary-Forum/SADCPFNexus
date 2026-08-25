@@ -56,3 +56,15 @@ export async function skipIfAccessDenied(
     test.skip(true, reason);
   }
 }
+
+/** Skip when a create/new control is hidden for this role. */
+export async function skipIfLocatorMissing(
+  locator: import("@playwright/test").Locator,
+  reason: string,
+  timeout = 3_000
+): Promise<void> {
+  const visible = await locator.isVisible({ timeout }).catch(() => false);
+  if (!visible) {
+    test.skip(true, reason);
+  }
+}

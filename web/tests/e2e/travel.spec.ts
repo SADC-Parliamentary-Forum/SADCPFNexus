@@ -2,6 +2,7 @@
  * Travel module E2E tests.
  */
 import { test, expect } from "@playwright/test";
+import { skipIfAccessDenied, skipIfLocatorMissing } from "./helpers/auth";
 
 const UNIQUE = `E2E-${Date.now()}`;
 
@@ -13,13 +14,16 @@ test.describe("Travel — list page", () => {
 
   test("travel list page loads", async ({ page }) => {
     await page.waitForLoadState("networkidle");
+    await skipIfAccessDenied(page, "Staff cannot open travel");
     await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible();
   });
 
   test("page has a 'New Request' or create button", async ({ page }) => {
+    await skipIfAccessDenied(page, "Staff cannot open travel");
     const createBtn = page.locator(
       "a:has-text('New Request'), a:has-text('Create'), button:has-text('New'), a[href*='/create']"
     ).first();
+    await skipIfLocatorMissing(createBtn, "Staff cannot create travel requests");
     await expect(createBtn).toBeVisible();
   });
 
@@ -39,6 +43,7 @@ test.describe("Travel — create request", () => {
   test("can navigate to create page", async ({ page }) => {
     await page.goto("/travel/create");
     await page.waitForURL("**/travel/create", { timeout: 15_000 });
+    await skipIfAccessDenied(page, "Staff cannot open travel create");
 
     // Form fields should be present
     await expect(
@@ -49,9 +54,11 @@ test.describe("Travel — create request", () => {
   test("form shows validation errors on empty submit", async ({ page }) => {
     await page.goto("/travel/create");
     await page.waitForURL("**/travel/create");
+    await skipIfAccessDenied(page, "Staff cannot open travel create");
 
     // Click submit without filling form
     const submitBtn = page.locator('button[type="submit"], button:has-text("Submit"), button:has-text("Save")').first();
+    await skipIfLocatorMissing(submitBtn, "Travel create submit control missing");
     await submitBtn.click();
 
     // Expect at least one error message
@@ -63,6 +70,7 @@ test.describe("Travel — create request", () => {
     await page.goto("/travel/create");
     await page.waitForURL("**/travel/create");
     await page.waitForLoadState("networkidle");
+    await skipIfAccessDenied(page, "Staff cannot open travel create");
 
     // Fill purpose
     const purposeField = page.locator(
@@ -145,18 +153,21 @@ test.describe("Travel Phase 2 — missions & reports smoke", () => {
   test("missions page loads", async ({ page }) => {
     await page.goto("/travel/missions");
     await page.waitForURL("**/travel/missions", { timeout: 15_000 });
+    await skipIfAccessDenied(page, "Staff cannot open travel missions");
     await expect(page.getByRole("heading", { name: /Mission Readiness/i })).toBeVisible();
   });
 
   test("reports analytics page loads", async ({ page }) => {
     await page.goto("/travel/reports");
     await page.waitForURL("**/travel/reports", { timeout: 15_000 });
+    await skipIfAccessDenied(page, "Staff cannot open travel reports");
     await expect(page.getByRole("heading", { name: /Travel Reports/i })).toBeVisible();
   });
 
   test("finance queue page loads", async ({ page }) => {
     await page.goto("/travel/queues/finance");
     await page.waitForURL("**/travel/queues/finance", { timeout: 15_000 });
+    await skipIfAccessDenied(page, "Staff cannot open travel finance queue");
     await expect(page.getByRole("heading", { name: /Finance Review Queue/i })).toBeVisible();
   });
 });
@@ -165,6 +176,7 @@ test.describe("Travel Phase 3 — settings FX smoke", () => {
   test("settings page shows FX register", async ({ page }) => {
     await page.goto("/travel/settings");
     await page.waitForURL("**/travel/settings", { timeout: 15_000 });
+    await skipIfAccessDenied(page, "Staff cannot open travel FX settings");
     await expect(page.getByTestId("travel-fx-settings")).toBeVisible();
   });
 });

@@ -68,6 +68,27 @@ jobs:
         working-directory: web
         run: npx playwright install chromium --with-deps
 
+      - name: Raise Postgres lock limits for large-schema RefreshDatabase
+        working-directory: api
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: sadcpfnexus
+          DB_USERNAME: sadcpf
+          DB_PASSWORD: secret
+        run: |
+          php -r '
+            $pdo = new PDO(
+              sprintf("pgsql:host=%s;port=%s;dbname=%s", getenv("DB_HOST"), getenv("DB_PORT"), getenv("DB_DATABASE")),
+              getenv("DB_USERNAME"),
+              getenv("DB_PASSWORD")
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $pdo->exec("ALTER SYSTEM SET max_locks_per_transaction = 1024");
+            $pdo->exec("ALTER SYSTEM SET max_pred_locks_per_transaction = 1024");
+            $pdo->query("SELECT pg_reload_conf()");
+          '
+
       - name: Migrate and seed database
         working-directory: api
         env:

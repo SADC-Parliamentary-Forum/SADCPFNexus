@@ -435,6 +435,7 @@ class LifecycleCaseService
             if ($group->isEmpty()) {
                 return true;
             }
+
             // At least one optional in each group must be complete if group exists
             return $group->contains(fn ($t) => $t->status === 'completed') || $group->every(fn ($t) => $t->status === 'pending');
         });
