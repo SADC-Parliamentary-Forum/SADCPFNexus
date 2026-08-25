@@ -4,7 +4,6 @@ namespace Tests\Feature\Admin;
 
 use App\Models\Tenant;
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class UsersTest extends TestCase
@@ -27,7 +26,7 @@ class UsersTest extends TestCase
 
         // Laravel paginator returns data at root level (no 'meta' wrapper)
         $response->assertOk()
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
 
         $this->assertGreaterThanOrEqual(1, count($response->json('data')));
     }
@@ -43,7 +42,7 @@ class UsersTest extends TestCase
         // Both tenants' users are listed (RLS disabled in tests), just verify 200 OK
         $response = $http->getJson('/api/v1/admin/users');
         $response->assertOk()
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
     }
 
     public function test_staff_cannot_list_admin_users(): void
@@ -60,14 +59,14 @@ class UsersTest extends TestCase
         [$http] = $this->asAdmin($tenant);
 
         $response = $http->postJson('/api/v1/admin/users', [
-            'name'       => 'Jane Doe',
-            'email'      => 'jane.doe@sadcpf.org',
-            'tenant_id'  => $tenant->id,
-            'role'       => 'staff',
+            'name' => 'Jane Doe',
+            'email' => 'jane.doe@sadcpf.org',
+            'tenant_id' => $tenant->id,
+            'role' => 'staff',
         ]);
 
         $response->assertCreated()
-                 ->assertJsonPath('user.email', 'jane.doe@sadcpf.org');
+            ->assertJsonPath('user.email', 'jane.doe@sadcpf.org');
 
         $this->assertDatabaseHas('users', ['email' => 'jane.doe@sadcpf.org']);
     }
@@ -77,8 +76,8 @@ class UsersTest extends TestCase
         [$http] = $this->asAdmin();
 
         $http->postJson('/api/v1/admin/users', [])
-             ->assertUnprocessable()
-             ->assertJsonValidationErrors(['name', 'email']);
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name', 'email']);
     }
 
     public function test_create_user_rejects_duplicate_email(): void
@@ -89,11 +88,11 @@ class UsersTest extends TestCase
         User::factory()->create(['email' => 'dup@sadcpf.org', 'tenant_id' => $tenant->id]);
 
         $http->postJson('/api/v1/admin/users', [
-            'name'       => 'Dup User',
-            'email'      => 'dup@sadcpf.org',
-            'tenant_id'  => $tenant->id,
+            'name' => 'Dup User',
+            'email' => 'dup@sadcpf.org',
+            'tenant_id' => $tenant->id,
         ])->assertUnprocessable()
-          ->assertJsonValidationErrors(['email']);
+            ->assertJsonValidationErrors(['email']);
     }
 
     // ── Update ───────────────────────────────────────────────────────────────
@@ -106,12 +105,12 @@ class UsersTest extends TestCase
         $user = User::factory()->create(['tenant_id' => $tenant->id, 'name' => 'Old Name']);
 
         $response = $http->putJson("/api/v1/admin/users/{$user->id}", [
-            'name'  => 'New Name',
+            'name' => 'New Name',
             'email' => $user->email,
         ]);
 
         $response->assertOk()
-                 ->assertJsonPath('user.name', 'New Name');
+            ->assertJsonPath('user.name', 'New Name');
 
         $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'New Name']);
     }
@@ -126,7 +125,7 @@ class UsersTest extends TestCase
         $user = User::factory()->create(['tenant_id' => $tenant->id, 'is_active' => true]);
 
         $http->deleteJson("/api/v1/admin/users/{$user->id}")
-             ->assertOk();
+            ->assertOk();
 
         $this->assertDatabaseHas('users', ['id' => $user->id, 'is_active' => false]);
     }
@@ -139,27 +138,34 @@ class UsersTest extends TestCase
         $user = User::factory()->create(['tenant_id' => $tenant->id, 'is_active' => false]);
 
         $http->postJson("/api/v1/admin/users/{$user->id}/reactivate")
-             ->assertOk();
+            ->assertOk();
 
         $this->assertDatabaseHas('users', ['id' => $user->id, 'is_active' => true]);
     }
 
     // ── Password change ───────────────────────────────────────────────────────
 
-    public function test_admin_can_change_user_password(): void
+    public function test_admin_change_password_sends_reset_and_rejects_plaintext(): void
     {
         $tenant = Tenant::factory()->create();
         [$http] = $this->asAdmin($tenant);
 
         $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $originalHash = $user->password;
 
         $http->postJson("/api/v1/admin/users/{$user->id}/change-password", [
-            'password'              => 'NewPassword@456',
+            'password' => 'NewPassword@456',
             'password_confirmation' => 'NewPassword@456',
-        ])->assertOk();
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['password']);
+
+        $http->postJson("/api/v1/admin/users/{$user->id}/change-password")
+            ->assertOk()
+            ->assertJsonPath('message', 'Password reset link sent.');
 
         $user->refresh();
-        $this->assertTrue(Hash::check('NewPassword@456', $user->password));
+        $this->assertSame($originalHash, $user->password);
+        $this->assertTrue((bool) $user->must_reset_password);
     }
 
     // ── Audit ─────────────────────────────────────────────────────────────────
@@ -171,8 +177,8 @@ class UsersTest extends TestCase
         $user = User::factory()->create(['tenant_id' => $tenant->id]);
 
         $http->getJson("/api/v1/admin/users/{$user->id}/audit")
-             ->assertOk()
-             ->assertJsonStructure(['data']);
+            ->assertOk()
+            ->assertJsonStructure(['data']);
     }
 
     // ── Search / Filter ───────────────────────────────────────────────────────
