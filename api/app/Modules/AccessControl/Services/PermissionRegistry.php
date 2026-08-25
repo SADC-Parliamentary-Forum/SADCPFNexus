@@ -28,7 +28,20 @@ class PermissionRegistry
 
     public function expandLegacy(string $legacyKey): array
     {
-        return config('access_control.legacy_aliases.'.$legacyKey, []);
+        // Alias keys contain dots (e.g. travel.view). Laravel's dotted
+        // config('legacy_aliases.'.$legacyKey) would look up nested
+        // ['travel']['view'], not the literal array key.
+        $aliases = config('access_control.legacy_aliases', []);
+        if (! is_array($aliases) || ! array_key_exists($legacyKey, $aliases)) {
+            return [];
+        }
+
+        $canonicals = $aliases[$legacyKey];
+        if (! is_array($canonicals)) {
+            return [];
+        }
+
+        return array_values(array_filter($canonicals, 'is_string'));
     }
 
     /**

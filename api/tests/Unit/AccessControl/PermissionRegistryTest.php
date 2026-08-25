@@ -36,6 +36,22 @@ class PermissionRegistryTest extends TestCase
         $this->assertSame(['a.read', 'b.read'], $permissions);
     }
 
+    public function test_expand_legacy_indexes_dotted_keys_literally(): void
+    {
+        config([
+            'access_control.legacy_aliases' => [
+                'travel.view' => ['travel.request.read.self', 'travel.module.view'],
+            ],
+        ]);
+
+        $canonicals = app(PermissionRegistry::class)->expandLegacy('travel.view');
+
+        $this->assertSame(
+            ['travel.request.read.self', 'travel.module.view'],
+            $canonicals
+        );
+    }
+
     public function test_legacy_travel_view_maps_to_self_read(): void
     {
         $keys = app(PermissionRegistry::class)->resolveEquivalents('travel.view');

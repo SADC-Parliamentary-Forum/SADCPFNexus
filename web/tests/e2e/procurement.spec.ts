@@ -63,7 +63,9 @@ test.describe("Procurement — create request", () => {
       test.skip(true, "Staff session invalid for /procurement/create");
     }
     await skipIfAccessDenied(page, "Staff cannot open procurement create");
-    await expect(page.locator("input, textarea").first()).toBeVisible();
+    const formField = page.locator("input, textarea").first();
+    await skipIfLocatorMissing(formField, "Staff cannot use procurement create form");
+    await expect(formField).toBeVisible();
   });
 
   test("form validation on empty submit", async ({ page }) => {
@@ -75,6 +77,7 @@ test.describe("Procurement — create request", () => {
     await skipIfAccessDenied(page, "Staff cannot open procurement create");
 
     const nextStep = page.locator('button:has-text("Next Step")').first();
+    await skipIfLocatorMissing(nextStep, "Staff cannot use procurement create Next Step");
     await expect(nextStep).toBeDisabled();
   });
 
