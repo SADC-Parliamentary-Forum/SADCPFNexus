@@ -86,11 +86,16 @@ class NotificationDispatchService
             }
         }
 
+        // Outbox consumption is deferred until afterCommit when the caller is
+        // already inside a DB transaction (user invite, workflow, etc.).
         return Notification::query()
             ->where('user_id', $recipient->id)
             ->where('trigger', $triggerKey)
             ->latest('id')
-            ->firstOrFail();
+            ->first() ?? new Notification([
+                'user_id' => $recipient->id,
+                'trigger' => $triggerKey,
+            ]);
     }
 
     public function publishEvent(array $data, bool $processInline = true): NotificationOutbox
@@ -231,6 +236,7 @@ class NotificationDispatchService
                     ['meta' => $meta, 'vars' => $vars],
                     $meta['coalesce_key'] ?? null,
                 );
+
                 continue;
             }
 
