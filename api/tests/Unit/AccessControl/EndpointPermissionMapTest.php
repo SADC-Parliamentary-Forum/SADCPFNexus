@@ -49,6 +49,28 @@ class EndpointPermissionMapTest extends TestCase
         $this->assertSame(['admin.roles.approve'], $map->permissionsForRoute($route));
     }
 
+    public function test_matches_registry_id_placeholder_to_named_route_parameter(): void
+    {
+        $map = new EndpointPermissionMap($this->registry([
+            'procurement.evaluation.read.assigned' => [
+                'linked_endpoints' => [
+                    'GET /api/v1/procurement/committee-evaluations/{id}',
+                ],
+            ],
+        ]), []);
+
+        $route = new LaravelRoute(
+            ['GET'],
+            'api/v1/procurement/committee-evaluations/{procurementRequest}',
+            ['uses' => fn () => null]
+        );
+
+        $this->assertSame(
+            ['procurement.evaluation.read.assigned'],
+            $map->permissionsForRoute($route)
+        );
+    }
+
     public function test_extracts_route_middleware_permission_groups_without_losing_and_semantics(): void
     {
         $map = new EndpointPermissionMap($this->registry([]), []);

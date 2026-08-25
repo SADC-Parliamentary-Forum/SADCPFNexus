@@ -146,6 +146,9 @@ return [
             'GET' => ['procurement.view', 'procurement.admin', 'procurement.manage_vendors', 'procurement.supplier.read'],
             'WRITE' => ['procurement.manage_vendors', 'procurement.admin', 'procurement.supplier.approve', 'procurement.create'],
         ]],
+        ['pattern' => 'api/v1/procurement/committee-evaluations*', 'permissions' => [
+            'READ' => ['procurement.evaluation.read.assigned'],
+        ]],
         ['pattern' => 'api/v1/procurement*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin'],
             'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
@@ -256,10 +259,10 @@ return [
             'DELETE' => ['pif.admin'],
         ]],
         ['pattern' => 'api/v1/leave*', 'permissions' => [
-            'READ' => ['leave.view', 'leave.approve', 'leave.admin'],
-            'POST' => ['leave.create', 'leave.approve', 'leave.admin'],
-            'PUT' => ['leave.create', 'leave.approve', 'leave.admin'],
-            'PATCH' => ['leave.create', 'leave.approve', 'leave.admin'],
+            'READ' => ['leave.view', 'leave.approve', 'leave.admin', 'leave.module.view', 'leave.request.read.self'],
+            'POST' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.create.self', 'leave.request.submit.created', 'leave.request.withdraw.created'],
+            'PUT' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.edit.created'],
+            'PATCH' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.edit.created'],
             'DELETE' => ['leave.admin'],
         ]],
         ['pattern' => 'api/v1/documents*', 'permissions' => [

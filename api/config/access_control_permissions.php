@@ -1255,7 +1255,7 @@ return [
         'data_classification' => 'Internal',
         'mfa_required' => false,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => ['POST /api/v1/leave/requests/{leaveRequest}/submit'],
     ],
     'leave.request.withdraw.created' => [
         'display_name' => 'Withdraw leave',
@@ -1544,6 +1544,7 @@ return [
         'linked_endpoints' => [
             'GET /api/v1/procurement/committee-evaluations',
             'GET /api/v1/procurement/committee-evaluations/{id}',
+            'GET /api/v1/procurement/committee-evaluations/{procurementRequest}',
         ],
     ],
     'procurement.evaluation.score.assigned' => [

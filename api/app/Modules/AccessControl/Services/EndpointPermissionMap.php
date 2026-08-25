@@ -63,7 +63,7 @@ class EndpointPermissionMap
         $permissions = [];
 
         foreach ($this->endpointKeys($route, $method) as $key) {
-            $permissions = array_merge($permissions, $this->registeredEndpoints()[$key] ?? []);
+            $permissions = array_merge($permissions, $this->lookupRegistered($key));
         }
 
         return array_values(array_unique($permissions));
@@ -200,6 +200,23 @@ class EndpointPermissionMap
         [$method, $uri] = array_pad(explode(' ', $endpoint, 2), 2, '');
 
         return strtoupper($method).' /'.ltrim($uri, '/');
+    }
+
+    /**
+     * Registry entries often use `{id}` while Laravel routes use `{leaveRequest}`.
+     *
+     * @return list<string>
+     */
+    private function lookupRegistered(string $key): array
+    {
+        $registered = $this->registeredEndpoints();
+        $permissions = $registered[$key] ?? [];
+        $generic = preg_replace('/\{[^}]+\}/', '{id}', $key) ?? $key;
+        if ($generic !== $key) {
+            $permissions = array_merge($permissions, $registered[$generic] ?? []);
+        }
+
+        return $permissions;
     }
 
     private function normalizeMethod(string $method): string

@@ -94,7 +94,7 @@ function StatPill({ label, value, color = "text-neutral-900", href }: {
   const inner = (
     <div className="flex flex-col items-center py-3 px-2 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer">
       <span className={`text-xl font-bold ${color}`}>{value}</span>
-      <span className="text-[10px] text-neutral-400 mt-0.5">{label}</span>
+      <span className="text-[10px] text-neutral-700 mt-0.5">{label}</span>
     </div>
   );
   return href ? <Link href={href}>{inner}</Link> : <div>{inner}</div>;
@@ -242,7 +242,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
             {greeting}{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-neutral-700 dark:text-neutral-300 mt-0.5">
             {dateLabel} · Here&apos;s your workspace overview.
           </p>
         </div>
@@ -274,9 +274,9 @@ export default function DashboardPage() {
               </div>
               <div>
                 <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Customize Dashboard</h3>
-                <p className="text-xs text-neutral-400">Show or hide sections</p>
+                <p className="text-xs text-neutral-700">Show or hide sections</p>
               </div>
-              <button type="button" onClick={() => setShowCustomize(false)} className="ml-auto text-neutral-400 hover:text-neutral-600">
+              <button type="button" onClick={() => setShowCustomize(false)} className="ml-auto text-neutral-700 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
@@ -284,7 +284,7 @@ export default function DashboardPage() {
               {ALL_WIDGETS.map((w_) => (
                 <label key={w_.id} className="flex items-center justify-between rounded-xl border border-neutral-100 dark:border-neutral-700/50 bg-neutral-50 dark:bg-neutral-700/30 px-3 py-2.5 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700/60 transition-colors">
                   <div className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-[18px] text-neutral-400">{w_.icon}</span>
+                    <span className="material-symbols-outlined text-[18px] text-neutral-700">{w_.icon}</span>
                     <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">{w_.label}</span>
                   </div>
                   <div
@@ -296,7 +296,7 @@ export default function DashboardPage() {
                 </label>
               ))}
             </div>
-            <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-4 text-center">Preferences are saved in your browser.</p>
+            <p className="text-xs text-neutral-700 dark:text-neutral-500 mt-4 text-center">Preferences are saved in your browser.</p>
           </div>
         </div>
       )}
@@ -307,13 +307,13 @@ export default function DashboardPage() {
           <Link key={key} href={href} className={`card p-5 border ${border} hover:shadow-elevated transition-all hover:border-primary/30 group`}>
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">{label}</p>
+                <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider">{label}</p>
                 <p className="mt-2 text-3xl font-bold text-neutral-900 dark:text-neutral-100">
                   {loading
                     ? <span className="inline-block h-8 w-12 animate-pulse rounded-md bg-neutral-100 dark:bg-neutral-700/40" />
                     : stats ? String(stats[key]) : "—"}
                 </p>
-                <p className="mt-1 text-xs text-neutral-400 group-hover:text-primary transition-colors">View →</p>
+                <p className="mt-1 text-xs text-neutral-700 group-hover:text-primary transition-colors">View →</p>
               </div>
               <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${bg}`}>
                 <span className={`material-symbols-outlined ${color} text-[22px]`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
@@ -329,10 +329,10 @@ export default function DashboardPage() {
         <div className="lg:col-span-2 card">
           <div className="card-header">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-neutral-400 text-[18px]">history</span>
+              <span className="material-symbols-outlined text-neutral-700 text-[18px]">history</span>
               <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Recent Activity</h3>
             </div>
-            <Link href="/travel" className="text-xs text-neutral-400 hover:text-primary transition-colors">View all</Link>
+            <Link href="/travel" className="text-xs text-neutral-700 hover:text-primary transition-colors">View all</Link>
           </div>
           {activityLoading ? (
             <div className="divide-y divide-neutral-50 dark:divide-neutral-800">
@@ -349,7 +349,7 @@ export default function DashboardPage() {
           ) : activity.length === 0 ? (
             <div className="px-5 py-10 text-center">
               <span className="material-symbols-outlined text-4xl text-neutral-200">inbox</span>
-              <p className="mt-2 text-sm text-neutral-400">No recent activity</p>
+              <p className="mt-2 text-sm text-neutral-700">No recent activity</p>
               <div className="flex justify-center gap-3 mt-4">
                 <Link href="/travel/create" className="btn-primary text-xs py-2 px-3 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">add</span>New Travel
@@ -371,9 +371,9 @@ export default function DashboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">{a.ref}</span>
-                        <span className="text-[10px] text-neutral-400 uppercase font-medium">{a.module}</span>
+                        <span className="text-[10px] text-neutral-700 uppercase font-medium">{a.module}</span>
                       </div>
-                      <p className="text-[11px] text-neutral-400">{formatDateShort(a.date)}</p>
+                      <p className="text-[11px] text-neutral-700">{formatDateShort(a.date)}</p>
                     </div>
                     <span className={`badge text-[10px] ${STATUS_BADGE[a.status] ?? "badge-muted"}`}>{a.status.replace(/_/g, " ")}</span>
                   </Link>
@@ -387,15 +387,15 @@ export default function DashboardPage() {
         <div className="card">
           <div className="card-header">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-neutral-400 text-[18px]">calendar_month</span>
+              <span className="material-symbols-outlined text-neutral-700 text-[18px]">calendar_month</span>
               <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Upcoming Events</h3>
             </div>
-            <Link href="/workplan" className="text-xs text-neutral-400 hover:text-primary transition-colors">View all</Link>
+            <Link href="/workplan" className="text-xs text-neutral-700 hover:text-primary transition-colors">View all</Link>
           </div>
           {upcomingEvents.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <span className="material-symbols-outlined text-3xl text-neutral-200">calendar_today</span>
-              <p className="text-xs text-neutral-400 mt-2">No upcoming events</p>
+              <p className="text-xs text-neutral-700 mt-2">No upcoming events</p>
               <Link href="/workplan/new" className="mt-3 inline-block text-xs font-semibold text-primary hover:underline">Add event</Link>
             </div>
           ) : (
@@ -411,7 +411,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">{e.title}</p>
-                      <p className="text-[10px] text-neutral-400">{formatDateShort(e.date)}</p>
+                      <p className="text-[10px] text-neutral-700">{formatDateShort(e.date)}</p>
                     </div>
                   </>
                 );
@@ -430,12 +430,12 @@ export default function DashboardPage() {
       <div className="card">
         <div className="card-header">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-neutral-400 text-[18px]">task_alt</span>
+            <span className="material-symbols-outlined text-neutral-700 text-[18px]">task_alt</span>
             <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
               {showFullAssignments ? "Assignments Overview" : "My Assignments"}
             </h3>
           </div>
-          <Link href="/assignments" className="text-xs text-neutral-400 hover:text-primary transition-colors">
+          <Link href="/assignments" className="text-xs text-neutral-700 hover:text-primary transition-colors">
             View all
           </Link>
         </div>
@@ -451,7 +451,7 @@ export default function DashboardPage() {
                 <StatPill label="Blocked" value={assignStats.blocked} href="/assignments/blocked" color="text-red-500" />
                 <StatPill label="Overdue" value={assignStats.overdue} href="/assignments/overdue" color="text-red-600" />
                 <StatPill label="Due Soon" value={assignStats.due_soon} color="text-amber-600" />
-                <StatPill label="Completed" value={assignStats.completed} color="text-neutral-400" />
+                <StatPill label="Completed" value={assignStats.completed} color="text-neutral-700" />
                 <StatPill label="My Pending" value={assignStats.my_pending} color="text-blue-600" />
               </>
             ) : (
@@ -481,12 +481,12 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                      <span className="text-[10px] font-mono text-neutral-400">{a.reference_number}</span>
+                      <span className="text-[10px] font-mono text-neutral-700">{a.reference_number}</span>
                       <span className={`badge text-[10px] ${statusCls}`}>{statusLabel}</span>
                     </div>
                     <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">{a.title}</p>
                     {showFullAssignments && a.assignee && (
-                      <p className="text-[10px] text-neutral-400">{a.assignee.name}</p>
+                      <p className="text-[10px] text-neutral-700">{a.assignee.name}</p>
                     )}
                   </div>
                   <div className="flex-shrink-0 text-right">
@@ -494,7 +494,7 @@ export default function DashboardPage() {
                       <div className="w-14 h-1.5 rounded-full bg-neutral-100 dark:bg-neutral-700/40 overflow-hidden">
                         <div className="h-full rounded-full bg-primary" style={{ width: `${a.progress_percent}%` }} />
                       </div>
-                      <span className="text-[10px] text-neutral-400">{a.progress_percent}%</span>
+                      <span className="text-[10px] text-neutral-700">{a.progress_percent}%</span>
                     </div>
                   </div>
                 </Link>
@@ -504,7 +504,7 @@ export default function DashboardPage() {
         ) : (
           <div className="px-5 py-7 text-center">
             <span className="material-symbols-outlined text-3xl text-neutral-200">check_circle</span>
-            <p className="text-xs text-neutral-400 mt-1.5">No urgent assignments</p>
+            <p className="text-xs text-neutral-700 mt-1.5">No urgent assignments</p>
           </div>
         )}
       </div>
@@ -513,7 +513,7 @@ export default function DashboardPage() {
       {quickActionsToShow.length > 0 && <div className="card">
         <div className="card-header">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-neutral-400 text-[18px]">bolt</span>
+            <span className="material-symbols-outlined text-neutral-700 text-[18px]">bolt</span>
             <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Quick Actions</h3>
           </div>
         </div>
@@ -540,7 +540,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{m.label}</p>
-                <p className="text-[10px] text-neutral-400">{m.desc}</p>
+                <p className="text-[10px] text-neutral-700">{m.desc}</p>
               </div>
             </Link>
           ))}

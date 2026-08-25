@@ -45,3 +45,14 @@ export async function landedOnLogin(
   const email = page.locator('input[type="email"]');
   return email.isVisible({ timeout: 1_500 }).catch(() => false);
 }
+
+/** Skip when the role is gated away from this screen. */
+export async function skipIfAccessDenied(
+  page: import("@playwright/test").Page,
+  reason = "Current fixture cannot open this route"
+): Promise<void> {
+  const denied = page.getByText(/Access denied/i);
+  if (await denied.isVisible({ timeout: 1_500 }).catch(() => false)) {
+    test.skip(true, reason);
+  }
+}

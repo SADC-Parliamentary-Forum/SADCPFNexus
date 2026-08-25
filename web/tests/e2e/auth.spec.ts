@@ -3,6 +3,7 @@
  * Run under the "auth" project (no pre-stored state — tests the login UI itself).
  */
 import { test, expect } from "@playwright/test";
+import { webApiHeaders } from "./helpers/api";
 
 test.describe("Login page", () => {
   test.beforeEach(async ({ page }) => {
@@ -50,7 +51,9 @@ test.describe("Login page", () => {
 
     await page.waitForURL("**/dashboard", { timeout: 15_000 });
 
-    const meResponse = await page.request.get("/api/auth/me");
+    const meResponse = await page.request.get("/api/auth/me", {
+      headers: webApiHeaders(),
+    });
     expect(meResponse.ok()).toBeTruthy();
     const me = await meResponse.json();
     const email = me.email ?? me.user?.email ?? me.data?.email;
@@ -164,7 +167,9 @@ test.describe("Logout", () => {
     await page.waitForURL("**/login**", { timeout: 10_000 });
     expect(page.url()).toContain("login");
 
-    const meResponse = await page.request.get("/api/auth/me");
+    const meResponse = await page.request.get("/api/auth/me", {
+      headers: webApiHeaders(),
+    });
     expect(meResponse.status()).toBe(401);
   });
 });

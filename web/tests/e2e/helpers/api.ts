@@ -16,11 +16,22 @@ export function webApiUrl(path: string): string {
   return `${WEB_API_PREFIX}${normalised}`;
 }
 
-export function apiClient(request: APIRequestContext) {
-  const headers = {
+const WEB_ORIGIN = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+
+/** Sanctum SPA auth requires Origin/Referer on the Next origin, not Laravel. */
+export function webApiHeaders(extra: Record<string, string> = {}): Record<string, string> {
+  return {
     Accept: "application/json",
     "Content-Type": "application/json",
+    Origin: WEB_ORIGIN,
+    Referer: `${WEB_ORIGIN}/`,
+    "X-Requested-With": "XMLHttpRequest",
+    ...extra,
   };
+}
+
+export function apiClient(request: APIRequestContext) {
+  const headers = webApiHeaders();
 
   return {
     async get(path: string) {

@@ -321,11 +321,7 @@ class LifecycleCaseService
 
     public function reopenTask(LifecycleTaskInstance $task, User $actor, int $revision): LifecycleTaskInstance
     {
-        if (
-            ! $actor->can('lifecycle.admin')
-            && ! $actor->can('lifecycle.manage-onboarding')
-            && ! $actor->can('lifecycle.manage-separation')
-        ) {
+        if (! $actor->can('lifecycle.admin') && ! $actor->can('lifecycle.manage-onboarding') && ! $actor->can('lifecycle.manage-separation')) {
             abort(403);
         }
 

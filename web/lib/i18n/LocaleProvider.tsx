@@ -128,7 +128,7 @@ export function LocaleIconSwitcher({ className = "" }: { className?: string }) {
                   type="button"
                   className={`flex w-full items-center justify-between px-3 py-2 text-sm transition-colors ${
                     locale === code
-                      ? "bg-primary/10 text-primary font-semibold"
+                      ? "bg-blue-800 text-white font-semibold"
                       : "text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50"
                   }`}
                   onClick={() => {

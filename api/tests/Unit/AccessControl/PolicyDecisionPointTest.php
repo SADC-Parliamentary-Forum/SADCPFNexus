@@ -214,7 +214,7 @@ class PolicyDecisionPointTest extends TestCase
         app(AccessScopeResolver::class)->constrainQuery($query, $staff, 'requester_id', ['module' => 'leave']);
 
         $ids = $query->pluck('requester_id')->unique()->all();
-        $this->assertSame([(int) $staff->id], array_map('intval', $ids));
+        $this->assertSame([intval($staff->id)], array_map('intval', $ids));
     }
 
     public function test_expired_acting_context_denies_approval(): void
