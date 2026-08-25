@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { lifecycleApi } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/authAccess";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -27,6 +29,9 @@ export default function LifecycleTemplatesAdminPage() {
   const queryClient = useQueryClient();
   const { confirm } = useConfirm();
   const { success, error: toastError } = useToast();
+  const user = getStoredUser();
+  const canEdit = hasPermission(user, ["lifecycle.templates.edit", "lifecycle.admin"]);
+  const canPublish = hasPermission(user, ["lifecycle.templates.publish", "lifecycle.admin"]);
 
   const templatesQuery = useQuery({
     queryKey: ["lifecycle", "templates"],
@@ -105,12 +110,12 @@ export default function LifecycleTemplatesAdminPage() {
                     <button
                       type="button"
                       className="btn-secondary text-xs"
-                      disabled={cloneDraft.isPending || publish.isPending || !tpl.published_version?.id}
+                      disabled={cloneDraft.isPending || publish.isPending || !canEdit || !tpl.published_version?.id || Boolean(draft?.id)}
                       onClick={() => cloneDraft.mutate(tpl)}
                     >
-                      New draft from published
+                      {draft?.id ? "Draft already open" : "New draft from published"}
                     </button>
-                    {draft?.id ? (
+                    {draft?.id && canPublish ? (
                       <button
                         type="button"
                         data-testid="lifecycle-template-publish"

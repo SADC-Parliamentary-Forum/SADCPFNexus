@@ -3,11 +3,14 @@
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { lifecycleApi } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/authAccess";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { ClearanceEditor } from "@/components/lifecycle/ClearanceEditor";
 
 function apiError(err: unknown, fallback: string): string {
   const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
@@ -18,6 +21,8 @@ function apiError(err: unknown, fallback: string): string {
 export default function LifecycleMyTasksPage() {
   const queryClient = useQueryClient();
   const { success, error: toastError } = useToast();
+  const user = getStoredUser();
+  const canClearance = hasPermission(user, ["lifecycle.complete-department-tasks", "lifecycle.admin"]);
 
   const tasksQuery = useQuery({
     queryKey: ["lifecycle", "my-tasks"],
@@ -79,7 +84,7 @@ export default function LifecycleMyTasksPage() {
                     </Link>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="badge badge-muted capitalize">{String(task.status ?? "")}</span>
-                      {task.status !== "completed" ? (
+                      {task.status !== "completed" && !clearance ? (
                         <button
                           type="button"
                           data-testid="lifecycle-my-task-complete"
@@ -92,30 +97,20 @@ export default function LifecycleMyTasksPage() {
                       ) : null}
                     </div>
                   </div>
-                  {clearance ? (
-                    <label className="block max-w-xs text-xs font-semibold text-neutral-700" htmlFor={`lifecycle-my-task-clearance-${taskId}`}>
-                      Clearance
-                      <select
-                        id={`lifecycle-my-task-clearance-${taskId}`}
-                        data-testid="lifecycle-my-task-clearance"
-                        className="input mt-1 w-full"
-                        value={["pending", "cleared", "not_cleared"].includes(clearance) ? clearance : clearance}
-                        disabled={completeTask.isPending || updateClearance.isPending || clearance === "exception_pending" || clearance === "exception_approved"}
-                        onChange={(e) =>
-                          updateClearance.mutate({
-                            taskId,
-                            clearance_status: e.target.value,
-                            revision,
-                          })
-                        }
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="cleared">Cleared</option>
-                        <option value="not_cleared">Not cleared</option>
-                        {clearance === "exception_pending" ? <option value="exception_pending">Exception pending</option> : null}
-                        {clearance === "exception_approved" ? <option value="exception_approved">Exception approved</option> : null}
-                      </select>
-                    </label>
+                  {clearance && canClearance ? (
+                    <ClearanceEditor
+                      taskId={taskId}
+                      current={clearance}
+                      disabled={completeTask.isPending || updateClearance.isPending}
+                      testId="lifecycle-my-task-clearance"
+                      onSave={(status) =>
+                        updateClearance.mutate({
+                          taskId,
+                          clearance_status: status,
+                          revision,
+                        })
+                      }
+                    />
                   ) : null}
                 </li>
               );

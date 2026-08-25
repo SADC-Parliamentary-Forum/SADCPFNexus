@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { lifecycleApi } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/authAccess";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
@@ -11,6 +13,7 @@ import { formatDateShort } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { ClearanceEditor } from "@/components/lifecycle/ClearanceEditor";
 
 type LifecycleTask = {
   id: number;
@@ -44,9 +47,16 @@ export default function LifecycleCaseDetailPage() {
   const queryClient = useQueryClient();
   const { confirm } = useConfirm();
   const { success, error: toastError } = useToast();
+  const user = getStoredUser();
+  const canReopen = hasPermission(user, ["lifecycle.admin"]);
+  const canClearance = hasPermission(user, ["lifecycle.complete-department-tasks", "lifecycle.admin"]);
+  const canApproveException = hasPermission(user, ["lifecycle.approve-exceptions", "lifecycle.admin"]);
+  const canTerminal = hasPermission(user, ["lifecycle.manage-separation", "lifecycle.admin"]);
+  const canFinalise = hasPermission(user, ["lifecycle.finalise-separation", "lifecycle.admin"]);
   const [exceptionReasons, setExceptionReasons] = useState<Record<number, string>>({});
   const [exceptionNotes, setExceptionNotes] = useState<Record<number, string>>({});
   const [actionError, setActionError] = useState<string | null>(null);
+  const [latestRevision, setLatestRevision] = useState<number | null>(null);
 
   const caseQuery = useQuery({
     queryKey: ["lifecycle", "case", caseId],
@@ -145,7 +155,9 @@ export default function LifecycleCaseDetailPage() {
 
   const approveTerminal = useMutation({
     mutationFn: (revision: number) => lifecycleApi.approveTerminalPayment(caseId, revision),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      const revision = (res.data as { data?: { revision?: number } })?.data?.revision;
+      if (revision != null) setLatestRevision(Number(revision));
       setActionError(null);
       success("Terminal payment approved");
       invalidate();
@@ -165,10 +177,13 @@ export default function LifecycleCaseDetailPage() {
   });
 
   const data = caseQuery.data;
+  useEffect(() => {
+    if (data?.revision != null) setLatestRevision(Number(data.revision));
+  }, [data?.revision]);
   const stages = (data?.stages as Array<{ name: string; tasks: LifecycleTask[] }>) ?? [];
   const exceptions = (data?.exceptions as LifecycleException[] | undefined) ?? [];
   const isSeparation = data?.lifecycle_type === "separation";
-  const caseRevision = Number(data?.revision ?? 1);
+  const caseRevision = latestRevision ?? Number(data?.revision ?? 1);
   const pending = completeTask.isPending || reopenTask.isPending || updateClearance.isPending
     || requestException.isPending || approveException.isPending || approveTerminal.isPending || finalise.isPending;
 
@@ -235,7 +250,7 @@ export default function LifecycleCaseDetailPage() {
                             {clearance ? (
                               <span className="badge badge-muted capitalize">{clearance.replaceAll("_", " ")}</span>
                             ) : null}
-                            {task.status !== "completed" ? (
+                            {task.status !== "completed" && !clearance ? (
                               <button
                                 type="button"
                                 className="btn-secondary text-xs"
@@ -244,7 +259,8 @@ export default function LifecycleCaseDetailPage() {
                               >
                                 Complete
                               </button>
-                            ) : (
+                            ) : null}
+                            {task.status === "completed" && canReopen ? (
                               <button
                                 type="button"
                                 className="btn-secondary text-xs"
@@ -253,32 +269,25 @@ export default function LifecycleCaseDetailPage() {
                               >
                                 Reopen
                               </button>
-                            )}
+                            ) : null}
                           </div>
                         </div>
 
-                        {isSeparation && task.clearance_status != null ? (
+                        {isSeparation && task.clearance_status != null && canClearance ? (
                           <div className="grid gap-3 sm:grid-cols-2">
-                            <FormField label="Clearance" htmlFor={`lifecycle-clearance-status-${taskId}`}>
-                              <select
-                                id={`lifecycle-clearance-status-${taskId}`}
-                                data-testid="lifecycle-clearance-status"
-                                className="input w-full"
-                                value={["pending", "cleared", "not_cleared"].includes(clearance) ? clearance : "pending"}
-                                disabled={pending || clearance === "exception_pending" || clearance === "exception_approved"}
-                                onChange={(e) =>
-                                  updateClearance.mutate({
-                                    taskId,
-                                    clearance_status: e.target.value,
-                                    revision,
-                                  })
-                                }
-                              >
-                                <option value="pending">Pending</option>
-                                <option value="cleared">Cleared</option>
-                                <option value="not_cleared">Not cleared</option>
-                              </select>
-                            </FormField>
+                            <ClearanceEditor
+                              taskId={taskId}
+                              current={clearance}
+                              disabled={pending}
+                              testId="lifecycle-clearance-status"
+                              onSave={(status) =>
+                                updateClearance.mutate({
+                                  taskId,
+                                  clearance_status: status,
+                                  revision,
+                                })
+                              }
+                            />
                             {clearance === "not_cleared" ? (
                               <FormField label="Exception reason" htmlFor={`lifecycle-exception-reason-${taskId}`}>
                                 <div className="flex gap-2">
@@ -333,7 +342,7 @@ export default function LifecycleCaseDetailPage() {
                         notes: exception.resolution_notes ?? "—",
                       }}
                     />
-                    {exception.status === "pending" ? (
+                    {exception.status === "pending" && canApproveException ? (
                       <div className="flex flex-wrap items-end gap-2">
                         <FormField label="Resolution notes" htmlFor={`lifecycle-exception-notes-${exception.id}`}>
                           <input
@@ -348,13 +357,19 @@ export default function LifecycleCaseDetailPage() {
                         <button
                           type="button"
                           className="btn-primary text-xs"
-                          disabled={pending}
-                          onClick={() =>
+                          disabled={pending || !canApproveException}
+                          onClick={async () => {
+                            const ok = await confirm({
+                              title: "Approve this exception?",
+                              message: "This records an authorised waiver. It does not post payroll.",
+                              confirmText: "Approve",
+                            });
+                            if (!ok) return;
                             approveException.mutate({
                               exceptionId: exception.id,
                               notes: (exceptionNotes[exception.id] ?? "").trim() || undefined,
-                            })
-                          }
+                            });
+                          }}
                         >
                           Approve exception
                         </button>
@@ -381,8 +396,15 @@ export default function LifecycleCaseDetailPage() {
                   <button
                     type="button"
                     className="btn-secondary text-sm"
-                    disabled={pending || !terminalQuery.data?.allowed || Boolean(data.terminal_payment_approved_at)}
-                    onClick={() => approveTerminal.mutate(caseRevision)}
+                    disabled={pending || caseQuery.isFetching || !canTerminal || !terminalQuery.data?.allowed || Boolean(data.terminal_payment_approved_at)}
+                    onClick={async () => {
+                      const ok = await confirm({
+                        title: "Approve terminal payment gate?",
+                        message: "This records that clearance is resolved. It does not post a payment.",
+                        confirmText: "Approve gate",
+                      });
+                      if (ok) approveTerminal.mutate(caseRevision);
+                    }}
                   >
                     {data.terminal_payment_approved_at ? "Terminal payment approved" : "Approve terminal payment"}
                   </button>
@@ -390,7 +412,7 @@ export default function LifecycleCaseDetailPage() {
                     type="button"
                     data-testid="lifecycle-finalise"
                     className="btn-primary text-sm"
-                    disabled={pending || data.status === "completed"}
+                    disabled={pending || caseQuery.isFetching || !canFinalise || data.status === "completed"}
                     onClick={async () => {
                       const ok = await confirm({
                         title: "Finalise this separation?",

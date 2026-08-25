@@ -29,6 +29,9 @@ test("lifecycle case detail wires clearance, exceptions, terminal payment, and f
   assert.match(page, /lifecycle-exception-reason/);
   assert.match(page, /lifecycle-finalise/);
   assert.match(page, /useConfirm/);
+  assert.match(page, /hasPermission/);
+  assert.match(page, /ClearanceEditor/);
+  assert.match(page, /latestRevision|setLatestRevision/);
 });
 
 test("lifecycle my-tasks can complete and clear without leaving the queue", () => {
@@ -37,6 +40,8 @@ test("lifecycle my-tasks can complete and clear without leaving the queue", () =
   assert.match(page, /lifecycleApi\.updateClearance/);
   assert.match(page, /lifecycle-my-task-complete/);
   assert.match(page, /lifecycle-my-task-clearance/);
+  assert.match(page, /ClearanceEditor/);
+  assert.match(page, /!clearance/);
 });
 
 test("lifecycle templates can clone a draft and publish it", () => {
@@ -47,6 +52,7 @@ test("lifecycle templates can clone a draft and publish it", () => {
   assert.match(page, /draft_version/);
   assert.match(page, /lifecycle-template-publish/);
   assert.match(page, /useConfirm/);
+  assert.match(page, /Draft already open/);
 });
 
 test("audit findings create, issue, and never auto-close", () => {
@@ -56,6 +62,7 @@ test("audit findings create, issue, and never auto-close", () => {
   assert.match(page, /auditApi\.issueFinding/);
   assert.match(page, /never auto-closes|Never auto-closes/);
   assert.match(page, /\/audit\/findings\/\$\{/);
+  assert.match(page, /r\.redacted/);
 });
 
 test("audit finding detail supports respond and corrective actions", () => {
@@ -64,6 +71,8 @@ test("audit finding detail supports respond and corrective actions", () => {
   assert.match(page, /auditApi\.respondFinding/);
   assert.match(page, /auditApi\.createCorrective/);
   assert.match(page, /does not close the finding|does not close/);
+  assert.match(page, /owner_user_id/);
+  assert.match(page, /issued && canRespond|issued && canManageCa/);
 });
 
 test("audit corrective actions can complete and verify without auto-close", () => {
@@ -81,4 +90,5 @@ test("assignment handover pack picks from and to staff", () => {
   assert.match(page, /to_user_id/);
   assert.match(page, /handover-from-user/);
   assert.match(page, /handover-to-user/);
+  assert.match(page, /pack\.isError/);
 });

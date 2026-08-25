@@ -122,6 +122,9 @@ export default function AssignmentHandoverPage() {
       )}
 
       {pack.isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
+      {pack.isError ? (
+        <p className="text-sm text-red-600">Could not load this handover pack. You may not be authorised for that owner.</p>
+      ) : null}
       <div className="card overflow-x-auto" data-testid="assignment-handover-pack">
         <table className="min-w-full text-sm">
           <thead>

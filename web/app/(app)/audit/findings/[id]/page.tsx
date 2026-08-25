@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { auditApi } from "@/lib/api";
+import { auditApi, tenantUsersApi } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/authAccess";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
@@ -28,11 +30,22 @@ export default function AuditFindingDetailPage() {
   const [agrees, setAgrees] = useState(true);
   const [caTitle, setCaTitle] = useState("");
   const [caDue, setCaDue] = useState("");
+  const [caOwner, setCaOwner] = useState("");
+  const user = getStoredUser();
+  const canRespond = hasPermission(user, ["audit.response.manage", "audit.admin"]);
+  const canManageCa = hasPermission(user, ["audit.corrective.manage", "audit.admin"]);
 
   const findingQuery = useQuery({
     queryKey: ["audit", "finding", findingId],
     queryFn: async () => (await auditApi.getFinding(findingId)).data.data,
     enabled: Number.isFinite(findingId),
+  });
+  const issued = findingQuery.data ? String((findingQuery.data as Record<string, unknown>).status ?? "") !== "draft" : false;
+
+  const usersQuery = useQuery({
+    queryKey: ["tenant-users", "audit-ca"],
+    queryFn: async () => (await tenantUsersApi.list()).data.data ?? [],
+    enabled: issued && canManageCa,
   });
 
   const finding = (findingQuery.data ?? {}) as Record<string, unknown>;
@@ -58,6 +71,7 @@ export default function AuditFindingDetailPage() {
       auditApi.createCorrective(findingId, {
         title: caTitle.trim(),
         due_date: caDue || undefined,
+        owner_user_id: caOwner ? Number(caOwner) : undefined,
       }),
     onSuccess: () => {
       setCaTitle("");
@@ -96,7 +110,7 @@ export default function AuditFindingDetailPage() {
       />
 
       {findingQuery.isLoading ? <p className="text-sm text-neutral-500">Loading finding…</p> : null}
-      {findingQuery.isError ? <p className="text-sm text-red-600">Failed to load this finding.</p> : null}
+      {findingQuery.isError ? <p className="text-sm text-red-600">This finding is not available.</p> : null}
 
       {findingQuery.data ? (
         <>
@@ -146,6 +160,7 @@ export default function AuditFindingDetailPage() {
                 ))}
               </ul>
             )}
+            {issued && canRespond ? (
             <form
               className="space-y-3"
               onSubmit={(e) => {
@@ -177,6 +192,9 @@ export default function AuditFindingDetailPage() {
                 {respond.isPending ? "Saving..." : "Record response"}
               </button>
             </form>
+            ) : (
+              <p className="text-sm text-neutral-500">Responses can be recorded after the finding is issued.</p>
+            )}
           </FormSection>
 
           <FormSection title="Corrective actions">
@@ -201,6 +219,7 @@ export default function AuditFindingDetailPage() {
                 ))}
               </ul>
             )}
+            {issued && canManageCa ? (
             <form
               className="grid gap-3 sm:grid-cols-2"
               onSubmit={(e) => {
@@ -218,6 +237,20 @@ export default function AuditFindingDetailPage() {
                   disabled={createCorrective.isPending}
                 />
               </FormField>
+              <FormField label="Owner" htmlFor="audit-ca-owner">
+                <select
+                  id="audit-ca-owner"
+                  className="input w-full"
+                  value={caOwner}
+                  onChange={(e) => setCaOwner(e.target.value)}
+                  disabled={createCorrective.isPending}
+                >
+                  <option value="">Unassigned</option>
+                  {(usersQuery.data ?? []).map((person) => (
+                    <option key={person.id} value={person.id}>{person.name}</option>
+                  ))}
+                </select>
+              </FormField>
               <FormField label="Due date" htmlFor="audit-ca-due">
                 <input
                   id="audit-ca-due"
@@ -234,6 +267,7 @@ export default function AuditFindingDetailPage() {
                 </button>
               </div>
             </form>
+            ) : null}
             <p className="mt-3 text-xs">
               <Link className="text-primary" href="/audit/corrective-actions">Open corrective-action queue</Link>
             </p>

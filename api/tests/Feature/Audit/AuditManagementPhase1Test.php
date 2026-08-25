@@ -269,7 +269,21 @@ class AuditManagementPhase1Test extends TestCase
         }
         foreach ($rows as $row) {
             $this->assertNotSame('Secret payroll anomaly', $row['title'] ?? null);
+            $this->assertSame([], $row['corrective_actions'] ?? []);
         }
+
+        $listAll = $this->asUser($manager)->getJson('/api/v1/audit-management/findings?per_page=50');
+        $listAll->assertOk();
+        $allRows = $listAll->json('data') ?? [];
+        if (isset($allRows['data'])) {
+            $allRows = $allRows['data'];
+        }
+        $restricted = collect($allRows)->firstWhere('title', '[Restricted]');
+        $this->assertNotNull($restricted);
+        $this->assertSame([], $restricted['corrective_actions'] ?? []);
+
+        $id = AuditFinding::where('tenant_id', $auditor->tenant_id)->where('confidentiality_level', 'confidential')->value('id');
+        $this->asUser($manager)->getJson("/api/v1/audit-management/findings/{$id}")->assertNotFound();
     }
 
     public function test_universe_crud_basics(): void

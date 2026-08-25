@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { auditApi } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/authAccess";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -26,6 +28,9 @@ export default function AuditCorrectiveActionsPage() {
   const qc = useQueryClient();
   const { confirm } = useConfirm();
   const { success, error: toastError } = useToast();
+  const user = getStoredUser();
+  const canComplete = hasPermission(user, ["audit.corrective.manage", "audit.admin"]);
+  const canVerify = hasPermission(user, ["audit.corrective.verify", "audit.admin"]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["audit", "findings", "ca"],
@@ -73,7 +78,7 @@ export default function AuditCorrectiveActionsPage() {
           <EmptyState title="No open corrective-action findings" description="Issued findings with remediation in progress appear here." />
         ) : (
           <ul className="space-y-3">
-            {rows.map((r) => {
+            {rows.filter((r) => !r.redacted).map((r) => {
               const actions = (r.corrective_actions as Array<Record<string, unknown>> | undefined) ?? [];
               return (
                 <li key={String(r.id)} className="card p-4 space-y-3">
@@ -96,7 +101,7 @@ export default function AuditCorrectiveActionsPage() {
                           }}
                         />
                         <div className="mt-3 flex flex-wrap gap-2">
-                          {action.status !== "due_for_verification" && action.status !== "verified_closed" ? (
+                          {canComplete && action.status !== "due_for_verification" && action.status !== "verified_closed" ? (
                             <button
                               type="button"
                               className="btn-secondary text-xs"
@@ -106,7 +111,7 @@ export default function AuditCorrectiveActionsPage() {
                               Mark complete
                             </button>
                           ) : null}
-                          {action.status === "due_for_verification" ? (
+                          {canVerify && action.status === "due_for_verification" ? (
                             <>
                               <button
                                 type="button"

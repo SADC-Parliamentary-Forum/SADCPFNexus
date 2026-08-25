@@ -157,15 +157,19 @@ export default function AuditFindingsPage() {
                   <tr key={String(r.id)} className="border-b border-neutral-100">
                     <td className="p-2">{String(r.reference_number ?? "—")}</td>
                     <td className="p-2">
-                      <Link className="text-primary font-medium" href={`/audit/findings/${r.id}`}>
-                        {String(r.title)}
-                      </Link>
+                      {r.redacted ? (
+                        <span>{String(r.title)}</span>
+                      ) : (
+                        <Link className="text-primary font-medium" href={`/audit/findings/${r.id}`}>
+                          {String(r.title)}
+                        </Link>
+                      )}
                     </td>
                     <td className="p-2 capitalize">{String(r.rating ?? "—")}</td>
                     <td className="p-2">{String(r.status)}</td>
                     <td className="p-2">{String(r.confidentiality_level)}</td>
                     <td className="p-2">
-                      {r.status === "draft" ? (
+                      {r.status === "draft" && !r.redacted ? (
                         <button
                           type="button"
                           className="btn-secondary text-xs"
@@ -182,7 +186,7 @@ export default function AuditFindingsPage() {
                           Issue
                         </button>
                       ) : (
-                        <span className="text-xs text-neutral-400">Issued</span>
+                        <span className="text-xs text-neutral-400 capitalize">{String(r.status).replaceAll("_", " ")}</span>
                       )}
                     </td>
                   </tr>
