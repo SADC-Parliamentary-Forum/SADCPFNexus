@@ -75,6 +75,10 @@ test.describe("Timesheet templates admin", () => {
     await expect(row).toBeVisible();
     page.once("dialog", (d) => d.accept());
     await row.getByRole("button", { name: /deactivate/i }).click();
+    const confirmDeactivate = page.getByRole("button", { name: /^Deactivate$/i });
+    if (await confirmDeactivate.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await confirmDeactivate.click();
+    }
     await expect(row.getByText(/inactive/i)).toBeVisible({ timeout: 15_000 });
   });
 

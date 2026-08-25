@@ -321,7 +321,11 @@ class LifecycleCaseService
 
     public function reopenTask(LifecycleTaskInstance $task, User $actor, int $revision): LifecycleTaskInstance
     {
-        if (! $actor->can('lifecycle.admin') && ! $actor->can('lifecycle.manage-onboarding') && ! $actor->can('lifecycle.manage-separation')) {
+        if (
+            ! $actor->can('lifecycle.admin')
+            && ! $actor->can('lifecycle.manage-onboarding')
+            && ! $actor->can('lifecycle.manage-separation')
+        ) {
             abort(403);
         }
 
@@ -345,16 +349,16 @@ class LifecycleCaseService
 
     public function dashboard(User $user): array
     {
-        $base = LifecycleCase::where('tenant_id', $user->tenant_id);
+        $tenantId = $user->tenant_id;
 
         return [
-            'onboarding_open' => (clone $base)->where('lifecycle_type', 'onboarding')->where('status', 'in_progress')->count(),
-            'separation_open' => (clone $base)->where('lifecycle_type', 'separation')->where('status', 'in_progress')->count(),
-            'internal_open' => (clone $base)->whereIn('lifecycle_type', ['transfer', 'promotion', 'probation'])
+            'onboarding_open' => LifecycleCase::where('tenant_id', $tenantId)->where('lifecycle_type', 'onboarding')->where('status', 'in_progress')->count(),
+            'separation_open' => LifecycleCase::where('tenant_id', $tenantId)->where('lifecycle_type', 'separation')->where('status', 'in_progress')->count(),
+            'internal_open' => LifecycleCase::where('tenant_id', $tenantId)->whereIn('lifecycle_type', ['transfer', 'promotion', 'probation'])
                 ->where('status', 'in_progress')->count(),
-            'awaiting_clearance' => (clone $base)->where('lifecycle_type', 'separation')
+            'awaiting_clearance' => LifecycleCase::where('tenant_id', $tenantId)->where('lifecycle_type', 'separation')
                 ->where('terminal_payment_blocked', true)->count(),
-            'ready_onboarding' => (clone $base)->where('lifecycle_type', 'onboarding')
+            'ready_onboarding' => LifecycleCase::where('tenant_id', $tenantId)->where('lifecycle_type', 'onboarding')
                 ->whereJsonContains('readiness->ready', true)->count(),
         ];
     }

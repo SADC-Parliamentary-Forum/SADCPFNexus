@@ -2,6 +2,7 @@
  * Notifications E2E tests.
  */
 import { test, expect } from "@playwright/test";
+import { webApiUrl } from "./helpers/api";
 
 test.describe("Notification Centre", () => {
   test.beforeEach(async ({ page }) => {
@@ -15,9 +16,10 @@ test.describe("Notification Centre", () => {
   });
 
   test("All / Unread / Read tabs are present", async ({ page }) => {
-    const allTab = page.locator("button:has-text('All'), [role='tab']:has-text('All')").first();
+    await page.getByRole("button", { name: /My Notifications/i }).click();
+    const allTab = page.getByRole("button", { name: /^All/i }).first();
     await expect(allTab).toBeVisible();
-    const unreadTab = page.locator("button:has-text('Unread'), [role='tab']:has-text('Unread')").first();
+    const unreadTab = page.getByRole("button", { name: /Unread/i }).first();
     await expect(unreadTab).toBeVisible();
   });
 
@@ -45,9 +47,7 @@ test.describe("Notification bell in header", () => {
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
-    const bell = page.locator(
-      '[aria-label*="notification" i], .material-symbols-outlined:has-text("notifications"), [class*="bell"]'
-    ).first();
+    const bell = page.getByRole("button", { name: /Notifications/i }).first();
     await expect(bell).toBeVisible({ timeout: 5_000 });
   });
 
@@ -57,9 +57,7 @@ test.describe("Notification bell in header", () => {
     await page.goto("/dashboard");
     await page.waitForLoadState("networkidle");
 
-    const bell = page.locator(
-      '[aria-label*="notification" i], .material-symbols-outlined:has-text("notifications")'
-    ).first();
+    const bell = page.getByRole("button", { name: /Notifications/i }).first();
     if (await bell.isVisible({ timeout: 5_000 })) {
       await bell.click();
       // Either navigates to /notifications or shows a dropdown
@@ -77,8 +75,7 @@ test.describe("Notification bell in header", () => {
 
 test.describe("Notifications API", () => {
   test("unread count endpoint returns a number", async ({ request }) => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-    const res = await request.get(`${apiBase}/notifications/unread-count`);
+    const res = await request.get(webApiUrl("/notifications/unread-count"));
 
     expect(res.ok()).toBeTruthy();
     const body = await res.json();
@@ -86,8 +83,7 @@ test.describe("Notifications API", () => {
   });
 
   test("notifications list endpoint returns paginated data", async ({ request }) => {
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-    const res = await request.get(`${apiBase}/notifications`);
+    const res = await request.get(webApiUrl("/notifications"));
 
     expect(res.ok()).toBeTruthy();
     const body = await res.json();

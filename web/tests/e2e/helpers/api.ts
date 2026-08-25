@@ -1,11 +1,20 @@
 /**
  * Lightweight API helpers for Playwright tests.
  * Uses Playwright's APIRequestContext so all calls share cookies/headers.
+ *
+ * Browser login stores Sanctum session cookies on the Next.js origin
+ * (`http://localhost:3000`). Direct calls to Laravel (`:8000/api/v1`) do not
+ * send those cookies. Hit the Next rewrite prefix `/api/...` instead.
  */
-import { APIRequestContext, expect } from "@playwright/test";
+import { APIRequestContext } from "@playwright/test";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+/** Same-origin prefix that Next rewrites to Laravel `/api/v1`. */
+export const WEB_API_PREFIX = "/api";
+
+export function webApiUrl(path: string): string {
+  const normalised = path.startsWith("/") ? path : `/${path}`;
+  return `${WEB_API_PREFIX}${normalised}`;
+}
 
 export function apiClient(request: APIRequestContext) {
   const headers = {
@@ -15,26 +24,22 @@ export function apiClient(request: APIRequestContext) {
 
   return {
     async get(path: string) {
-      const res = await request.get(`${API_BASE}${path}`, { headers });
-      return res;
+      return request.get(webApiUrl(path), { headers });
     },
     async post(path: string, data: object = {}) {
-      const res = await request.post(`${API_BASE}${path}`, {
+      return request.post(webApiUrl(path), {
         headers,
         data,
       });
-      return res;
     },
     async put(path: string, data: object = {}) {
-      const res = await request.put(`${API_BASE}${path}`, {
+      return request.put(webApiUrl(path), {
         headers,
         data,
       });
-      return res;
     },
     async delete(path: string) {
-      const res = await request.delete(`${API_BASE}${path}`, { headers });
-      return res;
+      return request.delete(webApiUrl(path), { headers });
     },
   };
 }

@@ -212,7 +212,7 @@
   }
 
   .page-subtitle {
-    @apply text-sm text-neutral-500 mt-0.5;
+    @apply text-sm text-neutral-700 mt-0.5;
   }
 
   /* ── Legacy class bridges (pre–design-system pages) ─────────────────

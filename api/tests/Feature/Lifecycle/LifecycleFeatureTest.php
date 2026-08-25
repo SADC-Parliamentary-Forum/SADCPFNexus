@@ -6,7 +6,6 @@ use App\Models\HrContractType;
 use App\Models\HrGradeBand;
 use App\Models\HrPersonalFile;
 use App\Models\Lifecycle\LifecycleCase;
-use App\Models\Lifecycle\LifecycleException;
 use App\Models\Lifecycle\LifecycleJourneyTemplate;
 use App\Models\Lifecycle\LifecycleJourneyTemplateVersion;
 use App\Models\Lifecycle\LifecycleTaskInstance;

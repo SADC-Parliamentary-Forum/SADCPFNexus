@@ -159,14 +159,14 @@ export default function LoginPage() {
             />
             <div>
               <h1 className="text-lg font-bold leading-tight">SADC-PF Nexus</h1>
-              <p className="text-xs text-white/40">{t("auth.platform")}</p>
+              <p className="text-xs text-white/80">{t("auth.platform")}</p>
             </div>
           </div>
 
           <h2 className="text-3xl font-bold leading-snug mb-4">
             {t("auth.brandTitle")}
           </h2>
-          <p className="text-sm text-white/60 leading-relaxed mb-10">
+          <p className="text-sm text-white/80 leading-relaxed mb-10">
             {t("auth.brandDescription")}
           </p>
 
@@ -186,9 +186,9 @@ export default function LoginPage() {
         <div className="border-t border-white/10 pt-6">
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-green-400" />
-            <span className="text-xs text-white/50">{t("auth.operational")}</span>
+            <span className="text-xs text-white/80">{t("auth.operational")}</span>
           </div>
-          <p className="mt-3 text-xs text-white/30" suppressHydrationWarning>
+          <p className="mt-3 text-xs text-white/80" suppressHydrationWarning>
             {/* Use UTC year so SSR (Node) and the browser agree — local getFullYear()
                 can differ across timezones at year boundaries and trigger React #418. */}
             © {new Date().getUTCFullYear()} {t("auth.rights")}
@@ -208,14 +208,14 @@ export default function LoginPage() {
             />
             <div>
               <h1 className="text-base font-bold text-neutral-900">SADC-PF Nexus</h1>
-              <p className="text-xs text-neutral-400">{t("auth.platform")}</p>
+              <p className="text-xs text-neutral-700">{t("auth.platform")}</p>
             </div>
           </div>
 
           <div className="mb-8 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-2xl font-bold text-neutral-900">{t("login.title")}</h2>
-              <p className="text-sm text-neutral-500 mt-1">{t("login.subtitle")}</p>
+              <p className="text-sm text-neutral-700 mt-1">{t("login.subtitle")}</p>
             </div>
             <LocaleSwitcher />
           </div>
@@ -236,7 +236,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4" suppressHydrationWarning>
             <div suppressHydrationWarning>
-              <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
                 {t("login.email")}
               </label>
               <input
@@ -252,7 +252,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
+              <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
                 {t("login.password")}
               </label>
               <div className="relative">
@@ -270,7 +270,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPw(!showPw)}
                   aria-label={showPw ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-700 hover:text-neutral-900"
                 >
                   <span className="material-symbols-outlined text-[18px]">{showPw ? "visibility_off" : "visibility"}</span>
                 </button>
@@ -279,7 +279,7 @@ export default function LoginPage() {
 
             {mfaRequired && (
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-neutral-700 uppercase tracking-wider mb-2">
                   {t("login.mfa")}
                 </label>
                 <input
@@ -292,7 +292,7 @@ export default function LoginPage() {
                   inputMode="numeric"
                   autoComplete="one-time-code"
                 />
-                <p className="mt-2 text-xs text-neutral-400">
+                <p className="mt-2 text-xs text-neutral-700">
                   {t("login.mfaHint")}
                 </p>
               </div>
@@ -346,22 +346,22 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div className="mt-6 text-center text-xs text-neutral-500 space-y-1.5">
+          <div className="mt-6 text-center text-xs text-neutral-700 space-y-1.5">
             <p>
-              <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+              <Link href="/forgot-password" className="font-medium text-blue-800 hover:underline">
                 {t("login.resetPassword")}
               </Link>
               {" "}{t("login.or")}{" "}
-              <Link href="/request-password" className="font-medium text-primary hover:underline">
+              <Link href="/request-password" className="font-medium text-blue-800 hover:underline">
                 {t("login.requestPassword")}
               </Link>
               {" "}{t("login.forAccounts")}
             </p>
-            <p className="text-neutral-400">{t("login.mailboxHelp")}</p>
+            <p className="text-neutral-700">{t("login.mailboxHelp")}</p>
           </div>
-          <div className="mt-3 text-center text-xs text-neutral-500">
+          <div className="mt-3 text-center text-xs text-neutral-700">
             {t("login.supplierOnboarding")}{" "}
-            <Link href="/supplier/register" className="font-medium text-primary hover:underline">
+            <Link href="/supplier/register" className="font-medium text-blue-800 hover:underline">
               {t("login.supplierRegister")}
             </Link>
           </div>
