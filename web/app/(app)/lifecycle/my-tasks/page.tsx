@@ -8,6 +8,8 @@ import { hasPermission } from "@/lib/authAccess";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { QueryStatus } from "@/components/ui/QueryStatus";
+import { StatusPill } from "@/components/ui/StatusPill";
 import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { ClearanceEditor } from "@/components/lifecycle/ClearanceEditor";
@@ -51,7 +53,7 @@ export default function LifecycleMyTasksPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="page-container">
       <ModulePageHeader
         title="My lifecycle tasks"
         subtitle="Complete departmental tasks and clearance from this queue. Open the case for exceptions and finalise."
@@ -61,21 +63,21 @@ export default function LifecycleMyTasksPage() {
       />
 
       <FormSection title="Assigned to you">
-        {tasksQuery.isLoading ? <p className="text-sm text-neutral-500">Loading…</p> : null}
-        {tasksQuery.isError ? <p className="text-sm text-red-600">Failed to load tasks.</p> : null}
-        {!tasksQuery.isLoading && tasks.length === 0 ? (
+        <QueryStatus isLoading={tasksQuery.isLoading} isError={tasksQuery.isError} error="Failed to load tasks." />
+        {!tasksQuery.isLoading && !tasksQuery.isError && tasks.length === 0 ? (
           <EmptyState title="No lifecycle tasks" description="Tasks from your cases and departmental queues appear here." />
-        ) : (
+        ) : null}
+        {!tasksQuery.isLoading && tasks.length > 0 ? (
           <ul className="space-y-3">
             {tasks.map((task) => {
               const taskId = Number(task.id);
               const revision = Number(task.revision ?? 1);
               const clearance = task.clearance_status ? String(task.clearance_status) : "";
               return (
-                <li key={String(task.id)} className="card p-4 space-y-3">
+                <li key={String(task.id)} className="rounded-xl border border-neutral-200 p-4 space-y-3 dark:border-neutral-700">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <Link href={`/lifecycle/cases/${task.case_id ?? ""}`} className="min-w-0 hover:text-primary">
-                      <p className="font-semibold text-neutral-900">{String(task.title ?? "Task")}</p>
+                      <p className="font-semibold text-neutral-900 dark:text-neutral-100">{String(task.title ?? "Task")}</p>
                       <p className="text-xs text-neutral-500 mt-1">
                         {String(task.case_reference ?? "")}
                         {task.employee_name ? ` · ${String(task.employee_name)}` : ""}
@@ -83,7 +85,7 @@ export default function LifecycleMyTasksPage() {
                       </p>
                     </Link>
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="badge badge-muted capitalize">{String(task.status ?? "")}</span>
+                      <StatusPill value={String(task.status ?? "")} />
                       {task.status !== "completed" && !clearance ? (
                         <button
                           type="button"
@@ -116,7 +118,7 @@ export default function LifecycleMyTasksPage() {
               );
             })}
           </ul>
-        )}
+        ) : null}
       </FormSection>
     </div>
   );

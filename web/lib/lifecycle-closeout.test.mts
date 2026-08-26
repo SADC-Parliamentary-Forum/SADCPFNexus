@@ -32,6 +32,9 @@ test("lifecycle case detail wires clearance, exceptions, terminal payment, and f
   assert.match(page, /hasPermission/);
   assert.match(page, /ClearanceEditor/);
   assert.match(page, /latestRevision|setLatestRevision/);
+  assert.match(page, /QueryStatus/);
+  assert.match(page, /StatusPill/);
+  assert.match(page, /page-container/);
 });
 
 test("lifecycle my-tasks can complete and clear without leaving the queue", () => {
@@ -91,4 +94,20 @@ test("assignment handover pack picks from and to staff", () => {
   assert.match(page, /handover-from-user/);
   assert.match(page, /handover-to-user/);
   assert.match(page, /pack\.isError/);
+  assert.match(page, /ModulePageHeader/);
+  assert.match(page, /QueryStatus/);
+  assert.match(page, /EmptyState/);
+  assert.match(page, /form-input/);
+  assert.match(page, /assignment-handover-pack/);
+});
+
+test("lifecycle and audit hubs use shared page chrome", () => {
+  const css = readFileSync(join(webRoot, "app/globals.css"), "utf8");
+  assert.match(css, /\.form-input,\s*\n\s*\.input/);
+  const lifecycleHub = readFileSync(join(webRoot, "lib/hubs/lifecycle.ts"), "utf8");
+  assert.doesNotMatch(lifecycleHub, /lifecycle\/cases\/1/);
+  const auditDash = readFileSync(join(webRoot, "app/(app)/audit/page.tsx"), "utf8");
+  assert.match(auditDash, /page-container/);
+  assert.match(auditDash, /filter-tab/);
+  assert.match(auditDash, /QueryStatus/);
 });

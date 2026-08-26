@@ -41,7 +41,7 @@ export function FormSection({
             </div>
           ) : null}
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-neutral-900">{title}</h2>
+            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{title}</h2>
             {description ? <p className="mt-0.5 text-xs text-neutral-500">{description}</p> : null}
           </div>
         </div>
@@ -66,7 +66,7 @@ interface FormFieldProps {
 export function FormField({ label, htmlFor, required, hint, error, children, className }: FormFieldProps) {
   return (
     <label className={cn("block space-y-1.5", className)} htmlFor={htmlFor}>
-      <span className="block text-xs font-semibold text-neutral-700">
+      <span className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300">
         {label}
         {required ? <span className="ml-0.5 text-red-500">*</span> : null}
       </span>

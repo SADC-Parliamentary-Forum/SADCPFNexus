@@ -193,7 +193,8 @@
   }
 
   /* Form inputs */
-  .form-input {
+  .form-input,
+  .input {
     @apply w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition;
   }
 
@@ -229,6 +230,11 @@
 
   .table-wrap {
     @apply overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-card;
+  }
+
+  [data-theme="dark"] .table-wrap {
+    background-color: var(--dk-bg-surface);
+    border-color: var(--dk-border-default);
   }
 
   .table-wrap > .data-table,
@@ -313,7 +319,9 @@
 
   /* Highlight unedited inputs */
   .form-input:placeholder-shown,
-  select.form-input:invalid {
+  .input:placeholder-shown,
+  select.form-input:invalid,
+  select.input:invalid {
     @apply border-amber-300 bg-amber-50/50;
   }
 
@@ -377,17 +385,20 @@
   }
 
   /* ── Form inputs ─────────────────────────────────────────────────── */
-  [data-theme="dark"] .form-input {
+  [data-theme="dark"] .form-input,
+  [data-theme="dark"] .input {
     background-color: var(--dk-bg-elevated);
     border-color: var(--dk-border-default);
     color: var(--dk-text-primary);
   }
 
-  [data-theme="dark"] .form-input::placeholder {
+  [data-theme="dark"] .form-input::placeholder,
+  [data-theme="dark"] .input::placeholder {
     color: var(--dk-text-muted);
   }
 
-  [data-theme="dark"] .form-input:focus {
+  [data-theme="dark"] .form-input:focus,
+  [data-theme="dark"] .input:focus {
     border-color: var(--dk-accent);
     box-shadow: 0 0 0 3px var(--dk-accent-subtle);
     outline: none;
@@ -395,7 +406,9 @@
 
   /* Suppress the amber "unfilled" highlight in dark mode */
   [data-theme="dark"] .form-input:placeholder-shown,
-  [data-theme="dark"] select.form-input:invalid {
+  [data-theme="dark"] .input:placeholder-shown,
+  [data-theme="dark"] select.form-input:invalid,
+  [data-theme="dark"] select.input:invalid {
     border-color: var(--dk-border-default);
     background-color: var(--dk-bg-elevated);
   }

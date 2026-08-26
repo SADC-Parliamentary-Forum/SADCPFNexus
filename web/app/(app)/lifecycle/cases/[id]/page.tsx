@@ -11,6 +11,8 @@ import { FormField, FormSection } from "@/components/ui/FormSection";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { formatDateShort } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { QueryStatus } from "@/components/ui/QueryStatus";
+import { StatusPill } from "@/components/ui/StatusPill";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { ClearanceEditor } from "@/components/lifecycle/ClearanceEditor";
@@ -188,10 +190,10 @@ export default function LifecycleCaseDetailPage() {
     || requestException.isPending || approveException.isPending || approveTerminal.isPending || finalise.isPending;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="page-container">
       <ModulePageHeader
         title={String(data?.reference ?? "Lifecycle case")}
-        subtitle={`${String(data?.lifecycle_type ?? "")} · ${String(data?.status ?? "")}`}
+        subtitle={`${String(data?.lifecycle_type ?? "").replaceAll("_", " ")} journey`}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
@@ -200,11 +202,11 @@ export default function LifecycleCaseDetailPage() {
             ]}
           />
         }
+        meta={data ? <StatusPill value={String(data.status ?? "")} /> : null}
       />
 
-      {caseQuery.isLoading ? <p className="text-sm text-neutral-500">Loading case…</p> : null}
-      {caseQuery.isError ? <p className="text-sm text-red-600">Failed to load case.</p> : null}
-      {actionError ? <p className="text-sm text-red-600">{actionError}</p> : null}
+      <QueryStatus isLoading={caseQuery.isLoading} isError={caseQuery.isError} error="Failed to load case." />
+      {actionError ? <div className="alert alert-error" role="alert">{actionError}</div> : null}
 
       {data ? (
         <>
@@ -235,10 +237,10 @@ export default function LifecycleCaseDetailPage() {
                     const revision = Number(task.revision ?? 1);
                     const clearance = task.clearance_status ? String(task.clearance_status) : "";
                     return (
-                      <li key={String(task.id)} className="card p-4 space-y-3">
+                      <li key={String(task.id)} className="rounded-xl border border-neutral-200 p-4 space-y-3 dark:border-neutral-700">
                         <div className="flex items-start justify-between gap-4">
                           <div>
-                            <p className="font-medium text-neutral-900">{String(task.title)}</p>
+                            <p className="font-medium text-neutral-900 dark:text-neutral-100">{String(task.title)}</p>
                             <p className="text-xs text-neutral-500 mt-1">
                               {String(task.assignee_role ?? "")}
                               {task.due_date ? ` · Due ${formatDateShort(String(task.due_date))}` : ""}
@@ -246,10 +248,8 @@ export default function LifecycleCaseDetailPage() {
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="badge badge-muted capitalize">{String(task.status)}</span>
-                            {clearance ? (
-                              <span className="badge badge-muted capitalize">{clearance.replaceAll("_", " ")}</span>
-                            ) : null}
+                            <StatusPill value={String(task.status)} />
+                            {clearance ? <StatusPill value={clearance} /> : null}
                             {task.status !== "completed" && !clearance ? (
                               <button
                                 type="button"
@@ -294,7 +294,7 @@ export default function LifecycleCaseDetailPage() {
                                   <input
                                     id={`lifecycle-exception-reason-${taskId}`}
                                     data-testid="lifecycle-exception-reason"
-                                    className="input flex-1"
+                                    className="form-input flex-1"
                                     value={exceptionReasons[taskId] ?? ""}
                                     onChange={(e) =>
                                       setExceptionReasons((prev) => ({ ...prev, [taskId]: e.target.value }))
@@ -329,11 +329,11 @@ export default function LifecycleCaseDetailPage() {
 
           <FormSection title="Exceptions">
             {exceptions.length === 0 ? (
-              <p className="text-sm text-neutral-500">No clearance exceptions on this case.</p>
+              <EmptyState title="No clearance exceptions" description="Exceptions appear here when a clearance is waived." />
             ) : (
               <ul className="space-y-3">
                 {exceptions.map((exception) => (
-                  <li key={exception.id} className="card p-4 space-y-2">
+                  <li key={exception.id} className="rounded-xl border border-neutral-200 p-4 space-y-2 dark:border-neutral-700">
                     <LabelledRecord
                       value={{
                         type: exception.exception_type,
@@ -347,7 +347,7 @@ export default function LifecycleCaseDetailPage() {
                         <FormField label="Resolution notes" htmlFor={`lifecycle-exception-notes-${exception.id}`}>
                           <input
                             id={`lifecycle-exception-notes-${exception.id}`}
-                            className="input w-full min-w-[16rem]"
+                            className="form-input w-full min-w-[16rem]"
                             value={exceptionNotes[exception.id] ?? ""}
                             onChange={(e) =>
                               setExceptionNotes((prev) => ({ ...prev, [exception.id]: e.target.value }))
@@ -430,22 +430,24 @@ export default function LifecycleCaseDetailPage() {
             </FormSection>
           ) : null}
 
-          <FormSection title="Timeline">
+          <FormSection title="Timeline" icon="history">
             {(timelineQuery.data ?? []).length === 0 ? (
-              <p className="text-sm text-neutral-500">No events recorded yet.</p>
+              <EmptyState title="No events recorded yet" />
             ) : (
-              <ul className="space-y-2 text-sm">
+              <ol className="relative space-y-4 pl-2">
+                <div className="absolute left-4 top-2 bottom-2 w-0.5 bg-neutral-100 dark:bg-neutral-800" aria-hidden />
                 {(timelineQuery.data ?? []).map((event) => (
-                  <li key={String(event.id)} className="flex gap-3">
-                    <span className="text-neutral-400 whitespace-nowrap">
+                  <li key={String(event.id)} className="relative flex gap-3 pl-8">
+                    <span className="absolute left-2.5 top-1 flex h-3 w-3 rounded-full border-2 border-primary bg-white dark:bg-neutral-900" />
+                    <span className="text-neutral-400 whitespace-nowrap text-xs pt-0.5">
                       {event.created_at ? formatDateShort(String(event.created_at)) : "—"}
                     </span>
-                    <span>
-                      {String(event.event_type)} · {String(event.actor ?? "System")}
+                    <span className="text-sm">
+                      {String(event.event_type).replaceAll("_", " ")} · {String(event.actor ?? "System")}
                     </span>
                   </li>
                 ))}
-              </ul>
+              </ol>
             )}
           </FormSection>
         </>

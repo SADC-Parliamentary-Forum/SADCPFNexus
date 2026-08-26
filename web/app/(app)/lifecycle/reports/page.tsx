@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { lifecycleApi, type LifecycleAnalytics, type LifecycleCaseSummary } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
+import { QueryStatus } from "@/components/ui/QueryStatus";
+import { StatusPill } from "@/components/ui/StatusPill";
 import { formatDateShort } from "@/lib/utils";
 
 const TYPES: Array<{ key: string; label: string }> = [
@@ -17,9 +19,9 @@ const TYPES: Array<{ key: string; label: string }> = [
 
 function Kpi({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900">
+    <div className="card p-5">
       <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</p>
-      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{value}</p>
     </div>
   );
 }
@@ -54,7 +56,7 @@ export default function LifecycleReportsPage() {
   const aging = analytics?.clearance_aging;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="page-container">
       <ModulePageHeader
         title="Lifecycle reports"
         subtitle="Cycle time, bottlenecks, and clearance aging for onboarding, separation, transfer, promotion, and probation."
@@ -63,9 +65,7 @@ export default function LifecycleReportsPage() {
         }
       />
 
-      {analyticsQuery.isError ? (
-        <p className="text-sm text-red-600">Could not load analytics. Refresh or try again.</p>
-      ) : null}
+      <QueryStatus isError={analyticsQuery.isError} error="Could not load analytics. Refresh or try again." />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Kpi label="Open exceptions" value={analytics?.exceptions_open ?? "—"} />
@@ -75,26 +75,26 @@ export default function LifecycleReportsPage() {
       </div>
 
       <FormSection title="Cycle time by journey">
-        {analyticsQuery.isLoading ? <p className="text-sm text-neutral-500">Loading analytics…</p> : null}
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
+        <QueryStatus isLoading={analyticsQuery.isLoading} />
+        <div className="table-wrap">
+          <table className="data-table">
             <thead>
-              <tr className="border-b text-left text-neutral-500">
-                <th className="py-2 pr-4">Journey</th>
-                <th className="py-2 pr-4">Open</th>
-                <th className="py-2 pr-4">Completed</th>
-                <th className="py-2">Avg cycle (days)</th>
+              <tr>
+                <th>Journey</th>
+                <th>Open</th>
+                <th>Completed</th>
+                <th>Avg cycle (days)</th>
               </tr>
             </thead>
             <tbody>
               {TYPES.map((type) => {
                 const row = analytics?.by_type[type.key];
                 return (
-                  <tr key={type.key} className="border-b border-neutral-100 dark:border-neutral-800">
-                    <td className="py-2 pr-4">{type.label}</td>
-                    <td className="py-2 pr-4 tabular-nums">{row?.open ?? "—"}</td>
-                    <td className="py-2 pr-4 tabular-nums">{row?.completed ?? "—"}</td>
-                    <td className="py-2 tabular-nums">
+                  <tr key={type.key}>
+                    <td>{type.label}</td>
+                    <td className="tabular-nums">{row?.open ?? "—"}</td>
+                    <td className="tabular-nums">{row?.completed ?? "—"}</td>
+                    <td className="tabular-nums">
                       {row?.avg_cycle_days == null ? "—" : row.avg_cycle_days}
                     </td>
                   </tr>
@@ -131,28 +131,30 @@ export default function LifecycleReportsPage() {
         { title: "Separation cases", rows: separationQuery.data ?? [], loading: separationQuery.isLoading },
       ] as Array<{ title: string; rows: LifecycleCaseSummary[]; loading: boolean }>).map((section) => (
         <FormSection key={section.title} title={section.title}>
-          {section.loading ? <p className="text-sm text-neutral-500">Loading…</p> : null}
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+          <QueryStatus isLoading={section.loading} />
+          <div className="table-wrap">
+            <table className="data-table">
               <thead>
-                <tr className="text-left text-neutral-500 border-b">
-                  <th className="py-2 pr-4">Reference</th>
-                  <th className="py-2 pr-4">Employee</th>
-                  <th className="py-2 pr-4">Start</th>
-                  <th className="py-2">Status</th>
+                <tr>
+                  <th>Reference</th>
+                  <th>Employee</th>
+                  <th>Start</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {section.rows.map((row) => (
-                  <tr key={row.id} className="border-b border-neutral-100">
-                    <td className="py-2 pr-4">
-                      <Link href={`/lifecycle/cases/${row.id}`} className="text-primary">
+                  <tr key={row.id}>
+                    <td>
+                      <Link href={`/lifecycle/cases/${row.id}`} className="font-medium text-primary">
                         {row.reference}
                       </Link>
                     </td>
-                    <td className="py-2 pr-4">{row.employee_name ?? "—"}</td>
-                    <td className="py-2 pr-4">{row.start_date ? formatDateShort(row.start_date) : "—"}</td>
-                    <td className="py-2 capitalize">{row.status}</td>
+                    <td>{row.employee_name ?? "—"}</td>
+                    <td>{row.start_date ? formatDateShort(row.start_date) : "—"}</td>
+                    <td>
+                      <StatusPill value={row.status} />
+                    </td>
                   </tr>
                 ))}
               </tbody>

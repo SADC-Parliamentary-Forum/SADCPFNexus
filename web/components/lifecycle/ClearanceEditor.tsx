@@ -36,7 +36,7 @@ export function ClearanceEditor({
         <select
           id={`${testId}-${taskId}`}
           data-testid={testId}
-          className="input flex-1 min-w-[10rem]"
+          className="form-input flex-1 min-w-[10rem]"
           value={displayValue}
           disabled={locked}
           onChange={(e) => setValue(e.target.value)}

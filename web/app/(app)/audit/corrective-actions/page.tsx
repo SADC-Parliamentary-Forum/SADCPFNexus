@@ -8,6 +8,8 @@ import { hasPermission } from "@/lib/authAccess";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { QueryStatus } from "@/components/ui/QueryStatus";
+import { StatusPill } from "@/components/ui/StatusPill";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
@@ -62,7 +64,7 @@ export default function AuditCorrectiveActionsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="page-container">
       <ModulePageHeader
         title="Corrective actions"
         subtitle="Corrective actions create Assignments. Assignment completion moves items to Due for Audit Verification — it does not close the finding."
@@ -72,21 +74,21 @@ export default function AuditCorrectiveActionsPage() {
       />
 
       <FormSection title="Open remediation">
-        {isLoading ? <p className="text-sm text-neutral-500">Loading…</p> : null}
-        {isError ? <p className="text-sm text-red-600">Failed to load corrective actions.</p> : null}
-        {!isLoading && rows.length === 0 ? (
+        <QueryStatus isLoading={isLoading} isError={isError} error="Failed to load corrective actions." />
+        {!isLoading && !isError && rows.length === 0 ? (
           <EmptyState title="No open corrective-action findings" description="Issued findings with remediation in progress appear here." />
-        ) : (
+        ) : null}
+        {!isLoading && rows.filter((r) => !r.redacted).length > 0 ? (
           <ul className="space-y-3">
             {rows.filter((r) => !r.redacted).map((r) => {
               const actions = (r.corrective_actions as Array<Record<string, unknown>> | undefined) ?? [];
               return (
-                <li key={String(r.id)} className="card p-4 space-y-3">
-                  <div>
+                <li key={String(r.id)} className="rounded-xl border border-neutral-200 p-4 space-y-3 dark:border-neutral-700">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <Link className="font-medium text-primary" href={`/audit/findings/${r.id}`}>
                       {String(r.reference_number)} — {String(r.title)}
                     </Link>
-                    <p className="text-xs text-neutral-500 mt-1">Finding status: {String(r.status)}</p>
+                    <StatusPill value={String(r.status)} />
                   </div>
                   {actions.length === 0 ? (
                     <p className="text-sm text-neutral-500">No corrective actions loaded for this finding.</p>
@@ -146,7 +148,7 @@ export default function AuditCorrectiveActionsPage() {
               );
             })}
           </ul>
-        )}
+        ) : null}
       </FormSection>
     </div>
   );

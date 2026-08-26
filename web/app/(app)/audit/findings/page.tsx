@@ -7,6 +7,8 @@ import { auditApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { QueryStatus } from "@/components/ui/QueryStatus";
+import { StatusPill } from "@/components/ui/StatusPill";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 
@@ -67,7 +69,7 @@ export default function AuditFindingsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="page-container">
       <ModulePageHeader
         title="Findings"
         subtitle="Draft, issue, and track findings. Issuing does not close work. Never auto-closes."
@@ -86,7 +88,7 @@ export default function AuditFindingsPage() {
           <FormField label="Engagement" htmlFor="audit-finding-engagement" required>
             <select
               id="audit-finding-engagement"
-              className="input w-full"
+              className="form-input w-full"
               value={engagementId}
               onChange={(e) => setEngagementId(e.target.value)}
               disabled={create.isPending}
@@ -102,7 +104,7 @@ export default function AuditFindingsPage() {
           <FormField label="Title" htmlFor="audit-finding-title" required>
             <input
               id="audit-finding-title"
-              className="input w-full"
+              className="form-input w-full"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               disabled={create.isPending}
@@ -111,7 +113,7 @@ export default function AuditFindingsPage() {
           <FormField label="Rating" htmlFor="audit-finding-rating">
             <select
               id="audit-finding-rating"
-              className="input w-full"
+              className="form-input w-full"
               value={rating}
               onChange={(e) => setRating(e.target.value)}
               disabled={create.isPending}
@@ -135,28 +137,28 @@ export default function AuditFindingsPage() {
       </FormSection>
 
       <FormSection title="Register">
-        {findingsQuery.isLoading ? <p className="text-sm text-neutral-500">Loading…</p> : null}
-        {findingsQuery.isError ? <p className="text-sm text-red-600">Failed to load findings.</p> : null}
-        {!findingsQuery.isLoading && rows.length === 0 ? (
+        <QueryStatus isLoading={findingsQuery.isLoading} isError={findingsQuery.isError} error="Failed to load findings." />
+        {!findingsQuery.isLoading && !findingsQuery.isError && rows.length === 0 ? (
           <EmptyState title="No findings" description="Create a draft against an engagement, then issue it to management." />
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
+        ) : null}
+        {!findingsQuery.isLoading && rows.length > 0 ? (
+          <div className="table-wrap">
+            <table className="data-table">
               <thead>
-                <tr className="text-left text-neutral-500 border-b">
-                  <th className="p-2">Reference</th>
-                  <th className="p-2">Title</th>
-                  <th className="p-2">Rating</th>
-                  <th className="p-2">Status</th>
-                  <th className="p-2">Confidentiality</th>
-                  <th className="p-2">Actions</th>
+                <tr>
+                  <th>Reference</th>
+                  <th>Title</th>
+                  <th>Rating</th>
+                  <th>Status</th>
+                  <th>Confidentiality</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={String(r.id)} className="border-b border-neutral-100">
-                    <td className="p-2">{String(r.reference_number ?? "—")}</td>
-                    <td className="p-2">
+                  <tr key={String(r.id)}>
+                    <td>{String(r.reference_number ?? "—")}</td>
+                    <td>
                       {r.redacted ? (
                         <span>{String(r.title)}</span>
                       ) : (
@@ -165,10 +167,14 @@ export default function AuditFindingsPage() {
                         </Link>
                       )}
                     </td>
-                    <td className="p-2 capitalize">{String(r.rating ?? "—")}</td>
-                    <td className="p-2">{String(r.status)}</td>
-                    <td className="p-2">{String(r.confidentiality_level)}</td>
-                    <td className="p-2">
+                    <td>
+                      <StatusPill value={String(r.rating ?? "")} />
+                    </td>
+                    <td>
+                      <StatusPill value={String(r.status ?? "")} />
+                    </td>
+                    <td>{String(r.confidentiality_level)}</td>
+                    <td>
                       {r.status === "draft" && !r.redacted ? (
                         <button
                           type="button"
@@ -194,7 +200,7 @@ export default function AuditFindingsPage() {
               </tbody>
             </table>
           </div>
-        )}
+        ) : null}
       </FormSection>
     </div>
   );

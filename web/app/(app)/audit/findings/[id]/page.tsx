@@ -11,6 +11,8 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { QueryStatus } from "@/components/ui/QueryStatus";
+import { StatusPill } from "@/components/ui/StatusPill";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 
@@ -94,10 +96,10 @@ export default function AuditFindingDetailPage() {
   });
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="page-container">
       <ModulePageHeader
         title={String(finding.reference_number ?? "Finding")}
-        subtitle={`${String(finding.title ?? "")} · ${String(finding.status ?? "")}. Management response and corrective actions do not close the finding.`}
+        subtitle="Management response and corrective actions do not close the finding."
         breadcrumbs={
           <PageBreadcrumbs
             items={[
@@ -107,10 +109,15 @@ export default function AuditFindingDetailPage() {
             ]}
           />
         }
+        meta={findingQuery.data ? (
+          <>
+            <StatusPill value={String(finding.status ?? "")} />
+            <StatusPill value={String(finding.rating ?? "")} />
+          </>
+        ) : null}
       />
 
-      {findingQuery.isLoading ? <p className="text-sm text-neutral-500">Loading finding…</p> : null}
-      {findingQuery.isError ? <p className="text-sm text-red-600">This finding is not available.</p> : null}
+      <QueryStatus isLoading={findingQuery.isLoading} isError={findingQuery.isError} error="This finding is not available." />
 
       {findingQuery.data ? (
         <>
@@ -149,7 +156,7 @@ export default function AuditFindingDetailPage() {
             ) : (
               <ul className="mb-4 space-y-2 text-sm">
                 {responses.map((row) => (
-                  <li key={String(row.id)} className="card p-3">
+                  <li key={String(row.id)} className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-700">
                     <LabelledRecord
                       value={{
                         agrees: row.agrees ? "Agrees" : "Disagrees",
@@ -172,7 +179,7 @@ export default function AuditFindingDetailPage() {
               <FormField label="Response" htmlFor="audit-finding-response" required>
                 <textarea
                   id="audit-finding-response"
-                  className="input w-full"
+                  className="form-input w-full"
                   rows={3}
                   value={responseText}
                   onChange={(e) => setResponseText(e.target.value)}
@@ -206,7 +213,7 @@ export default function AuditFindingDetailPage() {
             ) : (
               <ul className="mb-4 space-y-2">
                 {actions.map((row) => (
-                  <li key={String(row.id)} className="card p-3">
+                  <li key={String(row.id)} className="rounded-xl border border-neutral-200 p-3 dark:border-neutral-700">
                     <LabelledRecord
                       value={{
                         title: row.title,
@@ -231,7 +238,7 @@ export default function AuditFindingDetailPage() {
               <FormField label="Action title" htmlFor="audit-ca-title" required>
                 <input
                   id="audit-ca-title"
-                  className="input w-full"
+                  className="form-input w-full"
                   value={caTitle}
                   onChange={(e) => setCaTitle(e.target.value)}
                   disabled={createCorrective.isPending}
@@ -240,7 +247,7 @@ export default function AuditFindingDetailPage() {
               <FormField label="Owner" htmlFor="audit-ca-owner">
                 <select
                   id="audit-ca-owner"
-                  className="input w-full"
+                  className="form-input w-full"
                   value={caOwner}
                   onChange={(e) => setCaOwner(e.target.value)}
                   disabled={createCorrective.isPending}
@@ -255,7 +262,7 @@ export default function AuditFindingDetailPage() {
                 <input
                   id="audit-ca-due"
                   type="date"
-                  className="input w-full"
+                  className="form-input w-full"
                   value={caDue}
                   onChange={(e) => setCaDue(e.target.value)}
                   disabled={createCorrective.isPending}

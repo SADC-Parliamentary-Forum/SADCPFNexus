@@ -7,6 +7,7 @@ import { hasPermission } from "@/lib/authAccess";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { QueryStatus } from "@/components/ui/QueryStatus";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 
@@ -69,7 +70,7 @@ export default function LifecycleTemplatesAdminPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="page-container">
       <ModulePageHeader
         title="Journey templates"
         subtitle="Operational stages and tasks only — notice, probation, and terminal-payment gates stay in HR settings."
@@ -85,19 +86,23 @@ export default function LifecycleTemplatesAdminPage() {
       />
 
       <FormSection title="Published journeys">
-        {templatesQuery.isLoading ? <p className="text-sm text-neutral-500">Loading templates…</p> : null}
-        {templatesQuery.isError ? <p className="text-sm text-red-600">Failed to load templates.</p> : null}
-        {!templatesQuery.isLoading && (templatesQuery.data ?? []).length === 0 ? (
+        <QueryStatus
+          isLoading={templatesQuery.isLoading}
+          isError={templatesQuery.isError}
+          error="Failed to load templates."
+        />
+        {!templatesQuery.isLoading && !templatesQuery.isError && (templatesQuery.data ?? []).length === 0 ? (
           <EmptyState title="No templates seeded" description="Run LifecycleJourneyTemplateSeeder for this tenant." />
-        ) : (
+        ) : null}
+        {!templatesQuery.isLoading && (templatesQuery.data ?? []).length > 0 ? (
           <ul className="space-y-3">
             {(templatesQuery.data ?? []).map((raw) => {
               const tpl = raw as TemplateRow;
               const draft = tpl.draft_version;
               return (
-                <li key={String(tpl.id)} className="card p-4 flex flex-wrap items-start justify-between gap-3">
+                <li key={String(tpl.id)} className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-neutral-200 p-4 dark:border-neutral-700">
                   <div>
-                    <p className="font-semibold text-neutral-900">{String(tpl.name)}</p>
+                    <p className="font-semibold text-neutral-900 dark:text-neutral-100">{String(tpl.name)}</p>
                     <p className="text-xs text-neutral-500 mt-1">
                       {String(tpl.code)} · {String(tpl.lifecycle_type)}
                       {tpl.published_version
@@ -138,7 +143,7 @@ export default function LifecycleTemplatesAdminPage() {
               );
             })}
           </ul>
-        )}
+        ) : null}
       </FormSection>
     </div>
   );
