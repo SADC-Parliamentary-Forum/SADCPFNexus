@@ -160,6 +160,14 @@ return [
         ['pattern' => 'api/v1/procurement/budget-reservations/{budgetReservation}', 'permissions' => [
             'DELETE' => ['procurement.manage_budget', 'finance.create', 'finance.approve'],
         ]],
+        // HOD department review is not procurement.create (requester). Exact
+        // patterns must precede api/v1/procurement* (first-match fallback).
+        ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/hod-approve', 'permissions' => [
+            'POST' => ['procurement.hod_approve', 'procurement.request.approve.assigned', 'approvals.task.act.assigned'],
+        ]],
+        ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/hod-reject', 'permissions' => [
+            'POST' => ['procurement.hod_approve', 'procurement.request.approve.assigned', 'approvals.task.act.assigned'],
+        ]],
         ['pattern' => 'api/v1/procurement*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin'],
             'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],

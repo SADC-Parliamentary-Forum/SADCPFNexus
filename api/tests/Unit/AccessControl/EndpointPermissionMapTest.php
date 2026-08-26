@@ -206,6 +206,31 @@ class EndpointPermissionMapTest extends TestCase
         );
     }
 
+    public function test_hod_approve_is_not_procurement_create(): void
+    {
+        $rules = [
+            ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/hod-approve', 'permissions' => [
+                'POST' => ['procurement.hod_approve', 'procurement.request.approve.assigned', 'approvals.task.act.assigned'],
+            ]],
+            ['pattern' => 'api/v1/procurement*', 'permissions' => [
+                'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
+            ]],
+        ];
+
+        $map = new EndpointPermissionMap($this->registry([]), $rules);
+        $hodApprove = new LaravelRoute(['POST'], 'api/v1/procurement/requests/{procurementRequest}/hod-approve', ['uses' => fn () => null]);
+        $create = new LaravelRoute(['POST'], 'api/v1/procurement/requests', ['uses' => fn () => null]);
+
+        $this->assertSame(
+            [['procurement.hod_approve', 'procurement.request.approve.assigned', 'approvals.task.act.assigned']],
+            $map->fallbackPermissionGroupsForRoute($hodApprove)
+        );
+        $this->assertSame(
+            [['procurement.create', 'procurement.approve', 'procurement.admin']],
+            $map->fallbackPermissionGroupsForRoute($create)
+        );
+    }
+
     private function registry(array $permissions): PermissionRegistry
     {
         return new class($permissions) extends PermissionRegistry

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api\V1\Procurement;
 
 use App\Http\Controllers\Controller;
@@ -18,13 +19,14 @@ class ProcurementController extends Controller
 
     public function __construct(
         private readonly ProcurementService $procurementService,
-        private readonly WorkflowService    $workflowService,
+        private readonly WorkflowService $workflowService,
         private readonly \App\Modules\Procurement\Services\ProcurementCoiService $coiService,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['status', 'category', 'search', 'per_page', 'has_programme']);
+
         return response()->json($this->procurementService->list($filters, $request->user()));
     }
 
@@ -59,23 +61,24 @@ class ProcurementController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'title'              => ['required', 'string', 'max:300'],
-            'description'        => ['required', 'string', 'max:2000'],
-            'category'           => ['required', 'string', 'in:goods,services,works'],
-            'estimated_value'    => ['nullable', 'numeric', 'min:0'],
-            'currency'           => ['nullable', 'string', 'size:3'],
+            'title' => ['required', 'string', 'max:300'],
+            'description' => ['required', 'string', 'max:2000'],
+            'category' => ['required', 'string', 'in:goods,services,works'],
+            'estimated_value' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'string', 'size:3'],
             'procurement_method' => ['nullable', 'string', 'in:quotation,tender,direct'],
-            'budget_line'        => ['nullable', 'string', 'max:200'],
-            'justification'      => ['nullable', 'string', 'max:2000'],
-            'required_by_date'   => ['nullable', 'date'],
-            'items'              => ['nullable', 'array'],
-            'items.*.description'          => ['required_with:items', 'string'],
-            'items.*.quantity'             => ['nullable', 'integer', 'min:1'],
-            'items.*.unit'                 => ['nullable', 'string'],
+            'budget_line' => ['nullable', 'string', 'max:200'],
+            'justification' => ['nullable', 'string', 'max:2000'],
+            'required_by_date' => ['nullable', 'date'],
+            'items' => ['nullable', 'array'],
+            'items.*.description' => ['required_with:items', 'string'],
+            'items.*.quantity' => ['nullable', 'integer', 'min:1'],
+            'items.*.unit' => ['nullable', 'string'],
             'items.*.estimated_unit_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $procurement = $this->procurementService->create($data, $request->user());
+
         return response()->json(['message' => 'Procurement request created.', 'data' => $procurement], 201);
     }
 
@@ -85,16 +88,17 @@ class ProcurementController extends Controller
             'Procurement Officer',
         ]);
         $data = $request->validate([
-            'title'            => ['sometimes', 'string', 'max:300'],
-            'description'      => ['sometimes', 'string', 'max:2000'],
-            'category'         => ['sometimes', 'string', 'in:goods,services,works'],
-            'estimated_value'  => ['nullable', 'numeric', 'min:0'],
-            'budget_line'      => ['nullable', 'string'],
-            'justification'    => ['nullable', 'string'],
+            'title' => ['sometimes', 'string', 'max:300'],
+            'description' => ['sometimes', 'string', 'max:2000'],
+            'category' => ['sometimes', 'string', 'in:goods,services,works'],
+            'estimated_value' => ['nullable', 'numeric', 'min:0'],
+            'budget_line' => ['nullable', 'string'],
+            'justification' => ['nullable', 'string'],
             'required_by_date' => ['nullable', 'date'],
         ]);
 
         $procurement = $this->procurementService->update($procurementRequest, $data, $request->user());
+
         return response()->json(['message' => 'Procurement request updated.', 'data' => $procurement]);
     }
 
@@ -104,10 +108,11 @@ class ProcurementController extends Controller
         if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
-        if (!$procurementRequest->isDraft()) {
+        if (! $procurementRequest->isDraft()) {
             return response()->json(['message' => 'Only draft requests can be deleted.'], 422);
         }
         $procurementRequest->forceDelete();
+
         return response()->json(['message' => 'Procurement request deleted.']);
     }
 
@@ -124,6 +129,7 @@ class ProcurementController extends Controller
             $request->user(),
             $data['split_justification'] ?? null
         );
+
         return response()->json(['message' => 'Procurement request submitted.', 'data' => $procurement]);
     }
 
@@ -140,24 +146,26 @@ class ProcurementController extends Controller
             $request->user(),
             $data['notes'] ?? null
         );
+
         return response()->json(['message' => 'Split purchase authorised.', 'data' => $procurement]);
     }
 
     public function hodApprove(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['HOD', 'System Admin', 'super-admin'])) {
+        if (! $request->user()->hasAnyRole(['HOD', 'System Admin', 'super-admin'])) {
             abort(403);
         }
         if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
             abort(404);
         }
         $procurement = $this->procurementService->hodApprove($procurementRequest, $request->user());
+
         return response()->json(['message' => 'HOD approval recorded.', 'data' => $procurement]);
     }
 
     public function hodReject(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['HOD', 'System Admin', 'super-admin'])) {
+        if (! $request->user()->hasAnyRole(['HOD', 'System Admin', 'super-admin'])) {
             abort(403);
         }
         if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
@@ -167,6 +175,7 @@ class ProcurementController extends Controller
             'reason' => ['required', 'string', 'max:1000'],
         ]);
         $procurement = $this->procurementService->hodReject($procurementRequest, $data['reason'], $request->user());
+
         return response()->json(['message' => 'HOD rejection recorded.', 'data' => $procurement]);
     }
 
@@ -178,29 +187,30 @@ class ProcurementController extends Controller
 
         app(\App\Modules\AccessControl\Services\PolicyDecisionPoint::class)->assert(
             $request->user(),
-            'procurement.request.approve.assigned',
+            'procurement.approve',
             $procurementRequest,
             ['assigned' => true, 'owner_id' => $procurementRequest->requester_id]
         );
 
         // Phase 1 hard gate: Finance budget confirmation required before approve.
-        if (!$procurementRequest->budgetReservations()->whereNull('released_at')->exists()) {
+        if (! $procurementRequest->budgetReservations()->whereNull('released_at')->exists()) {
             return response()->json([
                 'message' => 'Finance budget confirmation is required before this action.',
-                'errors'  => ['budget' => ['Finance budget confirmation is required before this action.']],
+                'errors' => ['budget' => ['Finance budget confirmation is required before this action.']],
             ], 422);
         }
 
         if ($procurementRequest->approvalRequest) {
-            $data   = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
+            $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
             $result = $this->workflowService->approve(
                 $procurementRequest->approvalRequest,
                 $request->user(),
                 $data['comment'] ?? null
             );
+
             return response()->json([
-                'message'            => 'Procurement request approved.',
-                'data'               => $procurementRequest->fresh(['requester', 'approver', 'approvalRequest']),
+                'message' => 'Procurement request approved.',
+                'data' => $procurementRequest->fresh(['requester', 'approver', 'approvalRequest']),
                 'notified_approvers' => $result['notified_approvers'],
             ]);
         }
@@ -209,12 +219,13 @@ class ProcurementController extends Controller
             'Procurement Officer', 'Finance Controller', 'Secretary General',
         ]);
         $procurement = $this->procurementService->approve($procurementRequest, $request->user());
+
         return response()->json(['message' => 'Procurement request approved.', 'data' => $procurement]);
     }
 
     public function setMethod(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Secretary General', 'System Admin', 'super-admin'])) {
+        if (! $request->user()->hasAnyRole(['Procurement Officer', 'Secretary General', 'System Admin', 'super-admin'])) {
             abort(403);
         }
         if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
@@ -222,7 +233,7 @@ class ProcurementController extends Controller
         }
 
         $data = $request->validate([
-            'procurement_method'     => ['required', 'string', 'in:quotation,tender,direct,approved_supplier'],
+            'procurement_method' => ['required', 'string', 'in:quotation,tender,direct,approved_supplier'],
             'method_override_reason' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -233,7 +244,7 @@ class ProcurementController extends Controller
 
     public function award(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Secretary General', 'System Admin'])) {
+        if (! $request->user()->hasAnyRole(['Procurement Officer', 'Secretary General', 'System Admin'])) {
             abort(403);
         }
         if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {
@@ -241,7 +252,7 @@ class ProcurementController extends Controller
         }
 
         $data = $request->validate([
-            'quote_id'    => ['required', 'integer'],
+            'quote_id' => ['required', 'integer'],
             'award_notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -264,16 +275,16 @@ class ProcurementController extends Controller
         }
 
         $data = $request->validate([
-            'context'      => ['required', 'string', 'in:assess,award'],
+            'context' => ['required', 'string', 'in:assess,award'],
             'has_conflict' => ['required', 'boolean'],
-            'notes'        => ['nullable', 'string', 'max:2000'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $declaration = $this->coiService->declare($procurementRequest, $request->user(), $data);
 
         return response()->json([
             'message' => 'Conflict of interest declaration recorded.',
-            'data'    => $declaration,
+            'data' => $declaration,
         ], 201);
     }
 
@@ -283,15 +294,15 @@ class ProcurementController extends Controller
             abort(404);
         }
         if (
-            !$request->user()->isSystemAdmin()
-            && !$request->user()->hasAnyPermission(['procurement.create', 'procurement.approve', 'procurement.admin'])
+            ! $request->user()->isSystemAdmin()
+            && ! $request->user()->hasAnyPermission(['procurement.create', 'procurement.approve', 'procurement.admin'])
         ) {
             abort(403);
         }
 
         $data = $request->validate([
             'rfq_deadline' => ['nullable', 'date'],
-            'rfq_notes'    => ['nullable', 'string', 'max:2000'],
+            'rfq_notes' => ['nullable', 'string', 'max:2000'],
             'category_ids' => ['required', 'array', 'min:1', 'max:3'],
             'category_ids.*' => ['integer', 'exists:supplier_categories,id'],
             'external_invites' => ['nullable', 'array'],
@@ -300,6 +311,7 @@ class ProcurementController extends Controller
         ]);
 
         $rfq = $this->procurementService->issueRfq($procurementRequest, $data, $request->user());
+
         return response()->json(['message' => 'RFQ issued.', 'data' => $rfq]);
     }
 
@@ -316,7 +328,7 @@ class ProcurementController extends Controller
             'comment' => ['nullable', 'string', 'max:1000'],
         ]);
         $reason = $data['reason'] ?? $data['comment'] ?? null;
-        if (!$reason) {
+        if (! $reason) {
             return response()->json([
                 'message' => 'The comment field is required.',
                 'errors' => ['comment' => ['The comment field is required.']],
@@ -324,13 +336,15 @@ class ProcurementController extends Controller
         }
         if ($procurementRequest->approvalRequest) {
             $this->workflowService->reject($procurementRequest->approvalRequest, $request->user(), $reason);
+
             return response()->json([
                 'message' => 'Procurement request rejected.',
-                'data'    => $procurementRequest->fresh(['requester', 'approver', 'approvalRequest']),
+                'data' => $procurementRequest->fresh(['requester', 'approver', 'approvalRequest']),
             ]);
         }
 
         $procurement = $this->procurementService->reject($procurementRequest, $reason, $request->user());
+
         return response()->json(['message' => 'Procurement request rejected.', 'data' => $procurement]);
     }
 
@@ -343,9 +357,10 @@ class ProcurementController extends Controller
             $request->user(),
             $data['comment']
         );
+
         return response()->json([
             'message' => 'Request returned to requester for correction.',
-            'data'    => $procurementRequest->fresh(['requester', 'approver', 'approvalRequest']),
+            'data' => $procurementRequest->fresh(['requester', 'approver', 'approvalRequest']),
         ]);
     }
 
@@ -353,9 +368,10 @@ class ProcurementController extends Controller
     {
         abort_unless($procurementRequest->approvalRequest, 422, 'No active workflow on this request.');
         $this->workflowService->withdraw($procurementRequest->approvalRequest, $request->user());
+
         return response()->json([
             'message' => 'Procurement request withdrawn.',
-            'data'    => $procurementRequest->fresh(['requester', 'approvalRequest']),
+            'data' => $procurementRequest->fresh(['requester', 'approvalRequest']),
         ]);
     }
 
@@ -363,9 +379,10 @@ class ProcurementController extends Controller
     {
         abort_unless($procurementRequest->approvalRequest, 422, 'No active workflow on this request.');
         $this->workflowService->resubmit($procurementRequest->approvalRequest, $request->user());
+
         return response()->json([
             'message' => 'Procurement request resubmitted.',
-            'data'    => $procurementRequest->fresh(['requester', 'approvalRequest']),
+            'data' => $procurementRequest->fresh(['requester', 'approvalRequest']),
         ]);
     }
 
