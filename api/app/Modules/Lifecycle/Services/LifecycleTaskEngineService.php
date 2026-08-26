@@ -2,7 +2,6 @@
 
 namespace App\Modules\Lifecycle\Services;
 
-use App\Models\Assignment;
 use App\Models\Lifecycle\LifecycleCase;
 use App\Models\Lifecycle\LifecycleStageInstance;
 use App\Models\Lifecycle\LifecycleTaskInstance;
@@ -51,6 +50,10 @@ class LifecycleTaskEngineService
                         $case
                     );
 
+                    $assigneeRole = $taskDef['assignee_role'] ?? 'employee';
+                    $isDepartmentClearance = $case->lifecycle_type === 'separation'
+                        && $assigneeRole !== 'employee';
+
                     $task = LifecycleTaskInstance::create([
                         'tenant_id' => $case->tenant_id,
                         'case_id' => $case->id,
@@ -58,7 +61,7 @@ class LifecycleTaskEngineService
                         'task_key' => $taskDef['key'],
                         'title' => $taskDef['title'],
                         'description' => $taskDef['description'] ?? null,
-                        'assignee_role' => $taskDef['assignee_role'] ?? 'employee',
+                        'assignee_role' => $assigneeRole,
                         'department_slug' => $taskDef['department_slug'] ?? null,
                         'mandatory' => $taskDef['mandatory'] ?? true,
                         'optional_group' => $taskDef['optional_group'] ?? null,
@@ -67,7 +70,7 @@ class LifecycleTaskEngineService
                         'due_offset_days' => $taskDef['due_offset_days'] ?? null,
                         'due_anchor' => $taskDef['due_anchor'] ?? 'case_start',
                         'status' => 'pending',
-                        'clearance_status' => $case->lifecycle_type === 'separation' ? 'pending' : null,
+                        'clearance_status' => $isDepartmentClearance ? 'pending' : null,
                         'evidence_required' => $taskDef['evidence_required'] ?? false,
                     ]);
 
@@ -80,7 +83,7 @@ class LifecycleTaskEngineService
                             'source_purpose' => $task->task_key,
                             'source_reference' => $case->reference,
                             'due_date' => $dueDate?->toDateString(),
-                            'assigned_to' => ($taskDef['assignee_role'] ?? 'employee') === 'employee'
+                            'assigned_to' => $assigneeRole === 'employee'
                                 ? $case->employee_id
                                 : $actor->id,
                             'department_id' => null,

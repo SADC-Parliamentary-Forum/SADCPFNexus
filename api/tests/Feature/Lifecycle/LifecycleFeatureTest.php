@@ -303,6 +303,8 @@ class LifecycleFeatureTest extends TestCase
             'tenant_id' => $tenant->id,
             'code' => 'P3',
             'label' => 'P3',
+            'band_group' => 'C',
+            'employment_category' => 'local',
             'notice_period_days' => 30,
             'probation_months' => 6,
             'status' => 'published',
