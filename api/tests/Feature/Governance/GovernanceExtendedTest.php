@@ -20,11 +20,11 @@ class GovernanceExtendedTest extends TestCase
         [$http] = $this->asGovernanceOfficer();
 
         $response = $http->postJson('/api/v1/governance/resolutions', [
-            'title'            => 'Resolution on Budget Approval',
+            'title' => 'Resolution on Budget Approval',
             'reference_number' => 'RES-2026-001',
-            'adopted_at'       => now()->toDateString(),
-            'status'           => 'Adopted',
-            'description'      => 'This resolution approves the 2026 budget.',
+            'adopted_at' => now()->toDateString(),
+            'status' => 'Adopted',
+            'description' => 'This resolution approves the 2026 budget.',
         ]);
 
         $response->assertCreated();
@@ -40,14 +40,21 @@ class GovernanceExtendedTest extends TestCase
         $http->postJson('/api/v1/governance/resolutions', [
             'status' => 'adopted',
         ])->assertUnprocessable()
-          ->assertJsonValidationErrors(['title']);
+            ->assertJsonValidationErrors(['title']);
     }
 
-    public function test_staff_can_list_resolutions(): void
+    public function test_governance_officer_can_list_resolutions(): void
+    {
+        [$http] = $this->asGovernanceOfficer();
+
+        $http->getJson('/api/v1/governance/resolutions')->assertOk();
+    }
+
+    public function test_staff_cannot_list_resolutions(): void
     {
         [$http] = $this->asStaff();
 
-        $http->getJson('/api/v1/governance/resolutions')->assertOk();
+        $http->getJson('/api/v1/governance/resolutions')->assertForbidden();
     }
 
     public function test_governance_officer_can_update_resolution(): void
@@ -56,22 +63,22 @@ class GovernanceExtendedTest extends TestCase
         [$http] = $this->asGovernanceOfficer($tenant);
 
         $resolution = GovernanceResolution::create([
-            'tenant_id'        => $tenant->id,
-            'title'            => 'Original Title',
+            'tenant_id' => $tenant->id,
+            'title' => 'Original Title',
             'reference_number' => 'RES-2026-002',
-            'adopted_at'       => now()->toDateString(),
-            'status'           => 'Draft',
-            'description'      => 'Draft resolution.',
+            'adopted_at' => now()->toDateString(),
+            'status' => 'Draft',
+            'description' => 'Draft resolution.',
         ]);
 
         $http->putJson("/api/v1/governance/resolutions/{$resolution->id}", [
-            'title'  => 'Updated Title',
+            'title' => 'Updated Title',
             'status' => 'Adopted',
         ])->assertOk();
 
         $this->assertDatabaseHas('governance_resolutions', [
-            'id'     => $resolution->id,
-            'title'  => 'Updated Title',
+            'id' => $resolution->id,
+            'title' => 'Updated Title',
             'status' => 'Adopted',
         ]);
     }
@@ -82,11 +89,11 @@ class GovernanceExtendedTest extends TestCase
         [$http] = $this->asGovernanceOfficer($tenant);
 
         $resolution = GovernanceResolution::create([
-            'tenant_id'        => $tenant->id,
-            'title'            => 'To Delete',
+            'tenant_id' => $tenant->id,
+            'title' => 'To Delete',
             'reference_number' => 'RES-2026-003',
-            'adopted_at'       => now()->toDateString(),
-            'status'           => 'Draft',
+            'adopted_at' => now()->toDateString(),
+            'status' => 'Draft',
         ]);
 
         $http->deleteJson("/api/v1/governance/resolutions/{$resolution->id}")->assertOk();
@@ -115,6 +122,7 @@ class GovernanceExtendedTest extends TestCase
     protected function asGovernanceOfficer(?Tenant $tenant = null): array
     {
         $user = $this->makeGovernanceOfficer($tenant);
+
         return [$this->asUser($user), $user];
     }
 }

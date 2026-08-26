@@ -30,7 +30,7 @@ class MeetingResolutionsPhase1Test extends TestCase
 
     public function test_unique_reference_numbers_per_tenant(): void
     {
-        [$http, $user] = $this->asStaff();
+        [$http, $user] = $this->asGovernanceOfficer();
 
         $a = $this->createDecision($user, ['title' => 'First']);
         $b = $this->createDecision($user, ['title' => 'Second']);
@@ -47,7 +47,7 @@ class MeetingResolutionsPhase1Test extends TestCase
     public function test_assignment_from_resolution_is_idempotent(): void
     {
         $tenant = Tenant::factory()->create();
-        $drafter = $this->makeUser('staff', $tenant);
+        $drafter = $this->makeGovernanceOfficer($tenant);
         $owner = $this->makeUser('staff', $tenant);
         $adopter = $this->makeGovernanceOfficer($tenant);
 
@@ -88,7 +88,7 @@ class MeetingResolutionsPhase1Test extends TestCase
         config(['decisions.block_close_with_open_critical_actions' => true]);
 
         $tenant = Tenant::factory()->create();
-        $drafter = $this->makeUser('staff', $tenant);
+        $drafter = $this->makeGovernanceOfficer($tenant);
         $owner = $this->makeUser('staff', $tenant);
         $adopter = $this->makeGovernanceOfficer($tenant);
 
@@ -126,7 +126,7 @@ class MeetingResolutionsPhase1Test extends TestCase
     public function test_creator_cannot_self_adopt_without_admin_authority(): void
     {
         $tenant = Tenant::factory()->create();
-        $drafter = $this->makeUser('staff', $tenant);
+        $drafter = $this->makeGovernanceOfficer($tenant);
         $owner = $this->makeUser('staff', $tenant);
         $adopter = $this->makeGovernanceOfficer($tenant);
 

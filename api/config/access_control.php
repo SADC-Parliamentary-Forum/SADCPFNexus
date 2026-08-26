@@ -159,6 +159,42 @@ return [
         ['pattern' => 'api/v1/hr/timesheets/capacity-analytics', 'permissions' => [
             'READ' => ['hr.view', 'hr.admin', 'hr.approve', 'hr.edit', 'timesheets.view'],
         ]],
+        // Templates and payroll exports are HR-operated; must precede hr/timesheets*.
+        ['pattern' => 'api/v1/hr/timesheets/templates*', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'timesheets.view', 'timesheets.admin'],
+            'WRITE' => ['hr.admin', 'timesheets.admin', 'timesheets.manage-schedules'],
+        ]],
+        ['pattern' => 'api/v1/hr/timesheets/payroll-exports*', 'permissions' => [
+            'READ' => ['hr.admin', 'timesheets.admin', 'finance.admin'],
+            'WRITE' => ['hr.admin', 'timesheets.admin', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/hr/timesheets*', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'timesheets.view', 'timesheet.module.view', 'timesheet.read.self', 'timesheets.view-own', 'timesheets.view-team'],
+            'POST' => ['hr.create', 'hr.admin', 'timesheets.create', 'timesheet.create.self', 'timesheets.create-own', 'timesheets.submit', 'timesheet.approve.assigned', 'timesheets.approve', 'timesheets.review-team', 'timesheets.admin'],
+            'PUT' => ['hr.edit', 'hr.admin', 'timesheets.create', 'timesheet.create.self', 'timesheets.edit-own-draft'],
+            'PATCH' => ['hr.edit', 'hr.admin', 'timesheets.create', 'timesheet.create.self', 'timesheets.edit-own-draft'],
+            'DELETE' => ['hr.admin', 'timesheets.admin'],
+        ]],
+        // Staff may report an incident and edit their own description; they cannot list the org register.
+        ['pattern' => 'api/v1/hr/incidents', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin'],
+            'POST' => ['hr.create', 'hr.admin', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/hr/incidents/{hrIncident}', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin'],
+            'PUT' => ['hr.edit', 'hr.admin', 'my_work.view'],
+            'PATCH' => ['hr.edit', 'hr.admin', 'my_work.view'],
+            'DELETE' => ['hr.admin'],
+        ]],
+        // Staff may list/view their own personal file; create stays HR-operated.
+        ['pattern' => 'api/v1/hr/files', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'my_work.view'],
+            'POST' => ['hr.create', 'hr.admin'],
+        ]],
+        ['pattern' => 'api/v1/hr/files/{hrPersonalFile}', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'my_work.view'],
+            'WRITE' => ['hr.edit', 'hr.admin'],
+        ]],
         ['pattern' => 'api/v1/hr*', 'permissions' => [
             'READ' => ['hr.view', 'hr.admin'],
             'POST' => ['hr.create', 'hr.admin'],
@@ -260,8 +296,8 @@ return [
         ['pattern' => 'api/v1/correspondence*', 'permissions' => [
             'READ' => ['correspondence.view', 'correspondence.read.assigned', 'correspondence.admin'],
             'POST' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
-            'PUT' => ['correspondence.review', 'correspondence.approve', 'correspondence.admin'],
-            'PATCH' => ['correspondence.review', 'correspondence.approve', 'correspondence.admin'],
+            'PUT' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
+            'PATCH' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
             'DELETE' => ['correspondence.admin'],
         ]],
         ['pattern' => 'api/v1/stock*', 'permissions' => [
@@ -332,8 +368,8 @@ return [
             'WRITE' => ['workflows.submit', 'workflows.act', 'workflows.manage-definitions', 'workflows.admin'],
         ]],
         ['pattern' => 'api/v1/notifications*', 'permissions' => [
-            'READ' => ['notifications.view-own', 'notifications.admin'],
-            'WRITE' => ['notifications.manage-own-preferences', 'notifications.acknowledge', 'notifications.admin'],
+            'READ' => ['notifications.view-own', 'notifications.view.own', 'notifications.admin'],
+            'WRITE' => ['notifications.manage-own-preferences', 'notifications.manage.preferences', 'notifications.acknowledge', 'notifications.admin'],
         ]],
         ['pattern' => 'api/v1/notification-admin*', 'permissions' => [
             '*' => ['notifications.admin', 'notifications.manage-policies'],
@@ -344,11 +380,11 @@ return [
                 'weekly-reports.review-team', 'weekly-reports.accept', 'weekly-reports.admin',
                 'weekly-reports.view-management',
             ],
-            'WRITE' => ['weekly-reports.create-own', 'weekly-reports.review-team', 'weekly-reports.admin'],
+            'WRITE' => ['weekly-reports.create-own', 'weekly_report.create.self', 'weekly-reports.review-team', 'weekly-reports.admin'],
         ]],
         ['pattern' => 'api/v1/weekly-summary*', 'permissions' => [
             'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team', 'weekly_report.module.view'],
-            'WRITE' => ['weekly-reports.create-own', 'weekly-reports.review-team', 'weekly-reports.admin'],
+            'WRITE' => ['weekly-reports.create-own', 'weekly_report.create.self', 'weekly-reports.review-team', 'weekly-reports.admin'],
         ]],
         ['pattern' => 'api/v1/weekly-report-risks*', 'permissions' => [
             'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team'],
@@ -401,8 +437,21 @@ return [
             'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin'],
             'DELETE' => ['assets.admin'],
         ]],
+        // Staff may list types and create/list their events; type CRUD stays admin.
+        ['pattern' => 'api/v1/workplan/event-types*', 'permissions' => [
+            'READ' => ['workplan.view', 'workplan.admin', 'my_work.view'],
+            'WRITE' => ['workplan.create', 'workplan.admin'],
+            'DELETE' => ['workplan.admin'],
+        ]],
+        ['pattern' => 'api/v1/workplan/events*', 'permissions' => [
+            'READ' => ['workplan.view', 'workplan.admin', 'my_work.view'],
+            'POST' => ['workplan.create', 'workplan.admin', 'my_work.view'],
+            'PUT' => ['workplan.create', 'workplan.admin', 'my_work.view'],
+            'PATCH' => ['workplan.create', 'workplan.admin', 'my_work.view'],
+            'DELETE' => ['workplan.admin'],
+        ]],
         ['pattern' => 'api/v1/workplan*', 'permissions' => [
-            'READ' => ['workplan.view', 'workplan.admin'],
+            'READ' => ['workplan.view', 'workplan.admin', 'my_work.view'],
             'WRITE' => ['workplan.create', 'workplan.approve', 'workplan.admin'],
         ]],
         ['pattern' => 'api/v1/reports/schedules/{id}/approve', 'permissions' => [
@@ -429,6 +478,24 @@ return [
             'READ' => ['saam.view'],
             'WRITE' => ['saam.delegate'],
         ]],
+        // Own imprest requests are self-service; approve/liquidate stay finance-operated.
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/submit', 'permissions' => [
+            'POST' => ['imprest.create', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/withdraw', 'permissions' => [
+            'POST' => ['imprest.create', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/resubmit', 'permissions' => [
+            'POST' => ['imprest.create', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}', 'permissions' => [
+            'READ' => ['imprest.view', 'my_work.view'],
+            'WRITE' => ['imprest.create', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests', 'permissions' => [
+            'READ' => ['imprest.view', 'my_work.view'],
+            'POST' => ['imprest.create', 'my_work.view'],
+        ]],
         ['pattern' => 'api/v1/imprest*', 'permissions' => [
             'READ' => ['imprest.view'],
             'WRITE' => ['imprest.create', 'imprest.approve', 'imprest.liquidate'],
@@ -441,13 +508,14 @@ return [
             'READ' => ['approvals.inbox.view', 'workflows.view-own'],
             'WRITE' => ['approvals.task.act.assigned', 'workflows.act'],
         ]],
+        // Staff may list the institutional calendar (workplan UI is ungated) but cannot create/edit.
         ['pattern' => 'api/v1/calendar*', 'permissions' => [
-            'READ' => ['calendar.view'],
+            'READ' => ['calendar.view', 'my_work.view'],
             'WRITE' => ['calendar.create', 'calendar.admin'],
         ]],
         ['pattern' => 'api/v1/support*', 'permissions' => [
-            'READ' => ['support.view'],
-            'WRITE' => ['support.create', 'support.admin'],
+            'READ' => ['support.view', 'my_work.view'],
+            'WRITE' => ['support.create', 'support.admin', 'my_work.view'],
         ]],
         ['pattern' => 'api/v1/dashboard*', 'permissions' => [
             'READ' => ['dashboard.view', 'reports.view'],
@@ -462,7 +530,7 @@ return [
             'READ' => ['users.view', 'people.view-directory'],
         ]],
         ['pattern' => 'api/v1/alerts*', 'permissions' => [
-            'READ' => ['notifications.view-own', 'notifications.admin'],
+            'READ' => ['notifications.view-own', 'notifications.view.own', 'notifications.admin'],
         ]],
     ],
 

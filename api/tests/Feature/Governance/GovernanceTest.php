@@ -14,13 +14,20 @@ class GovernanceTest extends TestCase
         $this->getJson('/api/v1/governance/committees')->assertUnauthorized();
     }
 
-    public function test_authenticated_user_can_list_committees(): void
+    public function test_governance_officer_can_list_committees(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asGovernanceOfficer();
 
         $response = $http->getJson('/api/v1/governance/committees');
         $response->assertOk()
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
+    }
+
+    public function test_staff_cannot_list_committees(): void
+    {
+        [$http] = $this->asStaff();
+
+        $http->getJson('/api/v1/governance/committees')->assertForbidden();
     }
 
     public function test_governance_officer_can_create_committee(): void
@@ -28,12 +35,12 @@ class GovernanceTest extends TestCase
         [$http] = $this->asGovernanceOfficer();
 
         $response = $http->postJson('/api/v1/governance/committees', [
-            'name'      => 'Finance & Audit Committee',
+            'name' => 'Finance & Audit Committee',
             'is_active' => true,
         ]);
 
         $response->assertCreated()
-                 ->assertJsonPath('data.name', 'Finance & Audit Committee');
+            ->assertJsonPath('data.name', 'Finance & Audit Committee');
 
         $this->assertDatabaseHas('governance_committees', ['name' => 'Finance & Audit Committee']);
     }
@@ -43,8 +50,8 @@ class GovernanceTest extends TestCase
         [$http] = $this->asGovernanceOfficer();
 
         $http->postJson('/api/v1/governance/committees', [])
-             ->assertUnprocessable()
-             ->assertJsonValidationErrors(['name']);
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
     }
 
     public function test_governance_officer_can_update_committee(): void
@@ -53,16 +60,16 @@ class GovernanceTest extends TestCase
         [$http] = $this->asGovernanceOfficer($tenant);
 
         $create = $http->postJson('/api/v1/governance/committees', [
-            'name'      => 'Initial Name',
+            'name' => 'Initial Name',
             'is_active' => true,
         ]);
         $id = $create->json('data.id');
 
         $http->putJson("/api/v1/governance/committees/{$id}", [
-            'name'      => 'Updated Committee Name',
+            'name' => 'Updated Committee Name',
             'is_active' => true,
         ])->assertOk()
-          ->assertJsonPath('data.name', 'Updated Committee Name');
+            ->assertJsonPath('data.name', 'Updated Committee Name');
     }
 
     public function test_governance_officer_can_delete_committee(): void
@@ -71,13 +78,13 @@ class GovernanceTest extends TestCase
         [$http] = $this->asGovernanceOfficer($tenant);
 
         $create = $http->postJson('/api/v1/governance/committees', [
-            'name'      => 'To Delete',
+            'name' => 'To Delete',
             'is_active' => true,
         ]);
         $id = $create->json('data.id');
 
         $http->deleteJson("/api/v1/governance/committees/{$id}")
-             ->assertOk();
+            ->assertOk();
 
         $this->assertDatabaseMissing('governance_committees', ['id' => $id]);
     }
@@ -89,13 +96,20 @@ class GovernanceTest extends TestCase
         $this->getJson('/api/v1/governance/resolutions')->assertUnauthorized();
     }
 
-    public function test_authenticated_user_can_list_resolutions(): void
+    public function test_governance_officer_can_list_resolutions(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asGovernanceOfficer();
 
         $response = $http->getJson('/api/v1/governance/resolutions');
         $response->assertOk()
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
+    }
+
+    public function test_staff_cannot_list_resolutions(): void
+    {
+        [$http] = $this->asStaff();
+
+        $http->getJson('/api/v1/governance/resolutions')->assertForbidden();
     }
 
     public function test_governance_officer_can_create_resolution(): void
@@ -105,13 +119,13 @@ class GovernanceTest extends TestCase
 
         $response = $http->postJson('/api/v1/governance/resolutions', [
             'reference_number' => 'RES-2026-001',
-            'title'            => 'Resolution on Annual Budget Approval',
-            'status'           => 'Adopted',
-            'description'      => 'The Executive Committee hereby resolves to approve the annual budget.',
+            'title' => 'Resolution on Annual Budget Approval',
+            'status' => 'Adopted',
+            'description' => 'The Executive Committee hereby resolves to approve the annual budget.',
         ]);
 
         $response->assertCreated()
-                 ->assertJsonPath('data.reference_number', 'RES-2026-001');
+            ->assertJsonPath('data.reference_number', 'RES-2026-001');
 
         $this->assertDatabaseHas('governance_resolutions', ['reference_number' => 'RES-2026-001']);
     }
@@ -121,8 +135,8 @@ class GovernanceTest extends TestCase
         [$http] = $this->asGovernanceOfficer();
 
         $http->postJson('/api/v1/governance/resolutions', [])
-             ->assertUnprocessable()
-             ->assertJsonValidationErrors(['reference_number', 'title']);
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['reference_number', 'title']);
     }
 
     public function test_governance_officer_can_update_resolution(): void
@@ -132,17 +146,17 @@ class GovernanceTest extends TestCase
 
         $create = $http->postJson('/api/v1/governance/resolutions', [
             'reference_number' => 'RES-2026-002',
-            'title'            => 'Initial Title',
-            'status'           => 'Draft',
-            'description'      => 'Body text.',
+            'title' => 'Initial Title',
+            'status' => 'Draft',
+            'description' => 'Body text.',
         ]);
         $id = $create->json('data.id');
 
         $http->putJson("/api/v1/governance/resolutions/{$id}", [
-            'title'  => 'Updated Resolution Title',
+            'title' => 'Updated Resolution Title',
             'status' => 'Adopted',
         ])->assertOk()
-          ->assertJsonPath('data.title', 'Updated Resolution Title');
+            ->assertJsonPath('data.title', 'Updated Resolution Title');
     }
 
     public function test_governance_officer_can_delete_resolution(): void
@@ -152,14 +166,14 @@ class GovernanceTest extends TestCase
 
         $create = $http->postJson('/api/v1/governance/resolutions', [
             'reference_number' => 'RES-DEL-001',
-            'title'            => 'To Delete',
-            'status'           => 'Draft',
-            'description'      => 'Will be deleted.',
+            'title' => 'To Delete',
+            'status' => 'Draft',
+            'description' => 'Will be deleted.',
         ]);
         $id = $create->json('data.id');
 
         $http->deleteJson("/api/v1/governance/resolutions/{$id}")
-             ->assertOk();
+            ->assertOk();
 
         $this->assertDatabaseMissing('governance_resolutions', ['id' => $id]);
     }
@@ -172,9 +186,9 @@ class GovernanceTest extends TestCase
         [$httpA] = $this->asGovernanceOfficer($tenantA);
         $resA = $httpA->postJson('/api/v1/governance/resolutions', [
             'reference_number' => 'RES-A-001',
-            'title'            => 'Tenant A Resolution',
-            'status'           => 'Adopted',
-            'description'      => 'Tenant A only.',
+            'title' => 'Tenant A Resolution',
+            'status' => 'Adopted',
+            'description' => 'Tenant A only.',
         ]);
         $idA = $resA->json('data.id');
 
@@ -182,18 +196,18 @@ class GovernanceTest extends TestCase
 
         // Tenant B should not see Tenant A's resolution
         $httpB->getJson("/api/v1/governance/resolutions/{$idA}")
-              ->assertNotFound();
+            ->assertNotFound();
     }
 
     // ─── Governance Meeting Types ─────────────────────────────────────────────
 
-    public function test_can_list_governance_meeting_types(): void
+    public function test_governance_officer_can_list_governance_meeting_types(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asGovernanceOfficer();
 
         $response = $http->getJson('/api/v1/governance/meeting-types');
         $response->assertOk()
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
     }
 
     // ─── helper ──────────────────────────────────────────────────────────────
@@ -201,6 +215,7 @@ class GovernanceTest extends TestCase
     protected function asGovernanceOfficer(?Tenant $tenant = null): array
     {
         $user = $this->makeGovernanceOfficer($tenant);
+
         return [$this->asUser($user), $user];
     }
 }
