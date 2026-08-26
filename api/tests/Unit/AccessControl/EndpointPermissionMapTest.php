@@ -156,6 +156,31 @@ class EndpointPermissionMapTest extends TestCase
         $this->assertSame([['assets.create', 'assets.admin']], $map->fallbackPermissionGroupsForRoute($capitalise));
     }
 
+    public function test_people_authority_check_is_self_service_not_people_manage(): void
+    {
+        $rules = [
+            ['pattern' => 'api/v1/people-authority/authority/check', 'permissions' => [
+                'POST' => ['dashboard.view', 'my_work.view', 'authorities.manage', 'people.manage'],
+            ]],
+            ['pattern' => 'api/v1/people-authority*', 'permissions' => [
+                'WRITE' => ['people.manage', 'roles.assign', 'authorities.manage'],
+            ]],
+        ];
+
+        $map = new EndpointPermissionMap($this->registry([]), $rules);
+        $check = new LaravelRoute(['POST'], 'api/v1/people-authority/authority/check', ['uses' => fn () => null]);
+        $store = new LaravelRoute(['POST'], 'api/v1/people-authority/people', ['uses' => fn () => null]);
+
+        $this->assertSame(
+            [['dashboard.view', 'my_work.view', 'authorities.manage', 'people.manage']],
+            $map->fallbackPermissionGroupsForRoute($check)
+        );
+        $this->assertSame(
+            [['people.manage', 'roles.assign', 'authorities.manage']],
+            $map->fallbackPermissionGroupsForRoute($store)
+        );
+    }
+
     private function registry(array $permissions): PermissionRegistry
     {
         return new class($permissions) extends PermissionRegistry

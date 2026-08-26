@@ -202,6 +202,15 @@ return [
             'PATCH' => ['hr.edit', 'hr.admin'],
             'DELETE' => ['hr.admin'],
         ]],
+        // Authority check is a self-service query of the caller's (or delegated)
+        // authority — not a People & Authority mutation. Exact pattern must
+        // precede api/v1/people-authority* (first-match fallback).
+        ['pattern' => 'api/v1/people-authority/authority/check', 'permissions' => [
+            'POST' => ['dashboard.view', 'my_work.view', 'authorities.manage', 'people.manage'],
+        ]],
+        ['pattern' => 'api/v1/people-authority/me', 'permissions' => [
+            'GET' => ['profile.read.self', 'dashboard.view', 'my_work.view', 'people.view-directory'],
+        ]],
         ['pattern' => 'api/v1/people-authority*', 'permissions' => [
             'READ' => ['people.view-directory', 'people.view-profile', 'people.manage'],
             'WRITE' => ['people.manage', 'roles.assign', 'authorities.manage'],
