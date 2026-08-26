@@ -30,7 +30,7 @@ class Asset extends Model
 
     public function getQrUrlAttribute(): ?string
     {
-        return $this->qr_path ? '/api/v1/assets/' . $this->id . '/qr' : null;
+        return $this->qr_path ? '/api/v1/assets/'.$this->id.'/qr' : null;
     }
 
     protected function casts(): array
@@ -83,8 +83,12 @@ class Asset extends Model
         if (! $ref) {
             return null;
         }
-        $years = $ref->diffInYears(now());
-        $months = $ref->copy()->addYears($years)->diffInMonths(now());
+
+        // Carbon 3 returns float diffs. addYears() rejects non-integers
+        // (including tiny same-day fractions), which 500s JSON serialization.
+        $now = now();
+        $years = (int) $ref->diffInYears($now);
+        $months = (int) $ref->copy()->addYears($years)->diffInMonths($now);
         if ($years === 0) {
             return $months === 0 ? 'Less than 1 month' : "{$months} month(s)";
         }
