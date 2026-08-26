@@ -518,7 +518,7 @@ return [
             'WRITE' => ['support.create', 'support.admin', 'my_work.view'],
         ]],
         ['pattern' => 'api/v1/dashboard*', 'permissions' => [
-            'READ' => ['dashboard.view', 'reports.view'],
+            'READ' => ['dashboard.view', 'reports.view', 'reports.view.authorised', 'my_work.view'],
         ]],
         ['pattern' => 'api/v1/lookups', 'permissions' => [
             'READ' => ['dashboard.view', 'reports.view'],

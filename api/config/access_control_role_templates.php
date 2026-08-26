@@ -37,7 +37,7 @@ return [
     'Secretary General' => [
         'purpose' => 'Final institutional approvals and executive oversight',
         'risk_level' => 'critical',
-        'permissions' => ['leave.request.authorise.assigned', 'travel.request.approve.assigned', 'salary_advance.approve.assigned', 'programme.sg_approval.act.assigned', 'procurement.award.approve.assigned', 'approvals.task.act.assigned', 'admin.roles.approve', 'admin.roles.revoke', 'reports.view.authorised', 'correspondence.read.confidential', 'correspondence.approve', 'correspondence.route', 'audit.plan.approve', 'audit.findings.view'],
+        'permissions' => ['dashboard.view', 'leave.request.authorise.assigned', 'travel.request.approve.assigned', 'salary_advance.approve.assigned', 'programme.sg_approval.act.assigned', 'procurement.award.approve.assigned', 'approvals.task.act.assigned', 'admin.roles.approve', 'admin.roles.revoke', 'reports.view.authorised', 'correspondence.read.confidential', 'correspondence.approve', 'correspondence.route', 'audit.plan.approve', 'audit.findings.view'],
         'inherits' => [],
         'legacy_roles' => ['Secretary General'],
         'feature_only' => false,
@@ -48,6 +48,7 @@ return [
         'purpose' => 'HR records, leave certification, travel logistics and administration',
         'risk_level' => 'high',
         'permissions' => [
+            'dashboard.view',
             'leave.module.view',
             'leave.balance.certify.assigned',
             'leave.balance.read.assigned_staff',
@@ -77,6 +78,7 @@ return [
         'purpose' => 'Financial validation, calculations and processing',
         'risk_level' => 'critical',
         'permissions' => [
+            'dashboard.view',
             'finance.view',
             'finance.create',
             'finance.approve',
@@ -116,7 +118,7 @@ return [
     'Programme Officer' => [
         'purpose' => 'Prepare and manage assigned programmes and PIFs',
         'risk_level' => 'medium',
-        'permissions' => ['programme.module.view', 'programme.request.create', 'programme.request.read.created', 'programme.request.edit.created', 'programme.request.submit.created', 'programme.document.manage.created', 'programme.conflict_declaration.submit.created', 'programme.mande_link.read.authorised'],
+        'permissions' => ['dashboard.view', 'programme.module.view', 'programme.request.create', 'programme.request.read.created', 'programme.request.edit.created', 'programme.request.submit.created', 'programme.document.manage.created', 'programme.conflict_declaration.submit.created', 'programme.mande_link.read.authorised'],
         'inherits' => [],
         // Generic staff must not receive programme-authoring access merely
         // because Programme Officer used to share the staff alias.
@@ -138,7 +140,7 @@ return [
     'M&E Officer' => [
         'purpose' => 'Indicator, evidence and activity-report processing',
         'risk_level' => 'medium',
-        'permissions' => ['mande.module.view', 'mande.indicator.read', 'mande.indicator.create', 'mande.activity_report.create', 'mande.evidence.upload', 'mande.dashboard.view'],
+        'permissions' => ['dashboard.view', 'mande.module.view', 'mande.indicator.read', 'mande.indicator.create', 'mande.activity_report.create', 'mande.evidence.upload', 'mande.dashboard.view'],
         'inherits' => [],
         'legacy_roles' => [],
         'feature_only' => false,
@@ -158,7 +160,7 @@ return [
     'Procurement Officer' => [
         'purpose' => 'Procurement administration and controlled process execution',
         'risk_level' => 'high',
-        'permissions' => ['procurement.module.view', 'procurement.request.create', 'procurement.request.read.created', 'procurement.request.read.assigned', 'procurement.request.edit.created', 'procurement.request.submit.created', 'procurement.request.review.assigned', 'procurement.rfq.publish.assigned', 'procurement.supplier.read', 'procurement.supplier.approve', 'procurement.purchase_order.create.assigned', 'procurement.report.view'],
+        'permissions' => ['dashboard.view', 'procurement.module.view', 'procurement.request.create', 'procurement.request.read.created', 'procurement.request.read.assigned', 'procurement.request.edit.created', 'procurement.request.submit.created', 'procurement.request.review.assigned', 'procurement.rfq.publish.assigned', 'procurement.supplier.read', 'procurement.supplier.approve', 'procurement.purchase_order.create.assigned', 'procurement.report.view'],
         'inherits' => [],
         'legacy_roles' => ['Procurement Officer'],
         'feature_only' => false,
@@ -179,6 +181,7 @@ return [
         'purpose' => 'Operate Internal Audit workpapers while remaining read-only on business records',
         'risk_level' => 'high',
         'permissions' => [
+            'dashboard.view',
             'audit.event.read.organisation',
             'audit.universe.manage',
             'audit.plan.manage',
@@ -212,7 +215,7 @@ return [
     'External Auditor' => [
         'purpose' => 'Time-limited, engagement-scoped read-only assurance access',
         'risk_level' => 'high',
-        'permissions' => ['audit.event.read.organisation', 'reports.view.authorised', 'finance.view', 'risk.module.view', 'mande.module.view'],
+        'permissions' => ['dashboard.view', 'audit.event.read.organisation', 'reports.view.authorised', 'finance.view', 'risk.module.view', 'mande.module.view'],
         'inherits' => [],
         'legacy_roles' => [],
         'feature_only' => false,
@@ -232,7 +235,7 @@ return [
     'Security and Access Administrator' => [
         'purpose' => 'Role and access administration without business approval authority',
         'risk_level' => 'critical',
-        'permissions' => ['admin.roles.view', 'admin.roles.manage', 'admin.roles.assign', 'admin.access.simulate', 'admin.access.explore', 'admin.access.requests.manage', 'admin.access.reviews.manage', 'admin.security.manage', 'admin.users.view'],
+        'permissions' => ['dashboard.view', 'admin.roles.view', 'admin.roles.manage', 'admin.roles.assign', 'admin.access.simulate', 'admin.access.explore', 'admin.access.requests.manage', 'admin.access.reviews.manage', 'admin.security.manage', 'admin.users.view'],
         'inherits' => [],
         'legacy_roles' => [],
         'feature_only' => false,
@@ -242,7 +245,7 @@ return [
     'Workflow Administrator' => [
         'purpose' => 'Workflow configuration and operational correction under controlled conditions',
         'risk_level' => 'high',
-        'permissions' => ['admin.workflow.configure', 'approvals.inbox.view'],
+        'permissions' => ['dashboard.view', 'admin.workflow.configure', 'approvals.inbox.view'],
         'inherits' => [],
         'legacy_roles' => [],
         'feature_only' => false,
