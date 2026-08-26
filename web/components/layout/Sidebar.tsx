@@ -118,7 +118,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Budget Control", href: "/budget", icon: "account_balance_wallet" },
       { label: "Imprest", href: "/imprest", icon: "account_balance_wallet" },
       { label: "Payslips", href: "/finance/payslips", icon: "receipt_long" },
-      { label: "Budget Reports", href: "/budget/reports", icon: "analytics" },
+      { label: "Issue payslips", href: "/hr/payslips", icon: "upload_file" },
     ],
   },
   {
@@ -172,9 +172,9 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { label: "Overview", href: "/hr", icon: "bar_chart_4_bars" },
       { label: "Staff Leave Register", href: "/hr/leave", icon: "menu_book" },
+      { label: "Issue payslips", href: "/hr/payslips", icon: "receipt_long" },
       { label: "Employee Files", href: "/hr/files", icon: "folder_shared" },
       { label: "Appraisals", href: "/hr/appraisals", icon: "rate_review" },
-      { label: "Departments", href: "/hr/departments", icon: "corporate_fare" },
     ],
   },
     {

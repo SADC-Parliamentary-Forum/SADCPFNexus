@@ -294,7 +294,7 @@ export const PROCUREMENT_METHODS = ["Direct Purchase", "3 Quotations", "Tender"]
 export type ProcurementMethod = typeof PROCUREMENT_METHODS[number];
 
 // ─── Payslip upload ───────────────────────────────────────────────────────────
-export const PAYSLIP_ACCEPTED_TYPES = ".pdf,.xlsx,.xls";
+export const PAYSLIP_ACCEPTED_TYPES = ".pdf,.xlsx,.xls,.zip";
 export const PAYSLIP_EMPLOYEE_PATTERN = /EMP\d+/i;
 export const PAYSLIP_MONTH_NAMES = [
   "january","february","march","april","may","june",

@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Payslip;
 use App\Models\User;
 use App\Modules\Finance\Services\PayslipAutoFillService;
+use App\Modules\Finance\Services\PayslipDistributionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -52,8 +55,19 @@ class PayslipController extends Controller
             $term = '%' . $request->search . '%';
             $query->whereHas('user', function ($q) use ($term) {
                 $q->where('name', 'ilike', $term)
-                    ->orWhere('email', 'ilike', $term);
+                    ->orWhere('email', 'ilike', $term)
+                    ->orWhere('employee_number', 'ilike', $term);
             });
+        }
+
+        if ($request->filled('period_month')) {
+            $query->where('period_month', (int) $request->period_month);
+        }
+        if ($request->filled('period_year')) {
+            $query->where('period_year', (int) $request->period_year);
+        }
+        if ($request->filled('confirmation_status')) {
+            $query->where('confirmation_status', (string) $request->confirmation_status);
         }
 
         $payslips = $query
@@ -62,7 +76,136 @@ class PayslipController extends Controller
             ->orderByDesc('id')
             ->paginate($perPage);
 
+        $payslips->getCollection()->each->append(['has_file', 'period_label']);
+
         return response()->json($payslips);
+    }
+
+    public function match(Request $request, PayslipDistributionService $distribution): JsonResponse
+    {
+        $this->authorizePayslipAccess($request);
+        $hasFiles = $request->hasFile('files');
+        $data = $request->validate([
+            'filenames' => [$hasFiles ? 'nullable' : 'required', 'array', 'min:1', 'max:80'],
+            'filenames.*' => ['required', 'string', 'max:255'],
+            'files' => [$hasFiles ? 'required' : 'nullable', 'array', 'min:1', 'max:80'],
+            'files.*' => ['file', 'max:25600', 'mimes:pdf,xlsx,xls,zip'],
+            'period_month' => ['required', 'integer', 'min:1', 'max:12'],
+            'period_year' => ['required', 'integer', 'min:2020', 'max:2100'],
+        ]);
+
+        if ($hasFiles) {
+            /** @var list<UploadedFile> $files */
+            $files = array_values(array_filter(
+                $request->file('files', []) ?? [],
+                fn ($f) => $f instanceof UploadedFile
+            ));
+
+            return response()->json([
+                'data' => $distribution->previewFromUploads(
+                    $request->user(),
+                    $files,
+                    (int) $data['period_month'],
+                    (int) $data['period_year'],
+                ),
+            ]);
+        }
+
+        return response()->json([
+            'data' => $distribution->preview(
+                $request->user(),
+                array_values($data['filenames']),
+                (int) $data['period_month'],
+                (int) $data['period_year'],
+            ),
+        ]);
+    }
+
+    public function directory(Request $request, PayslipDistributionService $distribution): JsonResponse
+    {
+        $this->authorizePayslipAccess($request);
+        $data = $request->validate([
+            'q' => ['nullable', 'string', 'max:120'],
+        ]);
+        $rows = $distribution->directory($request->user(), $data['q'] ?? null)
+            ->map(fn (User $u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'employee_number' => $u->employee_number,
+            ]);
+
+        return response()->json(['data' => $rows]);
+    }
+
+    public function periodCoverage(Request $request, PayslipDistributionService $distribution): JsonResponse
+    {
+        $this->authorizePayslipAccess($request);
+        $data = $request->validate([
+            'period_month' => ['required', 'integer', 'min:1', 'max:12'],
+            'period_year' => ['required', 'integer', 'min:2020', 'max:2100'],
+        ]);
+
+        return response()->json([
+            'data' => $distribution->periodCoverage(
+                $request->user(),
+                (int) $data['period_month'],
+                (int) $data['period_year'],
+            ),
+        ]);
+    }
+
+    public function distribute(Request $request, PayslipDistributionService $distribution): JsonResponse
+    {
+        $this->authorizePayslipAccess($request);
+        $data = $request->validate([
+            'period_month' => ['required', 'integer', 'min:1', 'max:12'],
+            'period_year' => ['required', 'integer', 'min:2020', 'max:2100'],
+            'files' => ['required', 'array', 'min:1', 'max:80'],
+            'files.*' => ['file', 'max:25600', 'mimes:pdf,xlsx,xls,zip'],
+            'assignments' => ['nullable'],
+        ]);
+
+        $assignments = $data['assignments'] ?? [];
+        if (is_string($assignments)) {
+            $decoded = json_decode($assignments, true);
+            $assignments = is_array($decoded) ? $decoded : [];
+        }
+        if (! is_array($assignments)) {
+            $assignments = [];
+        }
+
+        /** @var list<UploadedFile> $files */
+        $files = array_values(array_filter(
+            $request->file('files', []) ?? [],
+            fn ($f) => $f instanceof UploadedFile
+        ));
+
+        $result = $distribution->distribute(
+            $request->user(),
+            $files,
+            $assignments,
+            (int) $data['period_month'],
+            (int) $data['period_year'],
+        );
+
+        return response()->json([
+            'message' => sprintf(
+                '%d payslip%s issued%s.',
+                $result['issued'] + $result['replaced'],
+                ($result['issued'] + $result['replaced']) === 1 ? '' : 's',
+                $result['replaced'] > 0 ? sprintf(' (%d replaced)', $result['replaced']) : ''
+            ),
+            'data' => [
+                'issued' => $result['issued'],
+                'replaced' => $result['replaced'],
+                'failed' => $result['failed'],
+                'payslips' => array_map(
+                    fn (Payslip $p) => $p->append(['has_file', 'period_label']),
+                    $result['payslips']
+                ),
+            ],
+        ], 201);
     }
 
     /**
@@ -75,6 +218,7 @@ class PayslipController extends Controller
             abort(404);
         }
         $payslip->load('user:id,name,email,employee_number');
+        $payslip->append(['has_file', 'period_label']);
         return response()->json($payslip);
     }
 
@@ -141,9 +285,24 @@ class PayslipController extends Controller
                 'gross_amount'  => $request->get('gross_amount', 0),
                 'net_amount'    => $request->get('net_amount', 0),
                 'currency'      => $request->get('currency', 'NAD'),
+                'issued_at'     => now(),
             ]
         );
         $payslip->load('user:id,name,email,employee_number');
+        $payslip->append(['has_file', 'period_label']);
+
+        AuditLog::record('finance.payslip.uploaded', [
+            'tenant_id' => $tenantId,
+            'user_id' => $request->user()->id,
+            'auditable_type' => Payslip::class,
+            'auditable_id' => $payslip->id,
+            'new_values' => [
+                'subject_user_id' => $user->id,
+                'period_month' => (int) $request->period_month,
+                'period_year' => (int) $request->period_year,
+            ],
+            'tags' => ['payslips', 'hr'],
+        ]);
 
         // Auto-fill payslip details from system data
         try {
