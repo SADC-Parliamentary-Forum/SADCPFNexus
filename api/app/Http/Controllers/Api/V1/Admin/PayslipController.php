@@ -168,12 +168,26 @@ class PayslipController extends Controller
 
         $assignments = $data['assignments'] ?? [];
         if (is_string($assignments)) {
-            $decoded = json_decode($assignments, true);
-            $assignments = is_array($decoded) ? $decoded : [];
+            if (trim($assignments) === '') {
+                $assignments = [];
+            } else {
+                $decoded = json_decode($assignments, true);
+                if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
+                    return response()->json(['message' => 'Assignments must be valid JSON.'], 422);
+                }
+                $assignments = $decoded;
+            }
         }
         if (! is_array($assignments)) {
             $assignments = [];
         }
+        $assignments = array_values(array_filter($assignments, function ($row) {
+            return is_array($row)
+                && isset($row['filename'], $row['user_id'])
+                && is_string($row['filename'])
+                && $row['filename'] !== ''
+                && is_numeric($row['user_id']);
+        }));
 
         /** @var list<UploadedFile> $files */
         $files = array_values(array_filter(

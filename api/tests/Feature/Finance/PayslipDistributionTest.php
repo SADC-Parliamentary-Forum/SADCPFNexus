@@ -105,6 +105,7 @@ class PayslipDistributionTest extends TestCase
             'period_month' => 8,
             'period_year' => 2026,
             'assignments' => json_encode([
+                ['filename' => 'EMP042_August2026.pdf', 'user_id' => $staff->id],
                 ['filename' => 'foreign.pdf', 'user_id' => $foreign->id],
             ]),
             'files' => [
@@ -125,6 +126,47 @@ class PayslipDistributionTest extends TestCase
         $this->assertDatabaseMissing('payslips', [
             'user_id' => $foreign->id,
         ]);
+    }
+
+    public function test_assignments_are_authoritative_and_skip_matcher_fallback(): void
+    {
+        if (! class_exists(ZipArchive::class)) {
+            $this->markTestSkipped('ZipArchive not available');
+        }
+        Storage::fake('local');
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asHrManager($tenant);
+        $jane = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Jane Doe',
+            'employee_number' => 'EMP042',
+        ]);
+        $john = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'John Smith',
+            'employee_number' => 'EMP099',
+        ]);
+
+        $zip = $this->makeZip([
+            'EMP042_August2026.pdf' => '%PDF-1.4 jane',
+            'EMP099_August2026.pdf' => '%PDF-1.4 john',
+        ]);
+
+        $http->post('/api/v1/admin/payslips/distribute', [
+            'period_month' => 8,
+            'period_year' => 2026,
+            'assignments' => json_encode([
+                ['filename' => 'EMP042_August2026.pdf', 'user_id' => $jane->id],
+            ]),
+            'files' => [$zip],
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.issued', 1)
+            ->assertJsonPath('data.failed.0.filename', 'EMP099_August2026.pdf')
+            ->assertJsonPath('data.failed.0.reason', 'unassigned');
+
+        $this->assertDatabaseHas('payslips', ['user_id' => $jane->id, 'period_month' => 8, 'period_year' => 2026]);
+        $this->assertDatabaseMissing('payslips', ['user_id' => $john->id]);
     }
 
     public function test_staff_cannot_download_another_users_payslip(): void
@@ -148,6 +190,10 @@ class PayslipDistributionTest extends TestCase
 
         $this->asUser($peer)
             ->getJson('/api/v1/finance/payslips/'.$payslip->id)
+            ->assertForbidden();
+
+        $this->asUser($peer)
+            ->get('/api/v1/finance/payslips/'.$payslip->id.'/download')
             ->assertForbidden();
     }
 

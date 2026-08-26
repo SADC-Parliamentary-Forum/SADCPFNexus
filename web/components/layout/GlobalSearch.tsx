@@ -40,7 +40,7 @@ const SEARCH_INDEX: SearchResult[] = [
   { id: "a-users-new",   label: "Create User",               description: "Add a new user account",               href: "/admin/users/create",  category: "Actions",     icon: "person_add"             },
   { id: "a-roles",       label: "Roles & Permissions",       description: "Configure system roles",               href: "/admin/access/roles",  category: "Admin",       icon: "admin_panel_settings"   },
   { id: "a-depts",       label: "Departments",               description: "Organisational structure",             href: "/admin/departments",   category: "Admin",       icon: "corporate_fare"         },
-  { id: "a-payslips",    label: "Payslip Upload",            description: "Bulk upload employee payslips",        href: "/admin/payslips",      category: "Admin",       icon: "receipt_long"           },
+  { id: "a-payslips",    label: "Issue payslips",            description: "Drop a pay-period envelope and assign files to staff", href: "/admin/payslips",      category: "Admin",       icon: "receipt_long"           },
   { id: "a-settings",    label: "System Settings",           description: "Organisation, fiscal year, timezone",  href: "/admin/settings",      category: "Admin",       icon: "settings"               },
   { id: "a-workflows",   label: "Approval Workflows",        description: "Configure approval chains",            href: "/admin/workflows",     category: "Admin",       icon: "account_tree"           },
   { id: "a-notifs",      label: "Notification Templates",    description: "Email and system notification content",href: "/admin/notifications", category: "Admin",       icon: "notifications"          },

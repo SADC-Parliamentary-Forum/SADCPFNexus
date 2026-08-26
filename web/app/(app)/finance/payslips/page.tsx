@@ -9,6 +9,7 @@ import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { RegisterMobileCards } from "@/components/ui/RegisterMobileCards";
 import { Input } from "@/components/ui/Input";
+import { useToast } from "@/components/ui/Toast";
 import { DEFAULT_PAGE_SIZE, clientPageCount, getListData, slicePage } from "@/lib/listPagination";
 import { formatPayPeriod } from "@/lib/payslipPeriod";
 
@@ -17,6 +18,7 @@ function periodLabel(p: Payslip): string {
 }
 
 export default function PayslipsPage() {
+  const { error: toastError } = useToast();
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export default function PayslipsPage() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {
-      // no file
+      toastError("Payslip document is not available yet.");
     }
   };
 

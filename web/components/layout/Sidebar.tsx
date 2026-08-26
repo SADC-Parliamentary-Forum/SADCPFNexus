@@ -343,7 +343,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Notifications", href: "/admin/notifications", icon: "notifications" },
       { label: "Timesheet Projects", href: "/admin/timesheet-projects", icon: "task_alt" },
       { label: "Holiday Calendar", href: "/admin/calendar", icon: "event_busy" },
-      { label: "Payslip Upload", href: "/admin/payslips", icon: "upload_file" },
+      { label: "Issue payslips", href: "/admin/payslips", icon: "upload_file" },
       { label: "Salary Assignments", href: "/admin/salary-assignments", icon: "badge" },
       { label: "Platform Audit Trail", href: "/admin/audit-trail", icon: "policy" },
       { label: "Document Register", href: "/admin/documents", icon: "folder_managed" },

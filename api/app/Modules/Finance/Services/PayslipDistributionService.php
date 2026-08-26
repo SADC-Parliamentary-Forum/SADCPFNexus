@@ -19,8 +19,13 @@ class PayslipDistributionService
     /** 25 MiB — same ceiling as a single uploaded payslip. */
     public const MAX_EXTRACTED_BYTES = 25 * 1024 * 1024;
 
+    /** Cap across every extracted document in one envelope. */
+    public const MAX_TOTAL_EXTRACTED_BYTES = 100 * 1024 * 1024;
+
     /** @var list<resource> */
     private array $tmpHandles = [];
+
+    private int $extractedBytes = 0;
 
     public function __destruct()
     {
@@ -165,6 +170,8 @@ class PayslipDistributionService
         $failed = [];
         $payslips = [];
         $seenUsers = [];
+        $issuedUserIds = [];
+        $strictAssignments = $assignmentMap !== [];
 
         foreach ($expanded as $entry) {
             $file = $entry['file'];
@@ -172,6 +179,10 @@ class PayslipDistributionService
             $key = $this->normalizeFilename($filename);
             $userId = $assignmentMap[$key] ?? null;
             if ($userId === null) {
+                if ($strictAssignments) {
+                    $failed[] = ['filename' => $filename, 'reason' => 'unassigned'];
+                    continue;
+                }
                 $match = $this->matcher->match($filename, $users->values());
                 $userId = $match['user']['id'] ?? null;
             }
@@ -197,6 +208,7 @@ class PayslipDistributionService
             try {
                 $payslip = $this->storeFile($actor, $employee, $file, $periodMonth, $periodYear, $existing);
                 $payslips[] = $payslip;
+                $issuedUserIds[] = (int) $employee->id;
                 if ($existing) {
                     $replaced++;
                 } else {
@@ -218,6 +230,7 @@ class PayslipDistributionService
                 'issued' => $issued,
                 'replaced' => $replaced,
                 'failed' => count($failed),
+                'user_ids' => array_values(array_unique($issuedUserIds)),
             ],
             'tags' => ['payslips', 'hr'],
         ]);
@@ -259,6 +272,7 @@ class PayslipDistributionService
      */
     private function expandUploads(array $files): array
     {
+        $this->extractedBytes = 0;
         $out = [];
         foreach ($files as $file) {
             if (! $file instanceof UploadedFile || ! $file->isValid()) {
@@ -328,6 +342,11 @@ class PayslipDistributionService
                 if ($copied === false || $copied > self::MAX_EXTRACTED_BYTES) {
                     fclose($tmp);
                     throw ValidationException::withMessages(['files' => 'A file inside the ZIP exceeds the 25 MB limit.']);
+                }
+                $this->extractedBytes += (int) $copied;
+                if ($this->extractedBytes > self::MAX_TOTAL_EXTRACTED_BYTES) {
+                    fclose($tmp);
+                    throw ValidationException::withMessages(['files' => 'The ZIP archive exceeds the 100 MB extracted-size limit.']);
                 }
                 $meta = stream_get_meta_data($tmp);
                 $path = $meta['uri'] ?? null;

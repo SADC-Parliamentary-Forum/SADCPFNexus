@@ -6,6 +6,7 @@ import Link from "next/link";
 import { financeApi, type SalaryAdvanceRequest, type Payslip, type FinanceSummary, type Budget } from "@/lib/api";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { FINANCE_HUB_CARDS } from "@/lib/hubs/finance";
+import { useToast } from "@/components/ui/Toast";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -85,6 +86,7 @@ function BudgetBar({ budget }: { budget: Budget }) {
 }
 
 export default function FinancePage() {
+  const { error: toastError } = useToast();
   const [advances, setAdvances] = useState<SalaryAdvanceRequest[]>([]);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
@@ -251,7 +253,7 @@ export default function FinancePage() {
                         a.click();
                         window.URL.revokeObjectURL(url);
                       } catch {
-                        // no file
+                        toastError("Payslip document is not available yet.");
                       }
                     }}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"

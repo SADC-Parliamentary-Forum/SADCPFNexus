@@ -9,6 +9,7 @@ import {
   isPayslipZip,
   parsePeriodValue,
 } from "./payslipPeriod.ts";
+import { canAccessRoute } from "./authAccess.ts";
 
 const webRoot = join(process.cwd());
 
@@ -59,6 +60,19 @@ test("finance and HR sidebars expose issue payslips for HR", () => {
   assert.match(finance, /\/hr\/payslips/);
   assert.match(finance, /Issue payslips/);
   assert.match(finance, /My payslips/);
+  assert.doesNotMatch(finance, /permission: "hr\.admin"/);
   assert.match(hr, /\/hr\/payslips/);
   assert.match(sidebar, /href: "\/hr\/payslips"/);
+});
+
+test("HR Manager can open the issue-payslips desk; staff cannot", () => {
+  assert.equal(
+    canAccessRoute({ roles: ["HR Manager"], permissions: ["hr.edit", "hr.view"] }, "/hr/payslips"),
+    true,
+  );
+  assert.equal(
+    canAccessRoute({ roles: ["HR Administrator"], permissions: ["hr.admin"] }, "/hr/payslips"),
+    true,
+  );
+  assert.equal(canAccessRoute({ roles: ["staff"], permissions: [] }, "/hr/payslips"), false);
 });

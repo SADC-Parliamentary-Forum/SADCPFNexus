@@ -33,12 +33,15 @@ class PayslipFilenameMatcher
     {
         $employeeNumber = $this->extractEmployeeNumber($filename);
         if ($employeeNumber !== null) {
-            $byNumber = $users->first(function (User $user) use ($employeeNumber) {
+            $byNumber = $users->filter(function (User $user) use ($employeeNumber) {
                 $code = $this->normalizeCode((string) ($user->employee_number ?? ''));
                 return $code !== '' && $code === $this->normalizeCode($employeeNumber);
-            });
-            if ($byNumber) {
-                return $this->result('matched', $byNumber, [$byNumber], $employeeNumber);
+            })->values();
+            if ($byNumber->count() === 1) {
+                return $this->result('matched', $byNumber[0], $byNumber->all(), $employeeNumber);
+            }
+            if ($byNumber->count() > 1) {
+                return $this->result('ambiguous', null, $byNumber->all(), $employeeNumber);
             }
         }
 
