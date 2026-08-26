@@ -304,6 +304,9 @@ return [
         ['pattern' => 'api/v1/finance/advances/eligibility', 'permissions' => [
             'READ' => ['salary_advance.module.view', 'salary_advance.request.read.self', 'finance.view'],
         ]],
+        ['pattern' => 'api/v1/finance/advances/employee-summary', 'permissions' => [
+            'READ' => ['salary_advance.module.view', 'salary_advance.request.read.self', 'finance.view'],
+        ]],
         ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/submit', 'permissions' => [
             'POST' => ['salary_advance.request.submit.created', 'finance.create'],
         ]],
