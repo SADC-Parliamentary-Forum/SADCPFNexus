@@ -505,8 +505,23 @@ return [
             'WRITE' => ['admin.platform.manage', 'system.admin'],
         ]],
         ['pattern' => 'api/v1/approvals*', 'permissions' => [
-            'READ' => ['approvals.inbox.view', 'workflows.view-own'],
-            'WRITE' => ['approvals.task.act.assigned', 'workflows.act'],
+            'READ' => [
+                'approvals.inbox.view',
+                'workflows.view-own',
+                // Named approvers must reach the snapshot before the controller
+                // scopes the row; specialist roles do not inherit General Employee.
+                'approvals.task.act.assigned',
+                'leave.balance.certify.assigned',
+                'leave.request.recommend.assigned',
+                'leave.request.authorise.assigned',
+            ],
+            'WRITE' => [
+                'approvals.task.act.assigned',
+                'workflows.act',
+                'leave.balance.certify.assigned',
+                'leave.request.recommend.assigned',
+                'leave.request.authorise.assigned',
+            ],
         ]],
         // Staff may list the institutional calendar (workplan UI is ungated) but cannot create/edit.
         ['pattern' => 'api/v1/calendar*', 'permissions' => [

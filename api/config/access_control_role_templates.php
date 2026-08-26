@@ -49,6 +49,8 @@ return [
         'risk_level' => 'high',
         'permissions' => [
             'dashboard.view',
+            'approvals.inbox.view',
+            'approvals.task.act.assigned',
             'leave.module.view',
             'leave.balance.certify.assigned',
             'leave.balance.read.assigned_staff',
