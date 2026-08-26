@@ -1102,7 +1102,9 @@ return [
         'data_classification' => 'Internal',
         'mfa_required' => false,
         'linked_routes' => ['/leave'],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'GET /api/v1/leave/requests',
+        ],
     ],
     'leave.report.export' => [
         'display_name' => 'Export leave reports',
@@ -1128,7 +1130,9 @@ return [
         'data_classification' => 'Internal',
         'mfa_required' => false,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'GET /api/v1/leave/requests',
+        ],
     ],
     'leave.request.authorise.assigned' => [
         'display_name' => 'Authorise leave',
@@ -1142,6 +1146,7 @@ return [
         'mfa_required' => true,
         'linked_routes' => [],
         'linked_endpoints' => [
+            'GET /api/v1/leave/requests',
             'POST /api/v1/leave/requests/{id}/approve',
             'POST /api/v1/leave/requests/{leaveRequest}/approve',
         ],
@@ -1196,7 +1201,9 @@ return [
         'data_classification' => 'Confidential',
         'mfa_required' => false,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'GET /api/v1/leave/requests',
+        ],
     ],
     'leave.request.read.self' => [
         'display_name' => 'Read own leave',

@@ -388,6 +388,18 @@ return [
             'PATCH' => ['pif.create', 'pif.approve', 'programme.finance-review', 'programme.finance_review.update.assigned', 'pif.admin'],
             'DELETE' => ['pif.admin'],
         ]],
+        ['pattern' => 'api/v1/leave/requests', 'permissions' => [
+            'GET' => [
+                'leave.view',
+                'leave.module.view',
+                'leave.request.read.self',
+                'leave.request.read.direct_reports',
+                'leave.request.authorise.assigned',
+                'leave.report.view',
+                'leave.calendar.view.organisation',
+                'leave.balance.certify.assigned',
+            ],
+        ]],
         ['pattern' => 'api/v1/leave*', 'permissions' => [
             'READ' => ['leave.view', 'leave.approve', 'leave.admin', 'leave.module.view', 'leave.request.read.self'],
             'POST' => [
