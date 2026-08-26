@@ -11,8 +11,6 @@ use App\Models\PeopleAuthority\Person;
 use App\Models\PeopleAuthority\PersonConfidentialProfile;
 use App\Models\PeopleAuthority\PersonUserLink;
 use App\Models\PeopleAuthority\PositionAssignment;
-use App\Models\PeopleAuthority\ReportingRelationship;
-use App\Models\PeopleAuthority\SignatureEnrolment;
 use App\Models\PeopleAuthority\UserRoleAssignment;
 use App\Models\Position;
 use App\Models\Tenant;
@@ -389,10 +387,9 @@ class PeopleAuthorityPhase1Test extends TestCase
             'national_id' => 'SECRET-ID',
         ]);
 
-        // Staff cannot see confidential
+        // Staff lacks people.view-profile — person records are HR directory, not self-service.
         $this->asUser($staff)->getJson('/api/v1/people-authority/people/'.$person->id)
-            ->assertOk()
-            ->assertJsonPath('data.confidential', null);
+            ->assertForbidden();
 
         // HR can see confidential
         $this->asUser($hr)->getJson('/api/v1/people-authority/people/'.$person->id)
