@@ -6,7 +6,6 @@ use App\Models\MeActivityReport;
 use App\Models\MeEvidence;
 use App\Models\Programme;
 use App\Models\Tenant;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -26,14 +25,14 @@ class EvidenceTest extends TestCase
         ]);
     }
 
-    public function test_staff_can_upload_evidence(): void
+    public function test_me_officer_can_upload_evidence(): void
     {
         Storage::fake('local');
         $tenant = Tenant::factory()->create();
         [$http, $user] = $this->asMeOfficer($tenant);
         $report = $this->makeReport($tenant, $user->id);
 
-        $file = UploadedFile::fake()->create('attendance.pdf', 120, 'application/pdf');
+        $file = $this->fakePdf('attendance.pdf');
 
         $http->post("/api/v1/mande/activity-reports/{$report->id}/evidence", [
             'file' => $file,
