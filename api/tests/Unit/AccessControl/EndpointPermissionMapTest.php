@@ -181,6 +181,31 @@ class EndpointPermissionMapTest extends TestCase
         );
     }
 
+    public function test_procurement_budget_reservation_is_finance_not_procurement_create(): void
+    {
+        $rules = [
+            ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/reserve-budget', 'permissions' => [
+                'POST' => ['procurement.manage_budget', 'finance.create', 'finance.approve'],
+            ]],
+            ['pattern' => 'api/v1/procurement*', 'permissions' => [
+                'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
+            ]],
+        ];
+
+        $map = new EndpointPermissionMap($this->registry([]), $rules);
+        $reserve = new LaravelRoute(['POST'], 'api/v1/procurement/requests/{procurementRequest}/reserve-budget', ['uses' => fn () => null]);
+        $create = new LaravelRoute(['POST'], 'api/v1/procurement/requests', ['uses' => fn () => null]);
+
+        $this->assertSame(
+            [['procurement.manage_budget', 'finance.create', 'finance.approve']],
+            $map->fallbackPermissionGroupsForRoute($reserve)
+        );
+        $this->assertSame(
+            [['procurement.create', 'procurement.approve', 'procurement.admin']],
+            $map->fallbackPermissionGroupsForRoute($create)
+        );
+    }
+
     private function registry(array $permissions): PermissionRegistry
     {
         return new class($permissions) extends PermissionRegistry

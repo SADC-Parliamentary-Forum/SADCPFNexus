@@ -152,6 +152,8 @@ return [
             'imprest.view',
             'imprest.approve',
             'imprest.liquidate',
+            'procurement.view',
+            'procurement.manage_budget',
         ],
         'inherits' => [],
         'legacy_roles' => ['Finance Controller'],

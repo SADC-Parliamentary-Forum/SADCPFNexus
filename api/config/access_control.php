@@ -149,6 +149,17 @@ return [
         ['pattern' => 'api/v1/procurement/committee-evaluations*', 'permissions' => [
             'READ' => ['procurement.evaluation.read.assigned'],
         ]],
+        // Budget confirmation is Finance, not procurement.create (requester). Exact
+        // patterns must precede api/v1/procurement* (first-match fallback).
+        ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/reserve-budget', 'permissions' => [
+            'POST' => ['procurement.manage_budget', 'finance.create', 'finance.approve'],
+        ]],
+        ['pattern' => 'api/v1/procurement/budget-reservations', 'permissions' => [
+            'GET' => ['procurement.manage_budget', 'finance.view', 'procurement.view'],
+        ]],
+        ['pattern' => 'api/v1/procurement/budget-reservations/{budgetReservation}', 'permissions' => [
+            'DELETE' => ['procurement.manage_budget', 'finance.create', 'finance.approve'],
+        ]],
         ['pattern' => 'api/v1/procurement*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin'],
             'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
