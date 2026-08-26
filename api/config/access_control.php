@@ -171,6 +171,9 @@ return [
         ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/approve', 'permissions' => [
             'POST' => ['procurement.approve', 'procurement.request.review.assigned', 'procurement.request.approve.assigned'],
         ]],
+        ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/issue-rfq', 'permissions' => [
+            'POST' => ['procurement.rfq.publish.assigned', 'procurement.create', 'procurement.admin'],
+        ]],
         ['pattern' => 'api/v1/procurement*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin'],
             'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],

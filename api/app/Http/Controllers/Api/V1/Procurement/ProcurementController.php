@@ -299,7 +299,9 @@ class ProcurementController extends Controller
         }
         if (
             ! $request->user()->isSystemAdmin()
-            && ! $request->user()->hasAnyPermission(['procurement.create', 'procurement.approve', 'procurement.admin'])
+            && ! $request->user()->can('procurement.rfq.publish.assigned')
+            && ! $request->user()->can('procurement.create')
+            && ! $request->user()->can('procurement.admin')
         ) {
             abort(403);
         }

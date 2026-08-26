@@ -256,6 +256,31 @@ class EndpointPermissionMapTest extends TestCase
         );
     }
 
+    public function test_issue_rfq_is_publish_assigned_not_procurement_create(): void
+    {
+        $rules = [
+            ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/issue-rfq', 'permissions' => [
+                'POST' => ['procurement.rfq.publish.assigned', 'procurement.create', 'procurement.admin'],
+            ]],
+            ['pattern' => 'api/v1/procurement*', 'permissions' => [
+                'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
+            ]],
+        ];
+
+        $map = new EndpointPermissionMap($this->registry([]), $rules);
+        $rfq = new LaravelRoute(['POST'], 'api/v1/procurement/requests/{procurementRequest}/issue-rfq', ['uses' => fn () => null]);
+        $create = new LaravelRoute(['POST'], 'api/v1/procurement/requests', ['uses' => fn () => null]);
+
+        $this->assertSame(
+            [['procurement.rfq.publish.assigned', 'procurement.create', 'procurement.admin']],
+            $map->fallbackPermissionGroupsForRoute($rfq)
+        );
+        $this->assertSame(
+            [['procurement.create', 'procurement.approve', 'procurement.admin']],
+            $map->fallbackPermissionGroupsForRoute($create)
+        );
+    }
+
     private function registry(array $permissions): PermissionRegistry
     {
         return new class($permissions) extends PermissionRegistry
