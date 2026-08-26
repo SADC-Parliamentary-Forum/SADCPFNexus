@@ -12,7 +12,7 @@ class MePhase2NonPifAndFollowUpTest extends TestCase
     public function test_staff_can_create_non_pif_report_with_reason(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http] = $this->asStaff($tenant);
+        [$http] = $this->asMeOfficer($tenant);
 
         $http->postJson('/api/v1/mande/activity-reports', [
             'activity_title' => 'Internal technical meeting',
@@ -22,16 +22,16 @@ class MePhase2NonPifAndFollowUpTest extends TestCase
             ->assertJsonPath('data.programme_id', null);
 
         $this->assertDatabaseHas('me_activity_reports', [
-            'tenant_id'      => $tenant->id,
+            'tenant_id' => $tenant->id,
             'activity_title' => 'Internal technical meeting',
-            'programme_id'   => null,
+            'programme_id' => null,
         ]);
     }
 
     public function test_non_pif_requires_reason(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http] = $this->asStaff($tenant);
+        [$http] = $this->asMeOfficer($tenant);
 
         $http->postJson('/api/v1/mande/activity-reports', [
             'activity_title' => 'Missing reason',
@@ -42,20 +42,20 @@ class MePhase2NonPifAndFollowUpTest extends TestCase
     public function test_follow_up_crud_on_activity_report(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asMeOfficer($tenant);
 
         $report = MeActivityReport::create([
-            'tenant_id'      => $tenant->id,
-            'programme_id'   => null,
+            'tenant_id' => $tenant->id,
+            'programme_id' => null,
             'non_pif_reason' => 'Internal meeting for follow-up test',
             'activity_title' => 'Follow-up host',
-            'review_status'  => 'not_submitted',
-            'created_by'     => $user->id,
+            'review_status' => 'not_submitted',
+            'created_by' => $user->id,
             'responsible_officer_id' => $user->id,
         ]);
 
         $created = $http->postJson("/api/v1/mande/activity-reports/{$report->id}/follow-ups", [
-            'action'   => 'Circulate meeting notes',
+            'action' => 'Circulate meeting notes',
             'due_date' => now()->addDays(7)->toDateString(),
             'priority' => 'high',
         ])->assertCreated()

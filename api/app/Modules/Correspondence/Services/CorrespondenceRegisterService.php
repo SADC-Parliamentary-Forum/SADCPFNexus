@@ -19,7 +19,6 @@ use App\Models\User;
 use App\Modules\Assignments\Services\AssignmentService;
 use App\Modules\Documents\Services\DocumentStorageService;
 use App\Services\NotificationService;
-use App\Support\UploadContentSniffer;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
@@ -42,9 +41,7 @@ class CorrespondenceRegisterService
         $query = Correspondence::query()->where('tenant_id', $user->tenant_id);
 
         $resolver = app(\App\Modules\AccessControl\Services\AccessScopeResolver::class);
-        $elevated = $user->isSystemAdmin()
-            || $user->can('correspondence.admin')
-            || $user->can('correspondence.confidential.view');
+        $elevated = $this->isElevatedCorrespondenceUser($user);
 
         // Elevated registry/admin path — still deny-by-default for pure ICT via resolver.
         // Note: correspondence.registry alone does NOT unlock the full register (staff seeder includes it).
@@ -82,10 +79,7 @@ class CorrespondenceRegisterService
     {
         abort_unless((int) $c->tenant_id === (int) $user->tenant_id, 404);
 
-        if ($user->isSystemAdmin()
-            || $user->hasPermissionTo('correspondence.admin', 'sanctum')
-            || $user->hasPermissionTo('correspondence.confidential.view', 'sanctum')
-        ) {
+        if ($this->isElevatedCorrespondenceUser($user)) {
             return;
         }
 
@@ -99,10 +93,7 @@ class CorrespondenceRegisterService
             return true;
         }
 
-        if ($user->isSystemAdmin()
-            || $user->hasPermissionTo('correspondence.admin', 'sanctum')
-            || $user->hasPermissionTo('correspondence.confidential.view', 'sanctum')
-        ) {
+        if ($this->isElevatedCorrespondenceUser($user)) {
             return true;
         }
 
@@ -115,6 +106,25 @@ class CorrespondenceRegisterService
                     ->orWhere('routed_by', $user->id)
                     ->orWhereJsonContains('supporting_owner_ids', $user->id);
             })->exists();
+    }
+
+    private function isElevatedCorrespondenceUser(User $user): bool
+    {
+        if ($user->isSystemAdmin()) {
+            return true;
+        }
+
+        foreach ([
+            'correspondence.admin',
+            'correspondence.confidential.view',
+            'correspondence.read.confidential',
+        ] as $permission) {
+            if ($user->can($permission)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function redactForUser(Correspondence $c, User $user): Correspondence
@@ -305,7 +315,7 @@ class CorrespondenceRegisterService
 
     public function voidReference(Correspondence $c, User $user, string $reason): Correspondence
     {
-        return DB::transaction(function () use ($c, $user, $reason) {
+        return DB::transaction(function () use ($c, $reason) {
             $refs = array_filter([$c->reference_number, $c->registry_reference]);
             CorrespondenceReferenceLedger::where('tenant_id', $c->tenant_id)
                 ->whereIn('reference', $refs)

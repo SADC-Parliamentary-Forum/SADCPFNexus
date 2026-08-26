@@ -3,7 +3,6 @@
 namespace Tests\Feature\Correspondence;
 
 use App\Models\Correspondence;
-use App\Models\CorrespondenceContact;
 use App\Models\Tenant;
 use Tests\TestCase;
 
@@ -12,10 +11,10 @@ class CorrespondenceTest extends TestCase
     private function letterPayload(array $overrides = []): array
     {
         return array_merge([
-            'title'     => 'Budget Review 2026',
-            'subject'   => 'Budget Review 2026',
-            'body'      => 'Please find attached the budget review for Q1.',
-            'type'      => 'external',
+            'title' => 'Budget Review 2026',
+            'subject' => 'Budget Review 2026',
+            'body' => 'Please find attached the budget review for Q1.',
+            'type' => 'external',
             'direction' => 'outgoing',
         ], $overrides);
     }
@@ -27,113 +26,145 @@ class CorrespondenceTest extends TestCase
         $this->getJson('/api/v1/correspondence/letters')->assertUnauthorized();
     }
 
-    public function test_staff_can_create_letter(): void
+    public function test_staff_cannot_create_letter(): void
     {
-        [$http, $user] = $this->asStaff();
+        [$http] = $this->asStaff();
+
+        $http->postJson('/api/v1/correspondence/letters', $this->letterPayload())->assertForbidden();
+    }
+
+    public function test_admin_can_create_letter(): void
+    {
+        [$http, $user] = $this->asAdmin();
 
         $response = $http->postJson('/api/v1/correspondence/letters', $this->letterPayload());
 
         $response->assertCreated();
         $this->assertDatabaseHas('correspondence', [
             'created_by' => $user->id,
-            'subject'    => 'Budget Review 2026',
+            'subject' => 'Budget Review 2026',
         ]);
     }
 
     public function test_letter_requires_subject(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asAdmin();
 
         $http->postJson('/api/v1/correspondence/letters', [
             'title' => 'No subject here',
-            'type'  => 'external',
-            'body'  => 'No subject here',
+            'type' => 'external',
+            'body' => 'No subject here',
         ])->assertUnprocessable()
-          ->assertJsonValidationErrors(['subject']);
+            ->assertJsonValidationErrors(['subject']);
     }
 
-    public function test_staff_can_list_letters(): void
+    public function test_staff_cannot_list_letters(): void
     {
         [$http] = $this->asStaff();
+
+        $http->getJson('/api/v1/correspondence/letters')->assertForbidden();
+    }
+
+    public function test_admin_can_list_letters(): void
+    {
+        [$http] = $this->asAdmin();
 
         $http->getJson('/api/v1/correspondence/letters')->assertOk();
     }
 
-    public function test_staff_can_view_letter(): void
+    public function test_admin_can_view_letter(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asAdmin($tenant);
 
         $letter = Correspondence::create([
-            'tenant_id'        => $tenant->id,
-            'created_by'       => $user->id,
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
             'reference_number' => 'CORR-001',
-            'title'            => 'Test Letter',
-            'subject'          => 'Test Letter',
-            'body'             => 'Content here.',
-            'type'             => 'external',
-            'direction'        => 'outgoing',
-            'status'           => 'draft',
+            'title' => 'Test Letter',
+            'subject' => 'Test Letter',
+            'body' => 'Content here.',
+            'type' => 'external',
+            'direction' => 'outgoing',
+            'status' => 'draft',
         ]);
 
         $http->getJson("/api/v1/correspondence/letters/{$letter->id}")->assertOk();
     }
 
-    public function test_staff_can_update_draft_letter(): void
+    public function test_admin_can_update_draft_letter(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asAdmin($tenant);
 
         $letter = Correspondence::create([
-            'tenant_id'        => $tenant->id,
-            'created_by'       => $user->id,
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
             'reference_number' => 'CORR-002',
-            'title'            => 'Old subject',
-            'subject'          => 'Old subject',
-            'body'             => 'Old body.',
-            'type'             => 'external',
-            'direction'        => 'outgoing',
-            'status'           => 'draft',
+            'title' => 'Old subject',
+            'subject' => 'Old subject',
+            'body' => 'Old body.',
+            'type' => 'external',
+            'direction' => 'outgoing',
+            'status' => 'draft',
         ]);
 
         $http->putJson("/api/v1/correspondence/letters/{$letter->id}", [
             'subject' => 'Updated subject',
-            'body'    => 'Updated body.',
+            'body' => 'Updated body.',
         ])->assertOk();
 
         $this->assertDatabaseHas('correspondence', [
-            'id'      => $letter->id,
+            'id' => $letter->id,
             'subject' => 'Updated subject',
         ]);
     }
 
     // ─── Contacts ────────────────────────────────────────────────────────────
 
-    public function test_staff_can_create_contact(): void
+    public function test_staff_cannot_create_contact(): void
     {
         [$http] = $this->asStaff();
 
         $http->postJson('/api/v1/correspondence/contacts', [
-            'full_name'    => 'John Smith',
+            'full_name' => 'John Smith',
             'organization' => 'Finance Ministry',
-            'email'        => 'john@finance.gov',
+            'email' => 'john@finance.gov',
+        ])->assertForbidden();
+    }
+
+    public function test_admin_can_create_contact(): void
+    {
+        [$http] = $this->asAdmin();
+
+        $http->postJson('/api/v1/correspondence/contacts', [
+            'full_name' => 'John Smith',
+            'organization' => 'Finance Ministry',
+            'email' => 'john@finance.gov',
         ])->assertCreated();
     }
 
-    public function test_staff_can_list_contacts(): void
+    public function test_staff_cannot_list_contacts(): void
     {
         [$http] = $this->asStaff();
+
+        $http->getJson('/api/v1/correspondence/contacts')->assertForbidden();
+    }
+
+    public function test_admin_can_list_contacts(): void
+    {
+        [$http] = $this->asAdmin();
 
         $http->getJson('/api/v1/correspondence/contacts')->assertOk();
     }
 
     public function test_contact_requires_name(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asAdmin();
 
         $http->postJson('/api/v1/correspondence/contacts', [
             'email' => 'noname@example.com',
         ])->assertUnprocessable()
-          ->assertJsonValidationErrors(['full_name']);
+            ->assertJsonValidationErrors(['full_name']);
     }
 }

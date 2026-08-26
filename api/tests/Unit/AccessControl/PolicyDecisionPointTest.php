@@ -5,7 +5,6 @@ namespace Tests\Unit\AccessControl;
 use App\Models\AccessControl\UserPermissionDenial;
 use App\Models\AccessControl\UserPermissionGrant;
 use App\Models\LeaveRequest;
-use App\Models\User;
 use App\Modules\AccessControl\Services\AccessCacheInvalidator;
 use App\Modules\AccessControl\Services\AccessScopeResolver;
 use App\Modules\AccessControl\Services\PolicyDecisionPoint;
@@ -87,7 +86,11 @@ class PolicyDecisionPointTest extends TestCase
 
     public function test_legacy_leave_approve_maps_to_canonical_authorise(): void
     {
-        $user = $this->makeUser('HR Manager');
+        // Canonical HR template no longer includes leave.approve. Grant the
+        // legacy alias directly so this test checks PDP mapping, not the catalogue.
+        $user = $this->makeUser('staff');
+        $user->givePermissionTo('leave.approve');
+
         $decision = app(PolicyDecisionPoint::class)->authorize(
             $user,
             'leave.request.authorise.assigned',
@@ -210,7 +213,7 @@ class PolicyDecisionPointTest extends TestCase
         app(AccessScopeResolver::class)->constrainQuery($query, $staff, 'requester_id', ['module' => 'leave']);
 
         $ids = $query->pluck('requester_id')->unique()->all();
-        $this->assertSame([(int) $staff->id], array_map('intval', $ids));
+        $this->assertSame([intval($staff->id)], array_map('intval', $ids));
     }
 
     public function test_expired_acting_context_denies_approval(): void

@@ -26,14 +26,15 @@ class AccessControlPersonaSmokeTest extends TestCase
             ['staff', ['leave.create', 'leave.view'], ['admin.roles.manage', 'salary_advance.report.export']],
             ['HOD', ['leave.view', 'travel.view'], ['admin.roles.assign']],
             ['HR Manager', ['leave.approve'], ['admin.roles.assign']],
-            ['Finance Controller', ['programme.finance_review.update.assigned'], ['procurement.evaluation.score.assigned']],
+            ['Finance Controller', ['programme.finance_review.update.assigned', 'programme.finance-review', 'finance.view', 'finance.create'], ['procurement.evaluation.score.assigned']],
             ['Programme Officer', ['programme.module.view', 'programme.request.create'], ['programme.finance_review.update.assigned']],
             ['Procurement Evaluation Committee Member', ['procurement.evaluation.read.assigned', 'my_work.view'], ['procurement.module.view', 'procurement.approve']],
             ['Administration Officer', ['travel.view'], ['admin.roles.assign', 'leave.request.authorise.assigned']],
             ['ICT Platform Administrator', ['admin.platform.manage'], ['leave.request.authorise.assigned', 'salary_advance.report.export', 'programme.finance_review.update.assigned']],
             ['Security and Access Administrator', ['admin.roles.view', 'admin.access.simulate'], ['leave.request.authorise.assigned']],
-            ['Internal Auditor', ['leave.view', 'audit.view'], ['leave.request.authorise.assigned', 'admin.roles.assign']],
-            ['Secretary General', ['leave.view'], ['admin.roles.manage']],
+            // Canonical Internal Auditor is report/assurance scoped, not self-service leave.view.
+            ['Internal Auditor', ['leave.report.view', 'audit.view', 'audit.plan.manage'], ['leave.view', 'leave.request.authorise.assigned', 'admin.roles.assign']],
+            ['Secretary General', ['leave.request.authorise.assigned', 'audit.plan.approve'], ['admin.roles.manage']],
         ];
     }
 

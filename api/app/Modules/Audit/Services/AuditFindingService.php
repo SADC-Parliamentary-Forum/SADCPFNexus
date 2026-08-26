@@ -28,9 +28,22 @@ class AuditFindingService
 
     public function list(array $filters, User $user): LengthAwarePaginator
     {
-        $q = AuditFinding::query()->where('tenant_id', $user->tenant_id)->orderByDesc('id');
+        $allowedStatuses = [
+            'draft', 'issued', 'management_response', 'corrective_in_progress',
+            'due_for_verification', 'reopened', 'closed', 'risk_accepted',
+        ];
+        $q = AuditFinding::query()
+            ->with(['correctiveActions'])
+            ->where('tenant_id', $user->tenant_id)
+            ->orderByDesc('id');
         if (! empty($filters['status'])) {
-            $q->where('status', $filters['status']);
+            $statuses = array_values(array_filter(array_map('trim', explode(',', (string) $filters['status']))));
+            $statuses = array_values(array_intersect($statuses, $allowedStatuses));
+            if (count($statuses) > 1) {
+                $q->whereIn('status', $statuses);
+            } elseif ($statuses !== []) {
+                $q->where('status', $statuses[0]);
+            }
         }
         if (! empty($filters['engagement_id'])) {
             $q->where('engagement_id', $filters['engagement_id']);
@@ -57,6 +70,7 @@ class AuditFindingService
                 $f->effect = null;
                 $f->recommendation = null;
                 $f->setAttribute('redacted', true);
+                $f->setRelation('correctiveActions', collect());
             }
 
             return $f;
@@ -442,6 +456,17 @@ class AuditFindingService
         ]);
 
         return $finding->fresh();
+    }
+
+    public function showForViewer(AuditFinding $finding, User $user): AuditFinding
+    {
+        $this->assertTenant($finding->tenant_id, $user);
+        if (in_array($finding->confidentiality_level, ['confidential', 'secret'], true)
+            && ! $this->gate->canViewConfidential($user)) {
+            abort(404);
+        }
+
+        return $finding->load(['managementResponses', 'recommendations', 'correctiveActions.assignment']);
     }
 
     private function assertTenant(int $tenantId, User $user): void

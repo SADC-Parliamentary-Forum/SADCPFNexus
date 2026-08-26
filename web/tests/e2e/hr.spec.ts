@@ -24,7 +24,9 @@ test.describe("Timesheets", () => {
   });
 
   test("timesheet entries table or empty state renders", async ({ page }) => {
-    await expect(page.locator("table, [class*='timesheet'], text=No timesheet").first()).toBeVisible({ timeout: 8_000 });
+    await expect(
+      page.locator("table").or(page.getByText(/timesheet|week|no entries/i)).first()
+    ).toBeVisible({ timeout: 8_000 });
   });
 });
 
@@ -85,7 +87,7 @@ test.describe("Profile", () => {
     await page.goto("/profile");
     await page.waitForLoadState("networkidle");
     // The logged-in user's details should appear
-    const emailEl = page.locator("text=@sadcpf.org, text=staff@, text=admin@").first();
+    const emailEl = page.getByText(/@sadcpf\.org/i).first();
     await expect(emailEl).toBeVisible({ timeout: 8_000 });
   });
 });

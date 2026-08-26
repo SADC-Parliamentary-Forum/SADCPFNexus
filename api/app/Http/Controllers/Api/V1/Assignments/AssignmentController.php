@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1\Assignments;
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\AssignmentChecklistItem;
+use App\Models\AssignmentDependency;
+use App\Models\User;
 use App\Modules\Assignments\Services\AssignmentCapacityService;
 use App\Modules\Assignments\Services\AssignmentDependencyService;
 use App\Modules\Assignments\Services\AssignmentHandoverPackService;
@@ -14,7 +16,6 @@ use App\Modules\Assignments\Services\AssignmentNlSearchService;
 use App\Modules\Assignments\Services\AssignmentService;
 use App\Modules\Assignments\Services\AssignmentTimesheetCouplingService;
 use App\Modules\Assignments\Services\AssignmentWorkloadForecastService;
-use App\Models\AssignmentDependency;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -307,6 +308,7 @@ class AssignmentController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $this->assertCanIssueAssignments($request->user());
         $data = $request->validate($this->createRules());
         $assignment = $this->service->create($data, $request->user());
 
@@ -315,6 +317,7 @@ class AssignmentController extends Controller
 
     public function fromSource(Request $request): JsonResponse
     {
+        $this->assertCanIssueAssignments($request->user());
         $data = $request->validate(array_merge($this->createRules(), [
             'source_type' => ['required', 'string'],
             'source_id' => ['required', 'integer'],
@@ -370,6 +373,7 @@ class AssignmentController extends Controller
 
     public function issue(Request $request, Assignment $assignment): JsonResponse
     {
+        $this->assertCanIssueAssignments($request->user());
         $result = $this->service->issue($assignment, $request->user());
 
         return response()->json(['message' => 'Assignment issued to assignee.', 'data' => $result]);
@@ -589,6 +593,7 @@ class AssignmentController extends Controller
 
     public function storeTemplate(Request $request): JsonResponse
     {
+        $this->assertCanIssueAssignments($request->user());
         $data = $request->validate(array_merge($this->createRules(), [
             'recurrence_rule' => ['nullable', 'array'],
             'recurrence_next_run_at' => ['nullable', 'date'],
@@ -601,6 +606,7 @@ class AssignmentController extends Controller
 
     public function generateFromTemplate(Request $request, Assignment $assignment): JsonResponse
     {
+        $this->assertCanIssueAssignments($request->user());
         $data = $request->validate([
             'due_date' => ['nullable', 'date'],
         ]);
@@ -608,6 +614,24 @@ class AssignmentController extends Controller
         $instance = $this->service->generateFromTemplate($assignment, $request->user(), $data['due_date'] ?? null);
 
         return response()->json(['message' => 'Recurring instance generated.', 'data' => $instance], 201);
+    }
+
+    /**
+     * Issuing new work is not a General Employee self-service action.
+     * Assignee mutations (complete/start/block) stay on assignment.read.assigned.
+     */
+    private function assertCanIssueAssignments(?User $user): void
+    {
+        if ($user === null) {
+            abort(403);
+        }
+        if ($user->isSystemAdmin()) {
+            return;
+        }
+        if ($user->can('assignments.create') || $user->can('assignments.issue') || $user->can('assignments.admin')) {
+            return;
+        }
+        abort(403);
     }
 
     private function createRules(): array

@@ -73,8 +73,8 @@ test.describe("Timesheet templates admin", () => {
 
     const row = list.locator("tr", { hasText: `${unique} Donor week` }).first();
     await expect(row).toBeVisible();
-    page.once("dialog", (d) => d.accept());
     await row.getByRole("button", { name: /deactivate/i }).click();
+    await page.getByRole("dialog").getByRole("button", { name: /^Deactivate$/i }).click();
     await expect(row.getByText(/inactive/i)).toBeVisible({ timeout: 15_000 });
   });
 

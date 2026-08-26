@@ -667,7 +667,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
         {sections.map((section, si) => (
           <div key={si} className={si > 0 ? (isCollapsed ? "mt-1" : "mt-2") : ""}>
             {section.label && !isCollapsed && (
-              <p className="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500 select-none">
+              <p className="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-300 select-none">
                 {section.label}
               </p>
             )}

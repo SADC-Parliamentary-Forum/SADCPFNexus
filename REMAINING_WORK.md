@@ -1,7 +1,7 @@
 # SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-08-24  
-**Baseline tip:** `feat/remaining-module-depth` (from `df32c9d` on `main`).
+**Last updated:** 2026-08-25  
+**Baseline tip:** `cursor/lifecycle-closeout-248a` (from `6b09e6af` on `main`).
 
 ---
 
@@ -125,6 +125,26 @@ Shipped on this branch (People labelled forms + watermark + remaining inventable
 - Travel amendment proposed_changes labelled diff (PR-20)
 - Risk audit-trail old/new labelled change rows (PR-21)
 - HR settings dead “Coming Soon” branch removed (PR-22)
+
+Shipped this continuation (lifecycle closeout + unused audit/handover APIs):
+
+- Lifecycle case detail **clearance**, **exception request/approve**, **reopen**, **terminal-payment assert/approve**, and **finalise** (no payroll posting)
+- Case payload includes labelled **exceptions[]**
+- My-tasks queue **complete** and **clearance** without leaving the list
+- Journey template admin **clone draft from published** and **publish** (list includes `draft_version`; createDraft accepts internal journey types)
+- Audit findings **create/issue** plus finding detail **respond / create corrective action** (never auto-closes)
+- Corrective-action queue **complete / verify**; findings list accepts comma-separated status and includes nested actions
+- Assignment handover **from/to staff pickers** (`tenantUsersApi`) instead of hardcoding the current user
+
+CI alignment on this branch (so PHPUnit and the web security audit actually run):
+
+- GitHub Actions PHP **8.4** (matches `docker/php/Dockerfile` and `composer.lock`; 8.2/8.3 cannot install openspout / Symfony 8)
+- Web `npm audit --audit-level=high` clean: Next.js 16.3.3, axios 1.19, patched overrides, unused `next-auth` removed
+- CI env bootstrap: `api/.env.testing.example` for PHPUnit; E2E/readiness copy `.env.example` before `key:generate`
+- Pint checks PHP files changed vs base (the tree was never repo-wide Pint-clean)
+- CI Postgres now gets `app_user` from the first RLS migration (Docker `init.sql` already created it)
+- Gitleaks remains operator-owned (`GITLEAKS_LICENSE` org secret) — not marked Done
+- Composer `audit` still reports lockfile advisories (Laravel/Guzzle/Symfony/dompdf) — needs `composer update` on PHP 8.4; gate is not ignored
 
 Shipped in `feat/remaining-module-depth` (secret-free module depth over existing APIs):
 

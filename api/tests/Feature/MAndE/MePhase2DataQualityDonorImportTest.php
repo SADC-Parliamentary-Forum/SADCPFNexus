@@ -13,7 +13,7 @@ class MePhase2DataQualityDonorImportTest extends TestCase
     public function test_data_quality_scan_returns_summary(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http] = $this->asStaff($tenant);
+        [$http] = $this->asMeOfficer($tenant);
 
         $http->getJson('/api/v1/mande/data-quality')
             ->assertOk()
@@ -28,18 +28,18 @@ class MePhase2DataQualityDonorImportTest extends TestCase
     public function test_data_quality_flags_past_end_without_submission(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asMeOfficer($tenant);
 
         MeActivityReport::create([
-            'tenant_id'      => $tenant->id,
-            'programme_id'   => null,
+            'tenant_id' => $tenant->id,
+            'programme_id' => null,
             'non_pif_reason' => 'Past end date test case',
             'activity_title' => 'Overdue draft',
-            'review_status'  => 'not_submitted',
-            'start_date'     => now()->subDays(20)->toDateString(),
-            'end_date'       => now()->subDays(5)->toDateString(),
-            'report_due_at'  => now()->subDays(2),
-            'created_by'     => $user->id,
+            'review_status' => 'not_submitted',
+            'start_date' => now()->subDays(20)->toDateString(),
+            'end_date' => now()->subDays(5)->toDateString(),
+            'report_due_at' => now()->subDays(2),
+            'created_by' => $user->id,
             'responsible_officer_id' => $user->id,
         ]);
 
@@ -51,7 +51,7 @@ class MePhase2DataQualityDonorImportTest extends TestCase
     public function test_donor_report_endpoint(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http] = $this->asStaff($tenant);
+        [$http] = $this->asMeOfficer($tenant);
 
         $http->getJson('/api/v1/mande/reports/donor')
             ->assertOk()
@@ -66,7 +66,7 @@ class MePhase2DataQualityDonorImportTest extends TestCase
         [$http] = $this->asAdmin($tenant);
 
         $csv = "activity_title,start_date,end_date,pif_number,non_pif_reason\n"
-            . "Historical workshop,2025-01-01,2025-01-03,,Imported historical non-PIF activity\n";
+            ."Historical workshop,2025-01-01,2025-01-03,,Imported historical non-PIF activity\n";
 
         $file = UploadedFile::fake()->createWithContent('import.csv', $csv);
 
@@ -83,24 +83,24 @@ class MePhase2DataQualityDonorImportTest extends TestCase
             ->assertJsonPath('data.created', 1);
 
         $this->assertDatabaseHas('me_activity_reports', [
-            'tenant_id'      => $tenant->id,
+            'tenant_id' => $tenant->id,
             'activity_title' => 'Historical workshop',
-            'programme_id'   => null,
+            'programme_id' => null,
         ]);
     }
 
     public function test_data_quality_flags_approved_pif_without_me(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asMeOfficer($tenant);
 
         Programme::create([
-            'tenant_id'        => $tenant->id,
-            'created_by'       => $user->id,
-            'reference_number' => 'PIF-' . uniqid(),
-            'title'            => 'Unlinked approved PIF',
-            'status'           => 'approved',
-            'approved_at'      => now(),
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
+            'reference_number' => 'PIF-'.uniqid(),
+            'title' => 'Unlinked approved PIF',
+            'status' => 'approved',
+            'approved_at' => now(),
         ]);
 
         $res = $http->getJson('/api/v1/mande/data-quality')->assertOk()->json('data');

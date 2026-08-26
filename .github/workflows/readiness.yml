@@ -42,10 +42,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up PHP 8.3
+      - name: Set up PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: pdo, pdo_pgsql, pgsql, bcmath, mbstring, xml, ctype, json
           coverage: none
 
@@ -68,6 +68,27 @@ jobs:
         working-directory: web
         run: npx playwright install chromium --with-deps
 
+      - name: Raise Postgres lock limits for large-schema RefreshDatabase
+        working-directory: api
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: sadcpfnexus
+          DB_USERNAME: sadcpf
+          DB_PASSWORD: secret
+        run: |
+          php -r '
+            $pdo = new PDO(
+              sprintf("pgsql:host=%s;port=%s;dbname=%s", getenv("DB_HOST"), getenv("DB_PORT"), getenv("DB_DATABASE")),
+              getenv("DB_USERNAME"),
+              getenv("DB_PASSWORD")
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $pdo->exec("ALTER SYSTEM SET max_locks_per_transaction = 1024");
+            $pdo->exec("ALTER SYSTEM SET max_pred_locks_per_transaction = 1024");
+            $pdo->query("SELECT pg_reload_conf()");
+          '
+
       - name: Migrate and seed database
         working-directory: api
         env:
@@ -87,8 +108,21 @@ jobs:
           MAIL_MAILER: array
           BCRYPT_ROUNDS: '4'
         run: |
-          php artisan key:generate --force
+          test -f .env || cp .env.example .env
+          test -f .env.testing || cp .env.testing.example .env.testing
           php artisan migrate:fresh --seed --force
+          php -r '
+            $pdo = new PDO(
+              sprintf("pgsql:host=%s;port=%s;dbname=%s", getenv("DB_HOST") ?: "127.0.0.1", getenv("DB_PORT") ?: "5432", getenv("DB_DATABASE") ?: "sadcpfnexus"),
+              getenv("DB_USERNAME") ?: "sadcpf",
+              getenv("DB_PASSWORD") ?: "secret"
+            );
+            $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $exists = $pdo->query("SELECT 1 FROM pg_database WHERE datname = '\''sadcpfnexus_test'\''")->fetchColumn();
+            if (!$exists) {
+              $pdo->exec("CREATE DATABASE sadcpfnexus_test");
+            }
+          '
 
       - name: Start API
         working-directory: api
@@ -125,6 +159,26 @@ jobs:
           for i in $(seq 1 60); do curl -sf http://localhost:3000 && break || sleep 1; done
 
       - name: Run readiness gate
+        env:
+          APP_ENV: testing
+          APP_KEY: base64:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa=
+          APP_URL: http://localhost:8000
+          FRONTEND_URL: http://localhost:3000
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: sadcpfnexus_test
+          DB_USERNAME: sadcpf
+          DB_PASSWORD: secret
+          CACHE_STORE: array
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: array
+          MAIL_MAILER: array
+          BCRYPT_ROUNDS: '4'
+          REQUIRE_PRIVILEGED_MFA: 'false'
+          SENTRY_LARAVEL_DSN: ''
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
         run: bash scripts/readiness/run-readiness.sh
 
       - name: Upload readiness artifacts

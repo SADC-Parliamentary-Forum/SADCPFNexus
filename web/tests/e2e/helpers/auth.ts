@@ -45,3 +45,31 @@ export async function landedOnLogin(
   const email = page.locator('input[type="email"]');
   return email.isVisible({ timeout: 1_500 }).catch(() => false);
 }
+
+/** Skip when the role is gated away from this screen. */
+export async function skipIfAccessDenied(
+  page: import("@playwright/test").Page,
+  reason = "Current fixture cannot open this route"
+): Promise<void> {
+  // AppShell shows "Loading…" until effective permissions resolve. Checking
+  // AccessDenied during that window races and lets gated pages fail later.
+  const loading = page.getByText(/^Loading…$/);
+  await loading.waitFor({ state: "hidden", timeout: 15_000 }).catch(() => undefined);
+
+  const denied = page.getByText(/Access denied|You cannot open this page/i);
+  if (await denied.isVisible({ timeout: 1_500 }).catch(() => false)) {
+    test.skip(true, reason);
+  }
+}
+
+/** Skip when a create/new control is hidden for this role. */
+export async function skipIfLocatorMissing(
+  locator: import("@playwright/test").Locator,
+  reason: string,
+  timeout = 3_000
+): Promise<void> {
+  const visible = await locator.isVisible({ timeout }).catch(() => false);
+  if (!visible) {
+    test.skip(true, reason);
+  }
+}

@@ -9082,6 +9082,8 @@ export const lifecycleApi = {
   initiateJourney: (data: Record<string, unknown>) => api.post("/lifecycle/journeys", data),
   completeTask: (id: number, revision: number) =>
     api.post(`/lifecycle/tasks/${id}/complete`, { revision }),
+  reopenTask: (id: number, revision: number) =>
+    api.post(`/lifecycle/tasks/${id}/reopen`, { revision }),
   updateClearance: (id: number, data: { clearance_status: string; revision: number }) =>
     api.post(`/lifecycle/tasks/${id}/clearance`, data),
   requestException: (id: number, reason: string) =>
@@ -9090,7 +9092,15 @@ export const lifecycleApi = {
     api.post(`/lifecycle/exceptions/${id}/approve`, { resolution_notes: notes }),
   assertTerminalPayment: (caseId: number) =>
     api.get<{ allowed: boolean; message?: string }>(`/lifecycle/cases/${caseId}/terminal-payment`),
+  approveTerminalPayment: (caseId: number, revision: number) =>
+    api.post(`/lifecycle/cases/${caseId}/terminal-payment`, { revision }),
+  finaliseSeparation: (caseId: number, revision: number) =>
+    api.post(`/lifecycle/cases/${caseId}/finalise`, { revision }),
   listTemplates: (params?: Record<string, string>) =>
     api.get<{ data: Array<Record<string, unknown>> }>("/lifecycle/templates", { params }),
+  getTemplate: (id: number) =>
+    api.get<{ data: Record<string, unknown> }>(`/lifecycle/templates/${id}`),
+  createTemplate: (data: Record<string, unknown>) =>
+    api.post("/lifecycle/templates", data),
   publishTemplate: (id: number) => api.post(`/lifecycle/templates/${id}/publish`),
 };

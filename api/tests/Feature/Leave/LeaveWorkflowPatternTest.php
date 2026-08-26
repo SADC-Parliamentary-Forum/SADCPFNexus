@@ -45,12 +45,29 @@ class LeaveWorkflowPatternTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $staff = $this->makeUser('staff', $tenant);
-        $manager = $this->makeHrManager($tenant);
+        $hod = $this->makeUser('HOD', $tenant);
+        $hr = $this->makeHrManager($tenant);
+        // Canonical HR Manager certifies; Secretary General holds authorise.
+        $authoriser = $this->makeSG($tenant);
 
         $staffHttp = $this->asUser($staff);
         $leave = $this->createAndSubmitLeave($staffHttp, $staff->id);
 
-        $this->asUser($manager)
+        $this->asUser($hod)
+            ->postJson("/api/v1/leave/requests/{$leave->id}/recommend", [
+                'action' => 'recommend',
+                'comment' => 'Operationally covered',
+            ])
+            ->assertOk();
+
+        $this->asUser($hr)
+            ->postJson("/api/v1/leave/requests/{$leave->id}/certify", [
+                'action' => 'certify',
+                'comment' => 'Balance and documents confirmed',
+            ])
+            ->assertOk();
+
+        $this->asUser($authoriser)
             ->postJson("/api/v1/leave/requests/{$leave->id}/approve", ['comment' => 'Approved'])
             ->assertOk();
 
@@ -62,12 +79,12 @@ class LeaveWorkflowPatternTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $staff = $this->makeUser('staff', $tenant);
-        $manager = $this->makeHrManager($tenant);
+        $authoriser = $this->makeSG($tenant);
 
         $staffHttp = $this->asUser($staff);
         $leave = $this->createAndSubmitLeave($staffHttp, $staff->id);
 
-        $this->asUser($manager)
+        $this->asUser($authoriser)
             ->postJson("/api/v1/leave/requests/{$leave->id}/reject", ['comment' => 'Operationally not possible'])
             ->assertOk()
             ->assertJsonPath('data.status', 'rejected');

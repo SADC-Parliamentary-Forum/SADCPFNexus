@@ -27,12 +27,12 @@ class ApprovalFlowTest extends TestCase
 
     public function test_manager_sees_pending_approvals(): void
     {
-        $tenant   = Tenant::factory()->create();
-        [$http]   = $this->asHrManager($tenant);
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asHrManager($tenant);
 
         $response = $http->getJson('/api/v1/approvals/pending');
         $response->assertOk()
-                 ->assertJsonStructure(['data']);
+            ->assertJsonStructure(['data']);
     }
 
     public function test_staff_pending_list_is_empty_for_non_approver(): void
@@ -51,20 +51,20 @@ class ApprovalFlowTest extends TestCase
 
     public function test_full_travel_approval_cycle(): void
     {
-        $tenant   = Tenant::factory()->create();
-        $staff    = $this->makeUser('staff', $tenant);
-        $manager  = $this->makeHrManager($tenant);
+        $tenant = Tenant::factory()->create();
+        $staff = $this->makeUser('staff', $tenant);
+        $manager = $this->makeHrManager($tenant);
 
         // 1. Staff creates + submits
         $staffHttp = $this->asUser($staff);
         $create = $staffHttp->postJson('/api/v1/travel/requests', [
-            'purpose'             => 'Regional conference',
-            'departure_date'      => now()->addDays(14)->toDateString(),
-            'return_date'         => now()->addDays(17)->toDateString(),
+            'purpose' => 'Regional conference',
+            'departure_date' => now()->addDays(14)->toDateString(),
+            'return_date' => now()->addDays(17)->toDateString(),
             'destination_country' => 'South Africa',
-            'destination_city'    => 'Johannesburg',
-            'estimated_dsa'       => 2500.00,
-            'currency'            => 'NAD',
+            'destination_city' => 'Johannesburg',
+            'estimated_dsa' => 2500.00,
+            'currency' => 'NAD',
         ]);
         $create->assertCreated();
         $travelId = $create->json('data.id');
@@ -106,9 +106,11 @@ class ApprovalFlowTest extends TestCase
 
     public function test_full_leave_approval_cycle(): void
     {
-        $tenant  = Tenant::factory()->create();
-        $staff   = $this->makeUser('staff', $tenant);
-        $manager = $this->makeHrManager($tenant);
+        $tenant = Tenant::factory()->create();
+        $staff = $this->makeUser('staff', $tenant);
+        $hod = $this->makeUser('HOD', $tenant);
+        $hr = $this->makeHrManager($tenant);
+        $authoriser = $this->makeSG($tenant);
 
         $staffHttp = $this->asUser($staff);
         LeaveBalance::query()->updateOrCreate(
@@ -120,26 +122,39 @@ class ApprovalFlowTest extends TestCase
         $create = $staffHttp->postJson('/api/v1/leave/requests', [
             'leave_type' => 'annual',
             'start_date' => now()->addDays(7)->toDateString(),
-            'end_date'   => now()->addDays(9)->toDateString(),
-            'reason'     => 'Personal vacation',
+            'end_date' => now()->addDays(9)->toDateString(),
+            'reason' => 'Personal vacation',
         ]);
         $create->assertCreated();
         $leaveId = $create->json('data.id');
 
         $staffHttp->postJson("/api/v1/leave/requests/{$leaveId}/submit")
-                  ->assertOk()
-                  ->assertJsonPath('data.status', 'submitted');
+            ->assertOk()
+            ->assertJsonPath('data.status', 'submitted');
 
-        // Approve
-        $this->asUser($manager)
-             ->postJson("/api/v1/leave/requests/{$leaveId}/approve", ['comment' => 'Noted'])
-             ->assertOk();
+        $this->asUser($hod)
+            ->postJson("/api/v1/leave/requests/{$leaveId}/recommend", [
+                'action' => 'recommend',
+                'comment' => 'Operationally covered',
+            ])
+            ->assertOk();
+
+        $this->asUser($hr)
+            ->postJson("/api/v1/leave/requests/{$leaveId}/certify", [
+                'action' => 'certify',
+                'comment' => 'Balance and documents confirmed',
+            ])
+            ->assertOk();
+
+        $this->asUser($authoriser)
+            ->postJson("/api/v1/leave/requests/{$leaveId}/approve", ['comment' => 'Noted'])
+            ->assertOk();
     }
 
     public function test_full_leave_rejection_cycle(): void
     {
-        $tenant  = Tenant::factory()->create();
-        $staff   = $this->makeUser('staff', $tenant);
+        $tenant = Tenant::factory()->create();
+        $staff = $this->makeUser('staff', $tenant);
         $manager = $this->makeHrManager($tenant);
 
         $staffHttp = $this->asUser($staff);
@@ -151,33 +166,33 @@ class ApprovalFlowTest extends TestCase
         $create = $staffHttp->postJson('/api/v1/leave/requests', [
             'leave_type' => 'annual',
             'start_date' => now()->addDays(3)->toDateString(),
-            'end_date'   => now()->addDays(4)->toDateString(),
-            'reason'     => 'Short trip',
+            'end_date' => now()->addDays(4)->toDateString(),
+            'reason' => 'Short trip',
         ]);
         $leaveId = $create->json('data.id');
         $staffHttp->postJson("/api/v1/leave/requests/{$leaveId}/submit");
 
         $this->asUser($manager)
-             ->postJson("/api/v1/leave/requests/{$leaveId}/reject", [
-                 'comment' => 'Critical period — cannot approve leave at this time',
-             ])->assertOk()
-               ->assertJsonPath('data.status', 'rejected');
+            ->postJson("/api/v1/leave/requests/{$leaveId}/reject", [
+                'comment' => 'Critical period — cannot approve leave at this time',
+            ])->assertOk()
+            ->assertJsonPath('data.status', 'rejected');
     }
 
     // ── Generic Approval endpoints ─────────────────────────────────────────────
 
     public function test_approval_history_is_retrievable(): void
     {
-        $tenant  = Tenant::factory()->create();
-        $staff   = $this->makeUser('staff', $tenant);
+        $tenant = Tenant::factory()->create();
+        $staff = $this->makeUser('staff', $tenant);
         $manager = $this->makeHrManager($tenant);
 
         $staffHttp = $this->asUser($staff);
         $create = $staffHttp->postJson('/api/v1/leave/requests', [
             'leave_type' => 'sick',
             'start_date' => now()->addDays(1)->toDateString(),
-            'end_date'   => now()->addDays(2)->toDateString(),
-            'reason'     => 'Doctor appointment',
+            'end_date' => now()->addDays(2)->toDateString(),
+            'reason' => 'Doctor appointment',
         ]);
         $leaveId = $create->json('data.id');
         $staffHttp->postJson("/api/v1/leave/requests/{$leaveId}/submit");
@@ -191,7 +206,7 @@ class ApprovalFlowTest extends TestCase
             $history = $this->asUser($manager)
                 ->getJson("/api/v1/approvals/{$approvalRequest->id}/history");
             $history->assertOk()
-                    ->assertJsonStructure(['data']);
+                ->assertJsonStructure(['data']);
         } else {
             // No workflow configured for leave — just assert the endpoint exists
             $this->assertTrue(true, 'No workflow configured for this tenant; history not tested.');
@@ -202,44 +217,44 @@ class ApprovalFlowTest extends TestCase
 
     public function test_cannot_approve_draft_request(): void
     {
-        $tenant  = Tenant::factory()->create();
-        $staff   = $this->makeUser('staff', $tenant);
-        $manager = $this->makeHrManager($tenant);
+        $tenant = Tenant::factory()->create();
+        $staff = $this->makeUser('staff', $tenant);
+        $authoriser = $this->makeSG($tenant);
 
         $staffHttp = $this->asUser($staff);
         $create = $staffHttp->postJson('/api/v1/leave/requests', [
             'leave_type' => 'annual',
             'start_date' => now()->addDays(5)->toDateString(),
-            'end_date'   => now()->addDays(6)->toDateString(),
-            'reason'     => 'Test',
+            'end_date' => now()->addDays(6)->toDateString(),
+            'reason' => 'Test',
         ]);
         $leaveId = $create->json('data.id');
 
         // Approve without submitting first — should fail
-        $this->asUser($manager)
-             ->postJson("/api/v1/leave/requests/{$leaveId}/approve")
-             ->assertStatus(422); // Unprocessable — wrong state
+        $this->asUser($authoriser)
+            ->postJson("/api/v1/leave/requests/{$leaveId}/approve")
+            ->assertStatus(422); // Unprocessable — wrong state
     }
 
     public function test_cannot_reject_without_comment(): void
     {
-        $tenant  = Tenant::factory()->create();
-        $staff   = $this->makeUser('staff', $tenant);
+        $tenant = Tenant::factory()->create();
+        $staff = $this->makeUser('staff', $tenant);
         $manager = $this->makeHrManager($tenant);
 
         $staffHttp = $this->asUser($staff);
         $create = $staffHttp->postJson('/api/v1/leave/requests', [
             'leave_type' => 'annual',
             'start_date' => now()->addDays(10)->toDateString(),
-            'end_date'   => now()->addDays(11)->toDateString(),
-            'reason'     => 'Test',
+            'end_date' => now()->addDays(11)->toDateString(),
+            'reason' => 'Test',
         ]);
         $leaveId = $create->json('data.id');
         $staffHttp->postJson("/api/v1/leave/requests/{$leaveId}/submit");
 
         $this->asUser($manager)
-             ->postJson("/api/v1/leave/requests/{$leaveId}/reject", [])
-             ->assertUnprocessable()
-             ->assertJsonValidationErrors(['comment']);
+            ->postJson("/api/v1/leave/requests/{$leaveId}/reject", [])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['comment']);
     }
 }

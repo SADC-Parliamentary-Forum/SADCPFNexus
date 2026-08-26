@@ -1825,3 +1825,60 @@ test("travel settings exposes DSA rate register with edit and rate type labels",
   assert.match(source, /effective_from/);
 });
 
+test("General Employee canonical permissions open staff self-service routes", async () => {
+  const { canAccessRoute } = await import("./authAccess.ts");
+  const staff = {
+    id: 1,
+    name: "Staff",
+    email: "staff@sadcpf.org",
+    tenant_id: 1,
+    classification: "UNCLASSIFIED",
+    roles: ["General Employee"],
+    permissions: [
+      "dashboard.view",
+      "leave.module.view",
+      "leave.request.create.self",
+      "leave.request.read.self",
+      "travel.module.view",
+      "travel.request.create.self",
+      "travel.request.read.self",
+      "salary_advance.module.view",
+      "salary_advance.request.create.self",
+      "salary_advance.request.read.self",
+      "timesheet.module.view",
+      "timesheet.create.self",
+      "timesheet.read.self",
+      "my_work.view",
+      "notifications.view.own",
+      "approvals.inbox.view",
+    ],
+  };
+
+  assert.equal(canAccessRoute(staff, "/dashboard"), true);
+  assert.equal(canAccessRoute(staff, "/leave"), true);
+  assert.equal(canAccessRoute(staff, "/travel"), true);
+  assert.equal(canAccessRoute(staff, "/travel/create"), true);
+  assert.equal(canAccessRoute(staff, "/salary-advances"), true);
+  assert.equal(canAccessRoute(staff, "/salary-advances/create"), true);
+  assert.equal(canAccessRoute(staff, "/finance/advances"), true);
+  assert.equal(canAccessRoute(staff, "/notifications"), true);
+  assert.equal(canAccessRoute(staff, "/approvals"), true);
+  assert.equal(canAccessRoute(staff, "/hr/timesheets"), true);
+  assert.equal(canAccessRoute(staff, "/assets/requests"), true);
+  assert.equal(canAccessRoute(staff, "/assets/requests/new"), true);
+
+  assert.equal(canAccessRoute(staff, "/assets"), false);
+  assert.equal(canAccessRoute(staff, "/procurement"), false);
+  assert.equal(canAccessRoute(staff, "/procurement/create"), false);
+  assert.equal(canAccessRoute(staff, "/travel/settings"), false);
+  assert.equal(canAccessRoute(staff, "/travel/reports"), false);
+  assert.equal(canAccessRoute(staff, "/travel/queues/finance"), false);
+  assert.equal(canAccessRoute(staff, "/finance"), false);
+});
+
+test("public tender notices call the Next /api rewrite, not a doubled /api/v1 prefix", () => {
+  const source = readFileSync(join(webRoot, "app/(auth)/tender-notices/page.tsx"), "utf8");
+  assert.match(source, /\/api\/procurement\/notices/);
+  assert.doesNotMatch(source, /\/api\/v1\/procurement\/notices/);
+});
+

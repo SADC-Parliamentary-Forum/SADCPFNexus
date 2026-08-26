@@ -2,11 +2,12 @@
 
 namespace Tests\Feature\Notifications;
 
-use App\Models\Notification;
 use App\Models\Notifications\NotificationChannelDelivery;
 use App\Models\Notifications\NotificationDigest;
 use App\Models\Notifications\NotificationDigestItem;
+use App\Models\Notifications\NotificationEvent;
 use App\Models\Notifications\NotificationRecipient;
+use App\Models\Notifications\NotificationRecord;
 use App\Models\Tenant;
 use App\Modules\Notifications\Services\ChannelDeliveryService;
 use App\Modules\Notifications\Services\HttpChannelProvider;
@@ -268,19 +269,37 @@ class LiveChannelDriversTest extends TestCase
         string $channel,
         string $destination = 'inbox',
     ): NotificationChannelDelivery {
-        $notification = Notification::create([
+        // notification_recipients.notification_record_id FKs to notification_records,
+        // which themselves require a notification_events row. The in-app
+        // `notifications` table is a different model and cannot satisfy this FK.
+        $event = NotificationEvent::create([
             'tenant_id' => $user->tenant_id,
-            'user_id' => $user->id,
             'uuid' => (string) \Illuminate\Support\Str::uuid(),
-            'type' => 'App\\Notifications\\ModuleNotification',
-            'trigger' => 'test.sms',
-            'subject' => 'Test',
-            'body' => 'Test body',
-            'is_read' => false,
+            'event_key' => 'test.sms',
+            'event_type' => 'test.sms',
+            'source_module' => 'notifications',
+            'occurred_at' => now(),
+            'importance' => 'normal',
+            'confidentiality' => 'internal',
+            'idempotency_key' => (string) \Illuminate\Support\Str::uuid(),
+            'payload' => ['subject' => 'Test', 'body' => 'Test body'],
+            'status' => 'consumed',
+        ]);
+        $record = NotificationRecord::create([
+            'tenant_id' => $user->tenant_id,
+            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'event_id' => $event->id,
+            'notification_type' => 'test.sms',
+            'template_key' => 'test.sms',
+            'importance' => 'normal',
+            'confidentiality' => 'internal',
+            'delivery_class' => 'operational',
+            'action_required' => false,
+            'status' => 'active',
         ]);
         $recipient = NotificationRecipient::create([
             'tenant_id' => $user->tenant_id,
-            'notification_record_id' => $notification->id,
+            'notification_record_id' => $record->id,
             'user_id' => $user->id,
             'status' => 'active',
             'resolved_at' => now(),

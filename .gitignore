@@ -4,6 +4,9 @@
 .env.*
 !.env.example
 !.env.docker.example
+!.env.testing.example
+!.env.production.example
+!.env.*.example
 api/.env
 *.pem
 *.key

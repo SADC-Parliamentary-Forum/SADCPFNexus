@@ -146,6 +146,34 @@ return [
             'GET' => ['procurement.view', 'procurement.admin', 'procurement.manage_vendors', 'procurement.supplier.read'],
             'WRITE' => ['procurement.manage_vendors', 'procurement.admin', 'procurement.supplier.approve', 'procurement.create'],
         ]],
+        ['pattern' => 'api/v1/procurement/committee-evaluations*', 'permissions' => [
+            'READ' => ['procurement.evaluation.read.assigned'],
+        ]],
+        // Budget confirmation is Finance, not procurement.create (requester). Exact
+        // patterns must precede api/v1/procurement* (first-match fallback).
+        ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/reserve-budget', 'permissions' => [
+            'POST' => ['procurement.manage_budget', 'finance.create', 'finance.approve'],
+        ]],
+        ['pattern' => 'api/v1/procurement/budget-reservations', 'permissions' => [
+            'GET' => ['procurement.manage_budget', 'finance.view', 'procurement.view'],
+        ]],
+        ['pattern' => 'api/v1/procurement/budget-reservations/{budgetReservation}', 'permissions' => [
+            'DELETE' => ['procurement.manage_budget', 'finance.create', 'finance.approve'],
+        ]],
+        // HOD department review is not procurement.create (requester). Exact
+        // patterns must precede api/v1/procurement* (first-match fallback).
+        ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/hod-approve', 'permissions' => [
+            'POST' => ['procurement.hod_approve', 'procurement.request.approve.assigned', 'approvals.task.act.assigned'],
+        ]],
+        ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/hod-reject', 'permissions' => [
+            'POST' => ['procurement.hod_approve', 'procurement.request.approve.assigned', 'approvals.task.act.assigned'],
+        ]],
+        ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/approve', 'permissions' => [
+            'POST' => ['procurement.approve', 'procurement.request.review.assigned', 'procurement.request.approve.assigned'],
+        ]],
+        ['pattern' => 'api/v1/procurement/requests/{procurementRequest}/issue-rfq', 'permissions' => [
+            'POST' => ['procurement.rfq.publish.assigned', 'procurement.create', 'procurement.admin'],
+        ]],
         ['pattern' => 'api/v1/procurement*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin'],
             'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
@@ -156,6 +184,42 @@ return [
         ['pattern' => 'api/v1/hr/timesheets/capacity-analytics', 'permissions' => [
             'READ' => ['hr.view', 'hr.admin', 'hr.approve', 'hr.edit', 'timesheets.view'],
         ]],
+        // Templates and payroll exports are HR-operated; must precede hr/timesheets*.
+        ['pattern' => 'api/v1/hr/timesheets/templates*', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'timesheets.view', 'timesheets.admin'],
+            'WRITE' => ['hr.admin', 'timesheets.admin', 'timesheets.manage-schedules'],
+        ]],
+        ['pattern' => 'api/v1/hr/timesheets/payroll-exports*', 'permissions' => [
+            'READ' => ['hr.admin', 'timesheets.admin', 'finance.admin'],
+            'WRITE' => ['hr.admin', 'timesheets.admin', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/hr/timesheets*', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'timesheets.view', 'timesheet.module.view', 'timesheet.read.self', 'timesheets.view-own', 'timesheets.view-team'],
+            'POST' => ['hr.create', 'hr.admin', 'timesheets.create', 'timesheet.create.self', 'timesheets.create-own', 'timesheets.submit', 'timesheet.approve.assigned', 'timesheets.approve', 'timesheets.review-team', 'timesheets.admin'],
+            'PUT' => ['hr.edit', 'hr.admin', 'timesheets.create', 'timesheet.create.self', 'timesheets.edit-own-draft'],
+            'PATCH' => ['hr.edit', 'hr.admin', 'timesheets.create', 'timesheet.create.self', 'timesheets.edit-own-draft'],
+            'DELETE' => ['hr.admin', 'timesheets.admin'],
+        ]],
+        // Staff may report an incident and edit their own description; they cannot list the org register.
+        ['pattern' => 'api/v1/hr/incidents', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin'],
+            'POST' => ['hr.create', 'hr.admin', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/hr/incidents/{hrIncident}', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin'],
+            'PUT' => ['hr.edit', 'hr.admin', 'my_work.view'],
+            'PATCH' => ['hr.edit', 'hr.admin', 'my_work.view'],
+            'DELETE' => ['hr.admin'],
+        ]],
+        // Staff may list/view their own personal file; create stays HR-operated.
+        ['pattern' => 'api/v1/hr/files', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'my_work.view'],
+            'POST' => ['hr.create', 'hr.admin'],
+        ]],
+        ['pattern' => 'api/v1/hr/files/{hrPersonalFile}', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'my_work.view'],
+            'WRITE' => ['hr.edit', 'hr.admin'],
+        ]],
         ['pattern' => 'api/v1/hr*', 'permissions' => [
             'READ' => ['hr.view', 'hr.admin'],
             'POST' => ['hr.create', 'hr.admin'],
@@ -163,13 +227,53 @@ return [
             'PATCH' => ['hr.edit', 'hr.admin'],
             'DELETE' => ['hr.admin'],
         ]],
+        // Authority check is a self-service query of the caller's (or delegated)
+        // authority — not a People & Authority mutation. Exact pattern must
+        // precede api/v1/people-authority* (first-match fallback).
+        ['pattern' => 'api/v1/people-authority/authority/check', 'permissions' => [
+            'POST' => ['dashboard.view', 'my_work.view', 'authorities.manage', 'people.manage'],
+        ]],
+        ['pattern' => 'api/v1/people-authority/me', 'permissions' => [
+            'GET' => ['profile.read.self', 'dashboard.view', 'my_work.view', 'people.view-directory'],
+        ]],
         ['pattern' => 'api/v1/people-authority*', 'permissions' => [
             'READ' => ['people.view-directory', 'people.view-profile', 'people.manage'],
             'WRITE' => ['people.manage', 'roles.assign', 'authorities.manage'],
         ]],
+        ['pattern' => 'api/v1/audit-management/findings/{finding}/responses', 'permissions' => [
+            'POST' => ['audit.response.manage', 'audit.admin', 'audit.engagement.manage', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/audit-management/findings/{finding}/corrective-actions', 'permissions' => [
+            'POST' => ['audit.corrective.manage', 'audit.admin', 'audit.engagement.manage', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/audit-management/corrective-actions/{correctiveAction}/complete', 'permissions' => [
+            'POST' => ['audit.corrective.manage', 'audit.admin', 'audit.engagement.manage', 'audit.corrective.verify', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/audit-management/corrective-actions/{correctiveAction}/verify', 'permissions' => [
+            'POST' => ['audit.corrective.verify', 'audit.admin', 'audit.engagement.manage'],
+        ]],
+        ['pattern' => 'api/v1/audit-management/findings/{finding}', 'permissions' => [
+            'GET' => ['audit.view', 'audit.findings.view', 'audit.admin', 'my_work.view'],
+            'PUT' => ['audit.findings.issue', 'audit.engagement.manage', 'audit.admin', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/audit-management/findings', 'permissions' => [
+            'GET' => ['audit.view', 'audit.findings.view', 'audit.admin', 'my_work.view'],
+            'POST' => ['audit.findings.issue', 'audit.engagement.manage', 'audit.admin'],
+        ]],
         ['pattern' => 'api/v1/audit-management*', 'permissions' => [
-            'READ' => ['audit.view', 'audit.events.view', 'audit.admin'],
-            'WRITE' => ['audit.admin', 'audit.plan.manage', 'audit.engagement.manage'],
+            'READ' => ['audit.view', 'audit.events.view', 'audit.findings.view', 'audit.admin'],
+            'WRITE' => [
+                'audit.admin',
+                'audit.plan.manage',
+                'audit.plan.approve',
+                'audit.engagement.manage',
+                'audit.universe.manage',
+                'audit.findings.issue',
+                'audit.report.draft',
+                'audit.report.issue',
+                'audit.corrective.verify',
+                'audit.engagement.fieldwork',
+            ],
         ]],
         ['pattern' => 'api/v1/audit-admin*', 'permissions' => [
             '*' => ['audit-trail.admin', 'audit.view', 'system.admin'],
@@ -194,6 +298,9 @@ return [
         ['pattern' => 'api/v1/records*', 'permissions' => [
             'READ' => ['audit-trail.view-record-history', 'audit.view'],
         ]],
+        ['pattern' => 'api/v1/budget/variance/{variance}/explanation', 'permissions' => [
+            'POST' => ['finance.create', 'finance.approve', 'finance.admin', 'my_work.view'],
+        ]],
         ['pattern' => 'api/v1/budget*', 'permissions' => [
             'READ' => ['finance.view', 'finance.admin'],
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
@@ -205,26 +312,90 @@ return [
             'PATCH' => ['risk.manage', 'risk.admin'],
             'DELETE' => ['risk.admin'],
         ]],
+        ['pattern' => 'api/v1/mande/programme-review-queue', 'permissions' => [
+            'GET' => ['mande.review', 'programme.manager_review.act.assigned'],
+        ]],
+        ['pattern' => 'api/v1/mande/activity-reports/{activityReport}/programme-review/clear', 'permissions' => [
+            'POST' => ['mande.review', 'programme.manager_review.act.assigned'],
+        ]],
+        ['pattern' => 'api/v1/mande/activity-reports/{activityReport}/programme-review/return', 'permissions' => [
+            'POST' => ['mande.review', 'programme.manager_review.act.assigned'],
+        ]],
         ['pattern' => 'api/v1/mande*', 'permissions' => [
             'READ' => ['mande.view', 'mande.module.view'],
             'WRITE' => ['mande.create', 'mande.review', 'mande.admin'],
         ]],
         ['pattern' => 'api/v1/travel*', 'permissions' => [
-            'READ' => ['travel.view', 'travel.admin'],
-            'POST' => ['travel.create', 'travel.approve', 'travel.admin'],
-            'PUT' => ['travel.create', 'travel.approve', 'travel.admin'],
-            'PATCH' => ['travel.create', 'travel.approve', 'travel.admin'],
+            'READ' => ['travel.view', 'travel.admin', 'travel.module.view', 'travel.request.read.self'],
+            'POST' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self', 'travel.request.approve.assigned'],
+            'PUT' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
+            'PATCH' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
             'DELETE' => ['travel.admin'],
+        ]],
+        // BCRE: employees see/acknowledge own registers. Exceptions and mutations stay finance.
+        ['pattern' => 'api/v1/finance/balance-registers/exceptions', 'permissions' => [
+            'READ' => ['finance.view', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance/balance-registers/{balanceRegister}/acknowledge', 'permissions' => [
+            'POST' => ['my_work.view', 'finance.create', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance/balance-registers*', 'permissions' => [
+            'READ' => ['finance.view', 'my_work.view'],
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
+        ]],
+        // Salary advances: self-service create/read/submit. Certify/pay fall through to finance*.
+        ['pattern' => 'api/v1/finance/advances/eligibility', 'permissions' => [
+            'READ' => ['salary_advance.module.view', 'salary_advance.request.read.self', 'finance.view'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/employee-summary', 'permissions' => [
+            'READ' => ['salary_advance.module.view', 'salary_advance.request.read.self', 'finance.view'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/submit', 'permissions' => [
+            'POST' => ['salary_advance.request.submit.created', 'finance.create'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/withdraw', 'permissions' => [
+            'POST' => ['salary_advance.request.withdraw.created', 'finance.create'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/resubmit', 'permissions' => [
+            'POST' => ['salary_advance.request.submit.created', 'finance.create'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/approve', 'permissions' => [
+            'POST' => ['finance.approve', 'finance.admin', 'salary_advance.approve.assigned'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/finance-certify', 'permissions' => [
+            'POST' => ['finance.create', 'finance.approve', 'salary_advance.finance_certify.assigned'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/finance-return', 'permissions' => [
+            'POST' => ['finance.create', 'finance.approve', 'salary_advance.finance_certify.assigned'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/ledger', 'permissions' => [
+            'READ' => ['finance.view', 'salary_advance.request.read.self'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/pdf', 'permissions' => [
+            'READ' => ['finance.view', 'salary_advance.request.read.self'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/certificate', 'permissions' => [
+            'READ' => ['finance.view', 'salary_advance.request.read.self'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}', 'permissions' => [
+            'READ' => ['finance.view', 'salary_advance.request.read.self'],
+            'PUT' => ['finance.create', 'salary_advance.request.edit.created'],
+            'PATCH' => ['finance.create', 'salary_advance.request.edit.created'],
+            'DELETE' => ['finance.admin', 'salary_advance.request.edit.created'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances', 'permissions' => [
+            'READ' => ['finance.view', 'salary_advance.request.read.self'],
+            'POST' => ['finance.create', 'salary_advance.request.create.self'],
         ]],
         ['pattern' => 'api/v1/finance*', 'permissions' => [
             'READ' => ['finance.view', 'finance.admin'],
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
         ]],
         ['pattern' => 'api/v1/correspondence*', 'permissions' => [
-            'READ' => ['correspondence.view', 'correspondence.read.assigned', 'correspondence.admin'],
-            'POST' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
-            'PUT' => ['correspondence.review', 'correspondence.approve', 'correspondence.admin'],
-            'PATCH' => ['correspondence.review', 'correspondence.approve', 'correspondence.admin'],
+            'READ' => ['correspondence.view', 'correspondence.read.assigned', 'correspondence.read.confidential', 'correspondence.admin'],
+            'POST' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin', 'correspondence.route', 'correspondence.registry', 'correspondence.dispatch', 'correspondence.send'],
+            'PUT' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
+            'PATCH' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
             'DELETE' => ['correspondence.admin'],
         ]],
         ['pattern' => 'api/v1/stock*', 'permissions' => [
@@ -246,20 +417,49 @@ return [
         ]],
         ['pattern' => 'api/v1/assignments*', 'permissions' => [
             'READ' => ['assignments.view', 'assignment.read.assigned', 'assignments.admin'],
-            'WRITE' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin'],
+            // POST/PUT cover assignee actions (complete/start/block) as well as
+            // create/issue. AssignmentController still forbids staff create.
+            'POST' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin', 'assignment.read.assigned'],
+            'PUT' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin', 'assignment.read.assigned'],
+            'PATCH' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin', 'assignment.read.assigned'],
+            'DELETE' => ['assignments.admin', 'assignments.create'],
         ]],
         ['pattern' => 'api/v1/programmes*', 'permissions' => [
             'READ' => ['pif.view', 'programme.request.read.created', 'programme.request.read.assigned'],
             'POST' => ['pif.create', 'programme.request.create', 'pif.approve', 'pif.admin'],
-            'PUT' => ['pif.create', 'pif.approve', 'programme.finance-review', 'pif.admin'],
-            'PATCH' => ['pif.create', 'pif.approve', 'programme.finance-review', 'pif.admin'],
+            'PUT' => ['pif.create', 'pif.approve', 'programme.finance-review', 'programme.finance_review.update.assigned', 'pif.admin'],
+            'PATCH' => ['pif.create', 'pif.approve', 'programme.finance-review', 'programme.finance_review.update.assigned', 'pif.admin'],
             'DELETE' => ['pif.admin'],
         ]],
+        ['pattern' => 'api/v1/leave/requests', 'permissions' => [
+            'GET' => [
+                'leave.view',
+                'leave.module.view',
+                'leave.request.read.self',
+                'leave.request.read.direct_reports',
+                'leave.request.authorise.assigned',
+                'leave.report.view',
+                'leave.calendar.view.organisation',
+                'leave.balance.certify.assigned',
+            ],
+        ]],
         ['pattern' => 'api/v1/leave*', 'permissions' => [
-            'READ' => ['leave.view', 'leave.approve', 'leave.admin'],
-            'POST' => ['leave.create', 'leave.approve', 'leave.admin'],
-            'PUT' => ['leave.create', 'leave.approve', 'leave.admin'],
-            'PATCH' => ['leave.create', 'leave.approve', 'leave.admin'],
+            'READ' => ['leave.view', 'leave.approve', 'leave.admin', 'leave.module.view', 'leave.request.read.self'],
+            'POST' => [
+                'leave.create',
+                'leave.approve',
+                'leave.admin',
+                'leave.request.create.self',
+                'leave.request.submit.created',
+                'leave.request.withdraw.created',
+                'leave.request.recommend.assigned',
+                'leave.request.authorise.assigned',
+                'leave.request.reject.assigned',
+                'leave.request.return.assigned',
+                'leave.balance.certify.assigned',
+            ],
+            'PUT' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.edit.created'],
+            'PATCH' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.edit.created'],
             'DELETE' => ['leave.admin'],
         ]],
         ['pattern' => 'api/v1/documents*', 'permissions' => [
@@ -278,8 +478,8 @@ return [
             'WRITE' => ['workflows.submit', 'workflows.act', 'workflows.manage-definitions', 'workflows.admin'],
         ]],
         ['pattern' => 'api/v1/notifications*', 'permissions' => [
-            'READ' => ['notifications.view-own', 'notifications.admin'],
-            'WRITE' => ['notifications.manage-own-preferences', 'notifications.acknowledge', 'notifications.admin'],
+            'READ' => ['notifications.view-own', 'notifications.view.own', 'notifications.admin'],
+            'WRITE' => ['notifications.manage-own-preferences', 'notifications.manage.preferences', 'notifications.acknowledge', 'notifications.admin'],
         ]],
         ['pattern' => 'api/v1/notification-admin*', 'permissions' => [
             '*' => ['notifications.admin', 'notifications.manage-policies'],
@@ -290,11 +490,11 @@ return [
                 'weekly-reports.review-team', 'weekly-reports.accept', 'weekly-reports.admin',
                 'weekly-reports.view-management',
             ],
-            'WRITE' => ['weekly-reports.create-own', 'weekly-reports.review-team', 'weekly-reports.admin'],
+            'WRITE' => ['weekly-reports.create-own', 'weekly_report.create.self', 'weekly-reports.review-team', 'weekly-reports.admin'],
         ]],
         ['pattern' => 'api/v1/weekly-summary*', 'permissions' => [
             'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team', 'weekly_report.module.view'],
-            'WRITE' => ['weekly-reports.create-own', 'weekly-reports.review-team', 'weekly-reports.admin'],
+            'WRITE' => ['weekly-reports.create-own', 'weekly_report.create.self', 'weekly-reports.review-team', 'weekly-reports.admin'],
         ]],
         ['pattern' => 'api/v1/weekly-report-risks*', 'permissions' => [
             'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team'],
@@ -318,12 +518,27 @@ return [
             'READ' => ['assets.view', 'assets.admin'],
             'WRITE' => ['assets.manage', 'assets.admin'],
         ]],
+        // Must precede api/v1/asset-* so staff My Requests is not gated on assets.view.
+        ['pattern' => 'api/v1/asset-requests*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin', 'my_work.view'],
+            'POST' => ['assets.create', 'assets.admin', 'my_work.view'],
+            'PUT' => ['assets.edit', 'assets.manage', 'assets.admin', 'my_work.view'],
+            'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin', 'my_work.view'],
+            'DELETE' => ['assets.admin', 'my_work.view'],
+        ]],
         ['pattern' => 'api/v1/asset-*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin'],
             'POST' => ['assets.create', 'assets.edit', 'assets.manage', 'assets.admin'],
             'PUT' => ['assets.edit', 'assets.manage', 'assets.admin'],
             'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin'],
             'DELETE' => ['assets.admin'],
+        ]],
+        // Must precede api/v1/assets* so assigned custodians can acknowledge/return.
+        ['pattern' => 'api/v1/assets/{asset}/acknowledge', 'permissions' => [
+            'POST' => ['assets.admin', 'assets.manage', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/return', 'permissions' => [
+            'POST' => ['assets.admin', 'assets.manage', 'my_work.view'],
         ]],
         ['pattern' => 'api/v1/assets*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin'],
@@ -332,8 +547,21 @@ return [
             'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin'],
             'DELETE' => ['assets.admin'],
         ]],
+        // Staff may list types and create/list their events; type CRUD stays admin.
+        ['pattern' => 'api/v1/workplan/event-types*', 'permissions' => [
+            'READ' => ['workplan.view', 'workplan.admin', 'my_work.view'],
+            'WRITE' => ['workplan.create', 'workplan.admin'],
+            'DELETE' => ['workplan.admin'],
+        ]],
+        ['pattern' => 'api/v1/workplan/events*', 'permissions' => [
+            'READ' => ['workplan.view', 'workplan.admin', 'my_work.view'],
+            'POST' => ['workplan.create', 'workplan.admin', 'my_work.view'],
+            'PUT' => ['workplan.create', 'workplan.admin', 'my_work.view'],
+            'PATCH' => ['workplan.create', 'workplan.admin', 'my_work.view'],
+            'DELETE' => ['workplan.admin'],
+        ]],
         ['pattern' => 'api/v1/workplan*', 'permissions' => [
-            'READ' => ['workplan.view', 'workplan.admin'],
+            'READ' => ['workplan.view', 'workplan.admin', 'my_work.view'],
             'WRITE' => ['workplan.create', 'workplan.approve', 'workplan.admin'],
         ]],
         ['pattern' => 'api/v1/reports/schedules/{id}/approve', 'permissions' => [
@@ -360,6 +588,39 @@ return [
             'READ' => ['saam.view'],
             'WRITE' => ['saam.delegate'],
         ]],
+        // Own imprest requests are self-service; approve/liquidate stay finance-operated.
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/submit', 'permissions' => [
+            'POST' => ['imprest.create', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/withdraw', 'permissions' => [
+            'POST' => ['imprest.create', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/resubmit', 'permissions' => [
+            'POST' => ['imprest.create', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/approve', 'permissions' => [
+            'POST' => ['imprest.approve', 'finance.approve'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/reject', 'permissions' => [
+            'POST' => ['imprest.approve', 'finance.approve'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/return', 'permissions' => [
+            'POST' => ['imprest.approve', 'finance.approve'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/retire', 'permissions' => [
+            'POST' => ['imprest.liquidate', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/certificate', 'permissions' => [
+            'READ' => ['imprest.view', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}', 'permissions' => [
+            'READ' => ['imprest.view', 'my_work.view'],
+            'WRITE' => ['imprest.create', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests', 'permissions' => [
+            'READ' => ['imprest.view', 'my_work.view'],
+            'POST' => ['imprest.create', 'my_work.view'],
+        ]],
         ['pattern' => 'api/v1/imprest*', 'permissions' => [
             'READ' => ['imprest.view'],
             'WRITE' => ['imprest.create', 'imprest.approve', 'imprest.liquidate'],
@@ -369,19 +630,35 @@ return [
             'WRITE' => ['admin.platform.manage', 'system.admin'],
         ]],
         ['pattern' => 'api/v1/approvals*', 'permissions' => [
-            'READ' => ['approvals.inbox.view', 'workflows.view-own'],
-            'WRITE' => ['approvals.task.act.assigned', 'workflows.act'],
+            'READ' => [
+                'approvals.inbox.view',
+                'workflows.view-own',
+                // Named approvers must reach the snapshot before the controller
+                // scopes the row; specialist roles do not inherit General Employee.
+                'approvals.task.act.assigned',
+                'leave.balance.certify.assigned',
+                'leave.request.recommend.assigned',
+                'leave.request.authorise.assigned',
+            ],
+            'WRITE' => [
+                'approvals.task.act.assigned',
+                'workflows.act',
+                'leave.balance.certify.assigned',
+                'leave.request.recommend.assigned',
+                'leave.request.authorise.assigned',
+            ],
         ]],
+        // Staff may list the institutional calendar (workplan UI is ungated) but cannot create/edit.
         ['pattern' => 'api/v1/calendar*', 'permissions' => [
-            'READ' => ['calendar.view'],
+            'READ' => ['calendar.view', 'my_work.view'],
             'WRITE' => ['calendar.create', 'calendar.admin'],
         ]],
         ['pattern' => 'api/v1/support*', 'permissions' => [
-            'READ' => ['support.view'],
-            'WRITE' => ['support.create', 'support.admin'],
+            'READ' => ['support.view', 'my_work.view'],
+            'WRITE' => ['support.create', 'support.admin', 'my_work.view'],
         ]],
         ['pattern' => 'api/v1/dashboard*', 'permissions' => [
-            'READ' => ['dashboard.view', 'reports.view'],
+            'READ' => ['dashboard.view', 'reports.view', 'reports.view.authorised', 'my_work.view'],
         ]],
         ['pattern' => 'api/v1/lookups', 'permissions' => [
             'READ' => ['dashboard.view', 'reports.view'],
@@ -393,7 +670,7 @@ return [
             'READ' => ['users.view', 'people.view-directory'],
         ]],
         ['pattern' => 'api/v1/alerts*', 'permissions' => [
-            'READ' => ['notifications.view-own', 'notifications.admin'],
+            'READ' => ['notifications.view-own', 'notifications.view.own', 'notifications.admin'],
         ]],
     ],
 
@@ -589,6 +866,18 @@ return [
             'mande.evidence.validate.assigned',
         ],
         'mande.admin' => ['mande.module.view', 'mande.configuration.manage', 'mande.strategic_plan.manage'],
+        'travel.view' => [
+            'travel.request.read.self',
+            'travel.module.view',
+        ],
+        'travel.create' => [
+            'travel.request.create.self',
+            'travel.module.view',
+        ],
+        'travel.approve' => [
+            'travel.request.approve.assigned',
+            'travel.module.view',
+        ],
     ],
 
     /**

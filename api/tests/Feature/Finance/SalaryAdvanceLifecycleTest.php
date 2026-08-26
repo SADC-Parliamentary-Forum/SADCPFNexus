@@ -8,7 +8,6 @@ use App\Models\SalaryAdvanceRequest;
 use App\Models\Tenant;
 use App\Models\User;
 use Database\Seeders\SalaryAdvancePolicySeeder;
-use Database\Seeders\WorkflowSeeder;
 use Tests\TestCase;
 
 class SalaryAdvanceLifecycleTest extends TestCase
@@ -22,16 +21,16 @@ class SalaryAdvanceLifecycleTest extends TestCase
     private function confirmedPayslip(User $user, float $net = 10000): Payslip
     {
         return Payslip::create([
-            'tenant_id'           => $user->tenant_id,
-            'user_id'             => $user->id,
-            'period_month'        => 6,
-            'period_year'         => 2026,
-            'gross_amount'        => 15000,
-            'net_amount'          => $net,
-            'currency'            => 'NAD',
+            'tenant_id' => $user->tenant_id,
+            'user_id' => $user->id,
+            'period_month' => 6,
+            'period_year' => 2026,
+            'gross_amount' => 15000,
+            'net_amount' => $net,
+            'currency' => 'NAD',
             'confirmation_status' => 'confirmed',
-            'confirmed_at'        => now(),
-            'confirmed_by'        => $user->id,
+            'confirmed_at' => now(),
+            'confirmed_by' => $user->id,
         ]);
     }
 
@@ -42,12 +41,12 @@ class SalaryAdvanceLifecycleTest extends TestCase
 
         $http = $this->asUser($staff);
         $create = $http->postJson('/api/v1/finance/advances', [
-            'advance_type'                  => 'medical',
-            'amount'                        => 2000,
-            'currency'                      => 'NAD',
-            'purpose'                       => 'Medical',
-            'justification'                 => 'Surgery',
-            'repayment_months'              => 1,
+            'advance_type' => 'medical',
+            'amount' => 2000,
+            'currency' => 'NAD',
+            'purpose' => 'Medical',
+            'justification' => 'Surgery',
+            'repayment_months' => 1,
             'deduction_authority_confirmed' => true,
         ]);
         $id = $create->json('data.id');
@@ -55,12 +54,12 @@ class SalaryAdvanceLifecycleTest extends TestCase
             'deduction_authority_confirmed' => true,
         ])->assertOk();
 
-        [$finHttp] = $this->asFinanceController($tenant);
+        [$finHttp, $finance] = $this->asFinanceController($tenant);
         $finHttp->postJson("/api/v1/finance/advances/{$id}/finance-certify", [
-            'confirmed_net_salary'           => 10000,
+            'confirmed_net_salary' => 10000,
             'intended_recovery_payroll_date' => '2026-07-31',
-            'eligible'                       => true,
-            'comments'                       => 'Certified',
+            'eligible' => true,
+            'comments' => 'Certified',
         ])->assertOk();
 
         // Legacy path (no workflow in this helper): SG final approve
@@ -68,7 +67,9 @@ class SalaryAdvanceLifecycleTest extends TestCase
         $sgHttp->postJson("/api/v1/finance/advances/{$id}/approve", [
             'comment' => 'Final approval',
         ])->assertOk()
-          ->assertJsonPath('data.status', 'approved_for_payment');
+            ->assertJsonPath('data.status', 'approved_for_payment');
+
+        $finHttp = $this->asUser($finance);
 
         $advance = SalaryAdvanceRequest::findOrFail($id);
         $this->assertNull(
@@ -87,7 +88,7 @@ class SalaryAdvanceLifecycleTest extends TestCase
 
         $this->assertSame('approved_for_payment', $advance->fresh()->status);
         $this->assertDatabaseMissing('balance_registers', [
-            'source_request_id'   => $advance->id,
+            'source_request_id' => $advance->id,
             'source_request_type' => SalaryAdvanceRequest::class,
         ]);
     }
@@ -99,10 +100,10 @@ class SalaryAdvanceLifecycleTest extends TestCase
 
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-payment", [
             'payment_reference' => 'PAY-001',
-            'payment_method'    => 'bank_transfer',
-            'payment_date'      => '2026-07-20',
+            'payment_method' => 'bank_transfer',
+            'payment_date' => '2026-07-20',
         ])->assertOk()
-          ->assertJsonPath('data.status', 'paid');
+            ->assertJsonPath('data.status', 'paid');
 
         $register = BalanceRegister::where('source_request_type', SalaryAdvanceRequest::class)
             ->where('source_request_id', $advance->id)
@@ -120,19 +121,19 @@ class SalaryAdvanceLifecycleTest extends TestCase
 
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-payment", [
             'payment_reference' => 'PAY-002',
-            'payment_method'    => 'bank_transfer',
-            'payment_date'      => '2026-07-20',
+            'payment_method' => 'bank_transfer',
+            'payment_date' => '2026-07-20',
         ])->assertOk();
 
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/schedule-recovery", [
             'intended_recovery_payroll_date' => '2026-07-31',
         ])->assertOk()
-          ->assertJsonPath('data.status', 'recovery_scheduled');
+            ->assertJsonPath('data.status', 'recovery_scheduled');
 
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-recovery", [
-            'amount'        => 2000,
+            'amount' => 2000,
             'reference_doc' => 'PAYROLL-JUL',
-            'notes'         => 'Full EOM recovery',
+            'notes' => 'Full EOM recovery',
         ])->assertOk();
 
         $advance->refresh();
@@ -146,12 +147,12 @@ class SalaryAdvanceLifecycleTest extends TestCase
         // New advance allowed after close (payslip already exists from setup)
         $http = $this->asUser($staff);
         $create = $http->postJson('/api/v1/finance/advances', [
-            'advance_type'                  => 'school',
-            'amount'                        => 1000,
-            'currency'                      => 'NAD',
-            'purpose'                       => 'School fees',
-            'justification'                 => 'Term fees',
-            'repayment_months'              => 1,
+            'advance_type' => 'school',
+            'amount' => 1000,
+            'currency' => 'NAD',
+            'purpose' => 'School fees',
+            'justification' => 'Term fees',
+            'repayment_months' => 1,
             'deduction_authority_confirmed' => true,
         ]);
         $newId = $create->json('data.id');
@@ -167,15 +168,15 @@ class SalaryAdvanceLifecycleTest extends TestCase
 
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-payment", [
             'payment_reference' => 'PAY-003',
-            'payment_method'    => 'bank_transfer',
-            'payment_date'      => '2026-07-20',
+            'payment_method' => 'bank_transfer',
+            'payment_date' => '2026-07-20',
         ])->assertOk();
 
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-recovery", [
-            'amount'        => 500,
+            'amount' => 500,
             'reference_doc' => 'PARTIAL',
         ])->assertOk()
-          ->assertJsonPath('data.status', 'reconciliation_required');
+            ->assertJsonPath('data.status', 'reconciliation_required');
     }
 
     public function test_ledger_and_pdf_authorised_for_owner(): void
@@ -185,8 +186,8 @@ class SalaryAdvanceLifecycleTest extends TestCase
 
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-payment", [
             'payment_reference' => 'PAY-004',
-            'payment_method'    => 'cash',
-            'payment_date'      => '2026-07-20',
+            'payment_method' => 'cash',
+            'payment_date' => '2026-07-20',
         ])->assertOk();
 
         $this->asUser($staff)
@@ -205,8 +206,8 @@ class SalaryAdvanceLifecycleTest extends TestCase
         [$advance, , $finHttp] = $this->approvedForPayment($tenant);
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-payment", [
             'payment_reference' => 'PAY-005',
-            'payment_method'    => 'cash',
-            'payment_date'      => '2026-07-20',
+            'payment_method' => 'cash',
+            'payment_date' => '2026-07-20',
         ])->assertOk();
 
         $peer = $this->makeUser('staff', $tenant);

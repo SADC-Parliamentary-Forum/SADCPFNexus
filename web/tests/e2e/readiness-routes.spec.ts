@@ -8,7 +8,7 @@ const STAFF_ROUTES = [
   "/finance/advances",
   "/salary-advances",
   "/imprest",
-  "/timesheets",
+  "/hr/timesheets",
   "/notifications",
   "/approvals",
   "/profile",

@@ -15,15 +15,15 @@ const config: Config = {
         "background-dark": "#101922",
         // SADC PF Brand primary
         primary: {
-          DEFAULT: "#1d85ed",
+          DEFAULT: "#1558c0",
           50: "#eff6ff",
           100: "#dbeafe",
           200: "#bfdbfe",
           300: "#93c5fd",
           400: "#60a5fa",
-          500: "#1d85ed",
-          600: "#1a75d4",
-          700: "#1a65bb",
+          500: "#1558c0",
+          600: "#1249a3",
+          700: "#103d89",
           800: "#1e4e8a",
           900: "#1e3a5f",
           950: "#172554",
@@ -39,7 +39,7 @@ const config: Config = {
           DEFAULT: "#ffffff",
           foreground: "#334155",
           border: "#e2e8f0",
-          accent: "#1d85ed",
+          accent: "#1558c0",
         },
         // Neutral palette (maps to slate)
         neutral: {

@@ -23,22 +23,49 @@ class LeavePayrollImpactTest extends TestCase
         ])->assertCreated();
 
         $this->asUser($staff)
-            ->postJson('/api/v1/leave/requests/' . $created->json('data.id') . '/submit')
+            ->postJson('/api/v1/leave/requests/'.$created->json('data.id').'/submit')
             ->assertOk();
 
         return LeaveRequest::with(['segments', 'requester'])->findOrFail($created->json('data.id'));
+    }
+
+    /**
+     * Sequential leave authorisation: HOD recommend → HR certify → SG authorise.
+     * HR Manager must not skip those stages or call LeaveService::approve().
+     */
+    private function sequentialAuthoriser(Tenant $tenant, LeaveRequest $leave): User
+    {
+        $hod = $this->makeUser('HOD', $tenant);
+        $hr = $this->makeHrManager($tenant);
+        $sg = $this->makeSG($tenant);
+
+        $this->asUser($hod)
+            ->postJson("/api/v1/leave/requests/{$leave->id}/recommend", [
+                'action' => 'recommend',
+                'comment' => 'Operationally covered',
+            ])
+            ->assertOk();
+
+        $this->asUser($hr)
+            ->postJson("/api/v1/leave/requests/{$leave->id}/certify", [
+                'action' => 'certify',
+                'comment' => 'Balance and documents confirmed',
+            ])
+            ->assertOk();
+
+        return $sg;
     }
 
     public function test_approved_leave_without_pay_creates_pending_payroll_impact(): void
     {
         $tenant = Tenant::factory()->create();
         $staff = $this->makeUser('staff', $tenant);
-        $approver = $this->makeHrManager($tenant);
         $start = now()->next(Carbon::MONDAY)->addWeeks(2);
 
         $leave = $this->createSubmittedLeave($tenant, $staff, 'unpaid', $start, $start->copy()->addDay());
+        $authoriser = $this->sequentialAuthoriser($tenant, $leave);
 
-        app(LeaveService::class)->approve($leave, $approver, 'Secretary General authorised leave without pay.');
+        app(LeaveService::class)->approve($leave->fresh(['segments', 'requester']), $authoriser, 'Secretary General authorised leave without pay.');
 
         $this->assertDatabaseHas('leave_payroll_impacts', [
             'tenant_id' => $tenant->id,
@@ -58,7 +85,6 @@ class LeavePayrollImpactTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $staff = $this->makeUser('staff', $tenant);
-        $approver = $this->makeHrManager($tenant);
 
         HrPersonalFile::create([
             'tenant_id' => $tenant->id,
@@ -70,8 +96,9 @@ class LeavePayrollImpactTest extends TestCase
 
         $start = now()->next(Carbon::MONDAY)->addWeeks(6);
         $leave = $this->createSubmittedLeave($tenant, $staff, 'maternity', $start, $start->copy()->addDays(13));
+        $authoriser = $this->sequentialAuthoriser($tenant, $leave);
 
-        app(LeaveService::class)->approve($leave, $approver, 'Approved maternity payroll review.');
+        app(LeaveService::class)->approve($leave->fresh(['segments', 'requester']), $authoriser, 'Approved maternity payroll review.');
 
         $this->assertDatabaseHas('leave_payroll_impacts', [
             'tenant_id' => $tenant->id,

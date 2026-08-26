@@ -80,14 +80,6 @@ export const LIFECYCLE_HUB_CARDS: HubCard[] = [
     section: "views",
   },
   {
-    href: "/lifecycle/cases/1",
-    title: "Case detail",
-    purpose: "Tasks, clearance, timeline, and readiness for one lifecycle case.",
-    icon: "folder_open",
-    section: "views",
-    permission: ["lifecycle.view", "lifecycle.view-own", "lifecycle.admin"],
-  },
-  {
     href: "/lifecycle/reports",
     title: "Reports",
     purpose: "Cycle time, bottlenecks, and clearance aging across journey types.",

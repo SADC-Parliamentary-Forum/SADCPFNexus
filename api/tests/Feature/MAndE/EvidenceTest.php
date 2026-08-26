@@ -6,7 +6,6 @@ use App\Models\MeActivityReport;
 use App\Models\MeEvidence;
 use App\Models\Programme;
 use App\Models\Tenant;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -16,7 +15,7 @@ class EvidenceTest extends TestCase
     {
         $programme = Programme::create([
             'tenant_id' => $tenant->id, 'created_by' => $userId,
-            'reference_number' => 'PIF-' . uniqid(), 'title' => 'P', 'status' => 'approved',
+            'reference_number' => 'PIF-'.uniqid(), 'title' => 'P', 'status' => 'approved',
         ]);
 
         return MeActivityReport::create([
@@ -26,50 +25,50 @@ class EvidenceTest extends TestCase
         ]);
     }
 
-    public function test_staff_can_upload_evidence(): void
+    public function test_me_officer_can_upload_evidence(): void
     {
         Storage::fake('local');
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asMeOfficer($tenant);
         $report = $this->makeReport($tenant, $user->id);
 
-        $file = UploadedFile::fake()->create('attendance.pdf', 120, 'application/pdf');
+        $file = $this->fakePdf('attendance.pdf');
 
         $http->post("/api/v1/mande/activity-reports/{$report->id}/evidence", [
-            'file'          => $file,
+            'file' => $file,
             'evidence_type' => 'attendance',
-            'title'         => 'Attendance register',
+            'title' => 'Attendance register',
         ])->assertCreated()
-          ->assertJsonPath('data.evidence_type', 'attendance')
-          ->assertJsonPath('data.review_status', 'pending');
+            ->assertJsonPath('data.evidence_type', 'attendance')
+            ->assertJsonPath('data.review_status', 'pending');
 
         $this->assertDatabaseHas('me_evidence', [
             'me_activity_report_id' => $report->id,
-            'evidence_type'         => 'attendance',
+            'evidence_type' => 'attendance',
         ]);
         $this->assertDatabaseHas('attachments', [
             'attachable_type' => MeEvidence::class,
-            'document_type'   => 'me_evidence',
+            'document_type' => 'me_evidence',
         ]);
     }
 
     public function test_evidence_upload_requires_file(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asMeOfficer($tenant);
         $report = $this->makeReport($tenant, $user->id);
 
         $http->postJson("/api/v1/mande/activity-reports/{$report->id}/evidence", [
             'evidence_type' => 'photo',
         ])->assertUnprocessable()
-          ->assertJsonValidationErrors(['file']);
+            ->assertJsonValidationErrors(['file']);
     }
 
     public function test_reviewer_can_validate_evidence(): void
     {
         Storage::fake('local');
         $tenant = Tenant::factory()->create();
-        $staff  = $this->makeUser('staff', $tenant);
+        $staff = $this->makeUser('staff', $tenant);
         $report = $this->makeReport($tenant, $staff->id);
 
         $evidence = MeEvidence::create([
@@ -81,13 +80,13 @@ class EvidenceTest extends TestCase
         $http->postJson("/api/v1/mande/activity-reports/{$report->id}/evidence/{$evidence->id}/review", [
             'review_status' => 'validated',
         ])->assertOk()
-          ->assertJsonPath('data.review_status', 'validated');
+            ->assertJsonPath('data.review_status', 'validated');
     }
 
     public function test_evidence_listing_returns_uploaded_items(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asMeOfficer($tenant);
         $report = $this->makeReport($tenant, $user->id);
 
         MeEvidence::create([
@@ -96,7 +95,7 @@ class EvidenceTest extends TestCase
         ]);
 
         $http->getJson("/api/v1/mande/activity-reports/{$report->id}/evidence")
-             ->assertOk()
-             ->assertJsonCount(1, 'data');
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
     }
 }

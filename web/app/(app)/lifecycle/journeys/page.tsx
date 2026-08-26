@@ -7,6 +7,8 @@ import { lifecycleApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { QueryStatus } from "@/components/ui/QueryStatus";
+import { StatusPill } from "@/components/ui/StatusPill";
 import { formatDateShort } from "@/lib/utils";
 
 const TYPES = [
@@ -31,7 +33,7 @@ export default function LifecycleInternalJourneysPage() {
   const cases = casesQuery.data ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="page-container">
       <ModulePageHeader
         title="Internal journeys"
         subtitle="Open transfer, promotion, and probation cases from published templates."
@@ -52,7 +54,7 @@ export default function LifecycleInternalJourneysPage() {
           </label>
           <select
             id="lifecycle-internal-type"
-            className="input w-full max-w-xs"
+            className="form-input w-full max-w-xs"
             value={type}
             onChange={(e) => setType(e.target.value)}
           >
@@ -63,32 +65,36 @@ export default function LifecycleInternalJourneysPage() {
             ))}
           </select>
         </div>
-        {casesQuery.isLoading ? <p className="text-sm text-neutral-500">Loading…</p> : null}
-        {casesQuery.isError ? <p className="text-sm text-red-600">Failed to load internal journeys.</p> : null}
-        {!casesQuery.isLoading && cases.length === 0 ? (
+        <QueryStatus
+          isLoading={casesQuery.isLoading}
+          isError={casesQuery.isError}
+          error="Failed to load internal journeys."
+        />
+        {!casesQuery.isLoading && !casesQuery.isError && cases.length === 0 ? (
           <EmptyState title="No open internal journeys" description="Start a transfer, promotion, or probation review from the button above." />
-        ) : (
+        ) : null}
+        {!casesQuery.isLoading && cases.length > 0 ? (
           <ul className="space-y-3">
             {cases.map((row) => (
               <li key={row.id}>
-                <Link href={`/lifecycle/cases/${row.id}`} className="card block p-4 hover:border-primary/30">
+                <Link href={`/lifecycle/cases/${row.id}`} className="card block p-4 hover:border-primary/30 hover:shadow-elevated transition-all">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="font-semibold text-neutral-900">{row.reference}</p>
-                      <p className="text-sm text-neutral-600">
+                      <p className="font-semibold text-neutral-900 dark:text-neutral-100">{row.reference}</p>
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400">
                         {row.employee_name ?? "Employee"} · <span className="capitalize">{row.lifecycle_type}</span>
                       </p>
                     </div>
-                    <div className="text-right text-xs text-neutral-500">
+                    <div className="text-right text-xs text-neutral-500 space-y-1">
                       <p>{row.start_date ? formatDateShort(row.start_date) : "—"}</p>
-                      <p className="capitalize">{row.status}</p>
+                      <StatusPill value={row.status} />
                     </div>
                   </div>
                 </Link>
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
       </FormSection>
     </div>
   );

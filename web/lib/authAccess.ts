@@ -194,7 +194,7 @@ interface RouteAccessRule {
 /** Path prefix or exact path -> required permission(s). Empty = allow any authenticated. */
 const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/dashboard" },
-  { path: "/approvals", permission: ["travel.approve", "leave.approve", "imprest.approve", "procurement.approve", "finance.approve", "governance.approve", "hr.approve"] },
+  { path: "/approvals", permission: ["approvals.inbox.view", "travel.approve", "leave.approve", "imprest.approve", "procurement.approve", "finance.approve", "governance.approve", "hr.approve"] },
   { path: "/alerts" },
   { path: "/assignments/unassigned", permission: ["assignments.issue", "assignments.admin"] },
   { path: "/assignments/escalations", permission: ["assignments.review", "assignments.admin"] },
@@ -245,10 +245,12 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/travel/queues/admin", permission: ["travel.admin-review", "travel.admin"] },
   { path: "/travel/queues/retirement", permission: ["travel.review-retirement", "travel.admin"] },
   { path: "/travel/queues", permission: ["travel.approve", "travel.recommend", "travel.admin", "travel.finance-review", "travel.final-approve"] },
-  { path: "/travel/create", permission: ["travel.create", "travel.prepare-for-others"] },
-  { path: "/travel", permission: "travel.view" },
-  { path: "/leave", permission: "leave.view" },
+  { path: "/travel/create", permission: ["travel.create", "travel.request.create.self", "travel.prepare-for-others"] },
+  { path: "/travel", permission: ["travel.view", "travel.module.view", "travel.request.read.self"] },
+  { path: "/leave", permission: ["leave.view", "leave.module.view", "leave.request.read.self", "leave.request.create.self"] },
   { path: "/budget", permission: ["finance.view", "finance.approve", "finance.admin", "procurement.manage_budget"] },
+  // Legacy alias: must precede `/finance` so staff salary-advance perms can follow the redirect.
+  { path: "/finance/advances", permission: ["salary_advance.view", "salary_advance.create", "salary_advance.module.view", "salary_advance.request.create.self", "salary_advance.request.read.self", "finance.view", "finance.create"] },
   { path: "/finance", permission: "finance.view" },
   // Salary Advances - more specific paths first (finance queues exclude plain employee view)
   { path: "/salary-advances/settings", permission: ["salary_advance.admin", "finance.admin"] },
@@ -259,10 +261,10 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/salary-advances/queues", permission: ["salary_advance.certify", "salary_advance.pay", "salary_advance.recover", "salary_advance.approve", "finance.approve", "finance.admin"] },
   { path: "/salary-advances/finance", permission: ["salary_advance.certify", "salary_advance.pay", "salary_advance.recover", "salary_advance.approve", "salary_advance.admin", "finance.approve", "finance.admin"] },
   { path: "/salary-advances/pending-approval", permission: ["salary_advance.approve", "finance.approve"] },
-  { path: "/salary-advances/create", permission: ["salary_advance.create", "finance.create"] },
-  { path: "/salary-advances/applications", permission: ["salary_advance.view", "salary_advance.create", "finance.view", "finance.create"] },
-  { path: "/salary-advances/history", permission: ["salary_advance.view", "salary_advance.create", "finance.view", "finance.create"] },
-  { path: "/salary-advances", permission: ["salary_advance.view", "salary_advance.create", "finance.view", "finance.create"] },
+  { path: "/salary-advances/create", permission: ["salary_advance.create", "salary_advance.request.create.self", "finance.create"] },
+  { path: "/salary-advances/applications", permission: ["salary_advance.view", "salary_advance.create", "salary_advance.module.view", "salary_advance.request.create.self", "salary_advance.request.read.self", "finance.view", "finance.create"] },
+  { path: "/salary-advances/history", permission: ["salary_advance.view", "salary_advance.create", "salary_advance.module.view", "salary_advance.request.create.self", "salary_advance.request.read.self", "finance.view", "finance.create"] },
+  { path: "/salary-advances", permission: ["salary_advance.view", "salary_advance.create", "salary_advance.module.view", "salary_advance.request.create.self", "salary_advance.request.read.self", "finance.view", "finance.create"] },
   { path: "/imprest", permission: "imprest.view" },
   { path: "/pif", permission: ["pif.view", "programme.module.view", "programme.request.create", "governance.view"] },
   { path: "/my-work/procurement-evaluations", permission: ["procurement.evaluation.read.assigned", "procurement.evaluation.score.assigned"] },
@@ -274,8 +276,12 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr/timesheets/templates", permission: ["hr.admin", "timesheets.admin"] },
   { path: "/hr/timesheets/team", permission: ["hr.admin", "hr.approve", "hr.edit"] },
   { path: "/hr/timesheets/capacity", permission: ["hr.admin", "hr.approve", "hr.edit"] },
+  { path: "/hr/timesheets", permission: ["timesheets.view", "timesheets.create", "timesheet.module.view", "timesheet.create.self", "timesheet.read.self", "hr.view", "hr.admin"] },
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
+  // My Requests is staff self-service; the register stays assets.view.
+  { path: "/assets/requests", permission: ["assets.view", "assets.admin", "my_work.view"] },
+  { path: "/assets/request", permission: ["assets.view", "assets.admin", "my_work.view"] },
   { path: "/assets", permission: "assets.view" },
   { path: "/fleet", permission: "assets.view" },
   { path: "/stock", permission: "stock.view" },
@@ -300,7 +306,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   // Risk Register
   { path: "/risk", permission: ["risk.view", "risk.admin", "risk.manage", "governance.view"] },
   // Notifications
-  { path: "/notifications", permission: ["notifications.view", "notifications.inbox", "alerts.view"] },
+  { path: "/notifications", permission: ["notifications.view", "notifications.inbox", "notifications.view.own", "alerts.view"] },
   { path: "/alerts", permission: ["alerts.view", "notifications.view"] },
   // Documents
   { path: "/documents", permission: ["documents.view", "documents.manage", "documents.admin"] },
@@ -313,8 +319,6 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/profile" },
   { path: "/settings" },
   { path: "/help" },
-  // Timesheets
-  { path: "/hr/timesheets", permission: ["timesheets.view", "timesheets.create", "hr.view", "hr.admin"] },
   // Decisions / meetings
   { path: "/decisions", permission: ["decisions.view", "governance.view", "meetings.view"] },
   { path: "/meetings", permission: ["meetings.view", "governance.view", "decisions.view"] },

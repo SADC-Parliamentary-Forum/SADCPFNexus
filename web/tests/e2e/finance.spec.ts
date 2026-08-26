@@ -5,7 +5,7 @@
  * Auth fixture skips: see helpers/auth.ts and tests/e2e/README.md.
  */
 import { test, expect } from "@playwright/test";
-import { landedOnLogin, skipWithoutAuth } from "./helpers/auth";
+import { landedOnLogin, skipIfAccessDenied, skipWithoutAuth } from "./helpers/auth";
 
 const UNIQUE = `E2E-${Date.now()}`;
 
@@ -54,10 +54,12 @@ test.describe("Salary advances IA redirects", () => {
 
   test("legacy /finance/advances redirects to applications", async ({ page }) => {
     await page.goto("/finance/advances");
-    await page.waitForURL("**/salary-advances/**", { timeout: 15_000 });
+    await page.waitForLoadState("networkidle");
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for salary advances");
     }
+    await skipIfAccessDenied(page, "Staff cannot follow /finance/advances alias");
+    await expect(page).toHaveURL(/salary-advances/, { timeout: 15_000 });
     await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible();
   });
 });

@@ -96,12 +96,16 @@ trait AuthorizesRequestRecords
         }
 
         // Prefer central PDP when a permission is supplied (deny/SoD/expiry aware).
+        // Legacy approve is an operational capability (organisation), not self-scope.
         if ($permission) {
             app(\App\Modules\AccessControl\Services\PolicyDecisionPoint::class)->assert(
                 $actor,
                 $permission,
                 $record,
-                ['assigned' => true, 'owner_id' => $record->getAttribute('requester_id')]
+                [
+                    'owner_id' => $record->getAttribute('requester_id'),
+                    'scope' => 'organisation',
+                ]
             );
 
             return;

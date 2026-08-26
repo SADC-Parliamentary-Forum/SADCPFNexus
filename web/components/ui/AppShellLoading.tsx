@@ -13,7 +13,7 @@ export function AppShellLoading() {
       aria-live="polite"
     >
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-neutral-200 border-t-primary dark:border-neutral-700 dark:border-t-primary" />
-      <span className="text-sm text-neutral-500 dark:text-neutral-400">Loading…</span>
+      <span className="text-sm text-neutral-700 dark:text-neutral-300">Loading…</span>
     </div>
   );
 }

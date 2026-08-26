@@ -2,13 +2,10 @@
 
 namespace App\Modules\Lifecycle\Services;
 
-use App\Models\HrPersonalFile;
 use App\Models\Lifecycle\LifecycleCase;
 use App\Models\Lifecycle\LifecycleTaskInstance;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LifecycleClearanceService
@@ -159,14 +156,18 @@ class LifecycleClearanceService
 
     public function syncCaseClearance(LifecycleCase $case): void
     {
+        // Employee handover tasks are work items, not departmental clearance gates.
+        // Terminal payment stays blocked until every mandatory department clearance is resolved.
         $mandatoryClearance = $case->tasks()
             ->where('mandatory', true)
             ->whereNotNull('clearance_status')
+            ->where('assignee_role', '!=', 'employee')
             ->get();
 
-        $allResolved = $mandatoryClearance->every(function (LifecycleTaskInstance $task) {
-            return in_array($task->clearance_status, ['cleared', 'exception_approved'], true);
-        });
+        $allResolved = $mandatoryClearance->isNotEmpty()
+            && $mandatoryClearance->every(function (LifecycleTaskInstance $task) {
+                return in_array($task->clearance_status, ['cleared', 'exception_approved'], true);
+            });
 
         $anyNotCleared = $mandatoryClearance->contains(fn ($t) => $t->clearance_status === 'not_cleared');
 

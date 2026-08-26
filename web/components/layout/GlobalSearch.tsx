@@ -213,11 +213,11 @@ export function GlobalSearch() {
       <button
         type="button"
         onClick={openSearch}
-        className="flex w-full max-w-md items-center gap-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 px-3.5 py-2.5 text-sm text-neutral-500 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors cursor-text group"
+        className="flex w-full max-w-md items-center gap-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 px-3.5 py-2.5 text-sm text-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors cursor-text group"
       >
-        <span className="material-symbols-outlined text-neutral-400 text-[20px] flex-shrink-0">search</span>
-        <span className="flex-1 text-left text-neutral-400">Search anywhere…</span>
-        <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1.5 py-0.5 text-[10px] font-mono text-neutral-400 shadow-sm">
+        <span className="material-symbols-outlined text-neutral-700 text-[20px] flex-shrink-0" aria-hidden="true">search</span>
+        <span className="flex-1 text-left text-neutral-700">Search anywhere…</span>
+        <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1.5 py-0.5 text-[10px] font-mono text-neutral-700 shadow-sm">
           <span className="text-[11px]">⌘</span>K
         </kbd>
       </button>

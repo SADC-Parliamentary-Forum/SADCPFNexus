@@ -78,10 +78,10 @@ jobs:
       - uses: actions/checkout@v4
 
       # ── API setup ────────────────────────────────────────────────────────────
-      - name: Set up PHP 8.3
+      - name: Set up PHP 8.4
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: pdo, pdo_pgsql, pgsql, bcmath, mbstring, xml, ctype, json
           coverage: none
 
@@ -115,7 +115,7 @@ jobs:
           MAIL_MAILER: array
           BCRYPT_ROUNDS: '4'
         run: |
-          php artisan key:generate --force
+          test -f .env || cp .env.example .env
           php artisan migrate:fresh --seed --force
 
       - name: Start API server

@@ -13,8 +13,7 @@ class AssignmentsPhase1Test extends TestCase
     private function seedPair(?Tenant $tenant = null): array
     {
         $tenant ??= Tenant::factory()->create();
-        $creator = User::factory()->create(['tenant_id' => $tenant->id]);
-        $creator->assignRole('staff');
+        $creator = $this->makeAdmin($tenant);
         $assignee = User::factory()->create(['tenant_id' => $tenant->id]);
         $assignee->assignRole('staff');
         $reviewer = User::factory()->create(['tenant_id' => $tenant->id]);
@@ -134,7 +133,7 @@ class AssignmentsPhase1Test extends TestCase
         $this->assertTrue((bool) $created['is_confidential']);
 
         $view = $this->actingAs($outsider, 'sanctum')
-            ->getJson('/api/v1/assignments/' . $created['id'])
+            ->getJson('/api/v1/assignments/'.$created['id'])
             ->assertOk()
             ->json();
 
@@ -244,7 +243,7 @@ class AssignmentsPhase1Test extends TestCase
         $this->assertTrue((bool) $template['is_template']);
 
         $instance = $this->actingAs($creator, 'sanctum')
-            ->postJson('/api/v1/assignments/' . $template['id'] . '/generate', [
+            ->postJson('/api/v1/assignments/'.$template['id'].'/generate', [
                 'due_date' => now()->addDays(7)->toDateString(),
             ])
             ->assertCreated()
@@ -262,7 +261,7 @@ class AssignmentsPhase1Test extends TestCase
         $dept = Department::create([
             'tenant_id' => $tenant->id,
             'name' => 'Finance',
-            'code' => 'FIN-' . uniqid(),
+            'code' => 'FIN-'.uniqid(),
         ]);
 
         $data = $this->actingAs($creator, 'sanctum')

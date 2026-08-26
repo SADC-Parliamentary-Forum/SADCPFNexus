@@ -34,6 +34,8 @@ test.describe("a11y scaffold", () => {
   test("dashboard has no critical axe violations", async ({ page }) => {
     await page.goto("/dashboard");
     await page.waitForLoadState("domcontentloaded");
+    await page.getByText(/^Loading…$/).waitFor({ state: "hidden", timeout: 15_000 }).catch(() => undefined);
+    await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible({ timeout: 15_000 });
     await assertNoCriticalOrSerious(page, "dashboard");
   });
 });

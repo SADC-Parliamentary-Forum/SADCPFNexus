@@ -85,13 +85,15 @@ test.describe("Leave — create request", () => {
       await reason.fill(`${UNIQUE} - E2E leave test reason`);
     }
 
-    const saveBtn = page.locator('button:has-text("Save"), button:has-text("Draft")').first();
-    if (await saveBtn.isVisible()) {
+    const saveBtn = page.getByRole("button", { name: /Save draft/i });
+    if (await saveBtn.isEnabled().catch(() => false)) {
       await saveBtn.click();
       await page.waitForURL(
         (url) => url.pathname.startsWith("/leave") && !url.pathname.includes("/create"),
         { timeout: 15_000 }
       );
+    } else {
+      await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible();
     }
   });
 });

@@ -394,12 +394,8 @@ class AuditManagementController extends Controller
 
     public function findingsShow(Request $request, AuditFinding $finding): JsonResponse
     {
-        if ((int) $finding->tenant_id !== (int) $request->user()->tenant_id) {
-            abort(404);
-        }
-
         return response()->json([
-            'data' => $finding->load(['managementResponses', 'recommendations', 'correctiveActions.assignment']),
+            'data' => $this->findings->showForViewer($finding, $request->user()),
         ]);
     }
 

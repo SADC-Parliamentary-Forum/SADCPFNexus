@@ -5,8 +5,8 @@ namespace Tests\Feature\MAndE;
 use App\Models\MeActivityReport;
 use App\Models\Tenant;
 use Illuminate\Http\UploadedFile;
-use OpenSpout\Writer\XLSX\Writer;
 use OpenSpout\Common\Entity\Row;
+use OpenSpout\Writer\XLSX\Writer;
 use Tests\TestCase;
 
 class MePhase2PolishDonorImportTest extends TestCase
@@ -14,17 +14,17 @@ class MePhase2PolishDonorImportTest extends TestCase
     public function test_donor_report_accepts_status_and_thematic_filters(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asMeOfficer($tenant);
 
         MeActivityReport::create([
-            'tenant_id'      => $tenant->id,
+            'tenant_id' => $tenant->id,
             'non_pif_reason' => 'Donor filter fixture activity',
             'activity_title' => 'Donor filtered',
-            'review_status'  => 'submitted',
-            'created_by'     => $user->id,
+            'review_status' => 'submitted',
+            'created_by' => $user->id,
             'responsible_officer_id' => $user->id,
-            'start_date'     => now()->subDays(10)->toDateString(),
-            'end_date'       => now()->subDays(5)->toDateString(),
+            'start_date' => now()->subDays(10)->toDateString(),
+            'end_date' => now()->subDays(5)->toDateString(),
         ]);
 
         $res = $http->getJson('/api/v1/mande/reports/donor?review_status=submitted')
@@ -42,8 +42,8 @@ class MePhase2PolishDonorImportTest extends TestCase
         $tenant = Tenant::factory()->create();
         [$http] = $this->asAdmin($tenant);
 
-        $path = tempnam(sys_get_temp_dir(), 'meimp') . '.xlsx';
-        $writer = new Writer();
+        $path = tempnam(sys_get_temp_dir(), 'meimp').'.xlsx';
+        $writer = new Writer;
         $writer->openToFile($path);
         $writer->addRow(Row::fromValues([
             'activity_title', 'start_date', 'end_date', 'pif_number', 'non_pif_reason',
@@ -68,7 +68,7 @@ class MePhase2PolishDonorImportTest extends TestCase
             ->assertJsonPath('data.created', 1);
 
         $this->assertDatabaseHas('me_activity_reports', [
-            'tenant_id'      => $tenant->id,
+            'tenant_id' => $tenant->id,
             'activity_title' => 'Excel imported workshop',
         ]);
 

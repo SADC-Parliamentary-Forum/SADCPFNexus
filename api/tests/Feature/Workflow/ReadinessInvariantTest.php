@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Workflow;
 
-use App\Models\LeaveRequest;
 use App\Models\LeaveBalance;
 use App\Models\SalaryAdvanceRequest;
 use App\Models\Tenant;
@@ -26,6 +25,7 @@ class ReadinessInvariantTest extends TestCase
             'reason' => 'Readiness invariant test',
         ]);
 
+        $create->assertCreated();
         $id = $create->json('data.id');
         $http->postJson("/api/v1/leave/requests/{$id}/submit")->assertOk();
         $http->postJson("/api/v1/leave/requests/{$id}/approve")
@@ -71,6 +71,7 @@ class ReadinessInvariantTest extends TestCase
             'reason' => 'Approver gate test',
         ]);
 
+        $create->assertCreated();
         $id = $create->json('data.id');
         $staffHttp->postJson("/api/v1/leave/requests/{$id}/submit")->assertOk();
 

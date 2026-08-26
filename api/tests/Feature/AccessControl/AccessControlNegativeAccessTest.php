@@ -117,10 +117,9 @@ class AccessControlNegativeAccessTest extends TestCase
         $this->getJson("/api/v1/procurement/committee-evaluations/{$assigned->id}")->assertOk();
         $this->getJson("/api/v1/procurement/committee-evaluations/{$other->id}")->assertStatus(404);
 
-        $list = $this->getJson('/api/v1/procurement/requests')->assertOk()->json();
-        $ids = collect($list['data'] ?? [])->pluck('id')->all();
-        $this->assertNotContains($other->id, $ids);
-        $this->assertNotContains($assigned->id, $ids);
+        // Feature-only evaluators have procurement.evaluation.read.assigned, not
+        // procurement.view. The register is denied (403), not an empty 200 list.
+        $this->getJson('/api/v1/procurement/requests')->assertForbidden();
     }
 
     public function test_ict_admin_cannot_export_salary_advances(): void
@@ -495,12 +494,24 @@ class AccessControlNegativeAccessTest extends TestCase
         $service->createRoleAssignment($target, $version, [], $admin);
     }
 
-    public function test_access_request_rejects_unregistered_permission(): void
+    public function test_employee_cannot_create_access_request_via_admin_route(): void
     {
         $requester = $this->makeUser('staff');
 
         Sanctum::actingAs($requester);
         $this->postJson('/api/v1/admin/access/requests', [
+            'permission_key' => 'dashboard.view',
+            'scope_type' => 'self',
+            'business_reason' => 'Admin manage route is not self-service',
+        ])->assertForbidden();
+    }
+
+    public function test_access_request_rejects_unregistered_permission(): void
+    {
+        $requester = $this->makeUser('staff');
+
+        Sanctum::actingAs($requester);
+        $this->postJson('/api/v1/access/requests', [
             'permission_key' => 'unregistered.permission',
             'scope_type' => 'self',
             'business_reason' => 'Must be rejected',
@@ -512,7 +523,7 @@ class AccessControlNegativeAccessTest extends TestCase
         $requester = $this->makeUser('staff');
 
         Sanctum::actingAs($requester);
-        $this->postJson('/api/v1/admin/access/requests', [
+        $this->postJson('/api/v1/access/requests', [
             'business_reason' => 'No target should be rejected',
         ])->assertStatus(422);
     }

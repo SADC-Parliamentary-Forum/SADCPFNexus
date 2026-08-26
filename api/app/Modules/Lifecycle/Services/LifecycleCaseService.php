@@ -211,7 +211,13 @@ class LifecycleCaseService
     {
         $this->rbac->assertViewCase($viewer, $case);
 
-        $case->load(['employee', 'stages.tasks', 'templateVersion.template', 'events' => fn ($q) => $q->latest('created_at')]);
+        $case->load([
+            'employee',
+            'stages.tasks',
+            'templateVersion.template',
+            'exceptions',
+            'events' => fn ($q) => $q->latest('created_at'),
+        ]);
 
         $payload = [
             'id' => $case->id,
@@ -228,6 +234,14 @@ class LifecycleCaseService
             'clearance_status' => $case->clearance_status,
             'terminal_payment_blocked' => $case->terminal_payment_blocked,
             'terminal_payment_approved_at' => $case->terminal_payment_approved_at?->toIso8601String(),
+            'exceptions' => $case->exceptions->map(fn ($e) => [
+                'id' => $e->id,
+                'task_instance_id' => $e->task_instance_id,
+                'exception_type' => $e->exception_type,
+                'reason' => $e->reason,
+                'status' => $e->status,
+                'resolution_notes' => $e->resolution_notes,
+            ])->values(),
             'revision' => $case->revision,
             'template' => [
                 'code' => $case->templateVersion?->template?->code,
@@ -331,16 +345,16 @@ class LifecycleCaseService
 
     public function dashboard(User $user): array
     {
-        $base = LifecycleCase::where('tenant_id', $user->tenant_id);
+        $tenantId = $user->tenant_id;
 
         return [
-            'onboarding_open' => (clone $base)->where('lifecycle_type', 'onboarding')->where('status', 'in_progress')->count(),
-            'separation_open' => (clone $base)->where('lifecycle_type', 'separation')->where('status', 'in_progress')->count(),
-            'internal_open' => (clone $base)->whereIn('lifecycle_type', ['transfer', 'promotion', 'probation'])
+            'onboarding_open' => LifecycleCase::where('tenant_id', $tenantId)->where('lifecycle_type', 'onboarding')->where('status', 'in_progress')->count(),
+            'separation_open' => LifecycleCase::where('tenant_id', $tenantId)->where('lifecycle_type', 'separation')->where('status', 'in_progress')->count(),
+            'internal_open' => LifecycleCase::where('tenant_id', $tenantId)->whereIn('lifecycle_type', ['transfer', 'promotion', 'probation'])
                 ->where('status', 'in_progress')->count(),
-            'awaiting_clearance' => (clone $base)->where('lifecycle_type', 'separation')
+            'awaiting_clearance' => LifecycleCase::where('tenant_id', $tenantId)->where('lifecycle_type', 'separation')
                 ->where('terminal_payment_blocked', true)->count(),
-            'ready_onboarding' => (clone $base)->where('lifecycle_type', 'onboarding')
+            'ready_onboarding' => LifecycleCase::where('tenant_id', $tenantId)->where('lifecycle_type', 'onboarding')
                 ->whereJsonContains('readiness->ready', true)->count(),
         ];
     }
@@ -382,7 +396,7 @@ class LifecycleCaseService
         $tasks = LifecycleTaskInstance::with(['lifecycleCase.employee:id,name'])
             ->where('tenant_id', $user->tenant_id)
             ->where('status', '!=', 'completed')
-            ->whereHas('lifecycleCase', function ($q) use ($user) {
+            ->whereHas('lifecycleCase', function ($q) {
                 $q->where('status', 'in_progress');
             })
             ->orderBy('due_date')
@@ -421,6 +435,7 @@ class LifecycleCaseService
             if ($group->isEmpty()) {
                 return true;
             }
+
             // At least one optional in each group must be complete if group exists
             return $group->contains(fn ($t) => $t->status === 'completed') || $group->every(fn ($t) => $t->status === 'pending');
         });

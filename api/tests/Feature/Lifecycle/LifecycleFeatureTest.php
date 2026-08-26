@@ -6,16 +6,12 @@ use App\Models\HrContractType;
 use App\Models\HrGradeBand;
 use App\Models\HrPersonalFile;
 use App\Models\Lifecycle\LifecycleCase;
-use App\Models\Lifecycle\LifecycleEvent;
-use App\Models\Lifecycle\LifecycleException;
 use App\Models\Lifecycle\LifecycleJourneyTemplate;
 use App\Models\Lifecycle\LifecycleJourneyTemplateVersion;
 use App\Models\Lifecycle\LifecycleTaskInstance;
 use App\Models\Tenant;
 use App\Models\User;
-use App\Modules\Lifecycle\Services\LifecycleTaskEngineService;
 use Carbon\Carbon;
-use Database\Seeders\RolesAndPermissionsSeeder;
 use Spatie\Permission\Models\Permission;
 use Tests\TestCase;
 
@@ -307,6 +303,8 @@ class LifecycleFeatureTest extends TestCase
             'tenant_id' => $tenant->id,
             'code' => 'P3',
             'label' => 'P3',
+            'band_group' => 'C',
+            'employment_category' => 'local',
             'notice_period_days' => 30,
             'probation_months' => 6,
             'status' => 'published',
@@ -640,5 +638,83 @@ class LifecycleFeatureTest extends TestCase
         [$http] = $this->asStaff($tenant);
 
         $http->getJson('/api/v1/lifecycle/analytics')->assertForbidden();
+    }
+
+    public function test_case_show_includes_open_exceptions(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->seedLifecycleTemplates($tenant);
+        [$http, $hr] = $this->asHrManager($tenant);
+        $this->grantLifecycle($hr, [
+            'lifecycle.manage-separation', 'lifecycle.view',
+            'lifecycle.complete-department-tasks', 'lifecycle.approve-exceptions',
+        ]);
+
+        $employee = User::factory()->create(['tenant_id' => $tenant->id]);
+        HrContractType::create([
+            'tenant_id' => $tenant->id,
+            'code' => 'permanent',
+            'name' => 'Permanent',
+            'notice_period_days' => 30,
+            'has_probation' => false,
+            'is_permanent' => true,
+            'is_active' => true,
+            'is_renewable' => false,
+        ]);
+        $this->personalFile($tenant, $employee, ['contract_type' => 'permanent']);
+
+        $created = $http->postJson('/api/v1/lifecycle/separation', [
+            'employee_id' => $employee->id,
+            'last_working_day' => '2026-09-30',
+        ])->assertCreated();
+        $caseId = $created->json('data.id');
+
+        $task = LifecycleTaskInstance::where('task_key', 'finance_clearance')->firstOrFail();
+        $http->postJson("/api/v1/lifecycle/tasks/{$task->id}/clearance", [
+            'clearance_status' => 'not_cleared',
+            'revision' => $task->revision,
+        ])->assertOk();
+        $http->postJson("/api/v1/lifecycle/tasks/{$task->id}/exceptions", [
+            'reason' => 'Outstanding imprest waived by HR Director',
+        ])->assertCreated();
+
+        $http->getJson("/api/v1/lifecycle/cases/{$caseId}")
+            ->assertOk()
+            ->assertJsonPath('data.exceptions.0.reason', 'Outstanding imprest waived by HR Director')
+            ->assertJsonPath('data.exceptions.0.status', 'pending');
+    }
+
+    public function test_template_list_includes_draft_version_and_internal_create(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->seedLifecycleTemplates($tenant);
+        [$http, $hr] = $this->asHrManager($tenant);
+        $this->grantLifecycle($hr, [
+            'lifecycle.templates.view',
+            'lifecycle.templates.edit',
+            'lifecycle.templates.publish',
+        ]);
+
+        $published = $this->publishedOnboardingVersion($tenant);
+        $definition = $published->definition;
+
+        $draft = $http->postJson('/api/v1/lifecycle/templates', [
+            'code' => 'onboarding-local',
+            'name' => 'Local staff onboarding',
+            'lifecycle_type' => 'onboarding',
+            'definition' => $definition,
+        ])->assertCreated();
+
+        $list = $http->getJson('/api/v1/lifecycle/templates')->assertOk();
+        $row = collect($list->json('data'))->firstWhere('code', 'onboarding-local');
+        $this->assertNotNull($row['draft_version']['id'] ?? null);
+        $this->assertSame($draft->json('data.id'), $row['draft_version']['id']);
+
+        $http->postJson('/api/v1/lifecycle/templates', [
+            'code' => 'transfer-internal',
+            'name' => 'Internal transfer',
+            'lifecycle_type' => 'transfer',
+            'definition' => \Database\Seeders\LifecycleJourneyTemplateSeeder::buildInternalDefinition('transfer', 'internal'),
+        ])->assertCreated();
     }
 }

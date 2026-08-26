@@ -2,8 +2,6 @@
 
 namespace Tests\Feature\Finance;
 
-use App\Models\AuditLog;
-use App\Models\BalanceRegister;
 use App\Models\Payslip;
 use App\Models\SalaryAdvancePolicyVersion;
 use App\Models\SalaryAdvanceReconciliation;
@@ -24,16 +22,16 @@ class SalaryAdvancePhase2Test extends TestCase
     private function confirmedPayslip(User $user, float $net = 10000): Payslip
     {
         return Payslip::create([
-            'tenant_id'           => $user->tenant_id,
-            'user_id'             => $user->id,
-            'period_month'        => 6,
-            'period_year'         => 2026,
-            'gross_amount'        => 15000,
-            'net_amount'          => $net,
-            'currency'            => 'NAD',
+            'tenant_id' => $user->tenant_id,
+            'user_id' => $user->id,
+            'period_month' => 6,
+            'period_year' => 2026,
+            'gross_amount' => 15000,
+            'net_amount' => $net,
+            'currency' => 'NAD',
             'confirmation_status' => 'confirmed',
-            'confirmed_at'        => now(),
-            'confirmed_by'        => $user->id,
+            'confirmed_at' => now(),
+            'confirmed_by' => $user->id,
         ]);
     }
 
@@ -44,12 +42,12 @@ class SalaryAdvancePhase2Test extends TestCase
 
         $http = $this->asUser($staff);
         $create = $http->postJson('/api/v1/finance/advances', [
-            'advance_type'                  => 'medical',
-            'amount'                        => 2000,
-            'currency'                      => 'NAD',
-            'purpose'                       => 'Medical',
-            'justification'                 => 'Surgery',
-            'repayment_months'              => 1,
+            'advance_type' => 'medical',
+            'amount' => 2000,
+            'currency' => 'NAD',
+            'purpose' => 'Medical',
+            'justification' => 'Surgery',
+            'repayment_months' => 1,
             'deduction_authority_confirmed' => true,
         ]);
         $id = $create->json('data.id');
@@ -57,12 +55,12 @@ class SalaryAdvancePhase2Test extends TestCase
             'deduction_authority_confirmed' => true,
         ])->assertOk();
 
-        [$finHttp] = $this->asFinanceController($tenant);
+        [$finHttp, $finance] = $this->asFinanceController($tenant);
         $finHttp->postJson("/api/v1/finance/advances/{$id}/finance-certify", [
-            'confirmed_net_salary'           => 10000,
+            'confirmed_net_salary' => 10000,
             'intended_recovery_payroll_date' => '2026-07-31',
-            'eligible'                       => true,
-            'comments'                       => 'Certified',
+            'eligible' => true,
+            'comments' => 'Certified',
         ])->assertOk();
 
         [$sgHttp] = $this->asSG($tenant);
@@ -70,17 +68,18 @@ class SalaryAdvancePhase2Test extends TestCase
             'comment' => 'Final approval',
         ])->assertOk();
 
+        $finHttp = $this->asUser($finance);
         $finHttp->postJson("/api/v1/finance/advances/{$id}/record-payment", [
             'payment_reference' => 'PAY-P2',
-            'payment_method'    => 'bank_transfer',
-            'payment_date'      => '2026-07-20',
+            'payment_method' => 'bank_transfer',
+            'payment_date' => '2026-07-20',
         ])->assertOk();
 
         $finHttp->postJson("/api/v1/finance/advances/{$id}/record-recovery", [
-            'amount'        => 500,
+            'amount' => 500,
             'reference_doc' => 'PARTIAL-P2',
         ])->assertOk()
-          ->assertJsonPath('data.status', 'reconciliation_required');
+            ->assertJsonPath('data.status', 'reconciliation_required');
 
         return [SalaryAdvanceRequest::findOrFail($id), $staff, $finHttp];
     }
@@ -92,7 +91,7 @@ class SalaryAdvancePhase2Test extends TestCase
 
         $this->assertDatabaseHas('salary_advance_reconciliations', [
             'salary_advance_request_id' => $advance->id,
-            'status'                    => 'open',
+            'status' => 'open',
         ]);
 
         $finHttp->getJson('/api/v1/finance/advances/reconciliations')
@@ -109,15 +108,15 @@ class SalaryAdvancePhase2Test extends TestCase
 
         // Record remaining recovery then resolve
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-recovery", [
-            'amount'        => 1500,
+            'amount' => 1500,
             'reference_doc' => 'BALANCE',
         ])->assertOk();
 
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/reconciliations/{$recon->id}/resolve", [
             'resolution_notes' => 'Balance recovered after payroll correction',
-            'outcome'          => 'balanced',
+            'outcome' => 'balanced',
         ])->assertOk()
-          ->assertJsonPath('data.status', 'resolved');
+            ->assertJsonPath('data.status', 'resolved');
 
         $this->assertSame('resolved', $recon->fresh()->status);
     }
@@ -183,17 +182,17 @@ class SalaryAdvancePhase2Test extends TestCase
         $this->confirmedPayslip($staff);
 
         $advance = SalaryAdvanceRequest::create([
-            'tenant_id'        => $tenant->id,
-            'requester_id'     => $staff->id,
+            'tenant_id' => $tenant->id,
+            'requester_id' => $staff->id,
             'reference_number' => 'ADV-HIST01',
-            'advance_type'     => 'medical',
-            'amount'           => 1000,
-            'currency'         => 'NAD',
+            'advance_type' => 'medical',
+            'amount' => 1000,
+            'currency' => 'NAD',
             'repayment_months' => 1,
-            'purpose'          => 'Past',
-            'justification'    => 'Closed history',
-            'status'           => 'closed',
-            'closed_at'        => now(),
+            'purpose' => 'Past',
+            'justification' => 'Closed history',
+            'status' => 'closed',
+            'closed_at' => now(),
         ]);
 
         $this->asUser($staff)
@@ -214,17 +213,17 @@ class SalaryAdvancePhase2Test extends TestCase
 
         $this->asUser($admin)
             ->postJson('/api/v1/finance/advances/policies', [
-                'version'                        => '2026.2',
-                'effective_from'                 => '2026-08-01',
-                'max_salary_percentage'          => 50,
-                'salary_basis'                   => 'net_confirmed',
-                'max_concurrent_advances'        => 1,
-                'full_repayment_required'        => true,
-                'recovery_rule'                  => 'full_eom',
-                'final_approver_role'            => 'Secretary General',
+                'version' => '2026.2',
+                'effective_from' => '2026-08-01',
+                'max_salary_percentage' => 50,
+                'salary_basis' => 'net_confirmed',
+                'max_concurrent_advances' => 1,
+                'full_repayment_required' => true,
+                'recovery_rule' => 'full_eom',
+                'final_approver_role' => 'Secretary General',
                 'finance_certification_required' => true,
-                'admin_review_required'          => true,
-                'change_reason'                  => 'Annual policy refresh',
+                'admin_review_required' => true,
+                'change_reason' => 'Annual policy refresh',
             ])
             ->assertCreated()
             ->assertJsonPath('data.version', '2026.2')
@@ -245,10 +244,10 @@ class SalaryAdvancePhase2Test extends TestCase
 
         $this->asUser($staff)
             ->postJson('/api/v1/finance/advances/policies', [
-                'version'               => '2026.hack',
-                'effective_from'        => '2026-08-01',
+                'version' => '2026.hack',
+                'effective_from' => '2026-08-01',
                 'max_salary_percentage' => 90,
-                'change_reason'         => 'Nope',
+                'change_reason' => 'Nope',
             ])
             ->assertForbidden();
     }

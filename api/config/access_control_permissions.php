@@ -1008,7 +1008,10 @@ return [
         'data_classification' => 'Confidential',
         'mfa_required' => true,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'POST /api/v1/leave/requests/{id}/certify',
+            'POST /api/v1/leave/requests/{leaveRequest}/certify',
+        ],
     ],
     'leave.balance.export' => [
         'display_name' => 'Export balances',
@@ -1099,7 +1102,9 @@ return [
         'data_classification' => 'Internal',
         'mfa_required' => false,
         'linked_routes' => ['/leave'],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'GET /api/v1/leave/requests',
+        ],
     ],
     'leave.report.export' => [
         'display_name' => 'Export leave reports',
@@ -1125,7 +1130,9 @@ return [
         'data_classification' => 'Internal',
         'mfa_required' => false,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'GET /api/v1/leave/requests',
+        ],
     ],
     'leave.request.authorise.assigned' => [
         'display_name' => 'Authorise leave',
@@ -1138,7 +1145,11 @@ return [
         'data_classification' => 'Internal',
         'mfa_required' => true,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'GET /api/v1/leave/requests',
+            'POST /api/v1/leave/requests/{id}/approve',
+            'POST /api/v1/leave/requests/{leaveRequest}/approve',
+        ],
     ],
     'leave.request.cancel.created' => [
         'display_name' => 'Cancel leave',
@@ -1190,7 +1201,9 @@ return [
         'data_classification' => 'Confidential',
         'mfa_required' => false,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'GET /api/v1/leave/requests',
+        ],
     ],
     'leave.request.read.self' => [
         'display_name' => 'Read own leave',
@@ -1216,7 +1229,10 @@ return [
         'data_classification' => 'Internal',
         'mfa_required' => false,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'POST /api/v1/leave/requests/{id}/recommend',
+            'POST /api/v1/leave/requests/{leaveRequest}/recommend',
+        ],
     ],
     'leave.request.reject.assigned' => [
         'display_name' => 'Reject leave',
@@ -1255,7 +1271,7 @@ return [
         'data_classification' => 'Internal',
         'mfa_required' => false,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => ['POST /api/v1/leave/requests/{leaveRequest}/submit'],
     ],
     'leave.request.withdraw.created' => [
         'display_name' => 'Withdraw leave',
@@ -1544,6 +1560,7 @@ return [
         'linked_endpoints' => [
             'GET /api/v1/procurement/committee-evaluations',
             'GET /api/v1/procurement/committee-evaluations/{id}',
+            'GET /api/v1/procurement/committee-evaluations/{procurementRequest}',
         ],
     ],
     'procurement.evaluation.score.assigned' => [
