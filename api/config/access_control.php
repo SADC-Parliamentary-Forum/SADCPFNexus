@@ -289,6 +289,49 @@ return [
             'PATCH' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
             'DELETE' => ['travel.admin'],
         ]],
+        // BCRE: employees see/acknowledge own registers. Exceptions and mutations stay finance.
+        ['pattern' => 'api/v1/finance/balance-registers/exceptions', 'permissions' => [
+            'READ' => ['finance.view', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance/balance-registers/{balanceRegister}/acknowledge', 'permissions' => [
+            'POST' => ['my_work.view', 'finance.create', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance/balance-registers*', 'permissions' => [
+            'READ' => ['finance.view', 'my_work.view'],
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
+        ]],
+        // Salary advances: self-service create/read/submit. Certify/pay fall through to finance*.
+        ['pattern' => 'api/v1/finance/advances/eligibility', 'permissions' => [
+            'READ' => ['salary_advance.module.view', 'salary_advance.request.read.self', 'finance.view'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/submit', 'permissions' => [
+            'POST' => ['salary_advance.request.submit.created', 'finance.create'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/withdraw', 'permissions' => [
+            'POST' => ['salary_advance.request.withdraw.created', 'finance.create'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/resubmit', 'permissions' => [
+            'POST' => ['salary_advance.request.submit.created', 'finance.create'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/approve', 'permissions' => [
+            'POST' => ['finance.approve', 'finance.admin', 'salary_advance.approve.assigned'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/finance-certify', 'permissions' => [
+            'POST' => ['finance.create', 'finance.approve', 'salary_advance.finance_certify.assigned'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/finance-return', 'permissions' => [
+            'POST' => ['finance.create', 'finance.approve', 'salary_advance.finance_certify.assigned'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}', 'permissions' => [
+            'READ' => ['finance.view', 'salary_advance.request.read.self'],
+            'PUT' => ['finance.create', 'salary_advance.request.edit.created'],
+            'PATCH' => ['finance.create', 'salary_advance.request.edit.created'],
+            'DELETE' => ['finance.admin', 'salary_advance.request.edit.created'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances', 'permissions' => [
+            'READ' => ['finance.view', 'salary_advance.request.read.self'],
+            'POST' => ['finance.create', 'salary_advance.request.create.self'],
+        ]],
         ['pattern' => 'api/v1/finance*', 'permissions' => [
             'READ' => ['finance.view', 'finance.admin'],
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],

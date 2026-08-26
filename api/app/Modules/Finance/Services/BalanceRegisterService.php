@@ -14,7 +14,6 @@ use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -30,37 +29,37 @@ class BalanceRegisterService
             throw ValidationException::withMessages(['register' => 'A balance register already exists for this advance.']);
         }
 
-        $amount           = (float) ($advance->approved_amount ?? $advance->amount);
-        $recoveryStart    = $advance->intended_recovery_payroll_date
+        $amount = (float) ($advance->approved_amount ?? $advance->amount);
+        $recoveryStart = $advance->intended_recovery_payroll_date
             ? Carbon::parse($advance->intended_recovery_payroll_date)->startOfMonth()
             : Carbon::now()->addMonthNoOverflow()->startOfMonth();
         // Policy v1: full EOM recovery — one installment equal to the full principal.
-        $repaymentMonths  = max(1, (int) ($advance->repayment_months ?: 1));
-        $installment      = round($amount / $repaymentMonths, 2);
-        $payoffDate       = $recoveryStart->copy()->addMonths($repaymentMonths - 1)->endOfMonth();
+        $repaymentMonths = max(1, (int) ($advance->repayment_months ?: 1));
+        $installment = round($amount / $repaymentMonths, 2);
+        $payoffDate = $recoveryStart->copy()->addMonths($repaymentMonths - 1)->endOfMonth();
 
         $register = BalanceRegister::create([
-            'tenant_id'            => $advance->tenant_id,
-            'module_type'          => 'salary_advance',
-            'employee_id'          => $advance->requester_id,
-            'source_request_type'  => SalaryAdvanceRequest::class,
-            'source_request_id'    => $advance->id,
-            'reference_number'     => 'BCR-' . strtoupper(Str::random(8)),
-            'approved_amount'      => $amount,
-            'total_processed'      => 0,
-            'balance'              => $amount,
-            'installment_amount'   => $installment,
-            'recovery_start_date'  => $recoveryStart->toDateString(),
-            'estimated_payoff_date'=> $payoffDate->toDateString(),
-            'status'               => 'active',
-            'created_by'           => $officer->id,
+            'tenant_id' => $advance->tenant_id,
+            'module_type' => 'salary_advance',
+            'employee_id' => $advance->requester_id,
+            'source_request_type' => SalaryAdvanceRequest::class,
+            'source_request_id' => $advance->id,
+            'reference_number' => 'BCR-'.strtoupper(Str::random(8)),
+            'approved_amount' => $amount,
+            'total_processed' => 0,
+            'balance' => $amount,
+            'installment_amount' => $installment,
+            'recovery_start_date' => $recoveryStart->toDateString(),
+            'estimated_payoff_date' => $payoffDate->toDateString(),
+            'status' => 'active',
+            'created_by' => $officer->id,
         ]);
 
         AuditLog::record('bcre.register_created', [
             'auditable_type' => BalanceRegister::class,
-            'auditable_id'   => $register->id,
-            'new_values'     => ['reference' => $register->reference_number, 'module' => 'salary_advance'],
-            'tags'           => 'bcre',
+            'auditable_id' => $register->id,
+            'new_values' => ['reference' => $register->reference_number, 'module' => 'salary_advance'],
+            'tags' => 'bcre',
         ]);
 
         $advance->loadMissing('requester');
@@ -69,12 +68,12 @@ class BalanceRegisterService
                 $advance->requester,
                 'bcre.register_created',
                 [
-                    'name'         => $advance->requester->name,
-                    'reference'    => $register->reference_number,
+                    'name' => $advance->requester->name,
+                    'reference' => $register->reference_number,
                     'module_label' => 'Salary Advance',
-                    'amount'       => number_format($amount, 2) . ' ' . $advance->currency,
+                    'amount' => number_format($amount, 2).' '.$advance->currency,
                 ],
-                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/' . $register->id]
+                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/'.$register->id]
             );
         }
 
@@ -92,24 +91,24 @@ class BalanceRegisterService
         $approvedAmount = (float) ($imprest->amount_approved ?? $imprest->amount_requested);
 
         $register = BalanceRegister::create([
-            'tenant_id'           => $imprest->tenant_id,
-            'module_type'         => 'imprest',
-            'employee_id'         => $imprest->requester_id,
+            'tenant_id' => $imprest->tenant_id,
+            'module_type' => 'imprest',
+            'employee_id' => $imprest->requester_id,
             'source_request_type' => ImprestRequest::class,
-            'source_request_id'   => $imprest->id,
-            'reference_number'    => 'BCR-' . strtoupper(Str::random(8)),
-            'approved_amount'     => $approvedAmount,
-            'total_processed'     => 0,
-            'balance'             => $approvedAmount,
-            'status'              => 'active',
-            'created_by'          => $officer->id,
+            'source_request_id' => $imprest->id,
+            'reference_number' => 'BCR-'.strtoupper(Str::random(8)),
+            'approved_amount' => $approvedAmount,
+            'total_processed' => 0,
+            'balance' => $approvedAmount,
+            'status' => 'active',
+            'created_by' => $officer->id,
         ]);
 
         AuditLog::record('bcre.register_created', [
             'auditable_type' => BalanceRegister::class,
-            'auditable_id'   => $register->id,
-            'new_values'     => ['reference' => $register->reference_number, 'module' => 'imprest'],
-            'tags'           => 'bcre',
+            'auditable_id' => $register->id,
+            'new_values' => ['reference' => $register->reference_number, 'module' => 'imprest'],
+            'tags' => 'bcre',
         ]);
 
         $imprest->loadMissing('requester');
@@ -118,12 +117,12 @@ class BalanceRegisterService
                 $imprest->requester,
                 'bcre.register_created',
                 [
-                    'name'         => $imprest->requester->name,
-                    'reference'    => $register->reference_number,
+                    'name' => $imprest->requester->name,
+                    'reference' => $register->reference_number,
                     'module_label' => 'Imprest',
-                    'amount'       => number_format($approvedAmount, 2) . ' ' . $imprest->currency,
+                    'amount' => number_format($approvedAmount, 2).' '.$imprest->currency,
                 ],
-                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/' . $register->id]
+                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/'.$register->id]
             );
         }
 
@@ -134,15 +133,15 @@ class BalanceRegisterService
     {
         $moduleClassMap = [
             'salary_advance' => SalaryAdvanceRequest::class,
-            'imprest'        => ImprestRequest::class,
+            'imprest' => ImprestRequest::class,
         ];
 
         $sourceClass = $moduleClassMap[$data['module_type']] ?? null;
-        if (!$sourceClass) {
+        if (! $sourceClass) {
             throw ValidationException::withMessages(['module_type' => 'Unsupported module type.']);
         }
 
-        if (!$sourceClass::find($data['source_request_id'])) {
+        if (! $sourceClass::find($data['source_request_id'])) {
             throw ValidationException::withMessages(['source_request_id' => 'Source request not found.']);
         }
 
@@ -155,27 +154,27 @@ class BalanceRegisterService
         $approvedAmount = (float) $data['approved_amount'];
 
         $register = BalanceRegister::create([
-            'tenant_id'           => $officer->tenant_id,
-            'module_type'         => $data['module_type'],
-            'employee_id'         => $data['employee_id'],
+            'tenant_id' => $officer->tenant_id,
+            'module_type' => $data['module_type'],
+            'employee_id' => $data['employee_id'],
             'source_request_type' => $sourceClass,
-            'source_request_id'   => $data['source_request_id'],
-            'reference_number'    => 'BCR-' . strtoupper(Str::random(8)),
-            'approved_amount'     => $approvedAmount,
-            'total_processed'     => 0,
-            'balance'             => $approvedAmount,
-            'installment_amount'  => $data['installment_amount'] ?? null,
+            'source_request_id' => $data['source_request_id'],
+            'reference_number' => 'BCR-'.strtoupper(Str::random(8)),
+            'approved_amount' => $approvedAmount,
+            'total_processed' => 0,
+            'balance' => $approvedAmount,
+            'installment_amount' => $data['installment_amount'] ?? null,
             'recovery_start_date' => $data['recovery_start_date'] ?? null,
-            'estimated_payoff_date'=> $data['estimated_payoff_date'] ?? null,
-            'status'              => 'active',
-            'created_by'          => $officer->id,
+            'estimated_payoff_date' => $data['estimated_payoff_date'] ?? null,
+            'status' => 'active',
+            'created_by' => $officer->id,
         ]);
 
         AuditLog::record('bcre.register_created', [
             'auditable_type' => BalanceRegister::class,
-            'auditable_id'   => $register->id,
-            'new_values'     => ['reference' => $register->reference_number, 'manual' => true],
-            'tags'           => 'bcre',
+            'auditable_id' => $register->id,
+            'new_values' => ['reference' => $register->reference_number, 'manual' => true],
+            'tags' => 'bcre',
         ]);
 
         return $register;
@@ -185,7 +184,7 @@ class BalanceRegisterService
     {
         abort_if($register->isLocked(), 422, 'This register is locked and cannot be updated.');
 
-        $type   = $data['type'];
+        $type = $data['type'];
         $amount = (float) $data['amount'];
 
         if ($amount <= 0) {
@@ -193,39 +192,39 @@ class BalanceRegisterService
         }
 
         $validTypes = ['disbursement', 'recovery', 'adjustment', 'write_off'];
-        if (!in_array($type, $validTypes)) {
+        if (! in_array($type, $validTypes)) {
             throw ValidationException::withMessages(['type' => 'Invalid transaction type.']);
         }
 
         $txn = DB::transaction(function () use ($register, $type, $amount, $data, $maker) {
             $previousBalance = (float) $register->balance;
-            $newBalance      = in_array($type, ['recovery', 'write_off'])
+            $newBalance = in_array($type, ['recovery', 'write_off'])
                 ? $previousBalance - $amount
                 : $previousBalance + $amount;
 
             $txn = BalanceTransaction::create([
-                'register_id'             => $register->id,
-                'type'                    => $type,
-                'amount'                  => $amount,
-                'previous_balance'        => $previousBalance,
-                'new_balance'             => $newBalance,
-                'reference_doc'           => $data['reference_doc'] ?? null,
-                'notes'                   => $data['notes'] ?? null,
-                'supporting_document_path'=> $data['supporting_document_path'] ?? null,
-                'created_by'              => $maker->id,
-                'verification_status'     => 'pending',
+                'register_id' => $register->id,
+                'type' => $type,
+                'amount' => $amount,
+                'previous_balance' => $previousBalance,
+                'new_balance' => $newBalance,
+                'reference_doc' => $data['reference_doc'] ?? null,
+                'notes' => $data['notes'] ?? null,
+                'supporting_document_path' => $data['supporting_document_path'] ?? null,
+                'created_by' => $maker->id,
+                'verification_status' => 'pending',
             ]);
 
             $register->update([
-                'balance'         => $newBalance,
+                'balance' => $newBalance,
                 'total_processed' => (float) $register->total_processed + $amount,
             ]);
 
             BalanceAcknowledgement::create([
-                'register_id'    => $register->id,
+                'register_id' => $register->id,
                 'transaction_id' => $txn->id,
-                'employee_id'    => $register->employee_id,
-                'status'         => 'pending',
+                'employee_id' => $register->employee_id,
+                'status' => 'pending',
             ]);
 
             return $txn;
@@ -233,9 +232,9 @@ class BalanceRegisterService
 
         AuditLog::record('bcre.transaction_created', [
             'auditable_type' => BalanceRegister::class,
-            'auditable_id'   => $register->id,
-            'new_values'     => ['type' => $type, 'amount' => $amount, 'transaction_id' => $txn->id],
-            'tags'           => 'bcre',
+            'auditable_id' => $register->id,
+            'new_values' => ['type' => $type, 'amount' => $amount, 'transaction_id' => $txn->id],
+            'tags' => 'bcre',
         ]);
 
         $register->loadMissing('employee');
@@ -244,13 +243,13 @@ class BalanceRegisterService
                 $register->employee,
                 'bcre.balance_updated',
                 [
-                    'name'        => $register->employee->name,
-                    'reference'   => $register->reference_number,
-                    'type'        => ucfirst(str_replace('_', ' ', $type)),
-                    'amount'      => number_format($amount, 2),
+                    'name' => $register->employee->name,
+                    'reference' => $register->reference_number,
+                    'type' => ucfirst(str_replace('_', ' ', $type)),
+                    'amount' => number_format($amount, 2),
                     'new_balance' => number_format((float) $txn->new_balance, 2),
                 ],
-                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/' . $register->id]
+                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/'.$register->id]
             );
         }
 
@@ -271,11 +270,11 @@ class BalanceRegisterService
                 'bcre.verification_required',
                 [
                     'reference' => $register->reference_number,
-                    'maker'     => $maker->name,
-                    'type'      => ucfirst(str_replace('_', ' ', $type)),
-                    'amount'    => number_format($amount, 2),
+                    'maker' => $maker->name,
+                    'type' => ucfirst(str_replace('_', ' ', $type)),
+                    'amount' => number_format($amount, 2),
                 ],
-                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/' . $register->id . '/verify?txn=' . $txn->id]
+                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/'.$register->id.'/verify?txn='.$txn->id]
             );
         }
 
@@ -290,23 +289,23 @@ class BalanceRegisterService
             'You cannot verify your own transaction. A different officer must act as checker.'
         );
 
-        if (!$txn->isPending()) {
+        if (! $txn->isPending()) {
             throw ValidationException::withMessages(['status' => 'This transaction has already been verified.']);
         }
 
         $register = $txn->register;
         abort_if($register->isLocked(), 422, 'This register is locked.');
 
-        $status   = $data['status']; // approved, rejected, correction_requested
+        $status = $data['status']; // approved, rejected, correction_requested
         $comments = $data['comments'] ?? null;
 
         $verification = DB::transaction(function () use ($txn, $register, $status, $comments, $checker) {
             $verification = BalanceVerification::create([
                 'transaction_id' => $txn->id,
-                'verified_by'    => $checker->id,
-                'status'         => $status,
-                'comments'       => $comments,
-                'verified_at'    => now(),
+                'verified_by' => $checker->id,
+                'status' => $status,
+                'comments' => $comments,
+                'verified_at' => now(),
             ]);
 
             $verificationStatus = $status === 'approved' ? 'approved' : 'rejected';
@@ -314,13 +313,13 @@ class BalanceRegisterService
 
             if ($status === 'rejected') {
                 // Reverse the balance impact
-                $reversedBalance    = in_array($txn->type, ['recovery', 'write_off'])
+                $reversedBalance = in_array($txn->type, ['recovery', 'write_off'])
                     ? (float) $register->balance + (float) $txn->amount
                     : (float) $register->balance - (float) $txn->amount;
                 $reversedProcessed = max(0, (float) $register->total_processed - (float) $txn->amount);
 
                 $register->update([
-                    'balance'         => $reversedBalance,
+                    'balance' => $reversedBalance,
                     'total_processed' => $reversedProcessed,
                 ]);
             }
@@ -330,9 +329,9 @@ class BalanceRegisterService
 
         AuditLog::record('bcre.transaction_verified', [
             'auditable_type' => BalanceRegister::class,
-            'auditable_id'   => $register->id,
-            'new_values'     => ['transaction_id' => $txn->id, 'status' => $status],
-            'tags'           => 'bcre',
+            'auditable_id' => $register->id,
+            'new_values' => ['transaction_id' => $txn->id, 'status' => $status],
+            'tags' => 'bcre',
         ]);
 
         $txn->loadMissing('createdBy');
@@ -341,13 +340,13 @@ class BalanceRegisterService
                 $txn->createdBy,
                 'bcre.transaction_verified',
                 [
-                    'name'      => $txn->createdBy->name,
+                    'name' => $txn->createdBy->name,
                     'reference' => $register->reference_number,
-                    'status'    => $status,
-                    'checker'   => $checker->name,
-                    'comments'  => $comments ?? '',
+                    'status' => $status,
+                    'checker' => $checker->name,
+                    'comments' => $comments ?? '',
                 ],
-                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/' . $register->id]
+                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/'.$register->id]
             );
         }
 
@@ -362,7 +361,7 @@ class BalanceRegisterService
             'You can only acknowledge your own balance register.'
         );
 
-        $status       = $data['status']; // confirmed or disputed
+        $status = $data['status']; // confirmed or disputed
         $disputeReason = $data['dispute_reason'] ?? null;
 
         if ($status === 'disputed' && empty($disputeReason)) {
@@ -375,18 +374,18 @@ class BalanceRegisterService
             ->latest()
             ->first();
 
-        if (!$ack) {
+        if (! $ack) {
             $ack = BalanceAcknowledgement::create([
                 'register_id' => $register->id,
                 'employee_id' => $employee->id,
-                'status'      => 'pending',
+                'status' => 'pending',
             ]);
         }
 
         $ack->update([
-            'status'         => $status,
+            'status' => $status,
             'dispute_reason' => $disputeReason,
-            'responded_at'   => now(),
+            'responded_at' => now(),
         ]);
 
         if ($status === 'disputed') {
@@ -402,19 +401,19 @@ class BalanceRegisterService
                     'bcre.balance_disputed',
                     [
                         'reference' => $register->reference_number,
-                        'employee'  => $employee->name,
-                        'reason'    => $disputeReason,
+                        'employee' => $employee->name,
+                        'reason' => $disputeReason,
                     ],
-                    ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/' . $register->id]
+                    ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/'.$register->id]
                 );
             }
         }
 
         AuditLog::record('bcre.acknowledged', [
             'auditable_type' => BalanceRegister::class,
-            'auditable_id'   => $register->id,
-            'new_values'     => ['status' => $status, 'employee_id' => $employee->id],
-            'tags'           => 'bcre',
+            'auditable_id' => $register->id,
+            'new_values' => ['status' => $status, 'employee_id' => $employee->id],
+            'tags' => 'bcre',
         ]);
 
         return $ack;
@@ -423,7 +422,7 @@ class BalanceRegisterService
     public function lockPeriod(BalanceRegister $register, User $controller): BalanceRegister
     {
         abort_if(
-            !$controller->hasRole('Finance Controller'),
+            ! $controller->hasRole('Finance Controller'),
             403,
             'Only a Finance Controller can lock a register period.'
         );
@@ -436,16 +435,16 @@ class BalanceRegisterService
         }
 
         $register->update([
-            'status'          => 'locked',
-            'period_locked_at'=> now(),
-            'locked_by'       => $controller->id,
+            'status' => 'locked',
+            'period_locked_at' => now(),
+            'locked_by' => $controller->id,
         ]);
 
         AuditLog::record('bcre.period_locked', [
             'auditable_type' => BalanceRegister::class,
-            'auditable_id'   => $register->id,
-            'new_values'     => ['locked_by' => $controller->id],
-            'tags'           => 'bcre',
+            'auditable_id' => $register->id,
+            'new_values' => ['locked_by' => $controller->id],
+            'tags' => 'bcre',
         ]);
 
         $register->loadMissing('employee');
@@ -454,11 +453,11 @@ class BalanceRegisterService
                 $register->employee,
                 'bcre.period_locked',
                 [
-                    'name'       => $register->employee->name,
-                    'reference'  => $register->reference_number,
+                    'name' => $register->employee->name,
+                    'reference' => $register->reference_number,
                     'controller' => $controller->name,
                 ],
-                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/' . $register->id]
+                ['module' => 'bcre', 'record_id' => $register->id, 'url' => '/finance/balance-register/'.$register->id]
             );
         }
 
@@ -468,25 +467,33 @@ class BalanceRegisterService
     public function unlockPeriod(BalanceRegister $register, User $controller): BalanceRegister
     {
         abort_if(
-            !$controller->hasRole('Finance Controller'),
+            ! $controller->hasRole('Finance Controller'),
             403,
             'Only a Finance Controller can unlock a register period.'
         );
 
         $register->update([
-            'status'           => 'active',
+            'status' => 'active',
             'period_locked_at' => null,
-            'locked_by'        => null,
+            'locked_by' => null,
         ]);
 
         AuditLog::record('bcre.period_unlocked', [
             'auditable_type' => BalanceRegister::class,
-            'auditable_id'   => $register->id,
-            'new_values'     => ['unlocked_by' => $controller->id],
-            'tags'           => 'bcre',
+            'auditable_id' => $register->id,
+            'new_values' => ['unlocked_by' => $controller->id],
+            'tags' => 'bcre',
         ]);
 
         return $register->fresh();
+    }
+
+    public function assertVisibleTo(User $user, BalanceRegister $register): void
+    {
+        abort_if((int) $register->tenant_id !== (int) $user->tenant_id, 403);
+        if (! $this->canManageTenantRegisters($user)) {
+            abort_if((int) $register->employee_id !== (int) $user->id, 403);
+        }
     }
 
     public function list(array $filters, User $user): LengthAwarePaginator
@@ -495,22 +502,21 @@ class BalanceRegisterService
             ->withCount('transactions')
             ->orderByDesc('created_at');
 
-        if (!($user->hasAnyRole(['Finance Controller', 'Finance Officer', 'System Admin', 'Secretary General'])
-            || $user->isSystemAdmin())) {
+        if (! $this->canManageTenantRegisters($user)) {
             $query->where('employee_id', $user->id);
         } else {
             $query->where('tenant_id', $user->tenant_id);
         }
 
-        if (!empty($filters['module_type'])) {
+        if (! empty($filters['module_type'])) {
             $query->where('module_type', $filters['module_type']);
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['employee_id'])) {
+        if (! empty($filters['employee_id'])) {
             $query->where('employee_id', $filters['employee_id']);
         }
 
@@ -519,11 +525,16 @@ class BalanceRegisterService
 
     public function dashboard(User $user): array
     {
-        $base = BalanceRegister::where('tenant_id', $user->tenant_id);
+        $base = BalanceRegister::query();
+        if (! $this->canManageTenantRegisters($user)) {
+            $base->where('employee_id', $user->id);
+        } else {
+            $base->where('tenant_id', $user->tenant_id);
+        }
 
-        $totalActive     = (clone $base)->where('status', 'active')->count();
-        $totalBalance    = (clone $base)->where('status', 'active')->sum('balance');
-        $disputed        = (clone $base)->where('status', 'disputed')->count();
+        $totalActive = (clone $base)->where('status', 'active')->count();
+        $totalBalance = (clone $base)->where('status', 'active')->sum('balance');
+        $disputed = (clone $base)->where('status', 'disputed')->count();
 
         $pendingVerifications = BalanceTransaction::whereIn(
             'register_id',
@@ -537,16 +548,18 @@ class BalanceRegisterService
             ->toArray();
 
         return [
-            'total_active_registers'  => $totalActive,
-            'total_outstanding_balance'=> (float) $totalBalance,
-            'pending_verifications'   => $pendingVerifications,
-            'disputed_registers'      => $disputed,
-            'registers_by_module'     => $byModule,
+            'total_active_registers' => $totalActive,
+            'total_outstanding_balance' => (float) $totalBalance,
+            'pending_verifications' => $pendingVerifications,
+            'disputed_registers' => $disputed,
+            'registers_by_module' => $byModule,
         ];
     }
 
     public function exceptions(User $user): LengthAwarePaginator
     {
+        abort_if(! $this->canManageTenantRegisters($user), 403);
+
         $query = BalanceRegister::with(['employee', 'createdBy'])
             ->where('tenant_id', $user->tenant_id)
             ->where(function ($q) {
@@ -559,5 +572,11 @@ class BalanceRegisterService
             ->orderByDesc('updated_at');
 
         return $query->paginate(20);
+    }
+
+    private function canManageTenantRegisters(User $user): bool
+    {
+        return $user->hasAnyRole(['Finance Controller', 'Finance Officer', 'System Admin', 'Secretary General'])
+            || $user->isSystemAdmin();
     }
 }
