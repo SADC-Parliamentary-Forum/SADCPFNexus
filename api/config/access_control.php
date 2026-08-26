@@ -322,6 +322,15 @@ return [
         ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/finance-return', 'permissions' => [
             'POST' => ['finance.create', 'finance.approve', 'salary_advance.finance_certify.assigned'],
         ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/ledger', 'permissions' => [
+            'READ' => ['finance.view', 'salary_advance.request.read.self'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/pdf', 'permissions' => [
+            'READ' => ['finance.view', 'salary_advance.request.read.self'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}/certificate', 'permissions' => [
+            'READ' => ['finance.view', 'salary_advance.request.read.self'],
+        ]],
         ['pattern' => 'api/v1/finance/advances/{salaryAdvanceRequest}', 'permissions' => [
             'READ' => ['finance.view', 'salary_advance.request.read.self'],
             'PUT' => ['finance.create', 'salary_advance.request.edit.created'],
