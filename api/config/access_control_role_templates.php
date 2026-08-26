@@ -37,7 +37,7 @@ return [
     'Secretary General' => [
         'purpose' => 'Final institutional approvals and executive oversight',
         'risk_level' => 'critical',
-        'permissions' => ['leave.request.authorise.assigned', 'travel.request.approve.assigned', 'salary_advance.approve.assigned', 'programme.sg_approval.act.assigned', 'procurement.award.approve.assigned', 'approvals.task.act.assigned', 'admin.roles.approve', 'admin.roles.revoke', 'reports.view.authorised', 'correspondence.read.confidential', 'audit.plan.approve', 'audit.findings.view'],
+        'permissions' => ['leave.request.authorise.assigned', 'travel.request.approve.assigned', 'salary_advance.approve.assigned', 'programme.sg_approval.act.assigned', 'procurement.award.approve.assigned', 'approvals.task.act.assigned', 'admin.roles.approve', 'admin.roles.revoke', 'reports.view.authorised', 'correspondence.read.confidential', 'correspondence.approve', 'correspondence.route', 'audit.plan.approve', 'audit.findings.view'],
         'inherits' => [],
         'legacy_roles' => ['Secretary General'],
         'feature_only' => false,
