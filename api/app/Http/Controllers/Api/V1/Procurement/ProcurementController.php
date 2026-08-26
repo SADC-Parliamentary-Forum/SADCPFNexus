@@ -189,7 +189,11 @@ class ProcurementController extends Controller
             $request->user(),
             'procurement.approve',
             $procurementRequest,
-            ['assigned' => true, 'owner_id' => $procurementRequest->requester_id]
+            [
+                'assigned' => true,
+                'scope' => 'assigned',
+                'owner_id' => $procurementRequest->requester_id,
+            ]
         );
 
         // Phase 1 hard gate: Finance budget confirmation required before approve.
