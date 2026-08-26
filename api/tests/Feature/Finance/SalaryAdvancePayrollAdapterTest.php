@@ -18,16 +18,16 @@ class SalaryAdvancePayrollAdapterTest extends TestCase
     private function confirmedPayslip(User $user, float $net = 10000): Payslip
     {
         return Payslip::create([
-            'tenant_id'           => $user->tenant_id,
-            'user_id'             => $user->id,
-            'period_month'        => 6,
-            'period_year'         => 2026,
-            'gross_amount'        => 15000,
-            'net_amount'          => $net,
-            'currency'            => 'NAD',
+            'tenant_id' => $user->tenant_id,
+            'user_id' => $user->id,
+            'period_month' => 6,
+            'period_year' => 2026,
+            'gross_amount' => 15000,
+            'net_amount' => $net,
+            'currency' => 'NAD',
             'confirmation_status' => 'confirmed',
-            'confirmed_at'        => now(),
-            'confirmed_by'        => $user->id,
+            'confirmed_at' => now(),
+            'confirmed_by' => $user->id,
         ]);
     }
 
@@ -38,12 +38,12 @@ class SalaryAdvancePayrollAdapterTest extends TestCase
 
         $http = $this->asUser($staff);
         $create = $http->postJson('/api/v1/finance/advances', [
-            'advance_type'                  => 'medical',
-            'amount'                        => $amount,
-            'currency'                      => 'NAD',
-            'purpose'                       => 'Medical',
-            'justification'                 => 'Surgery',
-            'repayment_months'              => 1,
+            'advance_type' => 'medical',
+            'amount' => $amount,
+            'currency' => 'NAD',
+            'purpose' => 'Medical',
+            'justification' => 'Surgery',
+            'repayment_months' => 1,
             'deduction_authority_confirmed' => true,
         ]);
         $id = $create->json('data.id');
@@ -51,12 +51,12 @@ class SalaryAdvancePayrollAdapterTest extends TestCase
             'deduction_authority_confirmed' => true,
         ])->assertOk();
 
-        [$finHttp] = $this->asFinanceController($tenant);
+        [$finHttp, $finance] = $this->asFinanceController($tenant);
         $finHttp->postJson("/api/v1/finance/advances/{$id}/finance-certify", [
-            'confirmed_net_salary'           => 10000,
+            'confirmed_net_salary' => 10000,
             'intended_recovery_payroll_date' => '2026-07-31',
-            'eligible'                       => true,
-            'comments'                       => 'Certified',
+            'eligible' => true,
+            'comments' => 'Certified',
         ])->assertOk();
 
         [$sgHttp] = $this->asSG($tenant);
@@ -64,10 +64,11 @@ class SalaryAdvancePayrollAdapterTest extends TestCase
             'comment' => 'Final approval',
         ])->assertOk();
 
+        $finHttp = $this->asUser($finance);
         $finHttp->postJson("/api/v1/finance/advances/{$id}/record-payment", [
             'payment_reference' => 'PAY-ADAPTER',
-            'payment_method'    => 'bank_transfer',
-            'payment_date'      => '2026-07-20',
+            'payment_method' => 'bank_transfer',
+            'payment_date' => '2026-07-20',
         ])->assertOk();
 
         return [SalaryAdvanceRequest::findOrFail($id), $staff, $finHttp];
@@ -95,7 +96,7 @@ class SalaryAdvancePayrollAdapterTest extends TestCase
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/schedule-recovery", [
             'intended_recovery_payroll_date' => '2026-08-31',
         ])->assertOk()
-          ->assertJsonPath('data.status', 'recovery_scheduled');
+            ->assertJsonPath('data.status', 'recovery_scheduled');
 
         $advance->refresh();
         $this->assertSame('2026-08-31', $advance->intended_recovery_payroll_date?->toDateString());
@@ -107,10 +108,10 @@ class SalaryAdvancePayrollAdapterTest extends TestCase
         $this->assertNull($status['vendor_status']);
 
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-recovery", [
-            'amount'        => 2000,
+            'amount' => 2000,
             'reference_doc' => 'PAYROLL-AUG-001',
         ])->assertOk()
-          ->assertJsonPath('data.status', 'closed');
+            ->assertJsonPath('data.status', 'closed');
 
         $finHttp->getJson('/api/v1/finance/advances/payroll-integration')
             ->assertOk()
@@ -130,7 +131,7 @@ class SalaryAdvancePayrollAdapterTest extends TestCase
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-recovery", [
             'amount' => 2000,
         ])->assertStatus(422)
-          ->assertJsonValidationErrors(['reference_doc']);
+            ->assertJsonValidationErrors(['reference_doc']);
     }
 
     public function test_null_and_disabled_drivers_bind_null_adapter_and_block_record(): void
@@ -157,13 +158,13 @@ class SalaryAdvancePayrollAdapterTest extends TestCase
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/schedule-recovery", [
             'intended_recovery_payroll_date' => '2026-08-31',
         ])->assertStatus(422)
-          ->assertJsonValidationErrors(['adapter']);
+            ->assertJsonValidationErrors(['adapter']);
 
         $finHttp->postJson("/api/v1/finance/advances/{$advance->id}/record-recovery", [
-            'amount'        => 2000,
+            'amount' => 2000,
             'reference_doc' => 'SHOULD-NOT-WORK',
         ])->assertStatus(422)
-          ->assertJsonValidationErrors(['adapter']);
+            ->assertJsonValidationErrors(['adapter']);
     }
 
     public function test_unknown_driver_is_rejected(): void
@@ -178,7 +179,7 @@ class SalaryAdvancePayrollAdapterTest extends TestCase
     {
         config([
             'salary_advance.payroll_recovery_driver' => 'vendor',
-            'salary_advance.payroll_vendor_class'    => null,
+            'salary_advance.payroll_vendor_class' => null,
         ]);
 
         $this->expectException(InvalidArgumentException::class);

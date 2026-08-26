@@ -3,7 +3,6 @@
 namespace Tests;
 
 use App\Http\Middleware\SetRlsContext;
-use App\Models\ApprovalRequest;
 use App\Models\Department;
 use App\Models\SupplierCategory;
 use App\Models\Tenant;
@@ -46,6 +45,7 @@ abstract class TestCase extends BaseTestCase
         $tenant ??= Tenant::factory()->create();
         $user = User::factory()->create(['tenant_id' => $tenant->id]);
         $user->assignRole($role);
+
         return $user;
     }
 
@@ -86,45 +86,56 @@ abstract class TestCase extends BaseTestCase
 
     // ── Auth helpers ─────────────────────────────────────────────────────────
 
+    /**
+     * Sanctum actingAs is process-global. $http from asFinanceController() is $this;
+     * a later asSG() replaces the actor. Re-bind with asUser($finance) before reuse.
+     */
     protected function asUser(User $user): static
     {
         Sanctum::actingAs($user);
+
         return $this;
     }
 
     protected function asStaff(?Tenant $tenant = null): array
     {
         $user = $this->makeUser('staff', $tenant);
+
         return [$this->asUser($user), $user];
     }
 
     protected function asAdmin(?Tenant $tenant = null): array
     {
         $user = $this->makeAdmin($tenant);
+
         return [$this->asUser($user), $user];
     }
 
     protected function asHrManager(?Tenant $tenant = null): array
     {
         $user = $this->makeHrManager($tenant);
+
         return [$this->asUser($user), $user];
     }
 
     protected function asHrAdmin(?Tenant $tenant = null): array
     {
         $user = $this->makeHrAdmin($tenant);
+
         return [$this->asUser($user), $user];
     }
 
     protected function asFinanceController(?Tenant $tenant = null): array
     {
         $user = $this->makeFinanceController($tenant);
+
         return [$this->asUser($user), $user];
     }
 
     protected function asProcurementOfficer(?Tenant $tenant = null): array
     {
         $user = $this->makeProcurementOfficer($tenant);
+
         return [$this->asUser($user), $user];
     }
 
@@ -186,12 +197,14 @@ abstract class TestCase extends BaseTestCase
     protected function asSG(?Tenant $tenant = null): array
     {
         $user = $this->makeSG($tenant);
+
         return [$this->asUser($user), $user];
     }
 
     protected function asGovernanceOfficer(?Tenant $tenant = null): array
     {
         $user = $this->makeGovernanceOfficer($tenant);
+
         return [$this->asUser($user), $user];
     }
 
@@ -201,8 +214,8 @@ abstract class TestCase extends BaseTestCase
     {
         return Department::create([
             'tenant_id' => $tenant->id,
-            'name'      => 'Dept ' . uniqid(),
-            'code'      => strtoupper(substr(uniqid(), -5)),
+            'name' => 'Dept '.uniqid(),
+            'code' => strtoupper(substr(uniqid(), -5)),
             'parent_id' => $parentId,
         ]);
     }
@@ -212,11 +225,11 @@ abstract class TestCase extends BaseTestCase
         $suffix = strtolower(substr(uniqid(), -6));
 
         return SupplierCategory::create(array_merge([
-            'tenant_id'    => $tenant->id,
-            'name'         => 'Category ' . strtoupper($suffix),
-            'code'         => 'cat_' . $suffix,
-            'description'  => 'Test supplier category',
-            'is_active'    => true,
+            'tenant_id' => $tenant->id,
+            'name' => 'Category '.strtoupper($suffix),
+            'code' => 'cat_'.$suffix,
+            'description' => 'Test supplier category',
+            'is_active' => true,
         ], $overrides));
     }
 
