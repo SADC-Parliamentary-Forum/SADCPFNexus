@@ -274,6 +274,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr/timesheets/templates", permission: ["hr.admin", "timesheets.admin"] },
   { path: "/hr/timesheets/team", permission: ["hr.admin", "hr.approve", "hr.edit"] },
   { path: "/hr/timesheets/capacity", permission: ["hr.admin", "hr.approve", "hr.edit"] },
+  { path: "/hr/payslips", permission: ["hr.admin", "hr.edit"], roles: ["HR Manager", "HR Administrator"] },
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
   { path: "/assets", permission: "assets.view" },
@@ -295,7 +296,6 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/procurement", permission: "procurement.view" },
   { path: "/supplier", permission: "supplier.portal", allowSystemAdmin: false },
   { path: "/settings/hr", permission: ["hr.admin", "hr_settings.view", "hr_settings.edit", "hr_settings.approve", "hr_settings.publish"] },
-  { path: "/hr/payslips", permission: ["hr.admin"] },
   { path: "/correspondence", permission: "correspondence.view" },
   // Risk Register
   { path: "/risk", permission: ["risk.view", "risk.admin", "risk.manage", "governance.view"] },

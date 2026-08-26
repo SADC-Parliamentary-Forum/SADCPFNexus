@@ -3,9 +3,9 @@ import type { HubCard } from "@/components/ui/ModuleHubCards";
 export const HR_SIDEBAR_CHILDREN = [
   { label: "Overview", href: "/hr", icon: "bar_chart_4_bars" },
   { label: "Staff leave register", href: "/hr/leave", icon: "menu_book" },
+  { label: "Issue payslips", href: "/hr/payslips", icon: "receipt_long" },
   { label: "Employee files", href: "/hr/files", icon: "folder_shared" },
   { label: "Appraisals", href: "/hr/appraisals", icon: "rate_review" },
-  { label: "Departments", href: "/hr/departments", icon: "corporate_fare" },
 ] as const;
 
 export const HR_HUB_CARDS: HubCard[] = [
@@ -20,7 +20,7 @@ export const HR_HUB_CARDS: HubCard[] = [
   { href: "/hr/performance", title: "Performance", purpose: "Performance records.", icon: "trending_up", section: "views" },
   { href: "/hr/files", title: "Employee files", purpose: "Digital personal files.", icon: "folder_shared", section: "views" },
   { href: "/hr/documents", title: "Documents", purpose: "HR document library.", icon: "description", section: "views" },
-  { href: "/hr/payslips", title: "Payslips", purpose: "HR view of staff payslips.", icon: "receipt_long", section: "views" },
+  { href: "/hr/payslips", title: "Issue payslips", purpose: "Drop a pay-period envelope and assign files to staff.", icon: "upload_file", section: "queues" },
   { href: "/hr/departments", title: "Departments", purpose: "Organisational units.", icon: "corporate_fare", section: "tools" },
   { href: "/hr/positions", title: "Positions", purpose: "Establishment positions.", icon: "work", section: "tools" },
 ];

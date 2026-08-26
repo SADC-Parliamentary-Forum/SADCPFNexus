@@ -118,7 +118,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Budget Control", href: "/budget", icon: "account_balance_wallet" },
       { label: "Imprest", href: "/imprest", icon: "account_balance_wallet" },
       { label: "Payslips", href: "/finance/payslips", icon: "receipt_long" },
-      { label: "Budget Reports", href: "/budget/reports", icon: "analytics" },
+      { label: "Issue payslips", href: "/hr/payslips", icon: "upload_file" },
     ],
   },
   {
@@ -172,9 +172,9 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { label: "Overview", href: "/hr", icon: "bar_chart_4_bars" },
       { label: "Staff Leave Register", href: "/hr/leave", icon: "menu_book" },
+      { label: "Issue payslips", href: "/hr/payslips", icon: "receipt_long" },
       { label: "Employee Files", href: "/hr/files", icon: "folder_shared" },
       { label: "Appraisals", href: "/hr/appraisals", icon: "rate_review" },
-      { label: "Departments", href: "/hr/departments", icon: "corporate_fare" },
     ],
   },
     {
@@ -343,7 +343,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Notifications", href: "/admin/notifications", icon: "notifications" },
       { label: "Timesheet Projects", href: "/admin/timesheet-projects", icon: "task_alt" },
       { label: "Holiday Calendar", href: "/admin/calendar", icon: "event_busy" },
-      { label: "Payslip Upload", href: "/admin/payslips", icon: "upload_file" },
+      { label: "Issue payslips", href: "/admin/payslips", icon: "upload_file" },
       { label: "Salary Assignments", href: "/admin/salary-assignments", icon: "badge" },
       { label: "Platform Audit Trail", href: "/admin/audit-trail", icon: "policy" },
       { label: "Document Register", href: "/admin/documents", icon: "folder_managed" },
