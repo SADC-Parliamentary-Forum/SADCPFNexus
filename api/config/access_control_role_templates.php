@@ -145,7 +145,19 @@ return [
     'M&E Officer' => [
         'purpose' => 'Indicator, evidence and activity-report processing',
         'risk_level' => 'medium',
-        'permissions' => ['dashboard.view', 'mande.module.view', 'mande.indicator.read', 'mande.indicator.create', 'mande.activity_report.create', 'mande.evidence.upload', 'mande.dashboard.view'],
+        // Honour both canonical keys and the Spatie `can:mande.view` /
+        // `can:mande.create` route middleware (exact name match).
+        'permissions' => [
+            'dashboard.view',
+            'mande.view',
+            'mande.create',
+            'mande.module.view',
+            'mande.indicator.read',
+            'mande.indicator.create',
+            'mande.activity_report.create',
+            'mande.evidence.upload',
+            'mande.dashboard.view',
+        ],
         'inherits' => [],
         'legacy_roles' => [],
         'feature_only' => false,
@@ -155,7 +167,15 @@ return [
     'M&E Manager' => [
         'purpose' => 'M&E review, acceptance, closure and reporting',
         'risk_level' => 'high',
-        'permissions' => ['mande.activity_report.review.assigned', 'mande.activity_report.accept.assigned', 'mande.evidence.validate.assigned', 'mande.configuration.manage', 'mande.strategic_plan.manage'],
+        'permissions' => [
+            'mande.review',
+            'mande.admin',
+            'mande.activity_report.review.assigned',
+            'mande.activity_report.accept.assigned',
+            'mande.evidence.validate.assigned',
+            'mande.configuration.manage',
+            'mande.strategic_plan.manage',
+        ],
         'inherits' => ['M&E Officer'],
         'legacy_roles' => [],
         'feature_only' => false,

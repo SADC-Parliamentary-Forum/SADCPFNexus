@@ -84,6 +84,11 @@ abstract class TestCase extends BaseTestCase
         return $this->makeUser('Governance Officer', $tenant);
     }
 
+    protected function makeMeOfficer(?Tenant $tenant = null): User
+    {
+        return $this->makeUser('M&E Officer', $tenant);
+    }
+
     // ── Auth helpers ─────────────────────────────────────────────────────────
 
     /**
@@ -204,6 +209,13 @@ abstract class TestCase extends BaseTestCase
     protected function asGovernanceOfficer(?Tenant $tenant = null): array
     {
         $user = $this->makeGovernanceOfficer($tenant);
+
+        return [$this->asUser($user), $user];
+    }
+
+    protected function asMeOfficer(?Tenant $tenant = null): array
+    {
+        $user = $this->makeMeOfficer($tenant);
 
         return [$this->asUser($user), $user];
     }
