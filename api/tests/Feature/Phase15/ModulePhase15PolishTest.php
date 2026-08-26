@@ -99,15 +99,16 @@ class ModulePhase15PolishTest extends TestCase
     public function test_meeting_action_item_assign_uses_from_source(): void
     {
         extract($this->seedActor());
+        $officer = $this->makeGovernanceOfficer($tenant);
 
         $minutes = MeetingMinutes::create([
             'tenant_id' => $tenant->id,
-            'created_by' => $creator->id,
+            'created_by' => $officer->id,
             'title' => 'Management meeting',
             'meeting_date' => now()->toDateString(),
             'meeting_type' => 'management',
             'status' => 'draft',
-            'chairperson' => $creator->name,
+            'chairperson' => $officer->name,
         ]);
 
         $item = MeetingActionItem::create([
@@ -118,7 +119,7 @@ class ModulePhase15PolishTest extends TestCase
             'status' => 'open',
         ]);
 
-        $this->actingAs($creator, 'sanctum')
+        $this->actingAs($officer, 'sanctum')
             ->postJson("/api/v1/governance/minutes/{$minutes->id}/action-items/{$item->id}/assign", [
                 'assigned_to' => $assignee->id,
                 'due_date' => now()->addDays(7)->toDateString(),
@@ -134,7 +135,7 @@ class ModulePhase15PolishTest extends TestCase
         $this->assertSame('Prepare Q3 briefing pack', $assignment->title);
         $this->assertNotSame('draft', $assignment->status);
 
-        $this->actingAs($creator, 'sanctum')
+        $this->actingAs($officer, 'sanctum')
             ->postJson("/api/v1/governance/minutes/{$minutes->id}/action-items/{$item->id}/assign", [
                 'assigned_to' => $assignee->id,
                 'due_date' => now()->addDays(7)->toDateString(),
@@ -150,6 +151,7 @@ class ModulePhase15PolishTest extends TestCase
     public function test_pif_from_source_endpoint_wires_for_ui(): void
     {
         extract($this->seedActor());
+        $issuer = $this->makeUser('HOD', $tenant);
 
         $payload = [
             'title' => 'PIF M&E follow-up',
@@ -161,12 +163,12 @@ class ModulePhase15PolishTest extends TestCase
             'source_purpose' => 'me_follow_up',
         ];
 
-        $id = $this->actingAs($creator, 'sanctum')
+        $id = $this->actingAs($issuer, 'sanctum')
             ->postJson('/api/v1/assignments/from-source', $payload)
             ->assertCreated()
             ->json('data.id');
 
-        $again = $this->actingAs($creator, 'sanctum')
+        $again = $this->actingAs($issuer, 'sanctum')
             ->postJson('/api/v1/assignments/from-source', $payload)
             ->assertCreated()
             ->json('data.id');

@@ -15,7 +15,7 @@ return [
     'Supervisor / Line Manager' => [
         'purpose' => 'Review direct-report submissions and assignments',
         'risk_level' => 'medium',
-        'permissions' => ['leave.request.read.direct_reports', 'leave.request.recommend.assigned', 'leave.request.return.assigned', 'timesheet.approve.assigned', 'assignment.read.assigned', 'weekly_report.review.team', 'approvals.task.act.assigned'],
+        'permissions' => ['leave.request.read.direct_reports', 'leave.request.recommend.assigned', 'leave.request.return.assigned', 'timesheet.approve.assigned', 'assignment.read.assigned', 'assignments.view', 'assignments.create', 'assignments.issue', 'weekly_report.review.team', 'approvals.task.act.assigned'],
         'inherits' => ['General Employee'],
         'legacy_roles' => ['HOD'],
         'feature_only' => false,
