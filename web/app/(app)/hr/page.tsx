@@ -125,14 +125,24 @@ function HRPageContent() {
       {/* Payroll tab */}
       {activeTab === "payroll" && (
         <div className="space-y-4">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Payroll management and payslip access.</p>
-          <Link href="/finance" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors">
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Issue staff payslips or open your own history.</p>
+          <Link href="/hr/payslips" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors">
             <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-[24px]">account_balance</span>
+              <span className="material-symbols-outlined text-primary text-[24px]">upload_file</span>
             </div>
             <div>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Finance &amp; Payroll</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Access payslips, salary advances, and finance records.</p>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Issue payslips</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">Drop a pay-period envelope and assign files to staff.</p>
+            </div>
+            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
+          </Link>
+          <Link href="/finance/payslips" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors">
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary text-[24px]">receipt_long</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">My payslips</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">View and download your own payslip history.</p>
             </div>
             <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
           </Link>

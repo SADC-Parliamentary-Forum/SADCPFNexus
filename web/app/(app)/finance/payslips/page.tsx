@@ -1,16 +1,19 @@
 "use client";
 
-import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { financeApi, type Payslip } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
-import { ListPagination } from "@/components/ui/ListPagination";
+import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
+import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { RegisterMobileCards } from "@/components/ui/RegisterMobileCards";
+import { Input } from "@/components/ui/Input";
 import { DEFAULT_PAGE_SIZE, clientPageCount, getListData, slicePage } from "@/lib/listPagination";
+import { formatPayPeriod } from "@/lib/payslipPeriod";
 
-function formatPeriod(p: Payslip): string {
-  const months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  return `${months[p.period_month] ?? p.period_month} ${p.period_year}`;
+function periodLabel(p: Payslip): string {
+  return p.period_label || formatPayPeriod(p.period_month, p.period_year);
 }
 
 export default function PayslipsPage() {
@@ -18,24 +21,33 @@ export default function PayslipsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [year, setYear] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
   useEffect(() => {
-    financeApi.listPayslips({ per_page: 100 })
+    financeApi
+      .listPayslips({ per_page: 100 })
       .then((res) => setPayslips(getListData<Payslip>(res.data)))
       .catch(() => setError("Failed to load payslips."))
       .finally(() => setLoading(false));
   }, []);
 
+  const years = useMemo(() => {
+    const set = new Set(payslips.map((p) => p.period_year));
+    return Array.from(set).sort((a, b) => b - a);
+  }, [payslips]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return payslips;
     return payslips.filter((p) => {
-      const hay = [formatPeriod(p), String(p.period_year), String(p.period_month)].join(" ").toLowerCase();
-      return hay.includes(q);
+      if (year !== "all" && String(p.period_year) !== year) return false;
+      if (!q) return true;
+      return periodLabel(p).toLowerCase().includes(q);
     });
-  }, [payslips, search]);
+  }, [payslips, search, year]);
 
+  const latest = filtered[0] ?? null;
   const lastPage = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
   const paged = useMemo(
     () => slicePage(filtered, Math.min(page, lastPage), DEFAULT_PAGE_SIZE),
@@ -52,151 +64,183 @@ export default function PayslipsPage() {
       a.click();
       window.URL.revokeObjectURL(url);
     } catch {
-      // No file available
+      // no file
     }
   };
 
-  const handleExport = () => {
-    if (filtered.length === 0) return;
-    exportToCsv(
-      `payslips-${new Date().toISOString().slice(0, 10)}.csv`,
-      filtered.map((p) => ({
-        period: formatPeriod(p),
-        year: p.period_year,
-        month: p.period_month,
-        net_amount: p.net_amount ?? "",
-        gross_amount: p.gross_amount ?? "",
-        currency: p.currency ?? "NAD",
-      })),
-      [
-        { key: "period", header: "Period" },
-        { key: "year", header: "Year" },
-        { key: "month", header: "Month" },
-        { key: "gross_amount", header: "Gross" },
-        { key: "net_amount", header: "Net pay" },
-        { key: "currency", header: "Currency" },
-      ],
-    );
-  };
-
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/finance" className="hover:text-primary transition-colors">Finance</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">Payslips</span>
-      </div>
-
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <ModulePageHeader
-        title="Payslips"
-        subtitle="View and download your payslip history."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Payslips" }]} />}
-      />
+    <RegisterShell
+      title="Payslips"
+      subtitle="Your official pay documents. Download or open any period."
+      breadcrumbs={<PageBreadcrumbs items={[{ label: "Finance", href: "/finance" }, { label: "Payslips" }]} />}
+      actions={
         <button
           type="button"
           className="btn-secondary text-sm disabled:opacity-50"
           disabled={filtered.length === 0}
-          onClick={handleExport}
+          onClick={() => {
+            exportToCsv(
+              `payslips-${new Date().toISOString().slice(0, 10)}.csv`,
+              filtered.map((p) => ({
+                period: periodLabel(p),
+                net_amount: p.net_amount ?? "",
+                gross_amount: p.gross_amount ?? "",
+                currency: p.currency ?? "NAD",
+                confirmation: p.confirmation_status ?? "",
+              })),
+              [
+                { key: "period", header: "Period" },
+                { key: "gross_amount", header: "Gross" },
+                { key: "net_amount", header: "Net pay" },
+                { key: "currency", header: "Currency" },
+                { key: "confirmation", header: "Confirmation" },
+              ],
+            );
+          }}
         >
-          <span className="material-symbols-outlined text-[18px]">download</span>
           Export CSV
         </button>
-      </div>
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <span className="material-symbols-outlined text-[18px]">error_outline</span>
-          {error}
-        </div>
-      )}
-
-      <div className="card p-4">
-        <div className="relative max-w-md">
-          <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-neutral-400">
-            search
-          </span>
-          <input
-            type="search"
-            className="form-input pl-10"
-            placeholder="Search by period…"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
-          />
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="card divide-y divide-neutral-50">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between px-5 py-4 animate-pulse">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-neutral-100" />
-                <div>
-                  <div className="h-3 w-24 bg-neutral-100 rounded mb-1.5" />
-                  <div className="h-2.5 w-32 bg-neutral-100 rounded" />
-                </div>
-              </div>
-              <div className="h-3 w-16 bg-neutral-100 rounded" />
+      }
+      stats={
+        latest ? (
+          <Link
+            href={`/finance/payslips/${latest.id}`}
+            className="card flex items-center justify-between gap-4 p-5 transition-colors hover:border-primary/40"
+          >
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-500">Latest payslip</p>
+              <p className="mt-1 text-lg font-semibold text-neutral-900 dark:text-neutral-100">{periodLabel(latest)}</p>
+              <p className="mt-0.5 text-sm text-neutral-500">
+                Net {latest.currency ?? "NAD"} {Number(latest.net_amount || 0).toLocaleString()}
+              </p>
             </div>
-          ))}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="card px-5 py-16 text-center">
-          <span className="material-symbols-outlined text-4xl text-neutral-300">description</span>
-          <p className="mt-3 text-sm text-neutral-500">No payslips available yet.</p>
-        </div>
-      ) : (
-        <div className="card overflow-hidden">
-          <div className="card-header">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-neutral-400 text-[18px]">description</span>
-              <h3 className="text-sm font-semibold text-neutral-900">Payslip History</h3>
-            </div>
-            <span className="text-xs text-neutral-400">{filtered.length} records</span>
+            <span className="material-symbols-outlined text-primary">arrow_forward</span>
+          </Link>
+        ) : undefined
+      }
+      filters={
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[200px] flex-1">
+            <Input
+              label="Search"
+              icon="search"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Search by period…"
+            />
           </div>
-          <div className="divide-y divide-neutral-50">
+          <div>
+            <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-neutral-500" htmlFor="payslip-year">
+              Year
+            </label>
+            <select
+              id="payslip-year"
+              className="form-input"
+              value={year}
+              onChange={(e) => {
+                setYear(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="all">All years</option>
+              {years.map((y) => (
+                <option key={y} value={String(y)}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      }
+      density={density}
+      onDensityChange={setDensity}
+      page={Math.min(page, lastPage)}
+      pageCount={lastPage}
+      total={filtered.length}
+      onPageChange={setPage}
+      loading={loading}
+      empty={
+        !loading && filtered.length === 0 ? (
+          error ? (
+            <EmptyState icon="error" title="Could not load payslips" description={error} />
+          ) : (
+            <EmptyState
+              icon="receipt_long"
+              title="No payslips yet"
+              description="HR issues payslips after each payroll run. They will appear here when your file is ready."
+            />
+          )
+        ) : undefined
+      }
+    >
+      <div className="card hidden overflow-hidden md:block">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Net pay</th>
+              <th>File</th>
+              <th>Status</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
             {paged.map((p) => (
-              <div key={p.id} className="flex items-center justify-between px-5 py-4 hover:bg-neutral-50/50 transition-colors">
-                <Link href={`/finance/payslips/${p.id}`} className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <span className="material-symbols-outlined text-primary text-[20px]">description</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-neutral-900">{formatPeriod(p)}</p>
-                    <p className="text-xs text-neutral-500 truncate">
-                      {p.net_amount != null
-                        ? `Net ${p.currency ?? "NAD"} ${Number(p.net_amount).toLocaleString()}`
-                        : "View details"}
-                    </p>
-                  </div>
-                </Link>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <Link href={`/finance/payslips/${p.id}`} className="text-xs font-medium text-primary hover:underline">
-                    View
+              <tr key={p.id}>
+                <td>
+                  <Link href={`/finance/payslips/${p.id}`} className="font-medium text-neutral-900 hover:text-primary dark:text-neutral-100">
+                    {periodLabel(p)}
                   </Link>
-                  <button
-                    type="button"
-                    onClick={() => void handleDownload(p)}
-                    className="text-xs font-medium text-neutral-600 hover:underline"
-                  >
-                    Download
-                  </button>
-                </div>
-              </div>
+                </td>
+                <td>
+                  {p.net_amount != null ? `${p.currency ?? "NAD"} ${Number(p.net_amount).toLocaleString()}` : "—"}
+                </td>
+                <td>{p.has_file ? <span className="badge badge-success">Available</span> : <span className="badge badge-muted">Pending</span>}</td>
+                <td>
+                  {p.confirmation_status === "confirmed" ? (
+                    <span className="badge badge-success">Confirmed</span>
+                  ) : p.confirmation_status === "rejected" ? (
+                    <span className="badge badge-danger">Returned</span>
+                  ) : (
+                    <span className="badge badge-muted">On file</span>
+                  )}
+                </td>
+                <td>
+                  <div className="flex gap-3">
+                    <Link href={`/finance/payslips/${p.id}`} className="text-xs font-medium text-primary hover:underline">
+                      View
+                    </Link>
+                    <button type="button" className="text-xs font-medium text-neutral-600 hover:underline" onClick={() => void handleDownload(p)}>
+                      Download
+                    </button>
+                  </div>
+                </td>
+              </tr>
             ))}
+          </tbody>
+        </table>
+      </div>
+      <RegisterMobileCards
+        items={paged}
+        getKey={(p) => p.id}
+        title={(p) => periodLabel(p)}
+        subtitle={(p) =>
+          p.net_amount != null ? `Net ${p.currency ?? "NAD"} ${Number(p.net_amount).toLocaleString()}` : "Open for details"
+        }
+        actions={(p) => (
+          <div className="flex gap-3">
+            <Link href={`/finance/payslips/${p.id}`} className="text-xs font-medium text-primary">
+              View
+            </Link>
+            <button type="button" className="text-xs font-medium text-neutral-600" onClick={() => void handleDownload(p)}>
+              Download
+            </button>
           </div>
-          <ListPagination
-            page={Math.min(page, lastPage)}
-            lastPage={lastPage}
-            total={filtered.length}
-            onPageChange={setPage}
-          />
-        </div>
-      )}
-    </div>
+        )}
+      />
+    </RegisterShell>
   );
 }

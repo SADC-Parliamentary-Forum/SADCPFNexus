@@ -440,6 +440,10 @@ Route::prefix('v1')->group(function () {
             // Payslips (list, show, download, upload, delete, refresh auto-fill)
             Route::get('payslips', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'index']);
             Route::post('payslips', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'store']);
+            Route::post('payslips/match', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'match']);
+            Route::post('payslips/distribute', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'distribute']);
+            Route::get('payslips/directory', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'directory']);
+            Route::get('payslips/period-coverage', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'periodCoverage']);
             Route::get('payslips/{payslip}', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'show']);
             Route::get('payslips/{payslip}/download', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'download']);
             Route::post('payslips/{payslip}/refresh', [\App\Http\Controllers\Api\V1\Admin\PayslipController::class, 'refresh']);

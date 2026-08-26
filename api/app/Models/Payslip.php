@@ -70,4 +70,9 @@ class Payslip extends Model
         $months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         return ($months[$this->period_month] ?? $this->period_month) . ' ' . $this->period_year;
     }
+
+    public function getHasFileAttribute(): bool
+    {
+        return filled($this->file_path);
+    }
 }

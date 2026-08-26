@@ -603,6 +603,9 @@ export const adminApi = {
     user_id?: number;
     employee_number?: string;
     search?: string;
+    period_month?: number;
+    period_year?: number;
+    confirmation_status?: string;
   }) =>
     api.get<PaginatedResponse<AdminPayslip>>("/admin/payslips", { params }),
   getPayslip: (id: number) => api.get<AdminPayslip>(`/admin/payslips/${id}`),
@@ -620,6 +623,30 @@ export const adminApi = {
   uploadPayslip: (formData: FormData) =>
     api.post<{ data: AdminPayslip; message: string }>("/admin/payslips", formData, {
       headers: { "Content-Type": "multipart/form-data" },
+    }),
+  matchPayslips: (data: { filenames: string[]; period_month: number; period_year: number }) =>
+    api.post<{ data: PayslipMatchPreview }>("/admin/payslips/match", data),
+  matchPayslipUploads: (formData: FormData) =>
+    api.post<{ data: PayslipMatchPreview }>("/admin/payslips/match", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  distributePayslips: (formData: FormData) =>
+    api.post<{
+      message: string;
+      data: {
+        issued: number;
+        replaced: number;
+        failed: Array<{ filename: string; reason: string }>;
+        payslips: AdminPayslip[];
+      };
+    }>("/admin/payslips/distribute", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  payslipDirectory: (q?: string) =>
+    api.get<{ data: PayslipDirectoryPerson[] }>("/admin/payslips/directory", { params: q ? { q } : undefined }),
+  payslipPeriodCoverage: (period_month: number, period_year: number) =>
+    api.get<{ data: PayslipPeriodCoverage }>("/admin/payslips/period-coverage", {
+      params: { period_month, period_year },
     }),
   deletePayslip: (id: number) => api.delete(`/admin/payslips/${id}`),
 
@@ -787,6 +814,44 @@ export const positionsApi = {
 export type AdminPayslip = Payslip & {
   user_id?: number;
   user?: { id: number; name: string; email: string; employee_number?: string | null };
+};
+
+export type PayslipDirectoryPerson = {
+  id: number;
+  name: string;
+  email: string;
+  employee_number?: string | null;
+};
+
+export type PayslipMatchItem = {
+  filename: string;
+  status: "matched" | "ambiguous" | "unmatched";
+  user: PayslipDirectoryPerson | null;
+  candidates: PayslipDirectoryPerson[];
+  extracted_employee_number?: string | null;
+  existing_payslip_id?: number | null;
+  archive?: string | null;
+};
+
+export type PayslipMatchPreview = {
+  period_month: number;
+  period_year: number;
+  items: PayslipMatchItem[];
+  coverage: {
+    staff: number;
+    already_issued: number;
+    missing: number;
+    period_month: number;
+    period_year: number;
+  };
+};
+
+export type PayslipPeriodCoverage = {
+  period_month: number;
+  period_year: number;
+  issued: Array<PayslipDirectoryPerson & { payslip_id: number | null }>;
+  missing: Array<PayslipDirectoryPerson & { payslip_id: number | null }>;
+  totals: { staff: number; issued: number; missing: number };
 };
 
 export interface TimesheetProject {
@@ -4152,6 +4217,7 @@ export interface Payslip {
    */
   details?: PayslipDetails | null;
   file_path?: string | null;
+  has_file?: boolean;
   period_label?: string;
   issued_at: string | null;
   confirmation_status?: "pending" | "confirmed" | "rejected";
