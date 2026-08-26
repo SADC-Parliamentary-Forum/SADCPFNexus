@@ -28,7 +28,7 @@ import {
   isPayslipZip,
   parsePeriodValue,
 } from "@/lib/payslipPeriod";
-import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { DEFAULT_PAGE_SIZE, clientPageCount, getLastPage, getListData, slicePage } from "@/lib/listPagination";
 
 type EnvelopeRow = {
   key: string;
@@ -176,7 +176,7 @@ export function PayslipDistributionDesk({
     const user = getStoredUser();
     setCanManage(
       isSystemAdmin(user) ||
-        hasPermission(user, "hr.admin") ||
+        hasPermission(user, ["hr.admin", "hr.edit"]) ||
         !!user?.roles?.some((r) => ["HR Manager", "HR Administrator"].includes(r)),
     );
   }, []);
@@ -186,16 +186,34 @@ export function PayslipDistributionDesk({
     setLoadingIssued(true);
     setIssuedError(null);
     Promise.all([
-      adminApi.listPayslips({
-        per_page: 100,
-        period_month: period.month,
-        period_year: period.year,
-        search: search.trim() || undefined,
-      }),
+      (async () => {
+        const first = await adminApi.listPayslips({
+          per_page: 100,
+          page: 1,
+          period_month: period.month,
+          period_year: period.year,
+          search: search.trim() || undefined,
+        });
+        const rows = getListData<AdminPayslip>(first.data);
+        const lastPage = Math.min(getLastPage(first.data), 10);
+        if (lastPage <= 1) return rows;
+        const rest = await Promise.all(
+          Array.from({ length: lastPage - 1 }, (_, i) =>
+            adminApi.listPayslips({
+              per_page: 100,
+              page: i + 2,
+              period_month: period.month,
+              period_year: period.year,
+              search: search.trim() || undefined,
+            }),
+          ),
+        );
+        return rows.concat(...rest.map((r) => getListData<AdminPayslip>(r.data)));
+      })(),
       adminApi.payslipPeriodCoverage(period.month, period.year),
     ])
-      .then(([listRes, coverRes]) => {
-        setIssued(Array.isArray(listRes.data?.data) ? listRes.data.data : []);
+      .then(([list, coverRes]) => {
+        setIssued(list);
         setCoverage(coverRes.data.data);
       })
       .catch(() => setIssuedError("Failed to load payslips for this period."))

@@ -9,7 +9,7 @@ export const FINANCE_SIDEBAR_CHILDREN = [
 ] as const;
 
 export const FINANCE_HUB_CARDS: HubCard[] = [
-  { href: "/hr/payslips", title: "Issue payslips", purpose: "Drop a pay-period envelope and assign files to staff.", icon: "upload_file", section: "queues", permission: "hr.admin" },
+  { href: "/hr/payslips", title: "Issue payslips", purpose: "Drop a pay-period envelope and assign files to staff.", icon: "upload_file", section: "queues" },
   { href: "/budget", title: "Budget control", purpose: "Live control of voted funds.", icon: "account_balance_wallet", section: "queues" },
   { href: "/budget/changes", title: "Budget changes", purpose: "Virements and change requests.", icon: "swap_horiz", section: "queues" },
   { href: "/budget/variance", title: "Budget variance", purpose: "Over/under spend explanations.", icon: "trending_down", section: "queues" },

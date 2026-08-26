@@ -62,6 +62,19 @@ class PayslipFilenameMatcherTest extends TestCase
         $this->assertCount(2, $result['candidates']);
     }
 
+    public function test_ambiguous_when_employee_number_is_shared(): void
+    {
+        $a = new User(['name' => 'Jane Doe', 'email' => 'a@sadcpf.org', 'employee_number' => 'EMP042']);
+        $a->id = 51;
+        $b = new User(['name' => 'John Doe', 'email' => 'b@sadcpf.org', 'employee_number' => 'EMP042']);
+        $b->id = 52;
+
+        $result = $this->matcher->match('EMP042_August2026.pdf', collect([$a, $b]));
+        $this->assertSame('ambiguous', $result['status']);
+        $this->assertNull($result['user']);
+        $this->assertCount(2, $result['candidates']);
+    }
+
     public function test_unmatched_when_nothing_fits(): void
     {
         $jane = new User(['name' => 'Jane Doe', 'email' => 'jane@sadcpf.org']);

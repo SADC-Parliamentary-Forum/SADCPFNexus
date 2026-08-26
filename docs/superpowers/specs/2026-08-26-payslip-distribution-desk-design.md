@@ -35,7 +35,7 @@ Admin remains the control plane: upload, assign, confirm, delete stay on `/api/v
 
 Matching: employee number in filename (`EMP123`, `SADC-0042`, non-year digits), then unique name-token match. Ambiguous names stay unmatched until HR picks. Never auto-assign across tenants.
 
-ZIP envelopes are unpacked at preview time so HR can assign inner files before Issue. Duplicate files for the same person are skipped. Missing-staff list can assign the next unassigned file with one click.
+ZIP envelopes are unpacked at preview time so HR can assign inner files before Issue. When assignments are sent, they are authoritative: unassigned inner files are skipped even if the filename would match. Duplicate files for the same person are skipped. Missing-staff list can assign the next unassigned file with one click. Duplicate employee numbers stay unmatched until HR picks.
 
 ## Explicitly not in this change
 
