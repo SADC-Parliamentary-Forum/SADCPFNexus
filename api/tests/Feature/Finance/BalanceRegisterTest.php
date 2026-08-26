@@ -35,10 +35,12 @@ class BalanceRegisterTest extends TestCase
             'tenant_id' => $tenant->id,
             'requester_id' => $user->id,
             'reference_number' => 'IMP-'.uniqid(),
+            'budget_line' => 'OP-01',
             'purpose' => 'Conference attendance',
             'amount_requested' => 4000.00,
             'amount_approved' => 4000.00,
             'currency' => 'NAD',
+            'expected_liquidation_date' => now()->addDays(30)->toDateString(),
             'status' => 'approved',
         ], $overrides));
     }
