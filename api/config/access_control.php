@@ -543,6 +543,21 @@ return [
         ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/resubmit', 'permissions' => [
             'POST' => ['imprest.create', 'my_work.view'],
         ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/approve', 'permissions' => [
+            'POST' => ['imprest.approve', 'finance.approve'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/reject', 'permissions' => [
+            'POST' => ['imprest.approve', 'finance.approve'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/return', 'permissions' => [
+            'POST' => ['imprest.approve', 'finance.approve'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/retire', 'permissions' => [
+            'POST' => ['imprest.liquidate', 'my_work.view'],
+        ]],
+        ['pattern' => 'api/v1/imprest/requests/{imprestRequest}/certificate', 'permissions' => [
+            'READ' => ['imprest.view', 'my_work.view'],
+        ]],
         ['pattern' => 'api/v1/imprest/requests/{imprestRequest}', 'permissions' => [
             'READ' => ['imprest.view', 'my_work.view'],
             'WRITE' => ['imprest.create', 'my_work.view'],
