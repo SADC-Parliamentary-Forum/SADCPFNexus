@@ -126,13 +126,14 @@ class MeetingResolutionsPhase1Test extends TestCase
     public function test_creator_cannot_self_adopt_without_admin_authority(): void
     {
         $tenant = Tenant::factory()->create();
-        $drafter = $this->makeGovernanceOfficer($tenant);
+        $drafter = $this->makeUser('staff', $tenant);
+        $drafter->givePermissionTo(['decisions.view', 'decisions.create']);
         $owner = $this->makeUser('staff', $tenant);
         $adopter = $this->makeGovernanceOfficer($tenant);
 
         $decision = $this->createDecision($drafter, ['owner_id' => $owner->id]);
 
-        // Drafter has no adopt permission via staff role alone for SoD path —
+        // Drafter has create but not admin, so SoD still blocks self-adopt.
         // even if they somehow get adopt, service blocks self-adopt.
         $drafter->givePermissionTo('decisions.adopt');
 
