@@ -1256,11 +1256,16 @@ Route::prefix('v1')->group(function () {
                 [\App\Http\Controllers\Api\V1\MAndE\MeFollowUpController::class, 'index']
             );
 
-            // Review workflow (§10.10) — reviewer actions gated on mande.review
-            Route::middleware('can:mande.review')->group(function () {
+            // Programme-manager gate: Director/PM hold programme.manager_review.act.assigned,
+            // not mande.review. Spatie `permission:` ORs names; `can:` does not split for PEP.
+            Route::middleware('permission:mande.review|programme.manager_review.act.assigned,sanctum')->group(function () {
                 Route::get('programme-review-queue', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'programmeReviewQueue']);
                 Route::post('activity-reports/{activityReport}/programme-review/clear', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'clearProgrammeReview']);
                 Route::post('activity-reports/{activityReport}/programme-review/return', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'returnProgrammeReview']);
+            });
+
+            // Review workflow (§10.10) — M&E reviewer actions gated on mande.review
+            Route::middleware('can:mande.review')->group(function () {
                 Route::post('activity-reports/{activityReport}/review',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'review']);
                 Route::post('activity-reports/{activityReport}/return',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'requestCorrection']);
                 Route::post('activity-reports/{activityReport}/accept',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'accept']);

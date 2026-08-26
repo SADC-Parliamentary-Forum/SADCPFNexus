@@ -278,6 +278,15 @@ return [
             'PATCH' => ['risk.manage', 'risk.admin'],
             'DELETE' => ['risk.admin'],
         ]],
+        ['pattern' => 'api/v1/mande/programme-review-queue', 'permissions' => [
+            'GET' => ['mande.review', 'programme.manager_review.act.assigned'],
+        ]],
+        ['pattern' => 'api/v1/mande/activity-reports/{activityReport}/programme-review/clear', 'permissions' => [
+            'POST' => ['mande.review', 'programme.manager_review.act.assigned'],
+        ]],
+        ['pattern' => 'api/v1/mande/activity-reports/{activityReport}/programme-review/return', 'permissions' => [
+            'POST' => ['mande.review', 'programme.manager_review.act.assigned'],
+        ]],
         ['pattern' => 'api/v1/mande*', 'permissions' => [
             'READ' => ['mande.view', 'mande.module.view'],
             'WRITE' => ['mande.create', 'mande.review', 'mande.admin'],
