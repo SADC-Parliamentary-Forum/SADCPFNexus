@@ -77,7 +77,13 @@ return [
     'Head of Department / Director' => [
         'purpose' => 'Departmental oversight and assigned approvals',
         'risk_level' => 'high',
-        'permissions' => ['leave.request.authorise.assigned', 'leave.request.reject.assigned', 'leave.calendar.view.department', 'travel.request.approve.assigned', 'procurement.request.approve.assigned', 'salary_advance.approve.assigned', 'programme.manager_review.act.assigned', 'risk.module.view', 'risk.create'],
+        'permissions' => [
+            'leave.request.authorise.assigned', 'leave.request.reject.assigned', 'leave.calendar.view.department',
+            'travel.request.approve.assigned', 'procurement.request.approve.assigned',
+            'salary_advance.approve.assigned', 'programme.manager_review.act.assigned',
+            'risk.module.view', 'risk.create',
+            'mande.review',
+        ],
         'inherits' => ['Supervisor / Line Manager'],
         // HOD remains the supervisor role; only Director maps to this wider
         // directorate scope.
@@ -226,7 +232,11 @@ return [
     'Programme Manager' => [
         'purpose' => 'Programme supervision and assigned programme approvals',
         'risk_level' => 'high',
-        'permissions' => ['programme.request.read.assigned', 'programme.manager_review.act.assigned', 'programme.activity_authorise.act.assigned'],
+        'permissions' => [
+            'programme.request.read.assigned', 'programme.manager_review.act.assigned',
+            'programme.activity_authorise.act.assigned',
+            'mande.review',
+        ],
         'inherits' => ['Programme Officer'],
         'legacy_roles' => [],
         'feature_only' => false,
