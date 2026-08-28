@@ -194,6 +194,10 @@ return [
         ['pattern' => 'api/v1/hr/timesheets/capacity-analytics', 'permissions' => [
             'READ' => ['hr.view', 'hr.admin', 'hr.approve', 'hr.edit', 'timesheets.view', 'timesheet.module.view'],
         ]],
+        ['pattern' => 'api/v1/hr/timesheets/payroll-exports*', 'permissions' => [
+            'READ' => ['timesheets.export', 'timesheets.admin', 'finance.export', 'hr.admin'],
+            'WRITE' => ['timesheets.export', 'timesheets.admin', 'finance.export', 'hr.admin'],
+        ]],
         ['pattern' => 'api/v1/hr/timesheets/attendance/clock', 'permissions' => [
             'WRITE' => ['timesheet.create.self', 'timesheet.module.view', 'timesheets.create', 'hr.create', 'hr.admin'],
         ]],
