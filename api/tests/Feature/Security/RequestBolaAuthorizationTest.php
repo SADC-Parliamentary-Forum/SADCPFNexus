@@ -14,6 +14,15 @@ use Tests\TestCase;
  */
 class RequestBolaAuthorizationTest extends TestCase
 {
+    /**
+     * Out-of-scope records may 403 or 404; both deny access. 404 is preferred
+     * because it does not confirm the record exists.
+     */
+    private function assertDenied(\Illuminate\Testing\TestResponse $response): void
+    {
+        $this->assertContains($response->status(), [403, 404], 'Expected BOLA denial (403 or 404), got '.$response->status());
+    }
+
     public function test_peer_cannot_view_another_users_travel_request(): void
     {
         $tenant = Tenant::factory()->create();
@@ -31,9 +40,9 @@ class RequestBolaAuthorizationTest extends TestCase
             'status'               => 'draft',
         ]);
 
-        $this->asUser($peer)
-            ->getJson("/api/v1/travel/requests/{$travel->id}")
-            ->assertForbidden();
+        $this->assertDenied(
+            $this->asUser($peer)->getJson("/api/v1/travel/requests/{$travel->id}")
+        );
     }
 
     public function test_owner_can_view_own_travel_request(): void
@@ -73,9 +82,9 @@ class RequestBolaAuthorizationTest extends TestCase
             'status'           => 'draft',
         ]);
 
-        $this->asUser($peer)
-            ->getJson("/api/v1/leave/requests/{$leave->id}")
-            ->assertForbidden();
+        $this->assertDenied(
+            $this->asUser($peer)->getJson("/api/v1/leave/requests/{$leave->id}")
+        );
     }
 
     public function test_peer_cannot_update_another_users_leave_request(): void
@@ -96,11 +105,11 @@ class RequestBolaAuthorizationTest extends TestCase
             'status'           => 'draft',
         ]);
 
-        $this->asUser($peer)
-            ->putJson("/api/v1/leave/requests/{$leave->id}", [
+        $this->assertDenied(
+            $this->asUser($peer)->putJson("/api/v1/leave/requests/{$leave->id}", [
                 'reason' => 'Hacked',
             ])
-            ->assertForbidden();
+        );
     }
 
     public function test_peer_cannot_view_another_users_imprest_request(): void
@@ -121,9 +130,9 @@ class RequestBolaAuthorizationTest extends TestCase
             'status'                    => 'draft',
         ]);
 
-        $this->asUser($peer)
-            ->getJson("/api/v1/imprest/requests/{$imprest->id}")
-            ->assertForbidden();
+        $this->assertDenied(
+            $this->asUser($peer)->getJson("/api/v1/imprest/requests/{$imprest->id}")
+        );
     }
 
     public function test_peer_cannot_view_another_users_procurement_request(): void
@@ -144,9 +153,9 @@ class RequestBolaAuthorizationTest extends TestCase
             'status'           => 'draft',
         ]);
 
-        $this->asUser($peer)
-            ->getJson("/api/v1/procurement/requests/{$procurement->id}")
-            ->assertForbidden();
+        $this->assertDenied(
+            $this->asUser($peer)->getJson("/api/v1/procurement/requests/{$procurement->id}")
+        );
     }
 
     public function test_guest_cannot_view_travel_request(): void
