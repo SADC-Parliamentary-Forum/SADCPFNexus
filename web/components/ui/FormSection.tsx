@@ -65,14 +65,16 @@ interface FormFieldProps {
 /** Label + control + optional hint/error — consistent form field chrome. */
 export function FormField({ label, htmlFor, required, hint, error, children, className }: FormFieldProps) {
   return (
-    <label className={cn("block space-y-1.5", className)} htmlFor={htmlFor}>
-      <span className="block text-xs font-semibold text-neutral-700">
-        {label}
-        {required ? <span className="ml-0.5 text-red-500">*</span> : null}
-      </span>
-      {children}
+    <div className={cn("block space-y-1.5", className)}>
+      <label className="block space-y-1.5" htmlFor={htmlFor}>
+        <span className="block text-xs font-semibold text-neutral-700">
+          {label}
+          {required ? <span className="ml-0.5 text-red-500">*</span> : null}
+        </span>
+        {children}
+      </label>
       {error ? <span className="block text-xs text-red-600">{error}</span> : null}
-      {!error && hint ? <span className="block text-[11px] text-neutral-400">{hint}</span> : null}
-    </label>
+      {!error && hint ? <span className="block text-[11px] text-neutral-600">{hint}</span> : null}
+    </div>
   );
 }

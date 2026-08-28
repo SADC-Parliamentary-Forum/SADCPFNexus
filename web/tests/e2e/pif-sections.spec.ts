@@ -58,7 +58,7 @@ test.describe("PIF — full section-completion happy path", () => {
     test.skip(!openedWizard, "PIF draft create did not open the wizard for this fixture");
     const pifId = page.url().match(/\/pif\/(\d+)\/edit/)?.[1];
     expect(pifId, "expected a numeric programme id in the redirect URL").toBeTruthy();
-    await page.waitForLoadState("networkidle");
+    await expect(page.getByLabel("Background", { exact: true })).toBeVisible({ timeout: 15_000 });
 
     // ── Overview ────────────────────────────────────────────────────────────
     await page.getByLabel("Background", { exact: true }).fill(
