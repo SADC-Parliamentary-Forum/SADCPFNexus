@@ -119,7 +119,9 @@ return [
         'permissions' => [
             'leave.module.view', 'leave.balance.certify.assigned', 'leave.balance.read.assigned_staff',
             'leave.calendar.view.organisation', 'leave.report.view', 'leave.balance.export',
-            'leave.view',
+            'leave.view', 'leave.approve',
+            'approvals.inbox.view', 'approvals.task.act.assigned',
+            'workflows.view-own', 'workflows.act',
             'travel.module.view', 'travel.view', 'travel.review-toil', 'travel.prepare-for-others', 'travel.health-view',
             'admin.organisation.manage',
             'users.view',
