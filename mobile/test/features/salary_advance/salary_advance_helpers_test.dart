@@ -30,8 +30,8 @@ void main() {
     });
 
     test('formatSaCurrency formats NAD amounts', () {
-      expect(formatSaCurrency(1500.5), 'NAD 1500.50');
-      expect(formatSaCurrency(null), 'NAD 0.00');
+      expect(formatSaCurrency(1500.5), 'N\$ 1,500.50');
+      expect(formatSaCurrency(null), 'N\$ 0.00');
       expect(formatSaCurrency(10, currency: 'USD'), 'USD 10.00');
     });
 

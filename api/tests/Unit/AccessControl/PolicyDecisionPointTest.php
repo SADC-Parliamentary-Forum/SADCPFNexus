@@ -84,17 +84,27 @@ class PolicyDecisionPointTest extends TestCase
         $this->assertSame('direct_grant', $decision->reasonCode);
     }
 
-    public function test_legacy_leave_approve_maps_to_canonical_authorise(): void
+    public function test_legacy_leave_approve_maps_to_canonical_certify_not_authorise(): void
     {
         $user = $this->makeUser('staff');
         $user->givePermissionTo('leave.approve');
-        $decision = app(PolicyDecisionPoint::class)->authorize(
+        $pdp = app(PolicyDecisionPoint::class);
+
+        $certify = $pdp->authorize(
+            $user,
+            'leave.balance.certify.assigned',
+            null,
+            ['assigned' => true]
+        );
+        $this->assertTrue($certify->allowed);
+
+        $authorise = $pdp->authorize(
             $user,
             'leave.request.authorise.assigned',
             null,
             ['assigned' => true]
         );
-        $this->assertTrue($decision->allowed);
+        $this->assertFalse($authorise->allowed);
     }
 
     public function test_self_approve_blocked_by_sod(): void

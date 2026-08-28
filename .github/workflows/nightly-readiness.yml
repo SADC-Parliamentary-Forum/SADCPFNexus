@@ -73,7 +73,7 @@ jobs:
           BCRYPT_ROUNDS: '4'
         run: |
           cp .env.example .env
-          php artisan key:generate --force
+          sed -i "s|^APP_KEY=.*|APP_KEY=${APP_KEY}|" .env
           php artisan migrate:fresh --seed --force
 
       - name: Start API

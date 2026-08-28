@@ -176,7 +176,7 @@ class AccessControlNegativeAccessTest extends TestCase
         $user->givePermissionTo('leave.approve');
 
         $pdp = app(\App\Modules\AccessControl\Services\PolicyDecisionPoint::class);
-        $this->assertTrue($pdp->can($user, 'leave.request.authorise.assigned'));
+        $this->assertTrue($pdp->can($user, 'leave.balance.certify.assigned'));
 
         // Warm effective-permission cache.
         $pdp->effectivePermissions($user);
@@ -184,7 +184,7 @@ class AccessControlNegativeAccessTest extends TestCase
         \App\Models\AccessControl\UserPermissionDenial::create([
             'tenant_id' => $user->tenant_id,
             'user_id' => $user->id,
-            'permission_key' => 'leave.request.authorise.assigned',
+            'permission_key' => 'leave.balance.certify.assigned',
             'status' => 'active',
             'reason' => 'Revoked for test',
             'denied_by' => $user->id,
@@ -193,7 +193,7 @@ class AccessControlNegativeAccessTest extends TestCase
         app(\App\Modules\AccessControl\Services\AccessCacheInvalidator::class)->invalidate($user);
 
         $this->assertFalse(
-            $pdp->can($user, 'leave.request.authorise.assigned'),
+            $pdp->can($user, 'leave.balance.certify.assigned'),
             'Denial must take effect after cache invalidation within the short TTL window.'
         );
     }

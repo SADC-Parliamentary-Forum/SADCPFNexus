@@ -678,12 +678,11 @@ return [
             'leave.request.withdraw.created',
             'leave.module.view',
         ],
+        // Sequential leave: HOD recommends, HR certifies, SG/Director authorises.
+        // leave.approve is the legacy HR key — it must not grant authorise.
         'leave.approve' => [
-            'leave.request.read.direct_reports',
-            'leave.request.recommend.assigned',
-            'leave.request.return.assigned',
-            'leave.request.authorise.assigned',
-            'leave.request.reject.assigned',
+            'leave.balance.certify.assigned',
+            'leave.calendar.view.organisation',
             'leave.module.view',
         ],
         'leave.admin' => [

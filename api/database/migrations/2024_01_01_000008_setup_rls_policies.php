@@ -7,6 +7,25 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
+        // CI Postgres (GitHub Actions service) and some local DBs have no
+        // docker/postgres/init.sql, so the RLS role is missing. Create it
+        // before GRANT — roles are cluster-level and survive migrate:fresh.
+        DB::statement(<<<'SQL'
+            DO $$ BEGIN
+                IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'app_user') THEN
+                    CREATE ROLE app_user NOLOGIN;
+                END IF;
+            END $$;
+        SQL);
+
+        $database = str_replace('"', '""', (string) DB::getDatabaseName());
+        DB::statement("GRANT CONNECT ON DATABASE \"{$database}\" TO app_user");
+        DB::statement('GRANT USAGE ON SCHEMA public TO app_user');
+
         // Grant app_user access to tables
         $tables = [
             'tenants', 'departments', 'users', 'audit_logs', 'attachments',
@@ -20,7 +39,7 @@ return new class extends Migration
         }
 
         // Grant sequence usage
-        DB::statement("GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user");
+        DB::statement('GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user');
 
         // Tenant isolation policy on users
         DB::statement("
@@ -71,6 +90,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'pgsql') {
+            return;
+        }
+
         $tables = [
             'tenants', 'departments', 'users', 'audit_logs', 'attachments',
             'workflow_definitions', 'workflow_instances', 'approval_steps',
