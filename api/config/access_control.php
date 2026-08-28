@@ -154,7 +154,10 @@ return [
             'DELETE' => ['procurement.admin'],
         ]],
         ['pattern' => 'api/v1/hr/timesheets/capacity-analytics', 'permissions' => [
-            'READ' => ['hr.view', 'hr.admin', 'hr.approve', 'hr.edit', 'timesheets.view'],
+            'READ' => ['hr.view', 'hr.admin', 'hr.approve', 'hr.edit', 'timesheets.view', 'timesheet.module.view'],
+        ]],
+        ['pattern' => 'api/v1/hr/timesheets/attendance/clock', 'permissions' => [
+            'WRITE' => ['timesheet.create.self', 'timesheet.module.view', 'timesheets.create', 'hr.create', 'hr.admin'],
         ]],
         ['pattern' => 'api/v1/hr*', 'permissions' => [
             'READ' => ['hr.view', 'hr.admin'],
@@ -194,6 +197,12 @@ return [
         ['pattern' => 'api/v1/records*', 'permissions' => [
             'READ' => ['audit-trail.view-record-history', 'audit.view'],
         ]],
+        ['pattern' => 'api/v1/budget/journals', 'permissions' => [
+            'WRITE' => [
+                'finance.create', 'finance.approve', 'finance.admin',
+                'programme.budget_availability.confirm.assigned',
+            ],
+        ]],
         ['pattern' => 'api/v1/budget*', 'permissions' => [
             'READ' => ['finance.view', 'finance.admin'],
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
@@ -215,6 +224,21 @@ return [
             'PUT' => ['travel.create', 'travel.approve', 'travel.admin'],
             'PATCH' => ['travel.create', 'travel.approve', 'travel.admin'],
             'DELETE' => ['travel.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances/policies*', 'permissions' => [
+            'READ' => ['salary_advance.admin', 'salary_advance.view', 'finance.admin', 'finance.view'],
+            'WRITE' => ['salary_advance.admin', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance/advances*', 'permissions' => [
+            'READ' => [
+                'salary_advance.request.read.self', 'salary_advance.module.view',
+                'salary_advance.view', 'finance.view', 'finance.admin',
+            ],
+            'WRITE' => [
+                'salary_advance.request.create.self', 'salary_advance.request.edit.created',
+                'salary_advance.request.submit.created', 'salary_advance.create',
+                'salary_advance.admin', 'finance.create', 'finance.admin',
+            ],
         ]],
         ['pattern' => 'api/v1/finance*', 'permissions' => [
             'READ' => ['finance.view', 'finance.admin'],
