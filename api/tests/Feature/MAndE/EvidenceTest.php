@@ -33,7 +33,7 @@ class EvidenceTest extends TestCase
         [$http, $user] = $this->asStaff($tenant);
         $report = $this->makeReport($tenant, $user->id);
 
-        $file = UploadedFile::fake()->create('attendance.pdf', 120, 'application/pdf');
+        $file = $this->fakePdf('attendance.pdf');
 
         $http->post("/api/v1/mande/activity-reports/{$report->id}/evidence", [
             'file'          => $file,
