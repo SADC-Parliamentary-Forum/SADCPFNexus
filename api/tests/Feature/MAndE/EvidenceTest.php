@@ -6,7 +6,6 @@ use App\Models\MeActivityReport;
 use App\Models\MeEvidence;
 use App\Models\Programme;
 use App\Models\Tenant;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
