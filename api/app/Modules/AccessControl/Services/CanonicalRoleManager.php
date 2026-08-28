@@ -63,6 +63,28 @@ class CanonicalRoleManager
         return $this->legacyRoleMap()[$name] ?? $name;
     }
 
+    /**
+     * Spatie roles to attach when assigning a catalogue or legacy alias.
+     *
+     * Controllers still call hasRole('Finance Controller') / hasRole('staff').
+     * Canonical sync keeps those alias roles; assignment must attach them
+     * alongside the catalogue name or those checks silently fail.
+     *
+     * @return list<string>
+     */
+    public function assignmentRoleNames(string $requested): array
+    {
+        $canonical = $this->canonicalize($requested);
+        if (in_array($canonical, self::SYSTEM_ROLES, true)) {
+            return [$canonical];
+        }
+
+        $templates = config('access_control.role_templates', []);
+        $legacy = $templates[$canonical]['legacy_roles'] ?? [];
+
+        return array_values(array_unique(array_merge([$canonical], $legacy)));
+    }
+
     private function synchronizeGuard(string $guard): void
     {
         $templates = config('access_control.role_templates', []);

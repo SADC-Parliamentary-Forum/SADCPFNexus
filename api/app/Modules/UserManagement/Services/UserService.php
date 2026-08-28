@@ -115,7 +115,7 @@ class UserService
                         'role' => ['The selected role is not part of the governed role catalogue.'],
                     ]);
                 }
-                $user->assignRole($role);
+                $user->syncRoles($roleManager->assignmentRoleNames((string) $data['role']));
                 app(PermissionRegistrar::class)->forgetCachedPermissions();
             }
 
@@ -258,17 +258,18 @@ class UserService
                     'role' => ['The selected role is not part of the governed role catalogue.'],
                 ]);
             }
-            $user->syncRoles([$role]);
+            $assigned = $roleManager->assignmentRoleNames((string) $data['role']);
+            $user->syncRoles($assigned);
             app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-            if ($oldRoles !== [$role]) {
+            if ($oldRoles !== $assigned) {
                 $this->revokeAllAccess($user);
 
                 AuditLog::record('user.role_changed', [
                     'auditable_type' => User::class,
                     'auditable_id' => $user->id,
                     'old_values' => ['roles' => $oldRoles],
-                    'new_values' => ['roles' => [$role]],
+                    'new_values' => ['roles' => $assigned],
                     'tags' => 'user_management',
                 ]);
             }
