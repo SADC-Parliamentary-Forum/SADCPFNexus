@@ -86,6 +86,7 @@ return [
             'salary_advance.approve.assigned', 'programme.manager_review.act.assigned',
             'risk.module.view', 'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve',
             'mande.review',
+            'workplan.view',
         ],
         'inherits' => ['Supervisor / Line Manager'],
         // HOD remains the supervisor role; only Director maps to this wider
