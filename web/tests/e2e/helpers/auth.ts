@@ -54,10 +54,22 @@ export async function skipIfAccessDenied(
   if (await landedOnLogin(page)) {
     test.skip(true, `${reason}: redirected to login`);
   }
-  const denied = page.getByText(
-    /not authorised|not authorized|forbidden|you do not have permission|you need .*(view|permission)/i
+  await page
+    .locator("h1, .page-title")
+    .first()
+    .waitFor({ state: "visible", timeout: 10_000 })
+    .catch(() => {});
+  if (await landedOnLogin(page)) {
+    test.skip(true, `${reason}: redirected to login`);
+  }
+  const deniedHeading = page.getByRole("heading", { name: /you cannot open this page/i });
+  const deniedCopy = page.getByText(
+    /access denied|does not include permission|not authorised|not authorized|forbidden|you do not have permission/i
   );
-  if (await denied.first().isVisible({ timeout: 1_000 }).catch(() => false)) {
+  if (
+    (await deniedHeading.isVisible().catch(() => false)) ||
+    (await deniedCopy.first().isVisible().catch(() => false))
+  ) {
     test.skip(true, `${reason}: access denied`);
   }
 }
