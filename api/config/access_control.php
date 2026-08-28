@@ -345,9 +345,25 @@ return [
             'READ' => ['decisions.view', 'decisions.admin'],
             'WRITE' => ['decisions.create', 'decisions.adopt', 'decisions.manage', 'decisions.admin'],
         ]],
+        ['pattern' => 'api/v1/assets/{asset}/acknowledge', 'permissions' => [
+            'WRITE' => [
+                'assets.edit',
+                'assets.manage',
+                'assets.admin',
+                'dashboard.view',
+                'profile.read.self',
+            ],
+        ]],
         ['pattern' => 'api/v1/assets-meta*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin'],
             'WRITE' => ['assets.manage', 'assets.admin'],
+        ]],
+        ['pattern' => 'api/v1/asset-requests*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin', 'dashboard.view', 'profile.read.self'],
+            'POST' => ['assets.create', 'assets.edit', 'dashboard.view', 'profile.read.self'],
+            'PUT' => ['assets.edit', 'assets.manage', 'assets.admin', 'dashboard.view', 'profile.read.self'],
+            'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin', 'dashboard.view', 'profile.read.self'],
+            'DELETE' => ['assets.admin', 'dashboard.view', 'profile.read.self'],
         ]],
         ['pattern' => 'api/v1/asset-*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin'],

@@ -37,10 +37,18 @@ class AssetsTest extends TestCase
         $this->getJson('/api/v1/assets')->assertUnauthorized();
     }
 
-    public function test_staff_can_list_assets(): void
+    public function test_staff_cannot_list_organisation_asset_register(): void
     {
         $tenant = Tenant::factory()->create();
         [$http] = $this->asStaff($tenant);
+
+        $http->getJson('/api/v1/assets')->assertForbidden();
+    }
+
+    public function test_admin_can_list_assets(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
 
         $http->getJson('/api/v1/assets')->assertOk();
     }
