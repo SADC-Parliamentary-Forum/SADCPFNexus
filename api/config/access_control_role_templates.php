@@ -11,7 +11,7 @@ return [
             'leave.request.edit.created', 'leave.request.submit.created', 'leave.request.withdraw.created',
             'leave.balance.read.self', 'leave.view', 'leave.create',
             'travel.module.view', 'travel.request.create.self', 'travel.request.read.self',
-            'travel.view', 'travel.create',
+            'travel.create',
             'salary_advance.module.view', 'salary_advance.request.create.self', 'salary_advance.request.read.self',
             'salary_advance.request.edit.created', 'salary_advance.request.submit.created',
             'salary_advance.view', 'salary_advance.create',
@@ -27,7 +27,7 @@ return [
             'approvals.inbox.view',
             'documents.upload', 'documents.view.authorised', 'documents.view', 'documents.download', 'documents.sign',
             'imprest.view', 'imprest.create',
-            'procurement.view', 'procurement.create',
+            'procurement.create',
             'procurement.request.create', 'procurement.request.read.created',
             'procurement.request.edit.created', 'procurement.request.submit.created',
             'governance.view',
@@ -42,8 +42,8 @@ return [
             'workflows.view-own', 'workflows.submit', 'workflows.act', 'workflows.withdraw',
             'lifecycle.view-own', 'lifecycle.complete-own-tasks',
             'parliaments.view',
-            // Own HR file / incident report / timesheet under /hr* — not org HR admin.
-            'hr.view', 'hr.create',
+            // Incident report / own timesheet under /hr* — not org HR admin (hr.view).
+            'hr.create',
             // Activity reporting is staff self-service; specialised M&E Officer still owns review.
             'mande.view', 'mande.create',
         ],
@@ -60,6 +60,7 @@ return [
             'leave.request.read.direct_reports', 'leave.request.recommend.assigned', 'leave.request.return.assigned',
             'timesheet.approve.assigned', 'assignment.read.assigned', 'weekly_report.review.team',
             'approvals.task.act.assigned',
+            'travel.view',
             // Legacy HOD departmental procurement review (HOD maps here, not Director).
             'procurement.view', 'procurement.hod_approve', 'procurement.request.approve.assigned',
             'timesheets.view', 'timesheets.view-team', 'timesheets.review-team', 'timesheets.return', 'timesheets.approve',

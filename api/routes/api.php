@@ -1005,21 +1005,23 @@ Route::prefix('v1')->group(function () {
             Route::get('advances/{salaryAdvanceRequest}/certificate', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'certificate']);
 
             // Balance Control & Reconciliation Engine (BCRE)
-            Route::prefix('balance-registers')->group(function () {
-                Route::get('dashboard', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'dashboard']);
-                Route::get('exceptions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'exceptions']);
-                Route::get('/', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'index']);
-                Route::post('/', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'store']);
-                Route::get('{balanceRegister}', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'show']);
-                Route::put('{balanceRegister}', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'update']);
-                Route::post('{balanceRegister}/lock', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'lock']);
-                Route::post('{balanceRegister}/unlock', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'unlock']);
-                Route::post('{balanceRegister}/acknowledge', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'acknowledge']);
-                Route::get('{balanceRegister}/transactions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'transactions']);
-                Route::post('{balanceRegister}/transactions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'storeTransaction']);
-                Route::get('{balanceRegister}/transactions/{balanceTransaction}/verify', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'getVerification']);
-                Route::post('{balanceRegister}/transactions/{balanceTransaction}/verify', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'storeVerification']);
-            });
+            foreach (['balance-register', 'balance-registers'] as $balanceRegisterPrefix) {
+                Route::prefix($balanceRegisterPrefix)->group(function () {
+                    Route::get('dashboard', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'dashboard']);
+                    Route::get('exceptions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'exceptions']);
+                    Route::get('/', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'index']);
+                    Route::post('/', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'store']);
+                    Route::get('{balanceRegister}', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'show']);
+                    Route::put('{balanceRegister}', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'update']);
+                    Route::post('{balanceRegister}/lock', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'lock']);
+                    Route::post('{balanceRegister}/unlock', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'unlock']);
+                    Route::post('{balanceRegister}/acknowledge', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'acknowledge']);
+                    Route::get('{balanceRegister}/transactions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'transactions']);
+                    Route::post('{balanceRegister}/transactions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'storeTransaction']);
+                    Route::get('{balanceRegister}/transactions/{balanceTransaction}/verify', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'getVerification']);
+                    Route::post('{balanceRegister}/transactions/{balanceTransaction}/verify', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'storeVerification']);
+                });
+            }
         });
 
         // HR - Timesheets & Summary

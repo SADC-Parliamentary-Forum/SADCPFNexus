@@ -153,6 +153,18 @@ return [
             'GET' => ['procurement.view', 'procurement.admin', 'procurement.manage_vendors', 'procurement.supplier.read'],
             'WRITE' => ['procurement.manage_vendors', 'procurement.admin', 'procurement.supplier.approve', 'procurement.create'],
         ]],
+        ['pattern' => 'api/v1/procurement/invoices*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.approve_invoice', 'finance.view', 'finance.approve', 'procurement.admin'],
+            'WRITE' => ['procurement.approve_invoice', 'finance.approve', 'finance.create', 'procurement.manage_po', 'procurement.admin'],
+        ]],
+        ['pattern' => 'api/v1/procurement/receipts*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.receive_goods', 'procurement.admin'],
+            'WRITE' => ['procurement.receive_goods', 'procurement.admin', 'procurement.manage_po'],
+        ]],
+        ['pattern' => 'api/v1/procurement/purchase-orders*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.manage_po', 'procurement.receive_goods', 'finance.view', 'procurement.admin'],
+            'WRITE' => ['procurement.manage_po', 'procurement.receive_goods', 'procurement.approve_invoice', 'finance.create', 'procurement.admin'],
+        ]],
         ['pattern' => 'api/v1/procurement*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin', 'procurement.request.read.created', 'procurement.module.view'],
             'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin', 'procurement.request.create', 'procurement.hod_approve'],
