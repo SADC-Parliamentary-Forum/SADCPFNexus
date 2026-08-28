@@ -141,5 +141,33 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(HrAppraisalTemplate::class, HrAppraisalTemplatePolicy::class);
         Gate::policy(HrPersonnelFileSection::class, HrPersonnelFileSectionPolicy::class);
         Gate::policy(HrApprovalMatrix::class, HrApprovalMatrixPolicy::class);
+
+        // Spatie `can:leave.create` middleware does not know dotted aliases.
+        // Forward-map a legacy ability to its *primary* canonical replacement
+        // only (index 0). Using the full alias list would treat leave.module.view
+        // as leave.approve and leak organisation query scopes.
+        Gate::before(function ($user, string $ability, array $arguments = []) {
+            if (! $user instanceof User || $arguments !== []) {
+                return null;
+            }
+
+            if ($user->checkPermissionTo($ability)) {
+                return true;
+            }
+
+            $aliases = config('access_control.legacy_aliases', []);
+            $primary = $aliases[$ability][0] ?? null;
+            if (is_string($primary) && $user->checkPermissionTo($primary)) {
+                return true;
+            }
+
+            foreach ($aliases as $legacy => $canonicals) {
+                if (in_array($ability, $canonicals, true) && $user->checkPermissionTo($legacy)) {
+                    return true;
+                }
+            }
+
+            return null;
+        });
     }
 }

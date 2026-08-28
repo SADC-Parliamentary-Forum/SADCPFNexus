@@ -154,10 +154,10 @@ return [
             'WRITE' => ['procurement.manage_vendors', 'procurement.admin', 'procurement.supplier.approve', 'procurement.create'],
         ]],
         ['pattern' => 'api/v1/procurement*', 'permissions' => [
-            'READ' => ['procurement.view', 'procurement.admin'],
-            'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
-            'PUT' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
-            'PATCH' => ['procurement.create', 'procurement.approve', 'procurement.admin'],
+            'READ' => ['procurement.view', 'procurement.admin', 'procurement.request.read.created', 'procurement.module.view'],
+            'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin', 'procurement.request.create', 'procurement.hod_approve'],
+            'PUT' => ['procurement.create', 'procurement.approve', 'procurement.admin', 'procurement.request.edit.created'],
+            'PATCH' => ['procurement.create', 'procurement.approve', 'procurement.admin', 'procurement.request.edit.created'],
             'DELETE' => ['procurement.admin'],
         ]],
         ['pattern' => 'api/v1/hr/timesheets/capacity-analytics', 'permissions' => [
@@ -165,6 +165,30 @@ return [
         ]],
         ['pattern' => 'api/v1/hr/timesheets/attendance/clock', 'permissions' => [
             'WRITE' => ['timesheet.create.self', 'timesheet.module.view', 'timesheets.create', 'hr.create', 'hr.admin'],
+        ]],
+        ['pattern' => 'api/v1/hr/timesheets*', 'permissions' => [
+            'READ' => [
+                'hr.view', 'hr.admin', 'timesheets.view', 'timesheets.view-own',
+                'timesheet.module.view', 'timesheet.read.self',
+            ],
+            'WRITE' => [
+                'hr.create', 'hr.edit', 'hr.admin', 'timesheets.create',
+                'timesheets.create-own', 'timesheet.create.self',
+            ],
+        ]],
+        ['pattern' => 'api/v1/hr/files*', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'profile.read.self', 'dashboard.view'],
+            'WRITE' => ['hr.create', 'hr.edit', 'hr.admin'],
+        ]],
+        ['pattern' => 'api/v1/hr/documents', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'profile.read.self', 'documents.view.authorised'],
+        ]],
+        ['pattern' => 'api/v1/hr/incidents*', 'permissions' => [
+            'READ' => ['hr.view', 'hr.admin', 'hr.create', 'profile.read.self'],
+            'POST' => ['hr.create', 'hr.admin', 'profile.read.self', 'dashboard.view'],
+            'PUT' => ['hr.edit', 'hr.approve', 'hr.admin'],
+            'PATCH' => ['hr.edit', 'hr.approve', 'hr.admin'],
+            'DELETE' => ['hr.admin'],
         ]],
         ['pattern' => 'api/v1/hr*', 'permissions' => [
             'READ' => ['hr.view', 'hr.admin'],
@@ -247,6 +271,14 @@ return [
                 'salary_advance.admin', 'finance.create', 'finance.admin',
             ],
         ]],
+        ['pattern' => 'api/v1/finance/balance-register*', 'permissions' => [
+            'READ' => [
+                'finance.view', 'finance.admin',
+                'salary_advance.module.view', 'salary_advance.view',
+                'imprest.view', 'dashboard.view',
+            ],
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
+        ]],
         ['pattern' => 'api/v1/finance*', 'permissions' => [
             'READ' => ['finance.view', 'finance.admin'],
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
@@ -254,8 +286,8 @@ return [
         ['pattern' => 'api/v1/correspondence*', 'permissions' => [
             'READ' => ['correspondence.view', 'correspondence.read.assigned', 'correspondence.admin'],
             'POST' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
-            'PUT' => ['correspondence.review', 'correspondence.approve', 'correspondence.admin'],
-            'PATCH' => ['correspondence.review', 'correspondence.approve', 'correspondence.admin'],
+            'PUT' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
+            'PATCH' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
             'DELETE' => ['correspondence.admin'],
         ]],
         ['pattern' => 'api/v1/stock*', 'permissions' => [
@@ -277,7 +309,7 @@ return [
         ]],
         ['pattern' => 'api/v1/assignments*', 'permissions' => [
             'READ' => ['assignments.view', 'assignment.read.assigned', 'assignments.admin'],
-            'WRITE' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin'],
+            'WRITE' => ['assignments.create', 'assignments.issue', 'assignments.review', 'assignments.admin', 'assignment.module.view'],
         ]],
         ['pattern' => 'api/v1/programmes*', 'permissions' => [
             'READ' => ['pif.view', 'programme.request.read.created', 'programme.request.read.assigned'],
@@ -309,8 +341,8 @@ return [
             'WRITE' => ['workflows.submit', 'workflows.act', 'workflows.manage-definitions', 'workflows.admin'],
         ]],
         ['pattern' => 'api/v1/notifications*', 'permissions' => [
-            'READ' => ['notifications.view-own', 'notifications.admin'],
-            'WRITE' => ['notifications.manage-own-preferences', 'notifications.acknowledge', 'notifications.admin'],
+            'READ' => ['notifications.view-own', 'notifications.view.own', 'notifications.admin'],
+            'WRITE' => ['notifications.manage-own-preferences', 'notifications.manage.preferences', 'notifications.acknowledge', 'notifications.admin'],
         ]],
         ['pattern' => 'api/v1/notification-admin*', 'permissions' => [
             '*' => ['notifications.admin', 'notifications.manage-policies'],
@@ -321,11 +353,11 @@ return [
                 'weekly-reports.review-team', 'weekly-reports.accept', 'weekly-reports.admin',
                 'weekly-reports.view-management',
             ],
-            'WRITE' => ['weekly-reports.create-own', 'weekly-reports.review-team', 'weekly-reports.admin'],
+            'WRITE' => ['weekly-reports.create-own', 'weekly_report.create.self', 'weekly-reports.review-team', 'weekly-reports.admin'],
         ]],
         ['pattern' => 'api/v1/weekly-summary*', 'permissions' => [
             'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team', 'weekly_report.module.view'],
-            'WRITE' => ['weekly-reports.create-own', 'weekly-reports.review-team', 'weekly-reports.admin'],
+            'WRITE' => ['weekly-reports.create-own', 'weekly_report.create.self', 'weekly-reports.review-team', 'weekly-reports.admin'],
         ]],
         ['pattern' => 'api/v1/weekly-report-risks*', 'permissions' => [
             'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team'],
@@ -440,7 +472,7 @@ return [
             'READ' => ['users.view', 'people.view-directory'],
         ]],
         ['pattern' => 'api/v1/alerts*', 'permissions' => [
-            'READ' => ['notifications.view-own', 'notifications.admin'],
+            'READ' => ['notifications.view-own', 'notifications.view.own', 'notifications.admin'],
         ]],
     ],
 
@@ -588,6 +620,46 @@ return [
         ],
         'reports.export' => [
             'reports.export.authorised',
+        ],
+        'finance.view' => [
+            'programme.budget_availability.confirm.assigned',
+            'programme.module.view',
+        ],
+        'finance.create' => [
+            'programme.budget_availability.confirm.assigned',
+        ],
+        'finance.approve' => [
+            'programme.budget_availability.confirm.assigned',
+        ],
+        'assignments.view' => [
+            'assignment.read.assigned',
+            'assignment.module.view',
+        ],
+        'assignments.create' => [
+            'assignment.module.view',
+        ],
+        'notifications.view-own' => [
+            'notifications.view.own',
+        ],
+        'notifications.manage-own-preferences' => [
+            'notifications.manage.preferences',
+        ],
+        'weekly-reports.view-own' => [
+            'weekly_report.module.view',
+        ],
+        'weekly-reports.create-own' => [
+            'weekly_report.create.self',
+        ],
+        'timesheets.view-own' => [
+            'timesheet.read.self',
+            'timesheet.module.view',
+        ],
+        'timesheets.create-own' => [
+            'timesheet.create.self',
+        ],
+        'lifecycle.view' => [
+            'lifecycle.view-own',
+            'lifecycle.complete-own-tasks',
         ],
         'procurement.view' => [
             'procurement.request.read.created',

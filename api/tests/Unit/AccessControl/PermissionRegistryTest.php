@@ -44,4 +44,12 @@ class PermissionRegistryTest extends TestCase
         $this->assertContains('procurement.module.view', $equivalents);
         $this->assertContains('procurement.request.read.created', $equivalents);
     }
+
+    public function test_finance_legacy_keys_expand_without_nested_config_lookup(): void
+    {
+        $equivalents = app(PermissionRegistry::class)->resolveEquivalents('finance.view');
+
+        $this->assertContains('finance.view', $equivalents);
+        $this->assertContains('programme.budget_availability.confirm.assigned', $equivalents);
+    }
 }

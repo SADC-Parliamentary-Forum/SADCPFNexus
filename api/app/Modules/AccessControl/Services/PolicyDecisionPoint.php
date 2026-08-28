@@ -68,7 +68,8 @@ class PolicyDecisionPoint
             );
         }
 
-        if ($this->isMutatingBusinessAction($permission) && $this->isAuditorReadOnly($actor)) {
+        if ($this->isMutatingBusinessAction($permission) && $this->isAuditorReadOnly($actor)
+            && ! $this->isAuditorOwnedAuditAction($permission)) {
             $this->auditDenial($actor, $permission, 'auditor_read_only', $resource);
 
             return AccessDecision::deny('auditor_read_only', 'Auditors have read-only access to business records.');
@@ -254,6 +255,16 @@ class PolicyDecisionPoint
         }
 
         return false;
+    }
+
+    /**
+     * Internal audit work (plans, engagements, workpapers) is the auditor's
+     * job. Read-only applies to other business modules, not the audit workspace.
+     */
+    private function isAuditorOwnedAuditAction(string $permission): bool
+    {
+        return str_starts_with($permission, 'audit.')
+            || str_starts_with($permission, 'audit-trail.');
     }
 
     private function isIctOrTechnicalOnly(User $actor): bool

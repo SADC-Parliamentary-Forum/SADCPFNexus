@@ -152,6 +152,14 @@ class PolicyDecisionPointTest extends TestCase
         $this->assertSame('auditor_read_only', $decision->reasonCode);
     }
 
+    public function test_auditor_can_mutate_audit_workspace_records(): void
+    {
+        $user = $this->makeUser('Internal Auditor');
+
+        $decision = app(PolicyDecisionPoint::class)->authorize($user, 'audit.plan.manage');
+        $this->assertTrue($decision->allowed);
+    }
+
     public function test_finance_certifier_not_sole_final_approver(): void
     {
         $user = $this->makeUser('Finance Controller');
