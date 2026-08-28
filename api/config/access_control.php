@@ -407,6 +407,13 @@ return [
             'PATCH' => ['documents.admin', 'documents.legal-hold'],
             'DELETE' => ['documents.admin'],
         ]],
+        ['pattern' => 'api/v1/governance/minutes*', 'permissions' => [
+            'READ' => ['governance.view', 'decisions.view', 'governance.admin'],
+            'WRITE' => [
+                'governance.create', 'decisions.create', 'assignments.create',
+                'governance.admin',
+            ],
+        ]],
         ['pattern' => 'api/v1/governance*', 'permissions' => [
             'READ' => ['governance.view', 'governance.admin'],
             'WRITE' => ['governance.create', 'governance.approve', 'governance.admin'],
