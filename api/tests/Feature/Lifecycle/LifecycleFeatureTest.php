@@ -361,7 +361,7 @@ class LifecycleFeatureTest extends TestCase
             ->assertStatus(422)
             ->assertJsonPath('allowed', false);
 
-        foreach ($case->tasks()->where('assignee_role', '!=', 'employee')->get() as $task) {
+        foreach ($case->tasks()->whereNotNull('clearance_status')->get() as $task) {
             $http->postJson("/api/v1/lifecycle/tasks/{$task->id}/clearance", [
                 'clearance_status' => 'cleared',
                 'revision' => $task->revision,
