@@ -52,6 +52,9 @@ return [
             // Consumables catalogue visibility for store requests — not the fixed-asset register.
             'stock.view',
             'support.view', 'support.create',
+            // Organisational calendar: staff may list types and create events;
+            // catalogue mutations stay workplan.admin / governance.admin / hr.admin.
+            'workplan.view', 'workplan.create',
         ],
         'inherits' => [],
         'legacy_roles' => ['staff'],

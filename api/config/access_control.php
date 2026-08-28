@@ -572,6 +572,14 @@ return [
             'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin'],
             'DELETE' => ['assets.admin'],
         ]],
+        ['pattern' => 'api/v1/workplan/event-types*', 'permissions' => [
+            'READ' => ['workplan.view', 'workplan.admin'],
+            'WRITE' => ['workplan.admin', 'governance.admin', 'hr.admin'],
+        ]],
+        ['pattern' => 'api/v1/workplan/meeting-types*', 'permissions' => [
+            'READ' => ['workplan.view', 'workplan.admin'],
+            'WRITE' => ['workplan.admin', 'governance.admin', 'hr.admin'],
+        ]],
         ['pattern' => 'api/v1/workplan*', 'permissions' => [
             'READ' => ['workplan.view', 'workplan.admin'],
             'WRITE' => ['workplan.create', 'workplan.approve', 'workplan.admin'],
