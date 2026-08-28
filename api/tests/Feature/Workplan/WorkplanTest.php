@@ -155,8 +155,8 @@ class WorkplanTest extends TestCase
         $this->assertSoftDeleted('workplan_events', ['id' => $event->id]);
     }
 
-    public function test_external_endpoint_returns_events_unauthenticated(): void
+    public function test_external_endpoint_rejects_unauthenticated_caller(): void
     {
-        $this->getJson('/api/v1/external/workplan')->assertOk();
+        $this->getJson('/api/v1/external/workplan')->assertUnauthorized();
     }
 }
