@@ -28,7 +28,12 @@ class PermissionRegistry
 
     public function expandLegacy(string $legacyKey): array
     {
-        return config('access_control.legacy_aliases.'.$legacyKey, []);
+        // Must index the aliases array directly. Laravel config('a.b.c') treats
+        // dots as nested keys, which would look up ['procurement']['view'] instead
+        // of the dotted permission name 'procurement.view'.
+        $aliases = config('access_control.legacy_aliases', []);
+
+        return $aliases[$legacyKey] ?? [];
     }
 
     /**

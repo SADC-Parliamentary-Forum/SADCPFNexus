@@ -2,14 +2,13 @@
 
 namespace App\Modules\AccessControl\Services;
 
+use App\Models\AccessControl\PermissionUsageEvent;
 use App\Models\AccessControl\UserPermissionDenial;
 use App\Models\AccessControl\UserPermissionGrant;
-use App\Models\AccessControl\PermissionUsageEvent;
 use App\Models\User;
 use App\Modules\AccessControl\Support\AccessDecision;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 
 /**
  * Central Policy Decision Point (PRD §23.2).
@@ -220,7 +219,8 @@ class PolicyDecisionPoint
     private function actorHasAnyPermission(User $actor, array $equivalents): bool
     {
         foreach ($equivalents as $key) {
-            if ($actor->can($key)) {
+            // Spatie store only — do not call can() (Gate/policies, not the role catalogue).
+            if ($actor->checkPermissionTo($key)) {
                 return true;
             }
         }
@@ -344,6 +344,7 @@ class PolicyDecisionPoint
 
             if (is_scalar($value) || $value === null) {
                 $safe[$key] = $value;
+
                 continue;
             }
 

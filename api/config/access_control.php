@@ -567,6 +567,12 @@ return [
             'travel.module.view',
             'travel.request.approve.assigned',
         ],
+        'reports.view' => [
+            'reports.view.authorised',
+        ],
+        'reports.export' => [
+            'reports.export.authorised',
+        ],
         'procurement.view' => [
             'procurement.request.read.created',
             'procurement.module.view',

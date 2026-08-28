@@ -35,4 +35,13 @@ class PermissionRegistryTest extends TestCase
 
         $this->assertSame(['a.read', 'b.read'], $permissions);
     }
+
+    public function test_dotted_legacy_keys_expand_to_canonical_equivalents(): void
+    {
+        $equivalents = app(PermissionRegistry::class)->resolveEquivalents('procurement.view');
+
+        $this->assertContains('procurement.view', $equivalents);
+        $this->assertContains('procurement.module.view', $equivalents);
+        $this->assertContains('procurement.request.read.created', $equivalents);
+    }
 }

@@ -1324,7 +1324,7 @@ Route::prefix('v1')->group(function () {
         Route::get('analytics/module/{module}', [\App\Http\Controllers\Api\V1\AnalyticsController::class, 'byModule']);
 
         // Reports — gated on reports.view permission
-        Route::middleware('can:reports.view')->group(function () {
+        Route::middleware('permission:reports.view|reports.view.authorised')->group(function () {
             Route::get('reports/summary', [\App\Http\Controllers\Api\V1\ReportsController::class, 'summary']);
             Route::get('reports/users', [\App\Http\Controllers\Api\V1\ReportsController::class, 'reportUsers']);
             Route::get('reports/departments', [\App\Http\Controllers\Api\V1\ReportsController::class, 'reportDepartments']);
