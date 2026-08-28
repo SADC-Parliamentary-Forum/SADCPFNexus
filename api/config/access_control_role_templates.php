@@ -51,6 +51,7 @@ return [
             'risk.view', 'risk.create', 'risk.submit',
             // Consumables catalogue visibility for store requests — not the fixed-asset register.
             'stock.view',
+            'support.view', 'support.create',
         ],
         'inherits' => [],
         'legacy_roles' => ['staff'],
