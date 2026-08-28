@@ -38,7 +38,7 @@ class RiskAppetitePolicy extends Model
             'low' => ['Risk Owner', 'HOD', 'Director', 'Governance Officer', 'Secretary General'],
             'medium' => ['HOD', 'Director', 'Governance Officer', 'Secretary General'],
             'high' => ['Director', 'Governance Officer', 'Secretary General'],
-            'critical' => ['Secretary General', 'Governance Officer'],
+            'critical' => ['Director', 'Secretary General', 'Governance Officer'],
         ];
     }
 
