@@ -504,8 +504,15 @@ return [
             'READ' => ['weekly-reports.view-own', 'weekly-reports.view-team'],
             'WRITE' => ['weekly-reports.create-risk', 'weekly-reports.admin'],
         ]],
+        ['pattern' => 'api/v1/srhr/reports*', 'permissions' => [
+            'READ' => ['srhr.view', 'researcher_reports.view', 'srhr.admin'],
+            'WRITE' => [
+                'researcher_reports.submit', 'researcher_reports.acknowledge',
+                'srhr.create', 'srhr.manage', 'srhr.admin',
+            ],
+        ]],
         ['pattern' => 'api/v1/srhr*', 'permissions' => [
-            'READ' => ['srhr.view', 'srhr.admin'],
+            'READ' => ['srhr.view', 'srhr.admin', 'parliaments.view'],
             'WRITE' => ['srhr.create', 'srhr.manage', 'srhr.admin'],
         ]],
         ['pattern' => 'api/v1/decisions/promote-meeting-pack', 'permissions' => [

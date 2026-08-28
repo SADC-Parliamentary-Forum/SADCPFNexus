@@ -382,4 +382,18 @@ return [
         'read_only' => false,
         'no_business_approve' => false,
     ],
+    'Field Researcher' => [
+        'purpose' => 'Submit SRHR field reports for an active deployment',
+        'risk_level' => 'medium',
+        'permissions' => [
+            'dashboard.view', 'profile.read.self', 'profile.edit.self',
+            'researcher_reports.view', 'researcher_reports.submit',
+            'parliaments.view', 'srhr.view',
+        ],
+        'inherits' => [],
+        'legacy_roles' => [],
+        'feature_only' => false,
+        'read_only' => false,
+        'no_business_approve' => false,
+    ],
 ];
