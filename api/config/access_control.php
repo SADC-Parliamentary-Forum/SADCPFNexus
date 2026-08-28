@@ -363,9 +363,18 @@ return [
         ]],
         ['pattern' => 'api/v1/travel*', 'permissions' => [
             'READ' => ['travel.view', 'travel.admin', 'travel.module.view', 'travel.request.read.self'],
-            'POST' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
-            'PUT' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
-            'PATCH' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
+            'POST' => [
+                'travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self',
+                'travel.finance-review',
+            ],
+            'PUT' => [
+                'travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self',
+                'travel.finance-review',
+            ],
+            'PATCH' => [
+                'travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self',
+                'travel.finance-review',
+            ],
             'DELETE' => ['travel.admin'],
         ]],
         ['pattern' => 'api/v1/finance/advances/policies*', 'permissions' => [
