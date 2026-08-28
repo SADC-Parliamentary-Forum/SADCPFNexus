@@ -139,6 +139,17 @@ return [
         ['pattern' => 'api/v1/admin/*', 'permissions' => [
             '*' => ['admin.platform.manage', 'system.admin'],
         ]],
+        ['pattern' => 'api/v1/procurement/requests*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.admin', 'procurement.request.read.created', 'procurement.module.view', 'procurement.create'],
+            'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin', 'procurement.request.create', 'procurement.hod_approve'],
+            'PUT' => ['procurement.create', 'procurement.approve', 'procurement.admin', 'procurement.request.edit.created'],
+            'PATCH' => ['procurement.create', 'procurement.approve', 'procurement.admin', 'procurement.request.edit.created'],
+            'DELETE' => ['procurement.create', 'procurement.admin', 'procurement.request.edit.created'],
+        ]],
+        ['pattern' => 'api/v1/procurement/supplier*', 'permissions' => [
+            'READ' => ['supplier.portal', 'procurement.bid.read.own'],
+            'WRITE' => ['supplier.portal', 'procurement.bid.submit.own'],
+        ]],
         ['pattern' => 'api/v1/procurement/newspaper-notice-templates', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin'],
         ]],
@@ -198,8 +209,8 @@ return [
         ['pattern' => 'api/v1/hr/incidents*', 'permissions' => [
             'READ' => ['hr.view', 'hr.admin', 'hr.create', 'profile.read.self'],
             'POST' => ['hr.create', 'hr.admin', 'profile.read.self', 'dashboard.view'],
-            'PUT' => ['hr.edit', 'hr.approve', 'hr.admin'],
-            'PATCH' => ['hr.edit', 'hr.approve', 'hr.admin'],
+            'PUT' => ['hr.create', 'hr.edit', 'hr.approve', 'hr.admin'],
+            'PATCH' => ['hr.create', 'hr.edit', 'hr.approve', 'hr.admin'],
             'DELETE' => ['hr.admin'],
         ]],
         ['pattern' => 'api/v1/hr*', 'permissions' => [
@@ -215,7 +226,7 @@ return [
         ]],
         ['pattern' => 'api/v1/audit-management*', 'permissions' => [
             'READ' => ['audit.view', 'audit.events.view', 'audit.admin'],
-            'WRITE' => ['audit.admin', 'audit.plan.manage', 'audit.engagement.manage'],
+            'WRITE' => ['audit.admin', 'audit.plan.manage', 'audit.engagement.manage', 'audit.plan.approve'],
         ]],
         ['pattern' => 'api/v1/audit-admin*', 'permissions' => [
             '*' => ['audit-trail.admin', 'audit.view', 'system.admin'],
@@ -280,8 +291,13 @@ return [
             'WRITE' => [
                 'salary_advance.request.create.self', 'salary_advance.request.edit.created',
                 'salary_advance.request.submit.created', 'salary_advance.create',
-                'salary_advance.admin', 'finance.create', 'finance.admin',
+                'salary_advance.certify', 'salary_advance.approve', 'salary_advance.finance_certify.assigned',
+                'salary_advance.admin', 'finance.create', 'finance.approve', 'finance.admin',
             ],
+        ]],
+        ['pattern' => 'api/v1/finance/budgets*', 'permissions' => [
+            'READ' => ['finance.view', 'finance.admin', 'dashboard.view'],
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
         ]],
         ['pattern' => 'api/v1/finance/balance-register*', 'permissions' => [
             'READ' => [

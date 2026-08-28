@@ -46,6 +46,13 @@ class BalanceRegisterController extends Controller
             'estimated_payoff_date' => 'nullable|date',
         ]);
 
+        abort_unless(
+            $request->user()->can('finance.create')
+                || $request->user()->can('finance.admin')
+                || $request->user()->hasAnyRole(['Finance Controller', 'Finance Officer', 'System Admin']),
+            403
+        );
+
         $register = $this->service->createManual($request->all(), $request->user());
         return response()->json(['data' => $register, 'message' => 'Balance register created.'], 201);
     }

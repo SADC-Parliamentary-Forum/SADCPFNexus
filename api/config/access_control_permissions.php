@@ -2254,7 +2254,10 @@ return [
         'data_classification' => 'Restricted',
         'mfa_required' => false,
         'linked_routes' => ['/salary-advances'],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'POST /api/v1/finance/balance-register/{balanceRegister}/acknowledge',
+            'POST /api/v1/finance/balance-registers/{balanceRegister}/acknowledge',
+        ],
     ],
     'salary_advance.outstanding_advance_verify.assigned' => [
         'display_name' => 'Verify outstanding',

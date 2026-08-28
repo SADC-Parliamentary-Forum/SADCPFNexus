@@ -258,18 +258,9 @@ class AuditManagementPhase1Test extends TestCase
             'condition_text' => 'Sensitive detail',
         ])->assertCreated();
 
-        // Staff without confidential.view should not see confidential rows in search
+        // Staff without audit workspace access cannot search findings.
         $list = $this->asUser($manager)->getJson('/api/v1/audit-management/findings?search=Secret');
-        $list->assertOk();
-        $titles = collect($list->json('data') ?? $list->json('data.data') ?? [])->pluck('title');
-        // paginator shape: data.data
-        $rows = $list->json('data') ?? [];
-        if (isset($rows['data'])) {
-            $rows = $rows['data'];
-        }
-        foreach ($rows as $row) {
-            $this->assertNotSame('Secret payroll anomaly', $row['title'] ?? null);
-        }
+        $list->assertForbidden();
     }
 
     public function test_universe_crud_basics(): void

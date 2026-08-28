@@ -109,20 +109,11 @@ return new class extends Migration
         }
 
         if (DB::getDriverName() === 'pgsql') {
-            foreach ([
-                'gl_journals',
-                'gl_journal_lines',
-                'inventory_register_entries',
-                'attendance_clock_events',
-                'access_role_sync_requests',
-                'worm_archive_entries',
-            ] as $table) {
-                try {
-                    DB::statement("GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE {$table} TO app_user");
-                    DB::statement("GRANT USAGE, SELECT ON SEQUENCE {$table}_id_seq TO app_user");
-                } catch (Throwable) {
-                    // Local/test databases may not have the app_user role.
-                }
+            try {
+                DB::statement('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user');
+                DB::statement('GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user');
+            } catch (Throwable) {
+                // Local/test databases may not have the app_user role.
             }
         }
     }

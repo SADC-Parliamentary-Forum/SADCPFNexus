@@ -99,12 +99,11 @@ class BudgetTest extends TestCase
              ->assertJsonStructure(['current_net_salary', 'current_gross_salary', 'ytd_gross', 'currency']);
     }
 
-    public function test_any_authenticated_user_can_create_budget(): void
+    public function test_staff_cannot_create_organisation_budgets(): void
     {
         [$http] = $this->asStaff();
 
-        // Budget creation has no role gate — any authenticated user can create
-        $response = $http->postJson('/api/v1/finance/budgets', $this->budgetPayload());
-        $response->assertCreated();
+        $http->postJson('/api/v1/finance/budgets', $this->budgetPayload())
+            ->assertForbidden();
     }
 }
