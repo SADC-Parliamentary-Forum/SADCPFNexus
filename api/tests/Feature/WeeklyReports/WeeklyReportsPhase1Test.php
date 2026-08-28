@@ -429,6 +429,12 @@ class WeeklyReportsPhase1Test extends TestCase
             ->json('data');
 
         $this->actingAs($employee, 'sanctum')
+            ->postJson("/api/v1/weekly-summaries/{$created['id']}/items", [
+                'section_type' => 'achievement',
+                'title' => 'Department rollup item',
+            ])->assertCreated();
+
+        $this->actingAs($employee, 'sanctum')
             ->postJson("/api/v1/weekly-summaries/{$created['id']}/submit", [
                 'declaration_confirmed' => true,
             ])
