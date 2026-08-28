@@ -3,7 +3,11 @@
 namespace Tests\Feature\Risk;
 
 use App\Models\Risk;
+use App\Models\StrategicGoal;
+use App\Models\StrategicObjective;
+use App\Models\StrategicPlan;
 use App\Models\Tenant;
+use App\Models\User;
 use Tests\TestCase;
 
 class RiskTest extends TestCase
@@ -17,6 +21,30 @@ class RiskTest extends TestCase
             'likelihood'  => 3,
             'impact'      => 4,
         ], $overrides);
+    }
+
+    private function submittablePayload(User $user): array
+    {
+        $plan = StrategicPlan::create([
+            'tenant_id' => $user->tenant_id,
+            'name' => 'Test Plan',
+            'status' => 'active',
+        ]);
+        $goal = StrategicGoal::create([
+            'tenant_id' => $user->tenant_id,
+            'strategic_plan_id' => $plan->id,
+            'title' => 'Test Goal',
+        ]);
+        $objective = StrategicObjective::create([
+            'tenant_id' => $user->tenant_id,
+            'strategic_goal_id' => $goal->id,
+            'title' => 'Test Objective',
+        ]);
+
+        return $this->riskPayload([
+            'strategic_objective_id' => $objective->id,
+            'risk_owner_id' => $user->id,
+        ]);
     }
 
     // ── Auth ─────────────────────────────────────────────────────────────────
@@ -157,13 +185,11 @@ class RiskTest extends TestCase
         $tenant = Tenant::factory()->create();
         [$http, $user] = $this->asStaff($tenant);
 
-        $create = $http->postJson('/api/v1/risk/risks', $this->riskPayload());
+        $create = $http->postJson('/api/v1/risk/risks', $this->submittablePayload($user));
         $id = $create->json('data.id');
 
-        // Submit it
-        $http->postJson("/api/v1/risk/risks/{$id}/submit");
+        $http->postJson("/api/v1/risk/risks/{$id}/submit")->assertOk();
 
-        // Try to update
         $http->putJson("/api/v1/risk/risks/{$id}", $this->riskPayload([
             'title' => 'Should not update',
         ]))->assertUnprocessable();
@@ -183,12 +209,12 @@ class RiskTest extends TestCase
 
     public function test_cannot_delete_non_draft_risk(): void
     {
-        [$http] = $this->asStaff();
+        [$http, $user] = $this->asStaff();
 
-        $create = $http->postJson('/api/v1/risk/risks', $this->riskPayload());
+        $create = $http->postJson('/api/v1/risk/risks', $this->submittablePayload($user));
         $id = $create->json('data.id');
 
-        $http->postJson("/api/v1/risk/risks/{$id}/submit");
+        $http->postJson("/api/v1/risk/risks/{$id}/submit")->assertOk();
 
         $http->deleteJson("/api/v1/risk/risks/{$id}")->assertUnprocessable();
     }
