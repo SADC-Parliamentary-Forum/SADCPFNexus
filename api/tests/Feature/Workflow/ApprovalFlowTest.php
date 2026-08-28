@@ -108,7 +108,9 @@ class ApprovalFlowTest extends TestCase
     {
         $tenant  = Tenant::factory()->create();
         $staff   = $this->makeUser('staff', $tenant);
+        $hod     = $this->makeUser('HOD', $tenant);
         $manager = $this->makeHrManager($tenant);
+        $sg      = $this->makeSG($tenant);
 
         $staffHttp = $this->asUser($staff);
         LeaveBalance::query()->updateOrCreate(
@@ -130,8 +132,21 @@ class ApprovalFlowTest extends TestCase
                   ->assertOk()
                   ->assertJsonPath('data.status', 'submitted');
 
-        // Approve
+        // Sequential leave authorisation: HOD recommend → HR certify → SG approve
+        $this->asUser($hod)
+             ->postJson("/api/v1/leave/requests/{$leaveId}/recommend", [
+                 'action' => 'recommend',
+                 'comment' => 'Supported',
+             ])
+             ->assertOk();
+
         $this->asUser($manager)
+             ->postJson("/api/v1/leave/requests/{$leaveId}/certify", [
+                 'action' => 'certify',
+             ])
+             ->assertOk();
+
+        $this->asUser($sg)
              ->postJson("/api/v1/leave/requests/{$leaveId}/approve", ['comment' => 'Noted'])
              ->assertOk();
     }
