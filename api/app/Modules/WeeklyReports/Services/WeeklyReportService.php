@@ -1077,13 +1077,9 @@ class WeeklyReportService
         $report->load($this->detailRelations());
         $version = $report->version;
 
-        // bump after accept/publish; submit keeps current until accept
-        if (in_array($reason, ['accept', 'publish', 'correction'], true)) {
-            $version = $report->version + ($reason === 'submit' ? 0 : 0);
-            if (in_array($reason, ['accept', 'publish', 'correction'], true)) {
-                $report->increment('version');
-                $version = $report->version;
-            }
+        if (in_array($reason, ['accept', 'publish', 'correction', 'resubmit'], true)) {
+            $report->increment('version');
+            $version = (int) $report->version;
         }
 
         return WeeklyReportVersion::create([
