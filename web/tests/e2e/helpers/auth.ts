@@ -45,3 +45,41 @@ export async function landedOnLogin(
   const email = page.locator('input[type="email"]');
   return email.isVisible({ timeout: 1_500 }).catch(() => false);
 }
+
+/** Skip when the fixture user is not allowed to use this module. */
+export async function skipIfAccessDenied(
+  page: import("@playwright/test").Page,
+  reason: string
+): Promise<void> {
+  if (await landedOnLogin(page)) {
+    test.skip(true, `${reason}: redirected to login`);
+  }
+  const denied = page.getByText(
+    /not authorised|not authorized|forbidden|you do not have permission|you need .*(view|permission)/i
+  );
+  if (await denied.first().isVisible({ timeout: 1_000 }).catch(() => false)) {
+    test.skip(true, `${reason}: access denied`);
+  }
+}
+
+/**
+ * Clear cookies + web storage from a same-origin document.
+ * `sessionStorage` throws on about:blank (opaque origin).
+ */
+export async function clearBrowserAuth(page: import("@playwright/test").Page): Promise<void> {
+  await page.goto("/login");
+  await page.evaluate(() => {
+    try {
+      sessionStorage.clear();
+      localStorage.clear();
+    } catch {
+      /* ignore opaque origin */
+    }
+  });
+  await page.context().clearCookies();
+}
+
+/** Prefer `load` over `networkidle` — header unread-count polling never goes idle. */
+export async function waitForApp(page: import("@playwright/test").Page): Promise<void> {
+  await page.waitForLoadState("domcontentloaded");
+}

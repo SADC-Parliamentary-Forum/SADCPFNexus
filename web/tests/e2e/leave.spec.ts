@@ -14,7 +14,7 @@ test.describe("Leave — list page", () => {
 
   test("leave list page loads without errors", async ({ page }) => {
     await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible();
-    await expect(page.locator("text=Error, text=Failed")).not.toBeVisible({ timeout: 3_000 }).catch(() => {});
+    await expect(page.getByText(/error|failed/i).first()).not.toBeVisible({ timeout: 3_000 }).catch(() => {});
   });
 
   test("has a 'New Request' button", async ({ page }) => {
@@ -101,7 +101,7 @@ test.describe("Leave balances", () => {
     await page.goto("/leave");
     await page.waitForLoadState("networkidle");
     // Balances might be on main page or sub-page
-    const balanceEl = page.locator("text=Annual, text=Balance, text=Days");
+    const balanceEl = page.getByText(/annual|balance|days/i);
     // Just verify page loaded — balances come from API
     await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible();
   });

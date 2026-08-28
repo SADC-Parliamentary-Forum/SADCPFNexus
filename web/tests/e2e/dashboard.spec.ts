@@ -16,7 +16,7 @@ test.describe("Dashboard", () => {
       if (msg.type() === "error") errors.push(msg.text());
     });
 
-    await page.waitForLoadState("networkidle", { timeout: 20_000 });
+    await page.waitForLoadState("domcontentloaded");
 
     // Filter out known non-critical errors (e.g. browser extension noise)
     const criticalErrors = errors.filter(
@@ -41,7 +41,7 @@ test.describe("Dashboard", () => {
 
   test("KPI / stats cards are visible", async ({ page }) => {
     // Wait for stats to load (they're fetched async)
-    await page.waitForLoadState("networkidle", { timeout: 20_000 });
+    await page.waitForLoadState("domcontentloaded");
 
     // Look for card-like elements with numeric content
     const cards = page.locator("[class*='card'], [class*='kpi'], [class*='stat']");
@@ -56,9 +56,9 @@ test.describe("Dashboard", () => {
   });
 
   test("navigation links are present", async ({ page }) => {
-    // Core modules should be reachable from sidebar
-    const links = page.locator("nav a, aside a");
-    const count = await links.count();
+    // Expanded parents are <button>; leaf items are <a>. Count both.
+    const items = page.locator("nav a, aside a, nav button, aside button");
+    const count = await items.count();
     expect(count).toBeGreaterThan(5);
   });
 

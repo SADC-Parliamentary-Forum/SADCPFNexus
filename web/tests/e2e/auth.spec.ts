@@ -3,6 +3,7 @@
  * Run under the "auth" project (no pre-stored state — tests the login UI itself).
  */
 import { test, expect } from "@playwright/test";
+import { clearBrowserAuth } from "./helpers/auth";
 
 test.describe("Login page", () => {
   test.beforeEach(async ({ page }) => {
@@ -14,7 +15,7 @@ test.describe("Login page", () => {
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
     await expect(page.locator('button[type="submit"]')).toBeVisible();
-    await expect(page.locator("text=SADC")).toBeVisible();
+    await expect(page.getByText(/SADC/i).first()).toBeVisible();
   });
 
   test("shows validation error for empty submission", async ({ page }) => {
@@ -50,12 +51,12 @@ test.describe("Login page", () => {
 
     await page.waitForURL("**/dashboard", { timeout: 15_000 });
 
-    const meResponse = await page.request.get(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/auth/me`
-    );
+    const meResponse = await page.request.get("/api/auth/me", {
+      headers: { Accept: "application/json" },
+    });
     expect(meResponse.ok()).toBeTruthy();
     const me = await meResponse.json();
-    expect(me.email).toBe("staff@sadcpf.org");
+    expect(me.email ?? me.data?.email).toBe("staff@sadcpf.org");
   });
 
   test("forgot-password link opens and stays on the reset form", async ({ page }) => {
@@ -101,13 +102,7 @@ test.describe("Auth protection", () => {
   test("unauthenticated access to /dashboard redirects to /login", async ({
     page,
   }) => {
-    // Clear any existing state
-    await page.goto("/");
-    await page.evaluate(() => {
-      sessionStorage.clear();
-    });
-    await page.context().clearCookies();
-
+    await clearBrowserAuth(page);
     await page.goto("/dashboard");
     await page.waitForURL("**/login**", { timeout: 10_000 });
     expect(page.url()).toContain("login");
@@ -116,9 +111,7 @@ test.describe("Auth protection", () => {
   test("unauthenticated access to /travel redirects to /login", async ({
     page,
   }) => {
-    await page.evaluate(() => sessionStorage.clear());
-    await page.context().clearCookies();
-
+    await clearBrowserAuth(page);
     await page.goto("/travel");
     await page.waitForURL("**/login**", { timeout: 10_000 });
   });
@@ -126,9 +119,7 @@ test.describe("Auth protection", () => {
   test("unauthenticated access to /admin redirects to /login", async ({
     page,
   }) => {
-    await page.evaluate(() => sessionStorage.clear());
-    await page.context().clearCookies();
-
+    await clearBrowserAuth(page);
     await page.goto("/admin");
     await page.waitForURL("**/login**", { timeout: 10_000 });
   });
@@ -153,15 +144,15 @@ test.describe("Logout", () => {
       // Try user menu dropdown first
       const userMenu = page.locator('[aria-label*="user" i], [class*="user-menu"], [class*="avatar"]').first();
       await userMenu.click();
-      await page.locator('text=Logout, text=Sign out').first().click();
+      await page.getByRole("button", { name: /log ?out|sign out/i }).or(page.getByRole("link", { name: /log ?out|sign out/i })).first().click();
     }
 
     await page.waitForURL("**/login**", { timeout: 10_000 });
     expect(page.url()).toContain("login");
 
-    const meResponse = await page.request.get(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/auth/me`
-    );
+    const meResponse = await page.request.get("/api/auth/me", {
+      headers: { Accept: "application/json" },
+    });
     expect(meResponse.status()).toBe(401);
   });
 });

@@ -166,7 +166,7 @@ export default function LoginPage() {
           <h2 className="text-3xl font-bold leading-snug mb-4">
             {t("auth.brandTitle")}
           </h2>
-          <p className="text-sm text-white/60 leading-relaxed mb-10">
+          <p className="text-sm text-white/70 leading-relaxed mb-10">
             {t("auth.brandDescription")}
           </p>
 
@@ -208,7 +208,7 @@ export default function LoginPage() {
             />
             <div>
               <h1 className="text-base font-bold text-neutral-900">SADC-PF Nexus</h1>
-              <p className="text-xs text-neutral-400">{t("auth.platform")}</p>
+              <p className="text-xs text-neutral-600">{t("auth.platform")}</p>
             </div>
           </div>
 
@@ -270,7 +270,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPw(!showPw)}
                   aria-label={showPw ? "Hide password" : "Show password"}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-neutral-800"
                 >
                   <span className="material-symbols-outlined text-[18px]">{showPw ? "visibility_off" : "visibility"}</span>
                 </button>
@@ -292,7 +292,7 @@ export default function LoginPage() {
                   inputMode="numeric"
                   autoComplete="one-time-code"
                 />
-                <p className="mt-2 text-xs text-neutral-400">
+                <p className="mt-2 text-xs text-neutral-600">
                   {t("login.mfaHint")}
                 </p>
               </div>
@@ -337,7 +337,7 @@ export default function LoginPage() {
                       </div>
                       <div>
                         <p className="text-xs font-semibold text-neutral-800">{cred.role}</p>
-                        <p className="text-[10px] text-neutral-400 truncate">{cred.email}</p>
+                        <p className="text-[10px] text-neutral-600 truncate">{cred.email}</p>
                       </div>
                     </button>
                   ))}
@@ -357,7 +357,7 @@ export default function LoginPage() {
               </Link>
               {" "}{t("login.forAccounts")}
             </p>
-            <p className="text-neutral-400">{t("login.mailboxHelp")}</p>
+            <p className="text-neutral-600">{t("login.mailboxHelp")}</p>
           </div>
           <div className="mt-3 text-center text-xs text-neutral-500">
             {t("login.supplierOnboarding")}{" "}

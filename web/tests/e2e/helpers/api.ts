@@ -1,11 +1,22 @@
 /**
  * Lightweight API helpers for Playwright tests.
- * Uses Playwright's APIRequestContext so all calls share cookies/headers.
+ *
+ * Authenticated calls MUST go through the Next.js origin (`/api/...`) so the
+ * Sanctum session cookie (set on :3000) is sent. Direct calls to :8000 are a
+ * different origin, so SameSite cookies are dropped.
+ *
+ * Next rewrite: `/api/:path*` → Laravel `/api/v1/:path*`.
  */
-import { APIRequestContext, expect } from "@playwright/test";
+import { APIRequestContext } from "@playwright/test";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+function origin(): string {
+  return (process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+}
+
+/** Same-origin API root used by the Next rewrite (axios `baseURL: "/api"`). */
+export function apiRoot(): string {
+  return `${origin()}/api`;
+}
 
 export function apiClient(request: APIRequestContext) {
   const headers = {
@@ -15,26 +26,16 @@ export function apiClient(request: APIRequestContext) {
 
   return {
     async get(path: string) {
-      const res = await request.get(`${API_BASE}${path}`, { headers });
-      return res;
+      return request.get(`${apiRoot()}${path}`, { headers });
     },
     async post(path: string, data: object = {}) {
-      const res = await request.post(`${API_BASE}${path}`, {
-        headers,
-        data,
-      });
-      return res;
+      return request.post(`${apiRoot()}${path}`, { headers, data });
     },
     async put(path: string, data: object = {}) {
-      const res = await request.put(`${API_BASE}${path}`, {
-        headers,
-        data,
-      });
-      return res;
+      return request.put(`${apiRoot()}${path}`, { headers, data });
     },
     async delete(path: string) {
-      const res = await request.delete(`${API_BASE}${path}`, { headers });
-      return res;
+      return request.delete(`${apiRoot()}${path}`, { headers });
     },
   };
 }

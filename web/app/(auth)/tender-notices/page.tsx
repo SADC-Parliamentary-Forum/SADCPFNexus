@@ -19,7 +19,7 @@ export default function PublicTenderNoticesPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["public", "tender-notices"],
     queryFn: async () => {
-      const res = await axios.get<{ data: Notice[] }>("/api/v1/procurement/notices");
+      const res = await axios.get<{ data: Notice[] }>("/api/procurement/notices");
       return res.data.data;
     },
     staleTime: 60_000,

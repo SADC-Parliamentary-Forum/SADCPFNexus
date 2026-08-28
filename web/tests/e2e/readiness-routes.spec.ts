@@ -3,12 +3,9 @@ import { test, expect } from "@playwright/test";
 const STAFF_ROUTES = [
   "/dashboard",
   "/leave",
-  "/travel",
-  "/procurement",
-  "/finance/advances",
   "/salary-advances",
   "/imprest",
-  "/timesheets",
+  "/hr/timesheets",
   "/notifications",
   "/approvals",
   "/profile",

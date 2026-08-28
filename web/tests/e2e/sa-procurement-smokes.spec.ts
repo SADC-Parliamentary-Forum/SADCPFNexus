@@ -26,6 +26,7 @@ import {
   authStatePath,
   landedOnLogin,
   skipWithoutAuth,
+  waitForApp,
 } from "./helpers/auth";
 
 async function expectNoServerCrash(page: import("@playwright/test").Page) {
@@ -43,7 +44,7 @@ test.describe("Smoke — Salary Advances (staff)", () => {
 
   test("nav shows Salary Advances; dashboard/list loads", async ({ page }) => {
     await page.goto("/dashboard");
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
 
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid — re-run global.setup against a live seeded API");
@@ -59,14 +60,14 @@ test.describe("Smoke — Salary Advances (staff)", () => {
     if (!navVisible) {
       // Fallback: deep-link still proves route availability for staff.
       await page.goto("/salary-advances");
-      await page.waitForLoadState("networkidle");
+      await waitForApp(page);
       if (await landedOnLogin(page)) {
         test.skip(true, "Salary Advances not reachable for staff fixture");
       }
     } else {
       await nav.click();
       await page.waitForURL(/\/salary-advances/, { timeout: 15_000 });
-      await page.waitForLoadState("networkidle");
+      await waitForApp(page);
     }
 
     await expect(
@@ -77,7 +78,7 @@ test.describe("Smoke — Salary Advances (staff)", () => {
 
   test("apply/create loads with eligibility banner area", async ({ page }) => {
     await page.goto("/salary-advances/create");
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
 
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff cannot open salary-advances/create — fixture/permissions");
@@ -87,13 +88,13 @@ test.describe("Smoke — Salary Advances (staff)", () => {
     await page.waitForURL(/\/(salary-advances\/create|finance\/advances\/create)/, {
       timeout: 15_000,
     });
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
 
     const eligibilityHeading = page.getByRole("heading", {
       name: /eligibility/i,
     });
-    const eligibilityBanner = page.locator(
-      "text=/Eligible|Not Eligible|Outstanding Advance|Confirmed Net Salary|Eligibility & Classification|Eligibility unavailable/i"
+    const eligibilityBanner = page.getByText(
+      /Eligible|Not Eligible|Outstanding Advance|Confirmed Net Salary|Eligibility & Classification|Eligibility unavailable/i
     );
 
     await expect(eligibilityHeading.or(eligibilityBanner).first()).toBeVisible({
@@ -112,7 +113,7 @@ test.describe("Smoke — Procurement (staff)", () => {
 
   test("list and create pages load", async ({ page }) => {
     await page.goto("/procurement");
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
 
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for procurement list");
@@ -125,7 +126,7 @@ test.describe("Smoke — Procurement (staff)", () => {
 
     await page.goto("/procurement/create");
     await page.waitForURL("**/procurement/create", { timeout: 15_000 });
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
 
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff cannot open procurement/create — fixture/permissions");
@@ -150,7 +151,6 @@ test.describe("Smoke — Public tender notices", () => {
     expect(response!.status(), `unexpected status ${response!.status()}`).toBeLessThan(500);
     expect(response!.status()).not.toBe(404);
 
-    await page.waitForLoadState("networkidle");
     await expect(
       page.getByRole("heading", { name: /public tender notices/i })
     ).toBeVisible({ timeout: 15_000 });
@@ -172,18 +172,18 @@ test.describe("Smoke — Procurement settings/register (authorised)", () => {
   test("settings or register loads for authorised role", async ({ page }) => {
     // Prefer settings (admin); fall back to register if settings is gated.
     await page.goto("/procurement/settings");
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
 
     if (await landedOnLogin(page)) {
       test.skip(true, "Admin session invalid — re-run global.setup");
     }
 
-    const denied = page.locator("text=/You need .*procurement\\.admin|not authorised|unauthorized|forbidden/i");
+    const denied = page.getByText(/You need .*procurement\.admin|not authorised|unauthorized|forbidden/i);
     const settingsDenied = await denied.first().isVisible({ timeout: 3_000 }).catch(() => false);
 
     if (settingsDenied) {
       await page.goto("/procurement/register");
-      await page.waitForLoadState("networkidle");
+      await waitForApp(page);
 
       if (await landedOnLogin(page)) {
         test.skip(true, "Admin fixture cannot open procurement register either");

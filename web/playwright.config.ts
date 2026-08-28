@@ -56,6 +56,8 @@ export default defineConfig({
         "**/auth.spec.ts",
         "**/admin.spec.ts",
         "**/timesheets-travel-followups.spec.ts",
+        "**/organogram.spec.ts",
+        "**/pif-sections.spec.ts",
       ],
     },
 
@@ -71,6 +73,8 @@ export default defineConfig({
         "**/admin.spec.ts",
         "**/readiness-routes.spec.ts",
         "**/timesheets-travel-followups.spec.ts",
+        "**/organogram.spec.ts",
+        "**/pif-sections.spec.ts",
       ],
     },
 

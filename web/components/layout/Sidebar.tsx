@@ -585,7 +585,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
                       "flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                       isChildActive
                         ? "bg-primary text-white shadow-sm"
-                        : "text-neutral-400 hover:text-white hover:bg-white/10"
+                        : "text-neutral-300 hover:text-white hover:bg-white/10"
                     )}
                   >
                     <span
@@ -667,7 +667,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
         {sections.map((section, si) => (
           <div key={si} className={si > 0 ? (isCollapsed ? "mt-1" : "mt-2") : ""}>
             {section.label && !isCollapsed && (
-              <p className="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-500 select-none">
+              <p className="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-300 select-none">
                 {section.label}
               </p>
             )}
