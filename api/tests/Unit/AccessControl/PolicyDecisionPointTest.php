@@ -5,7 +5,6 @@ namespace Tests\Unit\AccessControl;
 use App\Models\AccessControl\UserPermissionDenial;
 use App\Models\AccessControl\UserPermissionGrant;
 use App\Models\LeaveRequest;
-use App\Models\User;
 use App\Modules\AccessControl\Services\AccessCacheInvalidator;
 use App\Modules\AccessControl\Services\AccessScopeResolver;
 use App\Modules\AccessControl\Services\PolicyDecisionPoint;
@@ -87,7 +86,8 @@ class PolicyDecisionPointTest extends TestCase
 
     public function test_legacy_leave_approve_maps_to_canonical_authorise(): void
     {
-        $user = $this->makeUser('HR Manager');
+        $user = $this->makeUser('staff');
+        $user->givePermissionTo('leave.approve');
         $decision = app(PolicyDecisionPoint::class)->authorize(
             $user,
             'leave.request.authorise.assigned',

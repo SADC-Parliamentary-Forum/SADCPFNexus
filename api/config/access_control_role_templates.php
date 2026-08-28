@@ -37,7 +37,7 @@ return [
     'Secretary General' => [
         'purpose' => 'Final institutional approvals and executive oversight',
         'risk_level' => 'critical',
-        'permissions' => ['leave.request.authorise.assigned', 'travel.request.approve.assigned', 'salary_advance.approve.assigned', 'programme.sg_approval.act.assigned', 'procurement.award.approve.assigned', 'approvals.task.act.assigned', 'admin.roles.approve', 'admin.roles.revoke', 'reports.view.authorised', 'correspondence.read.confidential'],
+        'permissions' => ['leave.request.authorise.assigned', 'leave.module.view', 'travel.request.approve.assigned', 'salary_advance.approve.assigned', 'programme.sg_approval.act.assigned', 'procurement.award.approve.assigned', 'approvals.task.act.assigned', 'admin.roles.approve', 'admin.roles.revoke', 'reports.view.authorised', 'correspondence.read.confidential'],
         'inherits' => [],
         'legacy_roles' => ['Secretary General'],
         'feature_only' => false,
@@ -142,7 +142,7 @@ return [
     'Internal Auditor' => [
         'purpose' => 'Read-only assurance access to authorised records and audit data',
         'risk_level' => 'high',
-        'permissions' => ['audit.event.read.organisation', 'leave.report.view', 'procurement.report.view', 'programme.report.view', 'salary_advance.report.view', 'reports.view.authorised', 'risk.module.view', 'mande.module.view'],
+        'permissions' => ['audit.event.read.organisation', 'leave.module.view', 'leave.report.view', 'procurement.report.view', 'programme.report.view', 'salary_advance.report.view', 'reports.view.authorised', 'risk.module.view', 'mande.module.view'],
         'inherits' => [],
         'legacy_roles' => ['Internal Auditor'],
         'feature_only' => false,

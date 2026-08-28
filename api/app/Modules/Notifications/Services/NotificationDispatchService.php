@@ -40,7 +40,7 @@ class NotificationDispatchService
         bool $sendEmail = true,
         bool $sendPush = true,
         ?string $idempotencyKey = null,
-    ): Notification {
+    ): ?Notification {
         $meta = $this->links->sanitizeMeta($meta);
         $meta['trigger'] = $triggerKey;
         $idempotencyKey ??= $this->legacyIdempotencyKey($recipient, $triggerKey, $meta);
@@ -70,6 +70,9 @@ class NotificationDispatchService
 
         $this->outbox->scheduleAfterCommit($outbox, true);
 
+        // Consume is deferred until the outer business transaction commits
+        // (OutboxService::scheduleAfterCommit). Do not firstOrFail here — that
+        // turned user.invite / leave / workflow writes into HTTP 404s.
         $event = NotificationEvent::query()
             ->where('tenant_id', $recipient->tenant_id)
             ->where('idempotency_key', $idempotencyKey)
@@ -90,7 +93,7 @@ class NotificationDispatchService
             ->where('user_id', $recipient->id)
             ->where('trigger', $triggerKey)
             ->latest('id')
-            ->firstOrFail();
+            ->first();
     }
 
     public function publishEvent(array $data, bool $processInline = true): NotificationOutbox
@@ -231,6 +234,7 @@ class NotificationDispatchService
                     ['meta' => $meta, 'vars' => $vars],
                     $meta['coalesce_key'] ?? null,
                 );
+
                 continue;
             }
 

@@ -62,8 +62,10 @@ jobs:
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Copy .env.testing
-        run: cp .env.testing.example .env.testing
+      - name: Prepare environment files
+        run: |
+          cp .env.example .env
+          cp .env.example .env.testing
 
       - name: Run PHPUnit tests
         run: php artisan test --stop-on-failure

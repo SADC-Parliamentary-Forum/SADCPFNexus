@@ -1547,7 +1547,7 @@ return [
         'linked_routes' => ['/my-work/procurement-evaluations'],
         'linked_endpoints' => [
             'GET /api/v1/procurement/committee-evaluations',
-            'GET /api/v1/procurement/committee-evaluations/{id}',
+            'GET /api/v1/procurement/committee-evaluations/{procurementRequest}',
         ],
     ],
     'procurement.evaluation.score.assigned' => [

@@ -30,6 +30,7 @@ class NoticeRuleServiceTest extends TestCase
             'tenant_id' => $tenant->id,
             'code' => 'P4',
             'label' => 'Professional P4',
+            'band_group' => 'C',
             'employment_category' => 'local',
             'notice_period_days' => 30,
             'probation_months' => 6,

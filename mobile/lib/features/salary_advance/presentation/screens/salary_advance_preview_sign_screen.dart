@@ -407,7 +407,7 @@ class _SalaryAdvancePreviewSignScreenState
       remaining -= monthly;
       final balance = remaining < 0.01 ? 0.0 : remaining;
       result.add((
-        '${date.month == 1 ? 'January' : date.month == 2 ? 'February' : date.month == 3 ? 'March' : date.month == 4 ? 'April' : date.month == 5 ? 'May' : date.month == 6 ? 'June' : date.month == 7 ? 'July' : date.month == 8 ? 'August' : date.month == 9 ? 'September' : date.month == 10 ? 'October' : date.month == 11 ? 'November' : 'December'} ${date.year}',
+        monthLabel,
         formatSaCurrency(monthly, currency: currency),
         formatSaCurrency(balance, currency: currency),
       ));

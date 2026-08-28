@@ -19,7 +19,10 @@ class UserPolicy
      */
     public function view(User $authUser, User $user): bool
     {
-        if ($authUser->id === $user->id) return true;
+        if ($authUser->id === $user->id) {
+            return true;
+        }
+
         return ($authUser->isSystemAdmin() || $authUser->hasAnyRole(['HR Manager']))
             && $authUser->tenant_id === $user->tenant_id;
     }
@@ -49,7 +52,13 @@ class UserPolicy
      */
     public function delete(User $authUser, User $user): bool
     {
-        if ($authUser->id === $user->id) return false; // Cannot deactivate self
+        if ($authUser->id === $user->id) {
+            return false; // Cannot deactivate self
+        }
+        if ($user->isSystemAdmin()) {
+            return false; // Privileged admins are skipped in bulk deactivate
+        }
+
         return $authUser->isSystemAdmin() && $authUser->tenant_id === $user->tenant_id;
     }
 

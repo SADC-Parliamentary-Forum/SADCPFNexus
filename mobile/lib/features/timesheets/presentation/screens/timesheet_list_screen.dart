@@ -73,7 +73,6 @@ class _TimesheetListScreenState extends ConsumerState<TimesheetListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(

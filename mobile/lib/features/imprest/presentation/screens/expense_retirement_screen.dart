@@ -10,9 +10,8 @@ import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
 
 class _LineItem {
-  String description;
-  String amount;
-  _LineItem({this.description = '', this.amount = ''});
+  String description = '';
+  String amount = '';
 }
 
 class ExpenseRetirementScreen extends ConsumerStatefulWidget {

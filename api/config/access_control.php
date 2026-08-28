@@ -38,7 +38,7 @@ return [
             'DELETE' => ['admin.roles.manage', 'roles.manage'],
         ]],
         ['pattern' => 'api/v1/admin/departments*', 'permissions' => [
-            'READ' => ['admin.organisation.manage', 'users.view'],
+            'READ' => ['admin.organisation.manage', 'users.view', 'dashboard.view', 'profile.read.self'],
             'WRITE' => ['admin.organisation.manage'],
         ]],
         ['pattern' => 'api/v1/admin/positions*', 'permissions' => [
@@ -142,6 +142,13 @@ return [
         ['pattern' => 'api/v1/procurement/newspaper-notice-templates', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin'],
         ]],
+        ['pattern' => 'api/v1/procurement/committee-evaluations*', 'permissions' => [
+            'READ' => [
+                'procurement.evaluation.read.assigned',
+                'procurement.view',
+                'procurement.admin',
+            ],
+        ]],
         ['pattern' => 'api/v1/procurement/vendors*', 'permissions' => [
             'GET' => ['procurement.view', 'procurement.admin', 'procurement.manage_vendors', 'procurement.supplier.read'],
             'WRITE' => ['procurement.manage_vendors', 'procurement.admin', 'procurement.supplier.approve', 'procurement.create'],
@@ -219,10 +226,10 @@ return [
             'WRITE' => ['mande.create', 'mande.review', 'mande.admin'],
         ]],
         ['pattern' => 'api/v1/travel*', 'permissions' => [
-            'READ' => ['travel.view', 'travel.admin'],
-            'POST' => ['travel.create', 'travel.approve', 'travel.admin'],
-            'PUT' => ['travel.create', 'travel.approve', 'travel.admin'],
-            'PATCH' => ['travel.create', 'travel.approve', 'travel.admin'],
+            'READ' => ['travel.view', 'travel.admin', 'travel.module.view', 'travel.request.read.self'],
+            'POST' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
+            'PUT' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
+            'PATCH' => ['travel.create', 'travel.approve', 'travel.admin', 'travel.request.create.self'],
             'DELETE' => ['travel.admin'],
         ]],
         ['pattern' => 'api/v1/finance/advances/policies*', 'permissions' => [
@@ -280,10 +287,10 @@ return [
             'DELETE' => ['pif.admin'],
         ]],
         ['pattern' => 'api/v1/leave*', 'permissions' => [
-            'READ' => ['leave.view', 'leave.approve', 'leave.admin'],
-            'POST' => ['leave.create', 'leave.approve', 'leave.admin'],
-            'PUT' => ['leave.create', 'leave.approve', 'leave.admin'],
-            'PATCH' => ['leave.create', 'leave.approve', 'leave.admin'],
+            'READ' => ['leave.view', 'leave.approve', 'leave.admin', 'leave.module.view', 'leave.request.read.self'],
+            'POST' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.create.self'],
+            'PUT' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.edit.created'],
+            'PATCH' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.edit.created'],
             'DELETE' => ['leave.admin'],
         ]],
         ['pattern' => 'api/v1/documents*', 'permissions' => [
@@ -543,6 +550,22 @@ return [
         'salary_advance.admin' => [
             'salary_advance.configuration.manage',
             'salary_advance.module.view',
+        ],
+        'travel.view' => [
+            'travel.module.view',
+            'travel.request.read.self',
+        ],
+        'travel.create' => [
+            'travel.request.create.self',
+            'travel.module.view',
+        ],
+        'travel.approve' => [
+            'travel.request.approve.assigned',
+            'travel.module.view',
+        ],
+        'travel.admin' => [
+            'travel.module.view',
+            'travel.request.approve.assigned',
         ],
         'procurement.view' => [
             'procurement.request.read.created',

@@ -117,10 +117,7 @@ class AccessControlNegativeAccessTest extends TestCase
         $this->getJson("/api/v1/procurement/committee-evaluations/{$assigned->id}")->assertOk();
         $this->getJson("/api/v1/procurement/committee-evaluations/{$other->id}")->assertStatus(404);
 
-        $list = $this->getJson('/api/v1/procurement/requests')->assertOk()->json();
-        $ids = collect($list['data'] ?? [])->pluck('id')->all();
-        $this->assertNotContains($other->id, $ids);
-        $this->assertNotContains($assigned->id, $ids);
+        $this->getJson('/api/v1/procurement/requests')->assertStatus(403);
     }
 
     public function test_ict_admin_cannot_export_salary_advances(): void
@@ -500,7 +497,7 @@ class AccessControlNegativeAccessTest extends TestCase
         $requester = $this->makeUser('staff');
 
         Sanctum::actingAs($requester);
-        $this->postJson('/api/v1/admin/access/requests', [
+        $this->postJson('/api/v1/access/requests', [
             'permission_key' => 'unregistered.permission',
             'scope_type' => 'self',
             'business_reason' => 'Must be rejected',
@@ -512,7 +509,7 @@ class AccessControlNegativeAccessTest extends TestCase
         $requester = $this->makeUser('staff');
 
         Sanctum::actingAs($requester);
-        $this->postJson('/api/v1/admin/access/requests', [
+        $this->postJson('/api/v1/access/requests', [
             'business_reason' => 'No target should be rejected',
         ])->assertStatus(422);
     }

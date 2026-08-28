@@ -173,7 +173,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  @override
   Widget _buildTotpStep(BuildContext context, ColorScheme c) {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
