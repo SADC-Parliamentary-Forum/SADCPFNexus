@@ -141,7 +141,11 @@ return [
         ]],
         ['pattern' => 'api/v1/procurement/requests*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin', 'procurement.request.read.created', 'procurement.module.view', 'procurement.create'],
-            'POST' => ['procurement.create', 'procurement.approve', 'procurement.admin', 'procurement.request.create', 'procurement.hod_approve'],
+            'POST' => [
+                'procurement.create', 'procurement.approve', 'procurement.admin',
+                'procurement.request.create', 'procurement.hod_approve',
+                'finance.create', 'finance.approve', 'procurement.manage_budget',
+            ],
             'PUT' => ['procurement.create', 'procurement.approve', 'procurement.admin', 'procurement.request.edit.created'],
             'PATCH' => ['procurement.create', 'procurement.approve', 'procurement.admin', 'procurement.request.edit.created'],
             'DELETE' => ['procurement.create', 'procurement.admin', 'procurement.request.edit.created'],
@@ -175,6 +179,10 @@ return [
         ['pattern' => 'api/v1/procurement/purchase-orders*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.manage_po', 'procurement.receive_goods', 'finance.view', 'procurement.admin'],
             'WRITE' => ['procurement.manage_po', 'procurement.receive_goods', 'procurement.approve_invoice', 'finance.create', 'procurement.admin'],
+        ]],
+        ['pattern' => 'api/v1/procurement/budget-reservations*', 'permissions' => [
+            'READ' => ['finance.view', 'finance.create', 'procurement.view', 'procurement.manage_budget', 'procurement.admin'],
+            'WRITE' => ['finance.create', 'finance.approve', 'procurement.manage_budget', 'procurement.admin'],
         ]],
         ['pattern' => 'api/v1/procurement*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin', 'procurement.request.read.created', 'procurement.module.view'],
