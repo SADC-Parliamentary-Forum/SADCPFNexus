@@ -38,7 +38,12 @@ class LeavePayrollImpactTest extends TestCase
 
         $leave = $this->createSubmittedLeave($tenant, $staff, 'unpaid', $start, $start->copy()->addDay());
 
-        app(LeaveService::class)->approve($leave, $approver, 'Secretary General authorised leave without pay.');
+        $hod = $this->makeUser('HOD', $tenant);
+        $sg = $this->makeSG($tenant);
+        app(LeaveService::class)->recommend($leave, $hod, 'recommend');
+        $leave->refresh();
+        app(LeaveService::class)->certify($leave->fresh(), $approver, 'certify');
+        app(LeaveService::class)->approve($leave->fresh(), $sg, 'Secretary General authorised leave without pay.');
 
         $this->assertDatabaseHas('leave_payroll_impacts', [
             'tenant_id' => $tenant->id,
@@ -71,7 +76,11 @@ class LeavePayrollImpactTest extends TestCase
         $start = now()->next(Carbon::MONDAY)->addWeeks(6);
         $leave = $this->createSubmittedLeave($tenant, $staff, 'maternity', $start, $start->copy()->addDays(13));
 
-        app(LeaveService::class)->approve($leave, $approver, 'Approved maternity payroll review.');
+        $hod = $this->makeUser('HOD', $tenant);
+        $sg = $this->makeSG($tenant);
+        app(LeaveService::class)->recommend($leave, $hod, 'recommend');
+        app(LeaveService::class)->certify($leave->fresh(), $approver, 'certify');
+        app(LeaveService::class)->approve($leave->fresh(), $sg, 'Approved maternity payroll review.');
 
         $this->assertDatabaseHas('leave_payroll_impacts', [
             'tenant_id' => $tenant->id,

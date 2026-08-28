@@ -380,8 +380,16 @@ return [
             'DELETE' => ['pif.admin'],
         ]],
         ['pattern' => 'api/v1/leave*', 'permissions' => [
-            'READ' => ['leave.view', 'leave.approve', 'leave.admin', 'leave.module.view', 'leave.request.read.self'],
-            'POST' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.create.self'],
+            'READ' => [
+                'leave.view', 'leave.approve', 'leave.admin', 'leave.module.view',
+                'leave.request.read.self', 'leave.request.read.direct_reports',
+            ],
+            'POST' => [
+                'leave.create', 'leave.approve', 'leave.admin', 'leave.request.create.self',
+                'leave.request.recommend.assigned', 'leave.request.return.assigned',
+                'leave.request.authorise.assigned', 'leave.request.reject.assigned',
+                'leave.balance.certify.assigned',
+            ],
             'PUT' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.edit.created'],
             'PATCH' => ['leave.create', 'leave.approve', 'leave.admin', 'leave.request.edit.created'],
             'DELETE' => ['leave.admin'],

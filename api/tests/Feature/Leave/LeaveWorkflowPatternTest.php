@@ -45,12 +45,27 @@ class LeaveWorkflowPatternTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $staff = $this->makeUser('staff', $tenant);
-        $manager = $this->makeHrManager($tenant);
+        $hod = $this->makeUser('HOD', $tenant);
+        $hr = $this->makeHrManager($tenant);
+        $sg = $this->makeSG($tenant);
 
         $staffHttp = $this->asUser($staff);
         $leave = $this->createAndSubmitLeave($staffHttp, $staff->id);
 
-        $this->asUser($manager)
+        $this->asUser($hod)
+            ->postJson("/api/v1/leave/requests/{$leave->id}/recommend", [
+                'action' => 'recommend',
+                'comment' => 'Supported',
+            ])
+            ->assertOk();
+
+        $this->asUser($hr)
+            ->postJson("/api/v1/leave/requests/{$leave->id}/certify", [
+                'action' => 'certify',
+            ])
+            ->assertOk();
+
+        $this->asUser($sg)
             ->postJson("/api/v1/leave/requests/{$leave->id}/approve", ['comment' => 'Approved'])
             ->assertOk();
 
