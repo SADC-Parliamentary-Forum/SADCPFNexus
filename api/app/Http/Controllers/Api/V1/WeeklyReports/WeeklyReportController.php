@@ -16,6 +16,7 @@ use App\Modules\WeeklyReports\Services\WeeklyTrendAnalyticsService;
 use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class WeeklyReportController extends Controller
 {
@@ -196,6 +197,8 @@ class WeeklyReportController extends Controller
             'is_confidential' => 'nullable|boolean',
         ]);
 
+        $this->assertNotSelfReview($weeklySummary, $request->user());
+
         $approvalRequest = $weeklySummary->approvalRequest;
         if ($approvalRequest) {
             $this->workflowService->returnForCorrection($approvalRequest, $request->user(), $data['reason']);
@@ -213,6 +216,8 @@ class WeeklyReportController extends Controller
             'comment_type' => 'nullable|string',
             'is_confidential' => 'nullable|boolean',
         ]);
+
+        $this->assertNotSelfReview($weeklySummary, $request->user());
 
         $approvalRequest = $weeklySummary->approvalRequest;
         if ($approvalRequest) {
@@ -398,5 +403,14 @@ class WeeklyReportController extends Controller
             'management-pack' => $this->exports->managementPackDocx($weeklySummary, $request->user()),
             default => response()->json(['message' => 'Unsupported format'], 422),
         };
+    }
+
+    private function assertNotSelfReview(WeeklyReport $report, $actor): void
+    {
+        if ((int) $report->employee_id === (int) $actor->id) {
+            throw ValidationException::withMessages([
+                'reviewer' => 'You cannot review or accept your own weekly report.',
+            ]);
+        }
     }
 }

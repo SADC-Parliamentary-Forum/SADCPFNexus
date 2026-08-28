@@ -766,8 +766,8 @@ class WeeklyReportService
             // has already authorised this actor for the current step (which may be
             // an acting appointee/delegate the hardcoded supervisor_id/HOD checks
             // below don't know about).
-            $this->assertCanReview($report, $reviewer);
             $this->assertNotSelfReview($report, $reviewer);
+            $this->assertCanReview($report, $reviewer);
         }
 
         if (empty($data['reason'] ?? $data['correction_requested'] ?? null)) {
@@ -816,8 +816,8 @@ class WeeklyReportService
         if ($enforceLegacyAuthChecks) {
             // Skipped when called from Workflow::onWorkflowApproved() — see
             // returnReport()'s matching comment.
-            $this->assertCanReview($report, $reviewer);
             $this->assertNotSelfReview($report, $reviewer);
+            $this->assertCanReview($report, $reviewer);
         }
 
         return DB::transaction(function () use ($report, $reviewer, $data) {
