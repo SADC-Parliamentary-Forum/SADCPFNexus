@@ -35,8 +35,7 @@ class TravelBudgetReservationService
 
         $budgetLineId = $this->resolveBudgetLineId($travel);
         if (! $budgetLineId) {
-            // No institutional line configured — skip controlled commitment (legacy travel).
-            return null;
+            return $this->legacyReserve($travel, $actor, $amount);
         }
 
         $parent = null;
@@ -145,5 +144,46 @@ class TravelBudgetReservationService
         }
 
         return null;
+    }
+
+    /**
+     * Encumber travel against a free-text funding code when no BudgetLine row exists.
+     * Cancel still releases this row; GL posting stays gated on budget_line_id.
+     */
+    private function legacyReserve(TravelRequest $travel, User $actor, float $amount): BudgetReservation
+    {
+        $code = $travel->fundingLines
+            ->first(fn ($l) => filled($l->budget_line))
+            ?->budget_line
+            ?? 'TRAVEL-UNALLOCATED';
+
+        $existing = BudgetReservation::query()
+            ->where('tenant_id', $travel->tenant_id)
+            ->where('source_key', 'TRAVEL:'.$travel->id)
+            ->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        $now = now();
+
+        return BudgetReservation::create([
+            'tenant_id' => $travel->tenant_id,
+            'travel_request_id' => $travel->id,
+            'reserved_by' => $actor->id,
+            'budget_line' => $code,
+            'source_type' => 'travel',
+            'source_id' => $travel->id,
+            'source_key' => 'TRAVEL:'.$travel->id,
+            'idempotency_key' => 'travel-reserve-'.$travel->id,
+            'reserved_amount' => $amount,
+            'original_amount' => $amount,
+            'current_amount' => $amount,
+            'currency' => $travel->currency ?? 'NAD',
+            'notes' => 'Travel commitment on approval (legacy line) — '.$travel->reference_number,
+            'status' => 'confirmed',
+            'reserved_at' => $now,
+            'confirmed_at' => $now,
+        ]);
     }
 }
