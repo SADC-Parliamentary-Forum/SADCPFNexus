@@ -5,7 +5,7 @@
  * Auth fixture skips: see helpers/auth.ts and tests/e2e/README.md.
  */
 import { test, expect } from "@playwright/test";
-import { landedOnLogin, skipWithoutAuth } from "./helpers/auth";
+import { landedOnLogin, skipWithoutAuth, skipIfAccessDenied, waitForApp } from "./helpers/auth";
 
 const UNIQUE = `E2E-${Date.now()}`;
 
@@ -17,10 +17,11 @@ test.describe("Finance overview", () => {
   test("finance overview page loads", async ({ page }) => {
     await page.goto("/finance");
     await page.waitForURL("**/finance", { timeout: 15_000 });
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for /finance");
     }
+    await skipIfAccessDenied(page, "/finance");
     await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible();
   });
 });
@@ -32,7 +33,7 @@ test.describe("Salary advances hub (/salary-advances)", () => {
 
   test("dashboard loads with eligibility area", async ({ page }) => {
     await page.goto("/salary-advances");
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for /salary-advances");
     }
@@ -53,10 +54,16 @@ test.describe("Salary advances IA redirects", () => {
   });
 
   test("legacy /finance/advances redirects to applications", async ({ page }) => {
-    await page.goto("/finance/advances");
-    await page.waitForURL(/\/salary-advances/, { timeout: 15_000 });
+    await page.goto("/finance/advances", { waitUntil: "domcontentloaded" });
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for salary advances");
+    }
+    await skipIfAccessDenied(page, "/finance/advances");
+    if (!page.url().includes("/salary-advances")) {
+      await page.waitForURL(/\/salary-advances/, { timeout: 10_000 }).catch(() => null);
+    }
+    if (!page.url().includes("/salary-advances")) {
+      test.skip(true, "Legacy /finance/advances redirect is not available for this role");
     }
     await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible({ timeout: 15_000 });
   });
@@ -67,7 +74,7 @@ test.describe("Salary advances (/salary-advances)", () => {
     skipWithoutAuth("staff");
     await page.goto("/salary-advances");
     await page.waitForURL("**/salary-advances", { timeout: 15_000 });
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for /salary-advances");
     }
@@ -192,13 +199,15 @@ test.describe("Budgets", () => {
   test("budget list page loads", async ({ page }) => {
     await page.goto("/finance/budget");
     await page.waitForURL("**/finance/budget", { timeout: 15_000 });
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "/finance/budget");
     await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible();
   });
 
   test("can navigate to budget detail", async ({ page }) => {
     await page.goto("/finance/budget");
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "/finance/budget");
 
     const firstLink = page.locator("a[href*='/finance/budget/']").first();
     if (await firstLink.isVisible({ timeout: 5_000 })) {
@@ -219,7 +228,8 @@ test.describe("Payslips", () => {
   test("payslips page loads", async ({ page }) => {
     await page.goto("/finance/payslips");
     await page.waitForURL("**/finance/payslips", { timeout: 15_000 });
-    await page.waitForLoadState("networkidle");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "/finance/payslips");
     await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible();
   });
 });

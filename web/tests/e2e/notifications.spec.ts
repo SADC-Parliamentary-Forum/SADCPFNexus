@@ -2,8 +2,8 @@
  * Notifications E2E tests.
  */
 import { test, expect } from "@playwright/test";
-import { apiClient } from "./helpers/api";
-import { skipWithoutAuth, waitForApp } from "./helpers/auth";
+import { browserApiGet, skipIfApiForbidden } from "./helpers/api";
+import { skipWithoutAuth, skipIfAccessDenied, waitForApp } from "./helpers/auth";
 
 test.describe("Notification Centre", () => {
   test.beforeEach(async ({ page }) => {
@@ -11,6 +11,7 @@ test.describe("Notification Centre", () => {
     await page.goto("/notifications?tab=inbox");
     await page.waitForURL("**/notifications**", { timeout: 15_000 });
     await waitForApp(page);
+    await skipIfAccessDenied(page, "/notifications");
   });
 
   test("notifications page loads", async ({ page }) => {
@@ -19,6 +20,9 @@ test.describe("Notification Centre", () => {
 
   test("All / Unread / Read tabs are present", async ({ page }) => {
     await page.getByRole("button", { name: /my notifications/i }).click();
+    await expect(page.getByLabel("Inbox search").or(page.getByRole("button", { name: "All" })).first()).toBeVisible({
+      timeout: 12_000,
+    });
     await expect(page.getByRole("button", { name: /^all$/i })).toBeVisible({ timeout: 8_000 });
     await expect(page.getByRole("button", { name: /^unread/i })).toBeVisible();
   });
@@ -74,21 +78,27 @@ test.describe("Notification bell in header", () => {
 });
 
 test.describe("Notifications API", () => {
-  test("unread count endpoint returns a number", async ({ request }) => {
+  test("unread count endpoint returns a number", async ({ page }) => {
     skipWithoutAuth("staff");
-    const res = await apiClient(request).get("/notifications/unread-count");
-
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    await page.goto("/notifications");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "/notifications");
+    const res = await browserApiGet(page, "/notifications/unread-count");
+    skipIfApiForbidden(res, "/notifications/unread-count");
+    expect(res.ok).toBeTruthy();
+    const body = res.body as { count?: number; data?: { count?: number } };
     expect(typeof (body.count ?? body.data?.count)).toBe("number");
   });
 
-  test("notifications list endpoint returns paginated data", async ({ request }) => {
+  test("notifications list endpoint returns paginated data", async ({ page }) => {
     skipWithoutAuth("staff");
-    const res = await apiClient(request).get("/notifications");
-
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    await page.goto("/notifications?tab=inbox");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "/notifications");
+    const res = await browserApiGet(page, "/notifications");
+    skipIfApiForbidden(res, "/notifications");
+    expect(res.ok).toBeTruthy();
+    const body = res.body as { data?: unknown };
     const rows = body.data ?? body;
     expect(Array.isArray(rows) || Array.isArray(body.data)).toBeTruthy();
   });

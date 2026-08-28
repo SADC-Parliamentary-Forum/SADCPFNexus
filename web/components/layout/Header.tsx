@@ -161,7 +161,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
         </span>
         <div className="hidden md:block">
           <h2 className="text-lg font-bold leading-tight tracking-tight text-neutral-900 dark:text-neutral-100">SADC PF Nexus</h2>
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400 leading-none">Institutional Operations Platform</p>
+          <p className="text-xs font-medium text-neutral-700 dark:text-neutral-400 leading-none">Institutional Operations Platform</p>
         </div>
       </Link>
       </div>
@@ -290,9 +290,9 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
           >
             <div className="hidden sm:block text-right">
               <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 leading-tight">{user?.name ?? "User"}</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 leading-none">{String(roleLabel)}</p>
+              <p className="text-xs text-neutral-700 dark:text-neutral-400 leading-none">{String(roleLabel)}</p>
             </div>
-            <div className="flex size-9 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-primary text-white text-xs font-bold flex-shrink-0 shadow-sm">
+            <div className="flex size-9 items-center justify-center overflow-hidden rounded-full border-2 border-white bg-primary-700 text-white text-xs font-bold flex-shrink-0 shadow-sm">
               {initials}
             </div>
             <span className="material-symbols-outlined text-neutral-400 text-[16px]">expand_more</span>

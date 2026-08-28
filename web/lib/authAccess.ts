@@ -194,7 +194,7 @@ interface RouteAccessRule {
 /** Path prefix or exact path -> required permission(s). Empty = allow any authenticated. */
 const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/dashboard" },
-  { path: "/approvals", permission: ["travel.approve", "leave.approve", "imprest.approve", "procurement.approve", "finance.approve", "governance.approve", "hr.approve"] },
+  { path: "/approvals", permission: ["approvals.inbox.view", "travel.approve", "leave.approve", "imprest.approve", "procurement.approve", "finance.approve", "governance.approve", "hr.approve"] },
   { path: "/alerts" },
   { path: "/assignments/unassigned", permission: ["assignments.issue", "assignments.admin"] },
   { path: "/assignments/escalations", permission: ["assignments.review", "assignments.admin"] },
@@ -249,6 +249,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/travel", permission: "travel.view" },
   { path: "/leave", permission: "leave.view" },
   { path: "/budget", permission: ["finance.view", "finance.approve", "finance.admin", "procurement.manage_budget"] },
+  // Legacy IA aliases — must beat the /finance prefix so employees can follow the redirect.
+  { path: "/finance/advances", permission: ["salary_advance.view", "salary_advance.create", "finance.view", "finance.create"] },
   { path: "/finance", permission: "finance.view" },
   // Salary Advances - more specific paths first (finance queues exclude plain employee view)
   { path: "/salary-advances/settings", permission: ["salary_advance.admin", "finance.admin"] },
@@ -274,6 +276,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr/timesheets/templates", permission: ["hr.admin", "timesheets.admin"] },
   { path: "/hr/timesheets/team", permission: ["hr.admin", "hr.approve", "hr.edit"] },
   { path: "/hr/timesheets/capacity", permission: ["hr.admin", "hr.approve", "hr.edit"] },
+  // Own timesheets — must beat the /hr prefix (hr.view is org-HR admin, not self-service).
+  { path: "/hr/timesheets", permission: ["timesheets.view", "timesheets.create", "timesheets.view-own", "timesheet.module.view", "hr.view", "hr.admin"] },
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
   { path: "/assets", permission: "assets.view" },
@@ -300,7 +304,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   // Risk Register
   { path: "/risk", permission: ["risk.view", "risk.admin", "risk.manage", "governance.view"] },
   // Notifications
-  { path: "/notifications", permission: ["notifications.view", "notifications.inbox", "alerts.view"] },
+  { path: "/notifications", permission: ["notifications.view", "notifications.view-own", "notifications.view.own", "notifications.inbox", "alerts.view"] },
   { path: "/alerts", permission: ["alerts.view", "notifications.view"] },
   // Documents
   { path: "/documents", permission: ["documents.view", "documents.manage", "documents.admin"] },
@@ -313,8 +317,6 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/profile" },
   { path: "/settings" },
   { path: "/help" },
-  // Timesheets
-  { path: "/hr/timesheets", permission: ["timesheets.view", "timesheets.create", "hr.view", "hr.admin"] },
   // Decisions / meetings
   { path: "/decisions", permission: ["decisions.view", "governance.view", "meetings.view"] },
   { path: "/meetings", permission: ["meetings.view", "governance.view", "decisions.view"] },

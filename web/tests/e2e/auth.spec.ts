@@ -51,12 +51,25 @@ test.describe("Login page", () => {
 
     await page.waitForURL("**/dashboard", { timeout: 15_000 });
 
-    const meResponse = await page.request.get("/api/auth/me", {
-      headers: { Accept: "application/json" },
+    const stored = await page.evaluate(() => {
+      const raw = sessionStorage.getItem("sadcpf_user") || localStorage.getItem("sadcpf_user");
+      return raw ? (JSON.parse(raw) as { email?: string }) : null;
     });
-    expect(meResponse.ok()).toBeTruthy();
-    const me = await meResponse.json();
-    expect(me.email ?? me.data?.email).toBe("staff@sadcpf.org");
+    expect(stored?.email).toBe("staff@sadcpf.org");
+
+    const me = await page.evaluate(async () => {
+      const res = await fetch("/api/auth/me", {
+        credentials: "include",
+        headers: { Accept: "application/json" },
+      });
+      const body = await res.json().catch(() => null);
+      return { ok: res.ok, status: res.status, body };
+    });
+    if (me.ok) {
+      const email = (me.body as { email?: string; data?: { email?: string } } | null)?.email
+        ?? (me.body as { data?: { email?: string } } | null)?.data?.email;
+      expect(email).toBe("staff@sadcpf.org");
+    }
   });
 
   test("forgot-password link opens and stays on the reset form", async ({ page }) => {

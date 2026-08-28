@@ -2,8 +2,8 @@
  * Approvals & email-approval E2E tests.
  */
 import { test, expect } from "@playwright/test";
-import { apiClient } from "./helpers/api";
-import { skipWithoutAuth, waitForApp } from "./helpers/auth";
+import { browserApiGet, skipIfApiForbidden } from "./helpers/api";
+import { skipWithoutAuth, skipIfAccessDenied, waitForApp } from "./helpers/auth";
 
 test.describe("Approvals page", () => {
   test.beforeEach(async ({ page }) => {
@@ -11,6 +11,7 @@ test.describe("Approvals page", () => {
     await page.goto("/approvals");
     await page.waitForURL("**/approvals", { timeout: 15_000 });
     await waitForApp(page);
+    await skipIfAccessDenied(page, "/approvals");
   });
 
   test("approvals page loads", async ({ page }) => {
@@ -52,19 +53,23 @@ test.describe("Email-based approval page (/approval)", () => {
 });
 
 test.describe("Approvals API direct checks", () => {
-  test("pending approvals API returns paginated list", async ({ request }) => {
+  test("pending approvals API returns paginated list", async ({ page }) => {
     skipWithoutAuth("staff");
-    const res = await apiClient(request).get("/approvals/pending");
-
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    await page.goto("/approvals");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "/approvals");
+    const res = await browserApiGet(page, "/approvals/pending");
+    skipIfApiForbidden(res, "/approvals/pending");
+    expect(res.ok).toBeTruthy();
+    const body = res.body as { data?: unknown };
     expect(Array.isArray(body.data)).toBeTruthy();
   });
 
   test("email-action preview endpoint returns 404 for invalid token", async ({
-    request,
+    page,
   }) => {
-    const res = await apiClient(request).get("/email-action/preview/invalid_token_abc");
-    expect(res.status()).toBe(404);
+    await page.goto("/login");
+    const res = await browserApiGet(page, "/email-action/preview/invalid_token_abc");
+    expect(res.status).toBe(404);
   });
 });

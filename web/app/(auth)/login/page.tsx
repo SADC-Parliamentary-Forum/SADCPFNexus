@@ -215,7 +215,7 @@ export default function LoginPage() {
           <div className="mb-8 flex items-start justify-between gap-3">
             <div>
               <h2 className="text-2xl font-bold text-neutral-900">{t("login.title")}</h2>
-              <p className="text-sm text-neutral-500 mt-1">{t("login.subtitle")}</p>
+              <p className="text-sm text-neutral-700 mt-1">{t("login.subtitle")}</p>
             </div>
             <LocaleSwitcher />
           </div>
@@ -318,7 +318,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowDemo(!showDemo)}
-                className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 transition-colors"
+                className="flex items-center gap-1.5 text-xs font-medium text-neutral-700 hover:text-neutral-900 transition-colors"
               >
                 <span className="material-symbols-outlined text-[14px]">info</span>
                 {showDemo ? "Hide" : "Show"} demo login credentials
@@ -346,22 +346,22 @@ export default function LoginPage() {
             </div>
           )}
 
-          <div className="mt-6 text-center text-xs text-neutral-500 space-y-1.5">
+          <div className="mt-6 text-center text-xs text-neutral-700 space-y-1.5">
             <p>
-              <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+              <Link href="/forgot-password" className="font-medium text-primary-800 hover:underline">
                 {t("login.resetPassword")}
               </Link>
               {" "}{t("login.or")}{" "}
-              <Link href="/request-password" className="font-medium text-primary hover:underline">
+              <Link href="/request-password" className="font-medium text-primary-800 hover:underline">
                 {t("login.requestPassword")}
               </Link>
               {" "}{t("login.forAccounts")}
             </p>
-            <p className="text-neutral-600">{t("login.mailboxHelp")}</p>
+            <p className="text-neutral-700">{t("login.mailboxHelp")}</p>
           </div>
-          <div className="mt-3 text-center text-xs text-neutral-500">
+          <div className="mt-3 text-center text-xs text-neutral-700">
             {t("login.supplierOnboarding")}{" "}
-            <Link href="/supplier/register" className="font-medium text-primary hover:underline">
+            <Link href="/supplier/register" className="font-medium text-primary-800 hover:underline">
               {t("login.supplierRegister")}
             </Link>
           </div>

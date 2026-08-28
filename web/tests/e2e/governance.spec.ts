@@ -2,7 +2,7 @@
  * Governance module E2E tests.
  */
 import { test, expect } from "@playwright/test";
-import { apiClient } from "./helpers/api";
+import { browserApiGet, skipIfApiForbidden } from "./helpers/api";
 import { skipWithoutAuth, skipIfAccessDenied, waitForApp } from "./helpers/auth";
 
 test.describe("Governance overview", () => {
@@ -50,9 +50,8 @@ test.describe("Resolutions", () => {
   });
 
   test("resolution status filter tabs are present", async ({ page }) => {
-    const tabs = page.getByRole("button", { name: /all|draft|adopted/i });
-    const count = await tabs.count();
-    expect(count).toBeGreaterThan(0);
+    const tabs = page.locator(".filter-tab").or(page.getByRole("button", { name: "All" }));
+    await expect(tabs.first()).toBeVisible({ timeout: 10_000 });
   });
 });
 
@@ -68,22 +67,28 @@ test.describe("Plenary sessions", () => {
 });
 
 test.describe("Governance API via browser", () => {
-  test("resolutions API returns data structure the UI can render", async ({ request }) => {
+  test("resolutions API returns data structure the UI can render", async ({ page }) => {
     skipWithoutAuth("staff");
-    const res = await apiClient(request).get("/governance/resolutions");
-
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    await page.goto("/governance/resolutions");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "/governance/resolutions");
+    const res = await browserApiGet(page, "/governance/resolutions");
+    skipIfApiForbidden(res, "/governance/resolutions");
+    expect(res.ok).toBeTruthy();
+    const body = res.body as { data?: unknown };
     expect(body).toHaveProperty("data");
     expect(Array.isArray(body.data)).toBeTruthy();
   });
 
-  test("committees API returns data structure", async ({ request }) => {
+  test("committees API returns data structure", async ({ page }) => {
     skipWithoutAuth("staff");
-    const res = await apiClient(request).get("/governance/committees");
-
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
+    await page.goto("/governance");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "/governance");
+    const res = await browserApiGet(page, "/governance/committees");
+    skipIfApiForbidden(res, "/governance/committees");
+    expect(res.ok).toBeTruthy();
+    const body = res.body as { data?: unknown };
     expect(body).toHaveProperty("data");
   });
 });

@@ -25,6 +25,7 @@ import { test, expect } from "@playwright/test";
 import {
   authStatePath,
   landedOnLogin,
+  skipIfAccessDenied,
   skipWithoutAuth,
   waitForApp,
 } from "./helpers/auth";
@@ -118,6 +119,7 @@ test.describe("Smoke — Procurement (staff)", () => {
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid for procurement list");
     }
+    await skipIfAccessDenied(page, "/procurement");
 
     await expect(page.locator("h1, [class*='page-title']").first()).toBeVisible({
       timeout: 15_000,

@@ -21,7 +21,7 @@ export function AccessDenied({
           lock
         </span>
       </div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Access denied</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-neutral-700">Access denied</p>
       <h1 className="page-title mt-1">You cannot open this page</h1>
       <p className="page-subtitle mt-2 max-w-md">{reason}</p>
       {path ? (

@@ -43,14 +43,6 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
     })();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-6xl space-y-4">
-        {[...Array(3)].map((_, i) => <div key={i} className="h-28 animate-pulse rounded-xl bg-neutral-100" />)}
-      </div>
-    );
-  }
-
   const elig = summary?.eligibility;
   const current = summary?.current_request;
   const currentStatus = current ? (SA_STATUS_CONFIG[current.status] ?? { label: current.status, badge: "badge-muted" }) : null;
@@ -74,6 +66,12 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
         }
       />
 
+      {loading ? (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => <div key={i} className="h-28 animate-pulse rounded-xl bg-neutral-100" />)}
+        </div>
+      ) : (
+        <>
       {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -182,6 +180,8 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
           <ModuleHubCards cards={SALARY_ADVANCE_HUB_CARDS.filter((card) => card.href !== "/salary-advances/create")} />
         </div>
       </details>
+        </>
+      )}
     </div>
   );
 }

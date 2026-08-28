@@ -78,9 +78,9 @@ test.describe("Admin — Roles", () => {
   });
 
   test("roles list shows permission matrix or role cards", async ({ page }) => {
-    const cards = page.locator("[class*='role'], [class*='card']");
-    const count = await cards.count();
-    expect(count).toBeGreaterThan(0);
+    await expect(page.getByRole("heading", { name: /role catalogue|governed roles/i }).first()).toBeVisible({
+      timeout: 12_000,
+    });
   });
 });
 

@@ -58,7 +58,7 @@
 
 @layer base {
   :root {
-    --primary: #1d85ed;
+    --primary: #1a65bb;
     --surface: #f6f7f8;
     --sidebar-width: 260px;
   }
@@ -199,7 +199,7 @@
 
   /* Buttons */
   .btn-primary {
-    @apply inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors disabled:opacity-50;
+    @apply inline-flex items-center gap-2 rounded-lg bg-primary-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors disabled:opacity-50;
   }
 
   .btn-secondary {
@@ -212,7 +212,7 @@
   }
 
   .page-subtitle {
-    @apply text-sm text-neutral-500 mt-0.5;
+    @apply text-sm text-neutral-700 mt-0.5;
   }
 
   /* ── Legacy class bridges (pre–design-system pages) ─────────────────

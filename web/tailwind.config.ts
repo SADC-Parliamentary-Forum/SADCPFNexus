@@ -15,7 +15,9 @@ const config: Config = {
         "background-dark": "#101922",
         // SADC PF Brand primary
         primary: {
-          DEFAULT: "#1d85ed",
+          // DEFAULT is the AA-safe text/button tone (white-on-primary ≥ 4.5:1).
+          // 500 keeps the brighter brand chip for decorative /10 washes.
+          DEFAULT: "#1a65bb",
           50: "#eff6ff",
           100: "#dbeafe",
           200: "#bfdbfe",

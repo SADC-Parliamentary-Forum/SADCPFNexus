@@ -693,7 +693,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
         >
           <div
             className={cn(
-              "rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-white font-bold",
+              "rounded-full bg-primary-700 flex items-center justify-center flex-shrink-0 text-white font-bold",
               isCollapsed ? "h-8 w-8 text-xs" : "h-8 w-8 text-xs"
             )}
           >

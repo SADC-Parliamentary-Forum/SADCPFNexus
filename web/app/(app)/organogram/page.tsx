@@ -541,7 +541,7 @@ export default function OrganogramPage() {
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-neutral-400 pointer-events-none">
                 <span className="material-symbols-outlined text-7xl opacity-10">account_tree</span>
                 <p className="font-semibold text-sm">No units yet</p>
-                <p className="text-xs">Click "New Root Unit" to get started.</p>
+                <p className="text-xs">Click "Add Unit" to get started.</p>
               </div>
             )}
           </div>

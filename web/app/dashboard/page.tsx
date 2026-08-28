@@ -242,7 +242,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
             {greeting}{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
           </h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-600 mt-0.5">
+          <p className="text-sm text-neutral-700 dark:text-neutral-400 mt-0.5">
             {dateLabel} · Here&apos;s your workspace overview.
           </p>
         </div>
@@ -312,7 +312,7 @@ export default function DashboardPage() {
           <Link key={key} href={href} className={`card p-5 border ${border} hover:shadow-elevated transition-all hover:border-primary/30 group`}>
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-600 uppercase tracking-wider">{label}</p>
+                <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-400 uppercase tracking-wider">{label}</p>
                 <p className="mt-2 text-3xl font-bold text-neutral-900 dark:text-neutral-100">
                   {loading
                     ? <span className="inline-block h-8 w-12 animate-pulse rounded-md bg-neutral-100 dark:bg-neutral-700/40" />

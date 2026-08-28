@@ -40,13 +40,10 @@ test.describe("Dashboard", () => {
   });
 
   test("KPI / stats cards are visible", async ({ page }) => {
-    // Wait for stats to load (they're fetched async)
-    await page.waitForLoadState("domcontentloaded");
-
-    // Look for card-like elements with numeric content
-    const cards = page.locator("[class*='card'], [class*='kpi'], [class*='stat']");
-    const count = await cards.count();
-    expect(count).toBeGreaterThan(0);
+    await expect(page.getByRole("heading", { level: 1 }).first()).toBeVisible({ timeout: 12_000 });
+    const greeting = page.getByRole("heading", { name: /good (morning|afternoon|evening)/i });
+    const cards = page.locator(".card, [class*='kpi'], [class*='stat']");
+    await expect(greeting.or(cards.first()).first()).toBeVisible({ timeout: 12_000 });
   });
 
   test("header shows user info", async ({ page }) => {

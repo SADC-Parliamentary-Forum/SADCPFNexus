@@ -23,10 +23,9 @@ node scripts/readiness/generate-uat-pack.mjs
 
 echo "[READINESS] Workflow invariants (PHPUnit)"
 cd api
-php artisan test --filter=ReadinessInvariantTest --stop-on-failure
-php artisan test --filter=ReadinessEndpointHealthTest --stop-on-failure
-php artisan test --filter=ApiRouteScenarioRunnerTest --stop-on-failure
-php artisan test --filter=LeaveWorkflowPatternTest --stop-on-failure
+# One process: RefreshDatabase migrate:fresh runs once. Separate artisan
+# invocations re-drop 400+ tables and exhaust Postgres max_locks_per_transaction.
+php artisan test --stop-on-failure --filter='ReadinessInvariantTest|ReadinessEndpointHealthTest|ApiRouteScenarioRunnerTest|LeaveWorkflowPatternTest'
 cd "$ROOT_DIR"
 
 echo "[READINESS] Route/link 404/500 smoke (Playwright)"

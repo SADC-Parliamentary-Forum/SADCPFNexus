@@ -64,7 +64,7 @@ interface BreadcrumbItem {
 /** Compact breadcrumb row used under ModulePageHeader / RegisterShell. */
 export function PageBreadcrumbs({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <nav className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-neutral-500" aria-label="Breadcrumb">
+    <nav className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-neutral-700" aria-label="Breadcrumb">
       {items.map((item, i) => {
         const isLast = i === items.length - 1;
         return (

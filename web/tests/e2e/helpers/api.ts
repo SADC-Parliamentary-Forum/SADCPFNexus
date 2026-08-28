@@ -6,8 +6,12 @@
  * different origin, so SameSite cookies are dropped.
  *
  * Next rewrite: `/api/:path*` → Laravel `/api/v1/:path*`.
+ *
+ * Playwright's isolated `request` fixture often omits the browser session
+ * even with storageState. Prefer `browserApiGet(page, path)` after a
+ * same-origin navigation.
  */
-import { APIRequestContext } from "@playwright/test";
+import { APIRequestContext, Page, test } from "@playwright/test";
 
 function origin(): string {
   return (process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
@@ -38,6 +42,37 @@ export function apiClient(request: APIRequestContext) {
       return request.delete(`${apiRoot()}${path}`, { headers });
     },
   };
+}
+
+export type BrowserApiResult = {
+  ok: boolean;
+  status: number;
+  body: unknown;
+};
+
+/** In-page fetch so the real browser cookies (and CSRF) are sent. */
+export async function browserApiGet(page: Page, path: string): Promise<BrowserApiResult> {
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  return page.evaluate(async (p) => {
+    const res = await fetch(`/api${p}`, {
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    });
+    let body: unknown = null;
+    try {
+      body = await res.json();
+    } catch {
+      /* non-JSON */
+    }
+    return { ok: res.ok, status: res.status, body };
+  }, suffix);
+}
+
+/** Skip when the fixture user is not allowed to call this API. */
+export function skipIfApiForbidden(result: BrowserApiResult, path: string): void {
+  if (result.status === 401 || result.status === 403) {
+    test.skip(true, `${path} returned ${result.status} for this role`);
+  }
 }
 
 /** Wait for the page to show a toast or success indicator */

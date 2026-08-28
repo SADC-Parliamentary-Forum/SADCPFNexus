@@ -607,6 +607,11 @@ function NotificationsPageInner() {
   const initialTab = (searchParams.get("tab") as TabKey | null) ?? "alerts";
   const [tab, setTab] = useState<TabKey>(initialTab);
 
+  useEffect(() => {
+    const next = searchParams.get("tab") === "inbox" ? "inbox" : "alerts";
+    setTab(next);
+  }, [searchParams]);
+
   const { data: countData } = useQuery({
     queryKey: ["notifications", "unread-count"],
     queryFn: () => userNotificationsApi.unreadCount().then(r => r.data.count),
