@@ -295,6 +295,55 @@ return [
             'READ' => ['finance.view', 'finance.admin'],
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
         ]],
+        ['pattern' => 'api/v1/risk/kris*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.manage', 'risk.admin'],
+            'WRITE' => ['risk.manage', 'risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk/control-testing*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.manage', 'risk.admin'],
+            'WRITE' => ['risk.manage', 'risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk/bcp-*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.manage', 'risk.admin'],
+            'WRITE' => ['risk.manage', 'risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk/insurance*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.manage', 'risk.admin'],
+            'WRITE' => ['risk.manage', 'risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk/dependencies*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.manage', 'risk.admin'],
+            'WRITE' => ['risk.manage', 'risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk/appetite*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.manage', 'risk.admin'],
+            'WRITE' => ['risk.manage', 'risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk/policies*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.manage', 'risk.admin'],
+            'WRITE' => ['risk.manage', 'risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk/controls*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.manage', 'risk.admin'],
+            'WRITE' => ['risk.manage', 'risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk/incidents*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.create', 'risk.manage', 'risk.admin'],
+            'WRITE' => ['risk.create', 'risk.manage', 'risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk/acceptances*', 'permissions' => [
+            'WRITE' => ['risk.accept', 'risk.approve', 'risk.manage', 'risk.admin'],
+        ]],
+        ['pattern' => 'api/v1/risk/risks*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.module.view', 'risk.create'],
+            'POST' => [
+                'risk.create', 'risk.submit', 'risk.review', 'risk.approve',
+                'risk.manage', 'risk.admin',
+            ],
+            'PUT' => ['risk.create', 'risk.manage', 'risk.admin'],
+            'PATCH' => ['risk.create', 'risk.manage', 'risk.admin'],
+            'DELETE' => ['risk.create', 'risk.manage', 'risk.admin'],
+        ]],
         ['pattern' => 'api/v1/risk*', 'permissions' => [
             'READ' => ['risk.view', 'risk.module.view'],
             'POST' => ['risk.create', 'risk.manage', 'risk.admin'],
