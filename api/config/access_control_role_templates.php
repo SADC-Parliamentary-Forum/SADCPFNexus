@@ -49,6 +49,8 @@ return [
             'audit.response.manage', 'audit.corrective.manage',
             // Risk identification is staff self-service; review/approve stay on HOD/Director/SG.
             'risk.view', 'risk.create', 'risk.submit',
+            // Consumables catalogue visibility for store requests — not the fixed-asset register.
+            'stock.view',
         ],
         'inherits' => [],
         'legacy_roles' => ['staff'],
