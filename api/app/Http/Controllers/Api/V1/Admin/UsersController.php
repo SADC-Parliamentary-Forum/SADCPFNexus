@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AccountAccessRequest;
-use App\Models\AccountInvitation;
-use App\Models\Department;
 use App\Models\User;
 use App\Modules\UserManagement\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -27,11 +25,13 @@ class UsersController extends Controller
      *     summary="List users in the authenticated tenant",
      *     tags={"Admin - Users"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Parameter(name="search", in="query", schema={"type":"string"}),
      *     @OA\Parameter(name="department_id", in="query", schema={"type":"integer"}),
      *     @OA\Parameter(name="status", in="query", schema={"type":"string","enum":{"active","inactive"}}),
      *     @OA\Parameter(name="role", in="query", schema={"type":"string"}),
      *     @OA\Parameter(name="per_page", in="query", schema={"type":"integer","default":25}),
+     *
      *     @OA\Response(response=200, description="Paginated user list")
      * )
      */
@@ -50,12 +50,14 @@ class UsersController extends Controller
      *     summary="Get a specific user",
      *     tags={"Admin - Users"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Response(response=200, description="User detail")
      * )
      */
     public function show(User $user): JsonResponse
     {
         $this->authorize('view', $user);
+
         return response()->json(
             $user->load(['tenant', 'department', 'roles', 'permissions'])
         );
@@ -67,6 +69,7 @@ class UsersController extends Controller
      *     summary="Create a new user",
      *     tags={"Admin - Users"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Response(response=201, description="User created")
      * )
      */
@@ -74,41 +77,41 @@ class UsersController extends Controller
     {
         $this->authorize('create', User::class);
         $data = $request->validate([
-            'name'            => ['required', 'string', 'max:255'],
-            'email'           => ['required', 'email', 'unique:users,email'],
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'unique:users,email'],
             'employee_number' => ['nullable', 'string', 'max:50', 'unique:users,employee_number'],
-            'job_title'       => ['nullable', 'string', 'max:255'],
-            'department_id'   => ['nullable', 'exists:departments,id'],
-            'role'            => ['nullable', 'string', 'exists:roles,name'],
-            'classification'  => ['nullable', Rule::in(['UNCLASSIFIED', 'RESTRICTED', 'CONFIDENTIAL', 'SECRET'])],
-            'mfa_enabled'     => ['boolean'],
-            'bio'             => ['nullable', 'string'],
-            'date_of_birth'   => ['nullable', 'date'],
-            'join_date'       => ['nullable', 'date'],
-            'phone'           => ['nullable', 'string', 'max:50'],
-            'nationality'     => ['nullable', 'string', 'max:100'],
-            'gender'          => ['nullable', 'string', 'max:20'],
-            'marital_status'  => ['nullable', 'string', 'max:20'],
-            'emergency_contact_name'         => ['nullable', 'string', 'max:255'],
+            'job_title' => ['nullable', 'string', 'max:255'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'role' => ['nullable', 'string', 'exists:roles,name'],
+            'classification' => ['nullable', Rule::in(['UNCLASSIFIED', 'RESTRICTED', 'CONFIDENTIAL', 'SECRET'])],
+            'mfa_enabled' => ['boolean'],
+            'bio' => ['nullable', 'string'],
+            'date_of_birth' => ['nullable', 'date'],
+            'join_date' => ['nullable', 'date'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'nationality' => ['nullable', 'string', 'max:100'],
+            'gender' => ['nullable', 'string', 'max:20'],
+            'marital_status' => ['nullable', 'string', 'max:20'],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_relationship' => ['nullable', 'string', 'max:100'],
-            'emergency_contact_phone'        => ['nullable', 'string', 'max:50'],
-            'address_line1'   => ['nullable', 'string', 'max:255'],
-            'address_line2'   => ['nullable', 'string', 'max:255'],
-            'city'            => ['nullable', 'string', 'max:100'],
-            'country'         => ['nullable', 'string', 'max:100'],
-            'skills'              => ['nullable', 'array'],
-            'qualifications'      => ['nullable', 'array'],
-            'portfolio_ids'       => ['nullable', 'array'],
-            'portfolio_ids.*'     => ['exists:portfolios,id'],
-            'password'            => ['prohibited'],
-            'send_welcome_email'  => ['boolean'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:50'],
+            'address_line1' => ['nullable', 'string', 'max:255'],
+            'address_line2' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'skills' => ['nullable', 'array'],
+            'qualifications' => ['nullable', 'array'],
+            'portfolio_ids' => ['nullable', 'array'],
+            'portfolio_ids.*' => ['exists:portfolios,id'],
+            'password' => ['prohibited'],
+            'send_welcome_email' => ['boolean'],
         ]);
 
         $user = $this->userService->create($data, $request->user());
 
         return response()->json([
             'message' => 'User invited successfully.',
-            'user'    => $user,
+            'user' => $user,
         ], 201);
     }
 
@@ -118,6 +121,7 @@ class UsersController extends Controller
      *     summary="Update a user",
      *     tags={"Admin - Users"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Response(response=200, description="User updated")
      * )
      */
@@ -125,32 +129,32 @@ class UsersController extends Controller
     {
         $this->authorize('update', $user);
         $data = $request->validate([
-            'name'           => ['sometimes', 'string', 'max:255'],
-            'email'          => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
-            'job_title'      => ['nullable', 'string', 'max:255'],
-            'department_id'  => ['nullable', 'exists:departments,id'],
-            'role'           => ['nullable', 'string', 'exists:roles,name'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'email' => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
+            'job_title' => ['nullable', 'string', 'max:255'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'role' => ['nullable', 'string', 'exists:roles,name'],
             'classification' => ['nullable', Rule::in(['UNCLASSIFIED', 'RESTRICTED', 'CONFIDENTIAL', 'SECRET'])],
-            'mfa_enabled'    => ['boolean'],
-            'bio'            => ['nullable', 'string'],
-            'date_of_birth'  => ['nullable', 'date'],
-            'join_date'      => ['nullable', 'date'],
-            'phone'          => ['nullable', 'string', 'max:50'],
-            'nationality'     => ['nullable', 'string', 'max:100'],
-            'gender'          => ['nullable', 'string', 'max:20'],
-            'marital_status'  => ['nullable', 'string', 'max:20'],
-            'emergency_contact_name'         => ['nullable', 'string', 'max:255'],
+            'mfa_enabled' => ['boolean'],
+            'bio' => ['nullable', 'string'],
+            'date_of_birth' => ['nullable', 'date'],
+            'join_date' => ['nullable', 'date'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'nationality' => ['nullable', 'string', 'max:100'],
+            'gender' => ['nullable', 'string', 'max:20'],
+            'marital_status' => ['nullable', 'string', 'max:20'],
+            'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_relationship' => ['nullable', 'string', 'max:100'],
-            'emergency_contact_phone'        => ['nullable', 'string', 'max:50'],
-            'address_line1'   => ['nullable', 'string', 'max:255'],
-            'address_line2'   => ['nullable', 'string', 'max:255'],
-            'city'            => ['nullable', 'string', 'max:100'],
-            'country'         => ['nullable', 'string', 'max:100'],
-            'skills'          => ['nullable', 'array'],
-            'qualifications'  => ['nullable', 'array'],
-            'portfolio_ids'   => ['nullable', 'array'],
+            'emergency_contact_phone' => ['nullable', 'string', 'max:50'],
+            'address_line1' => ['nullable', 'string', 'max:255'],
+            'address_line2' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'skills' => ['nullable', 'array'],
+            'qualifications' => ['nullable', 'array'],
+            'portfolio_ids' => ['nullable', 'array'],
             'portfolio_ids.*' => ['exists:portfolios,id'],
-            'position_id'     => ['nullable', 'exists:positions,id'],
+            'position_id' => ['nullable', 'exists:positions,id'],
         ]);
 
         // Defense in depth: role/classification changes require assignRole ability.
@@ -162,7 +166,7 @@ class UsersController extends Controller
 
         return response()->json([
             'message' => 'User updated successfully.',
-            'user'    => $user,
+            'user' => $user,
         ]);
     }
 
@@ -172,6 +176,7 @@ class UsersController extends Controller
      *     summary="Deactivate a user (soft disable)",
      *     tags={"Admin - Users"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Response(response=200, description="User deactivated")
      * )
      */
@@ -189,7 +194,7 @@ class UsersController extends Controller
         $this->authorize('create', User::class);
 
         $data = $request->validate([
-            'ids'   => ['required', 'array', 'min:1', 'max:100'],
+            'ids' => ['required', 'array', 'min:1', 'max:100'],
             'ids.*' => ['integer', 'distinct'],
         ]);
 
@@ -201,11 +206,11 @@ class UsersController extends Controller
         );
 
         return response()->json([
-            'message'            => 'Bulk deactivate completed.',
-            'deactivated'        => $result['deactivated'],
-            'deactivated_count'  => count($result['deactivated']),
-            'skipped'            => $result['skipped'],
-            'skipped_count'      => count($result['skipped']),
+            'message' => 'Bulk deactivate completed.',
+            'deactivated' => $result['deactivated'],
+            'deactivated_count' => count($result['deactivated']),
+            'skipped' => $result['skipped'],
+            'skipped_count' => count($result['skipped']),
         ]);
     }
 
@@ -215,6 +220,7 @@ class UsersController extends Controller
      *     summary="Reactivate a deactivated user",
      *     tags={"Admin - Users"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Response(response=200, description="User reactivated")
      * )
      */
@@ -436,6 +442,7 @@ class UsersController extends Controller
      *     summary="Admin: send a password reset link for a user",
      *     tags={"Admin - Users"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Response(response=200, description="Password reset link sent")
      * )
      */
@@ -465,10 +472,10 @@ class UsersController extends Controller
 
         \App\Models\AuditLog::record('user.password_reset_link_sent_by_admin', [
             'auditable_type' => User::class,
-            'auditable_id'   => $user->id,
-            'actor_id'       => $request->user()->id,
-            'new_values'     => ['action' => 'reset_link_sent', 'target_user' => $user->email],
-            'tags'           => 'auth',
+            'auditable_id' => $user->id,
+            'actor_id' => $request->user()->id,
+            'new_values' => ['action' => 'reset_link_sent', 'target_user' => $user->email],
+            'tags' => 'auth',
         ]);
 
         return response()->json(['message' => 'Password reset link sent.']);
@@ -480,6 +487,7 @@ class UsersController extends Controller
      *     summary="Get audit trail for a user",
      *     tags={"Admin - Users"},
      *     security={{"sanctum":{}}},
+     *
      *     @OA\Response(response=200, description="Audit events")
      * )
      */

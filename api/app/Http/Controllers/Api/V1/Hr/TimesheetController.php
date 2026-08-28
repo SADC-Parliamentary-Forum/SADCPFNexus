@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Hr;
 
 use App\Http\Controllers\Controller;
 use App\Models\LeaveRequest;
+use App\Models\PayrollExportBatch;
 use App\Models\PerformanceTracker;
 use App\Models\Timesheet;
 use App\Models\TimesheetEntry;
@@ -11,7 +12,6 @@ use App\Models\TimesheetTemplate;
 use App\Modules\Timesheets\Services\TimesheetExportService;
 use App\Modules\Timesheets\Services\TimesheetPayrollExportService;
 use App\Modules\Timesheets\Services\TimesheetService;
-use App\Models\PayrollExportBatch;
 use App\Services\WorkflowService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +26,7 @@ class TimesheetController extends Controller
         private readonly TimesheetService $timesheetService,
         private readonly TimesheetExportService $exportService,
         private readonly TimesheetPayrollExportService $payrollExportService,
-        private readonly WorkflowService  $workflowService,
+        private readonly WorkflowService $workflowService,
         private readonly \App\Modules\Timesheets\Services\TimesheetCapacityAnalyticsService $capacityAnalytics,
     ) {}
 
@@ -37,11 +37,11 @@ class TimesheetController extends Controller
             ->where('user_id', $request->user()->id)
             ->orderByDesc('week_start');
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['week_start'])) {
+        if (! empty($filters['week_start'])) {
             $query->where('week_start', $filters['week_start']);
         }
 
@@ -53,14 +53,16 @@ class TimesheetController extends Controller
         }
 
         $paginated = $query->paginate($filters['per_page'] ?? 20);
+
         return response()->json($paginated);
     }
 
     public function show(Timesheet $timesheet): JsonResponse
     {
-        if ($timesheet->user_id !== request()->user()->id && !$this->canManageTimesheets(request()->user())) {
+        if ($timesheet->user_id !== request()->user()->id && ! $this->canManageTimesheets(request()->user())) {
             abort(403);
         }
+
         return response()->json($timesheet->load(['entries.project', 'entries.workAssignment', 'user', 'approver']));
     }
 
@@ -75,25 +77,25 @@ class TimesheetController extends Controller
         }
 
         $data = $request->validate([
-            'week_start'                   => ['required', 'date'],
-            'week_end'                     => ['required', 'date', 'after_or_equal:week_start'],
-            'entries'                      => ['required', 'array', 'min:1'],
-            'entries.*.work_date'          => ['required', 'date'],
-            'entries.*.hours'              => ['required', 'numeric', 'min:0', 'max:24'],
-            'entries.*.overtime_hours'     => ['nullable', 'numeric', 'min:0', 'max:12'],
-            'entries.*.description'        => ['nullable', 'string', 'max:500'],
-            'entries.*.project_id'         => ['nullable', 'integer', 'exists:timesheet_projects,id'],
-            'entries.*.work_bucket'        => ['nullable', 'string', 'in:' . implode(',', TimesheetEntry::WORK_BUCKETS)],
-            'entries.*.activity_type'      => ['nullable', 'string', 'max:100'],
-            'entries.*.entry_category'     => ['nullable', 'string', 'max:64'],
+            'week_start' => ['required', 'date'],
+            'week_end' => ['required', 'date', 'after_or_equal:week_start'],
+            'entries' => ['required', 'array', 'min:1'],
+            'entries.*.work_date' => ['required', 'date'],
+            'entries.*.hours' => ['required', 'numeric', 'min:0', 'max:24'],
+            'entries.*.overtime_hours' => ['nullable', 'numeric', 'min:0', 'max:12'],
+            'entries.*.description' => ['nullable', 'string', 'max:500'],
+            'entries.*.project_id' => ['nullable', 'integer', 'exists:timesheet_projects,id'],
+            'entries.*.work_bucket' => ['nullable', 'string', 'in:'.implode(',', TimesheetEntry::WORK_BUCKETS)],
+            'entries.*.activity_type' => ['nullable', 'string', 'max:100'],
+            'entries.*.entry_category' => ['nullable', 'string', 'max:64'],
             'entries.*.work_assignment_id' => ['nullable', 'integer', 'exists:work_assignments,id'],
-            'entries.*.assignment_id'      => ['nullable', 'integer'],
-            'entries.*.pif_id'             => ['nullable', 'integer'],
-            'entries.*.programme_id'       => ['nullable', 'integer'],
-            'entries.*.start_time'         => ['nullable', 'date_format:H:i'],
-            'entries.*.end_time'           => ['nullable', 'date_format:H:i'],
-            'entries.*.source_type'        => ['nullable', 'string', 'in:manual,leave,travel,holiday'],
-            'entries.*.source_record_id'   => ['nullable', 'integer'],
+            'entries.*.assignment_id' => ['nullable', 'integer'],
+            'entries.*.pif_id' => ['nullable', 'integer'],
+            'entries.*.programme_id' => ['nullable', 'integer'],
+            'entries.*.start_time' => ['nullable', 'date_format:H:i'],
+            'entries.*.end_time' => ['nullable', 'date_format:H:i'],
+            'entries.*.source_type' => ['nullable', 'string', 'in:manual,leave,travel,holiday'],
+            'entries.*.source_record_id' => ['nullable', 'integer'],
         ]);
 
         $user = $request->user();
@@ -111,37 +113,37 @@ class TimesheetController extends Controller
         $this->timesheetService->assertPeriodEditable($period);
 
         $timesheet = Timesheet::create([
-            'tenant_id'      => $user->tenant_id,
-            'period_id'      => $period->id,
-            'user_id'        => $user->id,
-            'week_start'     => $data['week_start'],
-            'week_end'       => $data['week_end'],
-            'week_number'    => $weekNumber,
-            'total_hours'    => $total,
+            'tenant_id' => $user->tenant_id,
+            'period_id' => $period->id,
+            'user_id' => $user->id,
+            'week_start' => $data['week_start'],
+            'week_end' => $data['week_end'],
+            'week_number' => $weekNumber,
+            'total_hours' => $total,
             'overtime_hours' => $overtime,
-            'status'         => 'draft',
+            'status' => 'draft',
         ]);
 
         foreach ($data['entries'] as $e) {
             TimesheetEntry::create([
-                'timesheet_id'       => $timesheet->id,
-                'work_date'          => $e['work_date'],
-                'start_time'         => isset($e['start_time']) ? $e['start_time'].':00' : null,
-                'end_time'           => isset($e['end_time']) ? $e['end_time'].':00' : null,
-                'hours'              => $e['hours'],
-                'overtime_hours'     => $e['overtime_hours'] ?? 0,
-                'description'        => $e['description'] ?? null,
-                'project_id'         => $e['project_id'] ?? null,
-                'work_bucket'        => $e['work_bucket'] ?? null,
-                'activity_type'      => $e['activity_type'] ?? null,
-                'entry_category'     => $e['entry_category'] ?? null,
+                'timesheet_id' => $timesheet->id,
+                'work_date' => $e['work_date'],
+                'start_time' => isset($e['start_time']) ? $e['start_time'].':00' : null,
+                'end_time' => isset($e['end_time']) ? $e['end_time'].':00' : null,
+                'hours' => $e['hours'],
+                'overtime_hours' => $e['overtime_hours'] ?? 0,
+                'description' => $e['description'] ?? null,
+                'project_id' => $e['project_id'] ?? null,
+                'work_bucket' => $e['work_bucket'] ?? null,
+                'activity_type' => $e['activity_type'] ?? null,
+                'entry_category' => $e['entry_category'] ?? null,
                 'work_assignment_id' => $e['work_assignment_id'] ?? null,
-                'assignment_id'      => $e['assignment_id'] ?? null,
-                'pif_id'             => $e['pif_id'] ?? null,
-                'programme_id'       => $e['programme_id'] ?? null,
-                'source_type'        => $e['source_type'] ?? 'manual',
-                'source_record_id'   => $e['source_record_id'] ?? null,
-                'is_locked'          => in_array($e['source_type'] ?? 'manual', ['leave', 'travel', 'holiday']),
+                'assignment_id' => $e['assignment_id'] ?? null,
+                'pif_id' => $e['pif_id'] ?? null,
+                'programme_id' => $e['programme_id'] ?? null,
+                'source_type' => $e['source_type'] ?? 'manual',
+                'source_record_id' => $e['source_record_id'] ?? null,
+                'is_locked' => in_array($e['source_type'] ?? 'manual', ['leave', 'travel', 'holiday']),
             ]);
         }
 
@@ -160,23 +162,23 @@ class TimesheetController extends Controller
         }
 
         $data = $request->validate([
-            'entries'                      => ['required', 'array', 'min:1'],
-            'entries.*.work_date'          => ['required', 'date'],
-            'entries.*.hours'              => ['required', 'numeric', 'min:0', 'max:24'],
-            'entries.*.overtime_hours'     => ['nullable', 'numeric', 'min:0', 'max:12'],
-            'entries.*.description'        => ['nullable', 'string', 'max:500'],
-            'entries.*.project_id'         => ['nullable', 'integer', 'exists:timesheet_projects,id'],
-            'entries.*.work_bucket'        => ['nullable', 'string', 'in:' . implode(',', TimesheetEntry::WORK_BUCKETS)],
-            'entries.*.activity_type'      => ['nullable', 'string', 'max:100'],
-            'entries.*.entry_category'     => ['nullable', 'string', 'max:64'],
+            'entries' => ['required', 'array', 'min:1'],
+            'entries.*.work_date' => ['required', 'date'],
+            'entries.*.hours' => ['required', 'numeric', 'min:0', 'max:24'],
+            'entries.*.overtime_hours' => ['nullable', 'numeric', 'min:0', 'max:12'],
+            'entries.*.description' => ['nullable', 'string', 'max:500'],
+            'entries.*.project_id' => ['nullable', 'integer', 'exists:timesheet_projects,id'],
+            'entries.*.work_bucket' => ['nullable', 'string', 'in:'.implode(',', TimesheetEntry::WORK_BUCKETS)],
+            'entries.*.activity_type' => ['nullable', 'string', 'max:100'],
+            'entries.*.entry_category' => ['nullable', 'string', 'max:64'],
             'entries.*.work_assignment_id' => ['nullable', 'integer', 'exists:work_assignments,id'],
-            'entries.*.assignment_id'      => ['nullable', 'integer'],
-            'entries.*.pif_id'             => ['nullable', 'integer'],
-            'entries.*.programme_id'       => ['nullable', 'integer'],
-            'entries.*.start_time'         => ['nullable', 'date_format:H:i'],
-            'entries.*.end_time'           => ['nullable', 'date_format:H:i'],
-            'entries.*.source_type'        => ['nullable', 'string', 'in:manual,leave,travel,holiday'],
-            'entries.*.source_record_id'   => ['nullable', 'integer'],
+            'entries.*.assignment_id' => ['nullable', 'integer'],
+            'entries.*.pif_id' => ['nullable', 'integer'],
+            'entries.*.programme_id' => ['nullable', 'integer'],
+            'entries.*.start_time' => ['nullable', 'date_format:H:i'],
+            'entries.*.end_time' => ['nullable', 'date_format:H:i'],
+            'entries.*.source_type' => ['nullable', 'string', 'in:manual,leave,travel,holiday'],
+            'entries.*.source_record_id' => ['nullable', 'integer'],
         ]);
 
         $this->timesheetService->validateEntries(
@@ -200,24 +202,24 @@ class TimesheetController extends Controller
         $timesheet->entries()->delete();
         foreach ($data['entries'] as $e) {
             TimesheetEntry::create([
-                'timesheet_id'       => $timesheet->id,
-                'work_date'          => $e['work_date'],
-                'start_time'         => isset($e['start_time']) ? $e['start_time'].':00' : null,
-                'end_time'           => isset($e['end_time']) ? $e['end_time'].':00' : null,
-                'hours'              => $e['hours'],
-                'overtime_hours'     => $e['overtime_hours'] ?? 0,
-                'description'        => $e['description'] ?? null,
-                'project_id'         => $e['project_id'] ?? null,
-                'work_bucket'        => $e['work_bucket'] ?? null,
-                'activity_type'      => $e['activity_type'] ?? null,
-                'entry_category'     => $e['entry_category'] ?? null,
+                'timesheet_id' => $timesheet->id,
+                'work_date' => $e['work_date'],
+                'start_time' => isset($e['start_time']) ? $e['start_time'].':00' : null,
+                'end_time' => isset($e['end_time']) ? $e['end_time'].':00' : null,
+                'hours' => $e['hours'],
+                'overtime_hours' => $e['overtime_hours'] ?? 0,
+                'description' => $e['description'] ?? null,
+                'project_id' => $e['project_id'] ?? null,
+                'work_bucket' => $e['work_bucket'] ?? null,
+                'activity_type' => $e['activity_type'] ?? null,
+                'entry_category' => $e['entry_category'] ?? null,
                 'work_assignment_id' => $e['work_assignment_id'] ?? null,
-                'assignment_id'      => $e['assignment_id'] ?? null,
-                'pif_id'             => $e['pif_id'] ?? null,
-                'programme_id'       => $e['programme_id'] ?? null,
-                'source_type'        => $e['source_type'] ?? 'manual',
-                'source_record_id'   => $e['source_record_id'] ?? null,
-                'is_locked'          => in_array($e['source_type'] ?? 'manual', ['leave', 'travel', 'holiday']),
+                'assignment_id' => $e['assignment_id'] ?? null,
+                'pif_id' => $e['pif_id'] ?? null,
+                'programme_id' => $e['programme_id'] ?? null,
+                'source_type' => $e['source_type'] ?? 'manual',
+                'source_record_id' => $e['source_record_id'] ?? null,
+                'is_locked' => in_array($e['source_type'] ?? 'manual', ['leave', 'travel', 'holiday']),
             ]);
         }
 
@@ -284,12 +286,12 @@ class TimesheetController extends Controller
     {
         $request->validate([
             'week_start' => ['required', 'date'],
-            'week_end'   => ['required', 'date', 'after_or_equal:week_start'],
+            'week_end' => ['required', 'date', 'after_or_equal:week_start'],
         ]);
 
-        $user      = $request->user();
+        $user = $request->user();
         $weekStart = Carbon::parse($request->week_start);
-        $weekEnd   = Carbon::parse($request->week_end);
+        $weekEnd = Carbon::parse($request->week_end);
 
         $leaves = LeaveRequest::where('requester_id', $user->id)
             ->whereIn('status', ['approved', 'submitted'])
@@ -300,12 +302,12 @@ class TimesheetController extends Controller
         $map = [];
         foreach ($leaves as $leave) {
             $current = Carbon::parse($leave->start_date);
-            $end     = Carbon::parse($leave->end_date);
+            $end = Carbon::parse($leave->end_date);
             while ($current->lte($end)) {
                 if ($current->isWeekday() && $current->between($weekStart, $weekEnd)) {
                     $map[$current->format('Y-m-d')] = [
                         'leave_type' => $leave->leave_type,
-                        'status'     => $leave->status,
+                        'status' => $leave->status,
                     ];
                 }
                 $current->addDay();
@@ -319,7 +321,7 @@ class TimesheetController extends Controller
     {
         $request->validate([
             'week_start' => ['required', 'date'],
-            'week_end'   => ['required', 'date', 'after_or_equal:week_start'],
+            'week_end' => ['required', 'date', 'after_or_equal:week_start'],
         ]);
 
         $map = $this->timesheetService->getTravelDays(
@@ -335,7 +337,7 @@ class TimesheetController extends Controller
     {
         $request->validate([
             'start' => ['required', 'date'],
-            'end'   => ['required', 'date', 'after_or_equal:start'],
+            'end' => ['required', 'date', 'after_or_equal:start'],
         ]);
 
         $map = $this->timesheetService->getHolidayDates(
@@ -350,7 +352,7 @@ class TimesheetController extends Controller
     public function team(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$this->canManageTimesheets($user)) {
+        if (! $this->canManageTimesheets($user)) {
             abort(403, 'Access restricted to HR supervisors and administrators.');
         }
 
@@ -361,7 +363,7 @@ class TimesheetController extends Controller
 
         // Supervisors see their direct reports; HR admins see all in tenant
         $isHrAdmin = $user->hasPermissionTo('hr.admin') || $user->hasPermissionTo('system.admin');
-        if (!$isHrAdmin) {
+        if (! $isHrAdmin) {
             $superviseeIds = PerformanceTracker::where('supervisor_id', $user->id)
                 ->pluck('employee_id')
                 ->toArray();
@@ -374,13 +376,13 @@ class TimesheetController extends Controller
         // Exclude own timesheets
         $query->where('user_id', '!=', $user->id);
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
-        if (!empty($filters['week_start'])) {
+        if (! empty($filters['week_start'])) {
             $query->where('week_start', $filters['week_start']);
         }
-        if (!empty($filters['user_id'])) {
+        if (! empty($filters['user_id'])) {
             $query->where('user_id', (int) $filters['user_id']);
         }
 
@@ -437,43 +439,44 @@ class TimesheetController extends Controller
         $rows = array_map('str_getcsv', file($path));
         if (empty($rows)) {
             return response()->json([
-                'message'  => 'File is empty or invalid.',
+                'message' => 'File is empty or invalid.',
                 'imported' => 0,
-                'errors'   => ['No rows found.'],
+                'errors' => ['No rows found.'],
             ], 422);
         }
 
-        $header    = array_map('strtolower', array_map('trim', $rows[0]));
-        $dateIdx   = array_search('date', $header);
-        $hoursIdx  = array_search('hours', $header);
-        $taskIdx   = array_search('task', $header);
+        $header = array_map('strtolower', array_map('trim', $rows[0]));
+        $dateIdx = array_search('date', $header);
+        $hoursIdx = array_search('hours', $header);
+        $taskIdx = array_search('task', $header);
         $projectIdx = array_search('project_code', $header);
-        $notesIdx  = array_search('notes', $header);
+        $notesIdx = array_search('notes', $header);
 
         if ($dateIdx === false || $hoursIdx === false) {
             return response()->json([
-                'message'  => 'CSV must have "date" and "hours" columns.',
+                'message' => 'CSV must have "date" and "hours" columns.',
                 'imported' => 0,
-                'errors'   => ['Missing required columns: date, hours'],
+                'errors' => ['Missing required columns: date, hours'],
             ], 422);
         }
 
-        $user        = $request->user();
-        $errors      = [];
-        $imported    = 0;
+        $user = $request->user();
+        $errors = [];
+        $imported = 0;
         $timesheetIds = [];
 
         for ($i = 1; $i < count($rows); $i++) {
             $row = $rows[$i];
             if (count($row) < max($dateIdx, $hoursIdx) + 1) {
-                $errors[] = "Row " . ($i + 1) . ": not enough columns.";
+                $errors[] = 'Row '.($i + 1).': not enough columns.';
+
                 continue;
             }
-            $dateStr     = trim($row[$dateIdx] ?? '');
-            $hoursStr    = trim($row[$hoursIdx] ?? '');
+            $dateStr = trim($row[$dateIdx] ?? '');
+            $hoursStr = trim($row[$hoursIdx] ?? '');
             $description = trim($row[$taskIdx] ?? $row[$projectIdx] ?? '') ?: 'Work';
             if ($notesIdx !== false && isset($row[$notesIdx]) && trim($row[$notesIdx]) !== '') {
-                $description .= ' – ' . trim($row[$notesIdx]);
+                $description .= ' – '.trim($row[$notesIdx]);
             }
 
             $date = null;
@@ -481,11 +484,13 @@ class TimesheetController extends Controller
                 try {
                     $date = Carbon::parse($dateStr)->format('Y-m-d');
                 } catch (\Throwable $e) {
-                    $errors[] = "Row " . ($i + 1) . ": invalid date '{$dateStr}'.";
+                    $errors[] = 'Row '.($i + 1).": invalid date '{$dateStr}'.";
+
                     continue;
                 }
             } else {
-                $errors[] = "Row " . ($i + 1) . ": date is required.";
+                $errors[] = 'Row '.($i + 1).': date is required.';
+
                 continue;
             }
 
@@ -493,48 +498,51 @@ class TimesheetController extends Controller
             if ($hoursStr !== '' && is_numeric($hoursStr)) {
                 $hours = (float) $hoursStr;
                 if ($hours < 0 || $hours > 24) {
-                    $errors[] = "Row " . ($i + 1) . ": hours must be between 0 and 24.";
+                    $errors[] = 'Row '.($i + 1).': hours must be between 0 and 24.';
+
                     continue;
                 }
             } else {
-                $errors[] = "Row " . ($i + 1) . ": hours must be a number.";
+                $errors[] = 'Row '.($i + 1).': hours must be a number.';
+
                 continue;
             }
 
             $weekStart = Carbon::parse($date)->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
-            $weekEnd   = Carbon::parse($weekStart)->addDays(6)->format('Y-m-d');
+            $weekEnd = Carbon::parse($weekStart)->addDays(6)->format('Y-m-d');
 
             $timesheet = Timesheet::where('user_id', $user->id)
                 ->where('week_start', $weekStart)
                 ->first();
 
-            if (!$timesheet) {
+            if (! $timesheet) {
                 $timesheet = Timesheet::create([
-                    'tenant_id'      => $user->tenant_id,
-                    'user_id'        => $user->id,
-                    'week_start'     => $weekStart,
-                    'week_end'       => $weekEnd,
-                    'week_number'    => Carbon::parse($weekStart)->isoWeek(),
-                    'total_hours'    => 0,
+                    'tenant_id' => $user->tenant_id,
+                    'user_id' => $user->id,
+                    'week_start' => $weekStart,
+                    'week_end' => $weekEnd,
+                    'week_number' => Carbon::parse($weekStart)->isoWeek(),
+                    'total_hours' => 0,
                     'overtime_hours' => 0,
-                    'status'         => 'draft',
+                    'status' => 'draft',
                 ]);
                 $timesheetIds[] = $timesheet->id;
             } elseif ($timesheet->status !== 'draft') {
-                $errors[] = "Row " . ($i + 1) . ": week of {$date} is already submitted/approved; skipped.";
+                $errors[] = 'Row '.($i + 1).": week of {$date} is already submitted/approved; skipped.";
+
                 continue;
             }
 
             TimesheetEntry::create([
-                'timesheet_id'   => $timesheet->id,
-                'work_date'      => $date,
-                'hours'          => $hours,
+                'timesheet_id' => $timesheet->id,
+                'work_date' => $date,
+                'hours' => $hours,
                 'overtime_hours' => max(0, $hours - 8),
-                'description'    => $description,
-                'source_type'    => 'manual',
+                'description' => $description,
+                'source_type' => 'manual',
             ]);
             $imported++;
-            if (!in_array($timesheet->id, $timesheetIds)) {
+            if (! in_array($timesheet->id, $timesheetIds)) {
                 $timesheetIds[] = $timesheet->id;
             }
         }
@@ -542,16 +550,16 @@ class TimesheetController extends Controller
         foreach (array_unique($timesheetIds) as $tid) {
             $ts = Timesheet::find($tid);
             if ($ts) {
-                $total    = $ts->entries()->sum('hours');
+                $total = $ts->entries()->sum('hours');
                 $overtime = $ts->entries()->sum('overtime_hours');
                 $ts->update(['total_hours' => $total, 'overtime_hours' => $overtime]);
             }
         }
 
         return response()->json([
-            'message'  => $imported > 0 ? 'Import completed.' : 'No rows imported.',
+            'message' => $imported > 0 ? 'Import completed.' : 'No rows imported.',
             'imported' => $imported,
-            'errors'   => array_slice($errors, 0, 20),
+            'errors' => array_slice($errors, 0, 20),
         ]);
     }
 

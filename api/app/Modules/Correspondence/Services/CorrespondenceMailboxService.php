@@ -136,21 +136,25 @@ class CorrespondenceMailboxService
                 $messageId = $this->normalizeMessageId((string) ($message['message_id'] ?? ''));
                 if ($messageId === '') {
                     $skipped++;
+
                     continue;
                 }
 
                 if ($this->messageIdExists($tenantId, $messageId)) {
                     $skipped++;
+
                     continue;
                 }
 
                 if (! $this->messageAddressAllowed($settings, $message)) {
                     $skipped++;
+
                     continue;
                 }
 
                 if ($dryRun) {
                     $imported++;
+
                     continue;
                 }
 

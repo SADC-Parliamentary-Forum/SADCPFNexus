@@ -18,7 +18,7 @@ final class Observability
         $dsn = config('services.sentry.dsn');
         if (! is_string($dsn) || $dsn === '') {
             Log::error($e->getMessage(), array_merge($context, [
-                'exception'  => $e::class,
+                'exception' => $e::class,
                 'request_id' => request()?->attributes->get('request_id'),
             ]));
 

@@ -4037,7 +4037,14 @@ export const noticeBoardApi = {
   public: () => api.get<{ data: TenderNotice[] }>("/procurement/notices"),
   staff: () => api.get<{ data: TenderNotice[] }>("/procurement/notice-board"),
   newspaperTemplates: () =>
-    api.get<{ data: { auto_award: boolean; requires_human_publication: boolean; templates: Array<Record<string, unknown>> } }>(
+    api.get<{
+      data: {
+        auto_award: boolean;
+        requires_human_publication: boolean;
+        llm_live?: boolean;
+        templates: Array<Record<string, unknown>>;
+      };
+    }>(
       "/procurement/newspaper-notice-templates",
     ),
   newspaperPack: (tenderId: number, templateKey?: string) =>

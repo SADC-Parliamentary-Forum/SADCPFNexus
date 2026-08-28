@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Api\V1\Procurement;
 
 use App\Http\Controllers\Controller;
+use App\Models\Tender;
 use App\Modules\Procurement\Services\NewspaperNoticeTemplateService;
 use App\Modules\Procurement\Services\PublicNoticeBoardService;
-use App\Models\Tender;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -27,9 +27,9 @@ class PublicNoticeController extends Controller
     /** Authenticated staff notice board (same public fields, tenant-scoped). */
     public function staffIndex(Request $request): JsonResponse
     {
-        if (!$request->user()->hasAnyRole([
+        if (! $request->user()->hasAnyRole([
             'Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General', 'super-admin',
-        ]) && !$request->user()->hasAnyPermission(['procurement.view', 'procurement.admin'])) {
+        ]) && ! $request->user()->hasAnyPermission(['procurement.view', 'procurement.admin'])) {
             abort(403);
         }
 
@@ -79,9 +79,9 @@ class PublicNoticeController extends Controller
 
     private function staffGate(Request $request): void
     {
-        if (!$request->user()->hasAnyRole([
+        if (! $request->user()->hasAnyRole([
             'Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General', 'super-admin',
-        ]) && !$request->user()->hasAnyPermission(['procurement.view', 'procurement.admin'])) {
+        ]) && ! $request->user()->hasAnyPermission(['procurement.view', 'procurement.admin'])) {
             abort(403);
         }
     }

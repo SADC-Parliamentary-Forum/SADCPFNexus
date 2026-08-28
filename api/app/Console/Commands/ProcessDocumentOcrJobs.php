@@ -28,6 +28,7 @@ class ProcessDocumentOcrJobs extends Command
             $version = $job->version;
             if (! $version) {
                 $job->update(['status' => 'failed', 'error_message' => 'Missing document version', 'completed_at' => now()]);
+
                 continue;
             }
             $result = $ocr->extract(

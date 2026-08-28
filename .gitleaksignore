@@ -1,0 +1,11 @@
+# Baseline for client-side Firebase API keys (FlutterFire / google-services.json)
+# and historical generic-api-key false positives. New findings still fail CI.
+# Fingerprints from `gitleaks detect` on 2026-08-28 (v8.24.3).
+ea49761cee394cead16b8229684bbfdacf40d3c8:web/components/layout/Sidebar.tsx:generic-api-key:524
+ea14a1513f05a62ea2942d6c28f2b926b6d91da7:api/tests/Feature/PlatformAudit/PlatformAuditTrailPhase2MvpTest.php:generic-api-key:105
+b1465e277ac6c6c58566f864ceaa90e2c4ca61a3:api/app/Modules/Risk/Services/RiskKriService.php:generic-api-key:55
+ed3a6027f7001f881e314d0261455bc710f60733:mobile/android/app/google-services.json:gcp-api-key:18
+ed3a6027f7001f881e314d0261455bc710f60733:mobile/lib/firebase_options.dart:gcp-api-key:47
+ed3a6027f7001f881e314d0261455bc710f60733:mobile/lib/firebase_options.dart:gcp-api-key:57
+ed3a6027f7001f881e314d0261455bc710f60733:mobile/lib/firebase_options.dart:gcp-api-key:65
+ed3a6027f7001f881e314d0261455bc710f60733:mobile/lib/firebase_options.dart:gcp-api-key:74

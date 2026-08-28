@@ -11,11 +11,17 @@ class Tender extends Model
     use SoftDeletes;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_PUBLISHED = 'published';
+
     public const STATUS_CLOSED = 'closed';
+
     public const STATUS_OPENED = 'opened';
+
     public const STATUS_EVALUATING = 'evaluating';
+
     public const STATUS_AWARDED = 'awarded';
+
     public const STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
@@ -29,24 +35,24 @@ class Tender extends Model
     ];
 
     protected $casts = [
-        'sealed_mode'           => 'boolean',
-        'published_at'          => 'datetime',
-        'submission_deadline'   => 'date',
-        'closed_at'             => 'datetime',
-        'bids_opened_at'        => 'datetime',
+        'sealed_mode' => 'boolean',
+        'published_at' => 'datetime',
+        'submission_deadline' => 'date',
+        'closed_at' => 'datetime',
+        'bids_opened_at' => 'datetime',
         'evaluation_started_at' => 'datetime',
-        'technical_weight'      => 'float',
-        'financial_weight'      => 'float',
-        'min_technical_score'   => 'float',
-        'newspaper_checklist'   => 'array',
-        'award_recommendation'  => 'array',
+        'technical_weight' => 'float',
+        'financial_weight' => 'float',
+        'min_technical_score' => 'float',
+        'newspaper_checklist' => 'array',
+        'award_recommendation' => 'array',
     ];
 
     protected static function booted(): void
     {
         static::creating(function (self $tender): void {
             if (empty($tender->reference_number)) {
-                $tender->reference_number = 'TND-' . strtoupper(Str::random(8));
+                $tender->reference_number = 'TND-'.strtoupper(Str::random(8));
             }
         });
     }
@@ -78,7 +84,7 @@ class Tender extends Model
 
     public function isPastDeadline(): bool
     {
-        if (!$this->submission_deadline) {
+        if (! $this->submission_deadline) {
             return false;
         }
 

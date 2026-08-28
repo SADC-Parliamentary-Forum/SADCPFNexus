@@ -27,7 +27,7 @@ class GoodsReceiptService
             abort(404);
         }
 
-        if (!$po->canReceiveGoods()) {
+        if (! $po->canReceiveGoods()) {
             throw ValidationException::withMessages([
                 'purchase_order_id' => 'Goods can only be received against an issued purchase order.',
             ]);
@@ -37,7 +37,7 @@ class GoodsReceiptService
         $po->loadMissing('items.receiptItems');
         foreach ($data['items'] as $lineItem) {
             $poItem = $po->items->find($lineItem['purchase_order_item_id'] ?? null);
-            if (!$poItem) {
+            if (! $poItem) {
                 throw ValidationException::withMessages([
                     'items' => "Purchase order item #{$lineItem['purchase_order_item_id']} not found on this PO.",
                 ]);
@@ -51,23 +51,23 @@ class GoodsReceiptService
         }
 
         $grn = GoodsReceiptNote::create([
-            'tenant_id'            => $po->tenant_id,
-            'purchase_order_id'    => $po->id,
-            'received_by'          => $user->id,
-            'received_date'        => $data['received_date'],
+            'tenant_id' => $po->tenant_id,
+            'purchase_order_id' => $po->id,
+            'received_by' => $user->id,
+            'received_date' => $data['received_date'],
             'delivery_note_number' => $data['delivery_note_number'] ?? null,
-            'notes'                => $data['notes'] ?? null,
-            'status'               => 'pending',
+            'notes' => $data['notes'] ?? null,
+            'status' => 'pending',
         ]);
 
         foreach ($data['items'] as $lineItem) {
             $poItem = $po->items->find($lineItem['purchase_order_item_id']);
             $grn->items()->create([
                 'purchase_order_item_id' => $poItem->id,
-                'quantity_ordered'       => $poItem->quantity,
-                'quantity_received'      => $lineItem['quantity_received'] ?? 0,
-                'quantity_accepted'      => $lineItem['quantity_accepted'] ?? $lineItem['quantity_received'] ?? 0,
-                'condition_notes'        => $lineItem['condition_notes'] ?? null,
+                'quantity_ordered' => $poItem->quantity,
+                'quantity_received' => $lineItem['quantity_received'] ?? 0,
+                'quantity_accepted' => $lineItem['quantity_accepted'] ?? $lineItem['quantity_received'] ?? 0,
+                'condition_notes' => $lineItem['condition_notes'] ?? null,
             ]);
         }
 
@@ -76,9 +76,9 @@ class GoodsReceiptService
 
         AuditLog::record('procurement.grn_recorded', [
             'auditable_type' => GoodsReceiptNote::class,
-            'auditable_id'   => $grn->id,
-            'new_values'     => ['reference' => $grn->reference_number, 'po' => $po->reference_number],
-            'tags'           => 'procurement',
+            'auditable_id' => $grn->id,
+            'new_values' => ['reference' => $grn->reference_number, 'po' => $po->reference_number],
+            'tags' => 'procurement',
         ]);
 
         return $grn->load(['items.purchaseOrderItem']);
@@ -94,11 +94,11 @@ class GoodsReceiptService
 
         AuditLog::record('procurement.grn_accepted', [
             'auditable_type' => GoodsReceiptNote::class,
-            'auditable_id'   => $grn->id,
-            'tags'           => 'procurement',
+            'auditable_id' => $grn->id,
+            'tags' => 'procurement',
         ]);
 
-        if (!empty($handoff)) {
+        if (! empty($handoff)) {
             $this->processHandoff($grn, $handoff, $user);
         }
 
@@ -117,7 +117,7 @@ class GoodsReceiptService
 
         foreach ($handoff as $line) {
             $grnItem = $grn->items->find($line['goods_receipt_item_id'] ?? null);
-            if (!$grnItem) {
+            if (! $grnItem) {
                 throw ValidationException::withMessages([
                     'handoff' => "Goods receipt item #{$line['goods_receipt_item_id']} not found on this GRN.",
                 ]);
@@ -141,17 +141,17 @@ class GoodsReceiptService
 
             if ($normalized === 'split') {
                 $asset = Asset::create([
-                    'tenant_id'              => $grn->tenant_id,
-                    'asset_code'             => 'AST-' . strtoupper(Str::random(8)),
-                    'name'                   => $line['name'],
-                    'category'               => $line['category'] ?? 'equipment',
-                    'status'                 => 'pending',
-                    'purchase_order_id'      => $grn->purchase_order_id,
+                    'tenant_id' => $grn->tenant_id,
+                    'asset_code' => 'AST-'.strtoupper(Str::random(8)),
+                    'name' => $line['name'],
+                    'category' => $line['category'] ?? 'equipment',
+                    'status' => 'pending',
+                    'purchase_order_id' => $grn->purchase_order_id,
                     'procurement_request_id' => $procurementRequestId,
-                    'goods_receipt_note_id'  => $grn->id,
-                    'purchase_value'         => isset($line['unit_cost']) ? (float) $line['unit_cost'] : null,
-                    'currency'               => $po?->currency,
-                    'notes'                  => $line['notes'] ?? null,
+                    'goods_receipt_note_id' => $grn->id,
+                    'purchase_value' => isset($line['unit_cost']) ? (float) $line['unit_cost'] : null,
+                    'currency' => $po?->currency,
+                    'notes' => $line['notes'] ?? null,
                 ]);
                 $stockLine = $line;
                 if (! isset($stockLine['quantity']) || (int) $stockLine['quantity'] < 1) {
@@ -166,6 +166,7 @@ class GoodsReceiptService
                     $stock,
                     (string) ($line['name'] ?? 'Split GRN handoff'),
                 );
+
                 continue;
             }
 
@@ -195,17 +196,17 @@ class GoodsReceiptService
                 for ($i = 1; $i <= $qty; $i++) {
                     $suffix = $qty > 1 ? ' #'.$i : '';
                     Asset::create([
-                        'tenant_id'              => $grn->tenant_id,
-                        'asset_code'             => 'AST-' . strtoupper(Str::random(8)),
-                        'name'                   => $line['name'].$suffix,
-                        'category'               => $assetCategory,
-                        'status'                 => 'pending',
-                        'purchase_order_id'      => $grn->purchase_order_id,
+                        'tenant_id' => $grn->tenant_id,
+                        'asset_code' => 'AST-'.strtoupper(Str::random(8)),
+                        'name' => $line['name'].$suffix,
+                        'category' => $assetCategory,
+                        'status' => 'pending',
+                        'purchase_order_id' => $grn->purchase_order_id,
                         'procurement_request_id' => $procurementRequestId,
-                        'goods_receipt_note_id'  => $grn->id,
-                        'purchase_value'         => $unitCost,
-                        'currency'               => $po?->currency,
-                        'notes'                  => $line['notes'] ?? null,
+                        'goods_receipt_note_id' => $grn->id,
+                        'purchase_value' => $unitCost,
+                        'currency' => $po?->currency,
+                        'notes' => $line['notes'] ?? null,
                     ]);
                 }
                 $this->inventoryRegister->linkSplit(
@@ -238,9 +239,9 @@ class GoodsReceiptService
 
         AuditLog::record('procurement.grn_handoff', [
             'auditable_type' => GoodsReceiptNote::class,
-            'auditable_id'   => $grn->id,
-            'new_values'     => ['handoff_count' => count($handoff)],
-            'tags'           => 'procurement',
+            'auditable_id' => $grn->id,
+            'new_values' => ['handoff_count' => count($handoff)],
+            'tags' => 'procurement',
         ]);
     }
 
@@ -254,8 +255,8 @@ class GoodsReceiptService
 
         AuditLog::record('procurement.grn_rejected', [
             'auditable_type' => GoodsReceiptNote::class,
-            'auditable_id'   => $grn->id,
-            'tags'           => 'procurement',
+            'auditable_id' => $grn->id,
+            'tags' => 'procurement',
         ]);
 
         return $grn->fresh();
@@ -265,7 +266,7 @@ class GoodsReceiptService
     {
         $po->loadMissing('items.receiptItems');
 
-        $allFulfilled = $po->items->every(fn($item) => $item->outstanding() === 0);
+        $allFulfilled = $po->items->every(fn ($item) => $item->outstanding() === 0);
 
         $po->update(['status' => $allFulfilled ? 'received' : 'partially_received']);
     }

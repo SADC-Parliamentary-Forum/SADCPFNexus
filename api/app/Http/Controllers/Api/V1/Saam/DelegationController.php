@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\V1\Saam;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\DelegatedAuthority;
-use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,7 +16,7 @@ class DelegationController extends Controller
     private function checkPerm(Request $request): void
     {
         $user = $request->user();
-        if (!$user->isSystemAdmin()) {
+        if (! $user->isSystemAdmin()) {
             abort_unless($user->hasPermissionTo('saam.delegate', 'sanctum'), 403);
         }
     }
@@ -52,16 +51,16 @@ class DelegationController extends Controller
 
         $data = $request->validate([
             'delegate_user_id' => ['required', 'integer', 'exists:users,id'],
-            'start_date'       => ['required', 'date', 'after_or_equal:today'],
-            'end_date'         => ['required', 'date', 'after_or_equal:start_date'],
-            'role_scope'       => ['nullable', 'string', 'max:128'],
-            'module'           => ['nullable', 'string', 'max:64'],
-            'can_draft'        => ['sometimes', 'boolean'],
-            'can_submit'       => ['sometimes', 'boolean'],
-            'can_upload'       => ['sometimes', 'boolean'],
-            'can_act_on_behalf'=> ['sometimes', 'boolean'],
+            'start_date' => ['required', 'date', 'after_or_equal:today'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'role_scope' => ['nullable', 'string', 'max:128'],
+            'module' => ['nullable', 'string', 'max:64'],
+            'can_draft' => ['sometimes', 'boolean'],
+            'can_submit' => ['sometimes', 'boolean'],
+            'can_upload' => ['sometimes', 'boolean'],
+            'can_act_on_behalf' => ['sometimes', 'boolean'],
             'requires_principal_confirmation' => ['sometimes', 'boolean'],
-            'reason'           => ['nullable', 'string', 'max:1000'],
+            'reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $user = $request->user();
@@ -71,26 +70,26 @@ class DelegationController extends Controller
         }
 
         $delegation = DelegatedAuthority::create([
-            'tenant_id'         => $user->tenant_id,
+            'tenant_id' => $user->tenant_id,
             'principal_user_id' => $user->id,
-            'delegate_user_id'  => $data['delegate_user_id'],
-            'start_date'        => $data['start_date'],
-            'end_date'          => $data['end_date'],
-            'role_scope'        => $data['role_scope'] ?? null,
-            'module'            => $data['module'] ?? null,
-            'can_draft'         => $data['can_draft'] ?? true,
-            'can_submit'        => $data['can_submit'] ?? true,
-            'can_upload'        => $data['can_upload'] ?? true,
+            'delegate_user_id' => $data['delegate_user_id'],
+            'start_date' => $data['start_date'],
+            'end_date' => $data['end_date'],
+            'role_scope' => $data['role_scope'] ?? null,
+            'module' => $data['module'] ?? null,
+            'can_draft' => $data['can_draft'] ?? true,
+            'can_submit' => $data['can_submit'] ?? true,
+            'can_upload' => $data['can_upload'] ?? true,
             'can_act_on_behalf' => $data['can_act_on_behalf'] ?? false,
             'requires_principal_confirmation' => $data['requires_principal_confirmation'] ?? false,
-            'reason'            => $data['reason'] ?? null,
-            'created_by'        => $user->id,
+            'reason' => $data['reason'] ?? null,
+            'created_by' => $user->id,
         ]);
 
         AuditLog::record('delegation.created', [
             'auditable_type' => DelegatedAuthority::class,
-            'auditable_id'   => $delegation->id,
-            'new_values'     => $delegation->only([
+            'auditable_id' => $delegation->id,
+            'new_values' => $delegation->only([
                 'principal_user_id', 'delegate_user_id', 'module', 'start_date', 'end_date',
                 'can_draft', 'can_submit', 'can_upload', 'can_act_on_behalf',
             ]),
@@ -107,7 +106,7 @@ class DelegationController extends Controller
 
         return response()->json([
             'message' => 'Delegation created.',
-            'data'    => $delegation->load(['delegate:id,name,email,job_title', 'principal:id,name']),
+            'data' => $delegation->load(['delegate:id,name,email,job_title', 'principal:id,name']),
         ], 201);
     }
 
@@ -115,18 +114,18 @@ class DelegationController extends Controller
     {
         try {
             $delegation->loadMissing(['delegate', 'principal']);
-            if (!$delegation->delegate) {
+            if (! $delegation->delegate) {
                 return;
             }
             $this->notificationService->dispatch(
                 $delegation->delegate,
                 'delegation.activated',
                 [
-                    'name'       => $delegation->delegate->name,
-                    'principal'  => $delegation->principal?->name ?? 'a colleague',
-                    'module'     => $delegation->module ?? 'all modules',
+                    'name' => $delegation->delegate->name,
+                    'principal' => $delegation->principal?->name ?? 'a colleague',
+                    'module' => $delegation->module ?? 'all modules',
                     'start_date' => optional($delegation->start_date)->toDateString(),
-                    'end_date'   => optional($delegation->end_date)->toDateString(),
+                    'end_date' => optional($delegation->end_date)->toDateString(),
                 ],
                 ['module' => 'saam', 'record_id' => $delegation->id, 'url' => '/saam/delegations'],
                 false
@@ -141,7 +140,7 @@ class DelegationController extends Controller
         $user = $request->user();
 
         // Only the principal or a system admin can revoke
-        if ((int) $delegation->principal_user_id !== (int) $user->id && !$user->isSystemAdmin()) {
+        if ((int) $delegation->principal_user_id !== (int) $user->id && ! $user->isSystemAdmin()) {
             abort(403);
         }
 

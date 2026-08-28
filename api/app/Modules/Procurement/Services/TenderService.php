@@ -28,18 +28,18 @@ class TenderService
         }
 
         $tender = Tender::create([
-            'tenant_id'              => $actor->tenant_id,
+            'tenant_id' => $actor->tenant_id,
             'procurement_request_id' => $request->id,
-            'tender_committee_id'    => $data['tender_committee_id'] ?? null,
-            'title'                  => $data['title'],
-            'notice'                 => $data['notice'] ?? null,
-            'status'                 => Tender::STATUS_DRAFT,
-            'sealed_mode'            => $data['sealed_mode'] ?? true,
-            'submission_deadline'    => $data['submission_deadline'] ?? null,
-            'technical_weight'       => $data['technical_weight'] ?? 80,
-            'financial_weight'       => $data['financial_weight'] ?? 20,
-            'min_technical_score'    => $data['min_technical_score'] ?? 70,
-            'created_by'             => $actor->id,
+            'tender_committee_id' => $data['tender_committee_id'] ?? null,
+            'title' => $data['title'],
+            'notice' => $data['notice'] ?? null,
+            'status' => Tender::STATUS_DRAFT,
+            'sealed_mode' => $data['sealed_mode'] ?? true,
+            'submission_deadline' => $data['submission_deadline'] ?? null,
+            'technical_weight' => $data['technical_weight'] ?? 80,
+            'financial_weight' => $data['financial_weight'] ?? 20,
+            'min_technical_score' => $data['min_technical_score'] ?? 70,
+            'created_by' => $actor->id,
         ]);
 
         if (($request->procurement_method ?? '') !== 'tender') {
@@ -48,8 +48,8 @@ class TenderService
 
         AuditLog::record('procurement.tender_created', [
             'auditable_type' => Tender::class,
-            'auditable_id'   => $tender->id,
-            'tags'           => ['procurement', 'tender'],
+            'auditable_id' => $tender->id,
+            'tags' => ['procurement', 'tender'],
         ]);
 
         return $tender->fresh(['procurementRequest', 'committee']);
@@ -65,13 +65,13 @@ class TenderService
         $this->procurementService->assertSplitAuthorisedIfRequired($tender->procurementRequest);
 
         $tender->update([
-            'status'       => Tender::STATUS_PUBLISHED,
+            'status' => Tender::STATUS_PUBLISHED,
             'published_at' => now(),
         ]);
 
         if ($tender->submission_deadline && blank($tender->procurementRequest->rfq_deadline)) {
             $tender->procurementRequest->update([
-                'rfq_deadline'  => $tender->submission_deadline,
+                'rfq_deadline' => $tender->submission_deadline,
                 'rfq_issued_at' => now(),
                 'rfq_issued_by' => $actor->id,
             ]);
@@ -79,8 +79,8 @@ class TenderService
 
         AuditLog::record('procurement.tender_published', [
             'auditable_type' => Tender::class,
-            'auditable_id'   => $tender->id,
-            'tags'           => ['procurement', 'tender'],
+            'auditable_id' => $tender->id,
+            'tags' => ['procurement', 'tender'],
         ]);
 
         return $tender->fresh(['procurementRequest', 'committee']);
@@ -94,7 +94,7 @@ class TenderService
         }
 
         $tender->update([
-            'status'    => Tender::STATUS_CLOSED,
+            'status' => Tender::STATUS_CLOSED,
             'closed_at' => now(),
         ]);
 
@@ -109,15 +109,15 @@ class TenderService
         }
 
         $tender->update([
-            'status'         => Tender::STATUS_OPENED,
+            'status' => Tender::STATUS_OPENED,
             'bids_opened_at' => now(),
             'bids_opened_by' => $actor->id,
         ]);
 
         AuditLog::record('procurement.tender_bids_opened', [
             'auditable_type' => Tender::class,
-            'auditable_id'   => $tender->id,
-            'tags'           => ['procurement', 'tender'],
+            'auditable_id' => $tender->id,
+            'tags' => ['procurement', 'tender'],
         ]);
 
         return $tender->fresh(['procurementRequest', 'committee']);
@@ -131,7 +131,7 @@ class TenderService
         }
 
         $tender->update([
-            'status'                => Tender::STATUS_EVALUATING,
+            'status' => Tender::STATUS_EVALUATING,
             'evaluation_started_at' => now(),
         ]);
 
@@ -241,10 +241,10 @@ class TenderService
 
             if ($request->status !== 'awarded') {
                 $request->update([
-                    'status'           => 'awarded',
+                    'status' => 'awarded',
                     'awarded_quote_id' => $quote->id,
-                    'awarded_at'       => now(),
-                    'award_notes'      => $data['notes'] ?? null,
+                    'awarded_at' => now(),
+                    'award_notes' => $data['notes'] ?? null,
                 ]);
                 $request->quotes()->where('id', '!=', $quote->id)->update(['is_recommended' => false]);
                 $quote->update(['is_recommended' => true]);
@@ -259,36 +259,36 @@ class TenderService
                 $contract = $existing;
             } else {
                 $contract = Contract::create([
-                    'tenant_id'              => $actor->tenant_id,
+                    'tenant_id' => $actor->tenant_id,
                     'procurement_request_id' => $request->id,
-                    'tender_id'              => $tender->id,
-                    'vendor_id'              => $quote->vendor_id,
-                    'title'                  => $data['title'] ?? ($tender->title.' — '.$quote->vendor_name),
-                    'description'            => $data['notes'] ?? null,
-                    'start_date'             => $data['start_date'],
-                    'end_date'               => $data['end_date'],
-                    'value'                  => $quote->quoted_amount,
-                    'currency'               => $quote->currency ?? $request->currency ?? 'NAD',
-                    'budget_line'            => $request->budget_line,
-                    'status'                 => 'draft',
-                    'created_by'             => $actor->id,
+                    'tender_id' => $tender->id,
+                    'vendor_id' => $quote->vendor_id,
+                    'title' => $data['title'] ?? ($tender->title.' — '.$quote->vendor_name),
+                    'description' => $data['notes'] ?? null,
+                    'start_date' => $data['start_date'],
+                    'end_date' => $data['end_date'],
+                    'value' => $quote->quoted_amount,
+                    'currency' => $quote->currency ?? $request->currency ?? 'NAD',
+                    'budget_line' => $request->budget_line,
+                    'status' => 'draft',
+                    'created_by' => $actor->id,
                 ]);
             }
 
             AuditLog::record('procurement.tender_awarded', [
                 'auditable_type' => Tender::class,
-                'auditable_id'   => $tender->id,
-                'new_values'     => [
-                    'quote_id'    => $quote->id,
+                'auditable_id' => $tender->id,
+                'new_values' => [
+                    'quote_id' => $quote->id,
                     'contract_id' => $contract->id,
-                    'vendor_id'   => $quote->vendor_id,
-                    'value'       => $quote->quoted_amount,
+                    'vendor_id' => $quote->vendor_id,
+                    'value' => $quote->quoted_amount,
                 ],
                 'tags' => ['procurement', 'tender', 'contract'],
             ]);
 
             return [
-                'tender'   => $tender->fresh(['procurementRequest', 'committee']),
+                'tender' => $tender->fresh(['procurementRequest', 'committee']),
                 'contract' => $contract->fresh(['vendor', 'procurementRequest']),
             ];
         });
@@ -308,9 +308,9 @@ class TenderService
 
         AuditLog::record('procurement.tender_cancelled', [
             'auditable_type' => Tender::class,
-            'auditable_id'   => $tender->id,
-            'new_values'     => ['reason' => $reason],
-            'tags'           => ['procurement', 'tender'],
+            'auditable_id' => $tender->id,
+            'new_values' => ['reason' => $reason],
+            'tags' => ['procurement', 'tender'],
         ]);
 
         return $tender->fresh(['procurementRequest', 'committee']);

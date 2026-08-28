@@ -34,7 +34,7 @@ class SalaryAdvanceService
     public function activePolicy(?int $tenantId = null): SalaryAdvancePolicyVersion
     {
         $policy = SalaryAdvancePolicyVersion::activeFor($tenantId);
-        if (!$policy) {
+        if (! $policy) {
             throw ValidationException::withMessages([
                 'policy' => ['No active salary advance policy is configured.'],
             ]);
@@ -59,7 +59,7 @@ class SalaryAdvanceService
     {
         $basisAmount = match ($policy->salary_basis) {
             'gross', 'basic' => (float) $payslip->gross_amount, // future modes only
-            default          => (float) $payslip->net_amount,   // net_confirmed (v1)
+            default => (float) $payslip->net_amount,   // net_confirmed (v1)
         };
 
         return round($basisAmount * ((float) $policy->max_salary_percentage / 100), 2);
@@ -115,16 +115,16 @@ class SalaryAdvanceService
 
         return [
             'has_outstanding_balance' => $outstanding > 0,
-            'outstanding_balance'     => $outstanding,
-            'has_active_advance'      => $hasActive,
-            'active_advance'          => $active ? [
-                'id'               => $active->id,
+            'outstanding_balance' => $outstanding,
+            'has_active_advance' => $hasActive,
+            'active_advance' => $active ? [
+                'id' => $active->id,
                 'reference_number' => $active->reference_number,
-                'status'           => $active->status,
-                'amount'           => (float) $active->amount,
+                'status' => $active->status,
+                'amount' => (float) $active->amount,
             ] : null,
-            'blocked'                 => $outstanding > 0 || $hasActive,
-            'reasons'                 => $reasons,
+            'blocked' => $outstanding > 0 || $hasActive,
+            'reasons' => $reasons,
         ];
     }
 
@@ -136,17 +136,17 @@ class SalaryAdvanceService
 
         $policyExceptions = $this->activePolicyExceptionsFor($user);
 
-        if (!$payslip) {
+        if (! $payslip) {
             return [
-                'eligible'     => false,
-                'reason'       => 'no_confirmed_payslip',
-                'net_salary'   => null,
+                'eligible' => false,
+                'reason' => 'no_confirmed_payslip',
+                'net_salary' => null,
                 'gross_salary' => null,
                 'max_eligible' => null,
                 'salary_basis' => $policy->salary_basis,
-                'payslip'      => null,
-                'exposure'     => $exposure,
-                'policy'       => $this->policyPayload($policy),
+                'payslip' => null,
+                'exposure' => $exposure,
+                'policy' => $this->policyPayload($policy),
                 'policy_exceptions' => $policyExceptions,
                 'intended_recovery_payroll_date' => $this->intendedRecoveryPayrollDate()->toDateString(),
             ];
@@ -154,23 +154,23 @@ class SalaryAdvanceService
 
         $maxEligible = $this->maxEligible($policy, $payslip);
         // Approved exceptions are informational only — never silent eligibility bypass.
-        $eligible = !$exposure['blocked'];
+        $eligible = ! $exposure['blocked'];
 
         return [
-            'eligible'     => $eligible,
-            'reason'       => $eligible ? null : ($exposure['reasons'][0] ?? 'blocked'),
-            'net_salary'   => (float) $payslip->net_amount,
+            'eligible' => $eligible,
+            'reason' => $eligible ? null : ($exposure['reasons'][0] ?? 'blocked'),
+            'net_salary' => (float) $payslip->net_amount,
             'gross_salary' => (float) $payslip->gross_amount,
             'max_eligible' => $maxEligible,
             'salary_basis' => $policy->salary_basis,
-            'payslip'      => [
-                'id'           => $payslip->id,
+            'payslip' => [
+                'id' => $payslip->id,
                 'period_month' => $payslip->period_month,
-                'period_year'  => $payslip->period_year,
-                'currency'     => $payslip->currency,
+                'period_year' => $payslip->period_year,
+                'currency' => $payslip->currency,
             ],
-            'exposure'     => $exposure,
-            'policy'       => $this->policyPayload($policy),
+            'exposure' => $exposure,
+            'policy' => $this->policyPayload($policy),
             'policy_exceptions' => $policyExceptions,
             'intended_recovery_payroll_date' => $this->intendedRecoveryPayrollDate()->toDateString(),
         ];
@@ -204,22 +204,22 @@ class SalaryAdvanceService
         if ($advance->requester_id !== $user->id) {
             abort(403);
         }
-        if (!in_array($advance->status, ['draft', 'finance_returned', 'returned_for_correction'], true)) {
+        if (! in_array($advance->status, ['draft', 'finance_returned', 'returned_for_correction'], true)) {
             throw ValidationException::withMessages(['status' => 'Only draft or returned requests can be submitted.']);
         }
-        if (!$deductionAuthorityConfirmed && !$advance->deduction_authority_confirmed) {
+        if (! $deductionAuthorityConfirmed && ! $advance->deduction_authority_confirmed) {
             throw ValidationException::withMessages([
                 'deduction_authority_confirmed' => ['You must confirm payroll deduction authority before submitting.'],
             ]);
         }
 
-        return DB::transaction(function () use ($advance, $user, $deductionAuthorityConfirmed) {
+        return DB::transaction(function () use ($advance, $user) {
             SalaryAdvanceRequest::where('requester_id', $user->id)->lockForUpdate()->get();
             $this->assertCanSubmit($user, $advance->id);
 
             $policy = $this->activePolicy($user->tenant_id);
             $payslip = $this->latestConfirmedPayslip($user);
-            if (!$payslip) {
+            if (! $payslip) {
                 throw ValidationException::withMessages([
                     'amount' => ['No confirmed payslip on file. Please contact HR to confirm your salary before submitting an advance request.'],
                 ]);
@@ -229,9 +229,9 @@ class SalaryAdvanceService
             if ((float) $advance->amount > $maxEligible) {
                 throw ValidationException::withMessages([
                     'amount' => [
-                        'The advance amount exceeds ' . $policy->max_salary_percentage
-                        . '% of your confirmed net salary. Maximum eligible: '
-                        . $advance->currency . ' ' . number_format($maxEligible, 2) . '.',
+                        'The advance amount exceeds '.$policy->max_salary_percentage
+                        .'% of your confirmed net salary. Maximum eligible: '
+                        .$advance->currency.' '.number_format($maxEligible, 2).'.',
                     ],
                 ]);
             }
@@ -239,22 +239,22 @@ class SalaryAdvanceService
             $repaymentMonths = $policy->recovery_rule === 'full_eom' ? 1 : (int) ($advance->repayment_months ?: 1);
 
             $advance->update([
-                'payslip_id'                       => $payslip->id,
-                'net_salary_at_request'            => (float) $payslip->net_amount,
-                'gross_salary_at_request'          => (float) $payslip->gross_amount,
-                'max_eligible_amount'              => $maxEligible,
-                'eligibility_status'               => 'eligible',
-                'policy_version_id'                => $policy->id,
-                'salary_basis'                     => $policy->salary_basis,
-                'repayment_months'                 => $repaymentMonths,
-                'intended_recovery_payroll_date'   => $this->intendedRecoveryPayrollDate()->toDateString(),
-                'deduction_authority_confirmed'    => true,
-                'deduction_authority_version'      => SalaryAdvanceRequest::DEDUCTION_AUTHORITY_VERSION,
+                'payslip_id' => $payslip->id,
+                'net_salary_at_request' => (float) $payslip->net_amount,
+                'gross_salary_at_request' => (float) $payslip->gross_amount,
+                'max_eligible_amount' => $maxEligible,
+                'eligibility_status' => 'eligible',
+                'policy_version_id' => $policy->id,
+                'salary_basis' => $policy->salary_basis,
+                'repayment_months' => $repaymentMonths,
+                'intended_recovery_payroll_date' => $this->intendedRecoveryPayrollDate()->toDateString(),
+                'deduction_authority_confirmed' => true,
+                'deduction_authority_version' => SalaryAdvanceRequest::DEDUCTION_AUTHORITY_VERSION,
                 'deduction_authority_confirmed_at' => now(),
-                'status'                           => 'submitted',
-                'submitted_at'                     => now(),
-                'payment_status'                   => 'not_prepared',
-                'recovery_status'                  => 'not_scheduled',
+                'status' => 'submitted',
+                'submitted_at' => now(),
+                'payment_status' => 'not_prepared',
+                'recovery_status' => 'not_scheduled',
             ]);
 
             // Workflow starts after Finance certify (Finance-first).
@@ -266,7 +266,7 @@ class SalaryAdvanceService
     {
         $this->assertCanCertify($actor, $advance);
 
-        if (!in_array($advance->status, ['submitted', 'resubmitted'], true)) {
+        if (! in_array($advance->status, ['submitted', 'resubmitted'], true)) {
             throw ValidationException::withMessages(['status' => 'Only submitted advances can be certified.']);
         }
 
@@ -276,38 +276,38 @@ class SalaryAdvanceService
         $recommended = (float) ($data['recommended_amount'] ?? $advance->amount);
         if ($recommended > $max) {
             throw ValidationException::withMessages([
-                'recommended_amount' => ['Recommended amount exceeds policy maximum of ' . number_format($max, 2) . '.'],
+                'recommended_amount' => ['Recommended amount exceeds policy maximum of '.number_format($max, 2).'.'],
             ]);
         }
 
         return DB::transaction(function () use ($advance, $actor, $data, $policy, $net, $max, $recommended) {
             SalaryAdvanceFinanceReview::create([
-                'salary_advance_request_id'      => $advance->id,
-                'reviewed_by'                    => $actor->id,
-                'outcome'                        => 'certified',
-                'salary_basis'                   => $policy->salary_basis,
-                'confirmed_net_salary'           => $net,
-                'confirmed_gross_salary'         => $data['confirmed_gross_salary'] ?? $advance->gross_salary_at_request,
-                'max_eligible_amount'            => $max,
-                'recommended_amount'             => $recommended,
+                'salary_advance_request_id' => $advance->id,
+                'reviewed_by' => $actor->id,
+                'outcome' => 'certified',
+                'salary_basis' => $policy->salary_basis,
+                'confirmed_net_salary' => $net,
+                'confirmed_gross_salary' => $data['confirmed_gross_salary'] ?? $advance->gross_salary_at_request,
+                'max_eligible_amount' => $max,
+                'recommended_amount' => $recommended,
                 'intended_recovery_payroll_date' => $data['intended_recovery_payroll_date'],
-                'eligible'                       => true,
-                'comments'                       => $data['comments'] ?? null,
-                'worksheet'                      => $data['worksheet'] ?? null,
+                'eligible' => true,
+                'comments' => $data['comments'] ?? null,
+                'worksheet' => $data['worksheet'] ?? null,
             ]);
 
             $advance->update([
-                'status'                         => 'finance_certified',
-                'finance_certified_at'           => now(),
-                'finance_certified_by'           => $actor->id,
-                'net_salary_at_request'          => $net,
-                'max_eligible_amount'            => $max,
+                'status' => 'finance_certified',
+                'finance_certified_at' => now(),
+                'finance_certified_by' => $actor->id,
+                'net_salary_at_request' => $net,
+                'max_eligible_amount' => $max,
                 'intended_recovery_payroll_date' => $data['intended_recovery_payroll_date'],
-                'amount'                         => $recommended,
+                'amount' => $recommended,
             ]);
 
             // Initiate Principal → SG workflow after certify.
-            if (!$advance->approvalRequest) {
+            if (! $advance->approvalRequest) {
                 $this->workflowService->initiate($advance->fresh(), 'salary_advance', $advance->requester);
             }
 
@@ -319,16 +319,16 @@ class SalaryAdvanceService
     {
         $this->assertCanCertify($actor, $advance);
 
-        if (!in_array($advance->status, ['submitted', 'resubmitted'], true)) {
+        if (! in_array($advance->status, ['submitted', 'resubmitted'], true)) {
             throw ValidationException::withMessages(['status' => 'Only submitted advances can be returned by Finance.']);
         }
 
         SalaryAdvanceFinanceReview::create([
             'salary_advance_request_id' => $advance->id,
-            'reviewed_by'               => $actor->id,
-            'outcome'                   => 'returned',
-            'return_reason'             => $reason,
-            'comments'                  => $reason,
+            'reviewed_by' => $actor->id,
+            'outcome' => 'returned',
+            'return_reason' => $reason,
+            'comments' => $reason,
         ]);
 
         $advance->update(['status' => 'finance_returned']);
@@ -340,21 +340,21 @@ class SalaryAdvanceService
     {
         $this->assertCanCertify($actor, $advance);
 
-        if (!in_array($advance->status, ['submitted', 'resubmitted'], true)) {
+        if (! in_array($advance->status, ['submitted', 'resubmitted'], true)) {
             throw ValidationException::withMessages(['status' => 'Only submitted advances can be marked not eligible.']);
         }
 
         SalaryAdvanceFinanceReview::create([
             'salary_advance_request_id' => $advance->id,
-            'reviewed_by'               => $actor->id,
-            'outcome'                   => 'not_eligible',
-            'eligible'                  => false,
-            'not_eligible_reason'       => $reason,
-            'comments'                  => $reason,
+            'reviewed_by' => $actor->id,
+            'outcome' => 'not_eligible',
+            'eligible' => false,
+            'not_eligible_reason' => $reason,
+            'comments' => $reason,
         ]);
 
         $advance->update([
-            'status'              => 'not_eligible',
+            'status' => 'not_eligible',
             'not_eligible_reason' => $reason,
         ]);
 
@@ -365,7 +365,7 @@ class SalaryAdvanceService
     {
         $this->assertCanPay($actor, $advance);
 
-        if (!in_array($advance->status, ['approved_for_payment', 'approved'], true)) {
+        if (! in_array($advance->status, ['approved_for_payment', 'approved'], true)) {
             throw ValidationException::withMessages(['status' => 'Only advances approved for payment can be paid.']);
         }
         if ($advance->status === 'paid' || $advance->payment_status === 'paid') {
@@ -393,19 +393,19 @@ class SalaryAdvanceService
             // Add an explicit disbursement txn without double-counting by resetting then posting.
             $register->update(['balance' => 0, 'total_processed' => 0]);
             $this->balanceRegisterService->createTransaction($register->fresh(), [
-                'type'          => 'disbursement',
-                'amount'        => $amount,
+                'type' => 'disbursement',
+                'amount' => $amount,
                 'reference_doc' => $data['payment_reference'] ?? null,
-                'notes'         => 'Salary advance payment recorded',
+                'notes' => 'Salary advance payment recorded',
             ], $actor);
 
             $advance->update([
-                'status'            => 'paid',
-                'payment_status'    => 'paid',
-                'paid_at'           => $data['payment_date'] ?? now(),
+                'status' => 'paid',
+                'payment_status' => 'paid',
+                'paid_at' => $data['payment_date'] ?? now(),
                 'payment_reference' => $data['payment_reference'] ?? null,
-                'payment_method'    => $data['payment_method'] ?? null,
-                'approved_amount'   => $amount,
+                'payment_method' => $data['payment_method'] ?? null,
+                'approved_amount' => $amount,
             ]);
 
             return $advance->fresh(['requester', 'balanceRegister']);
@@ -416,7 +416,7 @@ class SalaryAdvanceService
     {
         $this->assertCanRecover($actor, $advance);
 
-        if (!in_array($advance->status, ['paid', 'recovery_scheduled'], true)) {
+        if (! in_array($advance->status, ['paid', 'recovery_scheduled'], true)) {
             throw ValidationException::withMessages(['status' => 'Only paid advances can be scheduled for recovery.']);
         }
 
@@ -429,8 +429,8 @@ class SalaryAdvanceService
         ]);
 
         $advance->update([
-            'status'                         => 'recovery_scheduled',
-            'recovery_status'                => 'scheduled',
+            'status' => 'recovery_scheduled',
+            'recovery_status' => 'scheduled',
             'intended_recovery_payroll_date' => $schedulePayload['payroll_date'] ?? $date,
         ]);
 
@@ -441,7 +441,7 @@ class SalaryAdvanceService
     {
         $this->assertCanRecover($actor, $advance);
 
-        if (!in_array($advance->status, ['paid', 'recovery_scheduled', 'reconciliation_required'], true)) {
+        if (! in_array($advance->status, ['paid', 'recovery_scheduled', 'reconciliation_required'], true)) {
             throw ValidationException::withMessages(['status' => 'Advance is not in a recoverable state.']);
         }
 
@@ -449,7 +449,7 @@ class SalaryAdvanceService
             ->where('source_request_id', $advance->id)
             ->first();
 
-        if (!$register) {
+        if (! $register) {
             throw ValidationException::withMessages(['register' => ['No balance register exists for this advance.']]);
         }
 
@@ -465,10 +465,10 @@ class SalaryAdvanceService
 
         return DB::transaction(function () use ($advance, $actor, $register, $amount, $referenceDoc, $recoveryNote) {
             $this->balanceRegisterService->createTransaction($register, [
-                'type'          => 'recovery',
-                'amount'        => $amount,
+                'type' => 'recovery',
+                'amount' => $amount,
                 'reference_doc' => $referenceDoc,
-                'notes'         => $recoveryNote,
+                'notes' => $recoveryNote,
             ], $actor);
 
             $register->refresh();
@@ -477,17 +477,17 @@ class SalaryAdvanceService
 
             if ($balance <= 0.00001) {
                 $advance->update([
-                    'status'           => 'closed',
-                    'recovery_status'  => 'recovered',
+                    'status' => 'closed',
+                    'recovery_status' => 'recovered',
                     'recovered_amount' => $recovered,
-                    'closed_at'        => now(),
+                    'closed_at' => now(),
                 ]);
                 $register->update(['status' => 'closed', 'balance' => 0]);
                 $this->fileClosedAdvanceToPersonnelFile($advance->fresh(), $actor);
             } else {
                 $advance->update([
-                    'status'           => 'reconciliation_required',
-                    'recovery_status'  => 'partial',
+                    'status' => 'reconciliation_required',
+                    'recovery_status' => 'partial',
                     'recovered_amount' => $recovered,
                 ]);
 
@@ -498,15 +498,15 @@ class SalaryAdvanceService
                     ->delete();
 
                 SalaryAdvanceReconciliation::create([
-                    'tenant_id'                 => $advance->tenant_id,
+                    'tenant_id' => $advance->tenant_id,
                     'salary_advance_request_id' => $advance->id,
-                    'balance_register_id'       => $register->id,
-                    'status'                    => 'open',
-                    'expected_amount'           => $expected,
-                    'recovered_amount'          => $recovered,
-                    'variance_amount'           => round($expected - $recovered, 2),
-                    'reason'                    => 'partial_recovery',
-                    'opened_by'                 => $actor->id,
+                    'balance_register_id' => $register->id,
+                    'status' => 'open',
+                    'expected_amount' => $expected,
+                    'recovered_amount' => $recovered,
+                    'variance_amount' => round($expected - $recovered, 2),
+                    'reason' => 'partial_recovery',
+                    'opened_by' => $actor->id,
                 ]);
             }
 
@@ -547,29 +547,29 @@ class SalaryAdvanceService
             abort(404);
         }
 
-        if (!$reconciliation->isOpen()) {
+        if (! $reconciliation->isOpen()) {
             throw ValidationException::withMessages([
                 'status' => ['Reconciliation is already resolved.'],
             ]);
         }
 
         $reconciliation->update([
-            'status'           => 'resolved',
+            'status' => 'resolved',
             'resolution_notes' => $data['resolution_notes'],
-            'outcome'          => $data['outcome'] ?? 'balanced',
-            'resolved_by'      => $actor->id,
-            'resolved_at'      => now(),
+            'outcome' => $data['outcome'] ?? 'balanced',
+            'resolved_by' => $actor->id,
+            'resolved_at' => now(),
         ]);
 
         AuditLog::record('salary_advance.reconciliation_resolved', [
             'auditable_type' => SalaryAdvanceReconciliation::class,
-            'auditable_id'   => $reconciliation->id,
-            'new_values'     => [
+            'auditable_id' => $reconciliation->id,
+            'new_values' => [
                 'advance_id' => $advance->id,
-                'outcome'    => $reconciliation->outcome,
-                'notes'      => $reconciliation->resolution_notes,
+                'outcome' => $reconciliation->outcome,
+                'notes' => $reconciliation->resolution_notes,
             ],
-            'tags'           => ['salary_advance', 'reconciliation'],
+            'tags' => ['salary_advance', 'reconciliation'],
         ]);
 
         return $reconciliation->fresh(['advance', 'resolvedByUser']);
@@ -606,19 +606,19 @@ class SalaryAdvanceService
 
         return [
             'queues' => [
-                'certify'           => (clone $base)->whereIn('status', ['submitted', 'resubmitted'])->count(),
-                'pending_approval'  => (clone $base)->whereIn('status', ['finance_certified'])->count(),
-                'payment'           => (clone $base)->whereIn('status', ['approved_for_payment', 'approved'])->count(),
-                'recovery'          => (clone $base)->whereIn('status', ['paid', 'recovery_scheduled'])->count(),
-                'reconciliation'    => SalaryAdvanceReconciliation::query()
+                'certify' => (clone $base)->whereIn('status', ['submitted', 'resubmitted'])->count(),
+                'pending_approval' => (clone $base)->whereIn('status', ['finance_certified'])->count(),
+                'payment' => (clone $base)->whereIn('status', ['approved_for_payment', 'approved'])->count(),
+                'recovery' => (clone $base)->whereIn('status', ['paid', 'recovery_scheduled'])->count(),
+                'reconciliation' => SalaryAdvanceReconciliation::query()
                     ->where('tenant_id', $tenantId)
                     ->where('status', 'open')
                     ->count(),
-                'outstanding'       => $outstandingCount,
+                'outstanding' => $outstandingCount,
             ],
             'exposure' => [
                 'total_outstanding_balance' => $outstandingBalance,
-                'outstanding_count'         => $outstandingCount,
+                'outstanding_count' => $outstandingCount,
             ],
             'by_status' => (clone $base)
                 ->selectRaw('status, COUNT(*) as total')
@@ -646,10 +646,10 @@ class SalaryAdvanceService
             ->get(['id', 'reference_number', 'amount', 'currency', 'status', 'closed_at', 'created_at']);
 
         return [
-            'eligibility'     => $eligibility,
+            'eligibility' => $eligibility,
             'current_request' => $current,
-            'active_advance'  => $exposure['active_advance'],
-            'history'         => $history,
+            'active_advance' => $exposure['active_advance'],
+            'history' => $history,
         ];
     }
 
@@ -683,40 +683,40 @@ class SalaryAdvanceService
                 ->where('active', true)
                 ->where('tenant_id', $actor->tenant_id)
                 ->update([
-                    'active'       => false,
+                    'active' => false,
                     'effective_to' => now()->toDateString(),
                 ]);
 
             $policy = SalaryAdvancePolicyVersion::create([
-                'tenant_id'                      => $actor->tenant_id,
-                'version'                        => $data['version'],
-                'effective_from'                 => $data['effective_from'],
-                'effective_to'                   => $data['effective_to'] ?? null,
-                'max_salary_percentage'          => $data['max_salary_percentage'] ?? 50,
-                'salary_basis'                   => $data['salary_basis'] ?? 'net_confirmed',
-                'max_concurrent_advances'        => $data['max_concurrent_advances'] ?? 1,
-                'full_repayment_required'        => $data['full_repayment_required'] ?? true,
-                'recovery_rule'                  => $data['recovery_rule'] ?? 'full_eom',
-                'final_approver_role'            => $data['final_approver_role'] ?? 'Secretary General',
+                'tenant_id' => $actor->tenant_id,
+                'version' => $data['version'],
+                'effective_from' => $data['effective_from'],
+                'effective_to' => $data['effective_to'] ?? null,
+                'max_salary_percentage' => $data['max_salary_percentage'] ?? 50,
+                'salary_basis' => $data['salary_basis'] ?? 'net_confirmed',
+                'max_concurrent_advances' => $data['max_concurrent_advances'] ?? 1,
+                'full_repayment_required' => $data['full_repayment_required'] ?? true,
+                'recovery_rule' => $data['recovery_rule'] ?? 'full_eom',
+                'final_approver_role' => $data['final_approver_role'] ?? 'Secretary General',
                 'finance_certification_required' => $data['finance_certification_required'] ?? true,
-                'admin_review_required'          => $data['admin_review_required'] ?? true,
-                'configuration'                  => array_merge($data['configuration'] ?? [], [
+                'admin_review_required' => $data['admin_review_required'] ?? true,
+                'configuration' => array_merge($data['configuration'] ?? [], [
                     'change_reason' => $data['change_reason'] ?? null,
                 ]),
-                'approved_by'                    => $actor->id,
-                'active'                         => true,
+                'approved_by' => $actor->id,
+                'active' => true,
             ]);
 
             AuditLog::record('salary_advance.policy_version_created', [
                 'auditable_type' => SalaryAdvancePolicyVersion::class,
-                'auditable_id'   => $policy->id,
-                'new_values'     => [
-                    'version'       => $policy->version,
+                'auditable_id' => $policy->id,
+                'new_values' => [
+                    'version' => $policy->version,
                     'change_reason' => $data['change_reason'] ?? null,
-                    'max_pct'       => $policy->max_salary_percentage,
-                    'salary_basis'  => $policy->salary_basis,
+                    'max_pct' => $policy->max_salary_percentage,
+                    'salary_basis' => $policy->salary_basis,
                 ],
-                'tags'           => ['salary_advance', 'policy'],
+                'tags' => ['salary_advance', 'policy'],
             ]);
 
             return $policy;
@@ -748,9 +748,9 @@ class SalaryAdvanceService
         }
 
         $advance->update([
-            'status'          => 'closed',
+            'status' => 'closed',
             'recovery_status' => 'recovered',
-            'closed_at'       => now(),
+            'closed_at' => now(),
         ]);
 
         if ($register) {
@@ -783,20 +783,20 @@ class SalaryAdvanceService
 
         $personalFile = HrPersonalFile::firstOrCreate(
             [
-                'tenant_id'   => $advance->tenant_id,
+                'tenant_id' => $advance->tenant_id,
                 'employee_id' => $requester->id,
             ],
             [
-                'created_by'                     => $actor->id,
-                'file_status'                    => 'active',
+                'created_by' => $actor->id,
+                'file_status' => 'active',
                 'confidentiality_classification' => 'confidential',
-                'department_id'                  => $requester->department_id ?? null,
+                'department_id' => $requester->department_id ?? null,
             ]
         );
 
         $pdf = $this->form002Pdf($advance);
         $binary = $pdf->output();
-        $fileName = 'FORM-002-' . $advance->reference_number . '.pdf';
+        $fileName = 'FORM-002-'.$advance->reference_number.'.pdf';
         $path = sprintf(
             'hr/personnel-files/%d/salary-advances/%s',
             $personalFile->id,
@@ -805,50 +805,50 @@ class SalaryAdvanceService
         Storage::disk('local')->put($path, $binary);
 
         $doc = HrFileDocument::create([
-            'tenant_id'             => $advance->tenant_id,
-            'hr_file_id'            => $personalFile->id,
-            'uploaded_by'           => $actor->id,
-            'document_type'         => 'salary_advance_form_002',
-            'title'                 => 'Salary Advance FORM-002 — ' . $advance->reference_number,
-            'description'           => 'Closed salary advance FORM-002 filed from Finance recovery workflow.',
-            'file_path'             => $path,
-            'file_name'             => $fileName,
-            'file_size'             => strlen($binary),
+            'tenant_id' => $advance->tenant_id,
+            'hr_file_id' => $personalFile->id,
+            'uploaded_by' => $actor->id,
+            'document_type' => 'salary_advance_form_002',
+            'title' => 'Salary Advance FORM-002 — '.$advance->reference_number,
+            'description' => 'Closed salary advance FORM-002 filed from Finance recovery workflow.',
+            'file_path' => $path,
+            'file_name' => $fileName,
+            'file_size' => strlen($binary),
             'confidentiality_level' => 'confidential',
-            'issue_date'            => now()->toDateString(),
-            'effective_date'        => optional($advance->closed_at)->toDateString() ?? now()->toDateString(),
-            'source_module'         => 'salary_advance',
-            'tags'                  => ['salary_advance', 'form_002', $advance->reference_number],
-            'remarks'               => 'Auto-filed on advance closure. Reference: ' . $advance->reference_number,
+            'issue_date' => now()->toDateString(),
+            'effective_date' => optional($advance->closed_at)->toDateString() ?? now()->toDateString(),
+            'source_module' => 'salary_advance',
+            'tags' => ['salary_advance', 'form_002', $advance->reference_number],
+            'remarks' => 'Auto-filed on advance closure. Reference: '.$advance->reference_number,
         ]);
 
         HrFileTimelineEvent::create([
-            'tenant_id'          => $advance->tenant_id,
-            'hr_file_id'         => $personalFile->id,
-            'recorded_by'        => $actor->id,
-            'event_type'         => 'salary_advance_closed',
-            'title'              => 'Salary advance closed — ' . $advance->reference_number,
-            'description'        => 'FORM-002 filed to confidential personnel documents after full recovery.',
-            'event_date'         => now()->toDateString(),
-            'source_module'      => 'salary_advance',
+            'tenant_id' => $advance->tenant_id,
+            'hr_file_id' => $personalFile->id,
+            'recorded_by' => $actor->id,
+            'event_type' => 'salary_advance_closed',
+            'title' => 'Salary advance closed — '.$advance->reference_number,
+            'description' => 'FORM-002 filed to confidential personnel documents after full recovery.',
+            'event_date' => now()->toDateString(),
+            'source_module' => 'salary_advance',
             'linked_document_id' => $doc->id,
         ]);
 
         $advance->update([
-            'personnel_file_id'          => $personalFile->id,
+            'personnel_file_id' => $personalFile->id,
             'personnel_file_document_id' => $doc->id,
-            'personnel_file_filed_at'    => now(),
+            'personnel_file_filed_at' => now(),
         ]);
 
         AuditLog::record('salary_advance.personnel_file_filed', [
             'auditable_type' => SalaryAdvanceRequest::class,
-            'auditable_id'   => $advance->id,
-            'new_values'     => [
-                'personnel_file_id'          => $personalFile->id,
+            'auditable_id' => $advance->id,
+            'new_values' => [
+                'personnel_file_id' => $personalFile->id,
                 'personnel_file_document_id' => $doc->id,
-                'reference_number'           => $advance->reference_number,
+                'reference_number' => $advance->reference_number,
             ],
-            'tags'           => ['salary_advance', 'personnel_file'],
+            'tags' => ['salary_advance', 'personnel_file'],
         ]);
 
         return $doc;
@@ -886,30 +886,30 @@ class SalaryAdvanceService
         );
 
         $exception = SalaryAdvancePolicyException::create([
-            'tenant_id'             => $actor->tenant_id,
-            'employee_id'           => $data['employee_id'],
-            'exception_type'        => $data['exception_type'],
-            'status'                => 'pending',
-            'reason'                => $data['reason'],
-            'justification'         => $data['justification'],
-            'effective_from'        => $data['effective_from'],
-            'effective_to'          => $data['effective_to'] ?? null,
-            'policy_version_id'     => $data['policy_version_id'] ?? $this->activePolicy($actor->tenant_id)->id,
-            'linked_advance_id'     => $data['linked_advance_id'] ?? null,
-            'requested_by'          => $actor->id,
+            'tenant_id' => $actor->tenant_id,
+            'employee_id' => $data['employee_id'],
+            'exception_type' => $data['exception_type'],
+            'status' => 'pending',
+            'reason' => $data['reason'],
+            'justification' => $data['justification'],
+            'effective_from' => $data['effective_from'],
+            'effective_to' => $data['effective_to'] ?? null,
+            'policy_version_id' => $data['policy_version_id'] ?? $this->activePolicy($actor->tenant_id)->id,
+            'linked_advance_id' => $data['linked_advance_id'] ?? null,
+            'requested_by' => $actor->id,
             'applies_automatically' => false,
         ]);
 
         AuditLog::record('salary_advance.policy_exception_created', [
             'auditable_type' => SalaryAdvancePolicyException::class,
-            'auditable_id'   => $exception->id,
-            'new_values'     => [
-                'employee_id'    => $exception->employee_id,
+            'auditable_id' => $exception->id,
+            'new_values' => [
+                'employee_id' => $exception->employee_id,
                 'exception_type' => $exception->exception_type,
-                'reason'         => $exception->reason,
-                'status'         => $exception->status,
+                'reason' => $exception->reason,
+                'status' => $exception->status,
             ],
-            'tags'           => ['salary_advance', 'policy_exception'],
+            'tags' => ['salary_advance', 'policy_exception'],
         ]);
 
         return $exception->fresh(['employee', 'requestedBy']);
@@ -934,22 +934,22 @@ class SalaryAdvanceService
         }
 
         $exception->update([
-            'status'                => 'approved',
-            'decision_notes'        => $data['decision_notes'] ?? null,
-            'approved_by'           => $actor->id,
-            'approved_at'           => now(),
+            'status' => 'approved',
+            'decision_notes' => $data['decision_notes'] ?? null,
+            'approved_by' => $actor->id,
+            'approved_at' => now(),
             'applies_automatically' => false,
         ]);
 
         AuditLog::record('salary_advance.policy_exception_approved', [
             'auditable_type' => SalaryAdvancePolicyException::class,
-            'auditable_id'   => $exception->id,
-            'new_values'     => [
-                'status'                => 'approved',
-                'decision_notes'        => $exception->decision_notes,
+            'auditable_id' => $exception->id,
+            'new_values' => [
+                'status' => 'approved',
+                'decision_notes' => $exception->decision_notes,
                 'applies_automatically' => false,
             ],
-            'tags'           => ['salary_advance', 'policy_exception'],
+            'tags' => ['salary_advance', 'policy_exception'],
         ]);
 
         return $exception->fresh(['employee', 'approvedBy', 'requestedBy']);
@@ -974,17 +974,17 @@ class SalaryAdvanceService
         }
 
         $exception->update([
-            'status'         => 'revoked',
+            'status' => 'revoked',
             'decision_notes' => $data['decision_notes'] ?? $exception->decision_notes,
-            'revoked_by'     => $actor->id,
-            'revoked_at'     => now(),
+            'revoked_by' => $actor->id,
+            'revoked_at' => now(),
         ]);
 
         AuditLog::record('salary_advance.policy_exception_revoked', [
             'auditable_type' => SalaryAdvancePolicyException::class,
-            'auditable_id'   => $exception->id,
-            'new_values'     => ['status' => 'revoked'],
-            'tags'           => ['salary_advance', 'policy_exception'],
+            'auditable_id' => $exception->id,
+            'new_values' => ['status' => 'revoked'],
+            'tags' => ['salary_advance', 'policy_exception'],
         ]);
 
         return $exception->fresh(['employee', 'revokedBy']);
@@ -1003,14 +1003,14 @@ class SalaryAdvanceService
             ->get()
             ->filter(fn (SalaryAdvancePolicyException $e) => $e->isActiveOn())
             ->map(fn (SalaryAdvancePolicyException $e) => [
-                'id'                    => $e->id,
-                'exception_type'        => $e->exception_type,
-                'status'                => $e->status,
-                'reason'                => $e->reason,
-                'effective_from'        => $e->effective_from?->toDateString(),
-                'effective_to'          => $e->effective_to?->toDateString(),
+                'id' => $e->id,
+                'exception_type' => $e->exception_type,
+                'status' => $e->status,
+                'reason' => $e->reason,
+                'effective_from' => $e->effective_from?->toDateString(),
+                'effective_to' => $e->effective_to?->toDateString(),
                 'applies_automatically' => false,
-                'note'                  => 'Documented exception only — does not silently override eligibility.',
+                'note' => 'Documented exception only — does not silently override eligibility.',
             ])
             ->values()
             ->all();
@@ -1024,9 +1024,9 @@ class SalaryAdvanceService
             ->first();
 
         return [
-            'register'     => $register,
+            'register' => $register,
             'transactions' => $register?->transactions ?? [],
-            'balance'      => $register ? (float) $register->balance : 0,
+            'balance' => $register ? (float) $register->balance : 0,
         ];
     }
 
@@ -1046,7 +1046,7 @@ class SalaryAdvanceService
 
         return Pdf::loadView('pdf.salary_advance_form_002', [
             'advance' => $advance,
-            'ledger'  => $this->ledger($advance),
+            'ledger' => $this->ledger($advance),
             'letterhead' => TenantSetting::getLetterheadSettings($advance->tenant_id),
         ]);
     }
@@ -1082,14 +1082,14 @@ class SalaryAdvanceService
     public function hasSalaryAdvancePermission(User $actor, string $permission): bool
     {
         $fallbacks = [
-            'salary_advance.view'    => ['finance.view'],
-            'salary_advance.create'  => ['finance.create'],
+            'salary_advance.view' => ['finance.view'],
+            'salary_advance.create' => ['finance.create'],
             'salary_advance.certify' => ['finance.approve'],
             'salary_advance.approve' => ['finance.approve'],
-            'salary_advance.pay'     => ['finance.approve', 'finance.admin'],
+            'salary_advance.pay' => ['finance.approve', 'finance.admin'],
             'salary_advance.recover' => ['finance.approve', 'finance.admin'],
-            'salary_advance.export'  => ['finance.export'],
-            'salary_advance.admin'   => ['finance.admin'],
+            'salary_advance.export' => ['finance.export'],
+            'salary_advance.admin' => ['finance.admin'],
         ];
 
         if ($actor->can($permission)) {
@@ -1140,15 +1140,15 @@ class SalaryAdvanceService
     private function policyPayload(SalaryAdvancePolicyVersion $policy): array
     {
         return [
-            'id'                             => $policy->id,
-            'version'                        => $policy->version,
-            'max_salary_percentage'          => (float) $policy->max_salary_percentage,
-            'salary_basis'                   => $policy->salary_basis,
-            'max_concurrent_advances'        => (int) $policy->max_concurrent_advances,
-            'full_repayment_required'        => (bool) $policy->full_repayment_required,
-            'recovery_rule'                  => $policy->recovery_rule,
+            'id' => $policy->id,
+            'version' => $policy->version,
+            'max_salary_percentage' => (float) $policy->max_salary_percentage,
+            'salary_basis' => $policy->salary_basis,
+            'max_concurrent_advances' => (int) $policy->max_concurrent_advances,
+            'full_repayment_required' => (bool) $policy->full_repayment_required,
+            'recovery_rule' => $policy->recovery_rule,
             'finance_certification_required' => (bool) $policy->finance_certification_required,
-            'admin_review_required'          => (bool) $policy->admin_review_required,
+            'admin_review_required' => (bool) $policy->admin_review_required,
         ];
     }
 }

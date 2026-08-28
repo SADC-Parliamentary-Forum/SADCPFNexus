@@ -18,7 +18,7 @@ class TenderController extends Controller
 
     private function gate(Request $request): void
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General', 'super-admin'])) {
+        if (! $request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General', 'super-admin'])) {
             abort(403);
         }
     }
@@ -55,20 +55,20 @@ class TenderController extends Controller
                 $scoring = [];
                 foreach ($tender->procurementRequest?->quotes ?? [] as $quote) {
                     $tech = $quote->technical_score !== null ? (float) $quote->technical_score : null;
-                    $fin = (!$sealed && $quote->financial_score !== null) ? (float) $quote->financial_score : null;
+                    $fin = (! $sealed && $quote->financial_score !== null) ? (float) $quote->financial_score : null;
                     $combined = null;
-                    if (!$sealed && $tech !== null && $fin !== null) {
+                    if (! $sealed && $tech !== null && $fin !== null) {
                         $combined = round(($tech * $techW / 100) + ($fin * $finW / 100), 2);
                     }
                     $scoring[] = [
-                        'quote_id'          => $quote->id,
-                        'vendor_name'       => $quote->vendor_name,
-                        'technical_score'   => $tech,
-                        'financial_score'   => $sealed ? null : $fin,
+                        'quote_id' => $quote->id,
+                        'vendor_name' => $quote->vendor_name,
+                        'technical_score' => $tech,
+                        'financial_score' => $sealed ? null : $fin,
                         'financials_sealed' => $sealed,
-                        'quoted_amount'     => $sealed ? null : $quote->quoted_amount,
-                        'combined_score'    => $combined,
-                        'meets_min_tech'    => $tech !== null
+                        'quoted_amount' => $sealed ? null : $quote->quoted_amount,
+                        'combined_score' => $combined,
+                        'meets_min_tech' => $tech !== null
                             ? $tech >= (float) ($tender->min_technical_score ?? 70)
                             : null,
                     ];
@@ -95,15 +95,15 @@ class TenderController extends Controller
             $sealed = $tender->isSealed();
             foreach ($tender->procurementRequest?->quotes ?? [] as $quote) {
                 $row = [
-                    'tender_id'         => $tender->id,
-                    'tender_reference'  => $tender->reference_number,
-                    'quote_id'          => $quote->id,
-                    'vendor_name'       => $quote->vendor_name,
-                    'version'           => $quote->version,
-                    'status'            => $tender->status,
+                    'tender_id' => $tender->id,
+                    'tender_reference' => $tender->reference_number,
+                    'quote_id' => $quote->id,
+                    'vendor_name' => $quote->vendor_name,
+                    'version' => $quote->version,
+                    'status' => $tender->status,
                     'financials_sealed' => $sealed,
                 ];
-                if (!$sealed) {
+                if (! $sealed) {
                     $row['quoted_amount'] = $quote->quoted_amount;
                 }
                 $rows[] = $row;
@@ -118,14 +118,14 @@ class TenderController extends Controller
         $this->gate($request);
         $data = $request->validate([
             'procurement_request_id' => ['required', 'integer', 'exists:procurement_requests,id'],
-            'title'                  => ['required', 'string', 'max:255'],
-            'notice'                 => ['nullable', 'string'],
-            'tender_committee_id'    => ['nullable', 'integer', 'exists:tender_committees,id'],
-            'submission_deadline'    => ['nullable', 'date'],
-            'sealed_mode'            => ['nullable', 'boolean'],
-            'technical_weight'       => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'financial_weight'       => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'min_technical_score'    => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'title' => ['required', 'string', 'max:255'],
+            'notice' => ['nullable', 'string'],
+            'tender_committee_id' => ['nullable', 'integer', 'exists:tender_committees,id'],
+            'submission_deadline' => ['nullable', 'date'],
+            'sealed_mode' => ['nullable', 'boolean'],
+            'technical_weight' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'financial_weight' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'min_technical_score' => ['nullable', 'numeric', 'min:0', 'max:100'],
         ]);
 
         $tender = $this->tenderService->create($data, $request->user());
@@ -151,7 +151,7 @@ class TenderController extends Controller
 
         return response()->json([
             'message' => 'Tender published.',
-            'data'    => $this->tenderService->publish($tender, $request->user()),
+            'data' => $this->tenderService->publish($tender, $request->user()),
         ]);
     }
 
@@ -161,7 +161,7 @@ class TenderController extends Controller
 
         return response()->json([
             'message' => 'Tender closed.',
-            'data'    => $this->tenderService->close($tender, $request->user()),
+            'data' => $this->tenderService->close($tender, $request->user()),
         ]);
     }
 
@@ -171,7 +171,7 @@ class TenderController extends Controller
 
         return response()->json([
             'message' => 'Bids opened.',
-            'data'    => $this->tenderService->openBids($tender, $request->user()),
+            'data' => $this->tenderService->openBids($tender, $request->user()),
         ]);
     }
 
@@ -181,7 +181,7 @@ class TenderController extends Controller
 
         return response()->json([
             'message' => 'Evaluation started.',
-            'data'    => $this->tenderService->startEvaluation($tender, $request->user()),
+            'data' => $this->tenderService->startEvaluation($tender, $request->user()),
         ]);
     }
 
@@ -205,18 +205,18 @@ class TenderController extends Controller
     {
         $this->gate($request);
         $data = $request->validate([
-            'quote_id'   => ['required', 'integer'],
+            'quote_id' => ['required', 'integer'],
             'start_date' => ['required', 'date'],
-            'end_date'   => ['required', 'date', 'after:start_date'],
-            'title'      => ['nullable', 'string', 'max:255'],
-            'notes'      => ['nullable', 'string', 'max:2000'],
+            'end_date' => ['required', 'date', 'after:start_date'],
+            'title' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $result = $this->tenderService->award($tender, $data, $request->user());
 
         return response()->json([
             'message' => 'Tender awarded and draft contract created.',
-            'data'    => array_merge($result['tender']->toArray(), [
+            'data' => array_merge($result['tender']->toArray(), [
                 'contract' => $result['contract'],
             ]),
         ]);
@@ -231,7 +231,7 @@ class TenderController extends Controller
 
         return response()->json([
             'message' => 'Tender cancelled.',
-            'data'    => $this->tenderService->cancel($tender, $data['reason'], $request->user()),
+            'data' => $this->tenderService->cancel($tender, $data['reason'], $request->user()),
         ]);
     }
 
@@ -244,7 +244,7 @@ class TenderController extends Controller
 
         return response()->json([
             'message' => 'Comparison summary generated (assistive only).',
-            'data'    => $this->comparisonSummaryService->summarize($tender, $request->user()),
+            'data' => $this->comparisonSummaryService->summarize($tender, $request->user()),
         ]);
     }
 
@@ -266,7 +266,7 @@ class TenderController extends Controller
 
         return response()->json([
             'message' => 'Human review of assistive comparison acknowledged. No award action taken.',
-            'data'    => $this->comparisonSummaryService->confirmReview(
+            'data' => $this->comparisonSummaryService->confirmReview(
                 $tender,
                 $request->user(),
                 (string) ($data['summary_fingerprint'] ?? '')

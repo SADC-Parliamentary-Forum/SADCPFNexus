@@ -18,8 +18,8 @@ return [
     */
 
     'direct_purchase_limit' => env('PROCUREMENT_DIRECT_LIMIT', 10_000),
-    'quotation_limit'       => env('PROCUREMENT_QUOTATION_LIMIT', 100_000),
-    'tender_threshold'      => env('PROCUREMENT_TENDER_THRESHOLD', 100_000),
+    'quotation_limit' => env('PROCUREMENT_QUOTATION_LIMIT', 100_000),
+    'tender_threshold' => env('PROCUREMENT_TENDER_THRESHOLD', 100_000),
 
     /*
     | Minimum quotations required for RFQ-method purchases.
@@ -48,10 +48,10 @@ return [
     | llm requires PROCUREMENT_AI_COMPARISON_LLM_ENDPOINT + API key; otherwise falls back to stub.
     | Human confirm is audit-only and never awards.
     */
-    'ai_comparison_enabled'       => env('PROCUREMENT_AI_COMPARISON_ENABLED', false),
-    'ai_comparison_provider'      => env('PROCUREMENT_AI_COMPARISON_PROVIDER', 'stub'),
-    'ai_comparison_llm_endpoint'  => env('PROCUREMENT_AI_COMPARISON_LLM_ENDPOINT'),
-    'ai_comparison_llm_api_key'   => env('PROCUREMENT_AI_COMPARISON_LLM_API_KEY'),
+    'ai_comparison_enabled' => env('PROCUREMENT_AI_COMPARISON_ENABLED', false),
+    'ai_comparison_provider' => env('PROCUREMENT_AI_COMPARISON_PROVIDER', 'stub'),
+    'ai_comparison_llm_endpoint' => env('PROCUREMENT_AI_COMPARISON_LLM_ENDPOINT'),
+    'ai_comparison_llm_api_key' => env('PROCUREMENT_AI_COMPARISON_LLM_API_KEY'),
 
     /*
     | Newspaper-notice HTTP LLM draft (CR-8). Suggestion only; human checklist still required.
@@ -60,4 +60,3 @@ return [
     'notice_llm_url' => env('PROCUREMENT_NOTICE_LLM_URL'),
     'notice_llm_token' => env('PROCUREMENT_NOTICE_LLM_TOKEN'),
 ];
-

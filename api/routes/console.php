@@ -81,7 +81,7 @@ if (config('fleet_telematics.schedule_enabled')
 }
 
 // Generate and send weekly institutional summary emails to all active users every Friday at 16:00.
-Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob())
+Schedule::job(new \App\Jobs\RunWeeklySummaryBatchJob)
     ->fridays()
     ->at('16:00')
     ->withoutOverlapping()

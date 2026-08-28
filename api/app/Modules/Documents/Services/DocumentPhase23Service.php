@@ -2,6 +2,7 @@
 
 namespace App\Modules\Documents\Services;
 
+use App\Models\AuditLog;
 use App\Models\Documents\DocumentDerivative;
 use App\Models\Documents\DocumentDisposalRequest;
 use App\Models\Documents\DocumentExternalShare;
@@ -11,7 +12,6 @@ use App\Models\Documents\DocumentUploadSession;
 use App\Models\Documents\DocumentVersion;
 use App\Models\Documents\ManagedDocument;
 use App\Models\User;
-use App\Models\AuditLog;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -422,6 +422,7 @@ class DocumentPhase23Service
                 ->find($id);
             if (! $version) {
                 $results[] = ['id' => $id, 'status' => 'missing'];
+
                 continue;
             }
             $scanner = app(\App\Modules\Documents\Contracts\MalwareScannerInterface::class);

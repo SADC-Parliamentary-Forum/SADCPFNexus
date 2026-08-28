@@ -3,7 +3,6 @@
 namespace App\Modules\Admin\Services;
 
 use App\Models\CorrespondenceMailboxSetting;
-use App\Modules\Admin\Services\MobileStoreSubmitClient;
 
 /**
  * Aggregated operator credential / integration status.

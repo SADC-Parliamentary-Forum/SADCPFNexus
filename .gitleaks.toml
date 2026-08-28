@@ -1,0 +1,13 @@
+# Open-source gitleaks config. Client Firebase API keys are expected in
+# FlutterFire generated files; they are not server secrets.
+title = "SADCPFNexus"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "FlutterFire / Play client identifiers (restricted by app/package, not DSNs)"
+paths = [
+  '''mobile/lib/firebase_options\.dart''',
+  '''mobile/android/app/google-services\.json''',
+]

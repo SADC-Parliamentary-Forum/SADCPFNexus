@@ -30,11 +30,11 @@ class StockStoresController extends Controller
     public function availability(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'q'          => ['nullable', 'string', 'max:255'],
-            'item_ids'   => ['nullable', 'array'],
+            'q' => ['nullable', 'string', 'max:255'],
+            'item_ids' => ['nullable', 'array'],
             'item_ids.*' => ['integer'],
-            'names'      => ['nullable', 'array'],
-            'names.*'    => ['string', 'max:255'],
+            'names' => ['nullable', 'array'],
+            'names.*' => ['string', 'max:255'],
         ]);
 
         return response()->json([
@@ -61,15 +61,15 @@ class StockStoresController extends Controller
     {
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
-            'purpose'                     => ['nullable', 'string', 'max:500'],
-            'notes'                       => ['nullable', 'string', 'max:2000'],
-            'department_id'               => ['nullable', 'integer'],
-            'programme_id'                => ['nullable', 'integer'],
-            'submit'                      => ['nullable', 'boolean'],
-            'lines'                       => ['required', 'array', 'min:1'],
-            'lines.*.stock_item_id'       => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
-            'lines.*.quantity_requested'  => ['required', 'integer', 'min:1'],
-            'lines.*.notes'               => ['nullable', 'string', 'max:1000'],
+            'purpose' => ['nullable', 'string', 'max:500'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'department_id' => ['nullable', 'integer'],
+            'programme_id' => ['nullable', 'integer'],
+            'submit' => ['nullable', 'boolean'],
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.stock_item_id' => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
+            'lines.*.quantity_requested' => ['required', 'integer', 'min:1'],
+            'lines.*.notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $row = $this->workflow->createRequest($data, $request->user());
@@ -104,8 +104,8 @@ class StockStoresController extends Controller
         $this->authorizeApprove($request);
         $this->assertTenant($stockRequest->tenant_id, $request);
         $data = $request->validate([
-            'lines'                     => ['nullable', 'array'],
-            'lines.*.id'                => ['required_with:lines', 'integer'],
+            'lines' => ['nullable', 'array'],
+            'lines.*.id' => ['required_with:lines', 'integer'],
             'lines.*.quantity_approved' => ['required_with:lines', 'integer', 'min:0'],
         ]);
 
@@ -148,18 +148,18 @@ class StockStoresController extends Controller
         $this->authorizeIssue($request);
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
-            'stock_request_id'            => ['nullable', 'integer', Rule::exists('stock_requests', 'id')->where('tenant_id', $tenantId)],
-            'issued_to_user_id'           => ['nullable', 'integer'],
-            'issued_to_department_id'     => ['nullable', 'integer'],
-            'issued_to_other'             => ['nullable', 'string', 'max:255'],
-            'issue_date'                  => ['required', 'date'],
-            'notes'                       => ['nullable', 'string', 'max:2000'],
-            'lines'                       => ['required', 'array', 'min:1'],
-            'lines.*.stock_item_id'       => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
-            'lines.*.quantity'            => ['required', 'integer', 'min:1'],
+            'stock_request_id' => ['nullable', 'integer', Rule::exists('stock_requests', 'id')->where('tenant_id', $tenantId)],
+            'issued_to_user_id' => ['nullable', 'integer'],
+            'issued_to_department_id' => ['nullable', 'integer'],
+            'issued_to_other' => ['nullable', 'string', 'max:255'],
+            'issue_date' => ['required', 'date'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'lines' => ['required', 'array', 'min:1'],
+            'lines.*.stock_item_id' => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
+            'lines.*.quantity' => ['required', 'integer', 'min:1'],
             'lines.*.stock_request_line_id' => ['nullable', 'integer'],
-            'lines.*.stock_batch_id'      => ['nullable', 'integer'],
-            'lines.*.notes'               => ['nullable', 'string', 'max:1000'],
+            'lines.*.stock_batch_id' => ['nullable', 'integer'],
+            'lines.*.notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $row = $this->workflow->createIssue($data, $request->user());
@@ -199,13 +199,13 @@ class StockStoresController extends Controller
         $this->authorizeIssue($request);
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
-            'stock_item_id'  => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
-            'quantity'       => ['required', 'integer', 'min:1'],
-            'condition'      => ['nullable', Rule::in(['good', 'damaged', 'expired'])],
+            'stock_item_id' => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
+            'quantity' => ['required', 'integer', 'min:1'],
+            'condition' => ['nullable', Rule::in(['good', 'damaged', 'expired'])],
             'stock_issue_id' => ['nullable', 'integer'],
             'stock_batch_id' => ['nullable', 'integer'],
-            'return_date'    => ['required', 'date'],
-            'notes'          => ['nullable', 'string', 'max:2000'],
+            'return_date' => ['required', 'date'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $row = $this->workflow->createReturn($data, $request->user());
@@ -229,14 +229,14 @@ class StockStoresController extends Controller
         $this->authorizeTransfer($request);
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
-            'from_location_id'      => ['required', 'integer', Rule::exists('stock_locations', 'id')->where('tenant_id', $tenantId)],
-            'to_location_id'        => ['required', 'integer', Rule::exists('stock_locations', 'id')->where('tenant_id', $tenantId)],
-            'notes'                 => ['nullable', 'string', 'max:2000'],
-            'lines'                 => ['required', 'array', 'min:1'],
+            'from_location_id' => ['required', 'integer', Rule::exists('stock_locations', 'id')->where('tenant_id', $tenantId)],
+            'to_location_id' => ['required', 'integer', Rule::exists('stock_locations', 'id')->where('tenant_id', $tenantId)],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'lines' => ['required', 'array', 'min:1'],
             'lines.*.stock_item_id' => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
-            'lines.*.quantity'      => ['required', 'integer', 'min:1'],
-            'lines.*.stock_batch_id'=> ['nullable', 'integer'],
-            'lines.*.notes'         => ['nullable', 'string', 'max:1000'],
+            'lines.*.quantity' => ['required', 'integer', 'min:1'],
+            'lines.*.stock_batch_id' => ['nullable', 'integer'],
+            'lines.*.notes' => ['nullable', 'string', 'max:1000'],
         ]);
 
         $row = $this->workflow->createTransfer($data, $request->user());
@@ -286,12 +286,12 @@ class StockStoresController extends Controller
         $this->authorizeIssue($request);
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
-            'stock_item_id'   => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
-            'quantity'        => ['required', 'integer', 'min:1'],
-            'reason_code'     => ['required', Rule::in(['damaged', 'expired', 'shortage', 'other'])],
+            'stock_item_id' => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
+            'quantity' => ['required', 'integer', 'min:1'],
+            'reason_code' => ['required', Rule::in(['damaged', 'expired', 'shortage', 'other'])],
             'from_quarantine' => ['nullable', 'boolean'],
-            'stock_batch_id'  => ['nullable', 'integer'],
-            'notes'           => ['nullable', 'string', 'max:2000'],
+            'stock_batch_id' => ['nullable', 'integer'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $row = $this->workflow->requestWriteOff($data, $request->user());
@@ -324,10 +324,10 @@ class StockStoresController extends Controller
         $this->authorizeIssue($request);
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
-            'stock_item_id'       => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
-            'quantity_requested'  => ['required', 'integer', 'min:1'],
-            'quantity_suggested'  => ['nullable', 'integer', 'min:1'],
-            'notes'               => ['nullable', 'string', 'max:2000'],
+            'stock_item_id' => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
+            'quantity_requested' => ['required', 'integer', 'min:1'],
+            'quantity_suggested' => ['nullable', 'integer', 'min:1'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $row = $this->workflow->createReplenishment($data, $request->user());
@@ -343,7 +343,7 @@ class StockStoresController extends Controller
         $this->assertTenant($stockItem->tenant_id, $request);
         $data = $request->validate([
             'quantity' => ['required', 'integer', 'min:1'],
-            'notes'    => ['nullable', 'string', 'max:2000'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $item = $this->stockService->quarantine($stockItem, $data['quantity'], $request->user(), $data['notes'] ?? null);
@@ -379,18 +379,18 @@ class StockStoresController extends Controller
         $this->authorizeIssue($request);
         $tenantId = $request->user()->tenant_id;
         $data = $request->validate([
-            'stock_item_id'     => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
-            'batch_number'      => ['required', 'string', 'max:64'],
-            'expiry_date'       => ['nullable', 'date'],
-            'quantity'          => ['required', 'integer', 'min:0'],
+            'stock_item_id' => ['required', 'integer', Rule::exists('stock_items', 'id')->where('tenant_id', $tenantId)],
+            'batch_number' => ['required', 'string', 'max:64'],
+            'expiry_date' => ['nullable', 'date'],
+            'quantity' => ['required', 'integer', 'min:0'],
             'stock_location_id' => ['nullable', 'integer'],
-            'notes'             => ['nullable', 'string', 'max:2000'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $batch = StockBatch::create([
             ...$data,
             'tenant_id' => $tenantId,
-            'status'    => StockBatch::STATUS_ACTIVE,
+            'status' => StockBatch::STATUS_ACTIVE,
         ]);
 
         StockItem::whereKey($data['stock_item_id'])->update(['tracks_batches' => true]);

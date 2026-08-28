@@ -126,17 +126,17 @@ Route::prefix('v1')->group(function () {
         Route::delete('profile/sessions/{userSession}', [\App\Http\Controllers\Api\V1\ProfileSessionController::class, 'destroy']);
 
         // Two-Factor Authentication (TOTP)
-        Route::get('profile/2fa/status',   [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'status']);
-        Route::post('profile/2fa/enable',  [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'enable']);
+        Route::get('profile/2fa/status', [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'status']);
+        Route::post('profile/2fa/enable', [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'enable']);
         Route::post('profile/2fa/confirm', [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'confirm']);
         Route::post('profile/2fa/disable', [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'disable']);
-        Route::post('profile/2fa/verify',  [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'verify']);
+        Route::post('profile/2fa/verify', [\App\Http\Controllers\Api\V1\Profile\TwoFactorController::class, 'verify']);
 
         // Initial Setup Wizard (self-service, any authenticated user)
         Route::prefix('setup')->group(function () {
-            Route::get('options',  [\App\Http\Controllers\Api\V1\SetupController::class, 'options']);
+            Route::get('options', [\App\Http\Controllers\Api\V1\SetupController::class, 'options']);
             Route::put('identity', [\App\Http\Controllers\Api\V1\SetupController::class, 'updateIdentity']);
-            Route::post('complete',[\App\Http\Controllers\Api\V1\SetupController::class, 'complete']);
+            Route::post('complete', [\App\Http\Controllers\Api\V1\SetupController::class, 'complete']);
         });
 
         // Email action processing — authenticated (token + user must match)
@@ -511,17 +511,17 @@ Route::prefix('v1')->group(function () {
                 // Grade Bands (full lifecycle)
                 Route::apiResource('grade-bands', \App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class)
                     ->names('hr-settings.grade-bands');
-                Route::post('grade-bands/{gradeBand}/submit',      [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'submit'])->name('hr-settings.grade-bands.submit');
-                Route::post('grade-bands/{gradeBand}/approve',     [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'approve'])->name('hr-settings.grade-bands.approve');
-                Route::post('grade-bands/{gradeBand}/publish',     [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'publish'])->name('hr-settings.grade-bands.publish');
-                Route::post('grade-bands/{gradeBand}/archive',     [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'archive'])->name('hr-settings.grade-bands.archive');
+                Route::post('grade-bands/{gradeBand}/submit', [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'submit'])->name('hr-settings.grade-bands.submit');
+                Route::post('grade-bands/{gradeBand}/approve', [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'approve'])->name('hr-settings.grade-bands.approve');
+                Route::post('grade-bands/{gradeBand}/publish', [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'publish'])->name('hr-settings.grade-bands.publish');
+                Route::post('grade-bands/{gradeBand}/archive', [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'archive'])->name('hr-settings.grade-bands.archive');
                 Route::post('grade-bands/{gradeBand}/new-version', [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'newVersion'])->name('hr-settings.grade-bands.new-version');
-                Route::get( 'grade-bands/{gradeBand}/impact',      [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'impactCheck'])->name('hr-settings.grade-bands.impact');
+                Route::get('grade-bands/{gradeBand}/impact', [\App\Http\Controllers\Api\V1\HrSettings\GradeBandController::class, 'impactCheck'])->name('hr-settings.grade-bands.impact');
 
                 // Salary Scales (full lifecycle)
                 Route::apiResource('salary-scales', \App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class)
                     ->names('hr-settings.salary-scales');
-                Route::post('salary-scales/{salaryScale}/submit',  [\App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class, 'submit'])->name('hr-settings.salary-scales.submit');
+                Route::post('salary-scales/{salaryScale}/submit', [\App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class, 'submit'])->name('hr-settings.salary-scales.submit');
                 Route::post('salary-scales/{salaryScale}/approve', [\App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class, 'approve'])->name('hr-settings.salary-scales.approve');
                 Route::post('salary-scales/{salaryScale}/publish', [\App\Http\Controllers\Api\V1\HrSettings\SalaryScaleController::class, 'publish'])->name('hr-settings.salary-scales.publish');
 
@@ -581,11 +581,11 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Travel\TravelController::class)
                 ->parameters(['requests' => 'travelRequest'])
                 ->names('travel.requests');
-            Route::post('requests/{travelRequest}/submit',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'submit']);
-            Route::post('requests/{travelRequest}/approve',  [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'approve']);
-            Route::post('requests/{travelRequest}/reject',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'reject']);
-            Route::post('requests/{travelRequest}/cancel',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'cancel']);
-            Route::post('requests/{travelRequest}/return',   [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'returnForCorrection']);
+            Route::post('requests/{travelRequest}/submit', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'submit']);
+            Route::post('requests/{travelRequest}/approve', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'approve']);
+            Route::post('requests/{travelRequest}/reject', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'reject']);
+            Route::post('requests/{travelRequest}/cancel', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'cancel']);
+            Route::post('requests/{travelRequest}/return', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'returnForCorrection']);
             Route::post('requests/{travelRequest}/withdraw', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'withdraw']);
             Route::post('requests/{travelRequest}/resubmit', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'resubmit']);
             Route::get('requests/{travelRequest}/certificate', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'certificate']);
@@ -609,10 +609,10 @@ Route::prefix('v1')->group(function () {
             Route::post('requests/{travelRequest}/amendments', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'requestAmendment']);
             Route::post('amendments/{amendment}/approve', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'approveAmendment']);
             // Travel attachments
-            Route::get('requests/{travelRequest}/attachments',                        [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'index']);
-            Route::post('requests/{travelRequest}/attachments',                       [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'store']);
-            Route::delete('requests/{travelRequest}/attachments/{attachment}',        [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'destroy']);
-            Route::get('requests/{travelRequest}/attachments/{attachment}/download',  [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'download']);
+            Route::get('requests/{travelRequest}/attachments', [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'index']);
+            Route::post('requests/{travelRequest}/attachments', [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'store']);
+            Route::delete('requests/{travelRequest}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'destroy']);
+            Route::get('requests/{travelRequest}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Travel\TravelAttachmentController::class, 'download']);
         });
 
         // Imprest Module
@@ -620,13 +620,13 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Imprest\ImprestController::class)
                 ->parameters(['requests' => 'imprestRequest'])
                 ->names('imprest.requests');
-            Route::post('requests/{imprestRequest}/submit',   [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'submit']);
-            Route::post('requests/{imprestRequest}/approve',  [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'approve']);
-            Route::post('requests/{imprestRequest}/reject',   [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'reject']);
-            Route::post('requests/{imprestRequest}/return',   [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'returnForCorrection']);
+            Route::post('requests/{imprestRequest}/submit', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'submit']);
+            Route::post('requests/{imprestRequest}/approve', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'approve']);
+            Route::post('requests/{imprestRequest}/reject', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'reject']);
+            Route::post('requests/{imprestRequest}/return', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'returnForCorrection']);
             Route::post('requests/{imprestRequest}/withdraw', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'withdraw']);
             Route::post('requests/{imprestRequest}/resubmit', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'resubmit']);
-            Route::post('requests/{imprestRequest}/retire',   [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'retire']);
+            Route::post('requests/{imprestRequest}/retire', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'retire']);
             Route::get('requests/{imprestRequest}/certificate', [\App\Http\Controllers\Api\V1\Imprest\ImprestController::class, 'certificate']);
         });
 
@@ -653,20 +653,20 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
                 ->parameters(['requests' => 'leaveRequest'])
                 ->names('leave.requests');
-            Route::post('requests/{leaveRequest}/submit',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'submit']);
+            Route::post('requests/{leaveRequest}/submit', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'submit']);
             Route::post('requests/{leaveRequest}/recommend', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'recommend']);
-            Route::post('requests/{leaveRequest}/certify',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'certify']);
-            Route::post('requests/{leaveRequest}/approve',  [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'approve']);
-            Route::post('requests/{leaveRequest}/reject',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'reject']);
-            Route::post('requests/{leaveRequest}/return',   [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'returnForCorrection']);
+            Route::post('requests/{leaveRequest}/certify', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'certify']);
+            Route::post('requests/{leaveRequest}/approve', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'approve']);
+            Route::post('requests/{leaveRequest}/reject', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'reject']);
+            Route::post('requests/{leaveRequest}/return', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'returnForCorrection']);
             Route::post('requests/{leaveRequest}/withdraw', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'withdraw']);
             Route::post('requests/{leaveRequest}/resubmit', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'resubmit']);
             Route::get('requests/{leaveRequest}/certificate', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'certificate']);
             Route::get('requests/{leaveRequest}/pdf', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'pdf']);
             // Leave attachments
-            Route::get('requests/{leaveRequest}/attachments',                       [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'index']);
-            Route::post('requests/{leaveRequest}/attachments',                      [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'store']);
-            Route::delete('requests/{leaveRequest}/attachments/{attachment}',       [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'destroy']);
+            Route::get('requests/{leaveRequest}/attachments', [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'index']);
+            Route::post('requests/{leaveRequest}/attachments', [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'store']);
+            Route::delete('requests/{leaveRequest}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'destroy']);
             Route::get('requests/{leaveRequest}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'download']);
         });
 
@@ -678,33 +678,33 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Procurement\ProcurementController::class)
                 ->parameters(['requests' => 'procurementRequest'])
                 ->names('procurement.requests');
-            Route::post('requests/{procurementRequest}/submit',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'submit']);
+            Route::post('requests/{procurementRequest}/submit', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'submit']);
             Route::post('requests/{procurementRequest}/authorise-split', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'authoriseSplit']);
             Route::post('requests/{procurementRequest}/coi-declarations', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'storeCoiDeclaration']);
             Route::post('requests/{procurementRequest}/hod-approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodApprove']);
-            Route::post('requests/{procurementRequest}/hod-reject',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodReject']);
-            Route::post('requests/{procurementRequest}/approve',     [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
-            Route::post('requests/{procurementRequest}/reject',      [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
-            Route::post('requests/{procurementRequest}/return',      [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'returnForCorrection']);
-            Route::post('requests/{procurementRequest}/withdraw',    [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'withdraw']);
-            Route::post('requests/{procurementRequest}/resubmit',    [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'resubmit']);
-            Route::get('requests/{procurementRequest}/certificate',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'certificate']);
-            Route::post('requests/{procurementRequest}/award',       [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'award']);
-            Route::post('requests/{procurementRequest}/issue-rfq',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'issueRfq']);
+            Route::post('requests/{procurementRequest}/hod-reject', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'hodReject']);
+            Route::post('requests/{procurementRequest}/approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'approve']);
+            Route::post('requests/{procurementRequest}/reject', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'reject']);
+            Route::post('requests/{procurementRequest}/return', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'returnForCorrection']);
+            Route::post('requests/{procurementRequest}/withdraw', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'withdraw']);
+            Route::post('requests/{procurementRequest}/resubmit', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'resubmit']);
+            Route::get('requests/{procurementRequest}/certificate', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'certificate']);
+            Route::post('requests/{procurementRequest}/award', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'award']);
+            Route::post('requests/{procurementRequest}/issue-rfq', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'issueRfq']);
             Route::post('requests/{procurementRequest}/set-method', [\App\Http\Controllers\Api\V1\Procurement\ProcurementController::class, 'setMethod']);
             Route::post('requests/{procurementRequest}/reserve-budget', [\App\Http\Controllers\Api\V1\Procurement\BudgetReservationController::class, 'store']);
             Route::get('settings', [\App\Http\Controllers\Api\V1\Procurement\ProcurementSettingsController::class, 'show']);
             Route::put('settings', [\App\Http\Controllers\Api\V1\Procurement\ProcurementSettingsController::class, 'update']);
 
             // Quotes (per request)
-            Route::get('requests/{procurementRequest}/quotes',            [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'index']);
-            Route::post('requests/{procurementRequest}/quotes',           [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'store']);
-            Route::put('requests/{procurementRequest}/quotes/{quote}',    [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'update']);
+            Route::get('requests/{procurementRequest}/quotes', [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'index']);
+            Route::post('requests/{procurementRequest}/quotes', [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'store']);
+            Route::put('requests/{procurementRequest}/quotes/{quote}', [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'update']);
             Route::post('requests/{procurementRequest}/quotes/{quote}/assess', [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'assess']);
             Route::delete('requests/{procurementRequest}/quotes/{quote}', [\App\Http\Controllers\Api\V1\Procurement\QuoteController::class, 'destroy']);
-            Route::get('requests/{procurementRequest}/quotes/{quote}/attachments',                       [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'index']);
-            Route::post('requests/{procurementRequest}/quotes/{quote}/attachments',                      [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'store']);
-            Route::delete('requests/{procurementRequest}/quotes/{quote}/attachments/{attachment}',       [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'destroy']);
+            Route::get('requests/{procurementRequest}/quotes/{quote}/attachments', [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'index']);
+            Route::post('requests/{procurementRequest}/quotes/{quote}/attachments', [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'store']);
+            Route::delete('requests/{procurementRequest}/quotes/{quote}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'destroy']);
             Route::get('requests/{procurementRequest}/quotes/{quote}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\QuoteAttachmentController::class, 'download']);
 
             // Budget Reservations
@@ -718,18 +718,18 @@ Route::prefix('v1')->group(function () {
             Route::post('supplier-categories', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'store']);
             Route::put('supplier-categories/{supplierCategory}', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'update']);
             Route::delete('supplier-categories/{supplierCategory}', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'destroy']);
-            Route::post('vendors/{vendor}/approve',     [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'approve']);
-            Route::post('vendors/{vendor}/reject',      [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'reject']);
+            Route::post('vendors/{vendor}/approve', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'approve']);
+            Route::post('vendors/{vendor}/reject', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'reject']);
             Route::post('vendors/{vendor}/request-info', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'requestInfo']);
             Route::post('vendors/{vendor}/suspend', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'suspend']);
             Route::get('vendors/{vendor}/approval-logs', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'approvalLogs']);
-            Route::get('vendors/{vendor}/ratings',      [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'listRatings']);
-            Route::post('vendors/{vendor}/ratings',     [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'storeRating']);
-            Route::get('vendors/{vendor}/contracts',    [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'listContracts']);
-            Route::post('vendors/{vendor}/blacklist',   [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'blacklist']);
+            Route::get('vendors/{vendor}/ratings', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'listRatings']);
+            Route::post('vendors/{vendor}/ratings', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'storeRating']);
+            Route::get('vendors/{vendor}/contracts', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'listContracts']);
+            Route::post('vendors/{vendor}/blacklist', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'blacklist']);
             Route::post('vendors/{vendor}/unblacklist', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'unblacklist']);
             Route::post('vendors/{vendor}/portal-users/{portalUser}/change-password', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'changePortalUserPassword']);
-            Route::get('vendors/{vendor}/evaluations',  [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'index']);
+            Route::get('vendors/{vendor}/evaluations', [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'index']);
             Route::post('vendors/{vendor}/evaluations', [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'store']);
 
             Route::prefix('supplier')->group(function () {
@@ -749,20 +749,20 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('purchase-orders', \App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class)
                 ->parameters(['purchase-orders' => 'purchaseOrder'])
                 ->names('procurement.purchase-orders');
-            Route::post('purchase-orders/{purchaseOrder}/issue',  [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'issue']);
+            Route::post('purchase-orders/{purchaseOrder}/issue', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'issue']);
             Route::post('purchase-orders/{purchaseOrder}/cancel', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'cancel']);
 
             // Invoices
             Route::apiResource('invoices', \App\Http\Controllers\Api\V1\Procurement\InvoiceController::class)
                 ->only(['index', 'show', 'store']);
             Route::post('invoices/{invoice}/approve', [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'approve']);
-            Route::post('invoices/{invoice}/reject',  [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'reject']);
-            Route::post('invoices/{invoice}/mark-paid',  [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'markPaid']);
+            Route::post('invoices/{invoice}/reject', [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'reject']);
+            Route::post('invoices/{invoice}/mark-paid', [\App\Http\Controllers\Api\V1\Procurement\InvoiceController::class, 'markPaid']);
 
             // Contracts
             Route::apiResource('contracts', \App\Http\Controllers\Api\V1\Procurement\ContractController::class)
                 ->only(['index', 'show', 'store', 'destroy']);
-            Route::post('contracts/{contract}/activate',  [\App\Http\Controllers\Api\V1\Procurement\ContractController::class, 'activate']);
+            Route::post('contracts/{contract}/activate', [\App\Http\Controllers\Api\V1\Procurement\ContractController::class, 'activate']);
             Route::post('contracts/{contract}/terminate', [\App\Http\Controllers\Api\V1\Procurement\ContractController::class, 'terminate']);
             Route::get('contracts/{contract}/milestones', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'index']);
             Route::post('contracts/{contract}/milestones', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'store']);
@@ -818,57 +818,57 @@ Route::prefix('v1')->group(function () {
 
             // Analytics
             Route::prefix('analytics')->group(function () {
-                Route::get('summary',            [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'summary']);
-                Route::get('spend-by-category',  [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'spendByCategory']);
+                Route::get('summary', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'summary']);
+                Route::get('spend-by-category', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'spendByCategory']);
                 Route::get('vendor-performance', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'vendorPerformance']);
-                Route::get('flags',              [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'flags']);
+                Route::get('flags', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAnalyticsController::class, 'flags']);
             });
 
             // Goods Receipts — top-level listing
             Route::get('receipts', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'indexAll']);
 
             // Goods Receipts (nested under POs)
-            Route::get('purchase-orders/{purchaseOrder}/receipts',             [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'index']);
-            Route::post('purchase-orders/{purchaseOrder}/receipts',            [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'store']);
-            Route::get('purchase-orders/{purchaseOrder}/receipts/{receipt}',   [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'show']);
+            Route::get('purchase-orders/{purchaseOrder}/receipts', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'index']);
+            Route::post('purchase-orders/{purchaseOrder}/receipts', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'store']);
+            Route::get('purchase-orders/{purchaseOrder}/receipts/{receipt}', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'show']);
             Route::post('purchase-orders/{purchaseOrder}/receipts/{receipt}/accept', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'accept']);
             Route::post('purchase-orders/{purchaseOrder}/receipts/{receipt}/reject', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptController::class, 'reject']);
 
             // Procurement Request Attachments
-            Route::get('requests/{procurementRequest}/attachments',                            [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'index']);
-            Route::post('requests/{procurementRequest}/attachments',                           [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'store']);
-            Route::delete('requests/{procurementRequest}/attachments/{attachment}',            [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'destroy']);
-            Route::get('requests/{procurementRequest}/attachments/{attachment}/download',      [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'download']);
+            Route::get('requests/{procurementRequest}/attachments', [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'index']);
+            Route::post('requests/{procurementRequest}/attachments', [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'store']);
+            Route::delete('requests/{procurementRequest}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'destroy']);
+            Route::get('requests/{procurementRequest}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\ProcurementRequestAttachmentController::class, 'download']);
 
             // Purchase Order Attachments
-            Route::get('purchase-orders/{purchaseOrder}/attachments',                          [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'index']);
-            Route::post('purchase-orders/{purchaseOrder}/attachments',                         [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'store']);
-            Route::delete('purchase-orders/{purchaseOrder}/attachments/{attachment}',          [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'destroy']);
-            Route::get('purchase-orders/{purchaseOrder}/attachments/{attachment}/download',    [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'download']);
+            Route::get('purchase-orders/{purchaseOrder}/attachments', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'index']);
+            Route::post('purchase-orders/{purchaseOrder}/attachments', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'store']);
+            Route::delete('purchase-orders/{purchaseOrder}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'destroy']);
+            Route::get('purchase-orders/{purchaseOrder}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderAttachmentController::class, 'download']);
 
             // Invoice Attachments
-            Route::get('invoices/{invoice}/attachments',                                       [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'index']);
-            Route::post('invoices/{invoice}/attachments',                                      [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'store']);
-            Route::delete('invoices/{invoice}/attachments/{attachment}',                       [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'destroy']);
-            Route::get('invoices/{invoice}/attachments/{attachment}/download',                 [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'download']);
+            Route::get('invoices/{invoice}/attachments', [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'index']);
+            Route::post('invoices/{invoice}/attachments', [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'store']);
+            Route::delete('invoices/{invoice}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'destroy']);
+            Route::get('invoices/{invoice}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\InvoiceAttachmentController::class, 'download']);
 
             // Contract Attachments
-            Route::get('contracts/{contract}/attachments',                                     [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'index']);
-            Route::post('contracts/{contract}/attachments',                                    [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'store']);
-            Route::delete('contracts/{contract}/attachments/{attachment}',                     [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'destroy']);
-            Route::get('contracts/{contract}/attachments/{attachment}/download',               [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'download']);
+            Route::get('contracts/{contract}/attachments', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'index']);
+            Route::post('contracts/{contract}/attachments', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'store']);
+            Route::delete('contracts/{contract}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'destroy']);
+            Route::get('contracts/{contract}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'download']);
 
             // Goods Receipt Attachments
-            Route::get('receipts/{goodsReceiptNote}/attachments',                              [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'index']);
-            Route::post('receipts/{goodsReceiptNote}/attachments',                             [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'store']);
-            Route::delete('receipts/{goodsReceiptNote}/attachments/{attachment}',              [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'destroy']);
-            Route::get('receipts/{goodsReceiptNote}/attachments/{attachment}/download',        [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'download']);
+            Route::get('receipts/{goodsReceiptNote}/attachments', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'index']);
+            Route::post('receipts/{goodsReceiptNote}/attachments', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'store']);
+            Route::delete('receipts/{goodsReceiptNote}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'destroy']);
+            Route::get('receipts/{goodsReceiptNote}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\GoodsReceiptAttachmentController::class, 'download']);
 
             // Vendor Attachments
-            Route::get('vendors/{vendor}/attachments',                                         [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'index']);
-            Route::post('vendors/{vendor}/attachments',                                        [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'store']);
-            Route::delete('vendors/{vendor}/attachments/{attachment}',                         [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'destroy']);
-            Route::get('vendors/{vendor}/attachments/{attachment}/download',                   [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'download']);
+            Route::get('vendors/{vendor}/attachments', [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'index']);
+            Route::post('vendors/{vendor}/attachments', [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'store']);
+            Route::delete('vendors/{vendor}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'destroy']);
+            Route::get('vendors/{vendor}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\VendorAttachmentController::class, 'download']);
         });
 
         // Budget Management — availability, commitments, actuals (Phase 1)
@@ -986,13 +986,13 @@ Route::prefix('v1')->group(function () {
             Route::get('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'show']);
             Route::put('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'update']);
             Route::delete('advances/{salaryAdvanceRequest}', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'destroy']);
-            Route::post('advances/{salaryAdvanceRequest}/submit',   [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'submit']);
+            Route::post('advances/{salaryAdvanceRequest}/submit', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'submit']);
             Route::post('advances/{salaryAdvanceRequest}/finance-certify', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'financeCertify']);
             Route::post('advances/{salaryAdvanceRequest}/finance-return', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'financeReturn']);
             Route::post('advances/{salaryAdvanceRequest}/mark-not-eligible', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'markNotEligible']);
-            Route::post('advances/{salaryAdvanceRequest}/approve',  [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'approve']);
-            Route::post('advances/{salaryAdvanceRequest}/reject',   [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'reject']);
-            Route::post('advances/{salaryAdvanceRequest}/return',   [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'returnForCorrection']);
+            Route::post('advances/{salaryAdvanceRequest}/approve', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'approve']);
+            Route::post('advances/{salaryAdvanceRequest}/reject', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'reject']);
+            Route::post('advances/{salaryAdvanceRequest}/return', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'returnForCorrection']);
             Route::post('advances/{salaryAdvanceRequest}/withdraw', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'withdraw']);
             Route::post('advances/{salaryAdvanceRequest}/resubmit', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'resubmit']);
             Route::post('advances/{salaryAdvanceRequest}/record-payment', [\App\Http\Controllers\Api\V1\Finance\SalaryAdvanceController::class, 'recordPayment']);
@@ -1006,18 +1006,18 @@ Route::prefix('v1')->group(function () {
 
             // Balance Control & Reconciliation Engine (BCRE)
             Route::prefix('balance-registers')->group(function () {
-                Route::get('dashboard',  [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'dashboard']);
+                Route::get('dashboard', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'dashboard']);
                 Route::get('exceptions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'exceptions']);
-                Route::get('/',    [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'index']);
-                Route::post('/',   [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'store']);
-                Route::get('{balanceRegister}',    [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'show']);
-                Route::put('{balanceRegister}',    [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'update']);
-                Route::post('{balanceRegister}/lock',        [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'lock']);
-                Route::post('{balanceRegister}/unlock',      [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'unlock']);
+                Route::get('/', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'index']);
+                Route::post('/', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'store']);
+                Route::get('{balanceRegister}', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'show']);
+                Route::put('{balanceRegister}', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'update']);
+                Route::post('{balanceRegister}/lock', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'lock']);
+                Route::post('{balanceRegister}/unlock', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'unlock']);
                 Route::post('{balanceRegister}/acknowledge', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'acknowledge']);
-                Route::get('{balanceRegister}/transactions',  [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'transactions']);
+                Route::get('{balanceRegister}/transactions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'transactions']);
                 Route::post('{balanceRegister}/transactions', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'storeTransaction']);
-                Route::get('{balanceRegister}/transactions/{balanceTransaction}/verify',  [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'getVerification']);
+                Route::get('{balanceRegister}/transactions/{balanceTransaction}/verify', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'getVerification']);
                 Route::post('{balanceRegister}/transactions/{balanceTransaction}/verify', [\App\Http\Controllers\Api\V1\Finance\BalanceRegisterController::class, 'storeVerification']);
             });
         });
@@ -1150,9 +1150,9 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('', \App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class)
                 ->parameter('', 'programme')
                 ->names('programmes');
-            Route::post('{programme}/submit',  [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'submit']);
+            Route::post('{programme}/submit', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'submit']);
             Route::post('{programme}/approve', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'approve']);
-            Route::post('{programme}/reject',  [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'reject']);
+            Route::post('{programme}/reject', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'reject']);
             Route::post('{programme}/amend', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'amend']);
             Route::post('{programme}/submit-amendment', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'submitAmendment']);
             Route::get('{programme}/diff', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'diff']);
@@ -1162,15 +1162,15 @@ Route::prefix('v1')->group(function () {
             Route::middleware('can:programme.finance-review')
                 ->put('{programme}/finance-review', [\App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class, 'updateFinanceReview']);
 
-            Route::apiResource('{programme}/activities',   \App\Http\Controllers\Api\V1\Programmes\ProgrammeActivityController::class)
+            Route::apiResource('{programme}/activities', \App\Http\Controllers\Api\V1\Programmes\ProgrammeActivityController::class)
                 ->only(['store', 'update', 'destroy'])->parameters(['activities' => 'activity']);
-            Route::apiResource('{programme}/milestones',   \App\Http\Controllers\Api\V1\Programmes\ProgrammeMilestoneController::class)
+            Route::apiResource('{programme}/milestones', \App\Http\Controllers\Api\V1\Programmes\ProgrammeMilestoneController::class)
                 ->only(['store', 'update', 'destroy'])->parameters(['milestones' => 'milestone']);
             Route::apiResource('{programme}/deliverables', \App\Http\Controllers\Api\V1\Programmes\ProgrammeDeliverableController::class)
                 ->only(['store', 'update', 'destroy'])->parameters(['deliverables' => 'deliverable']);
             Route::apiResource('{programme}/budget-lines', \App\Http\Controllers\Api\V1\Programmes\ProgrammeBudgetLineController::class)
                 ->only(['store', 'update', 'destroy'])->parameters(['budget-lines' => 'budgetLine']);
-            Route::apiResource('{programme}/procurement',  \App\Http\Controllers\Api\V1\Programmes\ProgrammeProcurementItemController::class)
+            Route::apiResource('{programme}/procurement', \App\Http\Controllers\Api\V1\Programmes\ProgrammeProcurementItemController::class)
                 ->only(['store', 'update', 'destroy'])->parameters(['procurement' => 'procurementItem']);
             Route::apiResource('{programme}/documents', \App\Http\Controllers\Api\V1\Programmes\ProgrammeDocumentController::class)
                 ->only(['store', 'update', 'destroy'])->parameters(['documents' => 'document']);
@@ -1188,16 +1188,16 @@ Route::prefix('v1')->group(function () {
         Route::prefix('mande')->group(function () {
             // Dashboard & strategic reporting (read — gated on mande.view)
             Route::middleware('can:mande.view')->group(function () {
-                Route::get('dashboard',        [\App\Http\Controllers\Api\V1\MAndE\MeDashboardController::class, 'summary']);
-                Route::get('reports/strategic',[\App\Http\Controllers\Api\V1\MAndE\MeReportingController::class, 'strategic']);
-                Route::get('reports/donor',    [\App\Http\Controllers\Api\V1\MAndE\MeReportingController::class, 'donor']);
-                Route::get('data-quality',     [\App\Http\Controllers\Api\V1\MAndE\MeDataQualityController::class, 'index']);
-                Route::get('pif-linkages',     [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'linkablePifs']);
-                Route::get('settings',         [\App\Http\Controllers\Api\V1\MAndE\MeSettingsController::class, 'show']);
+                Route::get('dashboard', [\App\Http\Controllers\Api\V1\MAndE\MeDashboardController::class, 'summary']);
+                Route::get('reports/strategic', [\App\Http\Controllers\Api\V1\MAndE\MeReportingController::class, 'strategic']);
+                Route::get('reports/donor', [\App\Http\Controllers\Api\V1\MAndE\MeReportingController::class, 'donor']);
+                Route::get('data-quality', [\App\Http\Controllers\Api\V1\MAndE\MeDataQualityController::class, 'index']);
+                Route::get('pif-linkages', [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'linkablePifs']);
+                Route::get('settings', [\App\Http\Controllers\Api\V1\MAndE\MeSettingsController::class, 'show']);
             });
             Route::middleware('can:mande.admin')->group(function () {
                 Route::post('import/preview', [\App\Http\Controllers\Api\V1\MAndE\MeImportController::class, 'preview']);
-                Route::post('import/commit',  [\App\Http\Controllers\Api\V1\MAndE\MeImportController::class, 'commit']);
+                Route::post('import/commit', [\App\Http\Controllers\Api\V1\MAndE\MeImportController::class, 'commit']);
             });
             Route::middleware('can:mande.admin')->put('settings', [\App\Http\Controllers\Api\V1\MAndE\MeSettingsController::class, 'update']);
             Route::middleware('can:mande.review')->post(
@@ -1209,25 +1209,25 @@ Route::prefix('v1')->group(function () {
             Route::middleware('can:mande.view')->get('strategic-plans', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'index']);
             Route::middleware('can:mande.view')->get('strategic-plans/{strategicPlan}', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'show']);
             Route::middleware('can:mande.admin')->group(function () {
-                Route::post('strategic-plans',                       [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'store']);
-                Route::put('strategic-plans/{strategicPlan}',        [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'update']);
-                Route::delete('strategic-plans/{strategicPlan}',     [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'destroy']);
-                Route::post('strategic-plans/{strategicPlan}/archive',  [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'archive']);
+                Route::post('strategic-plans', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'store']);
+                Route::put('strategic-plans/{strategicPlan}', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'update']);
+                Route::delete('strategic-plans/{strategicPlan}', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'destroy']);
+                Route::post('strategic-plans/{strategicPlan}/archive', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'archive']);
                 Route::post('strategic-plans/{strategicPlan}/activate', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'activate']);
-                Route::post('strategic-plans/{strategicPlan}/goals',    [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addGoal']);
-                Route::post('strategic-goals/{goal}/objectives',        [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addObjective']);
-                Route::post('strategic-objectives/{objective}/outcomes',[\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addOutcome']);
-                Route::post('strategic-outcomes/{outcome}/outputs',     [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addOutput']);
-                Route::delete('strategic-nodes/{type}/{id}',            [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'deleteNode']);
+                Route::post('strategic-plans/{strategicPlan}/goals', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addGoal']);
+                Route::post('strategic-goals/{goal}/objectives', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addObjective']);
+                Route::post('strategic-objectives/{objective}/outcomes', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addOutcome']);
+                Route::post('strategic-outcomes/{outcome}/outputs', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'addOutput']);
+                Route::delete('strategic-nodes/{type}/{id}', [\App\Http\Controllers\Api\V1\MAndE\StrategicPlanController::class, 'deleteNode']);
             });
 
             // Results Frameworks (§10.5)
             Route::middleware('can:mande.view')->get('results-frameworks', [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'index']);
             Route::middleware('can:mande.view')->get('results-frameworks/{resultsFramework}', [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'show']);
             Route::middleware('can:mande.admin')->group(function () {
-                Route::post('results-frameworks',                       [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'store']);
-                Route::put('results-frameworks/{resultsFramework}',     [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'update']);
-                Route::delete('results-frameworks/{resultsFramework}',  [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'destroy']);
+                Route::post('results-frameworks', [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'store']);
+                Route::put('results-frameworks/{resultsFramework}', [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'update']);
+                Route::delete('results-frameworks/{resultsFramework}', [\App\Http\Controllers\Api\V1\MAndE\ResultsFrameworkController::class, 'destroy']);
             });
 
             // Indicators (§10.6)
@@ -1239,22 +1239,22 @@ Route::prefix('v1')->group(function () {
             Route::middleware('can:mande.view')->post('ai-assist', [\App\Http\Controllers\Api\V1\MAndE\MeAiAssistController::class, 'draft']);
             Route::middleware('can:mande.view')->post('ai-assist/confirm', [\App\Http\Controllers\Api\V1\MAndE\MeAiAssistController::class, 'confirm']);
             Route::middleware('can:mande.create')->group(function () {
-                Route::post('indicators',               [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'store']);
-                Route::put('indicators/{indicator}',    [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'update']);
+                Route::post('indicators', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'store']);
+                Route::put('indicators/{indicator}', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'update']);
                 Route::delete('indicators/{indicator}', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'destroy']);
                 Route::post('indicators/{indicator}/versions', [\App\Http\Controllers\Api\V1\MAndE\IndicatorController::class, 'createVersion']);
             });
 
             // Activity Reports (§10.7 + §10.8)
             Route::middleware('can:mande.view')->group(function () {
-                Route::get('activity-reports',                  [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'index']);
+                Route::get('activity-reports', [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'index']);
                 Route::get('activity-reports/{activityReport}', [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'show']);
                 Route::get('activity-reports/{activityReport}/history', [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'history']);
             });
             Route::middleware('can:mande.create')->group(function () {
-                Route::post('activity-reports',                  [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'store']);
-                Route::put('activity-reports/{activityReport}',  [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'update']);
-                Route::delete('activity-reports/{activityReport}',[\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'destroy']);
+                Route::post('activity-reports', [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'store']);
+                Route::put('activity-reports/{activityReport}', [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'update']);
+                Route::delete('activity-reports/{activityReport}', [\App\Http\Controllers\Api\V1\MAndE\MeActivityReportController::class, 'destroy']);
                 Route::post('activity-reports/{activityReport}/submit', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'submit']);
                 Route::post('activity-reports/{activityReport}/follow-ups', [\App\Http\Controllers\Api\V1\MAndE\MeFollowUpController::class, 'store']);
                 Route::put('activity-reports/{activityReport}/follow-ups/{followUp}', [\App\Http\Controllers\Api\V1\MAndE\MeFollowUpController::class, 'update']);
@@ -1270,10 +1270,10 @@ Route::prefix('v1')->group(function () {
                 Route::get('programme-review-queue', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'programmeReviewQueue']);
                 Route::post('activity-reports/{activityReport}/programme-review/clear', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'clearProgrammeReview']);
                 Route::post('activity-reports/{activityReport}/programme-review/return', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'returnProgrammeReview']);
-                Route::post('activity-reports/{activityReport}/review',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'review']);
-                Route::post('activity-reports/{activityReport}/return',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'requestCorrection']);
-                Route::post('activity-reports/{activityReport}/accept',  [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'accept']);
-                Route::post('activity-reports/{activityReport}/close',   [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'close']);
+                Route::post('activity-reports/{activityReport}/review', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'review']);
+                Route::post('activity-reports/{activityReport}/return', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'requestCorrection']);
+                Route::post('activity-reports/{activityReport}/accept', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'accept']);
+                Route::post('activity-reports/{activityReport}/close', [\App\Http\Controllers\Api\V1\MAndE\MeReviewController::class, 'close']);
             });
 
             // Evidence Repository (§10.9)
@@ -1286,8 +1286,8 @@ Route::prefix('v1')->group(function () {
             // Thematic Areas (admin-configurable lookup, §9.7/§27)
             Route::middleware('can:mande.view')->get('thematic-areas', [\App\Http\Controllers\Api\V1\MAndE\MeThematicAreaController::class, 'index']);
             Route::middleware('can:mande.admin')->group(function () {
-                Route::post('thematic-areas',                  [\App\Http\Controllers\Api\V1\MAndE\MeThematicAreaController::class, 'store']);
-                Route::put('thematic-areas/{thematicArea}',    [\App\Http\Controllers\Api\V1\MAndE\MeThematicAreaController::class, 'update']);
+                Route::post('thematic-areas', [\App\Http\Controllers\Api\V1\MAndE\MeThematicAreaController::class, 'store']);
+                Route::put('thematic-areas/{thematicArea}', [\App\Http\Controllers\Api\V1\MAndE\MeThematicAreaController::class, 'update']);
                 Route::delete('thematic-areas/{thematicArea}', [\App\Http\Controllers\Api\V1\MAndE\MeThematicAreaController::class, 'destroy']);
             });
         });
@@ -1325,20 +1325,20 @@ Route::prefix('v1')->group(function () {
 
         // Reports — gated on reports.view permission
         Route::middleware('can:reports.view')->group(function () {
-            Route::get('reports/summary',         [\App\Http\Controllers\Api\V1\ReportsController::class, 'summary']);
-            Route::get('reports/users',           [\App\Http\Controllers\Api\V1\ReportsController::class, 'reportUsers']);
-            Route::get('reports/departments',     [\App\Http\Controllers\Api\V1\ReportsController::class, 'reportDepartments']);
-            Route::get('reports/travel',          [\App\Http\Controllers\Api\V1\ReportsController::class, 'travel']);
-            Route::get('reports/leave',           [\App\Http\Controllers\Api\V1\ReportsController::class, 'leave']);
-            Route::get('reports/dsa',             [\App\Http\Controllers\Api\V1\ReportsController::class, 'dsa']);
-            Route::get('reports/assets',          [\App\Http\Controllers\Api\V1\ReportsController::class, 'assets']);
-            Route::get('reports/stock',           [\App\Http\Controllers\Api\V1\ReportsController::class, 'stock']);
-            Route::get('reports/imprest',         [\App\Http\Controllers\Api\V1\ReportsController::class, 'imprest']);
-            Route::get('reports/procurement',     [\App\Http\Controllers\Api\V1\ReportsController::class, 'procurement']);
+            Route::get('reports/summary', [\App\Http\Controllers\Api\V1\ReportsController::class, 'summary']);
+            Route::get('reports/users', [\App\Http\Controllers\Api\V1\ReportsController::class, 'reportUsers']);
+            Route::get('reports/departments', [\App\Http\Controllers\Api\V1\ReportsController::class, 'reportDepartments']);
+            Route::get('reports/travel', [\App\Http\Controllers\Api\V1\ReportsController::class, 'travel']);
+            Route::get('reports/leave', [\App\Http\Controllers\Api\V1\ReportsController::class, 'leave']);
+            Route::get('reports/dsa', [\App\Http\Controllers\Api\V1\ReportsController::class, 'dsa']);
+            Route::get('reports/assets', [\App\Http\Controllers\Api\V1\ReportsController::class, 'assets']);
+            Route::get('reports/stock', [\App\Http\Controllers\Api\V1\ReportsController::class, 'stock']);
+            Route::get('reports/imprest', [\App\Http\Controllers\Api\V1\ReportsController::class, 'imprest']);
+            Route::get('reports/procurement', [\App\Http\Controllers\Api\V1\ReportsController::class, 'procurement']);
             Route::get('reports/salary-advances', [\App\Http\Controllers\Api\V1\ReportsController::class, 'salaryAdvances']);
-            Route::get('reports/hr-timesheets',   [\App\Http\Controllers\Api\V1\ReportsController::class, 'hrTimesheets']);
-            Route::get('reports/risk',            [\App\Http\Controllers\Api\V1\ReportsController::class, 'risk']);
-            Route::get('reports/governance',      [\App\Http\Controllers\Api\V1\ReportsController::class, 'governance']);
+            Route::get('reports/hr-timesheets', [\App\Http\Controllers\Api\V1\ReportsController::class, 'hrTimesheets']);
+            Route::get('reports/risk', [\App\Http\Controllers\Api\V1\ReportsController::class, 'risk']);
+            Route::get('reports/governance', [\App\Http\Controllers\Api\V1\ReportsController::class, 'governance']);
             Route::get('reports/schedules', [\App\Http\Controllers\Api\V1\ReportsManagementController::class, 'schedules']);
             Route::get('reports/export-events', [\App\Http\Controllers\Api\V1\ReportsManagementController::class, 'exportEvents']);
             Route::get('reports/export-events/{id}/download', [\App\Http\Controllers\Api\V1\ReportsManagementController::class, 'downloadExport']);
@@ -1559,18 +1559,18 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('/', \App\Http\Controllers\Api\V1\Assignments\AssignmentController::class)
                 ->parameter('', 'assignment')
                 ->names('assignments');
-            Route::post('{assignment}/issue',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'issue']);
-            Route::post('{assignment}/accept',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'accept']);
-            Route::post('{assignment}/claim',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'claim']);
-            Route::post('{assignment}/start',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'start']);
-            Route::post('{assignment}/updates',  [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'addUpdate']);
-            Route::post('{assignment}/block',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'block']);
-            Route::post('{assignment}/unblock',  [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'unblock']);
+            Route::post('{assignment}/issue', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'issue']);
+            Route::post('{assignment}/accept', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'accept']);
+            Route::post('{assignment}/claim', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'claim']);
+            Route::post('{assignment}/start', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'start']);
+            Route::post('{assignment}/updates', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'addUpdate']);
+            Route::post('{assignment}/block', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'block']);
+            Route::post('{assignment}/unblock', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'unblock']);
             Route::post('{assignment}/complete', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'complete']);
-            Route::post('{assignment}/verify',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'verify']);
-            Route::post('{assignment}/close',    [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'close']);
-            Route::post('{assignment}/return',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'returnAssignment']);
-            Route::post('{assignment}/cancel',   [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'cancel']);
+            Route::post('{assignment}/verify', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'verify']);
+            Route::post('{assignment}/close', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'close']);
+            Route::post('{assignment}/return', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'returnAssignment']);
+            Route::post('{assignment}/cancel', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'cancel']);
             Route::post('{assignment}/reassign', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'reassign']);
             Route::post('{assignment}/change-due-date', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'changeDueDate']);
             Route::post('{assignment}/participants', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'addParticipant']);
@@ -1846,9 +1846,9 @@ Route::prefix('v1')->group(function () {
 
         // Risk Register Module
         Route::prefix('risk')->group(function () {
-            Route::get('dashboard',   [\App\Http\Controllers\Api\V1\Risk\RiskDashboardController::class, 'summary']);
+            Route::get('dashboard', [\App\Http\Controllers\Api\V1\Risk\RiskDashboardController::class, 'summary']);
             Route::get('audit-trail', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'auditTrail']);
-            Route::get('matrix',      [\App\Http\Controllers\Api\V1\Risk\RiskMatrixController::class, 'matrix']);
+            Route::get('matrix', [\App\Http\Controllers\Api\V1\Risk\RiskMatrixController::class, 'matrix']);
 
             // Phase 2 — automated KRIs
             Route::get('kris/catalog', [\App\Http\Controllers\Api\V1\Risk\RiskKriController::class, 'catalog']);
@@ -1872,21 +1872,21 @@ Route::prefix('v1')->group(function () {
             Route::post('dependencies', [\App\Http\Controllers\Api\V1\Risk\RiskPhase3Controller::class, 'storeDependency']);
 
             Route::apiResource('risks', \App\Http\Controllers\Api\V1\Risk\RiskController::class);
-            Route::post('risks/{risk}/submit',       [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'submit']);
+            Route::post('risks/{risk}/submit', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'submit']);
             Route::post('risks/{risk}/start-review', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'startReview']);
-            Route::post('risks/{risk}/approve',      [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'approve']);
-            Route::post('risks/{risk}/escalate',     [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'escalate']);
-            Route::post('risks/{risk}/close',        [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'close']);
-            Route::post('risks/{risk}/archive',      [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'archive']);
-            Route::post('risks/{risk}/reopen',       [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'reopen']);
-            Route::get('risks/{risk}/logs',          [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'logs']);
+            Route::post('risks/{risk}/approve', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'approve']);
+            Route::post('risks/{risk}/escalate', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'escalate']);
+            Route::post('risks/{risk}/close', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'close']);
+            Route::post('risks/{risk}/archive', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'archive']);
+            Route::post('risks/{risk}/reopen', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'reopen']);
+            Route::get('risks/{risk}/logs', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'logs']);
 
-            Route::get('risks/{risk}/actions',                    [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'index']);
-            Route::post('risks/{risk}/actions',                   [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'store']);
-            Route::put('risks/{risk}/actions/{action}',           [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'update']);
+            Route::get('risks/{risk}/actions', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'index']);
+            Route::post('risks/{risk}/actions', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'store']);
+            Route::put('risks/{risk}/actions/{action}', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'update']);
             Route::post('risks/{risk}/actions/{action}/complete', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'markComplete']);
             Route::post('risks/{risk}/actions/{action}/create-assignment', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'createAssignment']);
-            Route::delete('risks/{risk}/actions/{action}',        [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'destroy']);
+            Route::delete('risks/{risk}/actions/{action}', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'destroy']);
 
             // Phase 1 extensions
             Route::get('risks/{risk}/assessments', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'listAssessments']);
@@ -1905,35 +1905,35 @@ Route::prefix('v1')->group(function () {
             Route::post('appetite-policies/{policy}/activate', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'appetiteActivate']);
 
             // Risk Attachments
-            Route::get('risks/{risk}/attachments',                            [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'index']);
-            Route::post('risks/{risk}/attachments',                           [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'store']);
-            Route::delete('risks/{risk}/attachments/{attachment}',            [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'destroy']);
-            Route::get('risks/{risk}/attachments/{attachment}/download',      [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'download']);
+            Route::get('risks/{risk}/attachments', [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'index']);
+            Route::post('risks/{risk}/attachments', [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'store']);
+            Route::delete('risks/{risk}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'destroy']);
+            Route::get('risks/{risk}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Risk\RiskAttachmentController::class, 'download']);
 
             // Policy Library
             Route::apiResource('policies', \App\Http\Controllers\Api\V1\Risk\PolicyController::class);
-            Route::get('risks/{risk}/policies',                               [\App\Http\Controllers\Api\V1\Risk\PolicyController::class, 'listForRisk']);
-            Route::post('policies/{policy}/attach-risk',                      [\App\Http\Controllers\Api\V1\Risk\PolicyController::class, 'attachToRisk']);
-            Route::delete('policies/{policy}/detach-risk/{risk}',             [\App\Http\Controllers\Api\V1\Risk\PolicyController::class, 'detachFromRisk']);
+            Route::get('risks/{risk}/policies', [\App\Http\Controllers\Api\V1\Risk\PolicyController::class, 'listForRisk']);
+            Route::post('policies/{policy}/attach-risk', [\App\Http\Controllers\Api\V1\Risk\PolicyController::class, 'attachToRisk']);
+            Route::delete('policies/{policy}/detach-risk/{risk}', [\App\Http\Controllers\Api\V1\Risk\PolicyController::class, 'detachFromRisk']);
 
             // Policy Attachments
-            Route::get('policies/{policy}/attachments',                       [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'index']);
-            Route::post('policies/{policy}/attachments',                      [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'store']);
-            Route::delete('policies/{policy}/attachments/{attachment}',       [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'destroy']);
+            Route::get('policies/{policy}/attachments', [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'index']);
+            Route::post('policies/{policy}/attachments', [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'store']);
+            Route::delete('policies/{policy}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'destroy']);
             Route::get('policies/{policy}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Risk\PolicyAttachmentController::class, 'download']);
         });
 
         // Weekly Summary (email digest — existing)
         Route::prefix('weekly-summary')->group(function () {
-            Route::get('preferences/me',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'getPreferences']);
-            Route::put('preferences/me',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'updatePreferences']);
-            Route::get('reports',         [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'listReports']);
-            Route::get('reports/{report}',[\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'showReport']);
+            Route::get('preferences/me', [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'getPreferences']);
+            Route::put('preferences/me', [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'updatePreferences']);
+            Route::get('reports', [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'listReports']);
+            Route::get('reports/{report}', [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'showReport']);
         });
 
         Route::prefix('admin/weekly-summary')->middleware('role:System Admin')->group(function () {
-            Route::get('runs',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'listRuns']);
-            Route::post('run',  [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'triggerRun']);
+            Route::get('runs', [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'listRuns']);
+            Route::post('run', [\App\Http\Controllers\Api\V1\WeeklySummary\WeeklySummaryController::class, 'triggerRun']);
         });
 
         // Weekly Summary Reports (operational progress reporting — PRD Phase 1)
@@ -2192,10 +2192,10 @@ Route::prefix('v1')->group(function () {
 
         // Admin Workflows
         Route::prefix('admin/workflows')->group(function () {
-             Route::get('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'index']);
-             Route::post('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'store']);
-             Route::put('{workflow}', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'update']);
-             Route::delete('{workflow}', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'destroy']);
+            Route::get('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'store']);
+            Route::put('{workflow}', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'update']);
+            Route::delete('{workflow}', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'destroy']);
         });
     });
 });

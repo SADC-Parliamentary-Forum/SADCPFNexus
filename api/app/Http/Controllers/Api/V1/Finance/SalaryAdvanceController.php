@@ -41,9 +41,9 @@ class SalaryAdvanceController extends Controller
         if ($queue === 'history') {
             $query->where('requester_id', $user->id)
                 ->whereIn('status', ['closed', 'recovered', 'rejected', 'withdrawn', 'cancelled', 'not_eligible']);
-        } elseif ($queue === 'mine' || ($queue === null && !$canQueue)) {
+        } elseif ($queue === 'mine' || ($queue === null && ! $canQueue)) {
             $query->where('requester_id', $user->id);
-        } elseif (!empty($queue) && $canQueue) {
+        } elseif (! empty($queue) && $canQueue) {
             match ($queue) {
                 'certify' => $query->whereIn('status', ['submitted', 'resubmitted']),
                 'pending_approval' => $query->whereIn('status', ['finance_certified']),
@@ -63,7 +63,7 @@ class SalaryAdvanceController extends Controller
             $query->where('requester_id', $user->id);
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
@@ -106,7 +106,7 @@ class SalaryAdvanceController extends Controller
 
         $data = $request->validate([
             'resolution_notes' => ['required', 'string', 'max:2000'],
-            'outcome'          => ['nullable', 'string', 'in:balanced,written_off,adjusted,other'],
+            'outcome' => ['nullable', 'string', 'in:balanced,written_off,adjusted,other'],
         ]);
 
         $recon = \App\Models\SalaryAdvanceReconciliation::findOrFail($reconciliation);
@@ -130,19 +130,19 @@ class SalaryAdvanceController extends Controller
     public function storePolicy(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'version'                        => ['required', 'string', 'max:32'],
-            'effective_from'                 => ['required', 'date'],
-            'effective_to'                   => ['nullable', 'date', 'after:effective_from'],
-            'max_salary_percentage'          => ['nullable', 'numeric', 'min:1', 'max:100'],
-            'salary_basis'                   => ['nullable', 'string', 'in:net_confirmed,gross,basic'],
-            'max_concurrent_advances'        => ['nullable', 'integer', 'min:1', 'max:1'],
-            'full_repayment_required'        => ['nullable', 'boolean'],
-            'recovery_rule'                  => ['nullable', 'string', 'in:full_eom,monthly_instalments'],
-            'final_approver_role'            => ['nullable', 'string', 'max:64'],
+            'version' => ['required', 'string', 'max:32'],
+            'effective_from' => ['required', 'date'],
+            'effective_to' => ['nullable', 'date', 'after:effective_from'],
+            'max_salary_percentage' => ['nullable', 'numeric', 'min:1', 'max:100'],
+            'salary_basis' => ['nullable', 'string', 'in:net_confirmed,gross,basic'],
+            'max_concurrent_advances' => ['nullable', 'integer', 'min:1', 'max:1'],
+            'full_repayment_required' => ['nullable', 'boolean'],
+            'recovery_rule' => ['nullable', 'string', 'in:full_eom,monthly_instalments'],
+            'final_approver_role' => ['nullable', 'string', 'max:64'],
             'finance_certification_required' => ['nullable', 'boolean'],
-            'admin_review_required'          => ['nullable', 'boolean'],
-            'change_reason'                  => ['required', 'string', 'max:500'],
-            'configuration'                  => ['nullable', 'array'],
+            'admin_review_required' => ['nullable', 'boolean'],
+            'change_reason' => ['required', 'string', 'max:500'],
+            'configuration' => ['nullable', 'array'],
         ]);
 
         // v1 lock: do not allow enabling consolidation via policy UI
@@ -188,12 +188,12 @@ class SalaryAdvanceController extends Controller
     public function storePolicyException(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'employee_id'       => ['required', 'integer', 'exists:users,id'],
-            'exception_type'    => ['required', 'string', 'in:outstanding_balance,max_percentage,concurrent,other'],
-            'reason'            => ['required', 'string', 'max:500'],
-            'justification'     => ['required', 'string', 'max:5000'],
-            'effective_from'    => ['required', 'date'],
-            'effective_to'      => ['nullable', 'date', 'after_or_equal:effective_from'],
+            'employee_id' => ['required', 'integer', 'exists:users,id'],
+            'exception_type' => ['required', 'string', 'in:outstanding_balance,max_percentage,concurrent,other'],
+            'reason' => ['required', 'string', 'max:500'],
+            'justification' => ['required', 'string', 'max:5000'],
+            'effective_from' => ['required', 'date'],
+            'effective_to' => ['nullable', 'date', 'after_or_equal:effective_from'],
             'linked_advance_id' => ['nullable', 'integer', 'exists:salary_advance_requests,id'],
             'policy_version_id' => ['nullable', 'integer', 'exists:salary_advance_policy_versions,id'],
         ]);
@@ -202,7 +202,7 @@ class SalaryAdvanceController extends Controller
 
         return response()->json([
             'message' => 'Policy exception recorded (pending approval). Does not silently override eligibility.',
-            'data'    => $exception,
+            'data' => $exception,
         ], 201);
     }
 
@@ -217,7 +217,7 @@ class SalaryAdvanceController extends Controller
 
         return response()->json([
             'message' => 'Policy exception approved. Eligibility rules remain enforced unless a future controlled apply path is used.',
-            'data'    => $approved,
+            'data' => $approved,
         ]);
     }
 
@@ -232,7 +232,7 @@ class SalaryAdvanceController extends Controller
 
         return response()->json([
             'message' => 'Policy exception revoked.',
-            'data'    => $revoked,
+            'data' => $revoked,
         ]);
     }
 
@@ -262,12 +262,12 @@ class SalaryAdvanceController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'advance_type'                  => ['required', 'string', 'in:rental,medical,school,funeral,other'],
-            'amount'                        => ['required', 'numeric', 'min:1'],
-            'currency'                      => ['nullable', 'string', 'size:3'],
-            'repayment_months'              => ['nullable', 'integer', 'min:1', 'max:24'],
-            'purpose'                       => ['required', 'string', 'max:500'],
-            'justification'                 => ['required', 'string', 'max:2000'],
+            'advance_type' => ['required', 'string', 'in:rental,medical,school,funeral,other'],
+            'amount' => ['required', 'numeric', 'min:1'],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'repayment_months' => ['nullable', 'integer', 'min:1', 'max:24'],
+            'purpose' => ['required', 'string', 'max:500'],
+            'justification' => ['required', 'string', 'max:2000'],
             'deduction_authority_confirmed' => ['nullable', 'boolean'],
         ]);
 
@@ -276,23 +276,23 @@ class SalaryAdvanceController extends Controller
         $repaymentMonths = $policy->recovery_rule === 'full_eom' ? 1 : ($data['repayment_months'] ?? 1);
 
         $advance = SalaryAdvanceRequest::create([
-            'tenant_id'                        => $user->tenant_id,
-            'requester_id'                     => $user->id,
-            'reference_number'                 => 'ADV-' . strtoupper(Str::random(8)),
-            'advance_type'                     => $data['advance_type'],
-            'amount'                           => $data['amount'],
-            'currency'                         => $data['currency'] ?? 'NAD',
-            'repayment_months'                 => $repaymentMonths,
-            'purpose'                          => $data['purpose'],
-            'justification'                    => $data['justification'],
-            'status'                           => 'draft',
-            'deduction_authority_confirmed'    => (bool) ($data['deduction_authority_confirmed'] ?? false),
-            'deduction_authority_version'      => !empty($data['deduction_authority_confirmed'])
+            'tenant_id' => $user->tenant_id,
+            'requester_id' => $user->id,
+            'reference_number' => 'ADV-'.strtoupper(Str::random(8)),
+            'advance_type' => $data['advance_type'],
+            'amount' => $data['amount'],
+            'currency' => $data['currency'] ?? 'NAD',
+            'repayment_months' => $repaymentMonths,
+            'purpose' => $data['purpose'],
+            'justification' => $data['justification'],
+            'status' => 'draft',
+            'deduction_authority_confirmed' => (bool) ($data['deduction_authority_confirmed'] ?? false),
+            'deduction_authority_version' => ! empty($data['deduction_authority_confirmed'])
                 ? SalaryAdvanceRequest::DEDUCTION_AUTHORITY_VERSION
                 : null,
-            'deduction_authority_confirmed_at' => !empty($data['deduction_authority_confirmed']) ? now() : null,
-            'policy_version_id'                => $policy->id,
-            'salary_basis'                     => $policy->salary_basis,
+            'deduction_authority_confirmed_at' => ! empty($data['deduction_authority_confirmed']) ? now() : null,
+            'policy_version_id' => $policy->id,
+            'salary_basis' => $policy->salary_basis,
         ]);
 
         return response()->json(['message' => 'Salary advance request created.', 'data' => $advance->load('requester')], 201);
@@ -303,16 +303,16 @@ class SalaryAdvanceController extends Controller
         if ($salaryAdvanceRequest->requester_id !== $request->user()->id) {
             abort(403);
         }
-        if (!in_array($salaryAdvanceRequest->status, ['draft', 'finance_returned', 'returned_for_correction'], true)) {
+        if (! in_array($salaryAdvanceRequest->status, ['draft', 'finance_returned', 'returned_for_correction'], true)) {
             throw ValidationException::withMessages(['status' => 'Only draft or returned requests can be edited.']);
         }
 
         $data = $request->validate([
-            'advance_type'                  => ['sometimes', 'string', 'in:rental,medical,school,funeral,other'],
-            'amount'                        => ['sometimes', 'numeric', 'min:1'],
-            'repayment_months'              => ['sometimes', 'integer', 'min:1', 'max:24'],
-            'purpose'                       => ['sometimes', 'string', 'max:500'],
-            'justification'                 => ['sometimes', 'string', 'max:2000'],
+            'advance_type' => ['sometimes', 'string', 'in:rental,medical,school,funeral,other'],
+            'amount' => ['sometimes', 'numeric', 'min:1'],
+            'repayment_months' => ['sometimes', 'integer', 'min:1', 'max:24'],
+            'purpose' => ['sometimes', 'string', 'max:500'],
+            'justification' => ['sometimes', 'string', 'max:2000'],
             'deduction_authority_confirmed' => ['sometimes', 'boolean'],
         ]);
 
@@ -362,16 +362,16 @@ class SalaryAdvanceController extends Controller
     public function financeCertify(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
         $data = $request->validate([
-            'confirmed_net_salary'           => ['required', 'numeric', 'min:0'],
-            'confirmed_gross_salary'         => ['nullable', 'numeric', 'min:0'],
-            'recommended_amount'             => ['nullable', 'numeric', 'min:1'],
+            'confirmed_net_salary' => ['required', 'numeric', 'min:0'],
+            'confirmed_gross_salary' => ['nullable', 'numeric', 'min:0'],
+            'recommended_amount' => ['nullable', 'numeric', 'min:1'],
             'intended_recovery_payroll_date' => ['required', 'date'],
-            'eligible'                       => ['required', 'boolean'],
-            'comments'                       => ['nullable', 'string', 'max:2000'],
-            'worksheet'                      => ['nullable', 'array'],
+            'eligible' => ['required', 'boolean'],
+            'comments' => ['nullable', 'string', 'max:2000'],
+            'worksheet' => ['nullable', 'array'],
         ]);
 
-        if (!$data['eligible']) {
+        if (! $data['eligible']) {
             throw ValidationException::withMessages([
                 'eligible' => ['Use mark-not-eligible when the applicant is not eligible.'],
             ]);
@@ -385,7 +385,7 @@ class SalaryAdvanceController extends Controller
     public function financeReturn(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
         $data = $request->validate([
-            'reason'  => ['required', 'string', 'max:2000'],
+            'reason' => ['required', 'string', 'max:2000'],
             'comment' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -416,8 +416,8 @@ class SalaryAdvanceController extends Controller
     public function approve(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
         $data = $request->validate([
-            'comment'          => ['nullable', 'string', 'max:1000'],
-            'approved_amount'  => ['nullable', 'numeric', 'min:0'],
+            'comment' => ['nullable', 'string', 'max:1000'],
+            'approved_amount' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         if ($salaryAdvanceRequest->approvalRequest) {
@@ -431,8 +431,8 @@ class SalaryAdvanceController extends Controller
             );
 
             return response()->json([
-                'message'            => 'Approved.',
-                'data'               => $salaryAdvanceRequest->fresh(['requester', 'approver', 'approvalRequest']),
+                'message' => 'Approved.',
+                'data' => $salaryAdvanceRequest->fresh(['requester', 'approver', 'approvalRequest']),
                 'notified_approvers' => $result['notified_approvers'],
             ]);
         }
@@ -442,13 +442,13 @@ class SalaryAdvanceController extends Controller
 
         $policy = $this->salaryAdvanceService->activePolicy($salaryAdvanceRequest->tenant_id);
         if ($policy->finance_certification_required
-            && !in_array($salaryAdvanceRequest->status, ['finance_certified'], true)) {
+            && ! in_array($salaryAdvanceRequest->status, ['finance_certified'], true)) {
             throw ValidationException::withMessages([
                 'status' => ['Finance certification is required before final approval.'],
             ]);
         }
 
-        if (!in_array($salaryAdvanceRequest->status, ['submitted', 'finance_certified', 'resubmitted'], true)) {
+        if (! in_array($salaryAdvanceRequest->status, ['submitted', 'finance_certified', 'resubmitted'], true)) {
             throw ValidationException::withMessages(['status' => 'Request cannot be approved in its current status.']);
         }
         if ((int) $salaryAdvanceRequest->requester_id === (int) $request->user()->id) {
@@ -465,18 +465,18 @@ class SalaryAdvanceController extends Controller
 
         return response()->json([
             'message' => 'Approved.',
-            'data'    => $salaryAdvanceRequest->fresh(['requester', 'approver']),
+            'data' => $salaryAdvanceRequest->fresh(['requester', 'approver']),
         ]);
     }
 
     public function reject(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
         $data = $request->validate([
-            'reason'  => ['nullable', 'string', 'max:1000'],
+            'reason' => ['nullable', 'string', 'max:1000'],
             'comment' => ['nullable', 'string', 'max:1000'],
         ]);
         $reason = $data['reason'] ?? $data['comment'] ?? null;
-        if (!$reason) {
+        if (! $reason) {
             throw ValidationException::withMessages(['comment' => ['The comment field is required.']]);
         }
 
@@ -485,13 +485,13 @@ class SalaryAdvanceController extends Controller
 
             return response()->json([
                 'message' => 'Rejected.',
-                'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
+                'data' => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
             ]);
         }
 
         $this->authorizeLegacySalaryAdvanceAction($request->user(), $salaryAdvanceRequest);
 
-        if (!in_array($salaryAdvanceRequest->status, ['submitted', 'finance_certified', 'resubmitted'], true)) {
+        if (! in_array($salaryAdvanceRequest->status, ['submitted', 'finance_certified', 'resubmitted'], true)) {
             throw ValidationException::withMessages(['status' => 'Only submitted or certified requests can be rejected.']);
         }
         if ((int) $salaryAdvanceRequest->requester_id === (int) $request->user()->id) {
@@ -516,7 +516,7 @@ class SalaryAdvanceController extends Controller
 
         return response()->json([
             'message' => 'Request returned to requester for correction.',
-            'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
+            'data' => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
         ]);
     }
 
@@ -527,14 +527,14 @@ class SalaryAdvanceController extends Controller
 
         return response()->json([
             'message' => 'Salary advance request withdrawn.',
-            'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
+            'data' => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
         ]);
     }
 
     public function resubmit(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
         if (in_array($salaryAdvanceRequest->status, ['finance_returned', 'returned_for_correction'], true)
-            && !$salaryAdvanceRequest->approvalRequest) {
+            && ! $salaryAdvanceRequest->approvalRequest) {
             $data = $request->validate([
                 'deduction_authority_confirmed' => ['nullable', 'boolean'],
             ]);
@@ -552,7 +552,7 @@ class SalaryAdvanceController extends Controller
 
         return response()->json([
             'message' => 'Salary advance request resubmitted.',
-            'data'    => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
+            'data' => $salaryAdvanceRequest->fresh(['requester', 'approvalRequest']),
         ]);
     }
 
@@ -560,8 +560,8 @@ class SalaryAdvanceController extends Controller
     {
         $data = $request->validate([
             'payment_reference' => ['required', 'string', 'max:100'],
-            'payment_method'    => ['required', 'string', 'max:64'],
-            'payment_date'      => ['nullable', 'date'],
+            'payment_method' => ['required', 'string', 'max:64'],
+            'payment_date' => ['nullable', 'date'],
         ]);
 
         $advance = $this->salaryAdvanceService->recordPayment($salaryAdvanceRequest, $request->user(), $data);
@@ -583,9 +583,9 @@ class SalaryAdvanceController extends Controller
     public function recordRecovery(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
     {
         $data = $request->validate([
-            'amount'        => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
             'reference_doc' => ['required', 'string', 'max:120'],
-            'notes'         => ['nullable', 'string', 'max:2000'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $advance = $this->salaryAdvanceService->recordRecovery($salaryAdvanceRequest, $request->user(), $data);
@@ -619,7 +619,7 @@ class SalaryAdvanceController extends Controller
 
         $pdf = $this->salaryAdvanceService->form002Pdf($salaryAdvanceRequest);
 
-        return $pdf->download('FORM-002-' . $salaryAdvanceRequest->reference_number . '.pdf');
+        return $pdf->download('FORM-002-'.$salaryAdvanceRequest->reference_number.'.pdf');
     }
 
     public function certificate(Request $request, SalaryAdvanceRequest $salaryAdvanceRequest): JsonResponse
@@ -646,7 +646,7 @@ class SalaryAdvanceController extends Controller
         $max = (float) ($advance->max_eligible_amount ?? $advance->amount);
         if ($approvedAmount > $max + 0.00001) {
             throw ValidationException::withMessages([
-                'approved_amount' => ['Approved amount cannot exceed policy maximum of ' . number_format($max, 2) . '.'],
+                'approved_amount' => ['Approved amount cannot exceed policy maximum of '.number_format($max, 2).'.'],
             ]);
         }
         $advance->update(['approved_amount' => $approvedAmount, 'amount' => $approvedAmount]);
