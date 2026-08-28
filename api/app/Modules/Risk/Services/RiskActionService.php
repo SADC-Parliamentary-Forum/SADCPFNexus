@@ -143,6 +143,10 @@ class RiskActionService
             throw ValidationException::withMessages(['status' => 'Completed actions cannot be deleted.']);
         }
 
+        if ($action->status === 'in_progress') {
+            throw ValidationException::withMessages(['status' => 'In-progress actions cannot be deleted.']);
+        }
+
         $risk = $action->risk;
         $action->delete();
 
