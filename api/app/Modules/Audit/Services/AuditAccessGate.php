@@ -11,7 +11,7 @@ class AuditAccessGate
 {
     public function assertCanFieldwork(AuditEngagement $engagement, User $user): void
     {
-        if ($user->can('audit.admin') || $user->hasAnyRole(['System Admin', 'super-admin'])) {
+        if ($user->hasAnyRole(['System Admin', 'super-admin'])) {
             return;
         }
 

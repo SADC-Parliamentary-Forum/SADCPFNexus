@@ -224,6 +224,15 @@ return [
             'READ' => ['people.view-directory', 'people.view-profile', 'people.manage'],
             'WRITE' => ['people.manage', 'roles.assign', 'authorities.manage'],
         ]],
+        ['pattern' => 'api/v1/audit-management/findings*', 'permissions' => [
+            'READ' => ['audit.view', 'audit.events.view', 'audit.admin', 'audit.findings.view', 'audit.response.manage'],
+            'WRITE' => [
+                'audit.admin', 'audit.findings.issue', 'audit.response.manage', 'audit.corrective.manage',
+            ],
+        ]],
+        ['pattern' => 'api/v1/audit-management/corrective-actions*', 'permissions' => [
+            'WRITE' => ['audit.admin', 'audit.corrective.manage', 'audit.corrective.verify'],
+        ]],
         ['pattern' => 'api/v1/audit-management*', 'permissions' => [
             'READ' => ['audit.view', 'audit.events.view', 'audit.admin'],
             'WRITE' => ['audit.admin', 'audit.plan.manage', 'audit.engagement.manage', 'audit.plan.approve'],

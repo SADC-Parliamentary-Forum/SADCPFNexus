@@ -101,7 +101,11 @@ trait AuthorizesRequestRecords
                 $actor,
                 $permission,
                 $record,
-                ['assigned' => true, 'owner_id' => $record->getAttribute('requester_id')]
+                [
+                    'assigned' => true,
+                    'owner_id' => $record->getAttribute('requester_id'),
+                    'scope' => 'organisation',
+                ]
             );
 
             return;

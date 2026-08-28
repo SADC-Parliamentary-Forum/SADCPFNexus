@@ -46,6 +46,7 @@ return [
             'hr.create',
             // Activity reporting is staff self-service; specialised M&E Officer still owns review.
             'mande.view', 'mande.create',
+            'audit.response.manage', 'audit.corrective.manage',
         ],
         'inherits' => [],
         'legacy_roles' => ['staff'],

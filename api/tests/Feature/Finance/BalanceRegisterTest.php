@@ -37,6 +37,8 @@ class BalanceRegisterTest extends TestCase
             'requester_id'     => $user->id,
             'reference_number' => 'IMP-' . uniqid(),
             'purpose'          => 'Conference attendance',
+            'budget_line'      => 'Programme activities',
+            'expected_liquidation_date' => now()->addDays(30)->toDateString(),
             'amount_requested' => 4000.00,
             'amount_approved'  => 4000.00,
             'currency'         => 'NAD',
