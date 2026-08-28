@@ -332,7 +332,9 @@ return [
             'WRITE' => ['risk.create', 'risk.manage', 'risk.admin'],
         ]],
         ['pattern' => 'api/v1/risk/acceptances*', 'permissions' => [
-            'WRITE' => ['risk.accept', 'risk.approve', 'risk.manage', 'risk.admin'],
+            // Owners may POST decide so the service can return 422 for
+            // high/critical owner-alone acceptance; Director/SG still approve.
+            'WRITE' => ['risk.create', 'risk.accept', 'risk.approve', 'risk.manage', 'risk.admin'],
         ]],
         ['pattern' => 'api/v1/risk/risks*', 'permissions' => [
             'READ' => ['risk.view', 'risk.module.view', 'risk.create'],
