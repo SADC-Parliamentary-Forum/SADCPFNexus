@@ -408,6 +408,21 @@ class TimesheetController extends Controller
         ]);
     }
 
+    public function clockAttendance(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'direction' => ['required', 'string', 'in:in,out'],
+            'method' => ['nullable', 'string', 'in:manual,biometric,badge'],
+            'device_attested' => ['nullable', 'boolean'],
+            'device_id' => ['nullable', 'string', 'max:128'],
+        ]);
+
+        $event = app(\App\Modules\Timesheets\Services\AttendanceClockService::class)
+            ->clock($request->user(), $data);
+
+        return response()->json(['data' => $event], 201);
+    }
+
     /**
      * Import timesheet entries from CSV.
      */

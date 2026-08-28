@@ -64,6 +64,19 @@ class PublicNoticeController extends Controller
         return response()->json(['data' => $this->newspaper->saveTicks($tender, $request->user(), $data)]);
     }
 
+    public function newspaperLlmDraft(Request $request, Tender $tender): JsonResponse
+    {
+        $this->staffGate($request);
+        $data = $request->validate([
+            'template_key' => ['nullable', 'string', 'max:64'],
+        ]);
+
+        return response()->json([
+            'data' => $this->newspaper->draftWithLlm($tender, $request->user(), $data['template_key'] ?? null),
+            'message' => 'LLM draft is a suggestion only. Human publication checklist is still required. This never awards.',
+        ]);
+    }
+
     private function staffGate(Request $request): void
     {
         if (!$request->user()->hasAnyRole([

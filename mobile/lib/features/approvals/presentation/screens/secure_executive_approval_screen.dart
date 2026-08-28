@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/device_attestation.dart';
 import '../../../../core/theme/app_theme.dart';
 
-class SecureExecutiveApprovalScreen extends StatefulWidget {
+class SecureExecutiveApprovalScreen extends ConsumerStatefulWidget {
   const SecureExecutiveApprovalScreen({super.key});
 
   @override
-  State<SecureExecutiveApprovalScreen> createState() =>
+  ConsumerState<SecureExecutiveApprovalScreen> createState() =>
       _SecureExecutiveApprovalScreenState();
 }
 
 class _SecureExecutiveApprovalScreenState
-    extends State<SecureExecutiveApprovalScreen>
+    extends ConsumerState<SecureExecutiveApprovalScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -341,7 +343,13 @@ class _SecureExecutiveApprovalScreenState
               width: double.infinity,
               height: 52,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  attestDeviceBiometric(
+                    context,
+                    ref,
+                    reason: 'Authenticate to approve this executive request',
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.bgDark,

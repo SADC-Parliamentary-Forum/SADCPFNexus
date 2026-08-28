@@ -275,6 +275,33 @@ class UsersController extends Controller
         }
 
         $oldRoles = $user->getRoleNames()->values()->all();
+        $privileged = array_values(array_intersect($roles, [
+            'System Admin', 'Secretary General', 'Director of Finance and Corporate Services',
+            'Finance Controller', 'HR Manager',
+        ]));
+        if ($privileged !== []) {
+            $pending = \App\Models\AccessControl\AccessRoleSyncRequest::query()->create([
+                'tenant_id' => $user->tenant_id,
+                'user_id' => $user->id,
+                'roles' => array_values($roles),
+                'requested_by' => $request->user()->id,
+                'status' => 'pending_approval',
+                'reason' => 'Privileged role assignment requires dual control.',
+            ]);
+            \App\Models\AuditLog::record('user.roles_pending_dual_control', [
+                'auditable_type' => User::class,
+                'auditable_id' => $user->id,
+                'old_values' => ['roles' => $oldRoles],
+                'new_values' => ['roles' => array_values($roles), 'request_id' => $pending->id],
+                'tags' => 'auth,dual-control',
+            ]);
+
+            return response()->json([
+                'message' => 'Privileged role change pending second approval.',
+                'data' => ['status' => 'pending_approval', 'request_id' => $pending->id],
+            ], 202);
+        }
+
         $user->syncRoles($roles);
         app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         $this->userService->revokeAllAccess($user);
@@ -288,6 +315,44 @@ class UsersController extends Controller
         ]);
 
         return response()->json(['message' => 'User roles updated.', 'user' => $user->fresh(['roles'])]);
+    }
+
+    public function approveRoleSync(Request $request, \App\Models\AccessControl\AccessRoleSyncRequest $syncRequest): JsonResponse
+    {
+        $this->authorize('create', User::class);
+        abort_unless((int) $syncRequest->tenant_id === (int) $request->user()->tenant_id, 404);
+        if ((int) $syncRequest->requested_by === (int) $request->user()->id) {
+            abort(403, 'A different administrator must approve privileged role changes.');
+        }
+        if ($syncRequest->status !== 'pending_approval') {
+            abort(422, 'This role-sync request is not pending.');
+        }
+
+        $target = User::query()->findOrFail($syncRequest->user_id);
+        $this->authorize('assignRole', $target);
+        $oldRoles = $target->getRoleNames()->values()->all();
+        $roles = (array) $syncRequest->roles;
+        $target->syncRoles($roles);
+        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->userService->revokeAllAccess($target);
+
+        $syncRequest->update([
+            'status' => 'approved',
+            'approved_by' => $request->user()->id,
+        ]);
+
+        \App\Models\AuditLog::record('user.roles_updated', [
+            'auditable_type' => User::class,
+            'auditable_id' => $target->id,
+            'old_values' => ['roles' => $oldRoles],
+            'new_values' => ['roles' => array_values($roles), 'dual_control_request_id' => $syncRequest->id],
+            'tags' => 'auth,dual-control',
+        ]);
+
+        return response()->json([
+            'message' => 'Privileged roles applied after dual control.',
+            'user' => $target->fresh(['roles']),
+        ]);
     }
 
     public function resendInvitation(Request $request, User $user): JsonResponse

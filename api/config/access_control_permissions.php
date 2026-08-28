@@ -722,6 +722,7 @@ return [
         'linked_routes' => [],
         'linked_endpoints' => [
             'GET /api/v1/admin/access/governance',
+            'PUT /api/v1/admin/access/governance/{decision}',
         ],
     ],
     'admin.users.create' => [
@@ -1502,7 +1503,10 @@ return [
         'data_classification' => 'Restricted',
         'mfa_required' => true,
         'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'POST /api/v1/procurement/tenders/{tender}/award',
+            'POST /api/v1/procurement/tenders/{tender}/recommend-award',
+        ],
     ],
     'procurement.bid.open.assigned' => [
         'display_name' => 'Open bids',

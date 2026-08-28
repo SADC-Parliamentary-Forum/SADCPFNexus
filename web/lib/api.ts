@@ -2126,8 +2126,16 @@ export interface StockDemandRow {
 
 export const stockDemandApi = {
   forecast: (params?: { lookback_days?: number }) =>
-    api.get<{ success: boolean; data: StockDemandRow[]; meta?: { lookback_days: number } }>(
+    api.get<{ success: boolean; data: StockDemandRow[]; meta?: { lookback_days: number; method?: string } }>(
       "/stock/demand-forecast",
+      { params },
+    ),
+};
+
+export const inventoryApi = {
+  unifiedRegister: (params?: { per_page?: number; page?: number }) =>
+    api.get<{ data: Array<Record<string, unknown>>; meta?: Record<string, unknown> }>(
+      "/inventory/unified-register",
       { params },
     ),
 };
@@ -3093,6 +3101,13 @@ export const budgetApi = {
     api.post<{ success: boolean; data: BudgetReservation }>("/budget/commitments/reserve", data),
   postActual: (data: Record<string, unknown>) =>
     api.post<{ success: boolean; data: unknown }>("/budget/actuals", data),
+  postJournal: (data: {
+    budget_line_id: number;
+    memo?: string;
+    source_module?: string;
+    debit: number;
+    credit: number;
+  }) => api.post<{ data: unknown }>("/budget/journals", data),
   importActuals: (file: File) => {
     const form = new FormData();
     form.append("file", file);
@@ -4031,6 +4046,11 @@ export const noticeBoardApi = {
     }),
   saveNewspaperChecklist: (tenderId: number, data: { template_key?: string; ticks?: Record<string, boolean> }) =>
     api.patch<{ data: Record<string, unknown> }>(`/procurement/tenders/${tenderId}/newspaper-notice-checklist`, data),
+  newspaperLlmDraft: (tenderId: number, data?: { template_key?: string }) =>
+    api.post<{ data: Record<string, unknown>; message?: string }>(
+      `/procurement/tenders/${tenderId}/newspaper-notice-llm-draft`,
+      data ?? {},
+    ),
 };
 
 export const tenderCommitteesApi = {
@@ -4678,6 +4698,8 @@ export const hrApi = {
     api.get<PaginatedResponse<Timesheet>>("/hr/timesheets", { params }),
   capacityAnalytics: (params: { week_start: string; week_end: string; department_id?: number }) =>
     api.get<{ data: Record<string, unknown> }>("/hr/timesheets/capacity-analytics", { params }),
+  clockAttendance: (data: { direction: "in" | "out"; method?: string; device_attested?: boolean; device_id?: string }) =>
+    api.post<{ data: Record<string, unknown> }>("/hr/timesheets/attendance/clock", data),
   getTimesheet: (id: number) => api.get<Timesheet>(`/hr/timesheets/${id}`),
   createTimesheet: (data: { week_start: string; week_end: string; entries: TimesheetEntry[] }) =>
     api.post<{ data: Timesheet; message: string }>("/hr/timesheets", data),
@@ -8764,6 +8786,8 @@ export const auditApi = {
     api.get<{ data: Record<string, unknown> }>("/audit-management/analytics"),
   lookups: () => api.get<{ data: Record<string, unknown> }>("/audit-management/lookups"),
   settings: () => api.get<{ data: Record<string, unknown> }>("/audit-management/settings"),
+  updateSettings: (data: Record<string, unknown>) =>
+    api.put<{ data: Record<string, unknown> }>("/audit-management/settings", data),
   events: (params?: Record<string, string | number>) =>
     api.get("/audit-management/events", { params }),
 

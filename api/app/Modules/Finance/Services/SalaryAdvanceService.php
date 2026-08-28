@@ -375,9 +375,12 @@ class SalaryAdvanceService
         return DB::transaction(function () use ($advance, $actor, $data) {
             $amount = $advance->payableAmount();
 
-            // Ensure full-EOM register shape before create.
+            // Honour policy: monthly instalments keep requested months; full_eom stays 1.
             if ($advance->repayment_months != 1) {
-                $advance->update(['repayment_months' => 1]);
+                $policy = $this->activePolicy($advance->tenant_id);
+                if (! $policy || $policy->recovery_rule !== 'monthly_instalments') {
+                    $advance->update(['repayment_months' => 1]);
+                }
             }
 
             $register = $this->balanceRegisterService->createFromSalaryAdvance($advance->fresh(), $actor);

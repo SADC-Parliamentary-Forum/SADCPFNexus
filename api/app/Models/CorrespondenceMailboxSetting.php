@@ -22,6 +22,7 @@ class CorrespondenceMailboxSetting extends Model
         'imap_password_encrypted',
         'last_polled_at',
         'last_poll_status',
+        'allowlisted_addresses',
     ];
 
     protected $hidden = [
@@ -39,6 +40,7 @@ class CorrespondenceMailboxSetting extends Model
             'enabled' => 'boolean',
             'imap_port' => 'integer',
             'last_polled_at' => 'datetime',
+            'allowlisted_addresses' => 'array',
         ];
     }
 

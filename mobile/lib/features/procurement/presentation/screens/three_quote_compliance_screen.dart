@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../data/procurement_api_helpers.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DATA MODELS
@@ -28,49 +31,75 @@ class _QuoteDoc {
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
-class ThreeQuoteComplianceScreen extends StatefulWidget {
+class ThreeQuoteComplianceScreen extends ConsumerStatefulWidget {
   const ThreeQuoteComplianceScreen({super.key});
 
   @override
-  State<ThreeQuoteComplianceScreen> createState() =>
+  ConsumerState<ThreeQuoteComplianceScreen> createState() =>
       _ThreeQuoteComplianceScreenState();
 }
 
 class _ThreeQuoteComplianceScreenState
-    extends State<ThreeQuoteComplianceScreen> {
+    extends ConsumerState<ThreeQuoteComplianceScreen> {
   int _selectedVendorIndex = 0;
   final _recommendationCtrl = TextEditingController();
   bool _certified = false;
+  List<_VendorQuote> _vendors = const [];
+  List<_QuoteDoc> _docs = const [];
 
-  static const List<_VendorQuote> _vendors = [
-    _VendorQuote(
-      name: 'TechSolutions Ltd',
-      amount: 12500,
-      isCompliant: true,
-      validity: '30 Days',
-      delivery: '2 Weeks',
-    ),
-    _VendorQuote(
-      name: 'Global Systems Inc',
-      amount: 13200,
-      isCompliant: false,
-      validity: '45 Days',
-      delivery: '1 Week',
-    ),
-    _VendorQuote(
-      name: 'Apex Networks',
-      amount: 11900,
-      isCompliant: false,
-      validity: '5 Days',
-      delivery: '4 Weeks',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
 
-  static const List<_QuoteDoc> _docs = [
-    _QuoteDoc(fileName: 'Quote_TechSolutions_FINAL.pdf'),
-    _QuoteDoc(fileName: 'Global_Systems_Quote_0925.pdf'),
-    _QuoteDoc(fileName: 'Apex_Quote_Signed.pdf'),
-  ];
+  Future<void> _load() async {
+    try {
+      final dio = ref.read(apiClientProvider).dio;
+      final res = await dio.get<Map<String, dynamic>>(
+        '/procurement/requests',
+        queryParameters: {'per_page': 10},
+      );
+      final requests = extractListData(res.data);
+      List<_VendorQuote> quotes = [];
+      List<_QuoteDoc> docs = [];
+      for (final req in requests) {
+        final id = req['id'];
+        if (id == null) continue;
+        try {
+          final qRes = await dio.get<Map<String, dynamic>>('/procurement/requests/$id/quotes');
+          final qList = extractListData(qRes.data);
+          for (final q in qList) {
+            quotes.add(_VendorQuote(
+              name: (q['vendor_name'] ?? q['supplier_name'] ?? 'Quote ${q['id']}').toString(),
+              amount: double.tryParse('${q['quoted_amount'] ?? q['amount'] ?? 0}') ?? 0,
+              isCompliant: q['compliance_passed'] == true,
+              validity: (q['validity'] ?? '—').toString(),
+              delivery: (q['delivery'] ?? '—').toString(),
+            ));
+            final file = q['file_name'] ?? q['document_name'];
+            if (file != null) {
+              docs.add(_QuoteDoc(fileName: file.toString()));
+            }
+          }
+        } catch (_) {
+          // try next request
+        }
+        if (quotes.isNotEmpty) break;
+      }
+      if (!mounted) return;
+      setState(() {
+        _vendors = quotes;
+        _docs = docs;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _vendors = const [];
+        _docs = const [];
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -169,6 +198,15 @@ class _ThreeQuoteComplianceScreenState
             ],
           ),
           const SizedBox(height: 14),
+
+          if (_vendors.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                'No live quotes on open requisitions. This screen loads /procurement/requests quotes — it does not invent vendors.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+            ),
 
           // ── Vendor Cards ──────────────────────────────────────────────
           ..._vendors.asMap().entries.map((e) => _VendorCard(

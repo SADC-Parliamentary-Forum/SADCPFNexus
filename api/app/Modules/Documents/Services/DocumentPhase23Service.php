@@ -398,11 +398,16 @@ class DocumentPhase23Service
 
     public function migrationUtilityStatus(): array
     {
+        $url = trim((string) config('documents.sharepoint_http_url', ''));
+        $ready = $url !== '';
+
         return [
             'utility' => 'sharepoint_onedrive_migration',
-            'status' => 'stub',
-            'message' => 'Migration utility scaffold only — no live connector until governance approves credentials.',
-            'drivers' => ['null'],
+            'status' => $ready ? 'ready' : 'stub',
+            'message' => $ready
+                ? 'HTTP SharePoint/OneDrive connector configured. Import never auto-publishes.'
+                : 'Migration utility scaffold only — no live connector until governance approves credentials.',
+            'drivers' => $ready ? ['http'] : ['null'],
         ];
     }
 

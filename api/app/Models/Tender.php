@@ -25,6 +25,7 @@ class Tender extends Model
         'bids_opened_at', 'bids_opened_by', 'evaluation_started_at',
         'technical_weight', 'financial_weight', 'min_technical_score', 'created_by',
         'newspaper_checklist',
+        'award_recommendation',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class Tender extends Model
         'financial_weight'      => 'float',
         'min_technical_score'   => 'float',
         'newspaper_checklist'   => 'array',
+        'award_recommendation'  => 'array',
     ];
 
     protected static function booted(): void

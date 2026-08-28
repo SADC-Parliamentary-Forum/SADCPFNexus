@@ -32,6 +32,8 @@ class CorrespondenceMailboxController extends Controller
             'imap_encryption' => ['nullable', 'in:ssl,tls,none'],
             'imap_username' => ['nullable', 'string', 'max:255'],
             'imap_password' => ['nullable', 'string', 'max:500'],
+            'allowlisted_addresses' => ['nullable', 'array', 'max:50'],
+            'allowlisted_addresses.*' => ['email', 'max:255'],
         ]);
 
         return response()->json([

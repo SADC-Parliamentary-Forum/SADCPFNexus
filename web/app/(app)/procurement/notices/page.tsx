@@ -46,6 +46,13 @@ export default function StaffNoticeBoardPage() {
     },
   });
 
+  const llmDraft = useMutation({
+    mutationFn: () => noticeBoardApi.newspaperLlmDraft(selectedId as number, { template_key: templateKey }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["procurement", "newspaper-pack", selectedId] });
+    },
+  });
+
   return (
     <div className="space-y-5">
       <ModulePageHeader
@@ -64,6 +71,7 @@ export default function StaffNoticeBoardPage() {
         <p className="text-neutral-600">
           Live LLM drafting stays operator-owned. Templates fill from the tender; publication ticks are human.
           Auto-award: {templates.data?.auto_award ? "on" : "off"}.
+          HTTP LLM suggestion: {templates.data?.llm_live ? "configured" : "off until PROCUREMENT_NOTICE_LLM_URL is set"}.
         </p>
         <ul className="list-disc pl-5 text-neutral-700">
           {(templates.data?.templates ?? []).map((t) => (
@@ -110,6 +118,9 @@ export default function StaffNoticeBoardPage() {
             </select>
           </label>
           <pre className="whitespace-pre-wrap rounded bg-neutral-50 p-3 text-xs" data-testid="filled-newspaper-notice">{String(pack.data.filled_notice)}</pre>
+          {pack.data.llm_suggestion ? (
+            <pre className="whitespace-pre-wrap rounded bg-amber-50 p-3 text-xs" data-testid="llm-newspaper-suggestion">{String(pack.data.llm_suggestion)}</pre>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -128,6 +139,14 @@ export default function StaffNoticeBoardPage() {
               onClick={() => window.print()}
             >
               Print
+            </button>
+            <button
+              type="button"
+              className="btn-secondary text-sm"
+              disabled={llmDraft.isPending || !selectedId}
+              onClick={() => llmDraft.mutate()}
+            >
+              {llmDraft.isPending ? "Drafting…" : "Request LLM draft"}
             </button>
           </div>
           {copyMsg ? <p className="text-xs text-green-700">{copyMsg}</p> : null}

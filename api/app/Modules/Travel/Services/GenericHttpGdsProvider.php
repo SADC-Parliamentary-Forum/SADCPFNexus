@@ -53,4 +53,35 @@ class GenericHttpGdsProvider implements GdsProviderInterface
             return null;
         }
     }
+
+    public function searchOffers(array $criteria = []): array
+    {
+        $url = config('travel.gds_http_url');
+        if (! $url) {
+            return [];
+        }
+
+        try {
+            $req = Http::timeout(10)->acceptJson();
+            $token = config('travel.gds_http_token');
+            if ($token) {
+                $req = $req->withToken($token);
+            }
+            $res = $req->get(rtrim($url, '/').'/offers', $criteria);
+            if (! $res->successful()) {
+                return [];
+            }
+            $json = $res->json();
+            $offers = $json['offers'] ?? $json['data'] ?? $json;
+            if (! is_array($offers)) {
+                return [];
+            }
+
+            return array_values(array_filter($offers, 'is_array'));
+        } catch (\Throwable $e) {
+            Log::warning('travel.gds_http_search_failed', ['message' => $e->getMessage()]);
+
+            return [];
+        }
+    }
 }

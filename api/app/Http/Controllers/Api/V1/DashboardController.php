@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Correspondence;
 use App\Models\ImprestRequest;
 use App\Models\LeaveRequest;
 use App\Models\ProcurementRequest;
+use App\Models\Risk;
 use App\Models\TravelRequest;
 use App\Models\User;
 use App\Modules\AccessControl\Services\AccessScopeResolver;
@@ -79,17 +81,35 @@ class DashboardController extends Controller
             $openRequisitions = $q->count();
         }
 
+        $openCorrespondence = 0;
+        if ($this->canSeeModule($pdp, $user, ['correspondence.view', 'correspondence.registry', 'correspondence.create'])) {
+            $q = Correspondence::where('tenant_id', $tenantId)->whereNotIn('status', ['archived', 'closed']);
+            $scopes->constrainQuery($q, $user, 'created_by', ['module' => 'correspondence']);
+            $openCorrespondence = $q->count();
+        }
+
+        $openRisks = 0;
+        if ($this->canSeeModule($pdp, $user, ['risk.view', 'risk.manage', 'risk.create'])) {
+            $q = Risk::where('tenant_id', $tenantId)->whereNotIn('status', ['closed', 'archived']);
+            $scopes->constrainQuery($q, $user, 'submitted_by', ['module' => 'risk']);
+            $openRisks = $q->count();
+        }
+
         return response()->json([
             'app_name' => config('app.name'),
             'pending_approvals' => $pendingApprovals,
             'active_travels' => $activeTravels,
             'leave_requests' => $leaveRequests,
             'open_requisitions' => $openRequisitions,
+            'open_correspondence' => $openCorrespondence,
+            'open_risks' => $openRisks,
             'breakdown' => [
                 'pending_travel' => $pendingTravel,
                 'pending_leave' => $pendingLeave,
                 'pending_imprest' => $pendingImprest,
                 'pending_procurement' => $pendingProcurement,
+                'open_correspondence' => $openCorrespondence,
+                'open_risks' => $openRisks,
             ],
         ]);
     }

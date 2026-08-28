@@ -78,7 +78,7 @@ export default function TimesheetCapacityPage() {
       {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
       {isError && <p className="text-sm text-red-700">Failed to load capacity analytics.</p>}
       <p className="text-sm text-neutral-600" data-testid="timesheet-capacity-disclaimer">
-        Overtime rates are not calculated here. Biometric capture is not used.
+        Overtime rates are not calculated here. Device-attested biometric clock events may appear as a flag. Not a performance score.
       </p>
       <div className="card overflow-x-auto">
         <table className="min-w-full text-sm">

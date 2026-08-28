@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/device_attestation.dart';
 import '../../../../core/theme/app_theme.dart';
 
-class BiometricEntryScreen extends StatefulWidget {
+class BiometricEntryScreen extends ConsumerStatefulWidget {
   const BiometricEntryScreen({super.key});
 
   @override
-  State<BiometricEntryScreen> createState() => _BiometricEntryScreenState();
+  ConsumerState<BiometricEntryScreen> createState() => _BiometricEntryScreenState();
 }
 
-class _BiometricEntryScreenState extends State<BiometricEntryScreen>
+class _BiometricEntryScreenState extends ConsumerState<BiometricEntryScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _glowController;
   late Animation<double> _glowAnimation;
@@ -271,7 +273,14 @@ class _BiometricEntryScreenState extends State<BiometricEntryScreen>
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        attestDeviceBiometric(
+                          context,
+                          ref,
+                          reason: 'Authenticate to record a biometric clock-in',
+                          clockIn: true,
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: AppColors.bgDark,

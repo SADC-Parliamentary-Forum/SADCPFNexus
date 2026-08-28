@@ -274,6 +274,23 @@ class BudgetControlController extends Controller
         return response()->json(['success' => true, 'data' => $actual], 201);
     }
 
+    public function postJournal(Request $request): JsonResponse
+    {
+        $this->authorizeFinanceWrite($request);
+        $data = $request->validate([
+            'budget_line_id' => ['required', 'integer', 'exists:budget_lines,id'],
+            'memo' => ['nullable', 'string', 'max:1000'],
+            'source_module' => ['nullable', 'string', 'max:64'],
+            'source_id' => ['nullable', 'integer'],
+            'debit' => ['required', 'numeric', 'min:0.01'],
+            'credit' => ['required', 'numeric', 'min:0.01'],
+        ]);
+
+        $journal = app(\App\Modules\Budget\Services\GlPostingService::class)->post($request->user(), $data);
+
+        return response()->json(['data' => $journal], 201);
+    }
+
     public function importActuals(Request $request): JsonResponse
     {
         $this->authorizeFinanceWrite($request);

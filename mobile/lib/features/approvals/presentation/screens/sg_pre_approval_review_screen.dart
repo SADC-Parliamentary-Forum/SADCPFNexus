@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/device_attestation.dart';
 import '../../../../core/theme/app_theme.dart';
 
-class SgPreApprovalReviewScreen extends StatefulWidget {
+class SgPreApprovalReviewScreen extends ConsumerStatefulWidget {
   const SgPreApprovalReviewScreen({super.key});
 
   @override
-  State<SgPreApprovalReviewScreen> createState() =>
+  ConsumerState<SgPreApprovalReviewScreen> createState() =>
       _SgPreApprovalReviewScreenState();
 }
 
 class _SgPreApprovalReviewScreenState
-    extends State<SgPreApprovalReviewScreen> {
+    extends ConsumerState<SgPreApprovalReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -275,7 +277,13 @@ class _SgPreApprovalReviewScreenState
               width: double.infinity,
               height: 54,
               child: ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  attestDeviceBiometric(
+                    context,
+                    ref,
+                    reason: 'Authenticate SG pre-approval review',
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.bgDark,

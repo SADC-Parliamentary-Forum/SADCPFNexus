@@ -9,10 +9,11 @@ export default function StockDemandForecastPage() {
   const [lookback, setLookback] = useState(90);
   const query = useQuery({
     queryKey: ["stock", "demand-forecast", lookback],
-    queryFn: () => stockDemandApi.forecast({ lookback_days: lookback }).then((r) => r.data.data ?? []),
+    queryFn: () => stockDemandApi.forecast({ lookback_days: lookback }).then((r) => r.data),
   });
 
-  const rows = (query.data ?? []) as StockDemandRow[];
+  const rows = (query.data?.data ?? []) as StockDemandRow[];
+  const method = query.data?.meta?.method ?? "exponential_smoothing";
   const needs = rows.filter((r) => r.needs_reorder);
 
   return (
@@ -20,7 +21,7 @@ export default function StockDemandForecastPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
         title="Demand / reorder suggestions"
-        subtitle="Simple usage-based suggestions from stock issues over the lookback window. Not ML forecasting or event packs."
+        subtitle="Exponential smoothing of stock issues over the lookback window, with optional HTTP ML overlay. Not a live ML model unless STOCK_FORECAST_HTTP_URL is set."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Demand / reorder suggestions" }]} />}
       />
         <div className="flex items-center gap-2">
@@ -36,6 +37,7 @@ export default function StockDemandForecastPage() {
 
       <div className="card p-4 text-sm text-neutral-700">
         {needs.length} item{needs.length === 1 ? "" : "s"} suggested for reorder (of {rows.length} active).
+        Method: {method}.
       </div>
 
       <div className="card overflow-x-auto p-4">

@@ -52,5 +52,12 @@ return [
     'ai_comparison_provider'      => env('PROCUREMENT_AI_COMPARISON_PROVIDER', 'stub'),
     'ai_comparison_llm_endpoint'  => env('PROCUREMENT_AI_COMPARISON_LLM_ENDPOINT'),
     'ai_comparison_llm_api_key'   => env('PROCUREMENT_AI_COMPARISON_LLM_API_KEY'),
+
+    /*
+    | Newspaper-notice HTTP LLM draft (CR-8). Suggestion only; human checklist still required.
+    | Never auto-awards.
+    */
+    'notice_llm_url' => env('PROCUREMENT_NOTICE_LLM_URL'),
+    'notice_llm_token' => env('PROCUREMENT_NOTICE_LLM_TOKEN'),
 ];
 

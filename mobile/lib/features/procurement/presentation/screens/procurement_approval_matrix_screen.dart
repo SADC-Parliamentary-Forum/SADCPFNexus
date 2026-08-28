@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import '../../data/procurement_api_helpers.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  DATA
@@ -25,32 +28,76 @@ class _ApprovalStep {
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
-class ProcurementApprovalMatrixScreen extends StatelessWidget {
+class ProcurementApprovalMatrixScreen extends ConsumerStatefulWidget {
   const ProcurementApprovalMatrixScreen({super.key});
 
-  static const List<_ApprovalStep> _chain = [
-    _ApprovalStep(
-      role: 'Procurement Officer',
-      name: 'T. Mahlangu',
-      status: _ApprovalStatus.approved,
-      note: 'Verified specifications & pricing',
-      timestamp: 'Oct 24, 09:30 AM',
-    ),
-    _ApprovalStep(
-      role: 'Director of Finance',
-      name: 'K. Moyo',
-      status: _ApprovalStatus.approved,
-      note: 'Budget availability confirmed',
-      timestamp: 'Oct 25, 11:15 AM',
-    ),
-    _ApprovalStep(
-      role: 'Secretary General',
-      name: 'D. Sithole',
-      status: _ApprovalStatus.awaiting,
-      note: 'Final executive authorization',
-      timestamp: null,
-    ),
-  ];
+  @override
+  ConsumerState<ProcurementApprovalMatrixScreen> createState() =>
+      _ProcurementApprovalMatrixScreenState();
+}
+
+class _ProcurementApprovalMatrixScreenState
+    extends ConsumerState<ProcurementApprovalMatrixScreen> {
+  List<_ApprovalStep> _chain = const [];
+  String _title = 'Approval matrix';
+  String _heroTitle = 'Loading live requisition…';
+  String _heroMeta = '';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  Future<void> _load() async {
+    try {
+      final res = await ref.read(apiClientProvider).dio.get<Map<String, dynamic>>(
+        '/procurement/requests',
+        queryParameters: {'per_page': 5},
+      );
+      final list = extractListData(res.data);
+      if (!mounted) return;
+      if (list.isEmpty) {
+        setState(() {
+          _title = 'No open requisitions';
+          _heroTitle = 'No live procurement requests';
+          _heroMeta = 'The approval matrix loads from /procurement/requests.';
+          _chain = const [];
+        });
+        return;
+      }
+      final first = list.first;
+      final requester = first['requester'];
+      final requesterName = requester is Map ? (requester['name']?.toString() ?? 'Staff') : 'Staff';
+      setState(() {
+        _title = (first['reference_number'] ?? first['id'] ?? 'Requisition').toString();
+        _heroTitle = (first['title'] ?? 'Procurement request').toString();
+        _heroMeta = 'Status: ${first['status'] ?? '—'}';
+        _chain = [
+          _ApprovalStep(
+            role: 'Requester',
+            name: requesterName,
+            status: _ApprovalStatus.approved,
+            note: 'Submitted request',
+            timestamp: first['created_at']?.toString(),
+          ),
+          _ApprovalStep(
+            role: 'Current status',
+            name: (first['status'] ?? 'pending').toString(),
+            status: _ApprovalStatus.awaiting,
+            note: 'Loaded from live API — not a demo name list',
+            timestamp: null,
+          ),
+        ];
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _heroTitle = 'Unable to load requisitions';
+        _heroMeta = 'Check connectivity and try again.';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,9 +112,9 @@ class ProcurementApprovalMatrixScreen extends StatelessWidget {
               color: AppColors.textPrimary, size: 18),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text(
-          'Requisition #2491',
-          style: TextStyle(
+        title: Text(
+          _title,
+          style: const TextStyle(
             color: AppColors.textPrimary,
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -90,7 +137,7 @@ class ProcurementApprovalMatrixScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
         children: [
           // ── Hero Card ─────────────────────────────────────────────────
-          _HeroCard(),
+          _HeroCard(title: _heroTitle, meta: _heroMeta),
           const SizedBox(height: 20),
 
           // ── Sequential Approval Chain ─────────────────────────────────
@@ -278,6 +325,9 @@ class ProcurementApprovalMatrixScreen extends StatelessWidget {
 //  HERO CARD
 // ─────────────────────────────────────────────────────────────────────────────
 class _HeroCard extends StatelessWidget {
+  const _HeroCard({required this.title, required this.meta});
+  final String title;
+  final String meta;
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -317,15 +367,23 @@ class _HeroCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Laptop Refresh – Finance Dept',
-            style: TextStyle(
+          Text(
+            title,
+            style: const TextStyle(
               color: AppColors.textPrimary,
               fontSize: 17,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 6),
+          Text(
+            meta.isEmpty ? 'Live requisition from the API' : meta,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 8),
           const Text(
             'TOTAL AMOUNT',
             style: TextStyle(

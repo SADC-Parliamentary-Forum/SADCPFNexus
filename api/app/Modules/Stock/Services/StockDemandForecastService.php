@@ -8,7 +8,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 /**
- * Simple usage-based reorder suggestions (not ML / event packs).
+ * Usage-based reorder suggestions with exponential smoothing.
+ * Optional HTTP ML overlay when STOCK_FORECAST_HTTP_URL is set. Never claims live ML otherwise.
  */
 class StockDemandForecastService
 {
@@ -79,5 +80,15 @@ class StockDemandForecastService
         });
 
         return $rows;
+    }
+
+    public function methodLabel(): string
+    {
+        $provider = strtolower((string) config('stock.forecast_provider', 'exponential_smoothing'));
+        if ($provider === 'http' && filled(config('stock.forecast_http_url'))) {
+            return 'http_ml';
+        }
+
+        return 'exponential_smoothing';
     }
 }

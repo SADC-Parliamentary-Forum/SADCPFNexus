@@ -31,6 +31,10 @@ export default function BudgetControlPage() {
   const [error, setError] = useState("");
   const [q, setQ] = useState("");
   const [availabilityById, setAvailabilityById] = useState<Record<number, BudgetAvailability>>({});
+  const [journalLineId, setJournalLineId] = useState("");
+  const [journalAmount, setJournalAmount] = useState("");
+  const [journalMemo, setJournalMemo] = useState("");
+  const [journalMsg, setJournalMsg] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -124,6 +128,37 @@ export default function BudgetControlPage() {
           </div>
         ))}
       </div>
+
+      <form
+        className="card space-y-3 p-5 text-sm"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setJournalMsg("");
+          try {
+            const amount = Number(journalAmount);
+            await budgetApi.postJournal({
+              budget_line_id: Number(journalLineId),
+              memo: journalMemo,
+              source_module: "manual",
+              debit: amount,
+              credit: amount,
+            });
+            setJournalMsg("Journal posted against the budget line GL code. This does not own bank accounts.");
+          } catch {
+            setJournalMsg("Unable to post journal. Finance write access and a balanced amount are required.");
+          }
+        }}
+      >
+        <h2 className="text-lg font-semibold text-neutral-800">GL journal (budget line)</h2>
+        <p className="text-neutral-600">Double-entry posting keyed by the line GL account code. Not bank ownership.</p>
+        <div className="flex flex-wrap gap-3">
+          <input className="form-input w-40" placeholder="Budget line ID" value={journalLineId} onChange={(e) => setJournalLineId(e.target.value)} />
+          <input className="form-input w-40" placeholder="Amount" value={journalAmount} onChange={(e) => setJournalAmount(e.target.value)} />
+          <input className="form-input min-w-[12rem] flex-1" placeholder="Memo" value={journalMemo} onChange={(e) => setJournalMemo(e.target.value)} />
+          <button type="submit" className="btn-primary">Post journal</button>
+        </div>
+        {journalMsg ? <p className="text-xs text-neutral-600">{journalMsg}</p> : null}
+      </form>
 
       <div className="card overflow-hidden">
         <div className="card-header flex flex-wrap items-center justify-between gap-3">

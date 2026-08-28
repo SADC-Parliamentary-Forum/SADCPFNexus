@@ -21,6 +21,7 @@ const PUBLIC_PATHS = [
   "/activate-account",
   "/supplier/register",
   "/tender-notices",
+  "/parliament-connect",
 ];
 
 /** Unauthenticated token-reset links must reach the form (email deep links). */

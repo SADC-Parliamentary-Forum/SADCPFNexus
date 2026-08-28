@@ -69,6 +69,21 @@ class AuditManagementController extends Controller
         return response()->json(['data' => $this->plans->settings($request->user())]);
     }
 
+    public function updateSettings(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user->isSystemAdmin() && ! $user->can('audit.admin') && ! $user->can('audit.manage')) {
+            abort(403);
+        }
+        $data = $request->validate([
+            'plan_approval_mode' => ['nullable', 'string', 'in:sg,governance,configurable'],
+            'charter_configured' => ['nullable', 'boolean'],
+            'charter_notes' => ['nullable', 'string', 'max:8000'],
+        ]);
+
+        return response()->json(['data' => $this->plans->updateSettings($user, $data)]);
+    }
+
     public function events(Request $request): JsonResponse
     {
         $rows = AuditModuleEvent::query()

@@ -3,6 +3,7 @@
 namespace App\Modules\Admin\Services;
 
 use App\Models\CorrespondenceMailboxSetting;
+use App\Modules\Admin\Services\MobileStoreSubmitClient;
 
 /**
  * Aggregated operator credential / integration status.
@@ -350,16 +351,16 @@ final class OperatorCredentialStatusService
     /** @return array<string, mixed> */
     private function playStore(): array
     {
-        $configured = filled(env('PLAY_STORE_SERVICE_ACCOUNT_JSON'))
-            || filled(env('GOOGLE_PLAY_SERVICE_ACCOUNT_JSON'));
+        $play = app(MobileStoreSubmitClient::class)->playStatus();
+        $configured = $play['configured'];
 
         return [
             'key' => 'play_store',
             'label' => 'Google Play Console',
             'configured' => $configured,
-            'driver' => $configured ? 'service_account' : null,
+            'driver' => $play['driver'] ?? ($configured ? 'service_account' : null),
             'secret_source' => 'env',
-            'guidance' => 'Set PLAY_STORE_SERVICE_ACCOUNT_JSON (path) via server env for release tooling. Secrets never appear in Admin UI.',
+            'guidance' => 'Set PLAY_STORE_HTTP_URL or PLAY_STORE_SERVICE_ACCOUNT_JSON via server env. Secrets never appear in Admin UI. Artisan: php artisan mobile:submit-store play',
             'details' => [],
         ];
     }
@@ -367,17 +368,16 @@ final class OperatorCredentialStatusService
     /** @return array<string, mixed> */
     private function appStoreConnect(): array
     {
-        $configured = filled(env('ASC_KEY_ID'))
-            && filled(env('ASC_ISSUER_ID'))
-            && (filled(env('ASC_PRIVATE_KEY_PATH')) || filled(env('ASC_PRIVATE_KEY')));
+        $asc = app(MobileStoreSubmitClient::class)->appStoreStatus();
+        $configured = $asc['configured'];
 
         return [
             'key' => 'app_store_connect',
             'label' => 'App Store Connect (ASC)',
             'configured' => $configured,
-            'driver' => $configured ? 'asc_api' : null,
+            'driver' => $asc['driver'] ?? ($configured ? 'asc_api' : null),
             'secret_source' => 'env',
-            'guidance' => 'Set ASC_KEY_ID, ASC_ISSUER_ID, and ASC_PRIVATE_KEY_PATH (or ASC_PRIVATE_KEY) via server env. Never commit keys.',
+            'guidance' => 'Set ASC_HTTP_URL or ASC_KEY_ID / ASC_ISSUER_ID / ASC_PRIVATE_KEY_PATH via server env. Never commit keys. Artisan: php artisan mobile:submit-store appstore',
             'details' => [],
         ];
     }

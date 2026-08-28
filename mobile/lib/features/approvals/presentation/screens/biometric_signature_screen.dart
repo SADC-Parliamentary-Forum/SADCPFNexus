@@ -1,16 +1,18 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/auth/device_attestation.dart';
 import '../../../../core/theme/app_theme.dart';
 
-class BiometricSignatureScreen extends StatefulWidget {
+class BiometricSignatureScreen extends ConsumerStatefulWidget {
   const BiometricSignatureScreen({super.key});
 
   @override
-  State<BiometricSignatureScreen> createState() =>
+  ConsumerState<BiometricSignatureScreen> createState() =>
       _BiometricSignatureScreenState();
 }
 
-class _BiometricSignatureScreenState extends State<BiometricSignatureScreen>
+class _BiometricSignatureScreenState extends ConsumerState<BiometricSignatureScreen>
     with TickerProviderStateMixin {
   late AnimationController _rotateController;
   late AnimationController _pulseController;
@@ -415,7 +417,13 @@ class _BiometricSignatureScreenState extends State<BiometricSignatureScreen>
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  attestDeviceBiometric(
+                    context,
+                    ref,
+                    reason: 'Authenticate to confirm this signature',
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: AppColors.bgDark,

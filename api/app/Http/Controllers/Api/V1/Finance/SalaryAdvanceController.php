@@ -137,7 +137,7 @@ class SalaryAdvanceController extends Controller
             'salary_basis'                   => ['nullable', 'string', 'in:net_confirmed,gross,basic'],
             'max_concurrent_advances'        => ['nullable', 'integer', 'min:1', 'max:1'],
             'full_repayment_required'        => ['nullable', 'boolean'],
-            'recovery_rule'                  => ['nullable', 'string', 'in:full_eom'],
+            'recovery_rule'                  => ['nullable', 'string', 'in:full_eom,monthly_instalments'],
             'final_approver_role'            => ['nullable', 'string', 'max:64'],
             'finance_certification_required' => ['nullable', 'boolean'],
             'admin_review_required'          => ['nullable', 'boolean'],
@@ -152,8 +152,10 @@ class SalaryAdvanceController extends Controller
             // Accept storage of future basis values only when explicitly admin — still lock runtime to net in Phase 2
             $data['salary_basis'] = 'net_confirmed';
         }
-        $data['recovery_rule'] = 'full_eom';
-        $data['full_repayment_required'] = true;
+        $data['recovery_rule'] = in_array($data['recovery_rule'] ?? 'full_eom', ['full_eom', 'monthly_instalments'], true)
+            ? ($data['recovery_rule'] ?? 'full_eom')
+            : 'full_eom';
+        $data['full_repayment_required'] = ($data['recovery_rule'] === 'full_eom');
 
         $policy = $this->salaryAdvanceService->createPolicyVersion($request->user(), $data);
 

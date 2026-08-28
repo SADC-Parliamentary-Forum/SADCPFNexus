@@ -1598,6 +1598,7 @@ const OVERCROWDED_SIDEBARS: {
       "/stock/units",
       "/stock/categories",
       "/stock/phase2/forecasting",
+      "/stock/unified-register",
     ],
   },
   {

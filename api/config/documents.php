@@ -29,6 +29,15 @@ return [
 
     'ocr_driver' => env('DOCUMENT_OCR_DRIVER', 'null'),
 
+    'http_ocr' => [
+        'url' => env('DOCUMENT_OCR_HTTP_URL'),
+        'token' => env('DOCUMENT_OCR_HTTP_TOKEN'),
+        'timeout' => (int) env('DOCUMENT_OCR_HTTP_TIMEOUT', 30),
+    ],
+
+    'sharepoint_http_url' => env('DOCUMENT_SHAREPOINT_HTTP_URL'),
+    'sharepoint_http_token' => env('DOCUMENT_SHAREPOINT_HTTP_TOKEN'),
+
     /*
     | Backup / recovery hooks — ops configures schedules; app exposes status only.
     */

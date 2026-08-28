@@ -185,6 +185,22 @@ class TenderController extends Controller
         ]);
     }
 
+    public function recommendAward(Request $request, Tender $tender): JsonResponse
+    {
+        $this->gate($request);
+        $data = $request->validate([
+            'quote_id' => ['required', 'integer'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $tender = $this->tenderService->recommendAward($tender, $data, $request->user());
+
+        return response()->json([
+            'message' => 'Award recommendation recorded. A different user must complete the award. This endpoint never awards.',
+            'data' => $tender,
+        ]);
+    }
+
     public function award(Request $request, Tender $tender): JsonResponse
     {
         $this->gate($request);

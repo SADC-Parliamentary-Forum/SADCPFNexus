@@ -1,7 +1,7 @@
 # SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-08-24  
-**Baseline tip:** `feat/remaining-module-depth` (from `df32c9d` on `main`).
+**Last updated:** 2026-08-28  
+**Baseline tip:** remaining-gaps closeout on `cursor/implement-remaining-gaps-3ed7`.
 
 ---
 
@@ -49,15 +49,44 @@ Sentry: env-gated hooks exist (`App\Support\Observability`, `web/lib/observabili
 
 ---
 
-## Explicit OOS
+## Explicit OOS (will not be built in this product)
 
-- Full **mobile parity** for many modules
-- FA ↔ Stock merge
-- Bank GL ownership / FA accounting GL posting
-- Auto-award / invented OT rates / paid GDS marketplace
-- All-employee email ingest / AI auto-submit
-- Full ML stock forecasting
+- Full **mobile parity** for Admin / M&E / People / SAAM / HR settings / SRHR / Supplier / Workplan / Lifecycle / Decisions / My Work / Organogram / Alerts
+- Merged FA ↔ stock **accounting ledger** (unified register exists; it is not a single GL)
+- Bank account ownership / FA depreciation GL posting into a bank
+- Silent procurement auto-award / invented OT rates / paid GDS checkout marketplace
+- All-employee mailbox ingest / AI auto-submit of workflows
+- Full ML stock forecasting without an operator HTTP model
 - Fabricating hours / surveillance rankings
+- Collapsing 135 deferred UX IA tickets
+
+## Shipped in remaining-gaps closeout (2026-08-28)
+
+These were previously “not coded” or stub-only. They are now product surfaces; live vendors still need operator env + governance.
+
+| Item | What shipped | Still operator-owned |
+|------|----------------|----------------------|
+| WORM | `LocalWormArchive` hash chain; governance meta reflects `AUDIT_WORM_DRIVER` | External WORM vendor |
+| SharePoint / OneDrive | HTTP connector status `ready` when URL set | Live Graph credentials |
+| HTTP OCR | `documents:process-ocr-jobs` + `HttpOcrDriver` | `DOCUMENT_OCR_HTTP_*` |
+| Play / ASC | `mobile:submit-store` + HTTP client; fails closed | Store API secrets |
+| Budget GL journals | Double-entry `gl_journals` keyed by `gl_account_code` | Bank reconciliation |
+| FA ↔ stock register | Split GRN + `GET /inventory/unified-register` | Not a merged ledger |
+| Stock forecast | Exponential smoothing; `method` label; optional HTTP ML | Live ML URL |
+| Biometric attendance | `POST /hr/timesheets/attendance/clock` after `local_auth` | Device-vendor ingest |
+| Award recommend | SoD: recommender cannot award | Human award |
+| Newspaper LLM | HTTP draft into suggestion; human checklist | `PROCUREMENT_NOTICE_LLM_*` |
+| GDS | HTTP offer search; no checkout | Paid marketplace |
+| Mailbox allowlist | Extra IMAP addresses; suggestions only | All-employee ingest (OOS) |
+| Parliament Connect | Public `/parliament-connect` + `GET /parliament-connect/feed` | Publishing is Admin |
+| Salary instalments | Policy `monthly_instalments` (2–24 months) | Payroll vendor auto |
+| Sentry | HTTP envelope fallback when DSN set and SDK absent | DSN (never commit) |
+| iOS templates | Example plist / ExportOptions / xcconfig | Real team / Firebase |
+| Access governance | PUT status/notes | Institutional answers |
+| Privileged syncRoles | Dual-control pending request | Second admin |
+| SAAM → PA | Create mirrors `IdentityDelegation` | Legacy SAAM API kept |
+| Audit charter | PUT `charter_configured` | Operator sign-off pack |
+| Dashboard badges | Correspondence + risk scoped | Other badges residual |
 
 ---
 
@@ -75,9 +104,8 @@ Shipped in `feat/remaining-product-depth` (over existing APIs):
 
 Still later-phase (secrets / vendor / OOS):
 
-- Newspaper notices live LLM (CR-8) and auto-award remain out of this pack
-- Stock ML forecasting, live courier HTTP, biometric attendance
-- Salary-advance instalments remain v1-locked to `full_eom`
+- Newspaper notices **auto-award** remains out of this pack (LLM draft is HTTP when configured; human checklist required)
+- Full ML stock forecasting without `STOCK_FORECAST_HTTP_URL`
 - 135 deferred UX IA tickets (dual surfaces, calendars, settings IA)
 
 Shipped this continuation (module depth over existing APIs):
@@ -117,7 +145,7 @@ Shipped on this branch (People labelled forms + watermark + remaining inventable
 - Signature enrol/activate (staff specimen remains `/saam`)
 - Skills assign to person
 - Directory create/update person (PR-13)
-- PDF/image visual watermark via `DocumentWatermarkPainter` (uncompressed PDF text operator + GD raster; compressed PDFs may still need FPDI later)
+- PDF/image visual watermark via `DocumentWatermarkPainter` (inflates `/Filter /FlateDecode`, stamps, recompresses — FPDI not required)
 - Mobile weekly-summary donor/template fields (PR-15)
 - Mobile cashflow period chart (PR-16)
 - Mobile assignment dependencies + recurring templates (PR-17)
@@ -128,10 +156,10 @@ Shipped on this branch (People labelled forms + watermark + remaining inventable
 
 Shipped in `feat/remaining-module-depth` (secret-free module depth over existing APIs):
 
-- MD-1 Procurement newspaper-notice **templates and human checklists** (never auto-award; live LLM remains CR-8). Filled notice copy/print + template picker.
+- MD-1 Procurement newspaper-notice **templates and human checklists** (never auto-award). Optional HTTP LLM draft when `PROCUREMENT_NOTICE_LLM_URL` is set. Filled notice copy/print + template picker.
 - MD-5 Stock **event packs** (instantiate drafts a stock request only) plus **bulk barcode lookup**, **multi-line editor**, **barcode-add**, and **duplicate** (still never issues).
 - MD-6 Correspondence **registry/filing pack** (labelled checklist + subject files; courier URL stays stub — not live carrier proof)
-- MD-8 Timesheet **capacity analytics** from recorded vs expected hours with week picker and CSV (no invented OT rates, no biometric)
+- MD-8 Timesheet **capacity analytics** from recorded vs expected hours with week picker and CSV (no invented OT rates). Biometric flag is true only when device-attested clock events exist.
 - MD-9 Weekly summary **management-pack** Word export with assignment feed + emerging-risk counts (not auto-sent)
 - MD-10 Assignment **handover pack** (Word download, logged hours, NL apply-hrefs), **workload forecast** weeks selector, **NL filter suggest**, and **timesheet hour coupling** (no surveillance rankings)
 - MD-11 Internal Audit **investigation pack** suggestion kind with engagement id / next questions (never auto-closes)

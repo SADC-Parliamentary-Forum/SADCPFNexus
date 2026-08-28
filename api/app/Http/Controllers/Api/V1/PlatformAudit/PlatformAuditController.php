@@ -442,9 +442,13 @@ class PlatformAuditController extends Controller
                     'evidence_packages' => 'Shipped (product MVP)',
                 ],
                 'phase2_pending' => [
-                    'siem' => 'Governance Configuration Pending',
-                    'worm_archive' => 'Governance Configuration Pending',
-                    'anomaly_ai' => 'Governance Configuration Pending',
+                    'siem' => app(\App\Modules\PlatformAudit\Services\HttpSiemSink::class)->isEnabled()
+                        ? 'HTTP SIEM sink configured'
+                        : 'Governance Configuration Pending',
+                    'worm_archive' => app(\App\Modules\PlatformAudit\Services\LocalWormArchive::class)->status(),
+                    'anomaly_ai' => (string) config('audit.ai_provider', 'stub') === 'http'
+                        ? 'HTTP anomaly assist configured (human confirm)'
+                        : 'Governance Configuration Pending',
                 ],
                 // Backward-compatible alias for Phase 1 clients/tests
                 'phase2_stubs' => [

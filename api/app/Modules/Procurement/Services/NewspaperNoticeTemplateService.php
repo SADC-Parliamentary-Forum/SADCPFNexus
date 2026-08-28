@@ -17,7 +17,7 @@ class NewspaperNoticeTemplateService
         return [
             'auto_award' => false,
             'requires_human_publication' => true,
-            'llm_live' => false,
+            'llm_live' => filled(config('procurement.notice_llm_url')),
             'templates' => [
                 [
                     'key' => 'open_tender',
@@ -61,9 +61,59 @@ class NewspaperNoticeTemplateService
             'title' => $tender->title,
             'template_key' => $template['key'],
             'filled_notice' => $filled,
+            'llm_suggestion' => $tender->newspaper_checklist['llm_suggestion'] ?? null,
+            'llm_live' => filled(config('procurement.notice_llm_url')),
             'auto_award' => false,
             'checklist' => $this->checklist($tender, $ticks),
         ];
+    }
+
+    /**
+     * Optional HTTP LLM draft into llm_suggestion. Never awards. Human ticks remain required.
+     */
+    public function draftWithLlm(Tender $tender, User $user, ?string $templateKey = null): array
+    {
+        $pack = $this->packFor($tender, $user, $templateKey);
+        $url = trim((string) config('procurement.notice_llm_url', ''));
+        if ($url === '') {
+            $pack['llm_live'] = false;
+            $pack['llm_error'] = 'PROCUREMENT_NOTICE_LLM_URL is not configured.';
+
+            return $pack;
+        }
+
+        try {
+            $req = \Illuminate\Support\Facades\Http::timeout(20)->acceptJson();
+            $token = (string) config('procurement.notice_llm_token', '');
+            if ($token !== '') {
+                $req = $req->withToken($token);
+            }
+            $response = $req->post($url, [
+                'template_key' => $pack['template_key'],
+                'filled_notice' => $pack['filled_notice'],
+                'title' => $tender->title,
+                'reference' => $tender->reference_number,
+            ]);
+            $suggestion = (string) ($response->json('text') ?? $response->json('suggestion') ?? '');
+            if ($response->successful() && $suggestion !== '') {
+                $checklist = (array) ($tender->newspaper_checklist ?? []);
+                $checklist['llm_suggestion'] = $suggestion;
+                $checklist['llm_drafted_at'] = now()->toIso8601String();
+                $checklist['llm_drafted_by'] = $user->id;
+                $tender->newspaper_checklist = $checklist;
+                $tender->save();
+                $pack['llm_suggestion'] = $suggestion;
+                $pack['llm_live'] = true;
+            } else {
+                $pack['llm_error'] = 'LLM draft unavailable (HTTP '.$response->status().').';
+            }
+        } catch (\Throwable $e) {
+            $pack['llm_error'] = $e->getMessage();
+        }
+
+        $pack['auto_award'] = false;
+
+        return $pack;
     }
 
     public function saveTicks(Tender $tender, User $user, array $data): array

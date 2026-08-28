@@ -20,4 +20,9 @@ class NullGdsProvider implements GdsProviderInterface
     {
         return null;
     }
+
+    public function searchOffers(array $criteria = []): array
+    {
+        return [];
+    }
 }

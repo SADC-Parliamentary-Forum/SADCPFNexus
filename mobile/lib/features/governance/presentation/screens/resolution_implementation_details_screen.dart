@@ -61,79 +61,46 @@ class ResolutionImplementationDetailsScreen extends StatelessWidget {
             Text(description.toString(), style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
           ],
           const SizedBox(height: 20),
-          // Progress
           _card(children: [
             _secHeader('Implementation Progress'),
             Padding(padding: const EdgeInsets.fromLTRB(14, 8, 14, 16), child: Column(children: [
-              const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Overall Completion', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                Text('85%', style: TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w800)),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Text('Overall Completion', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(
+                  resolution?['implementation_progress']?.toString() ?? 'Not recorded',
+                  style: const TextStyle(color: AppColors.primary, fontSize: 16, fontWeight: FontWeight.w800),
+                ),
               ]),
-              const SizedBox(height: 8),
-              ClipRRect(borderRadius: BorderRadius.circular(6),
-                child: const LinearProgressIndicator(value: 0.85, minHeight: 8,
-                  backgroundColor: Color(0xFF1A2C24), valueColor: AlwaysStoppedAnimation(AppColors.primary))),
               const SizedBox(height: 12),
-              const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Due Date', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                Text('30 Jun 2026', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Text('Due Date', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                Text(resolution?['due_date']?.toString() ?? '—', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
               ]),
               const SizedBox(height: 4),
-              const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Responsible Dept', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
-                Text('Finance Department', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Text('Responsible Dept', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                Text(resolution?['committee']?.toString() ?? resolution?['lead_role']?.toString() ?? '—', style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
               ]),
             ])),
           ]),
           const SizedBox(height: 12),
-          // Voting record
           _card(children: [
             _secHeader('Voting Record'),
             Padding(padding: const EdgeInsets.fromLTRB(14, 8, 14, 14), child: Column(children: [
-              _voteRow('For', '38', AppColors.success),
-              _voteRow('Against', '2', AppColors.danger),
-              _voteRow('Abstain', '0', AppColors.textMuted),
-              const Divider(color: AppColors.border, height: 20),
-              const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Text('Quorum', style: TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                Row(children: [
-                  Icon(Icons.verified, color: AppColors.success, size: 14),
-                  SizedBox(width: 4),
-                  Text('Met (40/40)', style: TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w600)),
-                ]),
-              ]),
+              _voteRow('For', (resolution?['votes_for'] ?? '—').toString(), AppColors.success),
+              _voteRow('Against', (resolution?['votes_against'] ?? '—').toString(), AppColors.danger),
+              _voteRow('Abstain', (resolution?['votes_abstain'] ?? '—').toString(), AppColors.textMuted),
             ])),
           ]),
           const SizedBox(height: 12),
-          // Milestones
-          _card(children: [
-            _secHeader('Milestones'),
-            ...[
-              {'task': 'Legal framework drafted', 'done': true},
-              {'task': 'Stakeholder consultations', 'done': true},
-              {'task': 'Budget allocation approved', 'done': true},
-              {'task': 'Fund trustee appointed', 'done': false},
-              {'task': 'First disbursement cycle', 'done': false},
-            ].map((t) => Padding(
-              padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
-              child: Row(children: [
-                Icon(t['done'] as bool ? Icons.check_circle : Icons.radio_button_unchecked,
-                  color: t['done'] as bool ? AppColors.success : AppColors.border, size: 18),
-                const SizedBox(width: 10),
-                Text(t['task'] as String, style: TextStyle(
-                  color: t['done'] as bool ? AppColors.textSecondary : AppColors.textPrimary, fontSize: 13)),
-              ]),
-            )),
-            const SizedBox(height: 8),
-          ]),
-          const SizedBox(height: 12),
-          // Full text
           _card(children: [
             _secHeader('Resolution Text'),
-            const Padding(padding: EdgeInsets.fromLTRB(14, 8, 14, 14),
+            Padding(padding: const EdgeInsets.fromLTRB(14, 8, 14, 14),
               child: Text(
-                'RECOGNIZING the urgent need for climate resilience financing across SADC member states;\n\nNOTING the vulnerability of the region to climate change impacts;\n\nHAVING CONSIDERED the proposals from the Finance and Environment Committees;\n\nRESOLVES to establish the SADC-PF Climate Resilience Fund with an initial capitalization of USD 50 million...',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.6),
+                (description != null && description.toString().isNotEmpty)
+                    ? description.toString()
+                    : 'Full resolution text is not stored on this record.',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12, height: 1.6),
               )),
           ]),
           const SizedBox(height: 20),

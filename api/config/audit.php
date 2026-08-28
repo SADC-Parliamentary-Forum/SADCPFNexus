@@ -40,6 +40,10 @@ return [
     'siem_http_url' => env('AUDIT_SIEM_HTTP_URL'),
     'siem_http_token' => env('AUDIT_SIEM_HTTP_TOKEN'),
 
+    'worm_driver' => env('AUDIT_WORM_DRIVER', 'null'),
+    'worm_http_url' => env('AUDIT_WORM_HTTP_URL'),
+    'worm_http_token' => env('AUDIT_WORM_HTTP_TOKEN'),
+
     'allowed_suggestion_kinds' => [
         'workpaper_summary',
         'duplicate_findings',
@@ -48,6 +52,7 @@ return [
         'evidence_index',
         'nl_search',
         'investigation_pack',
+        'anomaly_detection',
     ],
 
     'allowed_apply_actions' => [

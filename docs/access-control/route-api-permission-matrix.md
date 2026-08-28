@@ -38,6 +38,7 @@
 | GET | `/api/v1/admin/access/explore` | `admin.access.explore` |
 | GET/POST | `/api/v1/admin/access/reviews` | `admin.access.reviews.manage` |
 | GET | `/api/v1/admin/access/governance` | `admin.security.manage` |
+| PUT | `/api/v1/admin/access/governance/{decision}` | `admin.security.manage` |
 
 ## Module coverage in registry
 

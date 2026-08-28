@@ -167,6 +167,28 @@ class AuditPlanService
         );
     }
 
+    public function updateSettings(User $user, array $data): AuditSetting
+    {
+        $row = $this->settings($user);
+        $row->update([
+            'plan_approval_mode' => $data['plan_approval_mode'] ?? $row->plan_approval_mode,
+            'charter_configured' => (bool) ($data['charter_configured'] ?? $row->charter_configured),
+            'charter_notes' => $data['charter_notes'] ?? $row->charter_notes,
+        ]);
+
+        \App\Models\AuditLog::record('audit.charter.updated', [
+            'auditable_type' => AuditSetting::class,
+            'auditable_id' => $row->id,
+            'new_values' => [
+                'charter_configured' => $row->charter_configured,
+                'plan_approval_mode' => $row->plan_approval_mode,
+            ],
+            'tags' => 'audit,governance',
+        ]);
+
+        return $row->fresh();
+    }
+
     private function snapshot(AuditPlan $plan, User $user, string $summary): void
     {
         $existing = AuditPlanVersion::query()

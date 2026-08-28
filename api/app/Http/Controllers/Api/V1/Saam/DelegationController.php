@@ -103,6 +103,8 @@ class DelegationController extends Controller
             $delegation->update(['activated_notified_at' => now()]);
         }
 
+        app(\App\Modules\PeopleAuthority\Services\DelegationCollapseService::class)->mirror($delegation->fresh());
+
         return response()->json([
             'message' => 'Delegation created.',
             'data'    => $delegation->load(['delegate:id,name,email,job_title', 'principal:id,name']),

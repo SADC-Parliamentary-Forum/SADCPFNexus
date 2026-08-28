@@ -7,6 +7,7 @@ use App\Models\AuditLog;
 use App\Models\GoodsReceiptNote;
 use App\Models\PurchaseOrder;
 use App\Models\User;
+use App\Modules\Inventory\Services\UnifiedInventoryRegisterService;
 use App\Modules\Stock\Services\StockService;
 use App\Services\NotificationService;
 use Illuminate\Support\Str;
@@ -17,6 +18,7 @@ class GoodsReceiptService
     public function __construct(
         protected NotificationService $notificationService,
         protected StockService $stockService,
+        protected UnifiedInventoryRegisterService $inventoryRegister,
     ) {}
 
     public function record(PurchaseOrder $po, array $data, User $user): GoodsReceiptNote
@@ -128,11 +130,42 @@ class GoodsReceiptService
             $normalized = match ($type) {
                 'capital', 'controlled', 'fixed_asset' => 'fixed_asset',
                 'consumable', 'stock' => 'stock',
+                'split' => 'split',
                 'direct_expense', 'skip' => 'skip',
                 default => null,
             };
 
             if ($normalized === 'skip') {
+                continue;
+            }
+
+            if ($normalized === 'split') {
+                $asset = Asset::create([
+                    'tenant_id'              => $grn->tenant_id,
+                    'asset_code'             => 'AST-' . strtoupper(Str::random(8)),
+                    'name'                   => $line['name'],
+                    'category'               => $line['category'] ?? 'equipment',
+                    'status'                 => 'pending',
+                    'purchase_order_id'      => $grn->purchase_order_id,
+                    'procurement_request_id' => $procurementRequestId,
+                    'goods_receipt_note_id'  => $grn->id,
+                    'purchase_value'         => isset($line['unit_cost']) ? (float) $line['unit_cost'] : null,
+                    'currency'               => $po?->currency,
+                    'notes'                  => $line['notes'] ?? null,
+                ]);
+                $stockLine = $line;
+                if (! isset($stockLine['quantity']) || (int) $stockLine['quantity'] < 1) {
+                    $stockLine['quantity'] = 1;
+                }
+                $stock = $this->stockService->receiveFromGrn($grn, $stockLine, $user, $procurementRequestId);
+                $this->inventoryRegister->linkSplit(
+                    (int) $grn->tenant_id,
+                    $grn->id,
+                    $grnItem->id,
+                    $asset,
+                    $stock,
+                    (string) ($line['name'] ?? 'Split GRN handoff'),
+                );
                 continue;
             }
 
@@ -175,12 +208,30 @@ class GoodsReceiptService
                         'notes'                  => $line['notes'] ?? null,
                     ]);
                 }
+                $this->inventoryRegister->linkSplit(
+                    (int) $grn->tenant_id,
+                    $grn->id,
+                    $grnItem->id,
+                    Asset::query()->where('goods_receipt_note_id', $grn->id)->latest('id')->first(),
+                    null,
+                    (string) ($line['name'] ?? 'Fixed asset handoff'),
+                    'grn_asset',
+                );
             } elseif ($normalized === 'stock') {
                 // Consumables only — never create FA records for consumable/stock.
-                $this->stockService->receiveFromGrn($grn, $line, $user, $procurementRequestId);
+                $stock = $this->stockService->receiveFromGrn($grn, $line, $user, $procurementRequestId);
+                $this->inventoryRegister->linkSplit(
+                    (int) $grn->tenant_id,
+                    $grn->id,
+                    $grnItem->id,
+                    null,
+                    $stock,
+                    (string) ($line['name'] ?? 'Stock handoff'),
+                    'grn_stock',
+                );
             } else {
                 throw ValidationException::withMessages([
-                    'handoff' => 'Each handoff line must specify type capital, controlled, consumable, direct_expense (or legacy fixed_asset/stock/skip).',
+                    'handoff' => 'Each handoff line must specify type capital, controlled, consumable, split, direct_expense (or legacy fixed_asset/stock/skip).',
                 ]);
             }
         }

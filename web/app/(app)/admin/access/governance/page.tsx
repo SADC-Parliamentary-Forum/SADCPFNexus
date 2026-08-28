@@ -11,21 +11,54 @@ export default function GovernanceChecklistPage() {
   const [rows, setRows] = useState<Decision[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<number | null>(null);
+  const [drafts, setDrafts] = useState<Record<number, { status: string; decision_notes: string }>>({});
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
     api
       .get<{ data: Decision[] }>("/admin/access/governance")
       .then((r) => r.data)
-      .then((r) => setRows(r.data ?? []))
+      .then((r) => {
+        const list = r.data ?? [];
+        setRows(list);
+        const next: Record<number, { status: string; decision_notes: string }> = {};
+        for (const row of list) {
+          next[row.id] = { status: row.status, decision_notes: row.decision_notes ?? "" };
+        }
+        setDrafts(next);
+      })
       .catch(() => setError("Failed to load governance checklist."))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
+
+  const save = async (id: number) => {
+    const draft = drafts[id];
+    if (!draft) return;
+    setSavingId(id);
+    setError(null);
+    try {
+      await api.put(`/admin/access/governance/${id}`, {
+        status: draft.status,
+        decision_notes: draft.decision_notes,
+      });
+      load();
+    } catch {
+      setError("Unable to save this governance decision.");
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <ModulePageHeader
         title="Governance checklist"
-        subtitle="Institutional decisions (MFA policy, review cadence, break-glass) — pending until owners decide."
+        subtitle="Institutional decisions (MFA policy, review cadence, break-glass). Status and notes are recorded here; live secrets stay in operator env."
         breadcrumbs={
           <PageBreadcrumbs
             items={[
@@ -53,15 +86,55 @@ export default function GovernanceChecklistPage() {
         </div>
       ) : (
         <div className="card divide-y divide-neutral-100">
-          {rows.map((r) => (
-            <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-              <div className="min-w-0">
+          {rows.map((r) => {
+            const draft = drafts[r.id] ?? { status: r.status, decision_notes: r.decision_notes ?? "" };
+            return (
+              <div key={r.id} className="space-y-3 px-4 py-4">
                 <p className="text-sm font-medium text-neutral-900">{r.topic}</p>
-                {r.decision_notes ? <p className="mt-0.5 text-xs text-neutral-500">{r.decision_notes}</p> : null}
+                <div className="flex flex-wrap items-end gap-3">
+                  <label className="text-xs text-neutral-600">
+                    Status
+                    <select
+                      className="form-input mt-1 block min-w-[10rem]"
+                      value={draft.status}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [r.id]: { ...draft, status: e.target.value },
+                        }))
+                      }
+                    >
+                      <option value="pending">pending</option>
+                      <option value="decided">decided</option>
+                      <option value="not_applicable">not_applicable</option>
+                    </select>
+                  </label>
+                  <label className="min-w-[16rem] flex-1 text-xs text-neutral-600">
+                    Decision notes
+                    <textarea
+                      className="form-input mt-1 block w-full"
+                      rows={2}
+                      value={draft.decision_notes}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [r.id]: { ...draft, decision_notes: e.target.value },
+                        }))
+                      }
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="btn-primary text-sm"
+                    disabled={savingId === r.id}
+                    onClick={() => save(r.id)}
+                  >
+                    {savingId === r.id ? "Saving…" : "Save"}
+                  </button>
+                </div>
               </div>
-              <span className="badge badge-muted text-xs uppercase tracking-wide">{r.status}</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

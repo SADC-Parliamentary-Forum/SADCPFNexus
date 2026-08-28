@@ -27,4 +27,5 @@ export const STOCK_HUB_CARDS: HubCard[] = [
   { href: "/stock/units", title: "Units", purpose: "Units of measure.", icon: "straighten", section: "tools" },
   { href: "/stock/categories", title: "Categories", purpose: "Stock categories.", icon: "category", section: "tools" },
   { href: "/stock/phase2/forecasting", title: "Forecasting", purpose: "Demand forecast for replenishment.", icon: "trending_up", section: "tools" },
+  { href: "/stock/unified-register", title: "Unified inventory register", purpose: "Linked FA and stock from split GRN handoffs. Not a merged accounting ledger.", icon: "hub", section: "views" },
 ];

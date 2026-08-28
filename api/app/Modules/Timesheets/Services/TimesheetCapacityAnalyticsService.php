@@ -53,7 +53,11 @@ class TimesheetCapacityAnalyticsService
             'week_end' => $end,
             'department_id' => $deptId,
             'invented_ot_rates' => false,
-            'biometric' => false,
+            'biometric' => \App\Models\AttendanceClockEvent::query()
+                ->where('tenant_id', $viewer->tenant_id)
+                ->where('method', 'biometric')
+                ->whereBetween('clocked_at', [$start, $end.' 23:59:59'])
+                ->exists(),
             'csv_columns' => ['name', 'recorded_hours', 'expected_hours', 'utilization_pct'],
             'people' => $rows,
             'summary' => [

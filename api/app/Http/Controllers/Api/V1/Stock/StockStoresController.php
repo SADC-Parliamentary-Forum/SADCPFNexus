@@ -405,7 +405,10 @@ class StockStoresController extends Controller
         return response()->json([
             'success' => true,
             'data' => $this->demandForecast->suggest((int) $request->user()->tenant_id, $lookback),
-            'meta' => ['lookback_days' => $lookback],
+            'meta' => [
+                'lookback_days' => $lookback,
+                'method' => $this->demandForecast->methodLabel(),
+            ],
         ]);
     }
 

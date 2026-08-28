@@ -13,7 +13,6 @@ Verified automated suites (local PHPUnit, RefreshDatabase):
 
 - Full pen-test engagement report
 - 100% field-level matrix perfection for every module
-- Parliament Connect public portal
 - Combining PIF + M&E permission domains
 
 ## Phase 7–8 cutover residuals
@@ -24,12 +23,12 @@ Verified automated suites (local PHPUnit, RefreshDatabase):
 | 2 | Freeze legacy role edits; migrate onto published versions | **Partial** — cutover status API + checklist; migration is operator-driven |
 | 3 | Retire obsolete broad permissions after dual-run | **Partial** — dry-run/execute helper for obsolete broad candidates; aliases remain |
 | 4 | Force privileged session refresh on role change | **Closed** — `AccessCacheInvalidator` kills Sanctum tokens + `user_sessions` |
-| 5 | Wire remaining module list endpoints through `AccessScopeResolver` | **Partial** — Leave + Travel + prior modules; Correspondence/Risk etc. still residual |
-| 6 | Unify Admin `syncRoles` with PA dual-control assignments | Open |
-| 7 | Collapse SAAM `DelegatedAuthority` into PA `IdentityDelegation` | Open |
-| 8 | `canAccessRoute` unknown-route default allow → deny | Open (needs full ROUTE_ACCESS coverage) |
-| 9 | Platform Audit Trail adapter preference | Open (dual-write remains) |
-| 10 | Automated badge/count filtering for hidden records | Open |
+| 5 | Wire remaining module list endpoints through `AccessScopeResolver` | **Closed for listed modules** — Leave, Travel, Correspondence, Risk, Programmes, Procurement list services use `constrainQuery`. Other modules remain residual. |
+| 6 | Unify Admin `syncRoles` with PA dual-control assignments | **Partial** — privileged roles (`System Admin`, SG, Finance Director, Finance Controller, HR Manager) create `access_role_sync_requests` pending a different admin; staff roles still apply immediately via `UsersController::updateRoles`. |
+| 7 | Collapse SAAM `DelegatedAuthority` into PA `IdentityDelegation` | **Partial** — `POST /saam/delegations` mirrors into PA (`legacy_delegated_authority_id`). SAAM API remains as a legacy surface. |
+| 8 | `canAccessRoute` unknown-route default allow → deny | **Closed** — `web/lib/authAccess.ts` `if (!entry) return false`. System Admin still bypasses unknown in-app routes. |
+| 9 | Platform Audit Trail adapter preference | **Closed** — `AuditLog::record` dual-writes to Platform Audit Trail. |
+| 10 | Automated badge/count filtering for hidden records | **Partial** — dashboard correspondence and risk counts use `AccessScopeResolver`. Other badges remain residual. |
 | 11 | Seeder overwrite of template merges | **Closed** — `mergePublishedTemplatePermissions` after legacy sync |
 | 12 | Leave / attachment IDOR safe 404 | **Closed** — leave show/attachments + salary-advance show use 404 |
 | 13 | Tender board vs committee-evaluations route split | Closed in Phases 1–6 |
@@ -46,7 +45,7 @@ Seeded in `access_governance_decisions` (status=`pending`):
 - Session revocation on role change *(code-enforceable session kill shipped; institutional policy still Pending)*
 - Pen-test engagement before Phase 8 cutover
 
-Admin UI: `/admin/access/governance`
+Admin UI: `/admin/access/governance` (GET + PUT `/api/v1/admin/access/governance/{decision}` — status/notes only; live secrets stay in operator env)
 
 ## Admin surfaces (web)
 

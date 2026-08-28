@@ -405,6 +405,42 @@ class AccessGovernanceController extends Controller
         ]);
     }
 
+    public function governanceUpdate(Request $request, AccessGovernanceDecision $decision): JsonResponse
+    {
+        $this->pdp->assert($request->user(), 'admin.security.manage');
+        abort_unless(
+            $request->user()->isSystemAdmin()
+            || (int) $decision->tenant_id === (int) $request->user()->tenant_id
+            || $decision->tenant_id === null,
+            404
+        );
+        $data = $request->validate([
+            'status' => ['required', 'string', 'in:pending,decided,not_applicable'],
+            'decision_notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $old = $decision->status;
+        $decision->update([
+            'status' => $data['status'],
+            'decision_notes' => $data['decision_notes'] ?? $decision->decision_notes,
+            'decided_at' => $data['status'] === 'pending' ? null : now(),
+            'owner_user_id' => $request->user()->id,
+        ]);
+
+        AuditLog::record('access.governance.updated', [
+            'auditable_type' => AccessGovernanceDecision::class,
+            'auditable_id' => $decision->id,
+            'old_values' => ['status' => $old],
+            'new_values' => ['status' => $decision->status],
+            'tags' => 'access-control,governance',
+        ]);
+
+        return response()->json([
+            'message' => 'Governance decision updated.',
+            'data' => $decision->fresh(),
+        ]);
+    }
+
     public function cutoverStatus(Request $request): JsonResponse
     {
         $this->pdp->assert($request->user(), 'admin.roles.view');

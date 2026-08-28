@@ -19,4 +19,11 @@ interface GdsProviderInterface
      * @return array{raw_text?: string, legs?: list<array<string, mixed>>}|null
      */
     public function fetchItinerary(string $bookingReference): ?array;
+
+    /**
+     * Offer search only. Never books, pays, or checks out.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function searchOffers(array $criteria = []): array;
 }

@@ -80,6 +80,9 @@ Route::prefix('v1')->group(function () {
     Route::get('documents/public/share/{token}', [\App\Http\Controllers\Api\V1\Documents\DocumentServiceController::class, 'publicShare'])
         ->middleware('throttle:30,1');
 
+    Route::get('parliament-connect/feed', [\App\Http\Controllers\Api\V1\ParliamentConnect\ParliamentConnectController::class, 'feed'])
+        ->middleware('throttle:60,1');
+
     // Authenticated routes
     Route::middleware([
         'auth:sanctum',
@@ -381,6 +384,7 @@ Route::prefix('v1')->group(function () {
             Route::post('users/{user}/resend-invitation', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'resendInvitation']);
             Route::patch('users/{user}/status', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'updateStatus']);
             Route::patch('users/{user}/roles', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'updateRoles']);
+            Route::post('users/role-sync-requests/{syncRequest}/approve', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'approveRoleSync']);
             Route::post('users/{user}/mfa-reset', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'mfaReset']);
             Route::post('users/{user}/revoke-sessions', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'revokeSessions']);
             Route::get('users/{user}/audit', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'audit']);
@@ -433,6 +437,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('reviews', [$ac, 'storeReviewCampaign']);
                 Route::post('reviews/items/{item}/decide', [$ac, 'decideReviewItem']);
                 Route::get('governance', [$ac, 'governanceChecklist']);
+                Route::put('governance/{decision}', [$ac, 'governanceUpdate']);
                 Route::get('cutover', [$ac, 'cutoverStatus']);
                 Route::post('cutover/revoke-obsolete', [$ac, 'cutoverRevokeObsolete']);
             });
@@ -773,6 +778,7 @@ Route::prefix('v1')->group(function () {
             Route::post('tenders/{tender}/open-bids', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'openBids']);
             Route::post('tenders/{tender}/start-evaluation', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'startEvaluation']);
             Route::post('tenders/{tender}/award', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'award']);
+            Route::post('tenders/{tender}/recommend-award', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'recommendAward']);
             Route::post('tenders/{tender}/cancel', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'cancel']);
             Route::post('tenders/{tender}/comparison-summary', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'comparisonSummary']);
             Route::post('tenders/{tender}/comparison-summary/confirm', [\App\Http\Controllers\Api\V1\Procurement\TenderController::class, 'confirmComparisonSummary']);
@@ -783,6 +789,7 @@ Route::prefix('v1')->group(function () {
             Route::get('newspaper-notice-templates', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'newspaperTemplates']);
             Route::get('tenders/{tender}/newspaper-notice', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'newspaperPack']);
             Route::patch('tenders/{tender}/newspaper-notice-checklist', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'newspaperChecklist']);
+            Route::post('tenders/{tender}/newspaper-notice-llm-draft', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'newspaperLlmDraft']);
 
             Route::get('policy-profiles', [\App\Http\Controllers\Api\V1\Procurement\ProcurementPolicyProfileController::class, 'index']);
             Route::post('policy-profiles', [\App\Http\Controllers\Api\V1\Procurement\ProcurementPolicyProfileController::class, 'store']);
@@ -880,6 +887,7 @@ Route::prefix('v1')->group(function () {
             Route::post('commitments/{commitment}/release', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'release']);
             Route::post('commitments/{commitment}/consume', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'consume']);
             Route::post('actuals', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'postActual']);
+            Route::post('journals', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'postJournal']);
             Route::post('actuals/import', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'importActuals']);
             Route::get('variance', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'variances']);
             Route::post('variance/scan', [\App\Http\Controllers\Api\V1\Budget\BudgetControlController::class, 'scanVariances']);
@@ -1039,6 +1047,7 @@ Route::prefix('v1')->group(function () {
             Route::post('timesheets/templates/{template}/apply', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'applyTemplate']);
             Route::get('timesheets/expected-hours', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'expectedHours']);
             Route::get('timesheets/capacity-analytics', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'capacityAnalytics']);
+            Route::post('timesheets/attendance/clock', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'clockAttendance']);
             Route::get('timesheets/periods', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'periods']);
             Route::post('timesheets/periods/{timesheetPeriod}/close', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'closePeriod']);
             Route::get('timesheets/schedules', [\App\Http\Controllers\Api\V1\Hr\WorkScheduleController::class, 'index']);
@@ -1430,6 +1439,8 @@ Route::prefix('v1')->group(function () {
         Route::get('asset-requests/{assetRequest}', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'show']);
         Route::put('asset-requests/{assetRequest}', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'update']);
         Route::delete('asset-requests/{assetRequest}', [\App\Http\Controllers\Api\V1\Assets\AssetRequestController::class, 'destroy']);
+
+        Route::get('inventory/unified-register', [\App\Http\Controllers\Api\V1\Inventory\UnifiedInventoryController::class, 'index']);
 
         // ── Consumables / Stock Register (PRD §17, §27) ───────────────────────
         // SEPARATE from the Fixed Asset Register above. Read routes gated on
@@ -1967,6 +1978,7 @@ Route::prefix('v1')->group(function () {
             Route::get('dashboard', [$c, 'dashboard']);
             Route::get('lookups', [$c, 'lookups']);
             Route::get('settings', [$c, 'settings']);
+            Route::put('settings', [$c, 'updateSettings']);
             Route::middleware('can:audit.events.view')->get('events', [$c, 'events']);
 
             Route::get('universe', [$c, 'universeIndex']);

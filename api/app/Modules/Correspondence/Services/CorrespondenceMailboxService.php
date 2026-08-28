@@ -39,6 +39,16 @@ class CorrespondenceMailboxService
             'updated_by' => $user->id,
         ]);
 
+        if (array_key_exists('allowlisted_addresses', $data)) {
+            $addresses = collect((array) $data['allowlisted_addresses'])
+                ->map(fn ($v) => strtolower(trim((string) $v)))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $settings->allowlisted_addresses = $addresses;
+        }
+
         if (array_key_exists('imap_password', $data) && filled($data['imap_password'])) {
             $settings->setImapPassword((string) $data['imap_password']);
         }
@@ -134,6 +144,11 @@ class CorrespondenceMailboxService
                     continue;
                 }
 
+                if (! $this->messageAddressAllowed($settings, $message)) {
+                    $skipped++;
+                    continue;
+                }
+
                 if ($dryRun) {
                     $imported++;
                     continue;
@@ -164,6 +179,32 @@ class CorrespondenceMailboxService
             'dry_run' => $dryRun,
             'errors' => $errors,
         ];
+    }
+
+    /**
+     * Designated mailbox plus Admin allowlist only. Never all-employee ingest.
+     *
+     * @param  array<string, mixed>  $message
+     */
+    private function messageAddressAllowed(CorrespondenceMailboxSetting $settings, array $message): bool
+    {
+        $to = strtolower(trim((string) ($message['to_address'] ?? $message['recipient'] ?? '')));
+        if ($to === '') {
+            return true;
+        }
+
+        $allowed = collect([(string) $settings->mailbox_address])
+            ->merge((array) $settings->allowlisted_addresses)
+            ->map(fn ($v) => strtolower(trim((string) $v)))
+            ->filter()
+            ->unique()
+            ->all();
+
+        if ($allowed === []) {
+            return true;
+        }
+
+        return in_array($to, $allowed, true);
     }
 
     /**

@@ -70,6 +70,9 @@ Schedule::command('workflow:escalate-overdue')->hourly()->withoutOverlapping();
 // Poll designated registry mailbox into suggestions only (requires IMAP config or is a no-op when disabled).
 Schedule::command('correspondence:poll-mailbox')->everyFifteenMinutes()->withoutOverlapping();
 
+// Drain HTTP OCR jobs when DOCUMENT_OCR_DRIVER=http (no-op for null driver / empty queue).
+Schedule::command('documents:process-ocr-jobs')->everyFiveMinutes()->withoutOverlapping();
+
 // Fleet telematics poll — only when schedule flag + a poll-capable driver are enabled.
 if (config('fleet_telematics.schedule_enabled')
     && in_array(strtolower((string) config('fleet_telematics.driver', 'null')), ['generic_http'], true)
