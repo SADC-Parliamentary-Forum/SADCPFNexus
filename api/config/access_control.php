@@ -332,10 +332,23 @@ return [
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
         ]],
         ['pattern' => 'api/v1/correspondence*', 'permissions' => [
-            'READ' => ['correspondence.view', 'correspondence.read.assigned', 'correspondence.admin'],
-            'POST' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
-            'PUT' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
-            'PATCH' => ['correspondence.create', 'correspondence.review', 'correspondence.approve', 'correspondence.admin'],
+            'READ' => [
+                'correspondence.view', 'correspondence.read.assigned',
+                'correspondence.read.confidential', 'correspondence.admin',
+            ],
+            'POST' => [
+                'correspondence.create', 'correspondence.review', 'correspondence.approve',
+                'correspondence.route', 'correspondence.send', 'correspondence.dispatch',
+                'correspondence.admin',
+            ],
+            'PUT' => [
+                'correspondence.create', 'correspondence.review', 'correspondence.approve',
+                'correspondence.admin',
+            ],
+            'PATCH' => [
+                'correspondence.create', 'correspondence.review', 'correspondence.approve',
+                'correspondence.admin',
+            ],
             'DELETE' => ['correspondence.admin'],
         ]],
         ['pattern' => 'api/v1/stock*', 'permissions' => [

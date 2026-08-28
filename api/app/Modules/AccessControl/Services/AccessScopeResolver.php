@@ -92,6 +92,7 @@ class AccessScopeResolver
             ],
             'correspondence' => [
                 'correspondence.admin', 'correspondence.confidential.view',
+                'correspondence.read.confidential', 'correspondence.approve', 'correspondence.route',
             ],
             'risk' => [
                 'risk.admin', 'risk.confidential', 'risk.approve', 'risk.manage',

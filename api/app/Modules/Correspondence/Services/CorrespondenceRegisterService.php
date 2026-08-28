@@ -42,13 +42,7 @@ class CorrespondenceRegisterService
         $query = Correspondence::query()->where('tenant_id', $user->tenant_id);
 
         $resolver = app(\App\Modules\AccessControl\Services\AccessScopeResolver::class);
-        $elevated = $user->isSystemAdmin()
-            || $user->can('correspondence.admin')
-            || $user->can('correspondence.confidential.view');
-
-        // Elevated registry/admin path — still deny-by-default for pure ICT via resolver.
-        // Note: correspondence.registry alone does NOT unlock the full register (staff seeder includes it).
-        if ($elevated) {
+        if ($this->hasRegistryOversight($user)) {
             return $resolver->constrainQuery($query, $user, 'created_by', [
                 'module' => 'correspondence',
                 'elevated' => true,
@@ -82,10 +76,7 @@ class CorrespondenceRegisterService
     {
         abort_unless((int) $c->tenant_id === (int) $user->tenant_id, 404);
 
-        if ($user->isSystemAdmin()
-            || $user->hasPermissionTo('correspondence.admin', 'sanctum')
-            || $user->hasPermissionTo('correspondence.confidential.view', 'sanctum')
-        ) {
+        if ($this->hasRegistryOversight($user)) {
             return;
         }
 
@@ -99,10 +90,7 @@ class CorrespondenceRegisterService
             return true;
         }
 
-        if ($user->isSystemAdmin()
-            || $user->hasPermissionTo('correspondence.admin', 'sanctum')
-            || $user->hasPermissionTo('correspondence.confidential.view', 'sanctum')
-        ) {
+        if ($this->hasRegistryOversight($user)) {
             return true;
         }
 
@@ -130,6 +118,33 @@ class CorrespondenceRegisterService
         $c->setRelation('notes', collect());
 
         return $c;
+    }
+
+    /**
+     * SG / registry officers may see the institutional tray. Canonical
+     * correspondence.read.confidential replaced the Spatie
+     * correspondence.confidential.view key; both (plus approve/route) count.
+     * correspondence.registry on General Employee must not unlock this path.
+     */
+    private function hasRegistryOversight(User $user): bool
+    {
+        if ($user->isSystemAdmin()) {
+            return true;
+        }
+
+        foreach ([
+            'correspondence.admin',
+            'correspondence.confidential.view',
+            'correspondence.read.confidential',
+            'correspondence.approve',
+            'correspondence.route',
+        ] as $key) {
+            if ($user->checkPermissionTo($key, 'sanctum') || $user->checkPermissionTo($key)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     // ── Incoming registration ─────────────────────────────────────────────────
