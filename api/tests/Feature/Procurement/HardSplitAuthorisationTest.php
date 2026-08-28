@@ -71,7 +71,8 @@ class HardSplitAuthorisationTest extends TestCase
         $req->refresh();
         $this->assertNotNull($req->split_authorised_by);
 
-        $http->postJson("/api/v1/procurement/requests/{$req->id}/approve")
+        $this->asUser($officer)
+            ->postJson("/api/v1/procurement/requests/{$req->id}/approve")
             ->assertOk()
             ->assertJsonPath('data.status', 'approved');
     }
