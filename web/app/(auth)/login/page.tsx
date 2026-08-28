@@ -159,7 +159,7 @@ export default function LoginPage() {
             />
             <div>
               <h1 className="text-lg font-bold leading-tight">SADC-PF Nexus</h1>
-              <p className="text-xs text-white/40">{t("auth.platform")}</p>
+              <p className="text-xs text-white/70">{t("auth.platform")}</p>
             </div>
           </div>
 
@@ -186,9 +186,9 @@ export default function LoginPage() {
         <div className="border-t border-white/10 pt-6">
           <div className="flex items-center gap-2">
             <span className="flex h-2 w-2 rounded-full bg-green-400" />
-            <span className="text-xs text-white/50">{t("auth.operational")}</span>
+            <span className="text-xs text-white/70">{t("auth.operational")}</span>
           </div>
-          <p className="mt-3 text-xs text-white/30" suppressHydrationWarning>
+          <p className="mt-3 text-xs text-white/70" suppressHydrationWarning>
             {/* Use UTC year so SSR (Node) and the browser agree — local getFullYear()
                 can differ across timezones at year boundaries and trigger React #418. */}
             © {new Date().getUTCFullYear()} {t("auth.rights")}
