@@ -735,6 +735,8 @@ class WeeklyReportService
             $existingRequest = $report->approvalRequest;
             if ($wasReturned && $existingRequest && $existingRequest->status === 'returned') {
                 $this->workflowService->resubmit($existingRequest, $actor);
+            } elseif ($existingRequest) {
+                // Idempotent resubmit: do not start a second workflow for the same report.
             } else {
                 $this->workflowService->initiate($report->fresh(), 'weekly_report', $actor);
             }

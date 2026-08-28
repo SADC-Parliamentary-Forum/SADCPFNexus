@@ -298,6 +298,7 @@ class WeeklyReportsPhase1Test extends TestCase
         $leaveData = [
             'requester_id' => $employee->id,
             'tenant_id' => $employee->tenant_id,
+            'reference_number' => 'LV-WR-EXEMPT-001',
             'leave_type' => 'annual',
             'start_date' => $period->start_date->toDateString(),
             'end_date' => $period->end_date->toDateString(),
