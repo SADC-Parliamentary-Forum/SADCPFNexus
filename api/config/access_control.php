@@ -220,9 +220,15 @@ return [
             'PATCH' => ['hr.edit', 'hr.admin'],
             'DELETE' => ['hr.admin'],
         ]],
+        ['pattern' => 'api/v1/people-authority/authority/check*', 'permissions' => [
+            'WRITE' => [
+                'people.view-directory', 'people.view-profile', 'people.manage',
+                'dashboard.view',
+            ],
+        ]],
         ['pattern' => 'api/v1/people-authority*', 'permissions' => [
             'READ' => ['people.view-directory', 'people.view-profile', 'people.manage'],
-            'WRITE' => ['people.manage', 'roles.assign', 'authorities.manage'],
+            'WRITE' => ['people.manage', 'roles.assign', 'roles.approve', 'authorities.manage', 'delegations.create', 'delegations.approve'],
         ]],
         ['pattern' => 'api/v1/audit-management/findings*', 'permissions' => [
             'READ' => ['audit.view', 'audit.events.view', 'audit.admin', 'audit.findings.view', 'audit.response.manage'],

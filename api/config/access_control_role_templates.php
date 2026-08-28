@@ -102,7 +102,7 @@ return [
             'programme.sg_approval.act.assigned',
             'procurement.award.approve.assigned', 'procurement.view', 'procurement.approve', 'procurement.award',
             'approvals.task.act.assigned',
-            'admin.roles.approve', 'admin.roles.revoke',
+            'admin.roles.approve', 'admin.roles.revoke', 'roles.approve',
             'reports.view.authorised', 'reports.view', 'reports.export',
             'correspondence.read.confidential', 'correspondence.confidential.view',
             'correspondence.view', 'correspondence.approve', 'correspondence.route',
