@@ -60,7 +60,7 @@ class ProgrammeSectionsTest extends TestCase
     public function test_programme_mass_assigns_and_casts_new_section_fields(): void
     {
         $tenant = \App\Models\Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
 
         $programme = \App\Models\Programme::create([
             'tenant_id'        => $tenant->id,
@@ -86,7 +86,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_venue_accommodation_count_required_when_accommodation_required(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Venue Test'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -96,7 +96,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_support_services_other_requires_note_even_as_array(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Support Services Test'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -111,7 +111,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_dsa_variance_reason_required_when_rates_differ(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'DSA Test'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -128,7 +128,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_conflict_mitigation_required_when_conflict_declared(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Test'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -140,7 +140,7 @@ class ProgrammeSectionsTest extends TestCase
     public function test_conflict_declared_by_and_at_are_set_server_side_not_from_payload(): void
     {
         $tenant = \App\Models\Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $other = $this->makeUser('staff', $tenant);
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Stamp Test'])->json('data.id');
 
@@ -159,7 +159,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_unrelated_update_does_not_retrigger_venue_accommodation_requirement(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Venue Regression Test'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -176,7 +176,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_unrelated_update_does_not_retrigger_conflict_requirements(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Regression Test'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -195,7 +195,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_conflict_details_can_be_amended_without_resending_conflict_declared(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Amend Test'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -217,7 +217,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_already_declared_conflict_without_resending_details_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Reaffirm Test'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -242,7 +242,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_fresh_conflict_declaration_without_details_anywhere_still_fails(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Conflict Fresh Test'])->json('data.id');
 
         // No prior conflict declared, no details in DB or request — must
@@ -259,7 +259,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_venue_accommodation_required_without_resending_count_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Venue Accom Reaffirm'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -279,7 +279,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_venue_conferencing_required_without_resending_participants_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Venue Conf Reaffirm'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -299,7 +299,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_fresh_venue_conferencing_required_without_participants_anywhere_still_fails(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Venue Conf Fresh'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -309,7 +309,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_en_fr_required_without_resending_interpreters_count_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'EN-FR Reaffirm'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -329,7 +329,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_fresh_en_fr_required_without_interpreters_count_anywhere_still_fails(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'EN-FR Fresh'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -339,7 +339,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_en_pt_required_without_resending_interpreters_count_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'EN-PT Reaffirm'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -359,7 +359,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_fr_pt_required_without_resending_interpreters_count_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'FR-PT Reaffirm'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -379,7 +379,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_interpreter_source_other_without_resending_note_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Interpreter Source Reaffirm'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -399,7 +399,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_translation_required_without_resending_languages_required_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Translation Reaffirm'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -420,7 +420,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_support_services_other_without_resending_note_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Support Services Reaffirm'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -440,7 +440,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_dsa_rates_without_resending_variance_reason_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'DSA Reaffirm'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -464,7 +464,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_reaffirming_participants_variance_without_resending_reason_succeeds(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Participants Reaffirm'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -486,7 +486,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_fresh_participants_variance_without_reason_anywhere_still_fails(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Participants Fresh'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [
@@ -497,7 +497,7 @@ class ProgrammeSectionsTest extends TestCase
 
     public function test_unrelated_update_does_not_retrigger_dsa_variance_reason_requirement(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'DSA Variance Regression'])->json('data.id');
 
         $http->putJson("/api/v1/programmes/{$programmeId}", [

@@ -11,7 +11,7 @@ class ProgrammePdfTest extends TestCase
     public function test_pdf_can_be_downloaded_for_an_approved_programme(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = Programme::create([
             'tenant_id' => $tenant->id, 'created_by' => $user->id,
             'reference_number' => 'PIF-' . uniqid(), 'title' => 'PDF Test',

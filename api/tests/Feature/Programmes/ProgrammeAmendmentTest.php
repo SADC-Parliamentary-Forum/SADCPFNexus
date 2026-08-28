@@ -24,7 +24,7 @@ class ProgrammeAmendmentTest extends TestCase
     public function test_amendment_can_only_be_created_from_an_approved_programme(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $draft = Programme::create([
             'tenant_id' => $tenant->id, 'created_by' => $user->id,
             'reference_number' => 'PIF-2026-002', 'title' => 'Draft', 'status' => 'draft',
@@ -36,7 +36,7 @@ class ProgrammeAmendmentTest extends TestCase
     public function test_amendment_clones_the_original_and_its_documents(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $original = $this->approvedProgramme($tenant, $user->id);
 
         $response = $http->postJson("/api/v1/programmes/{$original->id}/amend")->assertCreated();
@@ -54,7 +54,7 @@ class ProgrammeAmendmentTest extends TestCase
     public function test_only_one_open_amendment_allowed_at_a_time(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $original = $this->approvedProgramme($tenant, $user->id);
 
         $http->postJson("/api/v1/programmes/{$original->id}/amend")->assertCreated();
@@ -64,7 +64,7 @@ class ProgrammeAmendmentTest extends TestCase
     public function test_approving_an_amendment_supersedes_the_original(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $original = $this->approvedProgramme($tenant, $user->id);
 
         $amendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');
@@ -83,7 +83,7 @@ class ProgrammeAmendmentTest extends TestCase
     public function test_diff_endpoint_shows_changed_fields(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $original = $this->approvedProgramme($tenant, $user->id);
         $amendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');
 
@@ -96,7 +96,7 @@ class ProgrammeAmendmentTest extends TestCase
     public function test_submitting_amendment_without_declaration_confirmation_is_rejected(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $original = $this->approvedProgramme($tenant, $user->id);
         $amendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');
 
@@ -108,7 +108,7 @@ class ProgrammeAmendmentTest extends TestCase
     public function test_submitting_amendment_with_declaration_confirmation_stamps_declaration_fields(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $original = $this->approvedProgramme($tenant, $user->id);
         $amendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');
 
@@ -126,7 +126,7 @@ class ProgrammeAmendmentTest extends TestCase
     public function test_an_amended_programme_can_be_amended_again_and_chains_to_the_amended_record(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $original = $this->approvedProgramme($tenant, $user->id);
 
         $firstAmendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');
@@ -139,7 +139,7 @@ class ProgrammeAmendmentTest extends TestCase
         $this->assertDatabaseHas('programmes', ['id' => $firstAmendmentId, 'status' => 'amended']);
 
         // Amend the already-amended record.
-        [$http2] = $this->asStaff($tenant);
+        [$http2] = $this->asProgrammeOfficer($tenant);
         $response = $http2->postJson("/api/v1/programmes/{$firstAmendmentId}/amend")->assertCreated();
         $secondAmendmentId = $response->json('data.id');
 
@@ -151,7 +151,7 @@ class ProgrammeAmendmentTest extends TestCase
     public function test_send_to_procurement_works_on_an_amended_programme(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $original = $this->approvedProgramme($tenant, $user->id);
 
         $amendmentId = $http->postJson("/api/v1/programmes/{$original->id}/amend")->json('data.id');

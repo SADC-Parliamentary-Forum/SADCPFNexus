@@ -31,7 +31,7 @@ class ProgrammeProcurementTransferTest extends TestCase
     public function test_send_to_procurement_creates_one_request_with_multiple_items(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         [$programme, $item1, $item2] = $this->approvedProgrammeWithItems($tenant, $user->id);
 
         $response = $http->postJson("/api/v1/programmes/{$programme->id}/send-to-procurement", [
@@ -50,7 +50,7 @@ class ProgrammeProcurementTransferTest extends TestCase
     public function test_send_to_procurement_rejects_when_programme_not_approved(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = Programme::create([
             'tenant_id' => $tenant->id, 'created_by' => $user->id,
             'reference_number' => 'PIF-' . uniqid(), 'title' => 'Not Approved', 'status' => 'draft',
@@ -66,7 +66,7 @@ class ProgrammeProcurementTransferTest extends TestCase
     public function test_send_to_procurement_rejects_already_linked_items(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         [$programme, $item1] = $this->approvedProgrammeWithItems($tenant, $user->id);
 
         $http->postJson("/api/v1/programmes/{$programme->id}/send-to-procurement", [
@@ -81,7 +81,7 @@ class ProgrammeProcurementTransferTest extends TestCase
     public function test_send_to_procurement_leaves_untransferred_items_alone(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         [$programme, $item1, $item2, $item3] = $this->approvedProgrammeWithItems($tenant, $user->id);
 
         $response = $http->postJson("/api/v1/programmes/{$programme->id}/send-to-procurement", [
@@ -101,7 +101,7 @@ class ProgrammeProcurementTransferTest extends TestCase
     public function test_send_to_procurement_uses_client_supplied_category(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         [$programme, $item1] = $this->approvedProgrammeWithItems($tenant, $user->id);
 
         $response = $http->postJson("/api/v1/programmes/{$programme->id}/send-to-procurement", [

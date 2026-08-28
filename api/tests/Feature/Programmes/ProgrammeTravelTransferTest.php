@@ -12,7 +12,7 @@ class ProgrammeTravelTransferTest extends TestCase
     public function test_send_to_travel_creates_one_draft_per_traveller(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $t1 = $this->makeUser('staff', $tenant);
         $t2 = $this->makeUser('staff', $tenant);
 
@@ -53,7 +53,7 @@ class ProgrammeTravelTransferTest extends TestCase
     public function test_send_to_travel_rejects_non_approved_programme(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = Programme::create([
             'tenant_id' => $tenant->id,
             'created_by' => $user->id,

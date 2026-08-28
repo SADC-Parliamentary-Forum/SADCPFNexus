@@ -10,7 +10,7 @@ class ProgrammeDeclarationTest extends TestCase
 {
     public function test_submit_fails_without_declaration_confirmation(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Declaration Test'])->json('data.id');
 
         $http->postJson("/api/v1/programmes/{$programmeId}/submit")
@@ -21,7 +21,7 @@ class ProgrammeDeclarationTest extends TestCase
     public function test_submit_succeeds_and_stamps_declaration_when_confirmed(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Declaration Test'])->json('data.id');
 
         $http->postJson("/api/v1/programmes/{$programmeId}/submit", [

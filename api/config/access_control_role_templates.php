@@ -166,6 +166,7 @@ return [
         'permissions' => [
             'programme.finance_review.read.assigned', 'programme.finance_review.update.assigned',
             'programme.budget_availability.confirm.assigned', 'programme.module.view',
+            'programme.finance-review',
             'salary_advance.module.view', 'salary_advance.financial_details.read.assigned',
             'salary_advance.salary_verify.assigned', 'salary_advance.outstanding_advance_verify.assigned',
             'salary_advance.threshold_verify.assigned', 'salary_advance.finance_certify.assigned',
@@ -204,7 +205,13 @@ return [
     'Programme Officer' => [
         'purpose' => 'Prepare and manage assigned programmes and PIFs',
         'risk_level' => 'medium',
-        'permissions' => ['programme.module.view', 'programme.request.create', 'programme.request.read.created', 'programme.request.edit.created', 'programme.request.submit.created', 'programme.document.manage.created', 'programme.conflict_declaration.submit.created', 'programme.mande_link.read.authorised'],
+        'permissions' => [
+            'programme.module.view', 'programme.request.create', 'programme.request.read.created',
+            'programme.request.edit.created', 'programme.request.submit.created',
+            'programme.request.withdraw.created', 'programme.document.manage.created',
+            'programme.conflict_declaration.submit.created', 'programme.mande_link.read.authorised',
+            'pif.view', 'pif.create',
+        ],
         'inherits' => [],
         // Generic staff must not receive programme-authoring access merely
         // because Programme Officer used to share the staff alias.

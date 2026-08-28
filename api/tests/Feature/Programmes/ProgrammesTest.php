@@ -25,9 +25,9 @@ class ProgrammesTest extends TestCase
         $this->getJson('/api/v1/programmes')->assertUnauthorized();
     }
 
-    public function test_staff_can_create_programme(): void
+    public function test_programme_officer_can_create_programme(): void
     {
-        [$http, $user] = $this->asStaff();
+        [$http, $user] = $this->asProgrammeOfficer();
 
         $response = $http->postJson('/api/v1/programmes', $this->programmePayload());
 
@@ -41,7 +41,7 @@ class ProgrammesTest extends TestCase
     public function test_create_skips_soft_deleted_reference_numbers(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $year = now()->year;
 
         // Active count would suggest next = 005, but 005 already exists (trashed gap).
@@ -71,7 +71,7 @@ class ProgrammesTest extends TestCase
 
     public function test_programme_requires_title(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
 
         $http->postJson('/api/v1/programmes', [
             'description' => 'No title',
@@ -81,7 +81,7 @@ class ProgrammesTest extends TestCase
 
     public function test_staff_can_list_own_programmes(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
 
         $http->getJson('/api/v1/programmes')->assertOk();
     }
@@ -89,7 +89,7 @@ class ProgrammesTest extends TestCase
     public function test_staff_can_view_programme(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
 
         $programme = Programme::create([
             'tenant_id'        => $tenant->id,
@@ -130,7 +130,7 @@ class ProgrammesTest extends TestCase
     public function test_staff_can_update_draft_programme(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
 
         $programme = Programme::create([
             'tenant_id'        => $tenant->id,
@@ -153,7 +153,7 @@ class ProgrammesTest extends TestCase
     public function test_staff_can_submit_programme_for_approval(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
 
         $programme = Programme::create([
             'tenant_id'        => $tenant->id,
@@ -175,7 +175,7 @@ class ProgrammesTest extends TestCase
 
     public function test_staff_can_create_a_minimal_draft_with_only_a_title(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
 
         $response = $http->postJson('/api/v1/programmes', ['title' => 'Untitled PIF']);
 
@@ -186,7 +186,7 @@ class ProgrammesTest extends TestCase
 
     public function test_new_draft_can_immediately_receive_a_document_row(): void
     {
-        [$http] = $this->asStaff();
+        [$http] = $this->asProgrammeOfficer();
 
         $programmeId = $http->postJson('/api/v1/programmes', ['title' => 'Untitled PIF'])
             ->json('data.id');

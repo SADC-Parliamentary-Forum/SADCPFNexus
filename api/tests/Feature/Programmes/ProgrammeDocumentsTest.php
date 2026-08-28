@@ -23,7 +23,7 @@ class ProgrammeDocumentsTest extends TestCase
     public function test_staff_can_add_a_document_row_to_a_draft_programme(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
 
         $response = $http->postJson("/api/v1/programmes/{$programme->id}/documents", [
@@ -44,7 +44,7 @@ class ProgrammeDocumentsTest extends TestCase
     public function test_document_requires_owner_user_or_owner_name(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
 
         $http->postJson("/api/v1/programmes/{$programme->id}/documents", [
@@ -57,7 +57,7 @@ class ProgrammeDocumentsTest extends TestCase
     public function test_translation_required_document_requires_target_languages(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
 
         $http->postJson("/api/v1/programmes/{$programme->id}/documents", [
@@ -72,7 +72,7 @@ class ProgrammeDocumentsTest extends TestCase
     public function test_staff_can_update_and_delete_a_document_row(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
         $doc = ProgrammeDocument::create([
             'programme_id' => $programme->id,
@@ -93,7 +93,7 @@ class ProgrammeDocumentsTest extends TestCase
     public function test_clearing_owner_user_id_is_allowed_when_owner_name_already_exists(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
         $doc = ProgrammeDocument::create([
             'programme_id' => $programme->id,
@@ -116,7 +116,7 @@ class ProgrammeDocumentsTest extends TestCase
     public function test_clearing_owner_name_with_no_owner_user_id_is_rejected(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
         $doc = ProgrammeDocument::create([
             'programme_id' => $programme->id,

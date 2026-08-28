@@ -25,7 +25,7 @@ class ProgrammeMeStatusTest extends TestCase
     public function test_me_status_is_not_yet_linked_when_no_report_exists(): void
     {
         $tenant = Tenant::factory()->create();
-        [, $user] = $this->asStaff($tenant);
+        [, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->approvedProgramme($tenant, $user->id);
 
         $this->assertSame('not_yet_linked', $programme->me_status);
@@ -35,7 +35,7 @@ class ProgrammeMeStatusTest extends TestCase
     public function test_me_status_maps_each_review_status(string $reviewStatus, string $expected): void
     {
         $tenant = Tenant::factory()->create();
-        [, $user] = $this->asStaff($tenant);
+        [, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->approvedProgramme($tenant, $user->id);
 
         MeActivityReport::create([
@@ -66,7 +66,7 @@ class ProgrammeMeStatusTest extends TestCase
     public function test_me_status_is_report_pending_when_intake_confirmed(): void
     {
         $tenant = Tenant::factory()->create();
-        [, $user] = $this->asStaff($tenant);
+        [, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->approvedProgramme($tenant, $user->id);
 
         MeActivityReport::create([
@@ -84,7 +84,7 @@ class ProgrammeMeStatusTest extends TestCase
     public function test_me_status_is_archived_when_linked_report_was_soft_deleted(): void
     {
         $tenant = Tenant::factory()->create();
-        [, $user] = $this->asStaff($tenant);
+        [, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->approvedProgramme($tenant, $user->id);
 
         $report = MeActivityReport::create([
@@ -118,7 +118,7 @@ class ProgrammeMeStatusTest extends TestCase
     public function test_me_status_is_link_unavailable_for_an_unmapped_review_status(): void
     {
         $tenant = Tenant::factory()->create();
-        [, $user] = $this->asStaff($tenant);
+        [, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->approvedProgramme($tenant, $user->id);
 
         $report = MeActivityReport::create([
@@ -142,7 +142,7 @@ class ProgrammeMeStatusTest extends TestCase
     public function test_me_status_is_included_in_the_show_response(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->approvedProgramme($tenant, $user->id);
 
         $http->getJson("/api/v1/programmes/{$programme->id}")
@@ -161,7 +161,7 @@ class ProgrammeMeStatusTest extends TestCase
     public function test_index_query_count_does_not_scale_with_programme_count(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
 
         $this->approvedProgramme($tenant, $user->id);
 

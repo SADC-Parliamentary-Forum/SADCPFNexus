@@ -260,6 +260,17 @@ return [
         ['pattern' => 'api/v1/records*', 'permissions' => [
             'READ' => ['audit-trail.view-record-history', 'audit.view'],
         ]],
+        ['pattern' => 'api/v1/budget/variance/scan*', 'permissions' => [
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/budget/variance/explanations*', 'permissions' => [
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/budget/variance*', 'permissions' => [
+            'READ' => ['finance.view', 'finance.admin', 'dashboard.view'],
+            // HOD posts explanations; Finance reviews via explanations* above.
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin', 'dashboard.view'],
+        ]],
         ['pattern' => 'api/v1/budget/journals', 'permissions' => [
             'WRITE' => [
                 'finance.create', 'finance.approve', 'finance.admin',

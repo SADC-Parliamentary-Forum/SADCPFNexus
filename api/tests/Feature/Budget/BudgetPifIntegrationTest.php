@@ -43,10 +43,10 @@ class BudgetPifIntegrationTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $finance = $this->makeFinanceController($tenant);
-        [$http] = $this->asStaff($tenant);
+        $officer = $this->makeUser('Programme Officer', $tenant);
         $line = $this->seedLine($tenant, $finance);
 
-        $programmeId = $http->postJson('/api/v1/programmes', [
+        $programmeId = $this->asUser($officer)->postJson('/api/v1/programmes', [
             'title' => 'Budget Cert PIF',
             'total_budget' => 75000,
         ])->json('data.id');
@@ -76,10 +76,10 @@ class BudgetPifIntegrationTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $finance = $this->makeFinanceController($tenant);
-        [$http] = $this->asStaff($tenant);
+        $officer = $this->makeUser('Programme Officer', $tenant);
         $line = $this->seedLine($tenant, $finance, 'PROG-2');
 
-        $programmeId = $http->postJson('/api/v1/programmes', [
+        $programmeId = $this->asUser($officer)->postJson('/api/v1/programmes', [
             'title' => 'Budget Release PIF',
             'total_budget' => 40000,
         ])->json('data.id');

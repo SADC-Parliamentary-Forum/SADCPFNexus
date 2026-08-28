@@ -23,7 +23,7 @@ class ProgrammeArrivalDeparturesTest extends TestCase
     public function test_staff_can_add_an_arrival_departure_row(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
 
         $http->postJson("/api/v1/programmes/{$programme->id}/arrival-departures", [
@@ -41,7 +41,7 @@ class ProgrammeArrivalDeparturesTest extends TestCase
     public function test_departure_before_arrival_is_rejected(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
 
         $http->postJson("/api/v1/programmes/{$programme->id}/arrival-departures", [
@@ -55,7 +55,7 @@ class ProgrammeArrivalDeparturesTest extends TestCase
     public function test_malformed_departure_date_returns_validation_error_not_a_server_error(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
 
         $http->postJson("/api/v1/programmes/{$programme->id}/arrival-departures", [
@@ -69,7 +69,7 @@ class ProgrammeArrivalDeparturesTest extends TestCase
     public function test_staff_can_delete_an_arrival_departure_row(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
         $row = ProgrammeArrivalDeparture::create([
             'programme_id' => $programme->id,
@@ -83,7 +83,7 @@ class ProgrammeArrivalDeparturesTest extends TestCase
     public function test_partial_update_rejects_departure_before_existing_arrival(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
         $row = ProgrammeArrivalDeparture::create([
             'programme_id'   => $programme->id,
@@ -100,7 +100,7 @@ class ProgrammeArrivalDeparturesTest extends TestCase
     public function test_partial_update_allows_departure_after_existing_arrival(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $user] = $this->asStaff($tenant);
+        [$http, $user] = $this->asProgrammeOfficer($tenant);
         $programme = $this->draftProgramme($tenant, $user->id);
         $row = ProgrammeArrivalDeparture::create([
             'programme_id'   => $programme->id,

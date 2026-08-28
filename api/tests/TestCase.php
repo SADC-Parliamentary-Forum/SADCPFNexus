@@ -98,6 +98,12 @@ abstract class TestCase extends BaseTestCase
         return [$this->asUser($user), $user];
     }
 
+    protected function asProgrammeOfficer(?Tenant $tenant = null): array
+    {
+        $user = $this->makeUser('Programme Officer', $tenant);
+        return [$this->asUser($user), $user];
+    }
+
     protected function asAdmin(?Tenant $tenant = null): array
     {
         $user = $this->makeAdmin($tenant);
