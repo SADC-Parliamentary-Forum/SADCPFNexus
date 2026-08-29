@@ -42,13 +42,15 @@ class WeeklyReportsPhase3Test extends TestCase
     {
         [, , $employee] = $this->seedTeam();
 
+        $inWeek = now()->copy()->startOfWeek(\Carbon\Carbon::MONDAY)->addDays(2);
+
         WorkplanEvent::create([
             'tenant_id' => $employee->tenant_id,
             'created_by' => $employee->id,
             'title' => 'Directorate huddle',
             'type' => 'meeting',
-            'date' => now()->toDateString(),
-            'end_date' => now()->toDateString(),
+            'date' => $inWeek->toDateString(),
+            'end_date' => $inWeek->toDateString(),
         ]);
 
         $payload = $this->actingAs($employee, 'sanctum')

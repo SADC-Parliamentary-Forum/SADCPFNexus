@@ -35,17 +35,20 @@ class WeeklyReportsStrongerAiDraftTest extends TestCase
     {
         [, , $employee] = $this->seedTeam();
 
+        $inWeek = now()->copy()->startOfWeek(\Carbon\Carbon::MONDAY)->addDays(2)->setTime(12, 0);
+
         Assignment::create([
             'tenant_id' => $employee->tenant_id,
             'created_by' => $employee->id,
             'assigned_to' => $employee->id,
             'title' => 'Finalise briefing note',
             'description' => 'Completed this week',
-            'due_date' => now()->toDateString(),
+            'due_date' => $inWeek->toDateString(),
             'status' => 'completed',
             'priority' => 'medium',
             'is_template' => false,
-            'completed_at' => now(),
+            'completed_at' => $inWeek,
+            'closed_at' => $inWeek,
         ]);
 
         WorkplanEvent::create([
@@ -53,8 +56,8 @@ class WeeklyReportsStrongerAiDraftTest extends TestCase
             'created_by' => $employee->id,
             'title' => 'Sector coordination call',
             'type' => 'meeting',
-            'date' => now()->toDateString(),
-            'end_date' => now()->toDateString(),
+            'date' => $inWeek->toDateString(),
+            'end_date' => $inWeek->toDateString(),
         ]);
 
         $report = $this->actingAs($employee, 'sanctum')
