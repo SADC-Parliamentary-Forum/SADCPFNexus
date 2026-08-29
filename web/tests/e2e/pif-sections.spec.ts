@@ -169,7 +169,7 @@ test.describe("PIF — full section-completion happy path", () => {
     await submitBtn.click();
     await expect(page.getByText("Programme submitted for approval.")).toBeVisible({ timeout: 10_000 });
 
-    await expect(page.getByText("Submitted", { exact: true })).toBeVisible();
+    await expect(page.locator(".badge", { hasText: "Submitted" }).first()).toBeVisible();
 
     await page.getByRole("button", { name: "Logistics & Compliance" }).click();
 

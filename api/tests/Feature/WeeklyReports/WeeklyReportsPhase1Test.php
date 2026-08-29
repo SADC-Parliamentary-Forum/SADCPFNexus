@@ -64,16 +64,18 @@ class WeeklyReportsPhase1Test extends TestCase
     {
         [, , $employee] = $this->seedTeam();
 
+        $closedInPeriod = now()->copy()->startOfWeek(\Carbon\Carbon::MONDAY)->addDays(2)->setTime(12, 0);
+
         Assignment::create([
             'tenant_id' => $employee->tenant_id,
             'created_by' => $employee->id,
             'assigned_to' => $employee->id,
             'title' => 'Completed briefing',
             'description' => 'Done',
-            'due_date' => now()->toDateString(),
+            'due_date' => $closedInPeriod->toDateString(),
             'status' => 'completed',
             'priority' => 'medium',
-            'closed_at' => now(),
+            'closed_at' => $closedInPeriod,
             'is_confidential' => false,
         ]);
 
