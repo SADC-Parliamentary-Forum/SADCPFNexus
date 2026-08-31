@@ -40,6 +40,7 @@ class ProcurementRequest extends Model
         'split_authorised_at' => 'datetime',
         'estimated_value'     => 'float',
         'policy_snapshot'     => 'array',
+        'budget_confirmed'    => 'boolean',
     ];
 
     protected static function booted(): void
@@ -85,6 +86,17 @@ class ProcurementRequest extends Model
     public function isBudgetReserved(): bool { return $this->status === 'budget_reserved'; }
     public function isApproved(): bool       { return $this->status === 'approved'; }
     public function isAwarded(): bool        { return $this->status === 'awarded'; }
+
+    public function hasActiveBudgetConfirmation(): bool
+    {
+        if ($this->relationLoaded('budgetReservations')) {
+            return $this->budgetReservations->contains(
+                fn (BudgetReservation $reservation) => $reservation->isActiveConfirmation()
+            );
+        }
+
+        return $this->budgetReservations()->activeConfirmation()->exists();
+    }
 
     public function onWorkflowApproved(User $approver): void
     {

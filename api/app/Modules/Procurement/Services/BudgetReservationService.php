@@ -32,9 +32,16 @@ class BudgetReservationService
             abort(404);
         }
 
-        if (! $request->isHodApproved()) {
+        if ($request->hasActiveBudgetConfirmation()) {
             throw ValidationException::withMessages([
-                'status' => 'Budget can only be reserved for HOD-approved requests.',
+                'budget' => 'An active budget confirmation already exists for this request.',
+            ]);
+        }
+
+        $keepApproved = $request->isApproved();
+        if (! $request->isHodApproved() && ! $keepApproved) {
+            throw ValidationException::withMessages([
+                'status' => 'Budget can only be reserved after HOD approval.',
             ]);
         }
 
@@ -95,7 +102,7 @@ class BudgetReservationService
         }
 
         $request->update([
-            'status' => 'budget_reserved',
+            'status' => $keepApproved ? 'approved' : 'budget_reserved',
             'budget_line' => $reservation->budget_line,
         ]);
 

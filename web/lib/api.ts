@@ -2851,6 +2851,7 @@ export interface ProcurementRequest {
   rfqInvitations?: RfqInvitation[];
   purchaseOrder?: PurchaseOrder | null;
   budgetReservations?: BudgetReservation[];
+  budget_confirmed?: boolean | number;
 }
 
 export const procurementSettingsApi = {
@@ -2931,6 +2932,7 @@ export interface BudgetReservation {
   reserved_amount: number;
   currency: string;
   notes: string | null;
+  status?: string | null;
   released_at: string | null;
   released_by: number | null;
   created_at: string;

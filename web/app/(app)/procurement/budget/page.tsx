@@ -11,6 +11,8 @@ import {
   type ProcurementRequest,
 } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { apiErrorMessage } from "@/lib/apiError";
+import { isBudgetConfirmed } from "@/lib/procurementBudget";
 import { formatDateShort } from "@/lib/utils";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 
@@ -43,6 +45,15 @@ export default function ProcurementBudgetPage() {
     staleTime: 20_000,
   });
 
+  const approvedUnconfirmedQuery = useQuery({
+    queryKey: ["procurement", "budget", "approved-unconfirmed"],
+    queryFn: () =>
+      procurementApi.list({ status: "approved", per_page: 100 }).then((res) =>
+        getListData<ProcurementRequest>(res.data).filter((req) => !isBudgetConfirmed(req)),
+      ),
+    staleTime: 20_000,
+  });
+
   const awaitingApprovalQuery = useQuery({
     queryKey: ["procurement", "budget", "budget-reserved"],
     queryFn: () =>
@@ -72,6 +83,8 @@ export default function ProcurementBudgetPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["procurement", "budget"] });
       qc.invalidateQueries({ queryKey: ["procurement", "budget-reservations"] });
+      qc.invalidateQueries({ queryKey: ["rfq-approved"] });
+      qc.invalidateQueries({ queryKey: ["rfq-request"] });
       setReserveFor(null);
       setBudgetLineId(null);
       setReservedAmount("");
@@ -79,14 +92,7 @@ export default function ProcurementBudgetPage() {
       setFormError(null);
     },
     onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data
-          ?.message ??
-        (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors
-          ?.budget_line_id?.[0] ??
-        (err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors?.amount?.[0] ??
-        "Failed to reserve budget.";
-      setFormError(msg);
+      setFormError(apiErrorMessage(err, "Failed to reserve budget."));
     },
   });
 
@@ -97,7 +103,7 @@ export default function ProcurementBudgetPage() {
     },
   });
 
-  const needsReservation = hodApprovedQuery.data ?? [];
+  const needsReservation = [...(hodApprovedQuery.data ?? []), ...(approvedUnconfirmedQuery.data ?? [])];
   const awaitingApproval = awaitingApprovalQuery.data ?? [];
   const reservations = reservationsQuery.data ?? [];
 
@@ -121,7 +127,7 @@ export default function ProcurementBudgetPage() {
     <div className="space-y-6 max-w-6xl">
       <ModulePageHeader
         title="Budget Confirmation"
-        subtitle="Finance queue: reserve budget for HOD-approved requests, then approve for procurement."
+        subtitle="Finance queue: reserve budget for HOD-approved requests, including catch-up confirmation on approved requests that still need a reservation before RFQ."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Budget Confirmation" }]} />}
       />
 
@@ -137,7 +143,7 @@ export default function ProcurementBudgetPage() {
       </div>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-neutral-800">HOD approved — reserve budget</h2>
+        <h2 className="text-sm font-semibold text-neutral-800">Awaiting budget confirmation</h2>
         <div className="card overflow-x-auto">
           {needsReservation.length === 0 ? (
             <p className="px-5 py-8 text-sm text-neutral-400 text-center">No requests awaiting budget reservation.</p>
@@ -148,6 +154,7 @@ export default function ProcurementBudgetPage() {
                   <th>Reference</th>
                   <th>Title</th>
                   <th>Est. value</th>
+                  <th>Status</th>
                   <th>HOD reviewed</th>
                   <th></th>
                 </tr>
@@ -159,6 +166,9 @@ export default function ProcurementBudgetPage() {
                     <td className="font-medium">{req.title}</td>
                     <td className="font-mono text-sm">
                       {req.currency} {Number(req.estimated_value).toLocaleString()}
+                    </td>
+                    <td className="text-xs capitalize text-neutral-600">
+                      {req.status === "approved" ? "Approved — catch-up" : "HOD approved"}
                     </td>
                     <td className="text-xs text-neutral-500">
                       {req.hod_reviewed_at ? formatDateShort(req.hod_reviewed_at) : "—"}

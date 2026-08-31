@@ -11,6 +11,8 @@ import {
   type SupplierCategory,
 } from "@/lib/api";
 import { canIssueProcurementRfq, canViewProcurementRfq, getStoredUser } from "@/lib/auth";
+import { apiErrorMessage } from "@/lib/apiError";
+import { isBudgetConfirmed } from "@/lib/procurementBudget";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
@@ -78,8 +80,15 @@ export default function RfqListPage() {
 
   const approved: ProcurementRequest[] = (approvedData as { data?: ProcurementRequest[] })?.data ?? [];
   const awarded: ProcurementRequest[] = (awardedData as { data?: ProcurementRequest[] })?.data ?? [];
+  const awaitingBudget = useMemo(
+    () => approved.filter((request) => !request.rfq_issued_at && request.status === "approved" && !isBudgetConfirmed(request)),
+    [approved]
+  );
   const eligibleRequests = useMemo(
-    () => approved.filter((request) => !request.rfq_issued_at && request.status === "approved"),
+    () =>
+      approved.filter(
+        (request) => !request.rfq_issued_at && request.status === "approved" && isBudgetConfirmed(request),
+      ),
     [approved]
   );
   const selectedRequest = eligibleRequests.find((request) => request.id === selectedRequestId) ?? null;
@@ -180,11 +189,7 @@ export default function RfqListPage() {
       router.push(`/procurement/rfq/${requestId}`);
     },
     onError: (err: unknown) => {
-      const message =
-        err instanceof Error
-          ? err.message
-          : (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to issue RFQ.";
-      setFormError(message);
+      setFormError(apiErrorMessage(err, "Failed to issue RFQ."));
     },
   });
 
@@ -204,7 +209,7 @@ export default function RfqListPage() {
             <span className="text-neutral-700">RFQ</span>
           </div>
           <h1 className="page-title">Requests for Quotation</h1>
-          <p className="page-subtitle">Issue RFQs from approved procurement requests and track supplier responses.</p>
+          <p className="page-subtitle">Issue RFQs from approved requests that Finance has budget-confirmed, then track supplier responses.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -219,7 +224,9 @@ export default function RfqListPage() {
           {canIssueRfq && (
             <button
               type="button"
-              className="btn-primary inline-flex items-center gap-1.5 text-sm"
+              className="btn-primary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
+              disabled={eligibleRequests.length === 0}
+              title={eligibleRequests.length === 0 ? "Finance must confirm budget before an RFQ can be issued" : undefined}
               onClick={() => {
                 setFormError(null);
                 setShowCreate(true);
@@ -286,7 +293,16 @@ export default function RfqListPage() {
         </div>
       </div>
 
-      {canIssueRfq && eligibleRequests.length === 0 && (
+      {canIssueRfq && awaitingBudget.length > 0 && (
+        <div className="card p-4 text-sm text-amber-800 bg-amber-50 border border-amber-200">
+          Finance budget confirmation is required before issuing an RFQ for {awaitingBudget.length} approved
+          {awaitingBudget.length === 1 ? " request" : " requests"}.{" "}
+          <Link href="/procurement/budget" className="font-medium text-primary hover:underline">
+            Open budget confirmation
+          </Link>
+        </div>
+      )}
+      {canIssueRfq && eligibleRequests.length === 0 && awaitingBudget.length === 0 && (
         <div className="card p-4 text-sm text-amber-700 bg-amber-50 border-amber-200">
           No approved procurement requests are ready for a new RFQ. Approve a procurement request first, or update an existing RFQ from its detail page.
         </div>
@@ -333,10 +349,13 @@ export default function RfqListPage() {
                 {paged.map((req) => {
                   const quotes = req.quotes ?? [];
                   const isAwarded = req.status === "awarded";
+                  const needsBudget = !isAwarded && !isBudgetConfirmed(req);
                   const filter = isAwarded ? ("awarded" as const) : rfqFilter(req);
                   const badge = isAwarded
                     ? { label: "Awarded", cls: "badge-success", icon: "emoji_events" }
-                    : rfqBadge(filter as RfqFilter);
+                    : needsBudget
+                      ? { label: "Awaiting budget", cls: "badge-warning", icon: "account_balance" }
+                      : rfqBadge(filter as RfqFilter);
                   const lowest = quotes.length > 0 ? Math.min(...quotes.map((q) => q.quoted_amount)) : null;
 
                   return (
@@ -404,7 +423,7 @@ export default function RfqListPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-lg font-bold text-neutral-900">Create RFQ</h2>
-                <p className="text-sm text-neutral-500">Select an approved procurement request, configure supplier targeting, and issue the RFQ.</p>
+                <p className="text-sm text-neutral-500">Select a Finance-confirmed approved request, configure supplier targeting, and issue the RFQ.</p>
               </div>
               <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>Close</button>
             </div>
@@ -422,7 +441,7 @@ export default function RfqListPage() {
                 value={selectedRequestId}
                 onChange={(e) => setSelectedRequestId(e.target.value ? Number(e.target.value) : "")}
               >
-                <option value="">Select an approved request</option>
+                <option value="">Select an approved request with budget confirmation</option>
                 {eligibleRequests.map((request) => (
                   <option key={request.id} value={request.id}>
                     {request.reference_number} - {request.title}

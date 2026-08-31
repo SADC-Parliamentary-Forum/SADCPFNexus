@@ -30,6 +30,9 @@ class ProcurementService
     public function list(array $filters, User $user): LengthAwarePaginator
     {
         $query = ProcurementRequest::with(['requester', 'items', 'quotes', 'supplierCategories', 'programme:id,reference_number,title'])
+            ->withExists([
+                'budgetReservations as budget_confirmed' => fn ($q) => $q->activeConfirmation(),
+            ])
             ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
@@ -401,15 +404,7 @@ class ProcurementService
 
     protected function assertBudgetConfirmed(ProcurementRequest $request): void
     {
-        $active = $request->budgetReservations()
-            ->whereNull('released_at')
-            ->where(function ($q) {
-                $q->whereNull('status')
-                    ->orWhereIn('status', BudgetReservation::ACTIVE_STATUSES);
-            })
-            ->exists();
-
-        if (! $active) {
+        if (! $request->hasActiveBudgetConfirmation()) {
             throw ValidationException::withMessages([
                 'budget' => 'Finance budget confirmation is required before this action.',
             ]);

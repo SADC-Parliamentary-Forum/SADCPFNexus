@@ -4,6 +4,8 @@ import { use, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { canIssueProcurementRfq, getStoredUser } from "@/lib/auth";
+import { apiErrorMessage } from "@/lib/apiError";
+import { isBudgetConfirmed } from "@/lib/procurementBudget";
 import {
   procurementApi,
   quoteAttachmentsApi,
@@ -194,7 +196,7 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
       setError(null);
     },
     onError: (err: unknown) =>
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to issue RFQ."),
+      setError(apiErrorMessage(err, "Failed to issue RFQ.")),
   });
 
   const saveQuoteMutation = useMutation({
@@ -258,6 +260,9 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
   if (requestQuery.isLoading) return <div className="max-w-4xl mx-auto card p-6">Loading RFQ...</div>;
   if (requestQuery.isError || !req) return <div className="max-w-4xl mx-auto card p-6">RFQ not found.</div>;
 
+  const budgetConfirmed = isBudgetConfirmed(req);
+  const canIssueNow = budgetConfirmed;
+
   return (
     <div className="max-w-4xl mx-auto space-y-5">
       <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
@@ -292,15 +297,28 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
         {req.description && <p className="text-sm text-neutral-600">{req.description}</p>}
       </div>
 
+      {!budgetConfirmed && req.status !== "awarded" && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Finance budget confirmation is required before this RFQ can be issued.{" "}
+          <Link href="/procurement/budget" className="font-medium text-primary hover:underline">
+            Open budget confirmation
+          </Link>
+        </div>
+      )}
+
       <div className="card p-5 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold text-neutral-800">RFQ Initiation</h2>
             <p className="text-xs text-neutral-400">
-              {req.rfq_issued_at ? `Issued ${formatDateShort(req.rfq_issued_at)}` : "Target approved suppliers by category and email invitees."}
+              {req.rfq_issued_at
+                ? `Issued ${formatDateShort(req.rfq_issued_at)}`
+                : budgetConfirmed
+                  ? "Target approved suppliers by category and email invitees."
+                  : "Waiting for Finance to confirm budget before this RFQ can be issued."}
             </p>
           </div>
-          {manager && req.status !== "awarded" && (
+          {manager && req.status !== "awarded" && canIssueNow && (
             <button className="btn-secondary text-xs px-3 py-1.5" onClick={() => setShowIssue((v) => !v)}>
               {req.rfq_issued_at ? "Update RFQ" : "Issue RFQ"}
             </button>
@@ -367,7 +385,7 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
             </div>
             <div className="flex gap-2">
               <button className="btn-secondary" onClick={() => setShowIssue(false)}>Cancel</button>
-              <button className="btn-primary disabled:opacity-60" disabled={issueMutation.isPending || categoryIds.length === 0} onClick={() => issueMutation.mutate()}>
+              <button className="btn-primary disabled:opacity-60" disabled={issueMutation.isPending || categoryIds.length === 0 || !canIssueNow} onClick={() => issueMutation.mutate()}>
                 {issueMutation.isPending ? "Saving..." : req.rfq_issued_at ? "Update RFQ" : "Issue RFQ"}
               </button>
             </div>

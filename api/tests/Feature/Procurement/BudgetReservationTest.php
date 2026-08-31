@@ -276,4 +276,103 @@ class BudgetReservationTest extends TestCase
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['budget']);
     }
+
+    public function test_list_and_show_include_budget_confirmed_flag(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+
+        $unconfirmed = ProcurementRequest::create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $officer->id,
+            'title' => 'Approved without reservation',
+            'description' => 'Must surface budget_confirmed=false',
+            'category' => 'goods',
+            'estimated_value' => 20_000,
+            'currency' => 'NAD',
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        $confirmed = ProcurementRequest::create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $officer->id,
+            'title' => 'Approved with reservation',
+            'description' => 'Must surface budget_confirmed=true',
+            'category' => 'goods',
+            'estimated_value' => 21_000,
+            'currency' => 'NAD',
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+        $this->reserveBudgetFor($confirmed, $this->makeUser('Finance Controller', $tenant));
+
+        $list = $http->getJson('/api/v1/procurement/requests?status=approved&per_page=100')
+            ->assertOk()
+            ->json('data');
+
+        $listedUnconfirmed = collect($list)->firstWhere('id', $unconfirmed->id);
+        $listedConfirmed = collect($list)->firstWhere('id', $confirmed->id);
+
+        $this->assertNotNull($listedUnconfirmed);
+        $this->assertNotNull($listedConfirmed);
+        $this->assertFalse((bool) $listedUnconfirmed['budget_confirmed']);
+        $this->assertTrue((bool) $listedConfirmed['budget_confirmed']);
+
+        $this->assertFalse((bool) $http->getJson("/api/v1/procurement/requests/{$unconfirmed->id}")
+            ->assertOk()
+            ->json('budget_confirmed'));
+
+        $this->assertTrue((bool) $http->getJson("/api/v1/procurement/requests/{$confirmed->id}")
+            ->assertOk()
+            ->json('budget_confirmed'));
+    }
+
+    public function test_finance_can_reserve_budget_for_approved_request_without_reservation(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $requester = $this->makeUser('staff', $tenant);
+        $finance = $this->makeUser('Finance Controller', $tenant);
+        $line = $this->seedOrgLine($tenant, $finance);
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $category = $this->makeSupplierCategory($tenant);
+
+        $req = ProcurementRequest::create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $requester->id,
+            'title' => 'Workflow-approved without reservation',
+            'description' => 'Catch-up Finance confirmation before RFQ',
+            'category' => 'goods',
+            'estimated_value' => 15_000,
+            'currency' => 'NAD',
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        $this->asUser($finance)
+            ->postJson("/api/v1/procurement/requests/{$req->id}/reserve-budget", [
+                'budget_line_id' => $line->id,
+                'reserved_amount' => 15_000,
+                'notes' => 'Catch-up confirmation after SG approval.',
+            ])
+            ->assertCreated();
+
+        $this->assertDatabaseHas('procurement_requests', [
+            'id' => $req->id,
+            'status' => 'approved',
+        ]);
+
+        $this->asUser($finance)
+            ->postJson("/api/v1/procurement/requests/{$req->id}/reserve-budget", [
+                'budget_line_id' => $line->id,
+                'reserved_amount' => 15_000,
+            ])
+            ->assertUnprocessable();
+
+        $http->postJson("/api/v1/procurement/requests/{$req->id}/issue-rfq", [
+            'category_ids' => [$category->id],
+            'rfq_deadline' => now()->addDays(5)->toDateString(),
+        ])->assertOk()
+            ->assertJsonPath('data.rfq_issued_by', $officer->id);
+    }
 }

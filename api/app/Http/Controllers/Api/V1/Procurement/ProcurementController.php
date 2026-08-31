@@ -38,7 +38,7 @@ class ProcurementController extends Controller
             'Procurement Officer', 'Finance Controller', 'Secretary General',
         ]);
 
-        return response()->json($procurementRequest->load([
+        $procurementRequest->load([
             'requester',
             'approver',
             'items',
@@ -53,7 +53,13 @@ class ProcurementController extends Controller
             'approvalRequest.history.user',
             'budgetReservations',
             'programme',
-        ]));
+        ]);
+        $procurementRequest->setAttribute(
+            'budget_confirmed',
+            $procurementRequest->hasActiveBudgetConfirmation()
+        );
+
+        return response()->json($procurementRequest);
     }
 
     public function store(Request $request): JsonResponse
@@ -184,7 +190,7 @@ class ProcurementController extends Controller
         );
 
         // Phase 1 hard gate: Finance budget confirmation required before approve.
-        if (!$procurementRequest->budgetReservations()->whereNull('released_at')->exists()) {
+        if (! $procurementRequest->hasActiveBudgetConfirmation()) {
             return response()->json([
                 'message' => 'Finance budget confirmation is required before this action.',
                 'errors'  => ['budget' => ['Finance budget confirmation is required before this action.']],

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -110,5 +111,25 @@ class BudgetReservation extends Model
         return ! $this->isReleased()
             && in_array($this->status, self::ACTIVE_STATUSES, true)
             && (float) $this->current_amount > 0;
+    }
+
+    /**
+     * Matches the Phase 1 RFQ/approve gate: unreleased reservation whose status is
+     * still confirming budget (including legacy rows with a null status).
+     */
+    public function isActiveConfirmation(): bool
+    {
+        return $this->released_at === null
+            && ($this->status === null || in_array($this->status, self::ACTIVE_STATUSES, true));
+    }
+
+    public function scopeActiveConfirmation(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('released_at')
+            ->where(function (Builder $inner) {
+                $inner->whereNull('status')
+                    ->orWhereIn('status', self::ACTIVE_STATUSES);
+            });
     }
 }
