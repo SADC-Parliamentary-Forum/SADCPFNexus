@@ -247,7 +247,7 @@ class MeReportingService
     public function calendar(User $user, array $filters = []): array
     {
         $month = $filters['month'] ?? now()->format('Y-m');
-        $start = \Carbon\Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+        $start = \Carbon\Carbon::createFromFormat('Y-m-d', $month.'-01')->startOfMonth();
         $end = $start->copy()->endOfMonth();
 
         $items = DB::table('me_activity_reports')

@@ -6,6 +6,7 @@ use App\Models\LeaveLedgerEntry;
 use App\Models\LeaveType;
 use App\Models\Tenant;
 use App\Modules\Leave\Services\LeavePolicyService;
+use Carbon\CarbonImmutable;
 use Tests\TestCase;
 
 class LeaveMonthlyAccrualCommandTest extends TestCase
@@ -66,10 +67,16 @@ class LeaveMonthlyAccrualCommandTest extends TestCase
             ->where('code', 'annual')
             ->update(['annual_entitlement' => 24]);
 
-        $this->artisan('leave:post-monthly-accruals', [
-            '--tenant' => $tenant->id,
-            '--month' => '2026-09',
-        ])->assertExitCode(0);
+        // YYYY-MM parsing must not inherit "today" (31 Aug overflows September).
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-31'));
+        try {
+            $this->artisan('leave:post-monthly-accruals', [
+                '--tenant' => $tenant->id,
+                '--month' => '2026-09',
+            ])->assertExitCode(0);
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
 
         $this->assertDatabaseHas('leave_ledger_entries', [
             'tenant_id' => $tenant->id,

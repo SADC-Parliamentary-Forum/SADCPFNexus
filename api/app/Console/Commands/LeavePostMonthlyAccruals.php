@@ -55,7 +55,7 @@ class LeavePostMonthlyAccruals extends Command
             return false;
         }
 
-        $parsed = CarbonImmutable::createFromFormat('Y-m', $month);
+        $parsed = CarbonImmutable::createFromFormat('Y-m-d', $month.'-01');
 
         if (! $parsed || $parsed->format('Y-m') !== $month) {
             return false;
