@@ -374,6 +374,11 @@ test("assignment calendar surfaces calendar feed subscribe URL", () => {
   assert.match(source, /calendarFeed/);
   assert.match(source, /subscribe_url/);
   assert.match(source, /google_credentials_present/);
+  assert.match(source, /rotateCalendarFeed/);
+  assert.match(source, /EmptyState/);
+  assert.match(source, /\/assignments\/\$\{item\.id\}/);
+  assert.match(source, /Today/);
+  assert.doesNotMatch(source, /subscribe_url: feed\.subscribe_url/);
 });
 
 test("people org search renders labelled object cells instead of JSON dumps", () => {

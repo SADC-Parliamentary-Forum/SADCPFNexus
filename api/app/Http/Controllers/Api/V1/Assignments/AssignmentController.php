@@ -161,6 +161,38 @@ class AssignmentController extends Controller
         ]);
     }
 
+    public function rotateCalendarFeed(Request $request): JsonResponse
+    {
+        $this->ics->rotateFeed($request->user());
+        $sync = app(\App\Modules\Assignments\Services\AssignmentGoogleCalendarSyncService::class);
+        $googlePresent = $sync->credentialsPresent();
+
+        return response()->json([
+            'data' => array_merge(
+                $this->ics->feedMeta($request->user(), $googlePresent),
+                ['sync_status' => $sync->syncStatus()]
+            ),
+        ]);
+    }
+
+    /**
+     * Public ICS subscribe for calendar clients. Auth is the opaque feed token.
+     * Invalid, revoked, or disabled-user tokens 404 (do not leak 401).
+     */
+    public function calendarSubscribe(string $token): Response
+    {
+        $ics = $this->ics->icsForSubscribeToken($token);
+        if ($ics === null) {
+            abort(404);
+        }
+
+        return response($ics, 200, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'inline; filename="assignments.ics"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
     public function capacity(Request $request): JsonResponse
     {
         $data = $request->validate([

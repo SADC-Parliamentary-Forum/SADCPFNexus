@@ -57,12 +57,122 @@ class AssignmentsIcsCapacityTest extends TestCase
         $user = $this->makeUser('staff', $tenant);
         $this->seedAssignment($tenant, $user, $user);
 
-        $this->actingAs($user, 'sanctum')
+        $payload = $this->actingAs($user, 'sanctum')
             ->getJson('/api/v1/assignments/calendar-feed')
             ->assertOk()
             ->assertJsonPath('data.provider', 'ics')
             ->assertJsonPath('data.google_credentials_present', false)
-            ->assertJsonStructure(['data' => ['subscribe_url', 'download_url', 'provider', 'instructions']]);
+            ->assertJsonStructure(['data' => ['subscribe_url', 'download_url', 'provider', 'instructions']])
+            ->json('data');
+
+        $this->assertNotSame($payload['download_url'], $payload['subscribe_url']);
+        $this->assertStringContainsString('calendar-subscribe', $payload['subscribe_url']);
+        $this->assertStringContainsString('calendar.ics', $payload['download_url']);
+        $this->assertStringNotContainsString('calendar-subscribe', $payload['download_url']);
+    }
+
+    public function test_unauthenticated_ics_download_still_requires_sanctum(): void
+    {
+        $this->getJson('/api/v1/assignments/calendar.ics?scope=mine')->assertUnauthorized();
+    }
+
+    public function test_calendar_clients_can_fetch_subscribe_feed_with_opaque_token(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeUser('staff', $tenant);
+        $other = $this->makeUser('staff', $tenant);
+        $mine = $this->seedAssignment($tenant, $user, $user, [
+            'title' => 'Mine subscribe event',
+        ]);
+        $this->seedAssignment($tenant, $other, $other, [
+            'title' => 'Someone else private task',
+        ]);
+
+        $payload = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/assignments/calendar-feed')
+            ->assertOk()
+            ->json('data');
+
+        $path = $this->pathFromUrl($payload['subscribe_url']);
+        $this->flushAuthGuards();
+
+        $response = $this->get($path)->assertOk();
+        $this->assertStringContainsString('text/calendar', (string) $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('inline', (string) $response->headers->get('Content-Disposition'));
+        $body = $response->getContent();
+        $this->assertStringContainsString('BEGIN:VCALENDAR', $body);
+        $this->assertStringContainsString('Mine subscribe event', $body);
+        $this->assertStringContainsString('UID:assignment-'.$mine->id.'@sadcpf-nexus', $body);
+        $this->assertStringNotContainsString('Someone else private task', $body);
+
+        $this->get($path.'.ics')->assertOk()
+            ->assertSee('Mine subscribe event', false);
+    }
+
+    public function test_unknown_subscribe_token_returns_not_found(): void
+    {
+        $this->get('/api/v1/assignments/calendar-subscribe/not-a-real-token')->assertNotFound();
+    }
+
+    public function test_disabled_user_subscribe_token_returns_not_found(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeUser('staff', $tenant);
+        $this->seedAssignment($tenant, $user, $user, ['title' => 'Should vanish when disabled']);
+
+        $payload = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/assignments/calendar-feed')
+            ->assertOk()
+            ->json('data');
+
+        $path = $this->pathFromUrl($payload['subscribe_url']);
+
+        $user->update(['is_active' => false]);
+        $this->flushAuthGuards();
+
+        $this->get($path)->assertNotFound();
+    }
+
+    public function test_rotating_ics_feed_invalidates_previous_subscribe_url(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeUser('staff', $tenant);
+        $this->seedAssignment($tenant, $user, $user, ['title' => 'Rotate feed event']);
+
+        $before = $this->actingAs($user, 'sanctum')
+            ->getJson('/api/v1/assignments/calendar-feed')
+            ->assertOk()
+            ->json('data');
+
+        $oldPath = $this->pathFromUrl($before['subscribe_url']);
+
+        $after = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/v1/assignments/calendar-feed/rotate')
+            ->assertOk()
+            ->assertJsonPath('data.provider', 'ics')
+            ->json('data');
+
+        $this->assertNotSame($before['subscribe_url'], $after['subscribe_url']);
+        $this->assertStringContainsString('calendar-subscribe', $after['subscribe_url']);
+
+        $this->flushAuthGuards();
+        $this->get($oldPath)->assertNotFound();
+        $this->get($this->pathFromUrl($after['subscribe_url']))->assertOk()
+            ->assertSee('Rotate feed event', false);
+    }
+
+    private function pathFromUrl(string $url): string
+    {
+        $path = parse_url($url, PHP_URL_PATH);
+        $this->assertIsString($path);
+        $this->assertNotSame('', $path);
+
+        return $path;
+    }
+
+    private function flushAuthGuards(): void
+    {
+        $this->app['auth']->forgetGuards();
     }
 
     public function test_capacity_view_aggregates_open_workload_per_assignee(): void

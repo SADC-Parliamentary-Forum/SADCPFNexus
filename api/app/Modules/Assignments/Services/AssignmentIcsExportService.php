@@ -3,8 +3,10 @@
 namespace App\Modules\Assignments\Services;
 
 use App\Models\Assignment;
+use App\Models\AssignmentIcsFeed;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class AssignmentIcsExportService
 {
@@ -70,18 +72,91 @@ class AssignmentIcsExportService
 
     public function feedMeta(User $user, bool $googleCredentialsPresent): array
     {
+        $feed = $this->issueOrGetFeed($user);
         $base = rtrim((string) config('app.url'), '/').'/api/v1/assignments';
 
         return [
             'provider' => $googleCredentialsPresent ? 'google' : 'ics',
             'google_credentials_present' => $googleCredentialsPresent,
             'download_url' => $base.'/calendar.ics?scope=mine',
-            'subscribe_url' => $base.'/calendar.ics?scope=mine',
+            'subscribe_url' => $base.'/calendar-subscribe/'.$feed->plainToken(),
             'instructions' => $googleCredentialsPresent
-                ? 'Google Calendar two-way sync is configured. Run assignments:sync-google-calendar or use the webhook. ICS subscribe URL remains available.'
-                : 'Google credentials absent (not configured) — use the ICS subscribe/download URL in Google Calendar (Add by URL) or Outlook.',
+                ? 'Google Calendar two-way sync is configured. Run assignments:sync-google-calendar or use the webhook. The ICS subscribe URL is a secret feed token — add it in Google Calendar or Outlook (Add by URL). Do not share it. In-app Download ICS still uses your signed-in session.'
+                : 'Google credentials are not configured. Paste the ICS subscribe URL into Google Calendar or Outlook (Add by URL). That URL is a secret — anyone who has it can read your assignments. In-app Download ICS still uses your signed-in session.',
             'sync_status' => $googleCredentialsPresent ? 'configured' : 'not_configured',
         ];
+    }
+
+    public function issueOrGetFeed(User $user): AssignmentIcsFeed
+    {
+        $feed = AssignmentIcsFeed::query()
+            ->where('user_id', $user->id)
+            ->whereNull('revoked_at')
+            ->first();
+
+        if ($feed && $feed->plainToken()) {
+            return $feed;
+        }
+
+        if ($feed) {
+            return $this->rotateFeed($user);
+        }
+
+        return $this->createFeed($user);
+    }
+
+    public function rotateFeed(User $user): AssignmentIcsFeed
+    {
+        return DB::transaction(function () use ($user) {
+            AssignmentIcsFeed::query()
+                ->where('user_id', $user->id)
+                ->whereNull('revoked_at')
+                ->update(['revoked_at' => now()]);
+
+            return $this->createFeed($user);
+        });
+    }
+
+    public function icsForSubscribeToken(string $token): ?string
+    {
+        $plain = preg_replace('/\.ics$/i', '', $token) ?? $token;
+        if ($plain === '') {
+            return null;
+        }
+
+        $feed = AssignmentIcsFeed::query()
+            ->with('user')
+            ->where('token_hash', AssignmentIcsFeed::hashToken($plain))
+            ->whereNull('revoked_at')
+            ->first();
+
+        $user = $feed?->user;
+        if (! $feed || ! $user || ! $user->accountAllowsAuthentication()) {
+            return null;
+        }
+
+        $from = now()->subMonth()->startOfMonth()->toDateString();
+        $to = now()->addMonths(6)->endOfMonth()->toDateString();
+        $assignments = $this->buildCalendarQuery($user, AssignmentIcsFeed::SCOPE_MINE, $from, $to)
+            ->limit(500)
+            ->get();
+
+        $feed->markUsed();
+
+        return $this->toIcs($assignments);
+    }
+
+    private function createFeed(User $user): AssignmentIcsFeed
+    {
+        $feed = new AssignmentIcsFeed([
+            'tenant_id' => $user->tenant_id,
+            'user_id' => $user->id,
+            'scope' => AssignmentIcsFeed::SCOPE_MINE,
+        ]);
+        $feed->setPlainToken(AssignmentIcsFeed::generatePlainToken());
+        $feed->save();
+
+        return $feed;
     }
 
     private function escape(string $value): string

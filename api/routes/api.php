@@ -80,6 +80,11 @@ Route::prefix('v1')->group(function () {
     Route::get('documents/public/share/{token}', [\App\Http\Controllers\Api\V1\Documents\DocumentServiceController::class, 'publicShare'])
         ->middleware('throttle:30,1');
 
+    // Assignments ICS subscribe — opaque durable feed token (calendar clients cannot send Bearer).
+    Route::get('assignments/calendar-subscribe/{token}', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendarSubscribe'])
+        ->where('token', '[A-Za-z0-9._-]+')
+        ->middleware('throttle:60,1');
+
     Route::get('parliament-connect/feed', [\App\Http\Controllers\Api\V1\ParliamentConnect\ParliamentConnectController::class, 'feed'])
         ->middleware('throttle:60,1');
 
@@ -1547,6 +1552,7 @@ Route::prefix('v1')->group(function () {
             Route::get('calendar.ics', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendarIcs']);
             Route::post('calendar/import-ics', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'importIcs']);
             Route::get('calendar-feed', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'calendarFeed']);
+            Route::post('calendar-feed/rotate', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'rotateCalendarFeed']);
             Route::get('capacity', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'capacity']);
             Route::get('workload-forecast', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'workloadForecast']);
             Route::get('handover-pack.docx', [\App\Http\Controllers\Api\V1\Assignments\AssignmentController::class, 'handoverPackDocx']);

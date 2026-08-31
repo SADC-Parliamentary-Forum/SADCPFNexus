@@ -6329,6 +6329,8 @@ export const assignmentsApi = {
     api.get<Blob>("/assignments/calendar.ics", { params, responseType: "blob" }),
   calendarFeed: () =>
     api.get<{ data: { provider: string; google_credentials_present: boolean; download_url: string; subscribe_url: string; instructions: string } }>("/assignments/calendar-feed"),
+  rotateCalendarFeed: () =>
+    api.post<{ data: { provider: string; google_credentials_present: boolean; download_url: string; subscribe_url: string; instructions: string } }>("/assignments/calendar-feed/rotate"),
   capacity: (params?: { department_id?: number }) =>
     api.get<{ data: { department_id?: number | null; assignees: Array<Record<string, unknown>>; summary: Record<string, number> } }>("/assignments/capacity", { params }),
   workloadForecast: (params?: { weeks?: number; department_id?: number }) =>
