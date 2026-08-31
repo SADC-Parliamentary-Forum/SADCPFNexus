@@ -205,6 +205,11 @@ test.describe("Travel Phase 3 — settings FX smoke", () => {
     await page.waitForURL("**/travel/settings", { timeout: 15_000 });
     await waitForApp(page);
     await skipIfAccessDenied(page, "/travel/settings");
+    await expect(page.getByRole("heading", { name: /^Travel settings$/i })).toBeVisible();
+    await expect(page.getByTestId("travel-dsa-settings")).toBeVisible();
     await expect(page.getByTestId("travel-fx-settings")).toBeVisible();
+    await expect(page.getByTestId("travel-sponsored-rates")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /DSA rate register/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /Back/i })).toBeVisible();
   });
 });
