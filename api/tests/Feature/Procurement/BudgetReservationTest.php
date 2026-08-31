@@ -334,7 +334,7 @@ class BudgetReservationTest extends TestCase
         $requester = $this->makeUser('staff', $tenant);
         $finance = $this->makeUser('Finance Controller', $tenant);
         $line = $this->seedOrgLine($tenant, $finance);
-        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $officer = $this->makeProcurementOfficer($tenant);
         $category = $this->makeSupplierCategory($tenant);
 
         $req = ProcurementRequest::create([
@@ -369,10 +369,12 @@ class BudgetReservationTest extends TestCase
             ])
             ->assertUnprocessable();
 
-        $http->postJson("/api/v1/procurement/requests/{$req->id}/issue-rfq", [
-            'category_ids' => [$category->id],
-            'rfq_deadline' => now()->addDays(5)->toDateString(),
-        ])->assertOk()
+        $this->asUser($officer)
+            ->postJson("/api/v1/procurement/requests/{$req->id}/issue-rfq", [
+                'category_ids' => [$category->id],
+                'rfq_deadline' => now()->addDays(5)->toDateString(),
+            ])
+            ->assertOk()
             ->assertJsonPath('data.rfq_issued_by', $officer->id);
     }
 }

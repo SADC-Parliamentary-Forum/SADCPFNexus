@@ -53,10 +53,10 @@ test.describe("Dashboard", () => {
   });
 
   test("navigation links are present", async ({ page }) => {
-    // Expanded parents are <button>; leaf items are <a>. Count both.
+    // Sidebar hydrates from stored session then /access/navigation. Count after
+    // that, not on the first paint (which can be a single Dashboard item).
     const items = page.locator("nav a, aside a, nav button, aside button");
-    const count = await items.count();
-    expect(count).toBeGreaterThan(5);
+    await expect.poll(async () => items.count(), { timeout: 10_000 }).toBeGreaterThan(5);
   });
 
   test("notification bell is visible in header", async ({ page }) => {
