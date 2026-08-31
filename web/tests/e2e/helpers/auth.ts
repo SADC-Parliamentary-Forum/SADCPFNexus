@@ -7,7 +7,7 @@
  */
 import fs from "fs";
 import path from "path";
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 const AUTH_DIR = path.join(process.cwd(), "playwright/.auth");
 
@@ -94,4 +94,14 @@ export async function clearBrowserAuth(page: import("@playwright/test").Page): P
 /** Prefer `load` over `networkidle` — header unread-count polling never goes idle. */
 export async function waitForApp(page: import("@playwright/test").Page): Promise<void> {
   await page.waitForLoadState("domcontentloaded");
+}
+
+/**
+ * Next.js / Laravel crash chrome. Do not match the word "exceptions" in
+ * policy copy (salary-advance settings hub: "Policy version, exceptions…").
+ */
+export async function expectNoServerCrash(page: import("@playwright/test").Page): Promise<void> {
+  await expect(page.locator("body")).not.toContainText(
+    /Internal Server Error|Unhandled Runtime Error|Application error: a client-side exception|\bException\b/i
+  );
 }

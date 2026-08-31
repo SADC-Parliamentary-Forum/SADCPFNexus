@@ -8,13 +8,7 @@
  *   cd web && npx playwright test tests/e2e/timesheets-travel-followups.spec.ts --project=admin
  */
 import { test, expect } from "@playwright/test";
-import { landedOnLogin, skipWithoutAuth } from "./helpers/auth";
-
-async function expectNoServerCrash(page: import("@playwright/test").Page) {
-  await expect(page.locator("body")).not.toContainText(
-    /(Internal Server Error|Unhandled Runtime Error|Exception)/i
-  );
-}
+import { expectNoServerCrash, landedOnLogin, skipWithoutAuth } from "./helpers/auth";
 
 test.describe("Timesheet templates admin", () => {
   test.beforeEach(() => {

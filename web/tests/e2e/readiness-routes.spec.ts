@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { expectNoServerCrash } from "./helpers/auth";
 
 const STAFF_ROUTES = [
   "/dashboard",
@@ -55,7 +56,7 @@ test.describe("readiness route smoke", () => {
       expect(status, `unexpected ${status} for ${route}`).toBeLessThan(500);
       expect(status, `unexpected ${status} for ${route}`).not.toBe(404);
 
-      await expect(page.locator("body")).not.toContainText(/(Internal Server Error|Unhandled|Exception)/i);
+      await expectNoServerCrash(page);
 
       const discovered = await collectInternalLinks(page);
       for (const href of discovered) routes.add(href);
@@ -69,7 +70,7 @@ test.describe("readiness route smoke", () => {
       expect(status, `unexpected ${status} for discovered route ${route}`).toBeLessThan(500);
       expect(status, `unexpected ${status} for discovered route ${route}`).not.toBe(404);
 
-      await expect(page.locator("body")).not.toContainText(/(Internal Server Error|Unhandled|Exception)/i);
+      await expectNoServerCrash(page);
     }
   });
 });

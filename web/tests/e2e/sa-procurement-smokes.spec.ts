@@ -24,17 +24,12 @@
 import { test, expect } from "@playwright/test";
 import {
   authStatePath,
+  expectNoServerCrash,
   landedOnLogin,
   skipIfAccessDenied,
   skipWithoutAuth,
   waitForApp,
 } from "./helpers/auth";
-
-async function expectNoServerCrash(page: import("@playwright/test").Page) {
-  await expect(page.locator("body")).not.toContainText(
-    /(Internal Server Error|Unhandled Runtime Error|Exception)/i
-  );
-}
 
 test.describe("Smoke — Salary Advances (staff)", () => {
   test.use({ storageState: authStatePath("staff") });
