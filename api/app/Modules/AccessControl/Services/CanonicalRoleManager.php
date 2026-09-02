@@ -44,6 +44,7 @@ class CanonicalRoleManager
     {
         return [
             'staff' => 'General Employee',
+            'Staff' => 'General Employee',
             'HOD' => 'Supervisor / Line Manager',
             'Director' => 'Head of Department / Director',
             'HR Manager' => 'HR and Administration Officer',

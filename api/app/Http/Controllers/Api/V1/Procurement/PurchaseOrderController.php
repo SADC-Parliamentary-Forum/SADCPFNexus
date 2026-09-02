@@ -15,7 +15,7 @@ class PurchaseOrderController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        if ($request->user()->hasRole('staff')) {
+        if ($request->user()->hasAnyRole(['staff', 'Staff', 'General Employee'])) {
             abort(403);
         }
         $filters = $request->only(['status', 'search', 'per_page']);

@@ -82,6 +82,34 @@ class AccessControlModuleVisibilityTest extends TestCase
         $http->getJson('/api/v1/finance/balance-register/dashboard')->assertOk();
     }
 
+    public function test_title_case_staff_cannot_open_organisation_module_apis(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeUser('Staff', $tenant);
+
+        $http = $this->asUser($user);
+        $http->getJson('/api/v1/finance/budgets')->assertForbidden();
+        $http->getJson('/api/v1/finance/balance-register/dashboard')->assertForbidden();
+        $http->getJson('/api/v1/assets')->assertForbidden();
+        $http->getJson('/api/v1/travel/missions')->assertForbidden();
+        $http->getJson('/api/v1/travel/fleet-vehicles')->assertForbidden();
+    }
+
+    public function test_title_case_staff_me_payload_omits_organisation_hubs(): void
+    {
+        $user = $this->makeUser('Staff');
+        $perms = $this->asUser($user)->getJson('/api/v1/auth/me')->assertOk()->json('permissions');
+
+        $this->assertNotContains('travel.view', $perms);
+        $this->assertNotContains('finance.view', $perms);
+        $this->assertNotContains('procurement.view', $perms);
+        $this->assertNotContains('assets.view', $perms);
+        $this->assertNotContains('hr.view', $perms);
+        $this->assertNotContains('reports.view', $perms);
+        $this->assertContains('travel.create', $perms);
+        $this->assertContains('leave.view', $perms);
+    }
+
     public function test_staff_cannot_list_other_employees_hr_incidents(): void
     {
         $tenant = Tenant::factory()->create();

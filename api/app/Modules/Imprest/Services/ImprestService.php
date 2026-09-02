@@ -23,11 +23,14 @@ class ImprestService
     public function list(array $filters, User $user): LengthAwarePaginator
     {
         $query = ImprestRequest::with(['requester', 'orgBudgetLine'])
+            ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
-        if ($user->hasRole('staff')) {
-            $query->where('requester_id', $user->id);
-        }
+        // Deny-by-default: own records unless the actor has elevated imprest access.
+        // Do not key this off hasRole('staff') — production still has a title-case
+        // "Staff" leftover that does not match the lowercase alias.
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($query, $user, 'requester_id', ['module' => 'imprest']);
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);

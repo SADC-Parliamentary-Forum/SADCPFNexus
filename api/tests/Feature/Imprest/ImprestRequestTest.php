@@ -4,6 +4,9 @@ namespace Tests\Feature\Imprest;
 
 use App\Models\ImprestRequest;
 use App\Models\Tenant;
+use App\Models\User;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ImprestRequestTest extends TestCase
@@ -200,5 +203,38 @@ class ImprestRequestTest extends TestCase
 
         $http->deleteJson("/api/v1/imprest/requests/{$imprest->id}")
              ->assertStatus(422);
+    }
+
+    public function test_employee_without_lowercase_staff_role_only_lists_own_imprests(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $role = Role::firstOrCreate(['name' => 'OrphanEmployee', 'guard_name' => 'sanctum']);
+        $role->syncPermissions(
+            Permission::where('guard_name', 'sanctum')
+                ->whereIn('name', ['imprest.view', 'imprest.create'])
+                ->get()
+        );
+
+        $actor = User::factory()->create(['tenant_id' => $tenant->id]);
+        $actor->assignRole('OrphanEmployee');
+        $peer = $this->makeUser('staff', $tenant);
+
+        ImprestRequest::factory()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $actor->id,
+            'reference_number' => 'IMP-OWN-001',
+        ]);
+        ImprestRequest::factory()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $peer->id,
+            'reference_number' => 'IMP-JOHN-002',
+        ]);
+
+        $refs = collect($this->asUser($actor)->getJson('/api/v1/imprest/requests')->assertOk()->json('data'))
+            ->pluck('reference_number')
+            ->all();
+
+        $this->assertContains('IMP-OWN-001', $refs);
+        $this->assertNotContains('IMP-JOHN-002', $refs);
     }
 }

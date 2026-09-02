@@ -8,6 +8,7 @@ import {
   type Assignment, type AssignmentStats,
 } from "@/lib/api";
 import { canAccessRoute, isSystemAdmin } from "@/lib/auth";
+import { dashboardModulesForUser } from "@/lib/dashboardAccess";
 import { formatDateShort } from "@/lib/utils";
 import Link from "next/link";
 
@@ -27,26 +28,6 @@ const quickActions = [
   { label: "Timesheet",            href: "/hr/timesheets",           icon: "schedule",                color: "text-teal-600",   bg: "bg-teal-50 dark:bg-teal-900/20"     },
 ];
 
-const modules = [
-  { label: "Travel",          href: "/travel",          icon: "flight_takeoff",         desc: "Missions & DSA" },
-  { label: "Leave",           href: "/leave",           icon: "event_available",        desc: "Leave management" },
-  { label: "Finance",         href: "/finance",         icon: "payments",               desc: "Payslips & advances" },
-  { label: "Imprest",         href: "/imprest",         icon: "account_balance_wallet", desc: "Petty cash" },
-  { label: "Procurement",     href: "/procurement",     icon: "shopping_cart",          desc: "Requisitions" },
-  { label: "Stock",           href: "/stock",           icon: "inventory_2",            desc: "Consumables" },
-  { label: "Assets",          href: "/assets",          icon: "precision_manufacturing", desc: "Fixed assets" },
-  { label: "Fleet",           href: "/fleet",           icon: "directions_car",         desc: "Vehicles & bookings" },
-  { label: "HR",              href: "/hr",              icon: "people",                 desc: "Timesheets & leave" },
-  { label: "People",          href: "/people",          icon: "badge",                  desc: "Directory & authority" },
-  { label: "Assignments",     href: "/assignments",     icon: "task_alt",               desc: "Tasks & accountability" },
-  { label: "Workplan",        href: "/workplan",        icon: "calendar_month",         desc: "Institutional calendar" },
-  { label: "Correspondence",  href: "/correspondence",  icon: "mail",                   desc: "Registry & letters" },
-  { label: "Governance",      href: "/governance",      icon: "gavel",                  desc: "Resolutions & meetings" },
-  { label: "Risk",            href: "/risk",            icon: "warning",                desc: "Risk register" },
-  { label: "Audit",           href: "/audit",           icon: "policy",                 desc: "Plans & findings" },
-  { label: "Reports",         href: "/reports",         icon: "summarize",              desc: "Exports & packs" },
-  { label: "Admin",           href: "/admin",           icon: "admin_panel_settings",   desc: "Users & settings" },
-];
 
 interface ActivityItem {
   id: number;
@@ -239,7 +220,7 @@ export default function DashboardPage() {
 
   // ─── Derived ───────────────────────────────────────────────────────────────
   const statCardsToShow = statConfig.filter((card) => canAccessRoute(user ?? null, card.href));
-  const modulesToShow = modules.filter((m) => canAccessRoute(user ?? null, m.href));
+  const modulesToShow = dashboardModulesForUser(user ?? null);
   const quickActionsToShow = quickActions.filter((q) => canAccessRoute(user ?? null, q.href));
   const isAdmin = isSystemAdmin(user ?? null);
   const isSG = user?.roles?.some((r) => r === "Secretary General" || r === "SG") ?? false;

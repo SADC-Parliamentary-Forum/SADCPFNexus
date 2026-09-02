@@ -311,7 +311,7 @@ class ProcurementController extends Controller
 
     public function reject(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        if ($request->user()->hasRole('staff')) {
+        if ($request->user()->hasAnyRole(['staff', 'Staff', 'General Employee'])) {
             abort(403);
         }
         if ((int) $procurementRequest->tenant_id !== (int) $request->user()->tenant_id) {

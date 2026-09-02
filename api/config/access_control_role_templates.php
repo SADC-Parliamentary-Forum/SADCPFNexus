@@ -57,7 +57,7 @@ return [
             'workplan.view', 'workplan.create',
         ],
         'inherits' => [],
-        'legacy_roles' => ['staff'],
+        'legacy_roles' => ['staff', 'Staff'],
         'feature_only' => false,
         'read_only' => false,
         'no_business_approve' => false,
