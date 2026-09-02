@@ -35,21 +35,30 @@ class AccessControlModuleVisibilityTest extends TestCase
             ->pluck('label')
             ->all();
 
-        $this->assertNotContains('Procurement', $labels);
         $this->assertNotContains('Finance', $labels);
         $this->assertNotContains('HR', $labels);
         $this->assertNotContains('Assets', $labels);
         $this->assertNotContains('Fixed Assets', $labels);
 
         $items = $http->getJson('/api/v1/access/navigation')->json('data.items');
+
+        $assertCreateOnly = function (array $item, string $createHref, array $hubHrefs): void {
+            $this->assertFalse((bool) ($item['linkable'] ?? true));
+            $this->assertNull($item['href']);
+            $childHrefs = collect($item['children'] ?? [])->pluck('href')->all();
+            $this->assertContains($createHref, $childHrefs);
+            foreach ($hubHrefs as $href) {
+                $this->assertNotContains($href, $childHrefs);
+            }
+        };
+
         $travel = collect($items)->firstWhere('label', 'Travel');
         $this->assertNotNull($travel);
-        $this->assertFalse((bool) ($travel['linkable'] ?? true));
-        $this->assertNull($travel['href']);
-        $childHrefs = collect($travel['children'] ?? [])->pluck('href')->all();
-        $this->assertContains('/travel/create', $childHrefs);
-        $this->assertNotContains('/travel', $childHrefs);
-        $this->assertNotContains('/travel/missions', $childHrefs);
+        $assertCreateOnly($travel, '/travel/create', ['/travel', '/travel/missions', '/travel/register']);
+
+        $procurement = collect($items)->firstWhere('label', 'Procurement');
+        $this->assertNotNull($procurement);
+        $assertCreateOnly($procurement, '/procurement/create', ['/procurement', '/procurement/vendors']);
     }
 
     public function test_finance_controller_can_open_travel_missions_and_budget_hubs(): void

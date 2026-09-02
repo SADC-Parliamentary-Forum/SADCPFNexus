@@ -79,14 +79,18 @@ class NavigationManifestService
             );
         }
 
-        // Procurement — feature-only evaluators skip module landing
-        $procModule = $has('procurement.module.view', 'procurement.view');
-        $procEvalOnly = ! $procModule && $has('procurement.evaluation.read.assigned');
-        if ($procModule) {
-            $children = [
-                $this->item('Procurement Dashboard', '/procurement', 'dashboard'),
-            ];
-            if ($has('procurement.request.create', 'procurement.create')) {
+        // Procurement — organisation hub needs procurement.view.
+        // procurement.create aliases to procurement.module.view; that must not
+        // unlock the register / vendors landing the way a buyer role would.
+        $procHub = $has('procurement.view', 'procurement.admin');
+        $procCreate = $has('procurement.create', 'procurement.request.create');
+        $procEvalOnly = ! $procHub && ! $procCreate && $has('procurement.evaluation.read.assigned');
+        if ($procHub || $procCreate) {
+            $children = [];
+            if ($procHub) {
+                $children[] = $this->item('Procurement Dashboard', '/procurement', 'dashboard');
+            }
+            if ($procCreate || $procHub) {
                 $children[] = $this->item('New Request', '/procurement/create', 'add_circle');
             }
             if ($has('procurement.supplier.read', 'procurement.manage_vendors')) {
@@ -95,7 +99,13 @@ class NavigationManifestService
             if ($has('procurement.evaluation.read.assigned')) {
                 $children[] = $this->item('Evaluations', '/my-work/procurement-evaluations', 'fact_check');
             }
-            $items[] = $this->item('Procurement', '/procurement', 'shopping_cart', children: $children);
+            $items[] = $this->item(
+                'Procurement',
+                '/procurement',
+                'shopping_cart',
+                children: $children,
+                linkable: $procHub,
+            );
         } elseif ($procEvalOnly) {
             // Already covered under My Work — do not expose Procurement parent.
         }
