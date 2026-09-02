@@ -470,6 +470,7 @@ class TravelController extends Controller
 
     public function toilIndex(Request $request): JsonResponse
     {
+        $this->assertOrganisationTravelAccess($request, allowToilReviewers: true);
         $q = TravelToilCandidate::with(['travelRequest', 'user'])
             ->where('tenant_id', $request->user()->tenant_id)
             ->orderByDesc('candidate_date');
@@ -481,6 +482,7 @@ class TravelController extends Controller
 
     public function toilAuthoriseOt(Request $request, TravelToilCandidate $candidate): JsonResponse
     {
+        $this->assertOrganisationTravelAccess($request, allowToilReviewers: true);
         return response()->json([
             'message' => 'OT authorised.',
             'data' => $this->toilService->authoriseOt($candidate, $request->user()),
@@ -489,6 +491,7 @@ class TravelController extends Controller
 
     public function toilConfirmDuty(Request $request, TravelToilCandidate $candidate): JsonResponse
     {
+        $this->assertOrganisationTravelAccess($request, allowToilReviewers: true);
         return response()->json([
             'message' => 'Duty confirmed.',
             'data' => $this->toilService->confirmDuty($candidate, $request->user()),
@@ -511,6 +514,7 @@ class TravelController extends Controller
 
     public function toilReject(Request $request, TravelToilCandidate $candidate): JsonResponse
     {
+        $this->assertOrganisationTravelAccess($request, allowToilReviewers: true);
         $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
         return response()->json([
             'message' => 'TOIL candidate rejected.',
@@ -537,11 +541,13 @@ class TravelController extends Controller
 
     public function missionsIndex(Request $request): JsonResponse
     {
+        $this->assertOrganisationTravelAccess($request);
         return response()->json($this->missionService->list($request->user(), $request->only(['search', 'per_page'])));
     }
 
     public function missionsShow(Request $request, TravelMission $mission): JsonResponse
     {
+        $this->assertOrganisationTravelAccess($request);
         $payload = $this->missionService->showWithReadiness($mission, $request->user());
 
         return response()->json([
@@ -876,6 +882,7 @@ class TravelController extends Controller
 
     public function fleetVehicles(Request $request): JsonResponse
     {
+        $this->assertOrganisationTravelAccess($request);
         return response()->json(['data' => $this->vehicleService->listFleet($request->user())]);
     }
 
@@ -929,5 +936,25 @@ class TravelController extends Controller
         $rate = $this->dsaService->upsertSponsoredRate($data, $request->user());
 
         return response()->json(['message' => 'Sponsored deduction rate saved.', 'data' => $rate], empty($data['id']) ? 201 : 200);
+    }
+
+    /**
+     * Org-wide travel registers (TOIL, missions, fleet) are not self-service.
+     * General Employee keeps own requests via travel.create / travel.request.read.self.
+     */
+    private function assertOrganisationTravelAccess(Request $request, bool $allowToilReviewers = false): void
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->isSystemAdmin()
+                || $user->can('travel.view')
+                || $user->can('travel.admin')
+                || ($allowToilReviewers && (
+                    $user->can('travel.review-toil')
+                    || $user->can('hr.admin')
+                    || $user->can('leave.approve')
+                )),
+            403
+        );
     }
 }

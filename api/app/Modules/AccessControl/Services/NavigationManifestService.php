@@ -54,7 +54,29 @@ class NavigationManifestService
             if ($has('leave.balance.certify.assigned', 'leave.admin')) {
                 $children[] = $this->item('Certification Queue', '/leave/queues/certify', 'verified');
             }
-            $items[] = $this->item('Leave', '/leave', 'event_available', children: $children, linkable: $has('leave.module.view', 'leave.view'));
+            $items[] = $this->item('Leave', '/leave', 'event_available', children: $children, linkable: $has('leave.view'));
+        }
+
+        if ($has('travel.module.view', 'travel.view', 'travel.create', 'travel.request.create.self')) {
+            $children = [];
+            if ($has('travel.view')) {
+                $children[] = $this->item('Travel', '/travel', 'dashboard');
+                $children[] = $this->item('Register', '/travel/register', 'menu_book');
+                $children[] = $this->item('Missions', '/travel/missions', 'groups');
+            }
+            if ($has('travel.create', 'travel.request.create.self')) {
+                $children[] = $this->item('New request', '/travel/create', 'add_circle');
+            }
+            if ($has('travel.admin', 'travel.finance-review')) {
+                $children[] = $this->item('Settings', '/travel/settings', 'settings');
+            }
+            $items[] = $this->item(
+                'Travel',
+                '/travel',
+                'flight_takeoff',
+                children: $children,
+                linkable: $has('travel.view'),
+            );
         }
 
         // Procurement — feature-only evaluators skip module landing

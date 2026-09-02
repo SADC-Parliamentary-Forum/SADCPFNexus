@@ -428,21 +428,31 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
   }, []);
 
   const navItems = useMemo(() => {
-    // The server manifest is intentionally conservative and is still being
-    // expanded module by module. A system administrator must see the full
-    // application catalogue so newly deployed modules are not hidden merely
-    // because their navigation entry has not reached the manifest yet.
-    if (manifestItems && !isSystemAdmin(user)) return manifestItems;
+    const source = manifestItems && !isSystemAdmin(user)
+      ? manifestItems
+      : NAV_ITEMS;
 
-    return NAV_ITEMS.map((item) => {
-    if (item.children) {
-      const children = item.children.filter((c) => canAccessRoute(user, c.href));
-      if (children.length === 0) return null;
-      return { ...item, children };
-    }
-    if (!canAccessRoute(user, item.href)) return null;
-    return item;
-    }).filter((item): item is NavItem => item !== null);
+    return source.flatMap((item) => {
+      if (item.children) {
+        const children = item.children.filter((c) => canAccessRoute(user, c.href));
+        if (children.length === 0) return [];
+        const parentAllowed = canAccessRoute(user, item.href);
+        if (parentAllowed) {
+          return [{ ...item, children }];
+        }
+        const prefix = item.href.endsWith("/") ? item.href : `${item.href}/`;
+        const inModule = children.filter((c) => c.href === item.href || c.href.startsWith(prefix));
+        const outOfModule = children.filter((c) => c.href !== item.href && !c.href.startsWith(prefix));
+        const next: NavItem[] = [];
+        if (inModule.length > 0) {
+          next.push({ ...item, href: inModule[0].href, children: inModule });
+        }
+        next.push(...outOfModule);
+        return next;
+      }
+      if (!canAccessRoute(user, item.href)) return [];
+      return [item];
+    });
   }, [manifestItems, user]);
 
   // Auto-expand parent when a child is active

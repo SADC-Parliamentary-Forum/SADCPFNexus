@@ -195,7 +195,6 @@ interface RouteAccessRule {
 const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/dashboard" },
   { path: "/approvals", permission: ["approvals.inbox.view", "travel.approve", "leave.approve", "imprest.approve", "procurement.approve", "finance.approve", "governance.approve", "hr.approve"] },
-  { path: "/alerts" },
   { path: "/assignments/unassigned", permission: ["assignments.issue", "assignments.admin"] },
   { path: "/assignments/escalations", permission: ["assignments.review", "assignments.admin"] },
   { path: "/assignments/review", permission: ["assignments.review", "assignments.admin"] },
@@ -209,7 +208,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/assignments/recurring", permission: ["assignments.issue", "assignments.admin"] },
   { path: "/assignments/overdue", permission: ["assignments.team", "assignments.admin", "assignments.review"] },
   { path: "/assignments/blocked", permission: ["assignments.team", "assignments.admin"] },
-  { path: "/assignments" },
+  { path: "/assignments", permission: ["assignments.view", "assignment.read.assigned", "assignments.create"] },
   {
     path: "/weekly-summaries/review",
     permission: WEEKLY_REVIEW_PERMISSIONS,
@@ -235,10 +234,13 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
     permission: ["weekly-reports.admin", "weekly-reports.audit", "weekly-reports.view-management"],
     roles: WEEKLY_REVIEW_ROLES,
   },
-  { path: "/weekly-summaries" },
-  { path: "/travel/settings", permission: ["travel.admin", "travel.finance-review"] },
+  { path: "/weekly-summaries", permission: ["weekly-reports.view-own", "weekly-reports.create-own", "weekly_report.module.view", "weekly-reports.view-team"] },
+    { path: "/travel/settings", permission: ["travel.admin", "travel.finance-review"] },
   { path: "/travel/reports", permission: ["travel.export", "travel.view", "reports.export"] },
   { path: "/travel/register", permission: ["travel.view", "travel.export", "travel.admin"] },
+  { path: "/travel/missions", permission: ["travel.view", "travel.admin"] },
+  { path: "/travel/calendar", permission: ["travel.view", "travel.admin"] },
+  { path: "/travel/dashboards", permission: ["travel.view", "travel.admin", "travel.finance-review", "travel.admin-review"] },
   { path: "/travel/toil", permission: ["travel.review-toil", "travel.admin", "hr.admin", "leave.approve"] },
   { path: "/travel/queues/finance", permission: ["travel.finance-review", "travel.admin", "finance.approve"] },
   { path: "/travel/queues/director-finance", permission: ["travel.director-finance-confirm", "travel.admin"] },
@@ -247,6 +249,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/travel/queues", permission: ["travel.approve", "travel.recommend", "travel.admin", "travel.finance-review", "travel.final-approve"] },
   { path: "/travel/create", permission: ["travel.create", "travel.prepare-for-others"] },
   { path: "/travel", permission: "travel.view" },
+  { path: "/leave/settings", permission: ["leave.admin", "hr.admin", "hr_settings.view"] },
+  { path: "/leave/queues", permission: ["leave.approve", "leave.admin", "hr.admin"] },
   { path: "/leave", permission: "leave.view" },
   { path: "/budget", permission: ["finance.view", "finance.approve", "finance.admin", "procurement.manage_budget"] },
   // Legacy IA aliases — must beat the /finance prefix so employees can follow the redirect.
@@ -266,11 +270,12 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/salary-advances/history", permission: ["salary_advance.view", "salary_advance.create", "finance.view", "finance.create"] },
   { path: "/salary-advances", permission: ["salary_advance.view", "salary_advance.create", "finance.view", "finance.create"] },
   { path: "/imprest", permission: "imprest.view" },
+  { path: "/pif/create", permission: ["pif.create", "programme.request.create"] },
   { path: "/pif", permission: ["pif.view", "programme.module.view", "programme.request.create", "governance.view"] },
   { path: "/my-work/procurement-evaluations", permission: ["procurement.evaluation.read.assigned", "procurement.evaluation.score.assigned"] },
   { path: "/my-work", permission: ["my_work.view", "approvals.inbox.view", "procurement.evaluation.read.assigned", "assignment.read.assigned"] },
   { path: "/admin/access", permission: ["admin.roles.view", "roles.view", "roles.manage", "admin.access.simulate", "admin.access.explore"] },
-  { path: "/workplan" },
+  { path: "/workplan", permission: ["workplan.view", "workplan.create", "calendar.view"] },
   { path: "/hr/timesheets/payroll", permission: ["hr.admin", "timesheets.admin", "finance.admin"] },
   { path: "/hr/timesheets/schedules", permission: ["hr.admin", "timesheets.admin"] },
   { path: "/hr/timesheets/templates", permission: ["hr.admin", "timesheets.admin"] },
@@ -334,6 +339,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/mande/reports", permission: ["mande.view"] },
   { path: "/mande/ai-assist", permission: ["mande.view"] },
   { path: "/mande", permission: "mande.view" },
+  { path: "/srhr", permission: ["parliaments.view"] },
+  { path: "/saam", permission: ["saam.view"] },
   // Audit Management Module (Phase 1)
   { path: "/audit", permission: ["audit.view", "audit.findings.view", "audit.dashboard.auditor", "audit.dashboard.management", "audit.dashboard.sg", "audit.admin"] },
   // People & Authority Module (Phase 1)
@@ -347,7 +354,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/lifecycle/onboarding", permission: ["lifecycle.view", "lifecycle.manage-onboarding", "lifecycle.admin"] },
   { path: "/lifecycle/separation", permission: ["lifecycle.view", "lifecycle.manage-separation", "lifecycle.admin"] },
   { path: "/lifecycle/reports", permission: ["lifecycle.view", "lifecycle.admin"] },
-  { path: "/lifecycle/my-tasks" },
+  { path: "/lifecycle/my-tasks", permission: ["lifecycle.view-own", "lifecycle.complete-own-tasks", "lifecycle.view"] },
   { path: "/lifecycle", permission: ["lifecycle.view", "lifecycle.view-own", "lifecycle.manage-onboarding", "lifecycle.manage-separation", "lifecycle.admin"] },
 ];
 
@@ -378,6 +385,16 @@ export function canAccessRoute(user: AuthAccessUser | null | undefined, pathOrId
   if (systemAdmin && entry.allowSystemAdmin !== false) return true;
   if (systemAdmin && entry.allowSystemAdmin === false) return false;
   if (entry.roles?.some((role) => user.roles?.includes(role))) return true;
+
+  // Own records live under the module prefix (e.g. /travel/42) but must not
+  // unlock the module hub, register, or queues that require *.view.
+  if (entry.path === "/travel" && /^\/travel\/\d+(\/|$)/.test(path)) {
+    return hasPermission(user, ["travel.view", "travel.create", "travel.request.read.self"]);
+  }
+  if (entry.path === "/procurement" && /^\/procurement\/\d+(\/|$)/.test(path)) {
+    return hasPermission(user, ["procurement.view", "procurement.create", "procurement.request.read.created"]);
+  }
+
   if (!entry.permission) return true;
   return hasPermission(user, entry.permission);
 }

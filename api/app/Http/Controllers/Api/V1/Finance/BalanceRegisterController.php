@@ -16,12 +16,25 @@ class BalanceRegisterController extends Controller
     public function dashboard(Request $request): JsonResponse
     {
         $user = $request->user();
+        abort_unless(
+            $user->isSystemAdmin()
+                || $user->can('finance.view')
+                || $user->can('finance.admin'),
+            403
+        );
+
         return response()->json(['data' => $this->service->dashboard($user)]);
     }
 
     public function exceptions(Request $request): JsonResponse
     {
-        $user   = $request->user();
+        $user = $request->user();
+        abort_unless(
+            $user->isSystemAdmin()
+                || $user->can('finance.view')
+                || $user->can('finance.admin'),
+            403
+        );
         $result = $this->service->exceptions($user);
         return response()->json($result);
     }

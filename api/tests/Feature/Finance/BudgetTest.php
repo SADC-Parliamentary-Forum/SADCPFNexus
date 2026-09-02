@@ -54,13 +54,11 @@ class BudgetTest extends TestCase
              ->assertJsonValidationErrors(['year', 'name', 'type', 'lines']);
     }
 
-    public function test_staff_can_view_budgets(): void
+    public function test_staff_cannot_view_organisation_budgets(): void
     {
         [$http] = $this->asStaff();
 
-        $response = $http->getJson('/api/v1/finance/budgets');
-        $response->assertOk()
-                 ->assertJsonStructure(['data']);
+        $http->getJson('/api/v1/finance/budgets')->assertForbidden();
     }
 
     public function test_finance_controller_can_update_budget(): void

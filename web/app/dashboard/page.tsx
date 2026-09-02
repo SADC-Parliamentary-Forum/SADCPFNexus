@@ -153,16 +153,30 @@ export default function DashboardPage() {
     staleTime: 60_000,
   });
 
+  const canTravelHub = canAccessRoute(user ?? null, "/travel");
+  const canTravelCreate = canAccessRoute(user ?? null, "/travel/create");
+  const canLeave = canAccessRoute(user ?? null, "/leave");
+  const canImprest = canAccessRoute(user ?? null, "/imprest");
+  const canWorkplan = canAccessRoute(user ?? null, "/workplan");
+  const canAssignments = canAccessRoute(user ?? null, "/assignments");
+  const activityHome =
+    (canTravelHub && "/travel") ||
+    (canLeave && "/leave") ||
+    (canImprest && "/imprest") ||
+    (canTravelCreate && "/travel/create") ||
+    null;
+
   const loading = userLoading || statsLoading;
 
   // ─── Query 3: recent activity (travel + leave + imprest in one round-trip) ─
   const { data: activity = [], isLoading: activityLoading } = useQuery<ActivityItem[]>({
-    queryKey: ["dashboard", "activity"],
+    queryKey: ["dashboard", "activity", canTravelHub, canTravelCreate, canLeave, canImprest],
+    enabled: Boolean(user) && (canTravelHub || canTravelCreate || canLeave || canImprest),
     queryFn: async () => {
       const [travRes, lvRes, impRes] = await Promise.all([
-        travelApi.list({ per_page: 5 }).catch(() => null),
-        leaveApi.list({ per_page: 5 }).catch(() => null),
-        imprestApi.list({ per_page: 5 }).catch(() => null),
+        canTravelHub || canTravelCreate ? travelApi.list({ per_page: 5 }).catch(() => null) : Promise.resolve(null),
+        canLeave ? leaveApi.list({ per_page: 5 }).catch(() => null) : Promise.resolve(null),
+        canImprest ? imprestApi.list({ per_page: 5 }).catch(() => null) : Promise.resolve(null),
       ]);
       const items: ActivityItem[] = [];
       (((travRes?.data as { data?: TravelRequest[] })?.data) ?? []).forEach((r) =>
@@ -183,6 +197,7 @@ export default function DashboardPage() {
   // ─── Query 4: upcoming workplan events + social (cached 5 min) ────────────
   const { data: upcomingEvents = [] } = useQuery<{ id: number | string; title: string; date: string; type: string }[]>({
     queryKey: ["dashboard", "upcoming", _now.getFullYear(), _now.getMonth()],
+    enabled: Boolean(user) && canWorkplan,
     queryFn: async () => {
       const today = _now.toISOString().slice(0, 10);
       const [workplanRes, socialRes] = await Promise.all([
@@ -204,9 +219,10 @@ export default function DashboardPage() {
     staleTime: 5 * 60_000,
   });
 
-  // ─── Query 5: assignment stats (always fetch — filtered server-side by role) ─
+  // ─── Query 5: assignment stats ─
   const { data: assignStats } = useQuery<AssignmentStats>({
     queryKey: ["dashboard", "assignment-stats"],
+    enabled: Boolean(user) && canAssignments,
     queryFn: () => assignmentsApi.stats().then((r) => r.data),
     staleTime: 60_000,
   });
@@ -214,6 +230,7 @@ export default function DashboardPage() {
   // ─── Query 6: attention-needed assignments (overdue or blocked/at-risk) ─────
   const { data: urgentAssignments = [] } = useQuery<Assignment[]>({
     queryKey: ["dashboard", "urgent-assignments"],
+    enabled: Boolean(user) && canAssignments,
     queryFn: () =>
       assignmentsApi.list({ per_page: 5, overdue: "true" } as any)
         .then((r) => (r.data as any).data as Assignment[]),
@@ -227,6 +244,8 @@ export default function DashboardPage() {
   const isAdmin = isSystemAdmin(user ?? null);
   const isSG = user?.roles?.some((r) => r === "Secretary General" || r === "SG") ?? false;
   const showFullAssignments = isAdmin || isSG;
+  const hrefIfAllowed = (href?: string) =>
+    href && canAccessRoute(user ?? null, href.split("?")[0]) ? href : undefined;
 
   const EVENT_COLOR: Record<string, string> = {
     meeting: "bg-primary/10 text-primary", travel: "bg-blue-50 dark:bg-blue-900/20 text-blue-600",
@@ -329,15 +348,19 @@ export default function DashboardPage() {
       </div>}
 
       {/* Two-column: Recent Activity + Upcoming Events */}
+      {(w("recent_activity") || w("upcoming_events")) && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
+        {w("recent_activity") && (
         <div className="lg:col-span-2 card">
           <div className="card-header">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-neutral-600 text-[18px]">history</span>
               <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Recent Activity</h3>
             </div>
-            <Link href="/travel" className="text-xs text-neutral-600 hover:text-primary transition-colors">View all</Link>
+            {activityHome ? (
+              <Link href={activityHome} className="text-xs text-neutral-600 hover:text-primary transition-colors">View all</Link>
+            ) : null}
           </div>
           {activityLoading ? (
             <div className="divide-y divide-neutral-50 dark:divide-neutral-800">
@@ -356,12 +379,16 @@ export default function DashboardPage() {
               <span className="material-symbols-outlined text-4xl text-neutral-200">inbox</span>
               <p className="mt-2 text-sm text-neutral-600">No recent activity</p>
               <div className="flex justify-center gap-3 mt-4">
-                <Link href="/travel/create" className="btn-primary text-xs py-2 px-3 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px]">add</span>New Travel
-                </Link>
-                <Link href="/leave/create" className="btn-secondary text-xs py-2 px-3 flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px]">add</span>Apply Leave
-                </Link>
+                {canTravelCreate ? (
+                  <Link href="/travel/create" className="btn-primary text-xs py-2 px-3 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">add</span>New Travel
+                  </Link>
+                ) : null}
+                {canAccessRoute(user ?? null, "/leave/create") ? (
+                  <Link href="/leave/create" className="btn-secondary text-xs py-2 px-3 flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[14px]">add</span>Apply Leave
+                  </Link>
+                ) : null}
               </div>
             </div>
           ) : (
@@ -387,8 +414,10 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+        )}
 
         {/* Upcoming Workplan Events */}
+        {w("upcoming_events") && canWorkplan && (
         <div className="card">
           <div className="card-header">
             <div className="flex items-center gap-2">
@@ -401,7 +430,9 @@ export default function DashboardPage() {
             <div className="px-4 py-8 text-center">
               <span className="material-symbols-outlined text-3xl text-neutral-200">calendar_today</span>
               <p className="text-xs text-neutral-600 mt-2">No upcoming events</p>
-              <Link href="/workplan/new" className="mt-3 inline-block text-xs font-semibold text-primary hover:underline">Add event</Link>
+              {canAccessRoute(user ?? null, "/workplan/new") || canAccessRoute(user ?? null, "/workplan") ? (
+                <Link href="/workplan/new" className="mt-3 inline-block text-xs font-semibold text-primary hover:underline">Add event</Link>
+              ) : null}
             </div>
           ) : (
             <div className="divide-y divide-neutral-50 dark:divide-neutral-800">
@@ -429,9 +460,12 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+        )}
       </div>
+      )}
 
       {/* Assignments snapshot */}
+      {w("assignments") && canAssignments && (
       <div className="card">
         <div className="card-header">
           <div className="flex items-center gap-2">
@@ -450,20 +484,20 @@ export default function DashboardPage() {
           <div className={`grid divide-x divide-neutral-50 dark:divide-neutral-800 border-b border-neutral-50 dark:border-neutral-800 ${showFullAssignments ? "grid-cols-4 sm:grid-cols-8" : "grid-cols-2 sm:grid-cols-4"}`}>
             {showFullAssignments ? (
               <>
-                <StatPill label="Total" value={assignStats.total} href="/assignments/all" />
-                <StatPill label="Active" value={assignStats.active} href="/assignments/all?status=active" color="text-green-600" />
-                <StatPill label="Awaiting" value={assignStats.awaiting} href="/assignments/pending" color="text-primary" />
-                <StatPill label="Blocked" value={assignStats.blocked} href="/assignments/blocked" color="text-red-500" />
-                <StatPill label="Overdue" value={assignStats.overdue} href="/assignments/overdue" color="text-red-600" />
+                <StatPill label="Total" value={assignStats.total} href={hrefIfAllowed("/assignments/all")} />
+                <StatPill label="Active" value={assignStats.active} href={hrefIfAllowed("/assignments/all?status=active")} color="text-green-600" />
+                <StatPill label="Awaiting" value={assignStats.awaiting} href={hrefIfAllowed("/assignments/pending")} color="text-primary" />
+                <StatPill label="Blocked" value={assignStats.blocked} href={hrefIfAllowed("/assignments/blocked")} color="text-red-500" />
+                <StatPill label="Overdue" value={assignStats.overdue} href={hrefIfAllowed("/assignments/overdue")} color="text-red-600" />
                 <StatPill label="Due Soon" value={assignStats.due_soon} color="text-amber-600" />
                 <StatPill label="Completed" value={assignStats.completed} color="text-neutral-600" />
                 <StatPill label="My Pending" value={assignStats.my_pending} color="text-blue-600" />
               </>
             ) : (
               <>
-                <StatPill label="My Active" value={assignStats.active} color="text-green-600" href="/assignments/all?status=active" />
+                <StatPill label="My Active" value={assignStats.active} color="text-green-600" href={hrefIfAllowed("/assignments/all?status=active")} />
                 <StatPill label="My Pending" value={assignStats.my_pending} color="text-blue-600" />
-                <StatPill label="Overdue" value={assignStats.overdue} href="/assignments/overdue" color="text-red-600" />
+                <StatPill label="Overdue" value={assignStats.overdue} href={hrefIfAllowed("/assignments/overdue")} color="text-red-600" />
                 <StatPill label="Due Soon" value={assignStats.due_soon} color="text-amber-600" />
               </>
             )}
@@ -513,6 +547,7 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Quick Actions */}
       {quickActionsToShow.length > 0 && <div className="card">

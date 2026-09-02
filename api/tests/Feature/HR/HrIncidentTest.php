@@ -137,4 +137,22 @@ class HrIncidentTest extends TestCase
 
         $http->getJson("/api/v1/hr/incidents/{$incident->id}")->assertForbidden();
     }
+
+    public function test_staff_cannot_view_another_users_incident_in_same_tenant(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+        $other = $this->makeUser('staff', $tenant);
+
+        $incident = HrIncident::create([
+            'tenant_id'        => $tenant->id,
+            'reported_by'      => $other->id,
+            'reference_number' => HrIncident::generateReferenceNumber(),
+            'subject'          => 'Colleague incident',
+            'severity'         => 'low',
+            'status'           => 'reported',
+        ]);
+
+        $http->getJson("/api/v1/hr/incidents/{$incident->id}")->assertForbidden();
+    }
 }

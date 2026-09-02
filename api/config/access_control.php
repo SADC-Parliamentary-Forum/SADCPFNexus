@@ -211,8 +211,14 @@ return [
                 'timesheets.create-own', 'timesheet.create.self',
             ],
         ]],
+        ['pattern' => 'api/v1/hr/summary', 'permissions' => [
+            'READ' => [
+                'timesheets.view', 'timesheets.view-own', 'timesheet.module.view',
+                'timesheet.read.self', 'leave.view', 'hr.view', 'hr.admin',
+            ],
+        ]],
         ['pattern' => 'api/v1/hr/files*', 'permissions' => [
-            'READ' => ['hr.view', 'hr.admin', 'profile.read.self', 'dashboard.view'],
+            'READ' => ['hr.view', 'hr.admin', 'profile.read.self'],
             'WRITE' => ['hr.create', 'hr.edit', 'hr.admin'],
         ]],
         ['pattern' => 'api/v1/hr/documents', 'permissions' => [
@@ -220,7 +226,7 @@ return [
         ]],
         ['pattern' => 'api/v1/hr/incidents*', 'permissions' => [
             'READ' => ['hr.view', 'hr.admin', 'hr.create', 'profile.read.self'],
-            'POST' => ['hr.create', 'hr.admin', 'profile.read.self', 'dashboard.view'],
+            'POST' => ['hr.create', 'hr.admin', 'profile.read.self'],
             'PUT' => ['hr.create', 'hr.edit', 'hr.approve', 'hr.admin'],
             'PATCH' => ['hr.create', 'hr.edit', 'hr.approve', 'hr.admin'],
             'DELETE' => ['hr.admin'],
@@ -284,10 +290,12 @@ return [
         ['pattern' => 'api/v1/budget/variance/explanations*', 'permissions' => [
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
         ]],
+        ['pattern' => 'api/v1/budget/variance/{variance}/explanation', 'permissions' => [
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin', 'procurement.hod_approve'],
+        ]],
         ['pattern' => 'api/v1/budget/variance*', 'permissions' => [
-            'READ' => ['finance.view', 'finance.admin', 'dashboard.view'],
-            // HOD posts explanations; Finance reviews via explanations* above.
-            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin', 'dashboard.view'],
+            'READ' => ['finance.view', 'finance.admin'],
+            'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
         ]],
         ['pattern' => 'api/v1/budget/journals', 'permissions' => [
             'WRITE' => [
@@ -361,6 +369,38 @@ return [
             'READ' => ['mande.view', 'mande.module.view'],
             'WRITE' => ['mande.create', 'mande.review', 'mande.admin'],
         ]],
+        ['pattern' => 'api/v1/travel/toil*', 'permissions' => [
+            'READ' => ['travel.view', 'travel.review-toil', 'travel.admin', 'hr.admin'],
+            'WRITE' => [
+                'travel.view', 'travel.review-toil', 'travel.admin', 'hr.admin',
+                'travel.approve', 'leave.approve',
+            ],
+        ]],
+        ['pattern' => 'api/v1/travel/missions*', 'permissions' => [
+            'READ' => ['travel.view', 'travel.admin'],
+            'WRITE' => ['travel.view', 'travel.admin', 'travel.create'],
+        ]],
+        ['pattern' => 'api/v1/travel/register*', 'permissions' => [
+            'READ' => ['travel.view', 'travel.admin', 'travel.export', 'travel.finance-review'],
+        ]],
+        ['pattern' => 'api/v1/travel/analytics*', 'permissions' => [
+            'READ' => ['travel.view', 'travel.admin', 'travel.export', 'travel.finance-review'],
+        ]],
+        ['pattern' => 'api/v1/travel/dashboards/admin', 'permissions' => [
+            'READ' => ['travel.view', 'travel.admin', 'travel.admin-review'],
+        ]],
+        ['pattern' => 'api/v1/travel/dashboards/finance', 'permissions' => [
+            'READ' => ['travel.view', 'travel.admin', 'travel.finance-review', 'travel.director-finance-confirm'],
+        ]],
+        ['pattern' => 'api/v1/travel/reports*', 'permissions' => [
+            'READ' => ['travel.view', 'travel.admin', 'travel.export', 'travel.finance-review'],
+        ]],
+        ['pattern' => 'api/v1/travel/travellers', 'permissions' => [
+            'READ' => ['travel.prepare-for-others', 'travel.admin', 'travel.view'],
+        ]],
+        ['pattern' => 'api/v1/travel/fleet-vehicles', 'permissions' => [
+            'READ' => ['travel.view', 'travel.admin', 'assets.view'],
+        ]],
         ['pattern' => 'api/v1/travel*', 'permissions' => [
             'READ' => ['travel.view', 'travel.admin', 'travel.module.view', 'travel.request.read.self'],
             'POST' => [
@@ -394,14 +434,26 @@ return [
             ],
         ]],
         ['pattern' => 'api/v1/finance/budgets*', 'permissions' => [
-            'READ' => ['finance.view', 'finance.admin', 'dashboard.view'],
+            'READ' => ['finance.view', 'finance.admin'],
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance/balance-register/dashboard*', 'permissions' => [
+            'READ' => ['finance.view', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance/balance-registers/dashboard*', 'permissions' => [
+            'READ' => ['finance.view', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance/balance-register/exceptions*', 'permissions' => [
+            'READ' => ['finance.view', 'finance.admin'],
+        ]],
+        ['pattern' => 'api/v1/finance/balance-registers/exceptions*', 'permissions' => [
+            'READ' => ['finance.view', 'finance.admin'],
         ]],
         ['pattern' => 'api/v1/finance/balance-register*', 'permissions' => [
             'READ' => [
                 'finance.view', 'finance.admin',
                 'salary_advance.module.view', 'salary_advance.view',
-                'imprest.view', 'dashboard.view',
+                'imprest.view',
             ],
             'WRITE' => ['finance.create', 'finance.approve', 'finance.admin'],
         ]],
@@ -543,7 +595,6 @@ return [
                 'assets.edit',
                 'assets.manage',
                 'assets.admin',
-                'dashboard.view',
                 'profile.read.self',
             ],
         ]],
@@ -552,11 +603,11 @@ return [
             'WRITE' => ['assets.manage', 'assets.admin'],
         ]],
         ['pattern' => 'api/v1/asset-requests*', 'permissions' => [
-            'READ' => ['assets.view', 'assets.admin', 'dashboard.view', 'profile.read.self'],
-            'POST' => ['assets.create', 'assets.edit', 'dashboard.view', 'profile.read.self'],
-            'PUT' => ['assets.edit', 'assets.manage', 'assets.admin', 'dashboard.view', 'profile.read.self'],
-            'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin', 'dashboard.view', 'profile.read.self'],
-            'DELETE' => ['assets.admin', 'dashboard.view', 'profile.read.self'],
+            'READ' => ['assets.view', 'assets.admin', 'profile.read.self'],
+            'POST' => ['assets.create', 'assets.edit', 'profile.read.self'],
+            'PUT' => ['assets.edit', 'assets.manage', 'assets.admin', 'profile.read.self'],
+            'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin', 'profile.read.self'],
+            'DELETE' => ['assets.admin', 'profile.read.self'],
         ]],
         ['pattern' => 'api/v1/asset-*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin'],

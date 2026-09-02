@@ -4,11 +4,19 @@ namespace App\Http\Controllers\Api\V1\Hr;
 
 use App\Http\Controllers\Controller;
 use App\Models\HrIncident;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class HrIncidentController extends Controller
 {
+    private function canManageOrganisationIncidents(User $user): bool
+    {
+        return $user->isSystemAdmin()
+            || $user->can('hr.view')
+            || $user->can('hr.admin');
+    }
+
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -16,7 +24,7 @@ class HrIncidentController extends Controller
             ->with('reporter:id,name,email')
             ->orderByDesc('reported_at');
 
-        if ($request->input('mine') === '1') {
+        if (! $this->canManageOrganisationIncidents($user) || $request->input('mine') === '1') {
             $query->where('reported_by', $user->id);
         }
 
@@ -54,7 +62,11 @@ class HrIncidentController extends Controller
 
     public function show(Request $request, HrIncident $hrIncident): JsonResponse
     {
-        if ($hrIncident->tenant_id !== $request->user()->tenant_id) {
+        $user = $request->user();
+        if ($hrIncident->tenant_id !== $user->tenant_id) {
+            abort(403);
+        }
+        if (! $this->canManageOrganisationIncidents($user) && $hrIncident->reported_by !== $user->id) {
             abort(403);
         }
         $hrIncident->load('reporter:id,name,email');

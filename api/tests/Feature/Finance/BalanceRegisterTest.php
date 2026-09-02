@@ -92,12 +92,12 @@ class BalanceRegisterTest extends TestCase
                  ]]);
     }
 
-    public function test_staff_can_view_dashboard_with_own_data(): void
+    public function test_staff_cannot_view_organisation_balance_register_dashboard(): void
     {
         $tenant = Tenant::factory()->create();
         [$http] = $this->asStaff($tenant);
 
-        $http->getJson('/api/v1/finance/balance-register/dashboard')->assertOk();
+        $http->getJson('/api/v1/finance/balance-register/dashboard')->assertForbidden();
     }
 
     // ── List / Index ──────────────────────────────────────────────────────────
