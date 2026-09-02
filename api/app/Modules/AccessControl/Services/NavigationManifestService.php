@@ -19,6 +19,12 @@ class NavigationManifestService
     {
         $effective = $this->pdp->effectivePermissions($user);
         $has = fn (string ...$keys) => count(array_intersect($keys, $effective)) > 0;
+        // Hub landings must use assigned keys. effectivePermissions() reverse-aliases
+        // travel.module.view (from travel.create) back to travel.view / travel.admin.
+        $held = $user->getAllPermissions()->pluck('name')->all();
+        $holds = $user->isSystemAdmin()
+            ? fn (string ...$keys) => true
+            : fn (string ...$keys) => count(array_intersect($keys, $held)) > 0;
 
         $items = [];
 
@@ -51,15 +57,15 @@ class NavigationManifestService
             if ($has('leave.request.recommend.assigned', 'leave.approve')) {
                 $children[] = $this->item('Recommend Inbox', '/leave?queue=recommend', 'thumb_up');
             }
-            if ($has('leave.balance.certify.assigned', 'leave.admin')) {
+            if ($has('leave.balance.certify.assigned') || $holds('leave.admin')) {
                 $children[] = $this->item('Certification Queue', '/leave/queues/certify', 'verified');
             }
-            $items[] = $this->item('Leave', '/leave', 'event_available', children: $children, linkable: $has('leave.view'));
+            $items[] = $this->item('Leave', '/leave', 'event_available', children: $children, linkable: $holds('leave.view', 'leave.admin'));
         }
 
         if ($has('travel.module.view', 'travel.view', 'travel.create', 'travel.request.create.self')) {
             $children = [];
-            if ($has('travel.view')) {
+            if ($holds('travel.view', 'travel.admin')) {
                 $children[] = $this->item('Travel', '/travel', 'dashboard');
                 $children[] = $this->item('Register', '/travel/register', 'menu_book');
                 $children[] = $this->item('Missions', '/travel/missions', 'groups');
@@ -67,7 +73,7 @@ class NavigationManifestService
             if ($has('travel.create', 'travel.request.create.self')) {
                 $children[] = $this->item('New request', '/travel/create', 'add_circle');
             }
-            if ($has('travel.admin', 'travel.finance-review')) {
+            if ($holds('travel.admin', 'travel.finance-review')) {
                 $children[] = $this->item('Settings', '/travel/settings', 'settings');
             }
             $items[] = $this->item(
@@ -75,14 +81,14 @@ class NavigationManifestService
                 '/travel',
                 'flight_takeoff',
                 children: $children,
-                linkable: $has('travel.view'),
+                linkable: $holds('travel.view', 'travel.admin'),
             );
         }
 
         // Procurement — organisation hub needs procurement.view.
         // procurement.create aliases to procurement.module.view; that must not
         // unlock the register / vendors landing the way a buyer role would.
-        $procHub = $has('procurement.view', 'procurement.admin');
+        $procHub = $holds('procurement.view', 'procurement.admin');
         $procCreate = $has('procurement.create', 'procurement.request.create');
         $procEvalOnly = ! $procHub && ! $procCreate && $has('procurement.evaluation.read.assigned');
         if ($procHub || $procCreate) {
@@ -93,7 +99,7 @@ class NavigationManifestService
             if ($procCreate || $procHub) {
                 $children[] = $this->item('New Request', '/procurement/create', 'add_circle');
             }
-            if ($has('procurement.supplier.read', 'procurement.manage_vendors')) {
+            if ($holds('procurement.supplier.read', 'procurement.manage_vendors')) {
                 $children[] = $this->item('Suppliers', '/procurement/vendors', 'store');
             }
             if ($has('procurement.evaluation.read.assigned')) {

@@ -43,8 +43,8 @@ class AccessControlModuleVisibilityTest extends TestCase
         $items = $http->getJson('/api/v1/access/navigation')->json('data.items');
 
         $assertCreateOnly = function (array $item, string $createHref, array $hubHrefs): void {
-            $this->assertFalse((bool) ($item['linkable'] ?? true));
-            $this->assertNull($item['href']);
+            $this->assertFalse((bool) ($item['linkable'] ?? true), $item['label'].' hub must not be linkable without *.view');
+            $this->assertNull($item['href'], $item['label'].' parent href must be null when not linkable');
             $childHrefs = collect($item['children'] ?? [])->pluck('href')->all();
             $this->assertContains($createHref, $childHrefs);
             foreach ($hubHrefs as $href) {
