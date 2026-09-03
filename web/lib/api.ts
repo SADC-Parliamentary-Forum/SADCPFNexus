@@ -4675,6 +4675,8 @@ export interface TimesheetEntry {
   work_bucket?: 'delivery' | 'meeting' | 'communication' | 'administration' | 'other' | null;
   activity_type?: string | null;
   work_assignment_id?: number | null;
+  source_type?: "manual" | "leave" | "travel" | "holiday" | null;
+  is_locked?: boolean;
   project?: TimesheetProject;
   work_assignment?: { id: number; title: string; estimated_hours: number | null };
 }

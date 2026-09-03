@@ -204,7 +204,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
       setWorkDate(editEntry.work_date);
       setHours(editEntry.hours);
       setActivityType(editEntry.activity_type ?? "");
-      setProjectId(editEntry.project_id ?? null);
+      setProjectId(editEntry.project_id ?? projects[0]?.id ?? null);
       setWorkAssignmentId(editEntry.work_assignment_id ?? null);
       setDescription(editEntry.description ?? "");
     }
@@ -223,7 +223,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
         setHours(1);
         setActivityType("");
         setCustomActivity("");
-        setProjectId(null);
+        setProjectId(projects[0]?.id ?? null);
         setWorkAssignmentId(null);
         setDescription("");
         setAssignments([]);
@@ -236,7 +236,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
     setStep(2);
     setActivityType("");
     setCustomActivity("");
-    setProjectId(null);
+    setProjectId(projects[0]?.id ?? null);
     setWorkAssignmentId(null);
 
     if (wt.id === "task") {
@@ -495,16 +495,18 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
                 )}
               </div>
 
-              {/* Project (for project type) */}
-              {selectedType.id === "project" && (
+              {projects.length > 0 && (
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-neutral-700">Project</label>
+                  <label className="mb-1.5 block text-xs font-medium text-neutral-700" htmlFor="quick-entry-project">
+                    Project
+                  </label>
                   <select
+                    id="quick-entry-project"
                     className="form-input"
                     value={projectId ?? ""}
                     onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : null)}
                   >
-                    <option value="">— No project —</option>
+                    <option value="">Select project…</option>
                     {projects.map((p) => (
                       <option key={p.id} value={p.id}>{p.label}</option>
                     ))}

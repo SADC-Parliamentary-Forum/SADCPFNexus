@@ -9,6 +9,11 @@ import { USER_KEY } from "@/lib/constants";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { TIMESHEET_HUB_CARDS } from "@/lib/hubs/timesheets";
+import {
+  firstTimesheetRowErrorMessage,
+  normalizeTimesheetEntry,
+  timesheetRowErrors,
+} from "@/lib/timesheetRowValidation";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -63,6 +68,13 @@ const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }
   approved: { label: "Approved", cls: "badge-success", icon: "check_circle" },
   rejected: { label: "Rejected", cls: "badge-danger", icon: "cancel" },
 };
+
+function applyEntryDefaults(entry: TimesheetEntry, projects: TimesheetProject[]): TimesheetEntry {
+  return normalizeTimesheetEntry(entry, {
+    defaultProjectId: projects[0]?.id ?? null,
+    defaultBucket: "delivery",
+  }) as TimesheetEntry;
+}
 
 // ─── Summary Panel ─────────────────────────────────────────────────────────
 
@@ -232,15 +244,17 @@ export default function TimesheetsPage() {
           : Promise.resolve({ data: templates }),
       ]);
 
+      const loadedProjects: TimesheetProject[] =
+        projects.length === 0 ? ((projRes as any).data ?? []) : projects;
       const tsData = (tsRes.data as any).data ?? [];
       const found: Timesheet | undefined = tsData[0];
       setTimesheet(found ?? null);
-      setEntries(found?.entries ?? []);
+      setEntries((found?.entries ?? []).map((e: TimesheetEntry) => applyEntryDefaults(e, loadedProjects)));
       setLeaveDays((ldRes.data as any).data ?? {});
       setTravelDays((tdRes.data as any).data ?? {});
       setHolidayDates((hdRes.data as any).data ?? {});
       if (projects.length === 0) {
-        setProjects((projRes as any).data ?? []);
+        setProjects(loadedProjects);
       }
       if (templates.length === 0) {
         setTemplates((tmplRes as any).data ?? []);
@@ -270,7 +284,7 @@ export default function TimesheetsPage() {
       });
       const ts = data.data.timesheet;
       setTimesheet(ts);
-      setEntries(ts.entries ?? []);
+      setEntries((ts.entries ?? []).map((e) => applyEntryDefaults(e, projects)));
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data
@@ -289,10 +303,11 @@ export default function TimesheetsPage() {
     setEntries((prev) => {
       let next = [...prev];
       incoming.forEach((entry, idx) => {
-        if (entry.id) {
-          next = next.map((e) => (e.id === entry.id ? entry : e));
+        const normalized = applyEntryDefaults(entry, projects);
+        if (normalized.id && prev.some((e) => e.id === normalized.id)) {
+          next = next.map((e) => (e.id === normalized.id ? normalized : e));
         } else {
-          next.push({ ...entry, id: Date.now() + idx });
+          next.push({ ...normalized, id: normalized.id ?? Date.now() + idx });
         }
       });
       return next;
@@ -314,23 +329,32 @@ export default function TimesheetsPage() {
     work_assignment_id: e.work_assignment_id ?? null,
   }));
 
+  const persistDraft = async (): Promise<Timesheet | null> => {
+    if (entries.length === 0) return timesheet;
+    const payload = { entries: buildPayload() as TimesheetEntry[] };
+    let saved: Timesheet;
+    if (timesheet) {
+      const res = await hrApi.updateTimesheet(timesheet.id, payload);
+      saved = (res.data as any).data ?? res.data;
+    } else {
+      const res = await hrApi.createTimesheet({
+        week_start: weekStart!,
+        week_end: weekEnd!,
+        ...payload,
+      });
+      saved = (res.data as any).data ?? res.data;
+    }
+    setTimesheet(saved);
+    setEntries((saved.entries ?? entries).map((e: TimesheetEntry) => applyEntryDefaults(e, projects)));
+    return saved;
+  };
+
   const handleSave = async () => {
     if (entries.length === 0) return;
     setSaving(true);
     setError(null);
     try {
-      let res;
-      if (timesheet) {
-        res = await hrApi.updateTimesheet(timesheet.id, { entries: buildPayload() as TimesheetEntry[] });
-        const updated = (res.data as any).data ?? res.data;
-        setTimesheet(updated);
-        setEntries(updated.entries ?? entries);
-      } else {
-        res = await hrApi.createTimesheet({ week_start: weekStart!, week_end: weekEnd!, entries: buildPayload() as TimesheetEntry[] });
-        const created = (res.data as any).data ?? res.data;
-        setTimesheet(created);
-        setEntries(created.entries ?? entries);
-      }
+      await persistDraft();
     } catch {
       setError("Failed to save timesheet.");
     } finally {
@@ -339,14 +363,14 @@ export default function TimesheetsPage() {
   };
 
   const handleSubmit = async () => {
-    if (!timesheet) {
-      await handleSave();
-    }
     setSaving(true);
+    setError(null);
     try {
-      const id = timesheet?.id;
-      if (!id) { setSaving(false); return; }
-      const res = await hrApi.submitTimesheet(id);
+      const current = await persistDraft();
+      if (!current?.id) {
+        return;
+      }
+      const res = await hrApi.submitTimesheet(current.id);
       const updated = (res.data as any).data ?? res.data;
       setTimesheet((prev) => ({ ...prev!, ...updated }));
     } catch {
@@ -395,15 +419,7 @@ export default function TimesheetsPage() {
   }
   const weekTotal = entries.reduce((s, e) => s + e.hours, 0);
   const otTotal = entries.reduce((s, e) => s + (e.overtime_hours ?? 0), 0);
-  const rowErrors: Record<number, string> = {};
-  entries.forEach((e, idx) => {
-    if (!e.work_date) rowErrors[idx] = "Date required";
-    else if (e.hours == null || Number.isNaN(Number(e.hours))) rowErrors[idx] = "Hours required";
-    else if (e.hours < 0 || e.hours > 24) rowErrors[idx] = "Hours must be 0–24";
-    else if ((e.overtime_hours ?? 0) < 0 || (e.overtime_hours ?? 0) > 24) rowErrors[idx] = "OT hours must be 0–24";
-    else if (!e.project_id) rowErrors[idx] = "Select a project";
-    else if (!e.work_bucket) rowErrors[idx] = "Select a work bucket";
-  });
+  const rowErrors = timesheetRowErrors(entries, { projectCount: projects.length });
   const hasRowErrors = Object.keys(rowErrors).length > 0;
 
   const updateEntryField = <K extends keyof TimesheetEntry>(
@@ -424,7 +440,7 @@ export default function TimesheetsPage() {
         hours: 8,
         overtime_hours: 0,
         description: "",
-        project_id: null,
+        project_id: projects[0]?.id ?? null,
         work_bucket: "delivery",
         activity_type: "",
       },
@@ -433,7 +449,12 @@ export default function TimesheetsPage() {
 
   const handleSaveGuarded = async () => {
     if (hasRowErrors) {
-      setError("Fix highlighted rows before saving (project, bucket, and hours are required).");
+      const detail = firstTimesheetRowErrorMessage(rowErrors);
+      setError(
+        detail
+          ? `Fix highlighted rows before saving. ${detail}`
+          : "Fix highlighted rows before saving (project, bucket, and hours are required).",
+      );
       return;
     }
     await handleSave();
@@ -441,7 +462,8 @@ export default function TimesheetsPage() {
 
   const handleSubmitGuarded = async () => {
     if (hasRowErrors) {
-      setError("Fix highlighted rows before submitting.");
+      const detail = firstTimesheetRowErrorMessage(rowErrors);
+      setError(detail ? `Fix highlighted rows before submitting. ${detail}` : "Fix highlighted rows before submitting.");
       return;
     }
     await handleSubmit();
@@ -595,6 +617,11 @@ export default function TimesheetsPage() {
                   <span className="badge badge-warning text-xs">{Object.keys(rowErrors).length} row issue(s)</span>
                 )}
               </div>
+              {isDraft && projects.length === 0 && entries.length > 0 ? (
+                <p className="border-b border-amber-100 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+                  Charge codes did not load. Hours can still be saved; ask an administrator to publish timesheet projects if you need to allocate to a programme.
+                </p>
+              ) : null}
 
               {entries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
@@ -671,6 +698,8 @@ export default function TimesheetsPage() {
                                     )
                                   }
                                   aria-label={`Row ${idx + 1} project`}
+                                  aria-invalid={err === "Select a project"}
+                                  aria-describedby={err ? `timesheet-row-${idx}-error` : undefined}
                                 >
                                   <option value="">Select project…</option>
                                   {projects.map((p) => (
@@ -700,6 +729,7 @@ export default function TimesheetsPage() {
                                     )
                                   }
                                   aria-label={`Row ${idx + 1} bucket`}
+                                  aria-invalid={err === "Select a work bucket"}
                                 >
                                   <option value="">Bucket…</option>
                                   {Object.keys(BUCKET_ICONS).map((b) => (
@@ -778,7 +808,7 @@ export default function TimesheetsPage() {
                                 <span className="text-sm text-neutral-600">{entry.description || "—"}</span>
                               )}
                               {err && (
-                                <p className="mt-1 text-[11px] font-medium text-red-600">{err}</p>
+                                <p id={`timesheet-row-${idx}-error`} className="mt-1 text-[11px] font-medium text-red-600">{err}</p>
                               )}
                             </td>
                             {isDraft && (
