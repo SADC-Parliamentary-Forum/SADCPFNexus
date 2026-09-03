@@ -53,13 +53,23 @@ class _TimesheetWeeklyScreenState extends ConsumerState<TimesheetWeeklyScreen> {
     final end   = _toYMD(_weekEnd);
     try {
       final dio = ref.read(apiClientProvider).dio;
+      final projectFuture = dio.get<Map<String, dynamic>>('/hr/timesheets/projects');
       final results = await Future.wait([
         dio.get<Map<String, dynamic>>('/hr/timesheets', queryParameters: {'week_start': start}),
         dio.get<Map<String, dynamic>>('/hr/timesheets/leave-days', queryParameters: {'week_start': start, 'week_end': end}),
         dio.get<Map<String, dynamic>>('/hr/timesheets/travel-days', queryParameters: {'week_start': start, 'week_end': end}),
         dio.get<Map<String, dynamic>>('/hr/timesheets/holiday-dates', queryParameters: {'start': start, 'end': end}),
-        dio.get<Map<String, dynamic>>('/hr/timesheets/projects'),
       ]);
+
+      List<Map<String, dynamic>> projects = [];
+      try {
+        final projRes = await projectFuture;
+        projects = ((projRes.data?['data'] as List<dynamic>?) ?? [])
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+      } catch (_) {
+        projects = [];
+      }
 
       if (!mounted) return;
 
@@ -75,9 +85,7 @@ class _TimesheetWeeklyScreenState extends ConsumerState<TimesheetWeeklyScreen> {
         _leaveDays    = _parseOverlay(results[1].data?['data']);
         _travelDays   = _parseOverlay(results[2].data?['data']);
         _holidayDates = _parseOverlay(results[3].data?['data']);
-        _projects     = ((results[4].data?['data'] as List<dynamic>?) ?? [])
-            .map((e) => Map<String, dynamic>.from(e as Map))
-            .toList();
+        _projects     = projects;
         _loading = false;
       });
     } catch (e) {

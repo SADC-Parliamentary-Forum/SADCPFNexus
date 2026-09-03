@@ -87,6 +87,32 @@ class TimesheetProjectSelfServiceTest extends TestCase
         $http->postJson('/api/v1/hr/timesheets/projects', [
             'label' => 'Should not create via hr',
         ])->assertMethodNotAllowed();
+        $http->putJson('/api/v1/hr/timesheets/projects', [
+            'label' => 'Should not update via hr',
+        ])->assertMethodNotAllowed();
+        $http->patchJson('/api/v1/hr/timesheets/projects', [
+            'label' => 'Should not patch via hr',
+        ])->assertMethodNotAllowed();
+        $http->deleteJson('/api/v1/hr/timesheets/projects')->assertMethodNotAllowed();
+    }
+
+    public function test_general_employee_can_list_projects_via_hr_endpoint(): void
+    {
+        $tenant = Tenant::factory()->create();
+        TimesheetProject::create([
+            'tenant_id' => $tenant->id,
+            'label' => 'Programme delivery',
+            'sort_order' => 1,
+        ]);
+
+        $user = $this->makeUser('General Employee', $tenant);
+        $this->asUser($user)
+            ->getJson('/api/v1/hr/timesheets/projects')
+            ->assertOk()
+            ->assertJsonFragment(['label' => 'Programme delivery']);
+        $this->asUser($user)
+            ->getJson('/api/v1/admin/timesheet-projects')
+            ->assertForbidden();
     }
 
     public function test_hr_admin_can_list_projects_for_templates_but_cannot_mutate_admin_catalog(): void
