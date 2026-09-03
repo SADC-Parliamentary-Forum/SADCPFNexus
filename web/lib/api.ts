@@ -4751,6 +4751,8 @@ export const hrApi = {
       "/hr/timesheets/holiday-dates",
       { params: { start, end } }
     ),
+  listTimesheetProjects: () =>
+    api.get<{ data: TimesheetProject[] }>("/hr/timesheets/projects"),
   listTimesheetTemplates: (params?: { include_inactive?: boolean | number | string }) =>
     api.get<{ data: TimesheetTemplate[] }>("/hr/timesheets/templates", { params }),
   createTimesheetTemplate: (data: {

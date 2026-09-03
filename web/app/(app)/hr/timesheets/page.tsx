@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
-import { hrApi, adminApi, type Timesheet, type TimesheetEntry, type TimesheetProject, type TimesheetTemplate, type AuthUser } from "@/lib/api";
+import { hrApi, type Timesheet, type TimesheetEntry, type TimesheetProject, type TimesheetTemplate, type AuthUser } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
 import { QuickEntrySlideOver } from "@/components/timesheets/QuickEntrySlideOver";
 import { USER_KEY } from "@/lib/constants";
@@ -225,7 +225,7 @@ export default function TimesheetsPage() {
         hrApi.getTimesheetTravelDays(weekStart, weekEnd),
         hrApi.getTimesheetHolidayDates(weekStart, weekEnd),
         projects.length === 0
-          ? adminApi.listTimesheetProjects().then((r) => r.data)
+          ? hrApi.listTimesheetProjects().then((r) => r.data).catch(() => ({ data: [] }))
           : Promise.resolve({ data: projects }),
         templates.length === 0
           ? hrApi.listTimesheetTemplates().then((r) => r.data).catch(() => ({ data: [] }))

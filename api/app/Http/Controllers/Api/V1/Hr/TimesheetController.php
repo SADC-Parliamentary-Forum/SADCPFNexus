@@ -8,6 +8,7 @@ use App\Models\PayrollExportBatch;
 use App\Models\PerformanceTracker;
 use App\Models\Timesheet;
 use App\Models\TimesheetEntry;
+use App\Models\TimesheetProject;
 use App\Models\TimesheetTemplate;
 use App\Modules\Timesheets\Services\TimesheetExportService;
 use App\Modules\Timesheets\Services\TimesheetPayrollExportService;
@@ -579,6 +580,27 @@ class TimesheetController extends Controller
         }
 
         return response()->json(['data' => $query->get()]);
+    }
+
+    /**
+     * Tenant-scoped charge-code list for timesheet entry and template defaults.
+     * Catalog mutations stay on the admin timesheet-projects API.
+     */
+    public function projects(Request $request): JsonResponse
+    {
+        $tenantId = $request->user()?->tenant_id;
+        if ($tenantId === null) {
+            return response()->json(['data' => []]);
+        }
+
+        $projects = TimesheetProject::query()
+            ->where('tenant_id', $tenantId)
+            ->orderBy('sort_order')
+            ->orderBy('label')
+            ->orderBy('id')
+            ->get(['id', 'label', 'sort_order']);
+
+        return response()->json(['data' => $projects]);
     }
 
     public function storeTemplate(Request $request): JsonResponse

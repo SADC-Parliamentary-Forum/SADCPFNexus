@@ -1048,6 +1048,7 @@ Route::prefix('v1')->group(function () {
             Route::get('timesheets/travel-days', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'travelDays']);
             Route::get('timesheets/holiday-dates', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'holidayDates']);
             Route::get('timesheets/templates', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'templates']);
+            Route::get('timesheets/projects', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'projects']);
             Route::post('timesheets/templates', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'storeTemplate']);
             Route::put('timesheets/templates/{template}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'updateTemplate']);
             Route::post('timesheets/templates/{template}/deactivate', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'deactivateTemplate']);

@@ -25,6 +25,7 @@ class AccessControlModuleVisibilityTest extends TestCase
         $http->getJson('/api/v1/travel/fleet-vehicles')->assertForbidden();
         $http->getJson('/api/v1/assets')->assertForbidden();
         $http->getJson('/api/v1/hr/profile-requests')->assertForbidden();
+        $http->getJson('/api/v1/admin/timesheet-projects')->assertForbidden();
     }
 
     public function test_staff_navigation_hides_organisation_hubs_they_do_not_hold(): void

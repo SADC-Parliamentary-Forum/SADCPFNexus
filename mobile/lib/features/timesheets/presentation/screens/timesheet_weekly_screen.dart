@@ -58,7 +58,7 @@ class _TimesheetWeeklyScreenState extends ConsumerState<TimesheetWeeklyScreen> {
         dio.get<Map<String, dynamic>>('/hr/timesheets/leave-days', queryParameters: {'week_start': start, 'week_end': end}),
         dio.get<Map<String, dynamic>>('/hr/timesheets/travel-days', queryParameters: {'week_start': start, 'week_end': end}),
         dio.get<Map<String, dynamic>>('/hr/timesheets/holiday-dates', queryParameters: {'start': start, 'end': end}),
-        dio.get<Map<String, dynamic>>('/admin/timesheet-projects'),
+        dio.get<Map<String, dynamic>>('/hr/timesheets/projects'),
       ]);
 
       if (!mounted) return;

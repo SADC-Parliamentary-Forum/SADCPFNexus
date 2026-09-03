@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
-  adminApi,
   hrApi,
   type TimesheetProject,
   type TimesheetTemplate,
@@ -126,7 +125,7 @@ export default function TimesheetTemplatesAdminPage() {
     setError(null);
     Promise.all([
       hrApi.listTimesheetTemplates({ include_inactive: 1 }),
-      adminApi.listTimesheetProjects(),
+      hrApi.listTimesheetProjects().catch(() => ({ data: { data: [] } })),
     ])
       .then(([tmplRes, projRes]) => {
         setList(tmplRes.data?.data ?? []);
