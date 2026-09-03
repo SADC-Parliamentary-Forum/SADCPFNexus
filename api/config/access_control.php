@@ -136,6 +136,16 @@ return [
         ['pattern' => 'api/v1/admin/break-glass*', 'permissions' => [
             'WRITE' => ['admin-console.request-break-glass', 'admin-console.approve-break-glass'],
         ]],
+        // Charge-code list is needed by the timesheet grid. The currently shipped
+        // web client still calls this admin URL; mutations stay System Admin only.
+        ['pattern' => 'api/v1/admin/timesheet-projects*', 'permissions' => [
+            'READ' => [
+                'timesheets.view', 'timesheets.view-own', 'timesheet.module.view',
+                'timesheet.read.self', 'hr.view', 'hr.admin',
+                'admin.platform.manage', 'system.admin',
+            ],
+            'WRITE' => ['admin.platform.manage', 'system.admin'],
+        ]],
         ['pattern' => 'api/v1/admin/*', 'permissions' => [
             '*' => ['admin.platform.manage', 'system.admin'],
         ]],

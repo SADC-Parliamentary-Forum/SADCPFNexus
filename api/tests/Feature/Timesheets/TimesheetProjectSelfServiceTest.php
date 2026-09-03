@@ -66,17 +66,30 @@ class TimesheetProjectSelfServiceTest extends TestCase
             ->assertJsonFragment(['label' => 'EU Governance']);
     }
 
-    public function test_staff_cannot_use_admin_timesheet_project_apis(): void
+    public function test_staff_can_list_admin_timesheet_projects_but_cannot_mutate(): void
     {
         $tenant = Tenant::factory()->create();
+        $otherTenant = Tenant::factory()->create();
         [$http] = $this->asStaff($tenant);
         $project = TimesheetProject::create([
             'tenant_id' => $tenant->id,
             'label' => 'Programme delivery',
             'sort_order' => 1,
         ]);
+        TimesheetProject::create([
+            'tenant_id' => $otherTenant->id,
+            'label' => 'Other tenant secret',
+            'sort_order' => 1,
+        ]);
 
-        $http->getJson('/api/v1/admin/timesheet-projects')->assertForbidden();
+        $labels = collect($http->getJson('/api/v1/admin/timesheet-projects')
+            ->assertOk()
+            ->json('data'))
+            ->pluck('label')
+            ->all();
+        $this->assertContains('Programme delivery', $labels);
+        $this->assertNotContains('Other tenant secret', $labels);
+
         $http->postJson('/api/v1/admin/timesheet-projects', [
             'label' => 'Should not create',
         ])->assertForbidden();
@@ -112,7 +125,8 @@ class TimesheetProjectSelfServiceTest extends TestCase
             ->assertJsonFragment(['label' => 'Programme delivery']);
         $this->asUser($user)
             ->getJson('/api/v1/admin/timesheet-projects')
-            ->assertForbidden();
+            ->assertOk()
+            ->assertJsonFragment(['label' => 'Programme delivery']);
     }
 
     public function test_hr_admin_can_list_projects_for_templates_but_cannot_mutate_admin_catalog(): void
@@ -128,7 +142,9 @@ class TimesheetProjectSelfServiceTest extends TestCase
         $http->getJson('/api/v1/hr/timesheets/projects')
             ->assertOk()
             ->assertJsonFragment(['label' => 'EU Governance']);
-        $http->getJson('/api/v1/admin/timesheet-projects')->assertForbidden();
+        $http->getJson('/api/v1/admin/timesheet-projects')
+            ->assertOk()
+            ->assertJsonFragment(['label' => 'EU Governance']);
         $http->postJson('/api/v1/admin/timesheet-projects', [
             'label' => 'HR should not create',
         ])->assertForbidden();
