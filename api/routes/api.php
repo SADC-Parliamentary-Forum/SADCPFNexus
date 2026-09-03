@@ -1065,14 +1065,14 @@ Route::prefix('v1')->group(function () {
             Route::get('timesheets/payroll-exports', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'listPayrollExports']);
             Route::post('timesheets/payroll-exports/stage', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'stagePayrollExport']);
             Route::get('timesheets/payroll-exports/{payrollExport}/download', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'downloadPayrollExport']);
-            Route::get('timesheets/{timesheet}/export', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'export']);
-            Route::get('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'show']);
+            Route::get('timesheets/{timesheet}/export', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'export'])->whereNumber('timesheet');
+            Route::get('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'show'])->whereNumber('timesheet');
             Route::post('timesheets', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'store']);
-            Route::put('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'update']);
-            Route::post('timesheets/{timesheet}/submit', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'submit']);
-            Route::post('timesheets/{timesheet}/return', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'returnTimesheet']);
-            Route::post('timesheets/{timesheet}/approve', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'approve']);
-            Route::post('timesheets/{timesheet}/reject', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'reject']);
+            Route::put('timesheets/{timesheet}', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'update'])->whereNumber('timesheet');
+            Route::post('timesheets/{timesheet}/submit', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'submit'])->whereNumber('timesheet');
+            Route::post('timesheets/{timesheet}/return', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'returnTimesheet'])->whereNumber('timesheet');
+            Route::post('timesheets/{timesheet}/approve', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'approve'])->whereNumber('timesheet');
+            Route::post('timesheets/{timesheet}/reject', [\App\Http\Controllers\Api\V1\Hr\TimesheetController::class, 'reject'])->whereNumber('timesheet');
 
             // Overtime requisitions / actuals / settlement (PRD §89)
             Route::get('overtime-requisitions', [\App\Http\Controllers\Api\V1\Hr\OvertimeController::class, 'index']);
