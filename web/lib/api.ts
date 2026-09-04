@@ -3751,19 +3751,29 @@ export interface PurchaseOrderItem {
 export interface PurchaseOrder {
   id: number;
   reference_number: string;
+  lpo_number?: string | null;
+  lpo_date?: string | null;
   title: string;
   description: string | null;
   delivery_address: string | null;
   payment_terms: string;
   total_amount: number;
+  subtotal?: number | string | null;
+  tax_amount?: number | string | null;
+  vat_identified?: boolean;
   currency: string;
-  status: "draft" | "issued" | "partially_received" | "received" | "invoiced" | "closed" | "cancelled";
+  status: string;
+  retrospective?: boolean;
+  procurement_method?: string | null;
   issued_at: string | null;
   expected_delivery_date: string | null;
   cancellation_reason: string | null;
   vendor?: Vendor;
   items?: PurchaseOrderItem[];
+  project?: { id: number; name: string; code: string };
   procurement_request?: ProcurementRequest;
+  finance_handover_status?: string | null;
+  supplier_email_status?: string | null;
   created_at?: string;
 }
 
@@ -3804,6 +3814,112 @@ export const purchaseOrdersApi = {
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/issue`),
   cancel: (id: number, reason: string) =>
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/cancel`, { reason }),
+  submit: (id: number, idempotency_key?: string) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/submit`, { idempotency_key }),
+  approve: (id: number, comment?: string) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/approve`, { comment }),
+  returnLpo: (id: number, comment: string) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/return`, { comment }),
+  reject: (id: number, reason: string) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/reject`, { reason }),
+  emailSupplier: (id: number, to?: string) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/email`, { to }),
+  pdfUrl: (id: number) => `/procurement/purchase-orders/${id}/pdf`,
+  downloadPdf: (id: number) => api.get(`/procurement/purchase-orders/${id}/pdf`, { responseType: "blob" }),
+  confirmService: (id: number, data: { delivered: string; satisfactory?: boolean; comments?: string }) =>
+    api.post(`/procurement/purchase-orders/${id}/service-confirmations`, data),
+  invoiceMatch: (id: number) =>
+    api.post<{ data: { status: string; variance: string | null } }>(`/procurement/purchase-orders/${id}/invoice-match`),
+  financeHandover: (id: number) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/finance-handover`),
+  void: (id: number, reason: string) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/void`, { reason }),
+};
+
+export interface ProcurementIntake {
+  id: number;
+  document_type: string | null;
+  document_number: string | null;
+  document_date: string | null;
+  supplier_name_raw: string | null;
+  grand_total: string | number | null;
+  subtotal: string | number | null;
+  vat_identified: boolean;
+  vat_warning?: string | null;
+  currency: string | null;
+  extraction_status: string;
+  extraction_confidence: number | null;
+  confidence_band?: string;
+  classification_confidence?: number | null;
+  classification_method?: string | null;
+  ocr_available?: boolean | null;
+  extraction_message?: string | null;
+  text_method?: string | null;
+  needs_manual_classification: boolean;
+  invoice_first_case: string | null;
+  vendor_id: number | null;
+  vendor?: Vendor;
+  project?: { id: number; code: string; name: string };
+  procurement_project_id?: number | null;
+  procurement_request_id?: number | null;
+  purchase_order_id?: number | null;
+  policy_result?: Record<string, unknown>;
+  arithmetic?: { ok: boolean; issues: string[] };
+  supplier_match_status?: string | null;
+  supplier_differences?: Array<{ field: string; master: string; document: string }>;
+  bank_mismatch?: boolean;
+  currency_ambiguous?: boolean;
+  lines?: Array<{
+    id: number;
+    line_no: number;
+    source_description: string;
+    lpo_description: string | null;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+    confidence_score: number | null;
+  }>;
+  original_filename?: string;
+  duplicate_matches?: Array<{ reason: string; intake_id?: number; document_number?: string }>;
+}
+
+export const procurementIntakeApi = {
+  list: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<ProcurementIntake>>("/procurement/intakes", { params }),
+  get: (id: number) => api.get<{ data: ProcurementIntake }>(`/procurement/intakes/${id}`),
+  upload: (file: File, idempotencyKey?: string) => {
+    const body = new FormData();
+    body.append("file", file);
+    if (idempotencyKey) body.append("idempotency_key", idempotencyKey);
+    return api.post<{ data: ProcurementIntake; message: string }>("/procurement/intakes", body);
+  },
+  confirm: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: ProcurementIntake; message: string }>(`/procurement/intakes/${id}/confirm`, data),
+  matches: (id: number) => api.get<{ data: ProcurementRequest[] }>(`/procurement/intakes/${id}/matches`),
+  linkRequest: (id: number, procurement_request_id: number) =>
+    api.post(`/procurement/intakes/${id}/link-request`, { procurement_request_id }),
+  createRequest: (id: number, data: Record<string, unknown>) =>
+    api.post(`/procurement/intakes/${id}/create-request`, data),
+  generateLpo: (id: number) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/intakes/${id}/purchase-orders`),
+};
+
+export const procurementWorkbenchApi = {
+  cards: () => api.get<{ data: Record<string, number> }>("/procurement/workbench"),
+  projects: () => api.get<{ data: Array<{ id: number; code: string; name: string; funding_source: string }> }>("/procurement/projects"),
+  sequence: () => api.get<{ data: Record<string, unknown> }>("/procurement/lpo-sequence"),
+  activateSequence: (last_legacy_number: number, reason: string) =>
+    api.post("/procurement/lpo-sequence/activate", { last_legacy_number, reason }),
+  exceptions: () => api.get("/procurement/exceptions"),
+  approveException: (id: number) => api.post(`/procurement/exceptions/${id}/approve`),
+  inbox: () => api.get("/procurement/inbox"),
+  ingestInbox: (from_email: string, file: File, subject?: string) => {
+    const body = new FormData();
+    body.append("from_email", from_email);
+    body.append("file", file);
+    if (subject) body.append("subject", subject);
+    return api.post("/procurement/inbox", body);
+  },
 };
 
 export const goodsReceiptsApi = {

@@ -8,7 +8,8 @@ class PurchaseOrderItem extends Model
 {
     protected $fillable = [
         'purchase_order_id', 'procurement_item_id',
-        'description', 'quantity', 'unit', 'unit_price', 'total_price',
+        'description', 'source_description', 'quantity', 'unit', 'unit_price', 'total_price',
+        'account_code', 'vat_amount', 'source_intake_line_id',
     ];
 
     protected $casts = ['unit_price' => 'float', 'total_price' => 'float'];

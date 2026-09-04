@@ -104,6 +104,32 @@ class PurchaseOrderTest extends TestCase
         $response->assertCreated();
         $ref = $response->json('data.reference_number');
         $this->assertStringStartsWith('PO-', $ref);
+        $this->assertNull($response->json('data.lpo_number'));
+        $this->assertSame('award', $response->json('data.source_type'));
+    }
+
+    public function test_award_path_po_cannot_allocate_s_number_via_lpo_submit(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $staff  = $this->makeUser('staff', $tenant);
+        $req    = ProcurementRequest::create([
+            'tenant_id' => $tenant->id, 'requester_id' => $staff->id,
+            'title' => 'Test', 'description' => 'Test', 'category' => 'goods', 'estimated_value' => 10000, 'currency' => 'NAD', 'status' => 'awarded',
+        ]);
+        [$vendor, $quote] = $this->makeVendorAndQuote($tenant, $req);
+        $req->update(['awarded_quote_id' => $quote->id]);
+
+        [$http] = $this->asProcurementOfficer($tenant);
+        $id = $http->postJson('/api/v1/procurement/purchase-orders', $this->poPayload($vendor, $req))
+            ->assertCreated()
+            ->json('data.id');
+
+        $http->postJson("/api/v1/procurement/purchase-orders/{$id}/submit")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['reference_number']);
+
+        $this->assertStringStartsWith('PO-', PurchaseOrder::find($id)->reference_number);
+        $this->assertNull(PurchaseOrder::find($id)->lpo_number);
     }
 
     public function test_po_cannot_be_created_from_non_awarded_request(): void

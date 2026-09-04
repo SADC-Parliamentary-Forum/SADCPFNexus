@@ -1372,6 +1372,9 @@ const OVERCROWDED_SIDEBARS: {
       "/procurement/contracts",
       "/procurement/register",
       "/procurement/settings",
+      "/procurement/from-document",
+      "/procurement/exceptions",
+      "/procurement/inbox",
     ],
   },
   {

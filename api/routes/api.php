@@ -750,12 +750,42 @@ Route::prefix('v1')->group(function () {
                 Route::post('invoices/{invoice}/final-invoice', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'submitFinalInvoice']);
             });
 
-            // Purchase Orders
+            // Document intake (invoice / quote → LPO)
+            Route::get('workbench', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'workbench']);
+            Route::get('lpo-sequence', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'sequence']);
+            Route::post('lpo-sequence/activate', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'activateSequence']);
+            Route::get('projects', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'projects']);
+            Route::post('projects', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'storeProject']);
+            Route::get('exceptions', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'exceptions']);
+            Route::post('exceptions/{exception}/approve', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'approveException']);
+            Route::get('inbox', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'inbox']);
+            Route::post('inbox', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'ingestInbox']);
+
+            Route::get('intakes', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'index']);
+            Route::post('intakes', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'store']);
+            Route::get('intakes/{intake}', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'show']);
+            Route::post('intakes/{intake}/extract', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'extract']);
+            Route::post('intakes/{intake}/confirm', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'confirm']);
+            Route::get('intakes/{intake}/matches', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'matches']);
+            Route::post('intakes/{intake}/link-request', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'linkRequest']);
+            Route::post('intakes/{intake}/create-request', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'createRequest']);
+            Route::post('intakes/{intake}/purchase-orders', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'generateFromIntake']);
             Route::apiResource('purchase-orders', \App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class)
                 ->parameters(['purchase-orders' => 'purchaseOrder'])
                 ->names('procurement.purchase-orders');
             Route::post('purchase-orders/{purchaseOrder}/issue', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'issue']);
             Route::post('purchase-orders/{purchaseOrder}/cancel', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'cancel']);
+            Route::post('purchase-orders/{purchaseOrder}/submit', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'submit']);
+            Route::post('purchase-orders/{purchaseOrder}/approve', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'approve']);
+            Route::post('purchase-orders/{purchaseOrder}/return', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'returnLpo']);
+            Route::post('purchase-orders/{purchaseOrder}/reject', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'reject']);
+            Route::post('purchase-orders/{purchaseOrder}/email', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'email']);
+            Route::get('purchase-orders/{purchaseOrder}/pdf', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'pdf']);
+            Route::post('purchase-orders/{purchaseOrder}/service-confirmations', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'serviceConfirmation']);
+            Route::post('purchase-orders/{purchaseOrder}/invoice-match', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'invoiceMatch']);
+            Route::post('purchase-orders/{purchaseOrder}/finance-handover', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'financeHandover']);
+            Route::post('purchase-orders/{purchaseOrder}/void', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'void']);
+            Route::post('purchase-orders/{purchaseOrder}/amend', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'amend']);
 
             // Invoices
             Route::apiResource('invoices', \App\Http\Controllers\Api\V1\Procurement\InvoiceController::class)
