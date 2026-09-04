@@ -59,7 +59,11 @@ final class SpreadsheetGrid
             $row = [];
             for ($c = 1; $c <= $highestCol; $c++) {
                 $cell = $sheet->getCell(Coordinate::stringFromColumnIndex($c).$r);
-                $value = $cell->getValue();
+                try {
+                    $value = $cell->getCalculatedValue();
+                } catch (\Throwable) {
+                    $value = $cell->getValue();
+                }
                 if ($value instanceof \DateTimeInterface) {
                     $value = $value->format('Y-m-d');
                 } elseif (is_numeric($value) && ExcelDate::isDateTime($cell)) {

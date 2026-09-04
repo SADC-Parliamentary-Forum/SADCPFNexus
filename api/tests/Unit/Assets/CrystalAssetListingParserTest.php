@@ -111,6 +111,32 @@ class CrystalAssetListingParserTest extends TestCase
         $this->assertSame('fleet', AssetCategoryMapper::toCode('Motor Vehicles'));
     }
 
+    public function test_formula_merged_cells_negative_and_zero_amounts(): void
+    {
+        $path = sys_get_temp_dir().'/crystal-formula-'.uniqid().'.xls';
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->fromArray([
+            ['SADC PF Fixed Assets Listing'],
+            ['Category: Computer Equipment'],
+            ['CE-4001', '', '', '', null, '', '', 0, '', 0, '', 0, '', '', 0, '', 0, 0, 0, '', 0, 0, 0, 0, 0],
+            ['Asset Description: Formula laptop', '', '', '', '', '', '', '', '', '', '', '', 'Acquisition Date: 01/15/2021'],
+            ['CE-4002', '', '', '', -12.5, '', '', 0, '', 0, '', 0, '', '', -12.5, '', 0, 0, 0, '', 0, 0, 0, 0, -12.5],
+            ['Asset Description: Credit note monitor', '', '', '', '', '', '', '', '', '', '', '', 'Acquisition Date:'],
+        ]);
+        $sheet->setCellValue('E3', '=1000+234.78');
+        $sheet->mergeCells('A3:B3');
+        (new Xls($spreadsheet))->save($path);
+
+        $parsed = (new CrystalAssetListingParser)->parseFile($path, 'formula.xls');
+        unlink($path);
+
+        $this->assertCount(2, $parsed['records']);
+        $this->assertSame('CE-4001', $parsed['records'][0]['asset_tag']);
+        $this->assertEqualsWithDelta(1234.78, (float) $parsed['records'][0]['opening_cost'], 0.01);
+        $this->assertEqualsWithDelta(-12.5, (float) $parsed['records'][1]['opening_cost'], 0.01);
+    }
+
     /**
      * @param  list<list<mixed>>  $rows
      */

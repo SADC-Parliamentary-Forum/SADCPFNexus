@@ -287,6 +287,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/reports", permission: "reports.view" },
   { path: "/assets/import", permission: ["assets.import", "assets.admin", "assets.manage"] },
   { path: "/assets/labels", permission: ["assets.print", "assets.admin", "assets.manage"] },
+  { path: "/assets/verification", permission: ["assets.verify", "assets.admin", "assets.manage"] },
   { path: "/assets", permission: "assets.view" },
   { path: "/fleet", permission: "assets.view" },
   { path: "/stock", permission: "stock.view" },

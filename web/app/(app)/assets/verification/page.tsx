@@ -2,8 +2,7 @@
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
-import { assetUnregisteredFindsApi } from "@/lib/api";
+import api, { assetQrApi, assetUnregisteredFindsApi, assetVerificationApi } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
@@ -23,6 +22,8 @@ export default function AssetVerificationPage() {
   const [counts, setCounts] = useState<Counts | null>(null);
   const [finds, setFinds] = useState<Find[]>([]);
   const [findDesc, setFindDesc] = useState("");
+  const [scanToken, setScanToken] = useState("");
+  const [scanned, setScanned] = useState<{ id: number; asset_tag: string; name: string } | null>(null);
 
   async function load(campaignId?: number) {
     const r = await api.get<{ data: Campaign[] }>("/assets-meta/verification-campaigns");
@@ -64,6 +65,31 @@ export default function AssetVerificationPage() {
     await assetUnregisteredFindsApi.create({ description: findDesc, campaign_id: activeId ?? campaigns[0]?.id });
     setFindDesc("");
     await load(activeId ?? undefined);
+  }
+
+  async function scanTokenSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErrorMsg(null);
+    try {
+      const r = await assetQrApi.lookup(scanToken.trim());
+      setScanned({ id: r.data.data.id, asset_tag: r.data.data.asset_tag, name: r.data.data.name });
+    } catch {
+      setScanned(null);
+      setErrorMsg(t("assets.public.notFound"));
+    }
+  }
+
+  async function recordScanResult(result: "verified" | "missing" | "relocated") {
+    if (!activeId || !scanned) return;
+    await assetVerificationApi.record(activeId, {
+      asset_id: scanned.id,
+      result,
+      verification_method: "qr",
+    });
+    setMsg(t("assets.verify.recordResult"));
+    setScanToken("");
+    setScanned(null);
+    await load(activeId);
   }
 
   async function promoteFind(find: Find) {
@@ -124,6 +150,20 @@ export default function AssetVerificationPage() {
           </tbody>
         </table>
       </div>
+
+      <form onSubmit={scanTokenSubmit} className="card flex flex-wrap items-end gap-2 p-4">
+        <label className="text-sm flex-1">{t("assets.verify.scanToken")}
+          <input className="input mt-1" value={scanToken} onChange={(e) => setScanToken(e.target.value)} required />
+        </label>
+        <Button type="submit">{t("assets.verify.scan")}</Button>
+      </form>
+      {scanned && (
+        <div className="card flex flex-wrap items-center gap-3 p-4 text-sm">
+          <span className="font-mono">{scanned.asset_tag}</span>
+          <span>{scanned.name}</span>
+          <Button type="button" size="sm" onClick={() => recordScanResult("verified")}>{t("assets.verify.recordResult")}</Button>
+        </div>
+      )}
 
       <h2 className="text-sm font-semibold">{t("assets.verify.unregistered")}</h2>
       <form onSubmit={recordFind} className="card flex gap-2 p-4">

@@ -87,9 +87,12 @@ test("asset import and labels stay gated to import/print permissions", () => {
   const viewer = { roles: ["staff"], permissions: ["assets.view"] };
   const importer = { roles: ["Administration Officer"], permissions: ["assets.import", "assets.admin"] };
   const printer = { roles: ["Administration Officer"], permissions: ["assets.print", "assets.manage"] };
+  const verifier = { roles: ["Administration Officer"], permissions: ["assets.verify", "assets.view"] };
   assert.equal(canAccessRoute(viewer, "/assets"), true);
   assert.equal(canAccessRoute(viewer, "/assets/import"), false);
   assert.equal(canAccessRoute(viewer, "/assets/labels"), false);
+  assert.equal(canAccessRoute(viewer, "/assets/verification"), false);
   assert.equal(canAccessRoute(importer, "/assets/import"), true);
   assert.equal(canAccessRoute(printer, "/assets/labels"), true);
+  assert.equal(canAccessRoute(verifier, "/assets/verification"), true);
 });

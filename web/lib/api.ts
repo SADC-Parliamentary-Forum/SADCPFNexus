@@ -1946,6 +1946,17 @@ export const assetImportApi = {
   report: (id: number) => api.get(`/assets/import/${id}/report`),
 };
 
+export const assetQrApi = {
+  lookup: (token: string) => api.get<{ data: { id: number; asset_tag: string; name: string; serial_number?: string | null } }>(`/assets/qr/${encodeURIComponent(token)}`),
+};
+
+export const assetVerificationApi = {
+  record: (campaignId: number, data: Record<string, unknown>) =>
+    api.post(`/assets-meta/verification-campaigns/${campaignId}/results`, data),
+  close: (campaignId: number) =>
+    api.post(`/assets-meta/verification-campaigns/${campaignId}/close`),
+};
+
 export const assetMetaApi = {
   locations: () => api.get<{ data: { id: number; name: string; code: string; legacy_name?: string | null }[] }>("/assets-meta/locations"),
   createLocation: (data: Record<string, unknown>) =>

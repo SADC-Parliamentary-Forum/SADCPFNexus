@@ -317,4 +317,116 @@ class AssetRegisterImportTest extends TestCase
             'custodian_type' => 'shared',
         ]);
     }
+
+    public function test_label_print_overflows_avery_18_up_onto_a_second_page(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asAdmin($tenant);
+        app(AssetImportCommitService::class)->seedDefaultTemplates($tenant->id);
+        $template = \App\Models\AssetLabelTemplate::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('code', 'avery_l7161_permanent')
+            ->first();
+        $this->assertSame(18, (int) $template->rows * (int) $template->columns);
+
+        $ids = [];
+        for ($i = 1; $i <= 19; $i++) {
+            $asset = Asset::create([
+                'tenant_id' => $tenant->id,
+                'asset_code' => sprintf('CE-%04d', 5000 + $i),
+                'tag_number' => sprintf('CE-%04d', 5000 + $i),
+                'name' => 'Overflow '.$i,
+                'category' => 'it',
+                'status' => 'active',
+            ]);
+            app(AssetQrService::class)->ensure($asset, $user);
+            $ids[] = $asset->id;
+        }
+
+        $this->asUser($user);
+        $print = $http->postJson('/api/v1/assets/labels/print', [
+            'asset_ids' => $ids,
+            'template_id' => $template->id,
+            'json' => true,
+        ]);
+        $print->assertCreated();
+        $this->assertSame(19, (int) $print->json('data.number_of_labels'));
+        $this->assertSame(19, \App\Models\AssetLabelBatchItem::query()->count());
+    }
+
+    public function test_location_move_writes_append_only_movement_history(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [, $user] = $this->asAdmin($tenant);
+        $from = \App\Models\AssetLocation::create([
+            'tenant_id' => $tenant->id,
+            'code' => 'FROM',
+            'name' => 'Store A',
+            'location_type' => 'store',
+            'is_active' => true,
+        ]);
+        $to = \App\Models\AssetLocation::create([
+            'tenant_id' => $tenant->id,
+            'code' => 'TO',
+            'name' => 'Office 16C',
+            'location_type' => 'office',
+            'is_active' => true,
+        ]);
+        $asset = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CE-6100',
+            'tag_number' => 'CE-6100',
+            'name' => 'Moved laptop',
+            'category' => 'it',
+            'status' => 'active',
+            'location_id' => $from->id,
+        ]);
+
+        app(\App\Modules\Assets\Services\AssetService::class)->setLocation($asset, $to->id, $user, 'Relocated');
+
+        $this->assertDatabaseHas('asset_movements', [
+            'asset_id' => $asset->id,
+            'movement_type' => 'move',
+            'from_location_id' => $from->id,
+            'to_location_id' => $to->id,
+        ]);
+        $this->assertDatabaseHas('asset_location_histories', [
+            'asset_id' => $asset->id,
+            'location_id' => $to->id,
+        ]);
+        $this->assertSame($from->id, $from->fresh()->id);
+    }
+
+    public function test_verify_permission_can_record_qr_scan_result(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [, $admin] = $this->asAdmin($tenant);
+        $asset = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CE-7100',
+            'tag_number' => 'CE-7100',
+            'name' => 'Scan laptop',
+            'category' => 'it',
+            'status' => 'active',
+        ]);
+        $asset = app(AssetQrService::class)->ensure($asset, $admin);
+        $campaign = app(\App\Modules\Assets\Services\AssetVerificationService::class)->createCampaign([
+            'name' => 'QR scan campaign',
+            'starts_on' => now()->toDateString(),
+        ], $admin);
+
+        $verifier = $this->makeUser('staff', $tenant);
+        $verifier->givePermissionTo(['assets.view', 'assets.verify']);
+        $http = $this->asUser($verifier);
+
+        $http->getJson('/api/v1/assets/qr/'.$asset->qr_token)
+            ->assertOk()
+            ->assertJsonPath('data.asset_tag', 'CE-7100');
+
+        $http->postJson('/api/v1/assets-meta/verification-campaigns/'.$campaign->id.'/results', [
+            'asset_id' => $asset->id,
+            'result' => 'verified',
+            'verification_method' => 'qr',
+        ])->assertCreated();
+    }
 }

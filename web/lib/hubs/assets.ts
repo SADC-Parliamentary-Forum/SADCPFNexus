@@ -6,12 +6,14 @@ export const ASSETS_SIDEBAR_CHILDREN = [
   { label: "Fleet", href: "/fleet", icon: "directions_car" },
   { label: "My requests", href: "/assets/requests", icon: "request_quote" },
   { label: "Import", href: "/assets/import", icon: "upload_file" },
+  { label: "Labels", href: "/assets/labels", icon: "qr_code_2" },
+  { label: "Verification", href: "/assets/verification", icon: "fact_check" },
   { label: "Settings", href: "/assets/settings", icon: "settings" },
 ] as const;
 
 export const ASSETS_HUB_CARDS: HubCard[] = [
   { href: "/assets/intake", title: "Intake / pending", purpose: "GRN drafts waiting to be capitalised.", icon: "pending_actions", section: "queues" },
-  { href: "/assets/verification", title: "Verification", purpose: "Physical verification exercises.", icon: "fact_check", section: "queues" },
+  { href: "/assets/verification", title: "Verification", purpose: "Physical verification exercises.", icon: "fact_check", section: "queues", permission: ["assets.verify", "assets.admin", "assets.manage"] },
   { href: "/assets/import", title: "Import", purpose: "Review staged Crystal listings before committing the register.", icon: "upload_file", section: "queues", permission: ["assets.import", "assets.admin", "assets.manage"] },
   { href: "/assets/disposal", title: "Disposal", purpose: "Assets pending disposal.", icon: "delete_forever", section: "queues" },
   { href: "/assets/requests", title: "My requests", purpose: "Asset issue and transfer requests.", icon: "request_quote", section: "queues" },

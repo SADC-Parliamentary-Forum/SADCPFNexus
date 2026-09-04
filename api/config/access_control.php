@@ -616,6 +616,10 @@ return [
             'READ' => ['assets.verify', 'assets.admin', 'assets.manage', 'assets.view'],
             'WRITE' => ['assets.verify', 'assets.admin', 'assets.manage'],
         ]],
+        ['pattern' => 'api/v1/assets-meta/verification-campaigns*', 'permissions' => [
+            'READ' => ['assets.verify', 'assets.admin', 'assets.manage', 'assets.view'],
+            'WRITE' => ['assets.verify', 'assets.admin', 'assets.manage'],
+        ]],
         ['pattern' => 'api/v1/assets/qr*', 'permissions' => [
             'READ' => ['assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
         ]],

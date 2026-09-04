@@ -2640,6 +2640,10 @@ return [
         'linked_routes' => ['/assets/verification'],
         'linked_endpoints' => [
             'GET /api/v1/assets-meta/verification-campaigns',
+            'POST /api/v1/assets-meta/verification-campaigns',
+            'GET /api/v1/assets-meta/verification-campaigns/{assetVerificationCampaign}/dashboard',
+            'POST /api/v1/assets-meta/verification-campaigns/{assetVerificationCampaign}/results',
+            'POST /api/v1/assets-meta/verification-campaigns/{assetVerificationCampaign}/close',
             'POST /api/v1/assets/unregistered-finds',
             'GET /api/v1/assets/qr/{token}',
         ],
