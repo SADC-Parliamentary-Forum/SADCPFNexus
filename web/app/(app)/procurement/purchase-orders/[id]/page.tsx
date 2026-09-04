@@ -57,6 +57,22 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
     mutationFn: () => purchaseOrdersApi.issue(poId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
   });
+  const submitMutation = useMutation({
+    mutationFn: () => purchaseOrdersApi.submit(poId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
+  });
+  const emailMutation = useMutation({
+    mutationFn: () => purchaseOrdersApi.emailSupplier(poId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
+  });
+  const financeMutation = useMutation({
+    mutationFn: () => purchaseOrdersApi.financeHandover(poId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
+  });
+  const serviceMutation = useMutation({
+    mutationFn: () => purchaseOrdersApi.confirmService(poId, { delivered: "yes", satisfactory: true }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
+  });
 
   const cancelMutation = useMutation({
     mutationFn: () => purchaseOrdersApi.cancel(poId, cancelReason),
@@ -133,14 +149,23 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
             <h1 className="text-xl font-bold text-neutral-900">{po.title}</h1>
-            <p className="font-mono text-xs text-neutral-400 mt-0.5">{po.reference_number}</p>
+            <p className="font-mono text-xs text-neutral-400 mt-0.5">{po.lpo_number ?? po.reference_number}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
               {s.label}
             </span>
-            {po.status === "draft" && canManagePO() && (
+            {po.status === "draft" && canManagePO() && po.lpo_number == null && po.reference_number?.startsWith("PROC-DRAFT") && (
+              <button
+                onClick={() => submitMutation.mutate()}
+                disabled={submitMutation.isPending}
+                className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
+              >
+                {submitMutation.isPending ? "Submitting…" : "Send for Approval"}
+              </button>
+            )}
+            {po.status === "draft" && canManagePO() && !po.reference_number?.startsWith("PROC-DRAFT") && (
               <button
                 onClick={() => issueMutation.mutate()}
                 disabled={issueMutation.isPending}
@@ -149,6 +174,28 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
                 <span className="material-symbols-outlined text-[14px]">send</span>
                 {issueMutation.isPending ? "Issuing…" : "Issue PO"}
               </button>
+            )}
+            {(po.status === "issued" || po.status === "approved") && canManagePO() && (
+              <>
+                <button type="button" className="btn-secondary text-xs px-3 py-1.5" onClick={async () => {
+                  const blob = await purchaseOrdersApi.downloadPdf(poId).then((r) => r.data as Blob);
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `LPO_${(po.lpo_number ?? po.reference_number).replace(/\s+/g, "_")}.pdf`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}>Download PDF</button>
+                <button type="button" className="btn-secondary text-xs px-3 py-1.5" disabled={emailMutation.isPending} onClick={() => emailMutation.mutate()}>
+                  {emailMutation.isPending ? "Queuing…" : "Email Supplier"}
+                </button>
+                <button type="button" className="btn-secondary text-xs px-3 py-1.5" disabled={serviceMutation.isPending} onClick={() => serviceMutation.mutate()}>
+                  Confirm service
+                </button>
+                <button type="button" className="btn-primary text-xs px-3 py-1.5" disabled={financeMutation.isPending} onClick={() => financeMutation.mutate()}>
+                  Send to Finance
+                </button>
+              </>
             )}
             {!["closed","cancelled","received"].includes(po.status) && canManagePO() && (
               <button

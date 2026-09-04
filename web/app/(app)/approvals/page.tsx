@@ -46,6 +46,13 @@ const MODULE_CONFIG: Record<
     label: "Imprest",
     href: (id) => `/imprest/${id}`,
   },
+  purchase_order: {
+    icon: "receipt_long",
+    color: "text-rose-600 dark:text-rose-300",
+    bg: "bg-rose-50 dark:bg-rose-900/20",
+    label: "LPO",
+    href: (id) => `/procurement/purchase-orders/${id}`,
+  },
   procurement: {
     icon: "shopping_cart",
     color: "text-rose-600 dark:text-rose-300",
