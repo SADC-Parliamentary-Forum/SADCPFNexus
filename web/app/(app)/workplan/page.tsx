@@ -277,8 +277,14 @@ function CalendarView({
                         borderColor: "rgba(0,0,0,0.15)",
                       }}
                       title={`${ev.title} · ${formatDate(ev.date)}${ev.end_date ? ` – ${formatDate(ev.end_date)}` : ""}`}
-                      onDoubleClick={(e) => { e.preventDefault(); onOpenEvent(ev.id); }}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenEvent(ev.id); }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onOpenEvent(ev.id);
+                        }
+                      }}
                     >
                       <span className="truncate">{ev.title}</span>
                       <button
@@ -342,8 +348,14 @@ function CalendarView({
                                   tabIndex={0}
                                   className={`flex items-center gap-1 truncate rounded px-1.5 py-0.5 text-[10px] font-medium leading-tight border ${c.bg} ${c.text} ${c.border} hover:opacity-80 transition-opacity`}
                                   title={ev.title}
-                                  onDoubleClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenEvent(ev.id); }}
-                                  onClick={(e) => e.stopPropagation()}
+                                  onClick={(e) => { e.stopPropagation(); e.preventDefault(); onOpenEvent(ev.id); }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      onOpenEvent(ev.id);
+                                    }
+                                  }}
                                 >
                                   <span
                                     className="w-1.5 h-1.5 rounded-full flex-shrink-0"
@@ -690,8 +702,14 @@ function GanttView({
                       role="button"
                       tabIndex={0}
                       className="text-xs font-medium text-neutral-800 truncate hover:text-primary cursor-pointer flex-1 min-w-0"
-                      title="Double-click to open"
-                      onDoubleClick={() => onOpenEvent(ev.id)}
+                      title="Open event"
+                      onClick={() => onOpenEvent(ev.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onOpenEvent(ev.id);
+                        }
+                      }}
                     >
                       {ev.title}
                     </span>
@@ -736,7 +754,7 @@ function GanttView({
                       ) : null
                     )}
 
-                    {/* Event bar — double-click to open */}
+                    {/* Event bar — click to open */}
                     <div
                       role="button"
                       tabIndex={0}
@@ -748,8 +766,14 @@ function GanttView({
                         backgroundColor: c.bar,
                         minWidth: isSingleDay ? 8 : 24,
                       }}
-                      title={`${ev.title} · Double-click to open`}
-                      onDoubleClick={() => onOpenEvent(ev.id)}
+                      title={ev.title}
+                      onClick={() => onOpenEvent(ev.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          onOpenEvent(ev.id);
+                        }
+                      }}
                     >
                       {isSingleDay ? (
                         <div className="w-full h-full flex items-center justify-center">
@@ -1161,8 +1185,14 @@ export default function WorkplanListPage() {
                         role="button"
                         tabIndex={0}
                         className="cursor-pointer hover:bg-neutral-50"
-                        onDoubleClick={() => handleOpenEvent(ev.id)}
-                        title="Double-click to open"
+                        onClick={() => handleOpenEvent(ev.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleOpenEvent(ev.id);
+                          }
+                        }}
+                        title="Open event"
                       >
                         <td className="font-medium text-neutral-900">{ev.title}</td>
                         <td>
@@ -1186,7 +1216,6 @@ export default function WorkplanListPage() {
                           {ev.attachments?.length ?? 0}
                         </td>
                         <td className="text-right">
-                          <span className="text-xs text-neutral-400 mr-2">Double-click to open</span>
                           <button
                             type="button"
                             onClick={(e) => { e.stopPropagation(); handleDeleteEvent(ev.id); }}
