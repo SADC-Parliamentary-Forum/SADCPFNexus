@@ -1919,6 +1919,54 @@ export const assetMovementsApi = {
   get: (id: number) => api.get<AssetMovement>(`/assets/movements/${id}`),
 };
 
+export const assetImportApi = {
+  list: (params?: { per_page?: number; page?: number }) =>
+    api.get("/assets/import", { params }),
+  upload: (form: FormData) =>
+    api.post<{ message: string; data: unknown }>("/assets/import", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  show: (id: number) => api.get<{ data: unknown }>(`/assets/import/${id}`),
+  staging: (id: number, params?: Record<string, string | number | undefined>) =>
+    api.get(`/assets/import/${id}/staging`, { params }),
+  updateStaging: (batchId: number, stagingId: number, data: Record<string, unknown>) =>
+    api.patch<{ data: unknown }>(`/assets/import/${batchId}/staging/${stagingId}`, data),
+  approve: (id: number, data: { staging_ids?: number[]; all_non_blocking?: boolean }) =>
+    api.post(`/assets/import/${id}/approve`, data),
+  exclude: (batchId: number, stagingId: number, reason: string) =>
+    api.post(`/assets/import/${batchId}/staging/${stagingId}/exclude`, { reason }),
+  raw: (batchId: number, rawId: number) => api.get(`/assets/import/${batchId}/raw/${rawId}`),
+  mapLocation: (id: number, data: { legacy_location: string; location_id: number }) =>
+    api.post(`/assets/import/${id}/map-location`, data),
+  mapCustodian: (id: number, data: Record<string, unknown>) =>
+    api.post(`/assets/import/${id}/map-custodian`, data),
+  commit: (id: number, data?: { approve_non_blocking?: boolean }) =>
+    api.post(`/assets/import/${id}/commit`, data ?? {}),
+  report: (id: number) => api.get(`/assets/import/${id}/report`),
+};
+
+export const assetLabelsApi = {
+  templates: () => api.get("/assets/labels/templates"),
+  reprintQueue: (params?: { per_page?: number }) => api.get("/assets/labels/reprint-queue", { params }),
+  batches: () => api.get("/assets/labels/batches"),
+  print: (data: Record<string, unknown>) =>
+    api.post("/assets/labels/print", data, { responseType: "blob" }),
+};
+
+export const assetUnregisteredFindsApi = {
+  list: () => api.get("/assets/unregistered-finds"),
+  create: (data: Record<string, unknown>) => api.post("/assets/unregistered-finds", data),
+  promote: (id: number, data: Record<string, unknown>) =>
+    api.post(`/assets/unregistered-finds/${id}/promote`, data),
+};
+
+export const publicAssetQrApi = {
+  show: (token: string) =>
+    api.get<{ data: { organisation: string; notice: string; asset_tag: string; asset_name: string; contact: string } }>(
+      `/public/assets/${token}`
+    ),
+};
+
 // ─── Consumables / Stock Register (separate from Fixed Assets) ────────────────
 
 export interface StockCategory {

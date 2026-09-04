@@ -34,6 +34,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'procurement.hod_approve', 'procurement.manage_budget',
             'supplier.portal',
             'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
+            'assets.import', 'assets.verify', 'assets.print',
             // Consumables / Stock Register (separate from Fixed Assets)
             'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage', 'stock.admin',
             'stock.approve', 'stock.transfer',
@@ -273,7 +274,8 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'procurement.create', 'procurement.approve', 'procurement.admin',
                     'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po',
                     'procurement.receive_goods',
-                    'assets.view', 'assets.create', 'finance.view', 'governance.view',
+                    'assets.view', 'assets.create', 'assets.import', 'assets.verify', 'assets.print',
+                    'finance.view', 'governance.view',
                     // Procurement officers manage the consumables/stock register
                     'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage',
                     'stock.approve', 'stock.transfer',
@@ -295,13 +297,13 @@ class RolesAndPermissionsSeeder extends Seeder
             $externalAuditor->syncPermissions(
                 Permission::whereIn('name', [
                     'finance.view', 'salary_advance.view', 'governance.view', 'audit.view', 'audit.export',
-            // Platform Audit Trail (distinct from Internal Audit Management and legacy audit.view)
-            'audit-trail.view-own-records', 'audit-trail.view-record-history', 'audit-trail.view-department',
-            'audit-trail.view-module', 'audit-trail.view-security', 'audit-trail.view-privileged',
-            'audit-trail.view-confidential', 'audit-trail.search', 'audit-trail.export',
-            'audit-trail.create-forensic-case', 'audit-trail.manage-holds', 'audit-trail.manage-alerts',
-            'audit-trail.verify-integrity', 'audit-trail.manage-event-types', 'audit-trail.manage-retention',
-            'audit-trail.manage-ingestion', 'audit-trail.audit-access', 'audit-trail.admin',
+                    // Platform Audit Trail (distinct from Internal Audit Management and legacy audit.view)
+                    'audit-trail.view-own-records', 'audit-trail.view-record-history', 'audit-trail.view-department',
+                    'audit-trail.view-module', 'audit-trail.view-security', 'audit-trail.view-privileged',
+                    'audit-trail.view-confidential', 'audit-trail.search', 'audit-trail.export',
+                    'audit-trail.create-forensic-case', 'audit-trail.manage-holds', 'audit-trail.manage-alerts',
+                    'audit-trail.verify-integrity', 'audit-trail.manage-event-types', 'audit-trail.manage-retention',
+                    'audit-trail.manage-ingestion', 'audit-trail.audit-access', 'audit-trail.admin',
                     'travel.view', 'assets.view', 'hr.view',
                 ])->where('guard_name', $guard)->get()
             );
@@ -352,6 +354,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::whereIn('name', [
                     'procurement.view', 'procurement.hod_approve',
                     'hr.view', 'travel.view', 'leave.view', 'finance.view',
+                    'assets.view', 'assets.verify',
                     'reports.view',
                     'reports.view',
                     'timesheets.view', 'timesheets.view-team', 'timesheets.review-team',
@@ -554,6 +557,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::whereIn('name', [
                     'travel.view', 'travel.admin-review', 'travel.admin', 'travel.health-view',
                     'leave.view', 'imprest.view', 'hr.view', 'reports.view',
+                    'assets.view', 'assets.import', 'assets.verify', 'assets.print', 'assets.manage', 'assets.admin',
                 ])->where('guard_name', $guard)->get()
             );
 
@@ -565,13 +569,13 @@ class RolesAndPermissionsSeeder extends Seeder
                     'procurement.view', 'hr.view', 'governance.view', 'reports.view',
                     'mande.view', 'mande.review',
                     'audit.view', 'audit.export',
-            // Platform Audit Trail (distinct from Internal Audit Management and legacy audit.view)
-            'audit-trail.view-own-records', 'audit-trail.view-record-history', 'audit-trail.view-department',
-            'audit-trail.view-module', 'audit-trail.view-security', 'audit-trail.view-privileged',
-            'audit-trail.view-confidential', 'audit-trail.search', 'audit-trail.export',
-            'audit-trail.create-forensic-case', 'audit-trail.manage-holds', 'audit-trail.manage-alerts',
-            'audit-trail.verify-integrity', 'audit-trail.manage-event-types', 'audit-trail.manage-retention',
-            'audit-trail.manage-ingestion', 'audit-trail.audit-access', 'audit-trail.admin',
+                    // Platform Audit Trail (distinct from Internal Audit Management and legacy audit.view)
+                    'audit-trail.view-own-records', 'audit-trail.view-record-history', 'audit-trail.view-department',
+                    'audit-trail.view-module', 'audit-trail.view-security', 'audit-trail.view-privileged',
+                    'audit-trail.view-confidential', 'audit-trail.search', 'audit-trail.export',
+                    'audit-trail.create-forensic-case', 'audit-trail.manage-holds', 'audit-trail.manage-alerts',
+                    'audit-trail.verify-integrity', 'audit-trail.manage-event-types', 'audit-trail.manage-retention',
+                    'audit-trail.manage-ingestion', 'audit-trail.audit-access', 'audit-trail.admin',
                     'audit.universe.manage', 'audit.plan.manage',
                     'audit.engagement.manage', 'audit.engagement.fieldwork',
                     'audit.findings.issue', 'audit.findings.view',

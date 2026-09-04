@@ -258,6 +258,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Register", href: "/assets", icon: "inventory_2" },
       { label: "Fleet", href: "/fleet", icon: "directions_car" },
       { label: "My Requests", href: "/assets/requests", icon: "request_quote" },
+      { label: "Import", href: "/assets/import", icon: "upload_file" },
       { label: "Settings", href: "/assets/settings", icon: "settings" },
     ],
   },

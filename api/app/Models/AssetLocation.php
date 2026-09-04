@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class AssetLocation extends Model
 {
     protected $fillable = [
-        'tenant_id', 'code', 'name', 'building', 'floor', 'room',
-        'location_type', 'is_active',
+        'tenant_id', 'parent_id', 'code', 'name', 'legacy_name', 'building', 'floor', 'room',
+        'location_type', 'hierarchy_level', 'is_active',
     ];
 
     protected function casts(): array
@@ -26,5 +26,15 @@ class AssetLocation extends Model
     public function assets(): HasMany
     {
         return $this->hasMany(Asset::class, 'location_id');
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
     }
 }

@@ -19,6 +19,7 @@ return [
         'api/v1/profile/*',
         'api/v1/setup/*',
         'api/v1/email-action/*',
+        'api/v1/public/assets/*',
     ],
     'endpoint_fallback_permission_rules' => [
         ['pattern' => 'api/v1/admin/access-requests*', 'permissions' => [
@@ -599,6 +600,24 @@ return [
         ['pattern' => 'api/v1/decisions*', 'permissions' => [
             'READ' => ['decisions.view', 'decisions.admin'],
             'WRITE' => ['decisions.create', 'decisions.adopt', 'decisions.manage', 'decisions.admin'],
+        ]],
+        ['pattern' => 'api/v1/public/assets*', 'permissions' => [
+            'READ' => [],
+        ]],
+        ['pattern' => 'api/v1/assets/import*', 'permissions' => [
+            'READ' => ['assets.import', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.import', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/assets/labels*', 'permissions' => [
+            'READ' => ['assets.print', 'assets.admin', 'assets.manage', 'assets.view'],
+            'WRITE' => ['assets.print', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/assets/unregistered-finds*', 'permissions' => [
+            'READ' => ['assets.verify', 'assets.admin', 'assets.manage', 'assets.view'],
+            'WRITE' => ['assets.verify', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/assets/qr*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
         ]],
         ['pattern' => 'api/v1/assets/{asset}/acknowledge', 'permissions' => [
             'WRITE' => [

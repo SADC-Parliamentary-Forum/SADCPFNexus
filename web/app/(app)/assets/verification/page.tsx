@@ -3,21 +3,36 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { assetUnregisteredFindsApi } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type Campaign = { id: number; name: string; status: string; starts_on: string; ends_on?: string };
+type Counts = Record<string, number>;
+type Find = { id: number; description: string; status: string; found_location?: string | null };
 
 export default function AssetVerificationPage() {
+  const { t } = useI18n();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [name, setName] = useState("");
   const [startsOn, setStartsOn] = useState(new Date().toISOString().slice(0, 10));
   const [msg, setMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [counts, setCounts] = useState<Counts | null>(null);
+  const [finds, setFinds] = useState<Find[]>([]);
+  const [findDesc, setFindDesc] = useState("");
 
   async function load() {
     const r = await api.get<{ data: Campaign[] }>("/assets-meta/verification-campaigns");
-    setCampaigns(Array.isArray(r.data.data) ? r.data.data : []);
+    const list = Array.isArray(r.data.data) ? r.data.data : ((r.data as { data?: Campaign[] }).data ?? []);
+    setCampaigns(list);
+    if (list[0]) {
+      const dash = await api.get<{ data: { counts: Counts } }>(`/assets-meta/verification-campaigns/${list[0].id}/dashboard`);
+      setCounts(dash.data.data.counts);
+    }
+    const found = await assetUnregisteredFindsApi.list();
+    setFinds(((found.data as { data?: Find[] }).data ?? []) as Find[]);
   }
 
   useEffect(() => { load().catch(() => setCampaigns([])); }, []);
@@ -25,38 +40,54 @@ export default function AssetVerificationPage() {
   async function createCampaign(e: React.FormEvent) {
     e.preventDefault();
     if (creating) return;
-
     setCreating(true);
     setMsg(null);
     setErrorMsg(null);
-
     try {
       await api.post("/assets-meta/verification-campaigns", { name, starts_on: startsOn });
       setName("");
-      setMsg("Campaign created.");
+      setMsg(t("common.create"));
       await load();
-    } catch (error: any) {
-      setErrorMsg(error?.response?.data?.message ?? "Could not create campaign. Try again.");
+    } catch (error: unknown) {
+      const ax = error as { response?: { data?: { message?: string } } };
+      setErrorMsg(ax?.response?.data?.message ?? t("common.error"));
     } finally {
       setCreating(false);
     }
+  }
+
+  async function recordFind(e: React.FormEvent) {
+    e.preventDefault();
+    await assetUnregisteredFindsApi.create({ description: findDesc, campaign_id: campaigns[0]?.id });
+    setFindDesc("");
+    await load();
   }
 
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div className="page-header">
         <ModulePageHeader
-        title="Physical Verification"
-        subtitle="Campaigns for inventory checks; missing/damaged results update asset status"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Physical Verification" }]} />}
-      />
+          title={t("assets.verify.title")}
+          subtitle={t("assets.verify.subtitle")}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: t("assets.verify.title") }]} />}
+        />
       </div>
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
       {errorMsg && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{errorMsg}</div>}
+      {counts && (
+        <div className="grid gap-3 sm:grid-cols-4">
+          {Object.entries(counts).map(([k, v]) => (
+            <div key={k} className="card p-3">
+              <div className="text-xs text-neutral-500">{k.replaceAll("_", " ")}</div>
+              <div className="text-lg font-semibold">{v}</div>
+            </div>
+          ))}
+        </div>
+      )}
       <form onSubmit={createCampaign} className="card" style={{ padding: "1rem", marginBottom: "1.5rem", display: "flex", gap: 12, flexWrap: "wrap" }}>
-        <input className="input" placeholder="Campaign name" value={name} onChange={(e) => setName(e.target.value)} required />
+        <input className="input" placeholder={t("assets.verify.title")} value={name} onChange={(e) => setName(e.target.value)} required />
         <input className="input" type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} required />
-        <Button type="submit" disabled={creating}>{creating ? "Opening..." : "Open campaign"}</Button>
+        <Button type="submit" disabled={creating}>{creating ? t("common.loading") : t("common.create")}</Button>
       </form>
       <div className="table-wrap">
         <table className="data-table">
@@ -72,10 +103,19 @@ export default function AssetVerificationPage() {
                 <td>{c.ends_on ?? "—"}</td>
               </tr>
             ))}
-            {campaigns.length === 0 && <tr><td colSpan={4}>No campaigns yet.</td></tr>}
+            {campaigns.length === 0 && <tr><td colSpan={4}>{t("common.noResults")}</td></tr>}
           </tbody>
         </table>
       </div>
+
+      <h2 className="text-sm font-semibold">{t("assets.verify.unregistered")}</h2>
+      <form onSubmit={recordFind} className="card flex gap-2 p-4">
+        <input className="input flex-1" value={findDesc} onChange={(e) => setFindDesc(e.target.value)} placeholder={t("assets.verify.recordFind")} required />
+        <Button type="submit">{t("assets.verify.recordFind")}</Button>
+      </form>
+      <ul className="card space-y-1 p-4 text-sm">
+        {finds.map((f) => <li key={f.id}>{f.description} — {f.status}</li>)}
+      </ul>
     </div>
   );
 }

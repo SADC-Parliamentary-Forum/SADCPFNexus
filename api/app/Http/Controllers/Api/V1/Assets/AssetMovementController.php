@@ -44,16 +44,22 @@ class AssetMovementController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'asset_id'      => ['required', 'integer', 'exists:assets,id'],
-            'from_user_id'  => ['nullable', 'integer', 'exists:users,id'],
-            'to_user_id'    => ['nullable', 'integer', 'exists:users,id'],
-            'movement_type' => ['required', 'in:transfer,maintenance,disposal,storage,return'],
-            'reason'        => ['nullable', 'string', 'max:255'],
-            'notes'         => ['nullable', 'string'],
+            'asset_id' => ['required', 'integer', 'exists:assets,id'],
+            'from_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'to_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'movement_type' => ['required', 'in:transfer,maintenance,disposal,storage,return,assign,move,check_out,check_in,send_for_repair,return_from_repair,mark_missing,recover,dispose,write_off'],
+            'reason' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string'],
             'movement_date' => ['required', 'date'],
+            'from_location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
+            'to_location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
+            'from_department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'to_department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'reference_document' => ['nullable', 'string', 'max:128'],
+            'effective_date' => ['nullable', 'date'],
         ]);
 
-        $data['tenant_id']   = $request->user()->tenant_id;
+        $data['tenant_id'] = $request->user()->tenant_id;
         $data['recorded_by'] = $request->user()->id;
 
         $movement = AssetMovement::create($data);
@@ -62,7 +68,7 @@ class AssetMovementController extends Controller
         if ($data['movement_type'] === 'transfer' && isset($data['to_user_id'])) {
             Asset::where('id', $data['asset_id'])->update([
                 'assigned_to' => $data['to_user_id'],
-                'issued_at'   => $data['movement_date'],
+                'issued_at' => $data['movement_date'],
             ]);
         }
 

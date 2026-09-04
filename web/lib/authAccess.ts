@@ -53,7 +53,7 @@ export function canAccessRouteWithEffective(
 }
 
 /** Permission(s) that allow adding/managing assets (add asset, approve requests). */
-const ASSETS_MANAGE_PERMISSIONS = ["assets.admin", "assets.manage", "assets.create"];
+const ASSETS_MANAGE_PERMISSIONS = ["assets.admin", "assets.manage", "assets.create", "assets.import"];
 
 /**
  * True if the user can add or manage assets (not just view/request).
@@ -285,6 +285,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr/timesheets", permission: ["timesheets.view", "timesheets.create", "timesheets.view-own", "timesheet.module.view", "hr.view", "hr.admin"] },
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
+  { path: "/assets/import", permission: ["assets.import", "assets.admin", "assets.manage"] },
+  { path: "/assets/labels", permission: ["assets.print", "assets.admin", "assets.manage"] },
   { path: "/assets", permission: "assets.view" },
   { path: "/fleet", permission: "assets.view" },
   { path: "/stock", permission: "stock.view" },

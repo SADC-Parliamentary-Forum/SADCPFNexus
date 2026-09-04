@@ -902,7 +902,12 @@ export const phraseEn: PhraseDict = {
   "Page {page} of {total}": "Page {page} of {total}",
   "{count} rows": "{count} rows",
   "{count} total": "{count} total",
-  "Breadcrumb": "Breadcrumb"
+  "Breadcrumb": "Breadcrumb",
+  "Import": "Import",
+  "Labels": "Labels",
+  "Review staged Crystal listings before committing the register.": "Review staged Crystal listings before committing the register.",
+  "Print Avery and thermal asset labels.": "Print Avery and thermal asset labels.",
+  "Physical verification exercises.": "Physical verification exercises.",
 };
 
 export const phraseFr: PhraseDict = {
@@ -1807,7 +1812,12 @@ export const phraseFr: PhraseDict = {
   "Page {page} of {total}": "Page {page} sur {total}",
   "{count} rows": "{count} lignes",
   "{count} total": "{count} au total",
-  "Breadcrumb": "Fil d'Ariane"
+  "Breadcrumb": "Fil d'Ariane",
+  "Import": "Importation",
+  "Labels": "Étiquettes",
+  "Review staged Crystal listings before committing the register.": "Examiner les listes Crystal préparées avant de valider le registre.",
+  "Print Avery and thermal asset labels.": "Imprimer les étiquettes Avery et thermiques.",
+  "Physical verification exercises.": "Exercices de vérification physique.",
 };
 
 export const phrasePt: PhraseDict = {
@@ -2712,5 +2722,10 @@ export const phrasePt: PhraseDict = {
   "Page {page} of {total}": "Página {page} de {total}",
   "{count} rows": "{count} linhas",
   "{count} total": "{count} no total",
-  "Breadcrumb": "Navegação"
+  "Breadcrumb": "Navegação",
+  "Import": "Importação",
+  "Labels": "Etiquetas",
+  "Review staged Crystal listings before committing the register.": "Rever as listagens Crystal preparadas antes de confirmar o registo.",
+  "Print Avery and thermal asset labels.": "Imprimir etiquetas Avery e térmicas.",
+  "Physical verification exercises.": "Exercícios de verificação física.",
 };

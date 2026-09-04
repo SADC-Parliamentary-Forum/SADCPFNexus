@@ -46,6 +46,8 @@ test("General Employee still cannot open org-HR or module-admin prefixes", () =>
   assert.equal(canAccessRoute(ge, "/finance/budgets"), false);
   assert.equal(canAccessRoute(ge, "/finance/balance-register"), false);
   assert.equal(canAccessRoute(ge, "/assets"), false);
+  assert.equal(canAccessRoute(ge, "/assets/import"), false);
+  assert.equal(canAccessRoute(ge, "/assets/labels"), false);
   assert.equal(canAccessRoute(ge, "/fleet"), false);
   assert.equal(canAccessRoute(ge, "/admin"), false);
   assert.equal(canAccessRoute(ge, "/organogram"), false);
@@ -79,4 +81,15 @@ test("travel.view unlocks the travel hub that create-only staff cannot open", ()
   assert.equal(canAccessRoute(officer, "/travel/missions"), true);
   assert.equal(canAccessRoute(officer, "/travel/register"), true);
   assert.equal(canAccessRoute(ge, "/travel/missions"), false);
+});
+
+test("asset import and labels stay gated to import/print permissions", () => {
+  const viewer = { roles: ["staff"], permissions: ["assets.view"] };
+  const importer = { roles: ["Administration Officer"], permissions: ["assets.import", "assets.admin"] };
+  const printer = { roles: ["Administration Officer"], permissions: ["assets.print", "assets.manage"] };
+  assert.equal(canAccessRoute(viewer, "/assets"), true);
+  assert.equal(canAccessRoute(viewer, "/assets/import"), false);
+  assert.equal(canAccessRoute(viewer, "/assets/labels"), false);
+  assert.equal(canAccessRoute(importer, "/assets/import"), true);
+  assert.equal(canAccessRoute(printer, "/assets/labels"), true);
 });

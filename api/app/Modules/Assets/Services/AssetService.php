@@ -7,6 +7,7 @@ use App\Models\AssetAssignmentHistory;
 use App\Models\AssetCategory;
 use App\Models\AssetLocation;
 use App\Models\AssetLocationHistory;
+use App\Models\AssetMovement;
 use App\Models\AuditLog;
 use App\Models\User;
 use Carbon\Carbon;
@@ -135,18 +136,18 @@ class AssetService
 
             AuditLog::record('assets.capitalised', [
                 'auditable_type' => Asset::class,
-                'auditable_id'   => $asset->id,
-                'old_values'     => $old,
-                'new_values'     => [
-                    'status'         => 'active',
-                    'asset_class'    => $assetClass,
+                'auditable_id' => $asset->id,
+                'old_values' => $old,
+                'new_values' => [
+                    'status' => 'active',
+                    'asset_class' => $assetClass,
                     'purchase_value' => $purchaseValue,
-                    'purchase_date'  => $asset->purchase_date,
-                    'category'       => $category,
-                    'tag_number'     => $tag,
-                    'policy_id'      => $policy->id,
+                    'purchase_date' => $asset->purchase_date,
+                    'category' => $category,
+                    'tag_number' => $tag,
+                    'policy_id' => $policy->id,
                 ],
-                'tags'           => 'assets',
+                'tags' => 'assets',
             ]);
 
             return $asset->fresh();
@@ -174,10 +175,10 @@ class AssetService
 
             AuditLog::record('assets.capitalisation_rejected', [
                 'auditable_type' => Asset::class,
-                'auditable_id'   => $asset->id,
-                'old_values'     => ['status' => $oldStatus],
-                'new_values'     => ['status' => 'retired', 'reason' => $reason],
-                'tags'           => 'assets',
+                'auditable_id' => $asset->id,
+                'old_values' => ['status' => $oldStatus],
+                'new_values' => ['status' => 'retired', 'reason' => $reason],
+                'tags' => 'assets',
             ]);
 
             return $asset->fresh();
@@ -222,7 +223,13 @@ class AssetService
                 $this->recordLocationMove($asset, (int) $data['location_id'], $actor, 'Assignment');
             }
             $asset->status = ($data['assignment_type'] ?? 'custody') === 'loan' ? 'loan_out' : 'assigned';
+            $this->flagCustodyReprint($asset);
             $asset->save();
+            $this->recordMovement($asset, $actor, 'assign', [
+                'to_user_id' => $assignee->id,
+                'to_location_id' => $asset->location_id,
+                'notes' => $data['notes'] ?? null,
+            ]);
 
             AuditLog::record('assets.assigned', [
                 'auditable_type' => Asset::class,
@@ -292,7 +299,12 @@ class AssetService
             if (! empty($data['location_id'])) {
                 $this->recordLocationMove($asset, (int) $data['location_id'], $actor, 'Return');
             }
+            $this->flagCustodyReprint($asset);
             $asset->save();
+            $this->recordMovement($asset, $actor, 'return', [
+                'to_location_id' => $asset->location_id,
+                'notes' => $data['notes'] ?? null,
+            ]);
 
             AuditLog::record('assets.returned', [
                 'auditable_type' => Asset::class,
@@ -343,8 +355,15 @@ class AssetService
         $this->assertCanManage($actor);
 
         return DB::transaction(function () use ($asset, $locationId, $actor, $notes) {
+            $from = $asset->location_id;
             $this->recordLocationMove($asset, $locationId, $actor, $notes);
+            $this->flagCustodyReprint($asset);
             $asset->save();
+            $this->recordMovement($asset, $actor, 'move', [
+                'from_location_id' => $from,
+                'to_location_id' => $locationId,
+                'notes' => $notes,
+            ]);
 
             return $asset->fresh(['location']);
         });
@@ -378,6 +397,41 @@ class AssetService
         ]);
 
         $asset->location_id = $location->id;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function recordMovement(Asset $asset, User $actor, string $type, array $data = []): AssetMovement
+    {
+        return AssetMovement::create([
+            'tenant_id' => $asset->tenant_id,
+            'asset_id' => $asset->id,
+            'from_user_id' => $data['from_user_id'] ?? $asset->assigned_to,
+            'to_user_id' => $data['to_user_id'] ?? null,
+            'recorded_by' => $actor->id,
+            'movement_type' => $type,
+            'reason' => $data['reason'] ?? null,
+            'notes' => $data['notes'] ?? null,
+            'movement_date' => $data['movement_date'] ?? now()->toDateString(),
+            'from_location_id' => $data['from_location_id'] ?? null,
+            'to_location_id' => $data['to_location_id'] ?? null,
+            'from_department_id' => $data['from_department_id'] ?? null,
+            'to_department_id' => $data['to_department_id'] ?? null,
+            'approved_by' => $data['approved_by'] ?? null,
+            'requested_by' => $data['requested_by'] ?? $actor->id,
+            'reference_document' => $data['reference_document'] ?? null,
+            'effective_date' => $data['effective_date'] ?? now()->toDateString(),
+        ]);
+    }
+
+    private function flagCustodyReprint(Asset $asset): void
+    {
+        if (($asset->label_status ?? 'never_printed') === 'never_printed') {
+            return;
+        }
+        $asset->label_status = 'reprint_required';
+        $asset->label_reprint_reason = 'CUSTODY_OR_LOCATION_CHANGED';
     }
 
     private function closeOpenAssignment(Asset $asset): void

@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Asset extends Model
 {
@@ -24,13 +25,34 @@ class Asset extends Model
         'gps_lat', 'gps_lng', 'gps_recorded_at',
         'telematics_device_id', 'telematics_provider', 'telematics_raw_payload',
         'telematics_synced_at', 'telematics_sync_status', 'telematics_sync_error',
+        'uuid', 'qr_token', 'qr_generated_at', 'source_import_batch_id',
+        'legacy_description', 'legacy_location', 'legacy_category',
+        'verification_status', 'data_quality_status', 'data_quality_flags',
+        'label_status', 'label_reprint_reason', 'custodian_type', 'custodian_department_id',
+        'opening_depreciation', 'source_depreciation', 'source_book_value',
     ];
 
     protected $appends = ['age_years', 'age_display', 'current_value', 'qr_url'];
 
+    protected static function booted(): void
+    {
+        static::creating(function (Asset $asset) {
+            if (empty($asset->uuid)) {
+                $asset->uuid = (string) Str::uuid();
+            }
+            if ($asset->tag_number === '') {
+                $asset->tag_number = null;
+            }
+        });
+    }
+
     public function getQrUrlAttribute(): ?string
     {
-        return $this->qr_path ? '/api/v1/assets/' . $this->id . '/qr' : null;
+        if ($this->qr_token) {
+            return '/a/'.$this->qr_token;
+        }
+
+        return $this->qr_path ? '/api/v1/assets/'.$this->id.'/qr' : null;
     }
 
     protected function casts(): array
@@ -52,6 +74,11 @@ class Asset extends Model
             'book_value' => 'decimal:2',
             'gps_lat' => 'decimal:7',
             'gps_lng' => 'decimal:7',
+            'qr_generated_at' => 'datetime',
+            'data_quality_flags' => 'array',
+            'opening_depreciation' => 'decimal:2',
+            'source_depreciation' => 'decimal:2',
+            'source_book_value' => 'decimal:2',
         ];
     }
 

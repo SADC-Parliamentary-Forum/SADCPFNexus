@@ -3,16 +3,16 @@
 namespace App\Http\Controllers\Api\V1\Assets;
 
 use App\Http\Controllers\Controller;
-use App\Models\AssetLocation;
-use App\Models\AssetVerificationCampaign;
-use App\Modules\Assets\Services\AssetDepreciationService;
-use App\Modules\Assets\Services\AssetMaintenanceService;
-use App\Modules\Assets\Services\AssetVerificationService;
 use App\Models\Asset;
 use App\Models\AssetCapitalisationPolicy;
 use App\Models\AssetDepreciationRun;
+use App\Models\AssetLocation;
 use App\Models\AssetMaintenanceRecord;
+use App\Models\AssetVerificationCampaign;
 use App\Modules\Assets\Services\AssetCapitalisationPolicyService;
+use App\Modules\Assets\Services\AssetDepreciationService;
+use App\Modules\Assets\Services\AssetMaintenanceService;
+use App\Modules\Assets\Services\AssetVerificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -48,6 +48,9 @@ class AssetLifecycleController extends Controller
             'floor' => ['nullable', 'string', 'max:64'],
             'room' => ['nullable', 'string', 'max:64'],
             'location_type' => ['nullable', 'string', 'max:32'],
+            'parent_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
+            'hierarchy_level' => ['nullable', 'string', 'in:country,city,facility,building,floor,room'],
+            'legacy_name' => ['nullable', 'string', 'max:255'],
         ]);
         $loc = AssetLocation::create([
             ...$validated,
@@ -98,6 +101,34 @@ class AssetLifecycleController extends Controller
         return response()->json($rows);
     }
 
+    public function campaignDashboard(Request $request, AssetVerificationCampaign $assetVerificationCampaign): JsonResponse
+    {
+        abort_unless((int) $assetVerificationCampaign->tenant_id === (int) $request->user()->tenant_id, 404);
+        $tenantId = $request->user()->tenant_id;
+        $results = $assetVerificationCampaign->results()->get();
+        $listed = Asset::query()->where('tenant_id', $tenantId)->where('status', '!=', 'pending')->count();
+        $unregistered = \App\Models\AssetUnregisteredFind::query()
+            ->where('tenant_id', $tenantId)
+            ->when($assetVerificationCampaign->id, fn ($q) => $q->where('campaign_id', $assetVerificationCampaign->id))
+            ->count();
+
+        return response()->json([
+            'data' => [
+                'campaign' => $assetVerificationCampaign,
+                'counts' => [
+                    'listed' => $listed,
+                    'verified' => $results->where('result', 'verified')->count(),
+                    'missing' => $results->where('result', 'missing')->count(),
+                    'damaged' => $results->where('result', 'damaged')->count(),
+                    'relocated' => $results->where('result', 'relocated')->count(),
+                    'unregistered_finds' => $unregistered,
+                    'exceptions' => $results->whereNotIn('result', ['verified'])->count(),
+                    'unverified' => max(0, $listed - $results->unique('asset_id')->count()),
+                ],
+            ],
+        ]);
+    }
+
     public function storeCampaign(Request $request): JsonResponse
     {
         $validated = $request->validate([
@@ -117,6 +148,12 @@ class AssetLifecycleController extends Controller
             'result' => ['required', 'string', 'in:verified,missing,damaged,unregistered,relocated'],
             'condition' => ['nullable', 'string', 'max:32'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'verification_method' => ['nullable', 'string', 'in:qr,manual,photo'],
+            'gps_lat' => ['nullable', 'numeric'],
+            'gps_lng' => ['nullable', 'numeric'],
+            'device_id' => ['nullable', 'string', 'max:128'],
+            'photos' => ['nullable', 'array'],
+            'mismatch_types' => ['nullable', 'array'],
         ]);
         $result = $this->verification->recordResult($assetVerificationCampaign, $validated, $request->user());
 
