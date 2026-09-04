@@ -1614,6 +1614,7 @@ export interface Asset {
   qr_url?: string | null;
   serial_number?: string | null;
   tag_number?: string | null;
+  label_status?: string | null;
   acknowledgement_at?: string | null;
   funding_source?: string | null;
   book_value?: number | null;
@@ -1943,6 +1944,12 @@ export const assetImportApi = {
   commit: (id: number, data?: { approve_non_blocking?: boolean }) =>
     api.post(`/assets/import/${id}/commit`, data ?? {}),
   report: (id: number) => api.get(`/assets/import/${id}/report`),
+};
+
+export const assetMetaApi = {
+  locations: () => api.get<{ data: { id: number; name: string; code: string; legacy_name?: string | null }[] }>("/assets-meta/locations"),
+  createLocation: (data: Record<string, unknown>) =>
+    api.post<{ data: { id: number; name: string; code: string } }>("/assets-meta/locations", data),
 };
 
 export const assetLabelsApi = {

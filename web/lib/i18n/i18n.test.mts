@@ -84,6 +84,10 @@ test("shared chrome components translate user-facing copy", () => {
     "components/layout/Sidebar.tsx",
     "components/layout/GlobalSearch.tsx",
     "app/dashboard/page.tsx",
+    "app/(app)/assets/import/page.tsx",
+    "app/(app)/assets/labels/page.tsx",
+    "app/(app)/assets/verification/page.tsx",
+    "app/a/[token]/page.tsx",
   ];
   for (const rel of files) {
     const source = readFileSync(join(webRoot, rel), "utf8");
@@ -95,6 +99,15 @@ test("API client sends Accept-Language from the stored locale", () => {
   const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
   assert.match(source, /Accept-Language/);
   assert.match(source, /readStoredLocale/);
+});
+
+test("asset import review table uses translated column headers", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/assets/import/page.tsx"), "utf8");
+  assert.match(source, /assets\.import\.colTag/);
+  assert.doesNotMatch(source, /<th>Tag<\/th>/);
+  assert.match(source, /assets\.import\.mapLocation/);
+  assert.match(source, /assets\.import\.mapCustodian/);
+  assert.match(source, /filterAll/);
 });
 
 test("language switcher remains available without logout", () => {

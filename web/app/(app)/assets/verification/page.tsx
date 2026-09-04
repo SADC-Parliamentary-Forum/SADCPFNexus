@@ -14,6 +14,7 @@ type Find = { id: number; description: string; status: string; found_location?: 
 export default function AssetVerificationPage() {
   const { t } = useI18n();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [activeId, setActiveId] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [startsOn, setStartsOn] = useState(new Date().toISOString().slice(0, 10));
   const [msg, setMsg] = useState<string | null>(null);
@@ -23,12 +24,14 @@ export default function AssetVerificationPage() {
   const [finds, setFinds] = useState<Find[]>([]);
   const [findDesc, setFindDesc] = useState("");
 
-  async function load() {
+  async function load(campaignId?: number) {
     const r = await api.get<{ data: Campaign[] }>("/assets-meta/verification-campaigns");
     const list = Array.isArray(r.data.data) ? r.data.data : ((r.data as { data?: Campaign[] }).data ?? []);
     setCampaigns(list);
-    if (list[0]) {
-      const dash = await api.get<{ data: { counts: Counts } }>(`/assets-meta/verification-campaigns/${list[0].id}/dashboard`);
+    const selected = campaignId ?? activeId ?? list[0]?.id;
+    if (selected) {
+      setActiveId(selected);
+      const dash = await api.get<{ data: { counts: Counts } }>(`/assets-meta/verification-campaigns/${selected}/dashboard`);
       setCounts(dash.data.data.counts);
     }
     const found = await assetUnregisteredFindsApi.list();
@@ -58,9 +61,16 @@ export default function AssetVerificationPage() {
 
   async function recordFind(e: React.FormEvent) {
     e.preventDefault();
-    await assetUnregisteredFindsApi.create({ description: findDesc, campaign_id: campaigns[0]?.id });
+    await assetUnregisteredFindsApi.create({ description: findDesc, campaign_id: activeId ?? campaigns[0]?.id });
     setFindDesc("");
-    await load();
+    await load(activeId ?? undefined);
+  }
+
+  async function promoteFind(find: Find) {
+    const tag = window.prompt(t("assets.verify.promoteTag"));
+    if (!tag) return;
+    await assetUnregisteredFindsApi.promote(find.id, { asset_tag: tag, name: find.description });
+    await load(activeId ?? undefined);
   }
 
   return (
@@ -73,12 +83,12 @@ export default function AssetVerificationPage() {
         />
       </div>
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
-      {errorMsg && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{errorMsg}</div>}
+      {errorMsg && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{errorMsg}</div>}
       {counts && (
         <div className="grid gap-3 sm:grid-cols-4">
           {Object.entries(counts).map(([k, v]) => (
             <div key={k} className="card p-3">
-              <div className="text-xs text-neutral-500">{k.replaceAll("_", " ")}</div>
+              <div className="text-xs text-neutral-500">{t(`assets.verify.count.${k}`)}</div>
               <div className="text-lg font-semibold">{v}</div>
             </div>
           ))}
@@ -92,12 +102,19 @@ export default function AssetVerificationPage() {
       <div className="table-wrap">
         <table className="data-table">
           <thead>
-            <tr><th>Name</th><th>Status</th><th>Starts</th><th>Ends</th></tr>
+            <tr>
+              <th>{t("assets.verify.colName")}</th>
+              <th>{t("assets.verify.colStatus")}</th>
+              <th>{t("assets.verify.colStarts")}</th>
+              <th>{t("assets.verify.colEnds")}</th>
+            </tr>
           </thead>
           <tbody>
             {campaigns.map((c) => (
-              <tr key={c.id}>
-                <td>{c.name}</td>
+              <tr key={c.id} className={activeId === c.id ? "bg-primary/5" : undefined}>
+                <td>
+                  <button type="button" className="text-left font-medium" onClick={() => load(c.id)}>{c.name}</button>
+                </td>
                 <td>{c.status}</td>
                 <td>{c.starts_on}</td>
                 <td>{c.ends_on ?? "—"}</td>
@@ -113,8 +130,16 @@ export default function AssetVerificationPage() {
         <input className="input flex-1" value={findDesc} onChange={(e) => setFindDesc(e.target.value)} placeholder={t("assets.verify.recordFind")} required />
         <Button type="submit">{t("assets.verify.recordFind")}</Button>
       </form>
-      <ul className="card space-y-1 p-4 text-sm">
-        {finds.map((f) => <li key={f.id}>{f.description} — {f.status}</li>)}
+      <ul className="card space-y-2 p-4 text-sm">
+        {finds.map((f) => (
+          <li key={f.id} className="flex flex-wrap items-center justify-between gap-2">
+            <span>{f.description} — {f.status}</span>
+            {f.status !== "promoted" && (
+              <Button type="button" size="sm" variant="secondary" onClick={() => promoteFind(f)}>{t("assets.verify.promote")}</Button>
+            )}
+          </li>
+        ))}
+        {finds.length === 0 && <li>{t("common.noResults")}</li>}
       </ul>
     </div>
   );

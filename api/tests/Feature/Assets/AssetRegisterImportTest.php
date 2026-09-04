@@ -265,4 +265,56 @@ class AssetRegisterImportTest extends TestCase
         $this->getJson('/api/v1/public/assets/'.$old)->assertNotFound();
         $this->getJson('/api/v1/public/assets/'.$second->qr_token)->assertOk();
     }
+
+    public function test_location_and_custodian_mapping_updates_staging_rows(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+
+        $path = sys_get_temp_dir().'/template-map-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'legacy_location', 'custodian_candidate'],
+            ['CE-3001', 'Mapped laptop', 'Office 16C', 'ICT'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        $batchId = $res->json('data.batch.id');
+        unlink($path);
+
+        $location = \App\Models\AssetLocation::create([
+            'tenant_id' => $tenant->id,
+            'code' => 'HO_16C',
+            'name' => 'Head Office 16C',
+            'location_type' => 'office',
+            'is_active' => true,
+        ]);
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/map-location", [
+            'legacy_location' => 'Office 16C',
+            'location_id' => $location->id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('asset_import_staging', [
+            'import_batch_id' => $batchId,
+            'asset_tag' => 'CE-3001',
+            'location_id' => $location->id,
+        ]);
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/map-custodian", [
+            'legacy_key' => 'ICT',
+            'custodian_type' => 'shared',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('asset_import_staging', [
+            'import_batch_id' => $batchId,
+            'asset_tag' => 'CE-3001',
+            'custodian_type' => 'shared',
+        ]);
+    }
 }
