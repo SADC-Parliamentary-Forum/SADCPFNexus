@@ -284,6 +284,7 @@ class NotificationService
                 'subject' => 'SADC Parliamentary Forum — Local Purchase Order {{reference}}',
                 'body'    => "Dear {{name}},\n\nPlease find Local Purchase Order {{reference}} ({{amount}}).\n\nRegards,\nSADC Parliamentary Forum Procurement",
             ],
+            'procurement.submitted' => [
                 'subject' => 'Procurement request submitted — Action required',
                 'body'    => "Dear {{name}},\n\nA procurement request ({{reference}}) has been submitted by {{requester}} for approval.\n\nDescription: {{description}}\nEstimated value: {{amount}}\n\nPlease review and action this request.\n\nRegards,\nSADC-PF Nexus",
             ],
