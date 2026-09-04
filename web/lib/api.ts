@@ -2,6 +2,7 @@ import axios from "axios";
 import { clearStoredUser } from "@/lib/session";
 import { captureClientException } from "@/lib/observability";
 import { MFA_SETUP_PATH } from "@/lib/privilegedMfa";
+import { readStoredLocale } from "@/lib/i18n/messages";
 
 const MUST_RESET_COOKIE = "sadcpf_must_reset";
 const COOKIE_MAX_AGE_DAYS = 7;
@@ -53,6 +54,9 @@ const api = axios.create({
 // (File → {}), which Laravel rejects as "The file field is required."
 // Drop Content-Type so the browser sets multipart/form-data with boundary.
 api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    config.headers["Accept-Language"] = readStoredLocale();
+  }
   if (typeof FormData !== "undefined" && config.data instanceof FormData) {
     const headers = config.headers;
     if (headers && typeof headers.setContentType === "function") {

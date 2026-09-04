@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { accessApi, type AccessEffectivePayload, type AuthUser } from "@/lib/api";
 import { canAccessRouteWithEffective, getStoredUser } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Search index: all navigable areas + record types ────────────────────────
 interface SearchResult {
@@ -60,14 +61,15 @@ const CATEGORY_COLOR: Record<string, string> = {
   Account: "text-teal-600", Help: "text-amber-600",
 };
 
-function scoreResult(result: SearchResult, query: string): number {
+function scoreResult(result: SearchResult, query: string, translatedLabel: string): number {
   const q = query.toLowerCase();
   const label = result.label.toLowerCase();
+  const translated = translatedLabel.toLowerCase();
   const desc = (result.description ?? "").toLowerCase();
   const kw = (result.keywords ?? "").toLowerCase();
-  if (label === q) return 100;
-  if (label.startsWith(q)) return 80;
-  if (label.includes(q)) return 60;
+  if (label === q || translated === q) return 100;
+  if (label.startsWith(q) || translated.startsWith(q)) return 80;
+  if (label.includes(q) || translated.includes(q)) return 60;
   if (desc.includes(q)) return 40;
   if (kw.includes(q)) return 20;
   return 0;
@@ -86,6 +88,7 @@ function addRecent(term: string) {
 
 export function GlobalSearch() {
   const router = useRouter();
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -124,12 +127,12 @@ export function GlobalSearch() {
     const q = debouncedQuery.trim();
     if (q.length < 1) return [];
     return accessibleIndex
-      .map((r) => ({ r, score: scoreResult(r, q) }))
+      .map((r) => ({ r, score: scoreResult(r, q, t(r.label)) }))
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_RESULTS)
       .map((x) => x.r);
-  }, [accessibleIndex, debouncedQuery]);
+  }, [accessibleIndex, debouncedQuery, t]);
 
   // Group by category (preserving order)
   const grouped: { category: string; items: SearchResult[] }[] = useMemo(() => {
@@ -216,7 +219,7 @@ export function GlobalSearch() {
         className="flex w-full max-w-md items-center gap-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 px-3.5 py-2.5 text-sm text-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors cursor-text group"
       >
         <span className="material-symbols-outlined text-neutral-600 text-[20px] flex-shrink-0">search</span>
-        <span className="flex-1 text-left text-neutral-700">Search anywhere…</span>
+        <span className="flex-1 text-left text-neutral-700">{t("search.placeholder")}</span>
         <kbd className="hidden sm:inline-flex items-center gap-0.5 rounded-md border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1.5 py-0.5 text-[10px] font-mono text-neutral-400 shadow-sm">
           <span className="text-[11px]">⌘</span>K
         </kbd>
@@ -237,7 +240,7 @@ export function GlobalSearch() {
                 ref={inputRef}
                 type="text"
                 role="combobox"
-                aria-label="Search modules, records, people, and policies"
+                aria-label={t("search.aria")}
                 aria-expanded={open}
                 aria-controls={flatResults.length > 0 ? searchListboxId : undefined}
                 aria-haspopup="listbox"
@@ -246,7 +249,7 @@ export function GlobalSearch() {
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setCursor(0); }}
                 onKeyDown={handleKeyDown}
-                placeholder="Search modules, records, people, policies…"
+                placeholder={t("search.input")}
                 className="flex-1 rounded-md border-none bg-transparent text-sm text-neutral-900 outline-none placeholder-neutral-400 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:text-neutral-100 dark:focus-visible:ring-offset-neutral-800"
                 autoComplete="off"
               />
@@ -265,7 +268,7 @@ export function GlobalSearch() {
                 <div>
                   {recent.length > 0 && (
                     <div className="px-4 py-3">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-2">Recent Searches</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-2">{t("Recent searches")}</p>
                       <div className="space-y-0.5">
                         {recent.map((term) => (
                           <button key={term} type="button"
@@ -279,14 +282,14 @@ export function GlobalSearch() {
                     </div>
                   )}
                   <div className="px-4 py-3 border-t border-neutral-50 dark:border-neutral-700/50">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-2">Quick Actions</p>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-2">{t("Quick Actions")}</p>
                     <div className="space-y-0.5">
                       {accessibleIndex.filter((r) => r.category === "Actions").map((r) => (
                         <button key={r.id} type="button"
                           onClick={() => navigate(r.href, r.label)}
                           className="flex items-center gap-2.5 w-full rounded-lg px-3 py-2 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-primary/5 hover:text-primary transition-colors text-left">
                           <span className="material-symbols-outlined text-primary text-[16px]">{r.icon}</span>
-                          {r.label}
+                          {t(r.label)}
                         </button>
                       ))}
                     </div>
@@ -295,16 +298,16 @@ export function GlobalSearch() {
               ) : flatResults.length === 0 ? (
                 <div className="py-10 text-center">
                   <span className="material-symbols-outlined text-4xl text-neutral-200">search_off</span>
-                  <p className="mt-2 text-sm font-medium text-neutral-500">No results for &ldquo;{query}&rdquo;</p>
+                  <p className="mt-2 text-sm font-medium text-neutral-500">{t("common.noResults")}</p>
                   <p className="text-xs text-neutral-400 mt-0.5">Try a module name, action, or keyword</p>
                 </div>
               ) : (
-                <div id={searchListboxId} role="listbox" aria-label="Search results" className="py-2">
+                <div id={searchListboxId} role="listbox" aria-label={t("search.results")} className="py-2">
                   {grouped.map(({ category, items }) => {
                     return (
                       <div key={category}>
                         <p className={`px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-widest ${CATEGORY_COLOR[category] ?? "text-neutral-400"}`}>
-                          {category}
+                          {t(`search.category.${category}`) === `search.category.${category}` ? t(category) : t(`search.category.${category}`)}
                         </p>
                         {items.map((r) => {
                           const flatIdx = flatResults.indexOf(r);
@@ -327,10 +330,10 @@ export function GlobalSearch() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className={`text-sm font-medium truncate ${isActive ? "text-primary" : "text-neutral-900 dark:text-neutral-100"}`}>
-                                  {highlight(r.label)}
+                                  {highlight(t(r.label))}
                                 </p>
                                 {r.description && (
-                                  <p className="text-xs text-neutral-400 truncate">{r.description}</p>
+                                  <p className="text-xs text-neutral-400 truncate">{t(r.description)}</p>
                                 )}
                               </div>
                               {isActive && (
@@ -349,13 +352,13 @@ export function GlobalSearch() {
             {/* Footer */}
             <div className="flex items-center gap-4 border-t border-neutral-100 dark:border-neutral-700 px-4 py-2.5 bg-neutral-50 dark:bg-neutral-900/50">
               <div className="flex items-center gap-1.5 text-[10px] text-neutral-400">
-                <kbd className="rounded border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1 py-0.5 font-mono">↑↓</kbd> Navigate
+                <kbd className="rounded border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1 py-0.5 font-mono">↑↓</kbd> {t("common.navigate")}
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-neutral-400">
-                <kbd className="rounded border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1 py-0.5 font-mono">↵</kbd> Open
+                <kbd className="rounded border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1 py-0.5 font-mono">↵</kbd> {t("common.open")}
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-neutral-400">
-                <kbd className="rounded border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1 py-0.5 font-mono">ESC</kbd> Close
+                <kbd className="rounded border border-neutral-200 dark:border-neutral-600 bg-white dark:bg-neutral-700 px-1 py-0.5 font-mono">ESC</kbd> {t("common.close")}
               </div>
               <span className="ml-auto text-[10px] text-neutral-400">{flatResults.length} result{flatResults.length !== 1 ? "s" : ""}</span>
             </div>

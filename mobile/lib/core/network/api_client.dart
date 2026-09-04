@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../auth/auth_storage.dart';
 import '../config/api_config.dart';
@@ -26,6 +27,9 @@ class ApiClient {
         )) {
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
+        final prefs = await SharedPreferences.getInstance();
+        options.headers['Accept-Language'] =
+            prefs.getString('sadcpf_locale') ?? 'en';
         final token = await _authStorage.getToken();
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from "react";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface ConfirmOptions {
     title: string;
@@ -23,6 +24,7 @@ export function useConfirm() {
 }
 
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
+    const { t } = useI18n();
     const [isOpen, setIsOpen] = useState(false);
     const [options, setOptions] = useState<ConfirmOptions | null>(null);
     const [resolveFn, setResolveFn] = useState<(value: boolean) => void>(() => () => { });
@@ -84,11 +86,11 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                                         {options.variant === "danger" ? "warning" : "help"}
                                     </span>
                                 </div>
-                                <h3 id={titleId} className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{options.title}</h3>
+                                <h3 id={titleId} className="text-lg font-semibold text-neutral-900 dark:text-neutral-100">{t(options.title)}</h3>
                             </div>
                             {options.message && (
                                 <p id={descriptionId} className="text-sm text-neutral-500 mt-2 leading-relaxed ml-11 dark:text-neutral-300">
-                                    {options.message}
+                                    {t(options.message)}
                                 </p>
                             )}
                         </div>
@@ -99,7 +101,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                                 className="px-4 py-2 text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 dark:text-neutral-300 dark:hover:text-white"
                                 onClick={handleCancel}
                             >
-                                {options.cancelText || "Cancel"}
+                                {options.cancelText || t("common.cancel")}
                             </button>
                             <button
                                 type="button"
@@ -109,7 +111,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                                     }`}
                                 onClick={handleConfirm}
                             >
-                                {options.confirmText || "Confirm"}
+                                {options.confirmText || t("common.confirm")}
                             </button>
                         </div>
                     </div>

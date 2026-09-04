@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { canAccessRoute, getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { FormSection } from "@/components/ui/FormSection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export type HubSectionId = "queues" | "views" | "tools";
 
@@ -39,6 +40,7 @@ export function ModuleHubCards({
   sections?: HubSection[];
 }) {
   const user = getStoredUser();
+  const { t } = useI18n();
   const visible = useMemo(
     () =>
       cards.filter((card) => {
@@ -60,8 +62,8 @@ export function ModuleHubCards({
         return (
           <FormSection
             key={section.id}
-            title={section.title}
-            description={section.description}
+            title={t(section.title)}
+            description={t(section.description)}
             icon={section.icon}
             dense
           >
@@ -74,8 +76,8 @@ export function ModuleHubCards({
                 >
                   <span className="material-symbols-outlined mt-0.5 text-primary">{card.icon}</span>
                   <span>
-                    <span className="block text-sm font-semibold text-neutral-900">{card.title}</span>
-                    <span className="mt-0.5 block text-xs text-neutral-500">{card.purpose}</span>
+                    <span className="block text-sm font-semibold text-neutral-900">{t(card.title)}</span>
+                    <span className="mt-0.5 block text-xs text-neutral-500">{t(card.purpose)}</span>
                   </span>
                 </Link>
               ))}

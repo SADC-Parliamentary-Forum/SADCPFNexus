@@ -12,7 +12,9 @@ import {
 import {
   LOCALE_LABELS,
   LOCALES,
+  localeBcp47,
   type Locale,
+  type TranslateVars,
   readStoredLocale,
   storeLocale,
   translate,
@@ -21,9 +23,10 @@ import {
 type I18nValue = {
   locale: Locale;
   setLocale: (locale: Locale) => void;
-  t: (key: string) => string;
+  t: (key: string, vars?: TranslateVars) => string;
   locales: typeof LOCALES;
   labels: typeof LOCALE_LABELS;
+  localeTag: string;
 };
 
 const I18nContext = createContext<I18nValue | null>(null);
@@ -34,14 +37,14 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const stored = readStoredLocale();
     setLocaleState(stored);
-    document.documentElement.lang = stored;
+    document.documentElement.lang = localeBcp47(stored);
   }, []);
 
   const setLocale = useCallback((next: Locale) => {
     setLocaleState(next);
     storeLocale(next);
     if (typeof document !== "undefined") {
-      document.documentElement.lang = next;
+      document.documentElement.lang = localeBcp47(next);
     }
   }, []);
 
@@ -49,9 +52,10 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
     () => ({
       locale,
       setLocale,
-      t: (key: string) => translate(locale, key),
+      t: (key: string, vars?: TranslateVars) => translate(locale, key, vars),
       locales: LOCALES,
       labels: LOCALE_LABELS,
+      localeTag: localeBcp47(locale),
     }),
     [locale, setLocale],
   );
@@ -65,18 +69,19 @@ export function useI18n(): I18nValue {
     return {
       locale: "en",
       setLocale: () => undefined,
-      t: (key: string) => translate("en", key),
+      t: (key: string, vars?: TranslateVars) => translate("en", key, vars),
       locales: LOCALES,
       labels: LOCALE_LABELS,
+      localeTag: localeBcp47("en"),
     };
   }
   return ctx;
 }
 
 export function LocaleSwitcher({ className = "" }: { className?: string }) {
-  const { locale, setLocale, locales, labels } = useI18n();
+  const { locale, setLocale, locales, labels, t } = useI18n();
   return (
-    <div className={`inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white p-1 shadow-sm ${className}`} role="group" aria-label="Language">
+    <div className={`inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white p-1 shadow-sm ${className}`} role="group" aria-label={t("common.language")}>
       <span className="material-symbols-outlined ml-1 mr-0.5 text-[17px] text-neutral-400" aria-hidden="true">language</span>
       {locales.map((code) => (
         <button
@@ -98,7 +103,7 @@ export function LocaleSwitcher({ className = "" }: { className?: string }) {
 
 /** Compact language control for the app header — icon opens EN/FR/PT menu. */
 export function LocaleIconSwitcher({ className = "" }: { className?: string }) {
-  const { locale, setLocale, locales, labels } = useI18n();
+  const { locale, setLocale, locales, labels, t } = useI18n();
   const [open, setOpen] = useState(false);
 
   return (
@@ -119,7 +124,7 @@ export function LocaleIconSwitcher({ className = "" }: { className?: string }) {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
           <ul
             role="listbox"
-            aria-label="Choose language"
+            aria-label={t("common.chooseLanguage")}
             className="absolute right-0 top-full mt-1.5 w-44 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 shadow-xl z-50 overflow-hidden py-1"
           >
             {locales.map((code) => (

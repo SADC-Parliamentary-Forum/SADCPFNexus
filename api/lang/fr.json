@@ -1,0 +1,6 @@
+{
+  "Unauthenticated.": "Non authentifié.",
+  "You do not have access to this endpoint.": "Vous n'avez pas accès à ce point de terminaison.",
+  "This action is unauthorized.": "Cette action n'est pas autorisée.",
+  "Endpoint is not registered for access control.": "Ce point de terminaison n'est pas enregistré pour le contrôle d'accès."
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState, useEffect } from "react";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type ToastType = "success" | "error" | "warning" | "info";
 
@@ -73,6 +74,7 @@ const STYLES: Record<ToastType, { container: string; icon: string; progress: str
 
 function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: (id: string) => void }) {
   const [visible, setVisible] = useState(false);
+  const { t } = useI18n();
   const style = STYLES[toast.type];
 
   useEffect(() => {
@@ -88,12 +90,12 @@ function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: (id: string) => 
         {ICONS[toast.type]}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{toast.title}</p>
-        {toast.message && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{toast.message}</p>}
+        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t(toast.title)}</p>
+        {toast.message && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{t(toast.message)}</p>}
       </div>
       <button
         type="button"
-        aria-label="Dismiss notification"
+        aria-label={t("common.close")}
         onClick={() => dismiss(toast.id)}
         className="text-neutral-300 hover:text-neutral-500 dark:text-neutral-500 dark:hover:text-neutral-300 transition-colors flex-shrink-0 mt-0.5"
       >

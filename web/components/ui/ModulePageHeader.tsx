@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface ModulePageHeaderProps {
   title: string;
@@ -35,15 +36,16 @@ export function ModulePageHeader({
   className,
   maxWidth = "none",
 }: ModulePageHeaderProps) {
+  const { t } = useI18n();
   return (
     <div className={cn(MAX_WIDTH[maxWidth], maxWidth !== "none" && "mx-auto", className)}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           {breadcrumbs}
-          <h1 className="page-title">{title}</h1>
+          <h1 className="page-title">{t(title)}</h1>
           {subtitle ? (
             typeof subtitle === "string" ? (
-              <p className="page-subtitle">{subtitle}</p>
+              <p className="page-subtitle">{t(subtitle)}</p>
             ) : (
               <div className="page-subtitle">{subtitle}</div>
             )
@@ -63,10 +65,12 @@ interface BreadcrumbItem {
 
 /** Compact breadcrumb row used under ModulePageHeader / RegisterShell. */
 export function PageBreadcrumbs({ items }: { items: BreadcrumbItem[] }) {
+  const { t } = useI18n();
   return (
-    <nav className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-neutral-700" aria-label="Breadcrumb">
+    <nav className="mb-1 flex flex-wrap items-center gap-1.5 text-xs font-medium text-neutral-700" aria-label={t("common.breadcrumb")}>
       {items.map((item, i) => {
         const isLast = i === items.length - 1;
+        const label = t(item.label);
         return (
           <span key={`${item.label}-${i}`} className="flex items-center gap-1.5">
             {i > 0 ? (
@@ -74,10 +78,10 @@ export function PageBreadcrumbs({ items }: { items: BreadcrumbItem[] }) {
             ) : null}
             {item.href && !isLast ? (
               <Link href={item.href} className="transition-colors hover:text-primary">
-                {item.label}
+                {label}
               </Link>
             ) : (
-              <span className={isLast ? "text-neutral-700" : undefined}>{item.label}</span>
+              <span className={isLast ? "text-neutral-700" : undefined}>{label}</span>
             )}
           </span>
         );

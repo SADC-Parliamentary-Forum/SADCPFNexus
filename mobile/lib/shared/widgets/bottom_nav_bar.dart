@@ -7,6 +7,8 @@ import 'connectivity_banner.dart';
 import 'notification_banner.dart';
 import 'shell_drawer_scope.dart';
 import '../../core/auth/auth_providers.dart';
+import '../../l10n/app_locale.dart';
+import '../../l10n/app_strings.dart';
 import 'dart:async';
 
 class AppShell extends ConsumerStatefulWidget {
@@ -201,7 +203,7 @@ class _AppShellState extends ConsumerState<AppShell>
 // Glassy Nav Bar
 // ─────────────────────────────────────────────
 
-class _GlassNavBar extends StatelessWidget {
+class _GlassNavBar extends ConsumerWidget {
   final int selectedIndex;
   final void Function(int) onTap;
 
@@ -211,10 +213,11 @@ class _GlassNavBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final c = Theme.of(context).colorScheme;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final strings = AppStrings.of(ref.watch(appLanguageProvider));
 
     final glassColor = isDark
         ? const Color(0xCC1A211D) // dark surface at ~80%
@@ -248,35 +251,35 @@ class _GlassNavBar extends StatelessWidget {
               _GlassNavItem(
                 icon: Icons.dashboard_outlined,
                 activeIcon: Icons.dashboard_rounded,
-                label: 'Home',
+                label: strings.t('Home'),
                 isActive: selectedIndex == 0,
                 onTap: () => onTap(0),
               ),
               _GlassNavItem(
                 icon: Icons.description_outlined,
                 activeIcon: Icons.description_rounded,
-                label: 'Requests',
+                label: strings.t('Requests'),
                 isActive: selectedIndex == 1,
                 onTap: () => onTap(1),
               ),
               _GlassNavItem(
                 icon: Icons.task_alt_outlined,
                 activeIcon: Icons.task_alt_rounded,
-                label: 'Approvals',
+                label: strings.t('Approvals'),
                 isActive: selectedIndex == 2,
                 onTap: () => onTap(2),
               ),
               _GlassNavItem(
                 icon: Icons.bar_chart_outlined,
                 activeIcon: Icons.bar_chart_rounded,
-                label: 'Reports',
+                label: strings.t('Reports'),
                 isActive: selectedIndex == 3,
                 onTap: () => onTap(3),
               ),
               _GlassNavItem(
                 icon: Icons.person_outline_rounded,
                 activeIcon: Icons.person_rounded,
-                label: 'Profile',
+                label: strings.t('Profile'),
                 isActive: selectedIndex == 4,
                 onTap: () => onTap(4),
               ),

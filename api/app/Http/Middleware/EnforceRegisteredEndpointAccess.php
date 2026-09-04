@@ -67,7 +67,7 @@ class EnforceRegisteredEndpointAccess
             $this->record($request, 'report', '__unmapped_endpoint__', 'unmapped_endpoint', $context);
 
             if ($mode === 'enforce') {
-                return response()->json(['message' => 'Endpoint is not registered for access control.'], 403);
+                return response()->json(['message' => __('Endpoint is not registered for access control.')], 403);
             }
 
             return $next($request);
@@ -89,7 +89,7 @@ class EnforceRegisteredEndpointAccess
                 $deniedPermissions = implode('|', $group);
 
                 if (in_array($mode, ['mapped', 'enforce'], true)) {
-                    return response()->json(['message' => 'You do not have access to this endpoint.'], 403);
+                    return response()->json(['message' => __('You do not have access to this endpoint.')], 403);
                 }
 
                 $this->record($request, 'report', $deniedPermissions, 'endpoint_permission_denied_report_only', $context, $source);

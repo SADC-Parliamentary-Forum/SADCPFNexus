@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 import { TIMEZONES, DATE_FORMATS, CURRENCIES, LANGUAGES, PREFS_KEY } from "@/lib/constants";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import type { Locale } from "@/lib/i18n/messages";
 import {
   notificationsPhase23Api,
   userNotificationsApi,
@@ -75,6 +77,7 @@ function Toggle({ checked, onChange, label, description }: { checked: boolean; o
 export default function ProfileSettingsPage() {
   const { success, error, info } = useToast();
   const { theme, setTheme } = useTheme();
+  const { locale, setLocale } = useI18n();
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [inboxPrefs, setInboxPrefs] = useState<NotificationPreference[]>([]);
   const [inboxBusy, setInboxBusy] = useState(false);
@@ -83,9 +86,10 @@ export default function ProfileSettingsPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
-      if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) });
+      if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw), language: locale });
+      else setPrefs((p) => ({ ...p, language: locale }));
     } catch { /* ignore */ }
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     userNotificationsApi.preferences()
@@ -272,7 +276,17 @@ export default function ProfileSettingsPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Language</label>
-              <select className="form-input" value={prefs.language} onChange={(e) => set("language", e.target.value)}>
+              <select
+                className="form-input"
+                value={prefs.language}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  set("language", next);
+                  if (next === "en" || next === "fr" || next === "pt") {
+                    setLocale(next as Locale);
+                  }
+                }}
+              >
                 {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.label}</option>)}
               </select>
             </div>

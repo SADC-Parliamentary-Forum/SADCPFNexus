@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/auth/auth_providers.dart';
 import '../../core/auth/feature_access.dart';
+import '../../l10n/app_locale.dart';
+import '../../l10n/app_strings.dart';
 
 /// Stitch-aligned navigation drawer (hamburger menu).
 /// Menu items are filtered by user permissions/roles.
@@ -158,6 +160,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
   Widget build(BuildContext context) {
     final c = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    final strings = AppStrings.of(ref.watch(appLanguageProvider));
     final location =
         GoRouter.of(context).routeInformationProvider.value.uri.path;
 
@@ -182,7 +185,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
         mainTiles.add(_DrawerTile(
           icon: e.icon,
           activeIcon: e.activeIcon,
-          label: e.label,
+          label: strings.t(e.label),
           isSelected: isEntrySelected(e),
           onTap: () => closeAndGo(e.path),
         ));
@@ -195,7 +198,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
         moduleTiles.add(_DrawerTile(
           icon: e.icon,
           activeIcon: e.activeIcon,
-          label: e.label,
+          label: strings.t(e.label),
           isSelected: isEntrySelected(e),
           onTap: () => closeAndGo(e.path),
         ));
@@ -224,7 +227,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Parliamentary Forum Governance',
+                    strings.t('Parliamentary Forum Governance'),
                     style: textTheme.bodySmall?.copyWith(
                       color: c.onSurface.withValues(alpha: 0.7),
                     ),
@@ -244,7 +247,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                       child: Text(
-                        'MODULES',
+                        strings.t('MODULES'),
                         style: textTheme.labelSmall?.copyWith(
                           color: c.onSurface.withValues(alpha: 0.6),
                           letterSpacing: 1.2,
@@ -258,7 +261,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
                     child: Text(
-                      'PREFERENCES',
+                      strings.t('PREFERENCES'),
                       style: textTheme.labelSmall?.copyWith(
                         color: c.onSurface.withValues(alpha: 0.6),
                         letterSpacing: 1.2,
@@ -268,7 +271,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                   ),
                   _DrawerTile(
                     icon: Icons.settings_outlined,
-                    label: 'Settings',
+                    label: strings.t('Settings'),
                     isSelected: isPathSelected('/profile'),
                     onTap: () => closeAndGo('/profile'),
                   ),

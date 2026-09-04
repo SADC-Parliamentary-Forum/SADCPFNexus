@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface FormSectionProps {
   title: string;
@@ -31,6 +32,7 @@ export function FormSection({
   className,
   dense = false,
 }: FormSectionProps) {
+  const { t } = useI18n();
   return (
     <section className={cn("card", dense ? "p-4" : "p-5 sm:p-6", className)}>
       <div className={cn("flex items-start justify-between gap-3", description || children ? "mb-4" : "")}>
@@ -41,8 +43,8 @@ export function FormSection({
             </div>
           ) : null}
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-neutral-900">{title}</h2>
-            {description ? <p className="mt-0.5 text-xs text-neutral-500">{description}</p> : null}
+            <h2 className="text-sm font-semibold text-neutral-900">{t(title)}</h2>
+            {description ? <p className="mt-0.5 text-xs text-neutral-500">{t(description)}</p> : null}
           </div>
         </div>
         {actions ? <div className="flex flex-shrink-0 flex-wrap gap-2">{actions}</div> : null}
@@ -64,17 +66,18 @@ interface FormFieldProps {
 
 /** Label + control + optional hint/error — consistent form field chrome. */
 export function FormField({ label, htmlFor, required, hint, error, children, className }: FormFieldProps) {
+  const { t } = useI18n();
   return (
     <div className={cn("block space-y-1.5", className)}>
       <label className="block space-y-1.5" htmlFor={htmlFor}>
         <span className="block text-xs font-semibold text-neutral-700">
-          {label}
+          {t(label)}
           {required ? <span className="ml-0.5 text-red-500">*</span> : null}
         </span>
         {children}
       </label>
-      {error ? <span className="block text-xs text-red-600">{error}</span> : null}
-      {!error && hint ? <span className="block text-[11px] text-neutral-600">{hint}</span> : null}
+      {error ? <span className="block text-xs text-red-600">{t(error)}</span> : null}
+      {!error && hint ? <span className="block text-[11px] text-neutral-600">{t(hint)}</span> : null}
     </div>
   );
 }

@@ -1,4 +1,8 @@
+import { keyEn, keyFr, keyPt, type Dict } from "./keys.ts";
+import { phraseEn, phraseFr, phrasePt } from "./phrases.ts";
+
 export type Locale = "en" | "fr" | "pt";
+export type TranslateVars = Record<string, string | number>;
 
 export const LOCALES: Locale[] = ["en", "fr", "pt"];
 export const LOCALE_LABELS: Record<Locale, string> = {
@@ -7,183 +11,53 @@ export const LOCALE_LABELS: Record<Locale, string> = {
   pt: "Português",
 };
 
-type Dict = Record<string, string>;
-
-const en: Dict = {
-  "nav.dashboard": "Dashboard",
-  "nav.my_work": "My Work",
-  "nav.travel": "Travel",
-  "nav.leave": "Leave",
-  "nav.imprest": "Imprest",
-  "nav.procurement": "Procurement",
-  "nav.approvals": "Approvals",
-  "nav.finance": "Finance",
-  "nav.hr": "HR",
-  "nav.notifications": "Alerts & Notifications",
-  "nav.mande": "M&E / Results Monitoring",
-  "nav.reports": "Reports",
-  "nav.signOut": "Sign out",
-  "common.save": "Save",
-  "common.cancel": "Cancel",
-  "common.loading": "Loading…",
-  "common.error": "Something went wrong. Please try again.",
-  "common.required": "Required",
-  "common.back": "Back",
-  "common.submit": "Submit",
-  "common.search": "Search",
-  "mfa.setupRequired": "Multi-factor authentication is required for your role. Enable MFA to continue.",
-  "mfa.setupTitle": "Security setup required",
-  "login.title": "Sign in",
-  "login.subtitle": "Sign in to your account to continue.",
-  "login.email": "Email",
-  "login.password": "Password",
-  "login.submit": "Sign in",
-  "login.verify": "Verify & Sign in",
-  "login.mfa": "Authenticator code",
-  "login.mfaHint": "Enter the 6-digit code from your authenticator app to finish signing in.",
-  "login.forgot": "Forgot password?",
-  "login.error": "Login failed. Please try again.",
-  "login.resetPassword": "Reset password",
-  "login.or": "or",
-  "login.requestPassword": "request a password",
-  "login.forAccounts": "for staff and supplier accounts.",
-  "login.mailboxHelp": "If you no longer have mailbox access, contact IT Support.",
-  "login.supplierOnboarding": "Supplier onboarding:",
-  "login.supplierRegister": "Register your supplier account",
-  "auth.platform": "Institutional Operations Platform",
-  "auth.brandTitle": "Secure governance for Southern Africa",
-  "auth.brandDescription": "A unified platform for parliamentary operations, finance, HR, and compliance across the SADC Parliamentary Forum.",
-  "auth.feature.travel": "Travel & Mission Management",
-  "auth.feature.leave": "Leave & Attendance Tracking",
-  "auth.feature.imprest": "Imprest & Finance Control",
-  "auth.feature.governance": "Governance & Compliance",
-  "auth.feature.people": "HR, Payroll & Assets",
-  "auth.feature.reports": "Reports & Executive Analytics",
-  "auth.operational": "All systems operational",
-  "auth.rights": "SADC Parliamentary Forum. All rights reserved.",
-  "auth.supplierTitle": "Supplier Registration",
-  "auth.supplierDescription": "Register your company to receive category-matched RFQs through the SADC-PF supplier portal.",
-  "auth.backLogin": "Back to Login",
+const BCP47: Record<Locale, string> = {
+  en: "en-GB",
+  fr: "fr-FR",
+  pt: "pt-PT",
 };
 
-const fr: Dict = {
-  "nav.dashboard": "Tableau de bord",
-  "nav.my_work": "Mon travail",
-  "nav.travel": "Missions",
-  "nav.leave": "Congés",
-  "nav.imprest": "Avances",
-  "nav.procurement": "Achats",
-  "nav.approvals": "Approbations",
-  "nav.finance": "Finances",
-  "nav.hr": "RH",
-  "nav.notifications": "Alertes et notifications",
-  "nav.mande": "S&E / Suivi des résultats",
-  "nav.reports": "Rapports",
-  "nav.signOut": "Se déconnecter",
-  "common.save": "Enregistrer",
-  "common.cancel": "Annuler",
-  "common.loading": "Chargement…",
-  "common.error": "Une erreur s'est produite. Réessayez.",
-  "common.required": "Obligatoire",
-  "common.back": "Retour",
-  "common.submit": "Soumettre",
-  "common.search": "Rechercher",
-  "mfa.setupRequired": "L'authentification multifacteur est obligatoire pour votre rôle. Activez le MFA pour continuer.",
-  "mfa.setupTitle": "Configuration de sécurité requise",
-  "login.title": "Connexion",
-  "login.subtitle": "Connectez-vous à votre compte pour continuer.",
-  "login.email": "E-mail",
-  "login.password": "Mot de passe",
-  "login.submit": "Se connecter",
-  "login.verify": "Vérifier et se connecter",
-  "login.mfa": "Code d'authentification",
-  "login.mfaHint": "Saisissez le code à 6 chiffres de votre application d'authentification.",
-  "login.forgot": "Mot de passe oublié ?",
-  "login.error": "Échec de la connexion. Réessayez.",
-  "login.resetPassword": "Réinitialiser le mot de passe",
-  "login.or": "ou",
-  "login.requestPassword": "demander un mot de passe",
-  "login.forAccounts": "pour les comptes personnel et fournisseur.",
-  "login.mailboxHelp": "Si vous n'avez plus accès à votre boîte mail, contactez le support informatique.",
-  "login.supplierOnboarding": "Inscription fournisseur :",
-  "login.supplierRegister": "Créer votre compte fournisseur",
-  "auth.platform": "Plateforme des opérations institutionnelles",
-  "auth.brandTitle": "Gouvernance sécurisée pour l'Afrique australe",
-  "auth.brandDescription": "Une plateforme unifiée pour les opérations parlementaires, les finances, les RH et la conformité du Forum parlementaire de la SADC.",
-  "auth.feature.travel": "Missions et déplacements",
-  "auth.feature.leave": "Congés et suivi des présences",
-  "auth.feature.imprest": "Avances et contrôle financier",
-  "auth.feature.governance": "Gouvernance et conformité",
-  "auth.feature.people": "RH, paie et actifs",
-  "auth.feature.reports": "Rapports et analyses de direction",
-  "auth.operational": "Tous les systèmes sont opérationnels",
-  "auth.rights": "Forum parlementaire de la SADC. Tous droits réservés.",
-  "auth.supplierTitle": "Inscription fournisseur",
-  "auth.supplierDescription": "Inscrivez votre entreprise pour recevoir des demandes de devis correspondant à vos catégories via le portail fournisseur du Forum.",
-  "auth.backLogin": "Retour à la connexion",
+function mergeCatalog(dottedLocalized: Dict, phrases: Dict): Dict {
+  const table: Dict = { ...phrases, ...dottedLocalized };
+  for (const [key, english] of Object.entries(keyEn)) {
+    if (!english) continue;
+    if (!(english in table)) {
+      table[english] = dottedLocalized[key] ?? phrases[english] ?? english;
+    }
+  }
+  return table;
+}
+
+const TABLES: Record<Locale, Dict> = {
+  en: mergeCatalog(keyEn, phraseEn),
+  fr: mergeCatalog(keyFr, phraseFr),
+  pt: mergeCatalog(keyPt, phrasePt),
 };
 
-const pt: Dict = {
-  "nav.dashboard": "Painel",
-  "nav.my_work": "O meu trabalho",
-  "nav.travel": "Missões",
-  "nav.leave": "Licenças",
-  "nav.imprest": "Adiantamentos",
-  "nav.procurement": "Aquisições",
-  "nav.approvals": "Aprovações",
-  "nav.finance": "Finanças",
-  "nav.hr": "RH",
-  "nav.notifications": "Alertas e notificações",
-  "nav.mande": "M&A / Monitorização de resultados",
-  "nav.reports": "Relatórios",
-  "nav.signOut": "Terminar sessão",
-  "common.save": "Guardar",
-  "common.cancel": "Cancelar",
-  "common.loading": "A carregar…",
-  "common.error": "Algo correu mal. Tente novamente.",
-  "common.required": "Obrigatório",
-  "common.back": "Voltar",
-  "common.submit": "Submeter",
-  "common.search": "Pesquisar",
-  "mfa.setupRequired": "A autenticação multifator é obrigatória para o seu perfil. Ative o MFA para continuar.",
-  "mfa.setupTitle": "Configuração de segurança necessária",
-  "login.title": "Entrar",
-  "login.subtitle": "Inicie sessão na sua conta para continuar.",
-  "login.email": "E-mail",
-  "login.password": "Palavra-passe",
-  "login.submit": "Entrar",
-  "login.verify": "Verificar e entrar",
-  "login.mfa": "Código de autenticação",
-  "login.mfaHint": "Introduza o código de 6 dígitos da aplicação de autenticação.",
-  "login.forgot": "Esqueceu a palavra-passe?",
-  "login.error": "Falha no login. Tente novamente.",
-  "login.resetPassword": "Redefinir palavra-passe",
-  "login.or": "ou",
-  "login.requestPassword": "pedir uma palavra-passe",
-  "login.forAccounts": "para contas de pessoal e fornecedores.",
-  "login.mailboxHelp": "Se já não tiver acesso ao correio, contacte o suporte de TI.",
-  "login.supplierOnboarding": "Onboarding de fornecedor:",
-  "login.supplierRegister": "Registar a sua conta de fornecedor",
-  "auth.platform": "Plataforma de Operações Institucionais",
-  "auth.brandTitle": "Governação segura para a África Austral",
-  "auth.brandDescription": "Uma plataforma unificada para operações parlamentares, finanças, RH e conformidade no Fórum Parlamentar da SADC.",
-  "auth.feature.travel": "Gestão de viagens e missões",
-  "auth.feature.leave": "Controlo de licenças e presenças",
-  "auth.feature.imprest": "Controlo de adiantamentos e finanças",
-  "auth.feature.governance": "Governação e conformidade",
-  "auth.feature.people": "RH, salários e activos",
-  "auth.feature.reports": "Relatórios e análise executiva",
-  "auth.operational": "Todos os sistemas operacionais",
-  "auth.rights": "Fórum Parlamentar da SADC. Todos os direitos reservados.",
-  "auth.supplierTitle": "Registo de fornecedor",
-  "auth.supplierDescription": "Registe a sua empresa para receber pedidos de cotação correspondentes às suas categorias através do portal de fornecedores do Fórum.",
-  "auth.backLogin": "Voltar ao login",
-};
+export function catalogFor(locale: Locale): Dict {
+  return TABLES[locale];
+}
 
-const TABLES: Record<Locale, Dict> = { en, fr, pt };
+export function catalogKeys(): string[] {
+  return Object.keys(TABLES.en).sort();
+}
 
-export function translate(locale: Locale, key: string): string {
-  return TABLES[locale][key] ?? TABLES.en[key] ?? key;
+export function localeBcp47(locale: Locale): string {
+  return BCP47[locale];
+}
+
+export function interpolate(template: string, vars?: TranslateVars): string {
+  if (!vars) return template;
+  return template.replace(/\{(\w+)\}/g, (match, name: string) => {
+    const value = vars[name];
+    return value === undefined || value === null ? match : String(value);
+  });
+}
+
+export function translate(locale: Locale, key: string, vars?: TranslateVars): string {
+  if (!key) return key;
+  const found = TABLES[locale][key] ?? TABLES.en[key] ?? key;
+  return interpolate(found, vars);
 }
 
 export function readStoredLocale(): Locale {

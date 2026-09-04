@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export type RegisterDensity = "comfortable" | "compact";
 
@@ -48,6 +49,7 @@ export function RegisterShell({
   children,
   className,
 }: RegisterShellProps) {
+  const { t } = useI18n();
   const showPagination = typeof onPageChange === "function" && pageCount > 1;
 
   return (
@@ -55,8 +57,8 @@ export function RegisterShell({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           {breadcrumbs}
-          <h1 className="page-title">{title}</h1>
-          {subtitle ? <p className="page-subtitle">{subtitle}</p> : null}
+          <h1 className="page-title">{t(title)}</h1>
+          {subtitle ? <p className="page-subtitle">{t(subtitle)}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
       </div>
@@ -81,7 +83,7 @@ export function RegisterShell({
                         : "text-neutral-500 hover:text-neutral-800",
                     )}
                   >
-                    {d}
+                    {t(`common.${d}`)}
                   </button>
                 ))}
               </div>
@@ -106,8 +108,8 @@ export function RegisterShell({
       {showPagination ? (
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-neutral-600">
           <span>
-            Page {page} of {pageCount}
-            {typeof total === "number" ? ` · ${total} rows` : ""}
+            {t("common.pageOf", { page, total: pageCount })}
+            {typeof total === "number" ? ` · ${t("common.rows", { count: total })}` : ""}
           </span>
           <div className="flex gap-2">
             <button
@@ -116,7 +118,7 @@ export function RegisterShell({
               disabled={page <= 1}
               onClick={() => onPageChange?.(Math.max(1, page - 1))}
             >
-              Previous
+              {t("common.previous")}
             </button>
             <button
               type="button"
@@ -124,7 +126,7 @@ export function RegisterShell({
               disabled={page >= pageCount}
               onClick={() => onPageChange?.(Math.min(pageCount, page + 1))}
             >
-              Next
+              {t("common.next")}
             </button>
           </div>
         </div>

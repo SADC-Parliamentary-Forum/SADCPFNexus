@@ -4,6 +4,8 @@
  * Compact Prev/Next pager matching correspondence / salary-advance chrome.
  * Hide when only one page exists.
  */
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
 export function ListPagination({
   page,
   lastPage,
@@ -19,6 +21,7 @@ export function ListPagination({
   disabled?: boolean;
   className?: string;
 }) {
+  const { t } = useI18n();
   if (lastPage <= 1) return null;
 
   return (
@@ -26,8 +29,8 @@ export function ListPagination({
       className={`flex items-center justify-between border-t border-neutral-200 px-4 py-3 ${className}`}
     >
       <p className="text-xs text-neutral-500">
-        Page {page} of {lastPage}
-        {typeof total === "number" ? ` (${total} total)` : ""}
+        {t("common.pageOf", { page, total: lastPage })}
+        {typeof total === "number" ? ` (${t("common.totalCount", { count: total })})` : ""}
       </p>
       <div className="flex gap-2">
         <button
@@ -36,7 +39,7 @@ export function ListPagination({
           onClick={() => onPageChange(page - 1)}
           className="btn-secondary px-3 py-1.5 text-xs disabled:opacity-40"
         >
-          Previous
+          {t("common.previous")}
         </button>
         <button
           type="button"
@@ -44,7 +47,7 @@ export function ListPagination({
           onClick={() => onPageChange(page + 1)}
           className="btn-secondary px-3 py-1.5 text-xs disabled:opacity-40"
         >
-          Next
+          {t("common.next")}
         </button>
       </div>
     </div>

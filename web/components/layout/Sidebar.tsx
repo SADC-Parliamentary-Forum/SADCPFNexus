@@ -402,7 +402,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const isCollapsed = !isOpen;
 
-  const navLabel = (item: NavItem) => (item.i18nKey ? t(item.i18nKey) : item.label);
+  const navLabel = (item: NavItem) => t(item.i18nKey ?? item.label);
 
   useEffect(() => {
     setUser(getStoredUser());
@@ -678,7 +678,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
           <div key={si} className={si > 0 ? (isCollapsed ? "mt-1" : "mt-2") : ""}>
             {section.label && !isCollapsed && (
               <p className="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-neutral-300 select-none">
-                {section.label}
+                {t(section.label)}
               </p>
             )}
             <div className={isCollapsed ? "flex flex-col gap-0.5" : "space-y-0.5"}>
@@ -711,7 +711,7 @@ export function Sidebar({ isOpen, onClose, onOverlayClick }: SidebarProps) {
           </div>
           {!isCollapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white truncate">{user?.name ?? "Staff Member"}</p>
+              <p className="text-xs font-semibold text-white truncate">{user?.name ?? t("header.staffMember")}</p>
               <p className="text-[10px] text-neutral-400 truncate">{user?.email ?? "staff@sadcpf.org"}</p>
             </div>
           )}

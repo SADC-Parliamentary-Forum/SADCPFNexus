@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \App\Http\Middleware\AddCorsHeaders::class,
             \App\Http\Middleware\AssignRequestId::class,
+            \App\Http\Middleware\SetRequestLocale::class,
         ], append: [
             \App\Http\Middleware\RequireMfaForPrivileged::class,
             \App\Http\Middleware\EnforceRegisteredEndpointAccess::class,
@@ -62,7 +63,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if (!$request->is('api/*') && !$request->is('api')) {
                 return null;
             }
-            $response = response()->json(['message' => 'Unauthenticated.'], 401);
+            $response = response()->json(['message' => __('Unauthenticated.')], 401);
             foreach (\App\Support\CorsHelper::headersForRequest($request) as $name => $value) {
                 $response->header($name, $value);
             }

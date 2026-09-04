@@ -6,6 +6,8 @@ import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/notifications/fcm_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/theme/theme_provider.dart';
+import '../../../../l10n/app_locale.dart';
+import '../../../../l10n/app_strings.dart';
 import '../../../../shared/widgets/shell_drawer_scope.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -118,6 +120,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final strings = AppStrings.of(ref.watch(appLanguageProvider));
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -134,7 +137,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       onPressed: ShellDrawerScope.openDrawerOf(context),
                     ),
                     title: Text(
-                      'Profile',
+                      strings.t('Profile'),
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -268,10 +271,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                           // Settings section
                           _Section(
-                            title: 'Preferences',
+                            title: strings.t('PREFERENCES'),
                             icon: Icons.settings_outlined,
                             children: [
                               const _ThemeTile(),
+                              const _LanguageTile(),
                               _ActionTile(
                                 icon: Icons.notifications_outlined,
                                 label: 'Notifications',
@@ -281,7 +285,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               ),
                               _ActionTile(
                                 icon: Icons.security,
-                                label: 'Security Settings',
+                                label: strings.t('Security Settings'),
                                 iconColor: AppColors.warning,
                                 iconBg: AppColors.warning,
                                 onTap: () => context.push('/profile/security'),
@@ -550,6 +554,86 @@ class _ThemeTile extends ConsumerWidget {
                 Navigator.of(ctx).pop();
               },
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageTile extends ConsumerWidget {
+  const _LanguageTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final language = ref.watch(appLanguageProvider);
+    final strings = AppStrings.of(language);
+    return GestureDetector(
+      onTap: () => _showLanguageDialog(context, ref),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(
+                Icons.language,
+                size: 17,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                strings.t('Language'),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Text(
+              language.nativeLabel,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right, size: 16, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context, WidgetRef ref) {
+    final notifier = ref.read(appLanguageProvider.notifier);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Theme.of(ctx).colorScheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        title: Text(AppStrings.of(ref.watch(appLanguageProvider)).t('Language')),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final lang in AppLanguage.values)
+              ListTile(
+                title: Text(lang.nativeLabel),
+                trailing: lang == ref.watch(appLanguageProvider)
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () {
+                  notifier.setLanguage(lang);
+                  Navigator.of(ctx).pop();
+                },
+              ),
           ],
         ),
       ),

@@ -11,6 +11,7 @@ import { canAccessRoute, isSystemAdmin } from "@/lib/auth";
 import { dashboardModulesForUser } from "@/lib/dashboardAccess";
 import { formatDateShort } from "@/lib/utils";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statConfig = [
   { key: "pending_approvals" as const, label: "Pending Approvals", icon: "pending_actions", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20", border: "border-amber-100 dark:border-amber-800/30", href: "/approvals" },
@@ -72,10 +73,11 @@ function loadWidgetPrefs(): Record<WidgetId, boolean> {
 function StatPill({ label, value, color = "text-neutral-900", href }: {
   label: string; value: number; color?: string; href?: string;
 }) {
+  const { t } = useI18n();
   const inner = (
     <div className="flex flex-col items-center py-3 px-2 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors cursor-pointer">
       <span className={`text-xl font-bold ${color}`}>{value}</span>
-      <span className="text-[10px] text-neutral-600 mt-0.5">{label}</span>
+      <span className="text-[10px] text-neutral-600 mt-0.5">{t(label)}</span>
     </div>
   );
   return href ? <Link href={href}>{inner}</Link> : <div>{inner}</div>;
@@ -92,6 +94,7 @@ function getDayOfMonth(dateStr: string): number | string {
 const _now = new Date();
 
 export default function DashboardPage() {
+  const { t, localeTag } = useI18n();
   // ─── Widget customization ──────────────────────────────────────────────────
   const [widgetPrefs, setWidgetPrefs] = useState<Record<WidgetId, boolean>>({
     kpi_cards: true, quick_actions: true, recent_activity: true,
@@ -114,11 +117,11 @@ export default function DashboardPage() {
   useEffect(() => {
     const now = new Date();
     const h = now.getHours();
-    setGreeting(h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening");
-    setDateLabel(now.toLocaleDateString("en-GB", {
+    setGreeting(h < 12 ? t("dashboard.morning") : h < 18 ? t("dashboard.afternoon") : t("dashboard.evening"));
+    setDateLabel(now.toLocaleDateString(localeTag, {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
     }));
-  }, []);
+  }, [t, localeTag]);
 
   // ─── Query 1: current user (shared cache key — Header & Sidebar reuse it) ─
   const { data: user, isLoading: userLoading } = useQuery<AuthUser>({
@@ -243,7 +246,7 @@ export default function DashboardPage() {
             {greeting}{user?.name ? `, ${user.name.split(" ")[0]}` : ""}
           </h1>
           <p className="text-sm text-neutral-700 dark:text-neutral-400 mt-0.5">
-            {dateLabel} · Here&apos;s your workspace overview.
+            {dateLabel} · {t("dashboard.overview")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -253,12 +256,12 @@ export default function DashboardPage() {
             className="btn-secondary flex items-center gap-1.5 py-2 px-3 text-xs"
           >
             <span className="material-symbols-outlined text-[15px]">tune</span>
-            Customize
+            {t("dashboard.customize")}
           </button>
           {isAdmin && (
             <Link href="/admin" className="btn-secondary flex items-center gap-2 py-2 px-3 text-xs">
               <span className="material-symbols-outlined text-[16px]">admin_panel_settings</span>
-              Admin Panel
+              {t("dashboard.adminPanel")}
             </Link>
           )}
         </div>
@@ -273,14 +276,14 @@ export default function DashboardPage() {
                 <span className="material-symbols-outlined text-primary text-[20px]">dashboard_customize</span>
               </div>
               <div>
-                <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Customize Dashboard</h3>
-                <p className="text-xs text-neutral-600">Show or hide sections</p>
+                <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">{t("dashboard.customizeTitle")}</h3>
+                <p className="text-xs text-neutral-600">{t("dashboard.customizeHint")}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowCustomize(false)}
                 className="ml-auto text-neutral-600 hover:text-neutral-800"
-                aria-label="Close customize dashboard"
+                aria-label={t("dashboard.customizeTitle")}
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -290,7 +293,7 @@ export default function DashboardPage() {
                 <label key={w_.id} className="flex items-center justify-between rounded-xl border border-neutral-100 dark:border-neutral-700/50 bg-neutral-50 dark:bg-neutral-700/30 px-3 py-2.5 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-700/60 transition-colors">
                   <div className="flex items-center gap-2.5">
                     <span className="material-symbols-outlined text-[18px] text-neutral-600">{w_.icon}</span>
-                    <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">{w_.label}</span>
+                    <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">{t(w_.label)}</span>
                   </div>
                   <div
                     className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${widgetPrefs[w_.id] ? "bg-primary" : "bg-neutral-200 dark:bg-neutral-600"}`}
@@ -301,7 +304,7 @@ export default function DashboardPage() {
                 </label>
               ))}
             </div>
-            <p className="text-xs text-neutral-600 dark:text-neutral-500 mt-4 text-center">Preferences are saved in your browser.</p>
+            <p className="text-xs text-neutral-600 dark:text-neutral-500 mt-4 text-center">{t("dashboard.prefsSaved")}</p>
           </div>
         </div>
       )}
@@ -312,13 +315,13 @@ export default function DashboardPage() {
           <Link key={key} href={href} className={`card p-5 border ${border} hover:shadow-elevated transition-all hover:border-primary/30 group`}>
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-400 uppercase tracking-wider">{label}</p>
+                <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-400 uppercase tracking-wider">{t(label)}</p>
                 <p className="mt-2 text-3xl font-bold text-neutral-900 dark:text-neutral-100">
                   {loading
                     ? <span className="inline-block h-8 w-12 animate-pulse rounded-md bg-neutral-100 dark:bg-neutral-700/40" />
                     : stats ? String(stats[key]) : "—"}
                 </p>
-                <p className="mt-1 text-xs text-neutral-600 group-hover:text-primary transition-colors">View →</p>
+                <p className="mt-1 text-xs text-neutral-600 group-hover:text-primary transition-colors">{t("common.viewAll")} →</p>
               </div>
               <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${bg}`}>
                 <span className={`material-symbols-outlined ${color} text-[22px]`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
@@ -337,10 +340,10 @@ export default function DashboardPage() {
           <div className="card-header">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-neutral-600 text-[18px]">history</span>
-              <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Recent Activity</h3>
+              <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("Recent Activity")}</h3>
             </div>
             {activityHome ? (
-              <Link href={activityHome} className="text-xs text-neutral-600 hover:text-primary transition-colors">View all</Link>
+              <Link href={activityHome} className="text-xs text-neutral-600 hover:text-primary transition-colors">{t("common.viewAll")}</Link>
             ) : null}
           </div>
           {activityLoading ? (
@@ -403,9 +406,9 @@ export default function DashboardPage() {
           <div className="card-header">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-neutral-600 text-[18px]">calendar_month</span>
-              <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Upcoming Events</h3>
+              <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("Upcoming Events")}</h3>
             </div>
-            <Link href="/workplan" className="text-xs text-neutral-600 hover:text-primary transition-colors">View all</Link>
+            <Link href="/workplan" className="text-xs text-neutral-600 hover:text-primary transition-colors">{t("common.viewAll")}</Link>
           </div>
           {upcomingEvents.length === 0 ? (
             <div className="px-4 py-8 text-center">
@@ -452,11 +455,11 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-600 text-[18px]">task_alt</span>
             <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-              {showFullAssignments ? "Assignments Overview" : "My Assignments"}
+              {showFullAssignments ? t("Assignments Overview") : t("My Assignments")}
             </h3>
           </div>
           <Link href="/assignments" className="text-xs text-neutral-600 hover:text-primary transition-colors">
-            View all
+            {t("common.viewAll")}
           </Link>
         </div>
 
@@ -535,7 +538,7 @@ export default function DashboardPage() {
         <div className="card-header">
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-600 text-[18px]">bolt</span>
-            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Quick Actions</h3>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("Quick Actions")}</h3>
           </div>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-neutral-50 dark:divide-neutral-800">
@@ -544,7 +547,7 @@ export default function DashboardPage() {
               <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${action.bg} group-hover:scale-105 transition-transform`}>
                 <span className={`material-symbols-outlined ${action.color} text-[22px]`}>{action.icon}</span>
               </div>
-              <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 text-center leading-tight">{action.label}</span>
+              <span className="text-xs font-medium text-neutral-600 dark:text-neutral-300 text-center leading-tight">{t(action.label)}</span>
             </Link>
           ))}
         </div>
@@ -560,8 +563,8 @@ export default function DashboardPage() {
                 <span className="material-symbols-outlined text-neutral-500 group-hover:text-primary text-[20px] transition-colors">{m.icon}</span>
               </div>
               <div>
-                <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{m.label}</p>
-                <p className="text-[10px] text-neutral-600">{m.desc}</p>
+                <p className="text-xs font-semibold text-neutral-800 dark:text-neutral-200">{t(m.label)}</p>
+                <p className="text-[10px] text-neutral-600">{t(m.desc)}</p>
               </div>
             </Link>
           ))}

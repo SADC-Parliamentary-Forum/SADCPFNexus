@@ -16,7 +16,7 @@ import {
 import { clearStoredUser, readStoredUser } from "@/lib/session";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { GlobalSearch } from "./GlobalSearch";
-import { LocaleIconSwitcher } from "@/lib/i18n/LocaleProvider";
+import { LocaleIconSwitcher, useI18n } from "@/lib/i18n/LocaleProvider";
 import { requiresPrivilegedMfaSetup } from "@/lib/privilegedMfa";
 
 interface StoredUser {
@@ -40,6 +40,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { theme, setTheme } = useTheme();
+  const { t, localeTag } = useI18n();
 
   useEffect(() => {
     const storedUser = readStoredUser();
@@ -129,7 +130,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
             type="button"
             onClick={onMenuClick}
             className="flex md:hidden p-2 -ml-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors"
-            aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            aria-label={sidebarOpen ? t("header.closeSidebar") : t("header.openSidebar")}
           >
             <span className="material-symbols-outlined text-[24px]">
               {sidebarOpen ? "menu_open" : "menu"}
@@ -141,7 +142,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
             type="button"
             onClick={onMenuClick}
             className="hidden md:flex p-2 -ml-2 rounded-lg text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white transition-colors"
-            aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+            aria-label={sidebarOpen ? t("header.closeSidebar") : t("header.openSidebar")}
           >
             <span className="material-symbols-outlined text-[22px]">
               {sidebarOpen ? "chevron_left" : "chevron_right"}
@@ -161,7 +162,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
         </span>
         <div className="hidden md:block">
           <h2 className="text-lg font-bold leading-tight tracking-tight text-neutral-900 dark:text-neutral-100">SADC PF Nexus</h2>
-          <p className="text-xs font-medium text-neutral-700 dark:text-neutral-400 leading-none">Institutional Operations Platform</p>
+          <p className="text-xs font-medium text-neutral-700 dark:text-neutral-400 leading-none">{t("auth.platform")}</p>
         </div>
       </Link>
       </div>
@@ -177,8 +178,8 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
         <button
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
           className="flex size-9 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          title={theme === "dark" ? t("header.lightMode") : t("header.darkMode")}
+          aria-label={theme === "dark" ? t("header.lightMode") : t("header.darkMode")}
         >
           <span className="material-symbols-outlined text-[20px]">
             {theme === "dark" ? "light_mode" : "dark_mode"}
@@ -190,8 +191,8 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
           <button
             onClick={() => setShowNotifications(!showNotifications)}
             className="relative flex size-9 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
-            title="Notifications"
-            aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+            title={t("header.notifications")}
+            aria-label={unreadCount > 0 ? `${t("header.notifications")}, ${unreadCount}` : t("header.notifications")}
             aria-expanded={showNotifications}
           >
             <span className="material-symbols-outlined text-[20px]">notifications</span>
@@ -206,19 +207,19 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
               <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 dark:border-neutral-700">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px] text-neutral-500">notifications</span>
-                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Notifications</h3>
+                  <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("header.notifications")}</h3>
                   {unreadCount > 0 && <span className="rounded-full bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5">{unreadCount}</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
                     <button onClick={handleMarkAllRead} className="text-[11px] font-semibold text-primary hover:underline">
-                      Mark all read
+                      {t("header.markAllRead")}
                     </button>
                   )}
                   <button
                     onClick={() => setShowNotifications(false)}
                     className="text-neutral-400 hover:text-neutral-600"
-                    aria-label="Close notifications"
+                    aria-label={t("common.close")}
                   >
                     <span className="material-symbols-outlined text-[18px]" aria-hidden="true">close</span>
                   </button>
@@ -232,7 +233,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                 ) : notifItems.length === 0 ? (
                   <div className="px-4 py-10 text-center">
                     <span className="material-symbols-outlined text-3xl text-neutral-200 dark:text-neutral-600">check_circle</span>
-                    <p className="text-sm text-neutral-400 mt-2">You&apos;re all caught up!</p>
+                    <p className="text-sm text-neutral-400 mt-2">{t("header.caughtUp")}</p>
                   </div>
                 ) : notifItems.map((n) => {
                   const isUnread = !n.read_at;
@@ -261,7 +262,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                           {isUnread && <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />}
                         </div>
                         <p className="text-[11px] text-neutral-400 mt-0.5">
-                          {new Date(n.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          {new Date(n.created_at).toLocaleDateString(localeTag, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                         </p>
                       </div>
                     </div>
@@ -270,7 +271,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
               </div>
               <div className="border-t border-neutral-100 dark:border-neutral-700 px-4 py-2.5">
                 <Link href="/notifications" onClick={() => setShowNotifications(false)} className="text-xs font-semibold text-primary hover:underline">
-                  View all notifications →
+                  {t("header.viewAll")}
                 </Link>
               </div>
             </div>
@@ -284,7 +285,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            aria-label="User menu"
+            aria-label={t("header.userMenu")}
             aria-expanded={showUserMenu}
             aria-haspopup="menu"
           >
@@ -322,7 +323,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
                   >
                     <span className="material-symbols-outlined text-[18px] text-neutral-400">person</span>
-                    My Profile
+                    {t("header.myProfile")}
                   </Link>
                   <Link
                     href="/profile/settings"
@@ -330,7 +331,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
                   >
                     <span className="material-symbols-outlined text-[18px] text-neutral-400">tune</span>
-                    Preferences & Settings
+                    {t("header.preferences")}
                   </Link>
                   <Link
                     href="/profile/security"
@@ -338,7 +339,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
                   >
                     <span className="material-symbols-outlined text-[18px] text-neutral-400">lock</span>
-                    Security & Password
+                    {t("header.security")}
                   </Link>
                 </div>
                 <div className="border-t border-neutral-100 dark:border-neutral-700 py-1.5">
@@ -347,7 +348,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <span className="material-symbols-outlined text-[18px]">logout</span>
-                    Sign Out
+                    {t("header.signOut")}
                   </button>
                 </div>
               </div>

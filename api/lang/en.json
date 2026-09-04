@@ -1,0 +1,6 @@
+{
+  "Unauthenticated.": "Unauthenticated.",
+  "You do not have access to this endpoint.": "You do not have access to this endpoint.",
+  "This action is unauthorized.": "This action is unauthorized.",
+  "Endpoint is not registered for access control.": "Endpoint is not registered for access control."
+}
