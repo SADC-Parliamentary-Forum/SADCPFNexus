@@ -73,7 +73,7 @@ test.describe("Assets import (admin)", () => {
     await expect(row).toBeVisible({ timeout: 10_000 });
     await row.locator('input[type="checkbox"]').check();
     const printResp = page.waitForResponse((r) => r.url().includes("/assets/labels/print") && r.request().method() === "POST", { timeout: 20_000 });
-    await page.getByRole("button", { name: /Print selected|Imprimer la sélection|Imprimir seleccionados/i }).click();
+    await page.getByRole("button", { name: /^(Print selected|Imprimer la sélection|Imprimir seleccionados)$/ }).click();
     const resp = await printResp;
     expect(resp.status()).toBeLessThan(400);
     expect((resp.headers()["content-type"] ?? "")).toMatch(/pdf|octet-stream|json/i);
