@@ -186,6 +186,29 @@ return [
             'READ' => ['procurement.view', 'procurement.receive_goods', 'procurement.admin'],
             'WRITE' => ['procurement.receive_goods', 'procurement.admin', 'procurement.manage_po'],
         ]],
+        ['pattern' => 'api/v1/procurement/intakes*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.create', 'procurement.admin', 'procurement.manage_po'],
+            'WRITE' => ['procurement.create', 'procurement.admin', 'procurement.manage_po'],
+        ]],
+        ['pattern' => 'api/v1/procurement/workbench', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.admin', 'procurement.manage_po'],
+        ]],
+        ['pattern' => 'api/v1/procurement/lpo-sequence*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.admin', 'procurement.sequence.manage'],
+            'WRITE' => ['procurement.admin', 'procurement.sequence.manage'],
+        ]],
+        ['pattern' => 'api/v1/procurement/projects*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.create', 'procurement.admin'],
+            'WRITE' => ['procurement.admin'],
+        ]],
+        ['pattern' => 'api/v1/procurement/exceptions*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.admin', 'procurement.manage_po'],
+            'WRITE' => ['procurement.admin', 'procurement.approve'],
+        ]],
+        ['pattern' => 'api/v1/procurement/inbox*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.create', 'procurement.admin'],
+            'WRITE' => ['procurement.create', 'procurement.admin'],
+        ]],
         ['pattern' => 'api/v1/procurement/purchase-orders*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.manage_po', 'procurement.receive_goods', 'finance.view', 'procurement.admin'],
             'WRITE' => ['procurement.manage_po', 'procurement.receive_goods', 'procurement.approve_invoice', 'finance.create', 'procurement.admin'],

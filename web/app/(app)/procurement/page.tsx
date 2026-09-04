@@ -4,7 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { procurementApi, type ProcurementRequest } from "@/lib/api";
+import { procurementApi, procurementWorkbenchApi, type ProcurementRequest } from "@/lib/api";
 import { canViewProcurementVendors, getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
@@ -50,6 +50,13 @@ export default function ProcurementPage() {
     staleTime: 30_000,
   });
 
+  const { data: workbench } = useQuery({
+    queryKey: ["procurement", "workbench"],
+    queryFn: () => procurementWorkbenchApi.cards().then((res) => res.data.data),
+    staleTime: 15_000,
+    enabled: canCreateRequest,
+  });
+
   const totalValue = requests.reduce((s, r) => s + r.estimated_value, 0);
   const currency = requests[0]?.currency ?? "USD";
 
@@ -70,7 +77,13 @@ export default function ProcurementPage() {
             </Link>
           )}
           {canCreateRequest && (
-            <Link href="/procurement/create" className="btn-primary flex items-center gap-1.5">
+            <Link href="/procurement/from-document" className="btn-primary flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px]">upload_file</span>
+              Create from Invoice / Quote
+            </Link>
+          )}
+          {canCreateRequest && (
+            <Link href="/procurement/create" className="btn-secondary flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[18px]">add</span>
               New Requisition
             </Link>
@@ -79,6 +92,30 @@ export default function ProcurementPage() {
       </div>
 
       <ModuleHubCards cards={PROCUREMENT_HUB_CARDS} />
+
+      {canCreateRequest && workbench && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {([
+            ["new_documents", "New documents", "/procurement/from-document"],
+            ["needs_extraction_review", "Needs extraction review", "/procurement/from-document"],
+            ["requests_pending", "Requests pending", "/procurement"],
+            ["ready_for_lpo", "Ready for LPO", "/procurement/purchase-orders"],
+            ["awaiting_approval", "Awaiting approval", "/approvals"],
+            ["returned_for_correction", "Returned for correction", "/procurement/purchase-orders"],
+            ["approved_ready_to_issue", "Approved / ready to issue", "/procurement/purchase-orders"],
+            ["outstanding_lpos", "Outstanding LPOs", "/procurement/purchase-orders"],
+            ["awaiting_receipt", "Awaiting receipt", "/procurement/receipts"],
+            ["unmatched_invoices", "Unmatched invoices", "/procurement/invoices"],
+            ["ready_for_finance", "Ready for Finance", "/procurement/invoices"],
+            ["exceptions", "Exceptions", "/procurement/exceptions"],
+          ] as const).map(([key, label, href]) => (
+            <Link key={key} href={href} className="card p-4 hover:border-primary/30">
+              <p className="text-xs text-neutral-500">{label}</p>
+              <p className="mt-1 text-2xl font-bold text-neutral-900">{workbench[key] ?? 0}</p>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {isError && (
         <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">

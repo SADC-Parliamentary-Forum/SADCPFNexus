@@ -63,6 +63,11 @@ class WorkflowSeeder extends Seeder
             ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'Secretary General Approval', 'authority_action' => 'sg.approve', 'sla_hours' => 48]] : []),
         ]);
 
+        $this->makeWorkflow($tenant, 'Purchase Order / LPO Approval', 'purchase_order', [
+            ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance Certification', 'authority_action' => 'finance.certify', 'allow_return' => true]] : []),
+            ...($sgRole  ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'SG / Authorised Signatory', 'allow_return' => true]] : []),
+        ]);
+
         $this->makeWorkflow($tenant, 'Procurement Approval', 'procurement', [
             ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'recommend', 'step_name' => 'Supervisor Recommendation', 'allow_return' => true],
             ['approver_type' => 'up_the_chain', 'actor_selector' => 'hod', 'stage_type' => 'authorise', 'step_name' => 'HOD Authorisation'],

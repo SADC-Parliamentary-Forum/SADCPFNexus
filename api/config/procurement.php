@@ -57,6 +57,8 @@ return [
     | Newspaper-notice HTTP LLM draft (CR-8). Suggestion only; human checklist still required.
     | Never auto-awards.
     */
-    'notice_llm_url' => env('PROCUREMENT_NOTICE_LLM_URL'),
+    'inbox_imap_host' => env('PROCUREMENT_INBOX_IMAP_HOST'),
+    'inbox_imap_user' => env('PROCUREMENT_INBOX_IMAP_USER'),
+    'inbox_imap_password' => env('PROCUREMENT_INBOX_IMAP_PASSWORD'),
     'notice_llm_token' => env('PROCUREMENT_NOTICE_LLM_TOKEN'),
 ];
