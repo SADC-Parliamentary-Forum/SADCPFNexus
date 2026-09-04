@@ -271,6 +271,21 @@ return new class extends Migration
                 ]);
             }
         }
+
+        if (DB::getDriverName() === 'pgsql') {
+            foreach ([
+                'procurement_projects',
+                'procurement_document_intakes',
+                'procurement_document_intake_lines',
+                'procurement_exceptions',
+                'service_confirmations',
+                'purchase_order_revisions',
+                'procurement_inbox_messages',
+            ] as $table) {
+                DB::statement("GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE {$table} TO app_user");
+                DB::statement("GRANT USAGE, SELECT ON SEQUENCE {$table}_id_seq TO app_user");
+            }
+        }
     }
 
     public function down(): void
