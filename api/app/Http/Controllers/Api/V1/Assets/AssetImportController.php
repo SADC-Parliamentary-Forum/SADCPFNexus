@@ -11,6 +11,7 @@ use App\Modules\Assets\Services\AssetImportService;
 use App\Modules\Assets\Services\AssetReconciliationReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class AssetImportController extends Controller
 {
@@ -135,9 +136,14 @@ class AssetImportController extends Controller
 
     public function mapLocation(Request $request, AssetImportBatch $assetImportBatch): JsonResponse
     {
+        abort_unless((int) $assetImportBatch->tenant_id === (int) $request->user()->tenant_id, 404);
         $data = $request->validate([
             'legacy_location' => ['required', 'string', 'max:255'],
-            'location_id' => ['required', 'integer', 'exists:asset_locations,id'],
+            'location_id' => [
+                'required',
+                'integer',
+                Rule::exists('asset_locations', 'id')->where(fn ($q) => $q->where('tenant_id', $request->user()->tenant_id)),
+            ],
         ]);
         $this->imports->confirmLocationMapping($assetImportBatch, $request->user(), $data['legacy_location'], $data['location_id']);
 
@@ -146,12 +152,14 @@ class AssetImportController extends Controller
 
     public function mapCustodian(Request $request, AssetImportBatch $assetImportBatch): JsonResponse
     {
+        abort_unless((int) $assetImportBatch->tenant_id === (int) $request->user()->tenant_id, 404);
+        $tenantId = (int) $request->user()->tenant_id;
         $data = $request->validate([
             'legacy_key' => ['required', 'string', 'max:255'],
             'custodian_type' => ['required', 'in:user,department,store,shared'],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
-            'location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
+            'user_id' => ['nullable', 'integer', Rule::exists('users', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'department_id' => ['nullable', 'integer', Rule::exists('departments', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
+            'location_id' => ['nullable', 'integer', Rule::exists('asset_locations', 'id')->where(fn ($q) => $q->where('tenant_id', $tenantId))],
         ]);
         $this->imports->confirmCustodianMapping($assetImportBatch, $request->user(), $data['legacy_key'], $data);
 

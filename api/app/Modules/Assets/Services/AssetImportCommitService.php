@@ -76,9 +76,9 @@ class AssetImportCommitService
             $this->ensureDefaultTemplates($user->tenant_id);
             $this->openVerificationCampaign($user, $batch);
 
-            $batch->imported_count = $created;
-            $batch->updated_count = $updated;
-            $batch->unchanged_count = $unchanged;
+            $batch->imported_count = (int) $batch->imported_count + $created;
+            $batch->updated_count = (int) $batch->updated_count + $updated;
+            $batch->unchanged_count = (int) $batch->unchanged_count + $unchanged;
             $batch->excluded_count = AssetImportStaging::query()->where('import_batch_id', $batch->id)->where('review_status', 'excluded')->count();
             $batch->unresolved_count = AssetImportStaging::query()->where('import_batch_id', $batch->id)->whereNotIn('review_status', ['committed', 'excluded'])->count();
             $batch->committed_at = now();

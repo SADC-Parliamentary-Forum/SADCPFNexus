@@ -191,8 +191,12 @@ class AssetImportService
     {
         $this->assertCanImport($user);
         $this->assertTenant($batch, $user);
+        $this->assertBatchMutable($batch);
 
-        $query = AssetImportStaging::query()->where('import_batch_id', $batch->id)->where('blocking', false);
+        $query = AssetImportStaging::query()
+            ->where('import_batch_id', $batch->id)
+            ->where('blocking', false)
+            ->whereNotIn('review_status', ['committed', 'excluded']);
         if (! $allNonBlocking) {
             $query->whereIn('id', $stagingIds);
         }
@@ -216,7 +220,9 @@ class AssetImportService
     {
         $this->assertCanImport($user);
         $this->assertTenant($batch, $user);
+        $this->assertBatchMutable($batch);
         $row = AssetImportStaging::query()->where('import_batch_id', $batch->id)->findOrFail($stagingId);
+        $this->assertRowMutable($row);
         $row->review_status = 'excluded';
         $row->proposed_action = 'EXCLUDE';
         $row->admin_notes = $reason;
@@ -238,7 +244,9 @@ class AssetImportService
     {
         $this->assertCanImport($user);
         $this->assertTenant($batch, $user);
+        $this->assertBatchMutable($batch);
         $row = AssetImportStaging::query()->where('import_batch_id', $batch->id)->findOrFail($stagingId);
+        $this->assertRowMutable($row);
         $allowed = [
             'asset_name', 'make', 'model', 'serial_number', 'legacy_location', 'location_id',
             'custodian_type', 'custodian_user_id', 'custodian_department_id', 'category_code',
@@ -260,11 +268,17 @@ class AssetImportService
     public function confirmLocationMapping(AssetImportBatch $batch, User $user, string $legacy, int $locationId): void
     {
         $this->assertCanImport($user);
+        $this->assertTenant($batch, $user);
+        $this->assertBatchMutable($batch);
+        $location = AssetLocation::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->whereKey($locationId)
+            ->firstOrFail();
         AssetLocationMapping::query()->updateOrCreate(
             ['tenant_id' => $user->tenant_id, 'legacy_location' => $legacy],
             [
                 'import_batch_id' => $batch->id,
-                'location_id' => $locationId,
+                'location_id' => $location->id,
                 'confidence' => 'confirmed',
                 'confirmed_by' => $user->id,
                 'confirmed_at' => now(),
@@ -273,12 +287,24 @@ class AssetImportService
         AssetImportStaging::query()
             ->where('import_batch_id', $batch->id)
             ->where('legacy_location', $legacy)
-            ->update(['location_id' => $locationId]);
+            ->whereNotIn('review_status', ['committed', 'excluded'])
+            ->update(['location_id' => $location->id]);
     }
 
     public function confirmCustodianMapping(AssetImportBatch $batch, User $user, string $legacyKey, array $data): void
     {
         $this->assertCanImport($user);
+        $this->assertTenant($batch, $user);
+        $this->assertBatchMutable($batch);
+        if (! empty($data['user_id'])) {
+            User::query()->where('tenant_id', $user->tenant_id)->whereKey($data['user_id'])->firstOrFail();
+        }
+        if (! empty($data['department_id'])) {
+            \App\Models\Department::query()->where('tenant_id', $user->tenant_id)->whereKey($data['department_id'])->firstOrFail();
+        }
+        if (! empty($data['location_id'])) {
+            AssetLocation::query()->where('tenant_id', $user->tenant_id)->whereKey($data['location_id'])->firstOrFail();
+        }
         AssetCustodianMapping::query()->updateOrCreate(
             ['tenant_id' => $user->tenant_id, 'legacy_key' => $legacyKey],
             [
@@ -294,6 +320,7 @@ class AssetImportService
             ]
         );
         $query = AssetImportStaging::query()->where('import_batch_id', $batch->id)
+            ->whereNotIn('review_status', ['committed', 'excluded'])
             ->where(function ($q) use ($legacyKey) {
                 $q->where('custodian_candidate', $legacyKey)->orWhere('legacy_location', $legacyKey);
             });
@@ -889,6 +916,20 @@ class AssetImportService
     {
         if ((int) $batch->tenant_id !== (int) $user->tenant_id) {
             abort(404);
+        }
+    }
+
+    private function assertBatchMutable(AssetImportBatch $batch): void
+    {
+        if ($batch->status === 'committed') {
+            throw ValidationException::withMessages(['batch' => 'Committed import batches cannot be modified.']);
+        }
+    }
+
+    private function assertRowMutable(AssetImportStaging $row): void
+    {
+        if ($row->review_status === 'committed') {
+            throw ValidationException::withMessages(['staging' => 'Committed staging rows cannot be modified.']);
         }
     }
 }

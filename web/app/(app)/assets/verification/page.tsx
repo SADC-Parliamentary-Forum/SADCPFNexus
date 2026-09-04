@@ -71,7 +71,18 @@ export default function AssetVerificationPage() {
     e.preventDefault();
     setErrorMsg(null);
     try {
-      const r = await assetQrApi.lookup(scanToken.trim());
+      const raw = scanToken.trim();
+      let token = raw;
+      try {
+        const parsed = new URL(raw);
+        const parts = parsed.pathname.split("/").filter(Boolean);
+        const idx = parts.lastIndexOf("a");
+        if (idx >= 0 && parts[idx + 1]) token = decodeURIComponent(parts[idx + 1]);
+      } catch {
+        const match = raw.match(/\/a\/([^/?#]+)/);
+        if (match) token = decodeURIComponent(match[1]);
+      }
+      const r = await assetQrApi.lookup(token);
       setScanned({ id: r.data.data.id, asset_tag: r.data.data.asset_tag, name: r.data.data.name });
     } catch {
       setScanned(null);

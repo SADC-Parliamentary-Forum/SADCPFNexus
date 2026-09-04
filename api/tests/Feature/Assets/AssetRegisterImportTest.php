@@ -318,6 +318,74 @@ class AssetRegisterImportTest extends TestCase
         ]);
     }
 
+    public function test_mappings_reject_foreign_tenant_batch_and_location(): void
+    {
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        [$httpA, $adminA] = $this->asAdmin($tenantA);
+        $adminB = $this->makeAdmin($tenantB);
+
+        $path = sys_get_temp_dir().'/template-tenant-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'legacy_location'],
+            ['CE-3301', 'Tenant laptop', 'Office 16C'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+        $res = $httpA->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        $batchId = $res->json('data.batch.id');
+        unlink($path);
+
+        $foreignLocation = \App\Models\AssetLocation::create([
+            'tenant_id' => $tenantB->id,
+            'code' => 'FOREIGN',
+            'name' => 'Other tenant room',
+            'location_type' => 'office',
+            'is_active' => true,
+        ]);
+
+        $this->asUser($adminA);
+        $httpA->postJson("/api/v1/assets/import/{$batchId}/map-location", [
+            'legacy_location' => 'Office 16C',
+            'location_id' => $foreignLocation->id,
+        ])->assertStatus(422);
+
+        $this->asUser($adminB);
+        $httpA->postJson("/api/v1/assets/import/{$batchId}/map-location", [
+            'legacy_location' => 'Office 16C',
+            'location_id' => $foreignLocation->id,
+        ])->assertNotFound();
+    }
+
+    public function test_committed_staging_rows_cannot_be_edited(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $path = sys_get_temp_dir().'/template-lock-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name'],
+            ['CE-3401', 'Locked laptop'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        $batchId = $res->json('data.batch.id');
+        unlink($path);
+        $http->postJson("/api/v1/assets/import/{$batchId}/commit", ['approve_non_blocking' => true])->assertOk();
+        $stagingId = AssetImportBatch::find($batchId)->stagingRows()->first()->id;
+        $http->patchJson("/api/v1/assets/import/{$batchId}/staging/{$stagingId}", [
+            'asset_name' => 'Tampered',
+        ])->assertStatus(422);
+    }
+
     public function test_label_print_overflows_avery_18_up_onto_a_second_page(): void
     {
         $tenant = Tenant::factory()->create();
