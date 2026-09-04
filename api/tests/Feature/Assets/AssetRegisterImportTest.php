@@ -316,6 +316,24 @@ class AssetRegisterImportTest extends TestCase
             'asset_tag' => 'CE-3001',
             'custodian_type' => 'shared',
         ]);
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/commit", ['approve_non_blocking' => true])->assertOk();
+        $asset = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-3001')->first();
+        $this->assertNotNull($asset?->location_id);
+        $this->assertDatabaseHas('asset_location_histories', [
+            'asset_id' => $asset->id,
+            'location_id' => $location->id,
+        ]);
+    }
+
+    public function test_legacy_mode_requires_both_crystal_listings(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $http->post('/api/v1/assets/import', [
+            'mode' => 'legacy',
+            'category' => $this->uploaded($this->fixture('2036_Fixed_Assets_Listing_Category_31_March_2026.xls'), 'category.xls'),
+        ])->assertStatus(422);
     }
 
     public function test_mappings_reject_foreign_tenant_batch_and_location(): void
@@ -463,6 +481,31 @@ class AssetRegisterImportTest extends TestCase
             'location_id' => $to->id,
         ]);
         $this->assertSame($from->id, $from->fresh()->id);
+    }
+
+    public function test_repair_and_missing_movements_are_append_only(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [, $user] = $this->asAdmin($tenant);
+        $asset = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CE-7200',
+            'tag_number' => 'CE-7200',
+            'name' => 'Repair laptop',
+            'category' => 'it',
+            'status' => 'active',
+        ]);
+        $service = app(\App\Modules\Assets\Services\AssetService::class);
+        $service->sendForRepair($asset, $user, ['notes' => 'Screen']);
+        $service->returnFromRepair($asset->fresh(), $user);
+        $service->markMissing($asset->fresh(), $user);
+        $service->recover($asset->fresh(), $user);
+
+        $this->assertDatabaseHas('asset_movements', ['asset_id' => $asset->id, 'movement_type' => 'send_for_repair']);
+        $this->assertDatabaseHas('asset_movements', ['asset_id' => $asset->id, 'movement_type' => 'return_from_repair']);
+        $this->assertDatabaseHas('asset_movements', ['asset_id' => $asset->id, 'movement_type' => 'mark_missing']);
+        $this->assertDatabaseHas('asset_movements', ['asset_id' => $asset->id, 'movement_type' => 'recover']);
+        $this->assertSame(4, \App\Models\AssetMovement::query()->where('asset_id', $asset->id)->count());
     }
 
     public function test_verify_permission_can_record_qr_scan_result(): void

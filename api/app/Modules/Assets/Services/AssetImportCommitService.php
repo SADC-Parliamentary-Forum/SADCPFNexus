@@ -162,6 +162,7 @@ class AssetImportCommitService
 
         if ($existing) {
             $old = $existing->only(array_keys($payload));
+            $previousLocationId = $existing->location_id;
             foreach ($payload as $key => $value) {
                 if ($key === 'assigned_to' && $existing->last_verified_at) {
                     continue;
@@ -173,6 +174,9 @@ class AssetImportCommitService
             }
             $this->ensureIdentity($existing, $user);
             $existing->save();
+            if ($existing->location_id && (int) $existing->location_id !== (int) $previousLocationId && ! $existing->last_verified_at) {
+                app(\App\Modules\Assets\Services\AssetService::class)->recordLocationBaseline($existing, $user, 'Imported location');
+            }
             $this->qr->ensure($existing, $user);
             AuditLog::record('assets.import_updated', [
                 'auditable_type' => Asset::class,
@@ -189,6 +193,9 @@ class AssetImportCommitService
         $asset->tenant_id = $user->tenant_id;
         $this->ensureIdentity($asset, $user);
         $asset->save();
+        if ($asset->location_id) {
+            app(\App\Modules\Assets\Services\AssetService::class)->recordLocationBaseline($asset, $user, 'Imported from Crystal register');
+        }
         $this->qr->ensure($asset, $user);
         AuditLog::record('assets.import_created', [
             'auditable_type' => Asset::class,

@@ -369,6 +369,48 @@ class AssetService
         });
     }
 
+    public function checkOut(Asset $asset, User $actor, array $data = []): Asset
+    {
+        return $this->lifecycleMove($asset, $actor, 'check_out', $data, 'issued');
+    }
+
+    public function checkIn(Asset $asset, User $actor, array $data = []): Asset
+    {
+        return $this->lifecycleMove($asset, $actor, 'check_in', $data, $asset->assigned_to ? 'assigned' : 'active');
+    }
+
+    public function sendForRepair(Asset $asset, User $actor, array $data = []): Asset
+    {
+        return $this->lifecycleMove($asset, $actor, 'send_for_repair', $data, 'under_repair');
+    }
+
+    public function returnFromRepair(Asset $asset, User $actor, array $data = []): Asset
+    {
+        return $this->lifecycleMove($asset, $actor, 'return_from_repair', $data, $asset->assigned_to ? 'assigned' : 'active');
+    }
+
+    public function markMissing(Asset $asset, User $actor, array $data = []): Asset
+    {
+        return $this->lifecycleMove($asset, $actor, 'mark_missing', $data, 'missing');
+    }
+
+    public function recover(Asset $asset, User $actor, array $data = []): Asset
+    {
+        return $this->lifecycleMove($asset, $actor, 'recover', $data, $asset->assigned_to ? 'assigned' : 'active');
+    }
+
+    /**
+     * Write an append-only location history row without treating it as a user-initiated move.
+     */
+    public function recordLocationBaseline(Asset $asset, User $actor, ?string $notes = null): void
+    {
+        if (! $asset->location_id) {
+            return;
+        }
+        $this->recordLocationMove($asset, (int) $asset->location_id, $actor, $notes);
+        $asset->save();
+    }
+
     public function generateTag(int $tenantId, string $category): string
     {
         $prefix = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $category) ?: 'AST', 0, 4));
@@ -377,6 +419,34 @@ class AssetService
         } while (Asset::where('tenant_id', $tenantId)->where('tag_number', $tag)->exists());
 
         return $tag;
+    }
+
+    private function lifecycleMove(Asset $asset, User $actor, string $type, array $data, string $status): Asset
+    {
+        $this->assertTenant($asset, $actor);
+        $this->assertCanManage($actor);
+
+        return DB::transaction(function () use ($asset, $actor, $type, $data, $status) {
+            $fromLocation = $asset->location_id;
+            $fromUser = $asset->assigned_to;
+            if (! empty($data['location_id'])) {
+                $this->recordLocationMove($asset, (int) $data['location_id'], $actor, $data['notes'] ?? null);
+            }
+            $asset->status = $status;
+            $this->flagCustodyReprint($asset);
+            $asset->save();
+            $this->recordMovement($asset, $actor, $type, [
+                'from_user_id' => $fromUser,
+                'to_user_id' => $data['to_user_id'] ?? $asset->assigned_to,
+                'from_location_id' => $fromLocation,
+                'to_location_id' => $asset->location_id,
+                'notes' => $data['notes'] ?? null,
+                'reason' => $data['reason'] ?? null,
+                'reference_document' => $data['reference_document'] ?? null,
+            ]);
+
+            return $asset->fresh();
+        });
     }
 
     private function recordLocationMove(Asset $asset, int $locationId, User $actor, ?string $notes = null): void

@@ -55,6 +55,14 @@ class AssetImportService
         if ($uploads === []) {
             throw ValidationException::withMessages(['files' => 'Upload at least one source file.']);
         }
+        if ($mode === 'legacy' && (! isset($uploads['category']) || ! isset($uploads['location']))) {
+            throw ValidationException::withMessages([
+                'files' => 'Legacy import requires both the category and location Crystal listings.',
+            ]);
+        }
+        if ($mode === 'template' && ! isset($uploads['template'])) {
+            throw ValidationException::withMessages(['template' => 'Upload a Nexus asset template workbook.']);
+        }
 
         $hashes = [];
         $names = [];
@@ -463,11 +471,13 @@ class AssetImportService
             }
         }
 
-        $batch->unique_tag_count = AssetImportStaging::query()
-            ->where('import_batch_id', $batch->id)
-            ->whereNotNull('asset_tag')
-            ->distinct()
-            ->count('asset_tag');
+        $staging = AssetImportStaging::query()->where('import_batch_id', $batch->id)->get();
+        $batch->unique_tag_count = $staging->pluck('asset_tag')->filter()->unique()->count();
+        $batch->duplicate_count = $staging->filter(function ($row) {
+            return in_array('DUPLICATE_ASSET_TAG', $row->blocking_errors ?? [], true)
+                || in_array('ASSET_TAG_CONFLICT', $row->data_quality_flags ?? [], true);
+        })->count();
+        $batch->warning_count = $staging->filter(fn ($row) => ($row->data_quality_flags ?? []) !== [])->count();
         $batch->save();
     }
 
