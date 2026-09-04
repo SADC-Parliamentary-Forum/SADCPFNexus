@@ -3850,7 +3850,11 @@ export interface ProcurementIntake {
   extraction_status: string;
   extraction_confidence: number | null;
   confidence_band?: string;
-  classification_confidence: number | null;
+  classification_confidence?: number | null;
+  classification_method?: string | null;
+  ocr_available?: boolean | null;
+  extraction_message?: string | null;
+  text_method?: string | null;
   needs_manual_classification: boolean;
   invoice_first_case: string | null;
   vendor_id: number | null;

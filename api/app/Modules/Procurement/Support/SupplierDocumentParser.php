@@ -27,7 +27,7 @@ final class SupplierDocumentParser
      */
     public function parse(string $text, array $extractMeta = []): array
     {
-        if (($extractMeta['method'] ?? '') === 'ocr_unconfigured' || trim($text) === '') {
+        if (($extractMeta['method'] ?? '') === OcrUnconfiguredAdapter::METHOD || trim($text) === '') {
             return [
                 'document_type' => 'other',
                 'classification_confidence' => 20,
@@ -37,6 +37,7 @@ final class SupplierDocumentParser
                 'lines' => [],
                 'extraction_confidence' => 0,
                 'message' => $extractMeta['message'] ?? 'No extractable text. Manual classification required.',
+                'ocr_available' => false,
             ];
         }
 

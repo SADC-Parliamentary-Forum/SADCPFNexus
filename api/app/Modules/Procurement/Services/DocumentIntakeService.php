@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Modules\Documents\Services\ModuleDocumentBridge;
 use App\Modules\Procurement\Support\ArithmeticValidator;
 use App\Modules\Procurement\Support\DocumentTextExtractor;
+use App\Modules\Procurement\Support\OcrUnconfiguredAdapter;
 use App\Modules\Procurement\Support\SupplierDocumentParser;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\UploadedFile;
@@ -154,7 +155,9 @@ class DocumentIntakeService
         $status = $parsed['needs_manual_classification'] || ($parsed['extraction_confidence'] ?? 0) < 70
             ? ProcurementDocumentIntake::STATUS_NEEDS_REVIEW
             : ProcurementDocumentIntake::STATUS_NEEDS_REVIEW;
-        if (($textResult['method'] ?? '') === 'unsupported' || ($parsed['extraction_confidence'] ?? 0) === 0) {
+        if (($textResult['method'] ?? '') === OcrUnconfiguredAdapter::METHOD) {
+            $status = ProcurementDocumentIntake::STATUS_NEEDS_REVIEW;
+        } elseif (($textResult['method'] ?? '') === 'unsupported' || ($parsed['extraction_confidence'] ?? 0) === 0) {
             $status = ProcurementDocumentIntake::STATUS_EXTRACTION_FAILED;
         }
         if ($dup['duplicate']) {
@@ -168,7 +171,13 @@ class DocumentIntakeService
             'needs_manual_classification' => $parsed['needs_manual_classification'],
             'extraction_status' => $intake->bank_mismatch ? ProcurementDocumentIntake::STATUS_ON_HOLD : $status,
             'extraction_confidence' => $parsed['extraction_confidence'],
-            'raw_extraction' => ['text_method' => $textResult['method'] ?? null, 'fields' => $fields, 'lines' => $lines, 'message' => $parsed['message'] ?? null],
+            'raw_extraction' => [
+                'text_method' => $textResult['method'] ?? null,
+                'ocr_available' => array_key_exists('ocr_available', $textResult) ? (bool) $textResult['ocr_available'] : null,
+                'fields' => $fields,
+                'lines' => $lines,
+                'message' => $parsed['message'] ?? ($textResult['message'] ?? null),
+            ],
             'document_number' => $fields['document_number'] ?? null,
             'document_date' => $fields['document_date'] ?? null,
             'due_date' => $fields['due_date'] ?? null,

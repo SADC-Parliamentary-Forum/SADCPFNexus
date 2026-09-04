@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Modules\Procurement\Services\LpoSequenceAllocator;
 use App\Modules\Procurement\Services\ProcurementProjectService;
 use App\Modules\Procurement\Services\ProcurementWorkbenchService;
+use App\Modules\Procurement\Support\ImapUnconfiguredAdapter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -106,7 +107,7 @@ class ProcurementAutomationController extends Controller
     public function inbox(Request $request): JsonResponse
     {
         $this->assertOfficer($request);
-        $configured = (bool) config('procurement.inbox_imap_host');
+        $imap = new ImapUnconfiguredAdapter();
         $rows = ProcurementInboxMessage::query()
             ->where('tenant_id', $request->user()->tenant_id)
             ->orderByDesc('id')
@@ -114,8 +115,9 @@ class ProcurementAutomationController extends Controller
 
         return response()->json([
             'data' => $rows,
-            'imap_configured' => $configured,
-            'note' => $configured ? null : 'IMAP intake adapter is not configured. Forward files via upload or POST /inbox.',
+            'imap_configured' => $imap->isConfigured(),
+            'imap_adapter' => ImapUnconfiguredAdapter::METHOD,
+            'note' => $imap->statusNote(),
         ]);
     }
 

@@ -66,6 +66,7 @@ class PurchaseOrderService
             'status'                 => 'draft',
             'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
             'created_by'             => $user->id,
+            'source_type'            => 'award',
         ]);
 
         if (!empty($data['items'])) {

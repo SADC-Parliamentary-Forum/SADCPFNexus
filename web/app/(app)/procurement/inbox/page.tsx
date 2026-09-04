@@ -30,7 +30,7 @@ export default function ProcurementInboxPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <ModulePageHeader
         title="Procurement Inbox"
-        subtitle="Email invoices forwarded to the procurement mailbox."
+        subtitle="IMAP is not configured. Upload remains the live invoice intake path."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement", href: "/procurement" }, { label: "Inbox" }]} />}
       />
       {payload?.note && (
@@ -39,7 +39,7 @@ export default function ProcurementInboxPage() {
       {isLoading && <p className="text-sm text-neutral-500">Loading inbox…</p>}
       {isError && <p className="text-sm text-rose-700">Could not load the procurement inbox.</p>}
       {!isLoading && rows.length === 0 && (
-        <p className="text-sm text-neutral-500">No forwarded invoices yet. Upload a document from Create from Invoice / Quote, or POST to the inbox adapter when IMAP is configured.</p>
+        <p className="text-sm text-neutral-500">No forwarded invoices. IMAP is not configured — upload a PDF or DOCX from Create from Invoice / Quote.</p>
       )}
       <ul className="space-y-2">
         {rows.map((row) => (

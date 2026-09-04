@@ -11,7 +11,7 @@ export const PROCUREMENT_SIDEBAR_CHILDREN = [
 
 export const PROCUREMENT_HUB_CARDS: HubCard[] = [
   { href: "/procurement/from-document", title: "Create from Invoice / Quote", purpose: "Upload a supplier document and generate a controlled LPO.", icon: "upload_file", section: "queues" },
-  { href: "/procurement/inbox", title: "Procurement Inbox", purpose: "Email invoices forwarded to the procurement mailbox.", icon: "inbox", section: "queues" },
+  { href: "/procurement/inbox", title: "Procurement Inbox", purpose: "IMAP is not configured. Upload remains the live invoice intake path.", icon: "inbox", section: "queues" },
   { href: "/procurement/create", title: "New request", purpose: "Raise a requisition for goods, services, or works.", icon: "add_shopping_cart", section: "queues" },
   { href: "/procurement/intake", title: "Intake", purpose: "New requisitions awaiting routing.", icon: "inbox", section: "queues" },
   { href: "/procurement/budget", title: "Budget confirmation", purpose: "Funds confirmation before award.", icon: "account_balance", section: "queues" },

@@ -295,7 +295,9 @@ export default function ProcurementSettingsPage() {
             <div>
               <h2 className="text-base font-semibold text-neutral-900">LPO Sequence Setup</h2>
               <p className="text-xs text-neutral-500 mt-1">
-                Consecutive <code className="font-mono">S 00000</code> numbers. Confirm the last legacy LPO before Nexus issues the next official number. Do not infer the next number from sample documents.
+                Before production issuance, activate the live LPO sequence with the <strong>real last legacy number</strong>.
+                Consecutive <code className="font-mono">S #####</code> numbers are allocated on submit (intake path). Award-path POs keep existing <code className="font-mono">PO-</code> references.
+                Do not infer the next number from the sample invoice S 04015.
               </p>
             </div>
             {sequenceQuery.data && (
@@ -311,7 +313,7 @@ export default function ProcurementSettingsPage() {
                 className="form-input"
                 type="number"
                 min={0}
-                placeholder="Last legacy number (e.g. 4015)"
+                placeholder="Last issued legacy number (not the sample)"
                 value={legacyNumber}
                 onChange={(e) => setLegacyNumber(e.target.value)}
               />

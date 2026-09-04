@@ -93,7 +93,22 @@ class PurchaseOrder extends Model
     public function isDraft(): bool    { return in_array($this->status, ['draft', 'returned'], true); }
     public function isIssued(): bool   { return in_array($this->status, ['issued', 'partially_received']); }
     public function isReceived(): bool { return $this->status === 'received'; }
-    public function isClosed(): bool   { return $this->status === 'closed'; }
+    public function isClosed(): bool   { return in_array($this->status, ['closed'], true); }
+
+    /**
+     * Intake LPOs use PROC-DRAFT-* then official S ##### on submit.
+     * Award-path POs keep PO- references via Issue PO.
+     */
+    public function isIntakeLpo(): bool
+    {
+        if ($this->source_intake_id) {
+            return true;
+        }
+        $ref = (string) $this->reference_number;
+
+        return str_starts_with($ref, 'PROC-DRAFT-')
+            || (is_string($this->lpo_number) && str_starts_with($this->lpo_number, 'S '));
+    }
 
     public function canBeIssued(): bool   { return $this->isDraft() || $this->status === 'approved'; }
     public function canReceiveGoods(): bool { return in_array($this->status, ['issued', 'partially_received']); }

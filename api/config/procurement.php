@@ -57,6 +57,13 @@ return [
     | Newspaper-notice HTTP LLM draft (CR-8). Suggestion only; human checklist still required.
     | Never auto-awards.
     */
+    /*
+    | Image OCR and procurement IMAP are explicit unconfigured adapters.
+    | Env values below are reserved for a future real poller — they must not
+    | be treated as a live mailbox. Upload of PDF/DOCX remains the live path.
+    */
+    'ocr_adapter' => 'unconfigured',
+    'inbox_imap_adapter' => 'unconfigured',
     'inbox_imap_host' => env('PROCUREMENT_INBOX_IMAP_HOST'),
     'inbox_imap_user' => env('PROCUREMENT_INBOX_IMAP_USER'),
     'inbox_imap_password' => env('PROCUREMENT_INBOX_IMAP_PASSWORD'),

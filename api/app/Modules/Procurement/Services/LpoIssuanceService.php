@@ -134,6 +134,11 @@ class LpoIssuanceService
         if ($po->isIssued() || in_array($po->status, ['issued', 'void', 'cancelled'], true)) {
             throw ValidationException::withMessages(['status' => 'This LPO cannot be submitted.']);
         }
+        if (! $po->isIntakeLpo()) {
+            throw ValidationException::withMessages([
+                'reference_number' => 'Award-path purchase orders keep PO- references. Use Issue PO, not LPO submit.',
+            ]);
+        }
         if (! $po->procurement_project_id) {
             throw ValidationException::withMessages(['procurement_project_id' => 'Project is mandatory before submission.']);
         }
