@@ -42,6 +42,17 @@ class SupplierDocumentParserTest extends TestCase
         $result = (new DocumentTextExtractor())->extract('not-an-image', 'image/jpeg', 'scan.jpg');
         $this->assertFalse($result['ocr_available']);
         $this->assertSame('ocr_unconfigured', $result['method']);
+        $this->assertSame('', $result['text']);
+        $this->assertStringContainsString('not configured', $result['message']);
+        $this->assertStringContainsString('Upload remains the live intake path', $result['message']);
+    }
+
+    public function test_imap_mailbox_adapter_is_explicitly_unconfigured(): void
+    {
+        $imap = new \App\Modules\Procurement\Support\ImapUnconfiguredAdapter();
+        $this->assertFalse($imap->isConfigured());
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $imap->poll();
     }
 
     public function test_arithmetic_accepts_jvj_totals(): void

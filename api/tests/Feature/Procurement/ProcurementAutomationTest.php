@@ -157,8 +157,9 @@ class ProcurementAutomationTest extends TestCase
         $this->assertSame($vendor->id, (int) $draft->fresh()->vendor_id);
     }
 
-    public function test_sequence_allocator_issues_unique_numbers(): void
+    public function test_sequence_allocator_issues_25_unique_numbers_via_locked_sequential_allocations(): void
     {
+        // lockForUpdate in one PHP process — not 25 OS processes / pcntl_fork.
         $tenant = Tenant::factory()->create();
         $officer = $this->makeProcurementOfficer($tenant);
         $this->activateSequence($tenant, $officer, 0);
@@ -170,6 +171,21 @@ class ProcurementAutomationTest extends TestCase
         $this->assertCount(25, array_unique($seen));
         $this->assertSame('S 00001', $seen[0]);
         $this->assertSame('S 00025', $seen[24]);
+    }
+
+    public function test_lpo_sequence_is_not_inferred_from_sample_number_4015(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $status = app(LpoSequenceAllocator::class)->status($tenant->id);
+        $this->assertNotSame(4015, $status['current_value'] ?? null);
+        $this->assertNotSame('S 04016', $status['next_example'] ?? null);
+        $this->assertContains($status['status'] ?? '', ['missing', 'pending_activation']);
+        try {
+            app(LpoSequenceAllocator::class)->allocate($tenant->id);
+            $this->fail('Allocate must not issue numbers before live sequence activation.');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertNotEmpty($e->errors());
+        }
     }
 
     public function test_voided_lpo_number_is_not_reused(): void
@@ -336,5 +352,16 @@ class ProcurementAutomationTest extends TestCase
         ])->assertOk();
         $this->assertSame('existing_lpo', $confirm->json('data.invoice_first_case'));
         $http->postJson("/api/v1/procurement/intakes/{$intakeId}/purchase-orders")->assertUnprocessable();
+    }
+
+    public function test_inbox_imap_stays_unconfigured_even_when_host_env_is_set(): void
+    {
+        config(['procurement.inbox_imap_host' => 'imap.example.test']);
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asProcurementOfficer($tenant);
+        $res = $http->getJson('/api/v1/procurement/inbox')->assertOk();
+        $this->assertFalse($res->json('imap_configured'));
+        $this->assertSame('imap_unconfigured', $res->json('imap_adapter'));
+        $this->assertStringContainsString('Upload', (string) $res->json('note'));
     }
 }

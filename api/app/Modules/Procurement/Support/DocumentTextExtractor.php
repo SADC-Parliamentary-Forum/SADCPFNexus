@@ -24,12 +24,7 @@ final class DocumentTextExtractor
         }
 
         if (str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
-            return [
-                'text' => '',
-                'method' => 'ocr_unconfigured',
-                'ocr_available' => false,
-                'message' => 'Image OCR is not configured. Classify and extract this document manually.',
-            ];
+            return (new OcrUnconfiguredAdapter())->extract();
         }
 
         if (str_starts_with($mime, 'text/') || $ext === 'txt') {

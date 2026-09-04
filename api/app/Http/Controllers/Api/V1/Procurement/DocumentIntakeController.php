@@ -120,6 +120,10 @@ class DocumentIntakeController extends Controller
         $data['vat_warning'] = $intake->vat_identified ? null : 'VAT not identified — verify';
         $confidence = (int) ($intake->extraction_confidence ?? 0);
         $data['confidence_band'] = $confidence >= 90 ? 'ok' : ($confidence >= 70 ? 'review' : 'attention');
+        $raw = is_array($intake->raw_extraction) ? $intake->raw_extraction : [];
+        $data['ocr_available'] = $raw['ocr_available'] ?? null;
+        $data['extraction_message'] = $raw['message'] ?? null;
+        $data['text_method'] = $raw['text_method'] ?? $intake->classification_method;
 
         return $data;
     }

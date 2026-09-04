@@ -11,7 +11,10 @@ final class LpoSequenceAllocator
 {
     public const SCHEME_KEY = 'lpo';
 
-    /**
+     * Allocate the next official LPO number (S #####) under lockForUpdate.
+     * Callers must activate the live sequence with the real last legacy number
+     * before production issuance — this method never infers 4015 from samples.
+     *
      * @return array{formatted: string, sequence: int, scheme_id: int}
      */
     public function allocate(int $tenantId, ?User $actor = null): array

@@ -175,7 +175,7 @@ export default function CreateFromDocumentPage() {
         >
           <span className="material-symbols-outlined text-4xl text-primary">upload_file</span>
           <p className="mt-3 text-lg font-semibold text-neutral-800">Drop supplier document here</p>
-          <p className="text-sm text-neutral-500">PDF, Word (DOCX) or image. Extraction starts after upload.</p>
+          <p className="text-sm text-neutral-500">PDF or Word (DOCX) with selectable text is the live extraction path. Image OCR is not configured — scans need manual classification. IMAP is not configured.</p>
           <label className="btn-primary mt-4 inline-flex cursor-pointer items-center gap-1.5">
             <input
               type="file"
@@ -205,6 +205,9 @@ export default function CreateFromDocumentPage() {
             <span className={`mt-3 inline-block rounded border px-2 py-0.5 text-xs ${band.cls}`}>{band.text}</span>
             {intake.needs_manual_classification && (
               <p className="mt-3 text-amber-800">Needs manual classification — confidence is too low to guess silently.</p>
+            )}
+            {(intake.text_method === "ocr_unconfigured" || intake.ocr_available === false) && (
+              <p className="mt-3 text-amber-900">{intake.extraction_message ?? "Image OCR is not configured. Upload a PDF or DOCX, or enter fields manually."}</p>
             )}
           </div>
           <div className="lg:col-span-3 space-y-4">
