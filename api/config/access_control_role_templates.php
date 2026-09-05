@@ -76,6 +76,8 @@ return [
             'overtime.recommend', 'overtime.approve',
             'weekly-reports.view-team', 'weekly-reports.review-team', 'weekly-reports.return', 'weekly-reports.accept',
             'risk.view', 'risk.create', 'risk.submit', 'risk.review',
+            // Physical verification of departmental assets (not the financial register).
+            'assets.view', 'assets.verify',
         ],
         'inherits' => ['General Employee'],
         'legacy_roles' => ['HOD'],
@@ -177,6 +179,8 @@ return [
             'people.payroll-link.manage', 'people.signatures.publish-verify',
             'people.succession.manage', 'people.skills.manage', 'people.analytics.view',
             'people.ai.suggest', 'people.ai.apply', 'people.privilege-alerts.manage',
+            // Administration Officer alias: asset register import, labels, and verification.
+            'assets.view', 'assets.import', 'assets.verify', 'assets.print', 'assets.manage', 'assets.admin',
         ],
         'inherits' => [],
         'legacy_roles' => ['HR Manager', 'HR Administrator', 'Administration Officer'],
@@ -298,7 +302,7 @@ return [
             'procurement.purchase_order.create.assigned', 'procurement.report.view',
             'procurement.view', 'procurement.create', 'procurement.approve', 'procurement.admin',
             'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po', 'procurement.receive_goods',
-            'assets.view', 'assets.create', 'finance.view', 'governance.view',
+            'assets.view', 'assets.create', 'assets.import', 'assets.verify', 'assets.print', 'finance.view', 'governance.view',
             'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage', 'stock.approve', 'stock.transfer',
             'risk.view',
         ],

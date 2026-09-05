@@ -17,6 +17,14 @@ class AssetMovement extends Model
         'reason',
         'notes',
         'movement_date',
+        'from_location_id',
+        'to_location_id',
+        'from_department_id',
+        'to_department_id',
+        'approved_by',
+        'requested_by',
+        'reference_document',
+        'effective_date',
     ];
 
     protected $casts = [

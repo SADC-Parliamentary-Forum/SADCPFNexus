@@ -88,6 +88,10 @@ Route::prefix('v1')->group(function () {
     Route::get('parliament-connect/feed', [\App\Http\Controllers\Api\V1\ParliamentConnect\ParliamentConnectController::class, 'feed'])
         ->middleware('throttle:60,1');
 
+    Route::get('public/assets/{token}', [\App\Http\Controllers\Api\V1\Assets\PublicAssetQrController::class, 'show'])
+        ->where('token', '[A-Za-z0-9_-]+')
+        ->middleware('throttle:60,1');
+
     // Authenticated routes
     Route::middleware([
         'auth:sanctum',
@@ -1364,6 +1368,31 @@ Route::prefix('v1')->group(function () {
         // Assets (inventory, fleet - filter by category or assigned_to=me; create gated by admin/manager)
         Route::get('assets/dashboard', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'dashboard']);
         Route::get('assets/register-export', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'registerExport']);
+        Route::get('assets/qr/{token}', [\App\Http\Controllers\Api\V1\Assets\PublicAssetQrController::class, 'authenticated'])
+            ->where('token', '[A-Za-z0-9_-]+');
+
+        Route::get('assets/import', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'index']);
+        Route::post('assets/import', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'store']);
+        Route::get('assets/import/{assetImportBatch}', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'show']);
+        Route::get('assets/import/{assetImportBatch}/staging', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'staging']);
+        Route::patch('assets/import/{assetImportBatch}/staging/{staging}', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'updateStaging']);
+        Route::post('assets/import/{assetImportBatch}/approve', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'approve']);
+        Route::post('assets/import/{assetImportBatch}/staging/{staging}/exclude', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'exclude']);
+        Route::get('assets/import/{assetImportBatch}/raw/{raw}', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'raw']);
+        Route::post('assets/import/{assetImportBatch}/map-location', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'mapLocation']);
+        Route::post('assets/import/{assetImportBatch}/map-custodian', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'mapCustodian']);
+        Route::post('assets/import/{assetImportBatch}/commit', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'commit']);
+        Route::get('assets/import/{assetImportBatch}/report', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'report']);
+
+        Route::get('assets/labels/templates', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'templates']);
+        Route::get('assets/labels/reprint-queue', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'reprintQueue']);
+        Route::get('assets/labels/batches', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'batches']);
+        Route::post('assets/labels/print', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'print']);
+
+        Route::get('assets/unregistered-finds', [\App\Http\Controllers\Api\V1\Assets\AssetUnregisteredFindController::class, 'index']);
+        Route::post('assets/unregistered-finds', [\App\Http\Controllers\Api\V1\Assets\AssetUnregisteredFindController::class, 'store']);
+        Route::post('assets/unregistered-finds/{find}/promote', [\App\Http\Controllers\Api\V1\Assets\AssetUnregisteredFindController::class, 'promote']);
+
         Route::get('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'index']);
         Route::post('assets', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'store']);
         Route::post('assets/{asset}/capitalise', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'capitalise']);
@@ -1404,6 +1433,7 @@ Route::prefix('v1')->group(function () {
         Route::post('assets-meta/capitalisation-policies', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'storePolicy']);
         Route::get('assets-meta/verification-campaigns', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'campaigns']);
         Route::post('assets-meta/verification-campaigns', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'storeCampaign']);
+        Route::get('assets-meta/verification-campaigns/{assetVerificationCampaign}/dashboard', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'campaignDashboard']);
         Route::post('assets-meta/verification-campaigns/{assetVerificationCampaign}/results', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'recordVerification']);
         Route::post('assets-meta/verification-campaigns/{assetVerificationCampaign}/close', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'closeCampaign']);
         Route::get('assets-meta/maintenance', [\App\Http\Controllers\Api\V1\Assets\AssetLifecycleController::class, 'maintenanceIndex']);

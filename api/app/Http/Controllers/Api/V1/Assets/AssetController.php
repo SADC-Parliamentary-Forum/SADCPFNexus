@@ -5,10 +5,9 @@ namespace App\Http\Controllers\Api\V1\Assets;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Modules\Assets\Services\AssetQrService;
 use App\Modules\Assets\Services\AssetService;
 use Carbon\Carbon;
-use Endroid\QrCode\Builder\Builder;
-use Endroid\QrCode\Writer\SvgWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -18,9 +17,10 @@ use Illuminate\Validation\Rule;
 
 class AssetController extends Controller
 {
-    public function __construct(private readonly AssetService $assetService)
-    {
-    }
+    public function __construct(
+        private readonly AssetService $assetService,
+        private readonly AssetQrService $qr,
+    ) {}
 
     /**
      * List assets. Optional ?assigned_to=me for current user's assigned assets only.
@@ -82,20 +82,20 @@ class AssetController extends Controller
             abort(422, 'No asset categories defined. Create asset categories first.');
         }
         $validated = $request->validate([
-            'asset_code'          => ['required', 'string', 'max:64', 'unique:assets,asset_code'],
-            'name'                => ['required', 'string', 'max:255'],
-            'category'            => ['required', 'string', 'max:32', Rule::in($allowedCategories)],
-            'status'              => ['nullable', 'string', 'in:active,service_due,loan_out,retired'],
-            'assigned_to'         => ['nullable', 'integer', 'exists:users,id'],
-            'issued_at'           => ['nullable', 'date'],
-            'value'               => ['nullable', 'numeric', 'min:0'],
-            'notes'               => ['nullable', 'string', 'max:2000'],
-            'invoice_number'      => ['nullable', 'string', 'max:64'],
-            'invoice_path'        => ['nullable', 'string', 'max:500'],
-            'purchase_date'       => ['nullable', 'date'],
-            'purchase_value'      => ['nullable', 'numeric', 'min:0'],
-            'useful_life_years'   => ['nullable', 'integer', 'min:1', 'max:100'],
-            'salvage_value'       => ['nullable', 'numeric', 'min:0'],
+            'asset_code' => ['required', 'string', 'max:64', 'unique:assets,asset_code'],
+            'name' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:32', Rule::in($allowedCategories)],
+            'status' => ['nullable', 'string', 'in:active,service_due,loan_out,retired'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'issued_at' => ['nullable', 'date'],
+            'value' => ['nullable', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'invoice_number' => ['nullable', 'string', 'max:64'],
+            'invoice_path' => ['nullable', 'string', 'max:500'],
+            'purchase_date' => ['nullable', 'date'],
+            'purchase_value' => ['nullable', 'numeric', 'min:0'],
+            'useful_life_years' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'salvage_value' => ['nullable', 'numeric', 'min:0'],
             'depreciation_method' => ['nullable', 'string', 'in:straight_line,declining_balance'],
         ]);
 
@@ -113,22 +113,22 @@ class AssetController extends Controller
         $storedValue = $computedValue ?? (isset($validated['value']) ? (float) $validated['value'] : null);
 
         $asset = Asset::create([
-            'tenant_id'            => $user->tenant_id,
-            'asset_code'           => $validated['asset_code'],
-            'name'                 => $validated['name'],
-            'category'             => $validated['category'],
-            'status'               => $validated['status'] ?? 'active',
-            'assigned_to'          => $validated['assigned_to'] ?? null,
-            'issued_at'            => $validated['issued_at'] ?? null,
-            'value'                => $storedValue,
-            'notes'                => $validated['notes'] ?? null,
-            'invoice_number'       => $validated['invoice_number'] ?? null,
-            'invoice_path'         => $validated['invoice_path'] ?? null,
-            'purchase_date'        => $validated['purchase_date'] ?? null,
-            'purchase_value'       => $purchaseValue,
-            'useful_life_years'    => $usefulLife,
-            'salvage_value'        => isset($validated['salvage_value']) ? (float) $validated['salvage_value'] : null,
-            'depreciation_method'  => $method,
+            'tenant_id' => $user->tenant_id,
+            'asset_code' => $validated['asset_code'],
+            'name' => $validated['name'],
+            'category' => $validated['category'],
+            'status' => $validated['status'] ?? 'active',
+            'assigned_to' => $validated['assigned_to'] ?? null,
+            'issued_at' => $validated['issued_at'] ?? null,
+            'value' => $storedValue,
+            'notes' => $validated['notes'] ?? null,
+            'invoice_number' => $validated['invoice_number'] ?? null,
+            'invoice_path' => $validated['invoice_path'] ?? null,
+            'purchase_date' => $validated['purchase_date'] ?? null,
+            'purchase_value' => $purchaseValue,
+            'useful_life_years' => $usefulLife,
+            'salvage_value' => isset($validated['salvage_value']) ? (float) $validated['salvage_value'] : null,
+            'depreciation_method' => $method,
         ]);
 
         $this->generateAndSaveQr($asset);
@@ -145,6 +145,7 @@ class AssetController extends Controller
         if ((int) $asset->tenant_id !== (int) $user->tenant_id) {
             abort(404);
         }
+
         return response()->json($asset);
     }
 
@@ -154,28 +155,28 @@ class AssetController extends Controller
     public function capitalise(Request $request, Asset $asset): JsonResponse
     {
         $validated = $request->validate([
-            'asset_code'             => ['nullable', 'string', 'max:64', Rule::unique('assets', 'asset_code')->ignore($asset->id)],
-            'category'               => ['required', 'string', 'max:32'],
-            'purchase_date'          => ['required', 'date'],
-            'purchase_value'         => ['required', 'numeric', 'min:0'],
-            'useful_life_years'      => ['nullable', 'integer', 'min:1', 'max:100'],
-            'salvage_value'          => ['nullable', 'numeric', 'min:0'],
-            'depreciation_method'    => ['nullable', 'string', 'in:straight_line,declining_balance'],
-            'asset_class'            => ['nullable', 'string', 'in:capital,controlled'],
-            'force_controlled'       => ['nullable', 'boolean'],
-            'serial_number'          => ['nullable', 'string', 'max:128'],
-            'tag_number'             => ['nullable', 'string', 'max:64'],
+            'asset_code' => ['nullable', 'string', 'max:64', Rule::unique('assets', 'asset_code')->ignore($asset->id)],
+            'category' => ['required', 'string', 'max:32'],
+            'purchase_date' => ['required', 'date'],
+            'purchase_value' => ['required', 'numeric', 'min:0'],
+            'useful_life_years' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'salvage_value' => ['nullable', 'numeric', 'min:0'],
+            'depreciation_method' => ['nullable', 'string', 'in:straight_line,declining_balance'],
+            'asset_class' => ['nullable', 'string', 'in:capital,controlled'],
+            'force_controlled' => ['nullable', 'boolean'],
+            'serial_number' => ['nullable', 'string', 'max:128'],
+            'tag_number' => ['nullable', 'string', 'max:64'],
             'allow_serial_duplicate' => ['nullable', 'boolean'],
-            'funding_source'         => ['nullable', 'string', 'max:128'],
-            'location_id'            => ['nullable', 'integer', 'exists:asset_locations,id'],
-            'notes'                  => ['nullable', 'string', 'max:2000'],
+            'funding_source' => ['nullable', 'string', 'max:128'],
+            'location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $capitalised = $this->assetService->capitalise($asset, $validated, $request->user());
         $this->generateAndSaveQr($capitalised);
 
         return response()->json([
-            'data'    => $capitalised->fresh(),
+            'data' => $capitalised->fresh(),
             'message' => 'Asset capitalised into the Fixed Asset Register.',
         ]);
     }
@@ -314,7 +315,7 @@ class AssetController extends Controller
         $rejected = $this->assetService->rejectCapitalisation($asset, $validated['reason'], $request->user());
 
         return response()->json([
-            'data'    => $rejected,
+            'data' => $rejected,
             'message' => 'Pending capitalisation rejected.',
         ]);
     }
@@ -337,20 +338,20 @@ class AssetController extends Controller
             abort(422, 'No asset categories defined. Create asset categories first.');
         }
         $validated = $request->validate([
-            'asset_code'          => ['required', 'string', 'max:64', Rule::unique('assets', 'asset_code')->ignore($asset->id)],
-            'name'                => ['required', 'string', 'max:255'],
-            'category'            => ['required', 'string', 'max:32', Rule::in($allowedCategories)],
-            'status'              => ['nullable', 'string', 'in:active,service_due,loan_out,retired'],
-            'assigned_to'         => ['nullable', 'integer', 'exists:users,id'],
-            'issued_at'           => ['nullable', 'date'],
-            'value'               => ['nullable', 'numeric', 'min:0'],
-            'notes'               => ['nullable', 'string', 'max:2000'],
-            'invoice_number'      => ['nullable', 'string', 'max:64'],
-            'invoice_path'        => ['nullable', 'string', 'max:500'],
-            'purchase_date'       => ['nullable', 'date'],
-            'purchase_value'      => ['nullable', 'numeric', 'min:0'],
-            'useful_life_years'   => ['nullable', 'integer', 'min:1', 'max:100'],
-            'salvage_value'       => ['nullable', 'numeric', 'min:0'],
+            'asset_code' => ['required', 'string', 'max:64', Rule::unique('assets', 'asset_code')->ignore($asset->id)],
+            'name' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', 'max:32', Rule::in($allowedCategories)],
+            'status' => ['nullable', 'string', 'in:active,service_due,loan_out,retired'],
+            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'issued_at' => ['nullable', 'date'],
+            'value' => ['nullable', 'numeric', 'min:0'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'invoice_number' => ['nullable', 'string', 'max:64'],
+            'invoice_path' => ['nullable', 'string', 'max:500'],
+            'purchase_date' => ['nullable', 'date'],
+            'purchase_value' => ['nullable', 'numeric', 'min:0'],
+            'useful_life_years' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'salvage_value' => ['nullable', 'numeric', 'min:0'],
             'depreciation_method' => ['nullable', 'string', 'in:straight_line,declining_balance'],
         ]);
 
@@ -369,28 +370,25 @@ class AssetController extends Controller
 
         $oldAssetCode = $asset->asset_code;
 
-        $asset->asset_code           = $validated['asset_code'];
-        $asset->name                 = $validated['name'];
-        $asset->category             = $validated['category'];
-        $asset->status               = $validated['status'] ?? 'active';
-        $asset->assigned_to          = $validated['assigned_to'] ?? null;
-        $asset->issued_at            = $validated['issued_at'] ?? null;
-        $asset->value                = $storedValue;
-        $asset->notes                = $validated['notes'] ?? null;
-        $asset->invoice_number       = $validated['invoice_number'] ?? null;
-        $asset->invoice_path         = $validated['invoice_path'] ?? null;
-        $asset->purchase_date        = $validated['purchase_date'] ?? null;
-        $asset->purchase_value       = $purchaseValue;
-        $asset->useful_life_years    = $usefulLife;
-        $asset->salvage_value        = isset($validated['salvage_value']) ? (float) $validated['salvage_value'] : null;
-        $asset->depreciation_method  = $method;
+        $asset->asset_code = $validated['asset_code'];
+        $asset->name = $validated['name'];
+        $asset->category = $validated['category'];
+        $asset->status = $validated['status'] ?? 'active';
+        $asset->assigned_to = $validated['assigned_to'] ?? null;
+        $asset->issued_at = $validated['issued_at'] ?? null;
+        $asset->value = $storedValue;
+        $asset->notes = $validated['notes'] ?? null;
+        $asset->invoice_number = $validated['invoice_number'] ?? null;
+        $asset->invoice_path = $validated['invoice_path'] ?? null;
+        $asset->purchase_date = $validated['purchase_date'] ?? null;
+        $asset->purchase_value = $purchaseValue;
+        $asset->useful_life_years = $usefulLife;
+        $asset->salvage_value = isset($validated['salvage_value']) ? (float) $validated['salvage_value'] : null;
+        $asset->depreciation_method = $method;
         $asset->save();
 
-        if ($asset->asset_code !== $oldAssetCode) {
-            if ($asset->qr_path && Storage::disk('local')->exists($asset->qr_path)) {
-                Storage::disk('local')->delete($asset->qr_path);
-            }
-            $this->generateAndSaveQr($asset);
+        if ($asset->asset_code !== $oldAssetCode || empty($asset->qr_token)) {
+            $this->qr->generate($asset, $request->user(), (bool) $asset->qr_token);
         }
 
         return response()->json($asset->fresh());
@@ -406,8 +404,8 @@ class AssetController extends Controller
             abort(404);
         }
         // Generate QR on-the-fly if not yet stored
-        if (! $asset->qr_path || ! Storage::disk('local')->exists($asset->qr_path)) {
-            $this->generateAndSaveQr($asset);
+        if (! $asset->qr_path || ! Storage::disk('local')->exists($asset->qr_path) || empty($asset->qr_token)) {
+            $this->qr->ensure($asset, $user);
             $asset->refresh();
         }
         if (! $asset->qr_path || ! Storage::disk('local')->exists($asset->qr_path)) {
@@ -415,35 +413,19 @@ class AssetController extends Controller
         }
         $contents = Storage::disk('local')->get($asset->qr_path);
         $isPng = str_ends_with($asset->qr_path, '.png');
+
         return response($contents, 200, [
-            'Content-Type'        => $isPng ? 'image/png' : 'image/svg+xml',
-            'Content-Disposition' => 'inline; filename="asset-' . $asset->asset_code . '-qr.' . ($isPng ? 'png' : 'svg') . '"',
+            'Content-Type' => $isPng ? 'image/png' : 'image/svg+xml',
+            'Content-Disposition' => 'inline; filename="asset-'.$asset->asset_code.'-qr.'.($isPng ? 'png' : 'svg').'"',
         ]);
     }
 
     /**
-     * Generate QR code (asset_code) and save to storage; update asset.qr_path.
+     * Generate an opaque QR URL token and persist the SVG image.
      */
-    private function generateAndSaveQr(Asset $asset): void
+    private function generateAndSaveQr(Asset $asset, $actor = null): void
     {
-        $data = $asset->asset_code;
-        try {
-            $result = Builder::create()
-                ->writer(new SvgWriter())
-                ->data($data)
-                ->size(200)
-                ->margin(10)
-                ->build();
-            $svg = $result->getString();
-        } catch (\Throwable $e) {
-            return;
-        }
-        $dir = 'qr/assets/' . $asset->tenant_id;
-        $filename = $asset->id . '.svg';
-        $path = $dir . '/' . $filename;
-        Storage::disk('local')->put($path, $svg);
-        $asset->qr_path = $path;
-        $asset->save();
+        $this->qr->ensure($asset, $actor);
     }
 
     /**
@@ -490,8 +472,8 @@ class AssetController extends Controller
         $file = $request->file('invoice');
         $ext = $file->getClientOriginalExtension() ?: $file->guessExtension() ?: 'bin';
         $safeExt = in_array(strtolower($ext), ['pdf', 'jpeg', 'jpg', 'png', 'webp'], true) ? strtolower($ext) : 'bin';
-        $dir = 'invoices/assets/' . $asset->tenant_id;
-        $filename = $asset->id . '_' . Str::random(8) . '.' . $safeExt;
+        $dir = 'invoices/assets/'.$asset->tenant_id;
+        $filename = $asset->id.'_'.Str::random(8).'.'.$safeExt;
         $path = $file->storeAs($dir, $filename, ['disk' => 'local']);
 
         if ($asset->invoice_path && Storage::disk('local')->exists($asset->invoice_path)) {

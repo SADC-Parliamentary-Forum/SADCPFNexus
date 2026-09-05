@@ -12,6 +12,7 @@ const LOGIN_SIGNOUT_PARAM = "signout";
 const PUBLIC_PATH_PREFIXES = [
   "/approval",
   "/external-rfq",
+  "/a",
 ];
 
 const PUBLIC_PATHS = [

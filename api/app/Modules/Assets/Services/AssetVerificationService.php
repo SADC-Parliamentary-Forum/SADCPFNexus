@@ -52,21 +52,33 @@ class AssetVerificationService
                     'verified_by' => $user->id,
                     'verified_at' => now(),
                     'notes' => $data['notes'] ?? null,
+                    'verification_method' => $data['verification_method'] ?? 'manual',
+                    'gps_lat' => $data['gps_lat'] ?? null,
+                    'gps_lng' => $data['gps_lng'] ?? null,
+                    'device_id' => $data['device_id'] ?? null,
+                    'photos' => $data['photos'] ?? null,
+                    'mismatch_types' => $data['mismatch_types'] ?? null,
                 ]
             );
 
             if ($data['result'] === 'verified') {
                 $asset->last_verified_at = now();
+                $asset->verification_status = 'verified';
                 if (! empty($data['condition'])) {
                     $asset->condition = $data['condition'];
                 }
                 $asset->save();
             } elseif ($data['result'] === 'missing') {
                 $asset->status = 'missing';
+                $asset->verification_status = 'exception';
                 $asset->save();
             } elseif ($data['result'] === 'damaged') {
                 $asset->status = 'damaged';
                 $asset->condition = 'damaged';
+                $asset->verification_status = 'exception';
+                $asset->save();
+            } else {
+                $asset->verification_status = 'exception';
                 $asset->save();
             }
 

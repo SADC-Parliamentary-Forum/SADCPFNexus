@@ -55,6 +55,7 @@ export default defineConfig({
       testIgnore: [
         "**/auth.spec.ts",
         "**/admin.spec.ts",
+        "**/assets-import.spec.ts",
         "**/timesheets-travel-followups.spec.ts",
         "**/organogram.spec.ts",
         "**/pif-sections.spec.ts",
@@ -71,6 +72,7 @@ export default defineConfig({
       dependencies: ["setup"],
       testMatch: [
         "**/admin.spec.ts",
+        "**/assets-import.spec.ts",
         "**/readiness-routes.spec.ts",
         "**/timesheets-travel-followups.spec.ts",
         "**/organogram.spec.ts",
