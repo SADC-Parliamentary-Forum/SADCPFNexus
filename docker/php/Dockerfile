@@ -10,7 +10,11 @@ RUN set -eux; \
         libzip \
         oniguruma \
         c-client \
-        krb5-libs; \
+        krb5-libs \
+        freetype \
+        libjpeg-turbo \
+        libpng \
+        libwebp; \
     apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS \
         libpq-dev \
@@ -18,8 +22,13 @@ RUN set -eux; \
         oniguruma-dev \
         imap-dev \
         krb5-dev \
-        openssl-dev; \
-    docker-php-ext-install pdo pdo_pgsql pgsql zip bcmath mbstring pcntl; \
+        openssl-dev \
+        freetype-dev \
+        libjpeg-turbo-dev \
+        libpng-dev \
+        libwebp-dev; \
+    docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp; \
+    docker-php-ext-install pdo pdo_pgsql pgsql zip bcmath mbstring pcntl gd; \
     pecl install redis; \
     printf '\n' | pecl install imap; \
     docker-php-ext-enable redis imap; \
