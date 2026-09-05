@@ -49,7 +49,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php }}
-          extensions: pdo, pdo_pgsql, pgsql, bcmath, mbstring, xml, ctype, json
+          extensions: pdo, pdo_pgsql, pgsql, bcmath, mbstring, xml, ctype, json, gd, zip
           coverage: none
 
       - name: Cache Composer packages
