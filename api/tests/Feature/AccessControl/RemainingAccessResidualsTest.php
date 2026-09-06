@@ -52,6 +52,7 @@ class RemainingAccessResidualsTest extends TestCase
         $tenant = Tenant::factory()->create();
         $staff = $this->makeUser('staff', $tenant);
         $other = $this->makeUser('staff', $tenant);
+        $staff->givePermissionTo('assignments.view');
 
         $mine = $this->makeAssignment($staff);
         $theirs = $this->makeAssignment($other);
@@ -150,8 +151,8 @@ class RemainingAccessResidualsTest extends TestCase
         $this->makeAdvance($tenant, $other, ['status' => 'submitted']);
         $this->makeTimesheet($staff, 'submitted');
         $this->makeTimesheet($other, 'submitted');
-        $this->makeAssignment($staff, ['status' => 'in_progress']);
-        $this->makeAssignment($other, ['status' => 'in_progress']);
+        $this->makeAssignment($staff, ['status' => 'active']);
+        $this->makeAssignment($other, ['status' => 'active']);
         $this->makeStockRequest($staff, 'submitted');
         $this->makeStockRequest($other, 'submitted');
 

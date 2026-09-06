@@ -105,7 +105,7 @@ class AccessScopeResolver
                 'risk.admin', 'risk.confidential', 'risk.approve', 'risk.manage',
             ],
             'imprest' => ['imprest.approve', 'imprest.admin', 'finance.approve'],
-            'assignments' => ['assignments.admin', 'assignments.team', 'assignment.read.assigned'],
+            'assignments' => ['assignments.admin', 'assignments.team'],
             'timesheets' => ['timesheets.admin', 'timesheets.view-team', 'timesheets.approve', 'hr.admin', 'hr.approve'],
             'stock' => ['stock.admin', 'stock.approve', 'stock.manage', 'stock.issue'],
             'documents' => ['documents.admin', 'documents.view-audit', 'documents.legal-hold'],
