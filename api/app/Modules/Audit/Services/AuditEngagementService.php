@@ -78,6 +78,11 @@ class AuditEngagementService
     public function listEngagements(array $filters, User $user): LengthAwarePaginator
     {
         $q = AuditEngagement::query()->where('tenant_id', $user->tenant_id)->orderByDesc('id');
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($q, $user, 'created_by', [
+                'module' => 'audit',
+                'owner_columns' => ['created_by', 'lead_auditor_id', 'auditee_owner_id'],
+            ]);
         if (! empty($filters['status'])) {
             $q->where('status', $filters['status']);
         }

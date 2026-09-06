@@ -631,6 +631,9 @@ class DocumentStorageService
             ->with(['currentVersion', 'owner:id,name', 'legalHoldSetter:id,name'])
             ->latest('id');
 
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($query, $actor, 'owner_user_id', ['module' => 'documents']);
+
         if (! empty($filters['module'])) {
             $query->where('module', $filters['module']);
         }

@@ -674,6 +674,7 @@ return [
             'POST /api/v1/admin/access/roles',
             'POST /api/v1/admin/access/roles/{catalogue}/publish',
             'POST /api/v1/admin/access/users/{user}/denials',
+            'PUT /api/v1/admin/access/cutover/freeze',
         ],
     ],
     'admin.roles.revoke' => [

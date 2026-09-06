@@ -26,6 +26,13 @@ return [
             'READ' => ['admin.access.requests.manage', 'users.view'],
             'WRITE' => ['admin.roles.approve', 'users.edit'],
         ]],
+        ['pattern' => 'api/v1/admin/access/cutover/freeze', 'permissions' => [
+            'WRITE' => ['admin.roles.manage'],
+        ]],
+        ['pattern' => 'api/v1/admin/access/cutover*', 'permissions' => [
+            'READ' => ['admin.roles.view'],
+            'WRITE' => ['admin.roles.revoke', 'admin.roles.manage'],
+        ]],
         ['pattern' => 'api/v1/admin/users*', 'permissions' => [
             'GET' => ['admin.users.view', 'users.view'],
             'POST' => ['admin.users.create', 'users.create'],

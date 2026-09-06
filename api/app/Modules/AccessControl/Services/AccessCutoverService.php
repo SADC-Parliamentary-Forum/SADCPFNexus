@@ -5,6 +5,8 @@ namespace App\Modules\AccessControl\Services;
 use App\Models\AccessControl\AccessRoleAssignment;
 use App\Models\AccessControl\AccessRoleCatalogue;
 use App\Models\AccessControl\AccessRoleVersion;
+use App\Models\AuditLog;
+use App\Models\TenantSetting;
 use App\Models\User;
 
 /**
@@ -20,6 +22,32 @@ class AccessCutoverService
     public const OBSOLETE_BROAD_CANDIDATES = [
         'super-admin',
     ];
+
+    public const FREEZE_SETTING_KEY = 'access.legacy_role_edits_frozen';
+
+    public function legacyEditsFrozen(?int $tenantId): bool
+    {
+        if (! $tenantId) {
+            return false;
+        }
+
+        $value = TenantSetting::forTenant($tenantId)[self::FREEZE_SETTING_KEY] ?? false;
+
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    public function setLegacyEditsFrozen(int $tenantId, bool $frozen, User $actor): bool
+    {
+        TenantSetting::setForTenant($tenantId, self::FREEZE_SETTING_KEY, $frozen);
+        AuditLog::record('access.legacy_role_edits_freeze', [
+            'auditable_type' => User::class,
+            'auditable_id' => $actor->id,
+            'new_values' => ['frozen' => $frozen, 'tenant_id' => $tenantId],
+            'tags' => 'access-control,cutover',
+        ]);
+
+        return $frozen;
+    }
 
     /**
      * @return array{
@@ -97,14 +125,18 @@ class AccessCutoverService
             ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
             ->exists();
 
+        $legacyFrozen = $this->legacyEditsFrozen($tenantId);
+
         $checklist = [
             [
                 'id' => 'freeze_legacy_edits',
                 'title' => 'Freeze legacy role edits during dual-run',
-                'status' => $publishedVersions > 0 ? 'ready' : 'blocked',
-                'detail' => $publishedVersions > 0
-                    ? "{$publishedVersions} published access_role_versions available."
-                    : 'No published role versions — publish catalogue templates first.',
+                'status' => $legacyFrozen ? 'ready' : ($publishedVersions > 0 ? 'in_progress' : 'blocked'),
+                'detail' => $legacyFrozen
+                    ? 'Legacy Spatie role edits are frozen. Assign published access_role_versions instead.'
+                    : ($publishedVersions > 0
+                        ? "{$publishedVersions} published access_role_versions available. Operator has not frozen legacy Spatie edits yet."
+                        : 'No published role versions — publish catalogue templates first.'),
             ],
             [
                 'id' => 'migrate_users',
@@ -158,6 +190,7 @@ class AccessCutoverService
             'obsolete_broad_role_holders' => $obsoleteHolders,
             'published_role_versions' => $publishedVersions,
             'governance_pending' => $governancePending,
+            'legacy_role_edits_frozen' => $legacyFrozen,
         ];
     }
 

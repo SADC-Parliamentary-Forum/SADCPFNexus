@@ -18,6 +18,12 @@ const statConfig = [
   { key: "active_travels" as const, label: "Active Travels", icon: "flight_takeoff", color: "text-primary", bg: "bg-primary/10", border: "border-primary/20", href: "/travel" },
   { key: "leave_requests" as const, label: "Leave Requests", icon: "event_available", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20", border: "border-green-100 dark:border-green-800/30", href: "/leave" },
   { key: "open_requisitions" as const, label: "Open Requisitions", icon: "shopping_cart", color: "text-primary", bg: "bg-primary/10", border: "border-primary/20", href: "/procurement" },
+  { key: "open_correspondence" as const, label: "Open Correspondence", icon: "mail", color: "text-sky-700", bg: "bg-sky-50 dark:bg-sky-900/20", border: "border-sky-100 dark:border-sky-800/30", href: "/correspondence" },
+  { key: "open_risks" as const, label: "Open Risks", icon: "gpp_maybe", color: "text-rose-700", bg: "bg-rose-50 dark:bg-rose-900/20", border: "border-rose-100 dark:border-rose-800/30", href: "/risk" },
+  { key: "pending_salary_advances" as const, label: "Pending Salary Advances", icon: "payments", color: "text-amber-700", bg: "bg-amber-50 dark:bg-amber-900/20", border: "border-amber-100 dark:border-amber-800/30", href: "/salary-advances" },
+  { key: "open_assignments" as const, label: "Open Assignments", icon: "assignment", color: "text-teal-700", bg: "bg-teal-50 dark:bg-teal-900/20", border: "border-teal-100 dark:border-teal-800/30", href: "/assignments" },
+  { key: "pending_timesheets" as const, label: "Pending Timesheets", icon: "schedule", color: "text-indigo-700", bg: "bg-indigo-50 dark:bg-indigo-900/20", border: "border-indigo-100 dark:border-indigo-800/30", href: "/hr/timesheets" },
+  { key: "pending_stock_requests" as const, label: "Pending Stock Requests", icon: "inventory_2", color: "text-orange-700", bg: "bg-orange-50 dark:bg-orange-900/20", border: "border-orange-100 dark:border-orange-800/30", href: "/stock" },
 ];
 
 const quickActions = [
@@ -319,7 +325,7 @@ export default function DashboardPage() {
                 <p className="mt-2 text-3xl font-bold text-neutral-900 dark:text-neutral-100">
                   {loading
                     ? <span className="inline-block h-8 w-12 animate-pulse rounded-md bg-neutral-100 dark:bg-neutral-700/40" />
-                    : stats ? String(stats[key]) : "—"}
+                    : stats ? String(stats[key] ?? 0) : "—"}
                 </p>
                 <p className="mt-1 text-xs text-neutral-600 group-hover:text-primary transition-colors">{t("common.viewAll")} →</p>
               </div>

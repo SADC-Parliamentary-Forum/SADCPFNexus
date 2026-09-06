@@ -17,6 +17,7 @@ const LINKS = [
   { href: "/admin/access/requests", label: "Access requests", icon: "how_to_reg", description: "Request and decide grants" },
   { href: "/admin/access/reviews", label: "Access review campaigns", icon: "fact_check", description: "Periodic access attestation" },
   { href: "/admin/access/governance", label: "Governance checklist", icon: "policy", description: "Institutional decisions" },
+  { href: "/admin/access/cutover", label: "Access cutover", icon: "sync_lock", description: "Freeze legacy role edits" },
 ];
 
 export default function AccessGovernanceHomePage() {

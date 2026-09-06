@@ -46,13 +46,17 @@ class StockStoresController extends Controller
 
     public function indexRequests(Request $request): JsonResponse
     {
-        $query = StockRequest::forTenant($request->user()->tenant_id)
+        $user = $request->user();
+        $query = StockRequest::forTenant($user->tenant_id)
             ->with(['requester:id,name', 'lines.item:id,item_code,name,unit,current_balance,quantity_reserved,quantity_quarantined'])
             ->orderByDesc('id');
 
         if ($status = $request->string('status')->toString()) {
             $query->where('status', $status);
         }
+
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($query, $user, 'requested_by', ['module' => 'stock']);
 
         return response()->json($query->paginate($request->integer('per_page', 25)));
     }

@@ -29,7 +29,9 @@ class SalaryAdvanceController extends Controller
     {
         $user = $request->user();
         $filters = $request->only(['status', 'per_page', 'queue']);
-        $query = SalaryAdvanceRequest::with(['requester', 'balanceRegister'])->orderByDesc('created_at');
+        $query = SalaryAdvanceRequest::with(['requester', 'balanceRegister'])
+            ->where('tenant_id', $user->tenant_id)
+            ->orderByDesc('created_at');
 
         $canQueue = $this->salaryAdvanceService->hasSalaryAdvancePermission($user, 'salary_advance.view')
             || $this->salaryAdvanceService->hasSalaryAdvancePermission($user, 'salary_advance.certify')
@@ -66,6 +68,9 @@ class SalaryAdvanceController extends Controller
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
+
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($query, $user, 'requester_id', ['module' => 'salary_advance']);
 
         return response()->json($query->paginate($filters['per_page'] ?? 20));
     }

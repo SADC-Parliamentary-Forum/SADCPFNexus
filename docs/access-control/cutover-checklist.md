@@ -5,6 +5,10 @@ Operator-facing checklist. **No automatic revoke of production System Admin.** O
 ## Dual-run steps
 
 1. **Freeze legacy role edits** while published `access_role_versions` are authoritative.
+   - Admin UI: `/admin/access/cutover`
+   - API: `PUT /api/v1/admin/access/cutover/freeze` with `{ "frozen": true }` (requires `admin.roles.manage`).
+   - While frozen, `PATCH /api/v1/admin/users/{id}/roles` returns **423**. Assign published versions instead.
+   - Default is unfrozen. Do not invent a production freeze in code.
 2. **Migrate users** onto published versions (`POST /api/v1/admin/access/users/{id}/role-versions/{version}`).
 3. **Validate assignments** via `GET /api/v1/admin/access/cutover` (`validated_assignments`, `users_without_versioned_assignment`).
 4. **Session refresh:** role revoke / review-revoke / grant-deny invalidates Sanctum tokens + `user_sessions` via `AccessCacheInvalidator`.

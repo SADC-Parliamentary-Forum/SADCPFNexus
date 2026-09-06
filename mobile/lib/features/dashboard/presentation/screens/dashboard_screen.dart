@@ -207,6 +207,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final travels = _asInt(_stats?['active_travels']);
     final leaveReqs = _asInt(_stats?['leave_requests']);
     final requisitions = _asInt(_stats?['open_requisitions']);
+    final correspondence = _asInt(_stats?['open_correspondence']);
+    final risks = _asInt(_stats?['open_risks']);
+    final salaryAdvances = _asInt(_stats?['pending_salary_advances']);
+    final assignments = _asInt(_stats?['open_assignments']);
 
     final firstName = (_userName ?? 'User').split(' ').first;
 
@@ -426,6 +430,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             color: c.primary,
                             badge: 'Awaiting',
                             badgeHighlight: false,
+                          ),
+                          _KpiCard(
+                            label: 'Open Correspondence',
+                            value: '$correspondence',
+                            icon: Icons.mail_outline,
+                            color: c.primary,
+                            badge: correspondence > 0 ? 'Open' : 'None',
+                            badgeHighlight: correspondence > 0,
+                          ),
+                          _KpiCard(
+                            label: 'Open Risks',
+                            value: '$risks',
+                            icon: Icons.shield_outlined,
+                            color: c.secondary,
+                            badge: risks > 0 ? 'Open' : 'None',
+                            badgeHighlight: risks > 0,
+                          ),
+                          _KpiCard(
+                            label: 'Salary Advances',
+                            value: '$salaryAdvances',
+                            icon: Icons.payments_outlined,
+                            color: c.secondary,
+                            badge: salaryAdvances > 0 ? 'Pending' : 'None',
+                            badgeHighlight: salaryAdvances > 0,
+                          ),
+                          _KpiCard(
+                            label: 'Open Assignments',
+                            value: '$assignments',
+                            icon: Icons.assignment_outlined,
+                            color: c.primary,
+                            badge: assignments > 0 ? 'Open' : 'None',
+                            badgeHighlight: assignments > 0,
                           ),
                         ],
                       ),

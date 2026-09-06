@@ -29,6 +29,12 @@ class MeetingDecisionService
 
         $this->applyConfidentialityFilter($query, $user);
 
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($query, $user, 'created_by', [
+                'module' => 'meetings',
+                'owner_columns' => ['created_by', 'owner_id'],
+            ]);
+
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }

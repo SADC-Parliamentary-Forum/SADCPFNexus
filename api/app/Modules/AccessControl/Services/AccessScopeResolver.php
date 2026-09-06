@@ -45,7 +45,9 @@ class AccessScopeResolver
      *     elevated?: bool,
      *     module?: string,
      *     department_column?: string,
-     *     owner_columns?: list<string>
+     *     owner_columns?: list<string>,
+     *     participant_relation?: string,
+     *     participant_user_column?: string
      * }  $options
      */
     public function constrainQuery(Builder $query, User $actor, string $ownerColumn = 'requester_id', array $options = []): Builder
@@ -66,15 +68,20 @@ class AccessScopeResolver
         }
 
         $ownerColumns = $options['owner_columns'] ?? [$ownerColumn];
+        $participantRelation = $options['participant_relation'] ?? null;
+        $participantUserColumn = $options['participant_user_column'] ?? 'user_id';
 
         // Deny-by-default: own records (and optional alternate owner columns) only.
-        return $query->where(function (Builder $q) use ($actor, $ownerColumns) {
+        return $query->where(function (Builder $q) use ($actor, $ownerColumns, $participantRelation, $participantUserColumn) {
             foreach (array_values($ownerColumns) as $i => $col) {
                 if ($i === 0) {
                     $q->where($col, $actor->id);
                 } else {
                     $q->orWhere($col, $actor->id);
                 }
+            }
+            if (is_string($participantRelation) && $participantRelation !== '') {
+                $q->orWhereHas($participantRelation, fn ($p) => $p->where($participantUserColumn, $actor->id));
             }
         });
     }
@@ -98,6 +105,12 @@ class AccessScopeResolver
                 'risk.admin', 'risk.confidential', 'risk.approve', 'risk.manage',
             ],
             'imprest' => ['imprest.approve', 'imprest.admin', 'finance.approve'],
+            'assignments' => ['assignments.admin', 'assignments.team', 'assignment.read.assigned'],
+            'timesheets' => ['timesheets.admin', 'timesheets.view-team', 'timesheets.approve', 'hr.admin', 'hr.approve'],
+            'stock' => ['stock.admin', 'stock.approve', 'stock.manage', 'stock.issue'],
+            'documents' => ['documents.admin', 'documents.view-audit', 'documents.legal-hold'],
+            'meetings' => ['decisions.admin', 'decisions.manage', 'decisions.adopt', 'decisions.confidential', 'decisions.view'],
+            'audit' => ['audit.admin', 'audit.manage', 'audit.confidential.view', 'audit.engagement.manage'],
         ];
 
         foreach ($map[$module] ?? [] as $perm) {
@@ -107,21 +120,27 @@ class AccessScopeResolver
         }
 
         $roleMap = [
-            'leave' => ['HR Manager', 'HR Administrator', 'Secretary General', 'Director', 'HOD', 'Internal Auditor'],
-            'procurement' => ['Procurement Officer', 'Secretary General', 'Director', 'HOD', 'Internal Auditor'],
-            'programme' => ['Finance Controller', 'Secretary General', 'Director', 'Internal Auditor'],
-            'salary_advance' => ['Finance Controller', 'Secretary General', 'Director', 'Internal Auditor'],
+            'leave' => ['System Admin', 'HR Manager', 'HR Administrator', 'Secretary General', 'Director', 'HOD', 'Internal Auditor'],
+            'procurement' => ['System Admin', 'Procurement Officer', 'Secretary General', 'Director', 'HOD', 'Internal Auditor'],
+            'programme' => ['System Admin', 'Finance Controller', 'Secretary General', 'Director', 'Internal Auditor'],
+            'salary_advance' => ['System Admin', 'Finance Controller', 'Secretary General', 'Director', 'Internal Auditor'],
             'travel' => [
-                'Secretary General', 'HR Manager', 'Finance Controller', 'Director',
+                'System Admin', 'Secretary General', 'HR Manager', 'Finance Controller', 'Director',
                 'Administration Officer', 'HOD', 'Internal Auditor',
             ],
             'correspondence' => [
-                'Secretary General', 'Director', 'Administration Officer', 'Internal Auditor', 'Governance Officer',
+                'System Admin', 'Secretary General', 'Director', 'Administration Officer', 'Internal Auditor', 'Governance Officer',
             ],
             'risk' => [
-                'Governance Officer', 'Secretary General', 'Director', 'Internal Auditor', 'HOD', 'Committee Member',
+                'System Admin', 'Governance Officer', 'Secretary General', 'Director', 'Internal Auditor', 'HOD', 'Committee Member',
             ],
-            'imprest' => ['Finance Controller', 'Secretary General', 'Director', 'Internal Auditor'],
+            'imprest' => ['System Admin', 'Finance Controller', 'Secretary General', 'Director', 'Internal Auditor'],
+            'assignments' => ['System Admin', 'Secretary General', 'HR Manager', 'Finance Controller', 'Director', 'HOD'],
+            'timesheets' => ['System Admin', 'HR Manager', 'HR Administrator', 'Secretary General'],
+            'stock' => ['System Admin', 'Procurement Officer', 'Secretary General', 'Director'],
+            'documents' => ['System Admin', 'Secretary General', 'Internal Auditor'],
+            'meetings' => ['System Admin', 'Secretary General', 'Governance Officer', 'Director', 'Internal Auditor'],
+            'audit' => ['System Admin', 'Internal Auditor', 'Secretary General'],
         ];
 
         return $actor->hasAnyRole($roleMap[$module] ?? [

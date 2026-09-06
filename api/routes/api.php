@@ -448,6 +448,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('governance', [$ac, 'governanceChecklist']);
                 Route::put('governance/{decision}', [$ac, 'governanceUpdate']);
                 Route::get('cutover', [$ac, 'cutoverStatus']);
+                Route::put('cutover/freeze', [$ac, 'cutoverFreeze']);
                 Route::post('cutover/revoke-obsolete', [$ac, 'cutoverRevokeObsolete']);
             });
 

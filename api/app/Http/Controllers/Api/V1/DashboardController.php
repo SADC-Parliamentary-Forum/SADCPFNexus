@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Assignment;
 use App\Models\Correspondence;
 use App\Models\ImprestRequest;
 use App\Models\LeaveRequest;
 use App\Models\ProcurementRequest;
 use App\Models\Risk;
+use App\Models\SalaryAdvanceRequest;
+use App\Models\StockRequest;
+use App\Models\Timesheet;
 use App\Models\TravelRequest;
 use App\Models\User;
 use App\Modules\AccessControl\Services\AccessScopeResolver;
@@ -95,6 +99,42 @@ class DashboardController extends Controller
             $openRisks = $q->count();
         }
 
+        $pendingSalaryAdvances = 0;
+        if ($this->canSeeModule($pdp, $user, ['salary_advance.view', 'salary_advance.create', 'salary_advance.certify', 'finance.view'])) {
+            $q = SalaryAdvanceRequest::where('tenant_id', $tenantId)->where('status', 'submitted');
+            $scopes->constrainQuery($q, $user, 'requester_id', ['module' => 'salary_advance']);
+            $pendingSalaryAdvances = $q->count();
+        }
+
+        $openAssignments = 0;
+        if ($this->canSeeModule($pdp, $user, ['assignments.view', 'assignments.create', 'assignment.read.assigned', 'assignment.module.view'])) {
+            $q = Assignment::where('tenant_id', $tenantId)
+                ->where('is_template', false)
+                ->whereNotIn('status', ['closed', 'cancelled', 'completed']);
+            $scopes->constrainQuery($q, $user, 'created_by', [
+                'module' => 'assignments',
+                'owner_columns' => ['created_by', 'assigned_to', 'reviewer_id'],
+                'participant_relation' => 'participants',
+            ]);
+            $openAssignments = $q->count();
+        }
+
+        $pendingTimesheets = 0;
+        if ($this->canSeeModule($pdp, $user, ['timesheets.view', 'timesheets.view-own', 'timesheets.create', 'timesheet.module.view', 'hr.view'])) {
+            $q = Timesheet::where('tenant_id', $tenantId)->where('status', 'submitted');
+            $scopes->constrainQuery($q, $user, 'user_id', ['module' => 'timesheets']);
+            $pendingTimesheets = $q->count();
+        }
+
+        $pendingStockRequests = 0;
+        if ($this->canSeeModule($pdp, $user, ['stock.view', 'stock.create', 'stock.approve'])) {
+            $q = StockRequest::where('tenant_id', $tenantId)->where('status', 'submitted');
+            $scopes->constrainQuery($q, $user, 'requested_by', ['module' => 'stock']);
+            $pendingStockRequests = $q->count();
+        }
+
+        $pendingApprovals += $pendingSalaryAdvances;
+
         return response()->json([
             'app_name' => config('app.name'),
             'pending_approvals' => $pendingApprovals,
@@ -103,13 +143,21 @@ class DashboardController extends Controller
             'open_requisitions' => $openRequisitions,
             'open_correspondence' => $openCorrespondence,
             'open_risks' => $openRisks,
+            'pending_salary_advances' => $pendingSalaryAdvances,
+            'open_assignments' => $openAssignments,
+            'pending_timesheets' => $pendingTimesheets,
+            'pending_stock_requests' => $pendingStockRequests,
             'breakdown' => [
                 'pending_travel' => $pendingTravel,
                 'pending_leave' => $pendingLeave,
                 'pending_imprest' => $pendingImprest,
                 'pending_procurement' => $pendingProcurement,
+                'pending_salary_advances' => $pendingSalaryAdvances,
                 'open_correspondence' => $openCorrespondence,
                 'open_risks' => $openRisks,
+                'open_assignments' => $openAssignments,
+                'pending_timesheets' => $pendingTimesheets,
+                'pending_stock_requests' => $pendingStockRequests,
             ],
         ]);
     }

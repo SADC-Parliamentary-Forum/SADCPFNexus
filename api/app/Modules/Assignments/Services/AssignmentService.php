@@ -28,6 +28,7 @@ class AssignmentService
     public function list(array $filters, User $user): LengthAwarePaginator
     {
         $query = Assignment::with(['creator', 'assignee', 'department', 'reviewer', 'blockerOwner', 'participants.user'])
+            ->where('tenant_id', $user->tenant_id)
             ->orderByDesc('created_at');
 
         if (! empty($filters['templates_only']) && $filters['templates_only'] === 'true') {
@@ -37,6 +38,14 @@ class AssignmentService
         }
 
         $this->applyVisibilityScope($query, $user, $filters['scope'] ?? null);
+
+        app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
+            ->constrainQuery($query, $user, 'created_by', [
+                'module' => 'assignments',
+                'owner_columns' => ['created_by', 'assigned_to', 'reviewer_id'],
+                'participant_relation' => 'participants',
+                'participant_user_column' => 'user_id',
+            ]);
 
         if (! empty($filters['status'])) {
             $statuses = array_filter(array_map('trim', explode(',', (string) $filters['status'])));

@@ -1,7 +1,7 @@
 # SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-08-28  
-**Baseline tip:** remaining-gaps closeout on `cursor/implement-remaining-gaps-3ed7`.
+**Last updated:** 2026-09-06  
+**Baseline tip:** access residuals closeout on `cursor/access-residuals-closeout-9293`.
 
 ---
 
@@ -14,7 +14,7 @@
 | Honest WORM / support-health copy | Shipped — no fake “WORM Operational” |
 | Validation pack (conditional) | `docs/validation/01-executive-summary.md` |
 | Restore drill script | `scripts/ops/restore-drill.sh` (not executed here) |
-| Secret-free module depth (MD-1/5/6/8/9/10/11/13/14) | Deeper on `feat/remaining-module-depth` — templates/copy, multi-line event packs, registry pack, capacity week/CSV, management pack feed, handover Word/NL hrefs, investigation pack, minutes promote, M&E filter apply |
+| Access-control list/badge residuals + dual-control + freeze | Shipped — `cursor/access-residuals-closeout-9293` |
 
 ---
 
@@ -26,7 +26,7 @@ These rows are **complete as remaining work**: surfaces exist, evidence packs ex
 |------|-------------------|--------|
 | UAT sign-off (15 role scripts) | `docs/testing/uat/*.md` | Pending operator signatures |
 | Access-control pilot (AC-8) | `docs/access-control/pilot-signoff-pack.md` | Pending operator evidence |
-| Role freeze / cutover (AC-9/10) | `docs/access-control/cutover-checklist.md` | Pending operator execution |
+| Role freeze / cutover (AC-9/10) | `docs/access-control/cutover-checklist.md` + `/admin/access/cutover` | Product freeze toggle shipped; operator must freeze and migrate |
 | Restore drill measured RTO/RPO | `docs/ops/backup-restore.md` + `scripts/ops/restore-drill.sh` | Script shipped; RTO/RPO unmeasured |
 | Staging IDOR matrix | `docs/ops/staging-idor-matrix.md` | Result columns blank until a human run |
 | Prod IMAP / AV / FCM | Server env + `/admin/settings` | Pending live credentials |
@@ -37,6 +37,8 @@ These rows are **complete as remaining work**: surfaces exist, evidence packs ex
 | Document §125 / Notifications §124 / Access MFA-policy | `/admin/documents/governance`, `/admin/notifications/governance`, `/admin/access/governance` | Pending institutional answers |
 | Pen-test or residual-risk acceptance | `/admin/access/governance` | Pending |
 | Sentry DSN | Env only — never commit | Hooks exist; no DSN in repo |
+
+**Last updated:** 2026-09-06. Product-code residuals from `docs/access-control/residuals-and-governance.md` (remaining list scoping, remaining dashboard badges, Admin `syncRoles` dual-control for all roles, freeze toggle, SAAM collapse artisan) shipped on `cursor/access-residuals-closeout-9293`. Operator rows above stay unsigned.
 
 Launch remaining (not deferred): enable **SMS**, **WhatsApp**, **LLM assists**, and **SIEM** with real operator vendors/keys on the server (`NOTIFICATIONS_*_HTTP_*`, `AUDIT_SIEM_*`). Approve `/admin/notifications/governance` SMS/WhatsApp and `/admin/audit-trail/governance` SIEM first. HTTP drivers are in code; default remains Null — do not invent secrets.
 
@@ -166,7 +168,7 @@ Shipped in `feat/remaining-module-depth` (secret-free module depth over existing
 - MD-13 Meetings **promote risk drafts**, **promote meeting pack**, and **promote from minutes** (assignments + risks; decisions stay open)
 - MD-14 M&E **narrative / NL assist** with human confirm and query-string filter apply (stub provider; no auto-mutate)
 
-Not done in code (operator-owned, and not marked Done): UAT signatures, AC-8/9/10 execution, restore-drill RTO/RPO, staging IDOR result columns, Admin governance Pending rows, and live IMAP/AV/FCM/SMS/WhatsApp/LLM/SIEM credentials. The table above is the complete remaining list. Do not invent secrets or tick those rows.
+Not done in code (operator-owned, and not marked Done): UAT signatures, AC-8 persona evidence, AC-9/10 operator freeze/migrate/revoke, restore-drill RTO/RPO, staging IDOR result columns, Admin governance Pending rows, and live IMAP/AV/FCM/SMS/WhatsApp/LLM/SIEM credentials. Do not invent secrets or tick those rows.
 
 ---
 

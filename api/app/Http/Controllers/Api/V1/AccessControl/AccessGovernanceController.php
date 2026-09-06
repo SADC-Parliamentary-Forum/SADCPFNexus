@@ -470,6 +470,28 @@ class AccessGovernanceController extends Controller
         return response()->json(['data' => $result]);
     }
 
+    public function cutoverFreeze(Request $request): JsonResponse
+    {
+        $this->pdp->assert($request->user(), 'admin.roles.manage');
+        $data = $request->validate([
+            'frozen' => ['required', 'boolean'],
+        ]);
+
+        $frozen = app(\App\Modules\AccessControl\Services\AccessCutoverService::class)
+            ->setLegacyEditsFrozen(
+                (int) $request->user()->tenant_id,
+                (bool) $data['frozen'],
+                $request->user()
+            );
+
+        return response()->json([
+            'message' => $frozen
+                ? 'Legacy Spatie role edits are frozen. Assign published access_role_versions instead.'
+                : 'Legacy Spatie role edits are unfrozen.',
+            'data' => ['frozen' => $frozen],
+        ]);
+    }
+
     public function assignRoleVersion(Request $request, User $user, AccessRoleVersion $version): JsonResponse
     {
         $this->pdp->assert($request->user(), 'admin.roles.assign', null, [

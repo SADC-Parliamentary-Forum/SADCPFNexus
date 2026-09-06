@@ -20,15 +20,15 @@ Verified automated suites (local PHPUnit, RefreshDatabase):
 | # | Residual | Status |
 |---|---|---|
 | 1 | Pilot persona matrix sign-off | **Closed (tooling)** — `AccessControlPersonaSeeder` + `docs/access-control/pilot-signoff-pack.md`; operator evidence still required |
-| 2 | Freeze legacy role edits; migrate onto published versions | **Partial** — cutover status API + checklist; migration is operator-driven |
+| 2 | Freeze legacy role edits; migrate onto published versions | **Closed (tooling)** — `PUT /api/v1/admin/access/cutover/freeze` + `/admin/access/cutover`; freeze is operator-toggled (default off). Migration remains operator-driven |
 | 3 | Retire obsolete broad permissions after dual-run | **Partial** — dry-run/execute helper for obsolete broad candidates; aliases remain |
 | 4 | Force privileged session refresh on role change | **Closed** — `AccessCacheInvalidator` kills Sanctum tokens + `user_sessions` |
-| 5 | Wire remaining module list endpoints through `AccessScopeResolver` | **Closed for listed modules** — Leave, Travel, Correspondence, Risk, Programmes, Procurement list services use `constrainQuery`. Other modules remain residual. |
-| 6 | Unify Admin `syncRoles` with PA dual-control assignments | **Partial** — privileged roles (`System Admin`, SG, Finance Director, Finance Controller, HR Manager) create `access_role_sync_requests` pending a different admin; staff roles still apply immediately via `UsersController::updateRoles`. |
-| 7 | Collapse SAAM `DelegatedAuthority` into PA `IdentityDelegation` | **Partial** — `POST /saam/delegations` mirrors into PA (`legacy_delegated_authority_id`). SAAM API remains as a legacy surface. |
+| 5 | Wire remaining module list endpoints through `AccessScopeResolver` | **Closed** — Leave, Travel, Correspondence, Risk, Programmes, Procurement, salary advances, assignments, stock requests, document register, meeting decisions, audit engagements |
+| 6 | Unify Admin `syncRoles` with PA dual-control assignments | **Closed** — every Admin `PATCH /admin/users/{id}/roles` (including staff/HOD) creates `access_role_sync_requests` pending a different admin |
+| 7 | Collapse SAAM `DelegatedAuthority` into PA `IdentityDelegation` | **Closed (effective path)** — `people-authority:collapse-saam-delegations` backfills unmatched rows. SAAM HTTP API remains a legacy write facade that mirrors into PA |
 | 8 | `canAccessRoute` unknown-route default allow → deny | **Closed** — `web/lib/authAccess.ts` `if (!entry) return false`. System Admin still bypasses unknown in-app routes. |
 | 9 | Platform Audit Trail adapter preference | **Closed** — `AuditLog::record` dual-writes to Platform Audit Trail. |
-| 10 | Automated badge/count filtering for hidden records | **Partial** — dashboard correspondence and risk counts use `AccessScopeResolver`. Other badges remain residual. |
+| 10 | Automated badge/count filtering for hidden records | **Closed** — dashboard stats include scoped salary advances, assignments, timesheets, stock requests, correspondence, and risk |
 | 11 | Seeder overwrite of template merges | **Closed** — `mergePublishedTemplatePermissions` after legacy sync |
 | 12 | Leave / attachment IDOR safe 404 | **Closed** — leave show/attachments + salary-advance show use 404 |
 | 13 | Tender board vs committee-evaluations route split | Closed in Phases 1–6 |

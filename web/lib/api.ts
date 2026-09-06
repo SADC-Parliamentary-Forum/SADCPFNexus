@@ -228,6 +228,12 @@ export interface DashboardStats {
   active_travels: number;
   leave_requests: number;
   open_requisitions: number;
+  open_correspondence?: number;
+  open_risks?: number;
+  pending_salary_advances?: number;
+  open_assignments?: number;
+  pending_timesheets?: number;
+  pending_stock_requests?: number;
 }
 
 export interface UpcomingSocialEvent {
@@ -384,6 +390,12 @@ export const accessApi = {
     denials: unknown[];
   } }>(`/admin/access/users/${id}/profile`),
   coverage: () => api.get<{ data: Record<string, unknown> }>("/admin/access/coverage"),
+  cutoverStatus: () => api.get<{ data: {
+    checklist: Array<{ id: string; title: string; status: string; detail: string }>;
+    legacy_role_edits_frozen?: boolean;
+  } }>("/admin/access/cutover"),
+  cutoverFreeze: (frozen: boolean) =>
+    api.put<{ message: string; data: { frozen: boolean } }>("/admin/access/cutover/freeze", { frozen }),
 };
 
 export interface User {
