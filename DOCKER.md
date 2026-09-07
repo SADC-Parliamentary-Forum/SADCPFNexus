@@ -59,11 +59,18 @@ npm run verify:build-context
 
 ## Deploying to production (CloudPanel)
 
-Preferred path — run the deploy script from the app root on the server:
+Preferred path — as CloudPanel user **sadcpf-nexus** (never root):
 
 ```bash
-./scripts/deploy.sh              # deploys origin/main
-./scripts/deploy.sh some-ref     # deploys a specific branch/tag
+~/bin/deploy                     # origin/main (git fetch on the server)
+~/bin/deploy some-ref
+```
+
+GitHub Actions on `main` waits for CI, then SSHs as `sadcpf-nexus` and runs the same script. See [docs/ops/deploy-rollback.md](docs/ops/deploy-rollback.md).
+
+```bash
+bash ./scripts/deploy.sh              # deploys origin/main
+bash ./scripts/deploy.sh some-ref     # deploys a specific branch/tag
 ```
 
 It backs up the database, stashes/restores server-local state (`.env`, etc.),

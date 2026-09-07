@@ -1,0 +1,94 @@
+name: Deploy production (sadcpf-nexus)
+
+# After CI on main (git push) or manual Run workflow.
+# SSH as CloudPanel user sadcpf-nexus; the server then git-fetches origin/main
+# (or the chosen SHA) and runs scripts/deploy.sh.
+#
+# Secret: DEPLOY_SSH_PRIVATE_KEY
+#   Private key whose public half is in sadcpf-nexus ~/.ssh/authorized_keys
+#   (comment github-actions-deploy@sadcpf-nexus).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy (origin/main, main, or a commit SHA)
+        required: false
+        default: origin/main
+      skip_ci_gate:
+        description: Skip waiting for GitHub CI (emergency / already-green SHA)
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  checks: read
+  contents: read
+
+jobs:
+  ci-gate:
+    name: CI gate
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event.inputs.skip_ci_gate != 'true'
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/ci/wait-for-commit-checks.sh
+          sparse-checkout-cone-mode: false
+      - name: Wait for required checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WAIT_SHA: ${{ github.sha }}
+          WAIT_TIMEOUT_SECONDS: "2400"
+        run: bash scripts/ci/wait-for-commit-checks.sh
+
+  deploy:
+    name: SSH as sadcpf-nexus
+    runs-on: ubuntu-latest
+    needs: [ci-gate]
+    if: always() && (needs.ci-gate.result == 'success' || needs.ci-gate.result == 'skipped')
+    environment: production
+    timeout-minutes: 40
+    steps:
+      - name: Validate deploy ref
+        id: ref
+        env:
+          RAW_REF: ${{ github.event.inputs.ref || 'origin/main' }}
+        run: |
+          set -euo pipefail
+          case "$RAW_REF" in
+            origin/main|main) ;;
+            *)
+              if ! echo "$RAW_REF" | grep -Eq '^[0-9a-f]{7,40}$'; then
+                echo "Refused deploy ref: $RAW_REF"
+                exit 1
+              fi
+              ;;
+          esac
+          echo "value=$RAW_REF" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy over SSH (server git pull)
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_REF: ${{ steps.ref.outputs.value }}
+        run: |
+          set -euo pipefail
+          test -n "${SSH_PRIVATE_KEY:-}" || { echo "Missing secret DEPLOY_SSH_PRIVATE_KEY"; exit 1; }
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          ssh-keyscan -H 194.163.156.4 >> "$HOME/.ssh/known_hosts"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=120 \
+            sadcpf-nexus@194.163.156.4 \
+            "cd /home/sadcpf-nexus/htdocs/nexus.sadcpf.org/app && bash ./scripts/deploy.sh $(printf '%q' "$DEPLOY_REF")"
+          rm -f "$HOME/.ssh/id_ed25519"

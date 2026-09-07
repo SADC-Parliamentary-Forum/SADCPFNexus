@@ -46,6 +46,29 @@ TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 log() { printf '\n\033[1;34m==>\033[0m %s\n' "$1"; }
 die() { printf '\n\033[1;31mERROR:\033[0m %s\n' "$1" >&2; exit 1; }
 
+if [ "$(id -u)" -eq 0 ]; then
+  die "Run deploy as sadcpf-nexus, not root. PHP bind mounts must stay uid 82 at runtime."
+fi
+if [ "$(id -un)" != "sadcpf-nexus" ]; then
+  die "Run deploy as sadcpf-nexus (got $(id -un))."
+fi
+
+# Bind-mounted api/storage and api/bootstrap/cache are owned by the PHP
+# container user (Alpine www-data, uid/gid 82). Host git cannot replace
+# those files while they are 82:82, but they must remain 82:82 at runtime.
+PHP_VOLUME_UID=82
+PHP_VOLUME_GID=82
+
+php_volume_chown() {
+  local uid="$1" gid="$2"
+  docker exec -u 0 sadcpf_php chown -R "${uid}:${gid}" /var/www/api/storage /var/www/api/bootstrap/cache
+}
+
+restore_php_volume_owners() {
+  php_volume_chown "$PHP_VOLUME_UID" "$PHP_VOLUME_GID" || true
+}
+trap restore_php_volume_owners EXIT
+
 # --- 1. Sanity checks -------------------------------------------------------
 
 [ -f "docker-compose.yml" ] && [ -f "docker-compose.prod.yml" ] \
@@ -72,6 +95,10 @@ log "Backup OK: $BACKUP_FILE ($(du -h "$BACKUP_FILE" | cut -f1))"
 
 # --- 3-5. Stash local state, pull, restore local state -----------------------
 
+log "Granting host git user write on PHP bind mounts (temporary)"
+php_volume_chown "$(id -u)" "$(id -g)" \
+  || die "Could not chown api/storage and api/bootstrap/cache for git."
+
 log "Stashing server-local changes (.env, etc.) before pulling"
 STASHED=0
 if ! git diff --quiet || ! git diff --cached --quiet; then
@@ -88,6 +115,10 @@ if [ "$STASHED" -eq 1 ]; then
   log "Restoring server-local changes"
   git stash pop
 fi
+
+log "Restoring PHP container ownership on storage and bootstrap/cache (uid ${PHP_VOLUME_UID})"
+php_volume_chown "$PHP_VOLUME_UID" "$PHP_VOLUME_GID" \
+  || die "Could not restore uid ${PHP_VOLUME_UID} on api/storage and api/bootstrap/cache."
 
 [ -f ".env" ] || die ".env is missing after deploy — restore it from backup before continuing."
 
