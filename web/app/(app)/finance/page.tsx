@@ -4,9 +4,9 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { financeApi, type SalaryAdvanceRequest, type Payslip, type FinanceSummary, type Budget } from "@/lib/api";
-import { getStoredUser } from "@/lib/auth";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { FINANCE_HUB_CARDS } from "@/lib/hubs/finance";
+import { useToast } from "@/components/ui/Toast";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -86,6 +86,7 @@ function BudgetBar({ budget }: { budget: Budget }) {
 }
 
 export default function FinancePage() {
+  const { error: toastError } = useToast();
   const [advances, setAdvances] = useState<SalaryAdvanceRequest[]>([]);
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [summary, setSummary] = useState<FinanceSummary | null>(null);
@@ -93,12 +94,6 @@ export default function FinancePage() {
   const [loading, setLoading] = useState(true);
   const [budgetsLoading, setBudgetsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Detect admin/finance roles for conditional quick actions
-  const user = typeof window !== "undefined" ? getStoredUser() : null;
-  const isAdminOrFinance = user?.roles?.some((r: string) =>
-    ["admin", "finance", "system_admin", "Finance Controller"].includes(r)
-  ) ?? false;
 
   useEffect(() => {
     Promise.all([
@@ -125,56 +120,11 @@ export default function FinancePage() {
   const netStr = summary?.current_net_salary != null ? `${currency} ${Number(summary.current_net_salary).toLocaleString()}` : "—";
   const ytdStr = summary?.ytd_gross != null ? `${currency} ${Number(summary.ytd_gross).toLocaleString()}` : "—";
 
-  const quickActions = [
-    {
-      label: "New Salary Advance",
-      icon: "account_balance",
-      href: "/salary-advances/create",
-      color: "text-amber-600",
-      bg: "bg-amber-50 dark:bg-amber-900/20",
-      border: "border-amber-200 dark:border-amber-800/50",
-    },
-    {
-      label: "View Budgets",
-      icon: "pie_chart",
-      href: "/finance/budget",
-      color: "text-primary",
-      bg: "bg-primary/5",
-      border: "border-primary/20",
-    },
-    {
-      label: "View Payslips",
-      icon: "receipt_long",
-      href: "/finance/payslips",
-      color: "text-green-600",
-      bg: "bg-green-50 dark:bg-green-900/20",
-      border: "border-green-200 dark:border-green-800/50",
-    },
-    {
-      label: "Imprest Requests",
-      icon: "account_balance_wallet",
-      href: "/imprest",
-      color: "text-primary",
-      bg: "bg-primary/10",
-      border: "border-primary/20",
-    },
-    ...(isAdminOrFinance
-      ? [{
-          label: "Upload Payslip",
-          icon: "upload_file",
-          href: "/admin/payslips",
-          color: "text-neutral-600 dark:text-neutral-400",
-          bg: "bg-neutral-50 dark:bg-neutral-800/50",
-          border: "border-neutral-200 dark:border-neutral-700",
-        }]
-      : []),
-  ];
-
   return (
     <div className="space-y-6 max-w-5xl">
       <ModulePageHeader
         title="Finance"
-        subtitle="View your payslips, manage salary advances, and track budget utilization."
+        subtitle="Payslips, salary advances, imprest, and voted funds."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Finance" }]} />}
       />
 
@@ -208,28 +158,6 @@ export default function FinancePage() {
             </div>
           </div>
         ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="card p-5">
-        <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
-          <span className="material-symbols-outlined text-neutral-400 dark:text-neutral-500 text-[18px]">bolt</span>
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {quickActions.map((action) => (
-            <Link
-              key={action.label}
-              href={action.href}
-              className={`flex flex-col items-center gap-2 rounded-xl border ${action.border} ${action.bg} px-3 py-4 text-center transition-all hover:shadow-sm hover:scale-[1.02]`}
-            >
-              <div className={`h-10 w-10 rounded-xl bg-white dark:bg-neutral-800 flex items-center justify-center shadow-sm`}>
-                <span className={`material-symbols-outlined ${action.color} text-[20px]`}>{action.icon}</span>
-              </div>
-              <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300 leading-tight">{action.label}</span>
-            </Link>
-          ))}
-        </div>
       </div>
 
       {/* Budget Utilization */}
@@ -325,7 +253,7 @@ export default function FinancePage() {
                         a.click();
                         window.URL.revokeObjectURL(url);
                       } catch {
-                        // no file
+                        toastError("Payslip document is not available yet.");
                       }
                     }}
                     className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"

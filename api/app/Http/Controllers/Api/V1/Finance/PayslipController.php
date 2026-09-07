@@ -17,6 +17,7 @@ class PayslipController extends Controller
             ->orderByDesc('period_year')
             ->orderByDesc('period_month')
             ->paginate($perPage);
+        $payslips->getCollection()->each->append(['has_file', 'period_label']);
 
         return response()->json($payslips);
     }
@@ -26,6 +27,7 @@ class PayslipController extends Controller
         if ($payslip->user_id !== $request->user()->id) {
             abort(403);
         }
+        $payslip->append(['has_file', 'period_label']);
         return response()->json($payslip);
     }
 

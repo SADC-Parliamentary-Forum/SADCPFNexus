@@ -14,10 +14,14 @@ class PayslipConfirmationController extends Controller
         $user = $request->user();
         $isHr = $user->isSystemAdmin()
             || $user->hasPermissionTo('hr.admin')
-            || $user->hasPermissionTo('hr.edit');
+            || $user->hasPermissionTo('hr.edit')
+            || $user->hasAnyRole(['HR Manager', 'HR Administrator']);
 
         if (!$isHr) {
             abort(403, 'Only HR personnel may confirm payslips.');
+        }
+        if ((int) $payslip->tenant_id !== (int) $user->tenant_id) {
+            abort(404);
         }
 
         $validated = $request->validate([

@@ -154,6 +154,12 @@ return [
             ],
             'WRITE' => ['admin.platform.manage', 'system.admin'],
         ]],
+        // Pay-period envelope lives under /admin/payslips but is an HR desk
+        // (HR Manager has hr.edit, not admin.platform.manage).
+        ['pattern' => 'api/v1/admin/payslips*', 'permissions' => [
+            'READ' => ['hr.admin', 'hr.edit', 'admin.platform.manage', 'system.admin'],
+            'WRITE' => ['hr.admin', 'hr.edit', 'admin.platform.manage', 'system.admin'],
+        ]],
         ['pattern' => 'api/v1/admin/*', 'permissions' => [
             '*' => ['admin.platform.manage', 'system.admin'],
         ]],

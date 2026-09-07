@@ -283,6 +283,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr/timesheets/capacity", permission: ["hr.admin", "hr.approve", "hr.edit"] },
   // Own timesheets — must beat the /hr prefix (hr.view is org-HR admin, not self-service).
   { path: "/hr/timesheets", permission: ["timesheets.view", "timesheets.create", "timesheets.view-own", "timesheet.module.view", "hr.view", "hr.admin"] },
+  { path: "/hr/payslips", permission: ["hr.admin", "hr.edit"], roles: ["HR Manager", "HR Administrator"] },
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
   { path: "/assets/import", permission: ["assets.import", "assets.admin", "assets.manage"] },
@@ -310,7 +311,6 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/procurement", permission: "procurement.view" },
   { path: "/supplier", permission: "supplier.portal", allowSystemAdmin: false },
   { path: "/settings/hr", permission: ["hr.admin", "hr_settings.view", "hr_settings.edit", "hr_settings.approve", "hr_settings.publish"] },
-  { path: "/hr/payslips", permission: ["hr.admin"] },
   { path: "/correspondence", permission: "correspondence.view" },
   // Risk Register
   { path: "/risk", permission: ["risk.view", "risk.admin", "risk.manage", "governance.view"] },
