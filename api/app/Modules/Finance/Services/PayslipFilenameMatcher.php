@@ -59,13 +59,14 @@ class PayslipFilenameMatcher
     public function extractEmployeeNumber(string $filename): ?string
     {
         $base = pathinfo($filename, PATHINFO_FILENAME);
-        if (preg_match('/\bEMP[-_]?\d+\b/i', $base, $m) === 1) {
-            return strtoupper(str_replace(['-', '_'], '', $m[0]));
+        // Underscore is a word character, so \b cannot split EMP042_August2026.pdf.
+        if (preg_match('/(?<![A-Z0-9])(EMP[-_]?\d+)(?![A-Z0-9])/i', $base, $m) === 1) {
+            return strtoupper(str_replace(['-', '_'], '', $m[1]));
         }
-        if (preg_match('/\b([A-Z]{2,}[-_]\d{2,})\b/i', $base, $m) === 1) {
+        if (preg_match('/(?<![A-Z0-9])([A-Z]{2,}[-_]\d{2,})(?![A-Z0-9])/i', $base, $m) === 1) {
             return strtoupper(str_replace('_', '-', $m[1]));
         }
-        if (preg_match_all('/\b(\d{3,})\b/', $base, $m) >= 1) {
+        if (preg_match_all('/(?<![A-Z0-9])(\d{3,})(?![A-Z0-9])/', $base, $m) >= 1) {
             foreach ($m[1] as $digits) {
                 $year = (int) $digits;
                 if ($year >= 2020 && $year <= 2100) {

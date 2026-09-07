@@ -75,10 +75,12 @@ class PayslipDistributionTest extends TestCase
         User::factory()->create([
             'tenant_id' => $other->id,
             'name' => 'Foreign Staff',
-            'employee_number' => 'EMP100',
+            // employee_number is globally unique; a shared EMP token still
+            // matches both rows unless the directory is tenant-scoped.
+            'employee_number' => 'EMP200',
         ]);
 
-        $http->getJson('/api/v1/admin/payslips/directory?q=EMP100')
+        $http->getJson('/api/v1/admin/payslips/directory?q=EMP')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.name', 'Local Staff');
