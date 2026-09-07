@@ -1996,6 +1996,14 @@ export interface AssetLabelTemplate {
   qr_mm: number;
   is_default: boolean;
   is_active: boolean;
+  layout?: Array<{
+    id: string;
+    x_mm: number;
+    y_mm: number;
+    w_mm: number;
+    h_mm?: number;
+    visible?: boolean;
+  }> | null;
 }
 
 export const assetLabelsApi = {

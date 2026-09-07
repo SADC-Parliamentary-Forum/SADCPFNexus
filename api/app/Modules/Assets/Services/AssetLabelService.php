@@ -8,6 +8,7 @@ use App\Models\AssetLabelBatchItem;
 use App\Models\AssetLabelTemplate;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Modules\Assets\Support\AssetLabelLayout;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -77,6 +78,7 @@ class AssetLabelService
                 'template' => $template,
                 'labels' => $labels,
                 'batch' => $batch,
+                'layoutItems' => AssetLabelLayout::resolve($template),
             ])->setPaper([0, 0, $this->mmToPt((float) $template->page_width_mm), $this->mmToPt((float) $template->page_height_mm)]);
 
             AuditLog::record('assets.label_printed', [

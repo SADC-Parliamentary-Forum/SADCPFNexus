@@ -5,9 +5,19 @@ import Link from "next/link";
 import { assetLabelsApi, type AssetLabelTemplate } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { LabelTemplateVisualEditor } from "@/components/assets/LabelTemplateVisualEditor";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import {
+  PAGE_PRESETS,
+  clampLayout,
+  defaultLayout,
+  labelsPerPage,
+  resizeItem,
+  sanitizeLayout,
+  type LayoutItem,
+} from "@/lib/labelTemplateLayout";
 
 type FormState = {
   code: string;
@@ -28,6 +38,7 @@ type FormState = {
   qr_mm: number;
   is_default: boolean;
   is_active: boolean;
+  layout: LayoutItem[];
 };
 
 const EMPTY: FormState = {
@@ -49,10 +60,15 @@ const EMPTY: FormState = {
   qr_mm: 22,
   is_default: false,
   is_active: true,
+  layout: defaultLayout({ labelWidthMm: 63.5, labelHeightMm: 46.6, qrMm: 22 }),
 };
 
+function sizeOf(form: Pick<FormState, "label_width_mm" | "label_height_mm" | "qr_mm">) {
+  return { labelWidthMm: form.label_width_mm, labelHeightMm: form.label_height_mm, qrMm: form.qr_mm };
+}
+
 function fromTemplate(tpl: AssetLabelTemplate): FormState {
-  return {
+  const base = {
     code: tpl.code,
     name: tpl.name,
     kind: tpl.kind,
@@ -72,7 +88,18 @@ function fromTemplate(tpl: AssetLabelTemplate): FormState {
     is_default: Boolean(tpl.is_default),
     is_active: Boolean(tpl.is_active),
   };
+  return {
+    ...base,
+    layout: sanitizeLayout(tpl.layout, sizeOf(base)),
+  };
 }
+
+const PRESET_KEYS: Record<(typeof PAGE_PRESETS)[number]["id"], string> = {
+  avery18: "assets.labels.presetAvery18",
+  avery8: "assets.labels.presetAvery8",
+  avery2: "assets.labels.presetAvery2",
+  thermal: "assets.labels.presetThermal",
+};
 
 export default function AssetLabelTemplatesPage() {
   const { t } = useI18n();
@@ -83,6 +110,7 @@ export default function AssetLabelTemplatesPage() {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
 
   function load() {
     assetLabelsApi.templates({ include_inactive: true }).then((r) => {
@@ -95,12 +123,50 @@ export default function AssetLabelTemplatesPage() {
   function startEdit(tpl: AssetLabelTemplate) {
     setEditId(tpl.id);
     setForm(fromTemplate(tpl));
+    setEditorOpen(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function startNew() {
     setEditId(null);
-    setForm({ ...EMPTY, code: `custom_${Date.now().toString(36)}` });
+    setForm({ ...EMPTY, code: `custom_${Date.now().toString(36)}`, layout: defaultLayout(sizeOf(EMPTY)) });
+    setEditorOpen(true);
+  }
+
+  function applyPreset(id: (typeof PAGE_PRESETS)[number]["id"]) {
+    const preset = PAGE_PRESETS.find((row) => row.id === id);
+    if (!preset) return;
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        page_size: preset.page_size,
+        page_width_mm: preset.page_width_mm,
+        page_height_mm: preset.page_height_mm,
+        margin_top_mm: preset.margin_top_mm,
+        margin_left_mm: preset.margin_left_mm,
+        label_width_mm: preset.label_width_mm,
+        label_height_mm: preset.label_height_mm,
+        h_gap_mm: preset.h_gap_mm,
+        v_gap_mm: preset.v_gap_mm,
+        rows: preset.rows,
+        columns: preset.columns,
+        qr_mm: preset.qr_mm,
+      };
+      return { ...next, layout: defaultLayout(sizeOf(next)) };
+    });
+  }
+
+  function patchNumber(key: keyof FormState, value: number) {
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === "label_width_mm" || key === "label_height_mm") {
+        next.layout = clampLayout(next.layout, sizeOf(next));
+      }
+      if (key === "qr_mm") {
+        next.layout = resizeItem(next.layout, "qr", value, value, sizeOf(next));
+      }
+      return next;
+    });
   }
 
   async function save() {
@@ -108,15 +174,22 @@ export default function AssetLabelTemplatesPage() {
     setSaving(true);
     setError(null);
     try {
+      const qr = form.layout.find((item) => item.id === "qr");
+      const payload = {
+        ...form,
+        qr_mm: qr ? Math.round(qr.w_mm) : form.qr_mm,
+        layout: form.layout,
+      };
       if (editId) {
-        await assetLabelsApi.updateTemplate(editId, form);
+        await assetLabelsApi.updateTemplate(editId, payload);
         toast("success", t("assets.labels.templateUpdated"));
       } else {
-        await assetLabelsApi.createTemplate(form);
+        await assetLabelsApi.createTemplate(payload);
         toast("success", t("assets.labels.templateCreated"));
       }
       setEditId(null);
       setForm(EMPTY);
+      setEditorOpen(false);
       load();
     } catch (err: unknown) {
       const msg =
@@ -141,6 +214,7 @@ export default function AssetLabelTemplatesPage() {
       if (editId === tpl.id) {
         setEditId(null);
         setForm(EMPTY);
+        setEditorOpen(false);
       }
       load();
     } catch (err: unknown) {
@@ -152,14 +226,29 @@ export default function AssetLabelTemplatesPage() {
     }
   }
 
-  const num = (key: keyof FormState) => (
-    <input
-      type="number"
-      step="0.1"
-      className="form-input"
-      value={form[key] as number}
-      onChange={(e) => setForm((p) => ({ ...p, [key]: Number(e.target.value) }))}
-    />
+  const mmField = (key: keyof FormState, label: string) => (
+    <label className="text-xs font-semibold">{label}
+      <input
+        type="number"
+        step="0.1"
+        className="form-input mt-1"
+        value={form[key] as number}
+        onChange={(e) => patchNumber(key, Number(e.target.value))}
+      />
+    </label>
+  );
+
+  const intField = (key: keyof FormState, label: string) => (
+    <label className="text-xs font-semibold">{label}
+      <input
+        type="number"
+        step="1"
+        min={1}
+        className="form-input mt-1"
+        value={form[key] as number}
+        onChange={(e) => patchNumber(key, Number(e.target.value))}
+      />
+    </label>
   );
 
   return (
@@ -185,7 +274,7 @@ export default function AssetLabelTemplatesPage() {
 
       {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
-      {(editId !== null || form.code) && (
+      {editorOpen && (
         <div className="card space-y-4 p-5">
           <h3 className="text-sm font-semibold">{editId ? t("assets.labels.editTemplate") : t("assets.labels.newTemplate")}</h3>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -201,19 +290,46 @@ export default function AssetLabelTemplatesPage() {
                 <option value="custody">{t("assets.labels.kindCustody")}</option>
               </select>
             </label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldPageW")}{num("page_width_mm")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldPageH")}{num("page_height_mm")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldMarginT")}{num("margin_top_mm")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldMarginL")}{num("margin_left_mm")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldLabelW")}{num("label_width_mm")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldLabelH")}{num("label_height_mm")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldHGap")}{num("h_gap_mm")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldVGap")}{num("v_gap_mm")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldRows")}{num("rows")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldCols")}{num("columns")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldFont")}{num("font_pt")}</label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldQr")}{num("qr_mm")}</label>
+            {mmField("page_width_mm", t("assets.labels.fieldPageW"))}
+            {mmField("page_height_mm", t("assets.labels.fieldPageH"))}
+            {mmField("margin_top_mm", t("assets.labels.fieldMarginT"))}
+            {mmField("margin_left_mm", t("assets.labels.fieldMarginL"))}
+            {mmField("label_width_mm", t("assets.labels.fieldLabelW"))}
+            {mmField("label_height_mm", t("assets.labels.fieldLabelH"))}
+            {mmField("h_gap_mm", t("assets.labels.fieldHGap"))}
+            {mmField("v_gap_mm", t("assets.labels.fieldVGap"))}
+            {intField("rows", t("assets.labels.fieldRows"))}
+            {intField("columns", t("assets.labels.fieldCols"))}
+            {mmField("font_pt", t("assets.labels.fieldFont"))}
+            {mmField("qr_mm", t("assets.labels.fieldQr"))}
           </div>
+
+          <div>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("assets.labels.presets")}</p>
+            <div className="flex flex-wrap gap-2">
+              {PAGE_PRESETS.map((preset) => (
+                <button
+                  key={preset.id}
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => applyPreset(preset.id)}
+                >
+                  {t(PRESET_KEYS[preset.id])}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-neutral-500">
+              {t("assets.labels.labelsPerPage", { count: labelsPerPage(form.rows, form.columns) })}
+            </p>
+          </div>
+
+          <LabelTemplateVisualEditor
+            geometry={form}
+            layout={form.layout}
+            onChange={(layout) => setForm((prev) => ({ ...prev, layout }))}
+            onReset={() => setForm((prev) => ({ ...prev, layout: defaultLayout(sizeOf(prev)) }))}
+          />
+
           <div className="flex flex-wrap items-center gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.is_default} onChange={(e) => setForm((p) => ({ ...p, is_default: e.target.checked }))} />
@@ -224,7 +340,7 @@ export default function AssetLabelTemplatesPage() {
               {t("assets.labels.fieldActive")}
             </label>
             <div className="ml-auto flex gap-2">
-              <Button type="button" variant="secondary" onClick={() => { setEditId(null); setForm(EMPTY); }}>{t("common.cancel")}</Button>
+              <Button type="button" variant="secondary" onClick={() => { setEditId(null); setForm(EMPTY); setEditorOpen(false); }}>{t("common.cancel")}</Button>
               <Button type="button" disabled={saving} onClick={save}>{saving ? t("common.loading") : t("common.save")}</Button>
             </div>
           </div>

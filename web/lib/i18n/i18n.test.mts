@@ -87,6 +87,7 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/assets/import/page.tsx",
     "app/(app)/assets/labels/page.tsx",
     "app/(app)/assets/labels/templates/page.tsx",
+    "components/assets/LabelTemplateVisualEditor.tsx",
     "app/(app)/assets/verification/page.tsx",
     "app/a/[token]/page.tsx",
   ];
@@ -94,6 +95,16 @@ test("shared chrome components translate user-facing copy", () => {
     const source = readFileSync(join(webRoot, rel), "utf8");
     assert.match(source, /useI18n/, `${rel} should call useI18n`);
   }
+});
+
+test("label template editor is a live drag canvas", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/assets/labels/templates/page.tsx"), "utf8");
+  const editor = readFileSync(join(webRoot, "components/assets/LabelTemplateVisualEditor.tsx"), "utf8");
+  assert.match(page, /LabelTemplateVisualEditor/);
+  assert.match(page, /PAGE_PRESETS/);
+  assert.match(editor, /onPointerDown/);
+  assert.match(editor, /assets\.labels\.pagePreview/);
+  assert.match(editor, /assets\.labels\.dragHint/);
 });
 
 test("API client sends Accept-Language from the stored locale", () => {

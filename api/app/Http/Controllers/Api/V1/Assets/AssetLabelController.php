@@ -8,6 +8,7 @@ use App\Models\AssetLabelBatch;
 use App\Models\AssetLabelTemplate;
 use App\Models\User;
 use App\Modules\Assets\Services\AssetLabelService;
+use App\Modules\Assets\Support\AssetLabelLayout;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -52,7 +53,7 @@ class AssetLabelController extends Controller
         $user = $request->user();
         $this->assertCanManageTemplates($user);
         $this->assertSameTenant($assetLabelTemplate, $user);
-        $data = $this->validatedTemplate($request, $user->tenant_id, $assetLabelTemplate->id);
+        $data = $this->validatedTemplate($request, $user->tenant_id, $assetLabelTemplate);
         if (isset($data['code'])) {
             $data['code'] = strtolower($data['code']);
         }
@@ -154,16 +155,16 @@ class AssetLabelController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function validatedTemplate(Request $request, int $tenantId, ?int $ignoreId = null): array
+    private function validatedTemplate(Request $request, int $tenantId, ?AssetLabelTemplate $existing = null): array
     {
         $codeRule = Rule::unique('asset_label_templates', 'code')->where('tenant_id', $tenantId);
-        if ($ignoreId) {
-            $codeRule = $codeRule->ignore($ignoreId);
+        if ($existing) {
+            $codeRule = $codeRule->ignore($existing->id);
         }
 
-        $required = $ignoreId ? 'sometimes' : 'required';
+        $required = $existing ? 'sometimes' : 'required';
 
-        return $request->validate([
+        $validated = $request->validate([
             'code' => [$required, 'string', 'max:64', 'regex:/^[a-z0-9_-]+$/', $codeRule],
             'name' => [$required, 'string', 'max:255'],
             'kind' => [$required === 'required' ? 'required' : 'sometimes', 'in:permanent,custody'],
@@ -182,7 +183,21 @@ class AssetLabelController extends Controller
             'qr_mm' => ['nullable', 'numeric', 'min:8', 'max:40'],
             'is_default' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
+            'layout' => ['nullable', 'array', 'max:20'],
         ]);
+
+        if (array_key_exists('layout', $validated)) {
+            if ($validated['layout'] === null) {
+                $validated['layout'] = null;
+            } else {
+                $labelW = (float) ($validated['label_width_mm'] ?? $existing?->label_width_mm ?? 63.5);
+                $labelH = (float) ($validated['label_height_mm'] ?? $existing?->label_height_mm ?? 46.6);
+                $qrMm = (float) ($validated['qr_mm'] ?? $existing?->qr_mm ?? 22);
+                $validated['layout'] = AssetLabelLayout::sanitize($validated['layout'], $labelW, $labelH, $qrMm);
+            }
+        }
+
+        return $validated;
     }
 
     private function syncDefault(?AssetLabelTemplate $template): void

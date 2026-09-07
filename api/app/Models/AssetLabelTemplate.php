@@ -11,7 +11,7 @@ class AssetLabelTemplate extends Model
         'tenant_id', 'code', 'name', 'kind', 'page_size', 'page_width_mm',
         'page_height_mm', 'margin_top_mm', 'margin_left_mm', 'label_width_mm',
         'label_height_mm', 'h_gap_mm', 'v_gap_mm', 'rows', 'columns', 'font_pt',
-        'qr_mm', 'is_default', 'is_active',
+        'qr_mm', 'layout', 'is_default', 'is_active',
     ];
 
     protected function casts(): array
@@ -31,6 +31,7 @@ class AssetLabelTemplate extends Model
             'font_pt' => 'integer',
             'rows' => 'integer',
             'columns' => 'integer',
+            'layout' => 'array',
         ];
     }
 
