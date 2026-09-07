@@ -1159,6 +1159,15 @@ test("workplan event types page can delete system types", () => {
   assert.doesNotMatch(source, /System types cannot be deleted/);
 });
 
+test("workplan calendar opens an event on a single click", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/workplan/page.tsx"), "utf8");
+  assert.doesNotMatch(source, /onDoubleClick/);
+  assert.doesNotMatch(source, /Double-click to open/);
+  assert.match(source, /onOpenEvent\(ev\.id\)/);
+  assert.match(source, /handleOpenEvent\(ev\.id\)/);
+  assert.match(source, /onClick=\{\(\) => handleOpenEvent\(ev\.id\)\}/);
+});
+
 test("leave create form shows remaining days by type and labelled fields", () => {
   const source = readFileSync(join(webRoot, "app/(app)/leave/create/page.tsx"), "utf8");
   assert.match(source, /LeaveBalanceStrip|categorizeLeaveBalances/);
