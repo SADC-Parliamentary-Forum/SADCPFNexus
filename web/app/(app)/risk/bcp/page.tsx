@@ -127,7 +127,7 @@ export default function RiskBcpPage() {
         <ModulePageHeader
         title="BCP / Insurance Ops"
         subtitle="BCP linkage, exercises, and insurance renewal queue on existing risk/FA insurance data."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "BCP / Insurance Ops" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.bcp.title" }]} />}
       />
         <div className="flex gap-2">
           <Link href="/assets/insurance" className="btn-secondary">

@@ -177,7 +177,7 @@ export default function PolicyLibraryPage() {
         <ModulePageHeader
         title="Policy Library"
         subtitle="Manage organisational policies and link them to risks in the register."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Policy Library" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.policies.title" }]} />}
       />
         <button onClick={openCreate} className="btn-primary flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[18px]">add</span> New Policy

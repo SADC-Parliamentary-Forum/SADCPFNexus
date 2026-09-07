@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { riskApi, type RiskKri, type RiskKriCatalogEntry } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function statusBadge(status: RiskKri["last_status"]): string {
   if (status === "breach") return "badge-danger";
@@ -14,6 +15,7 @@ function statusBadge(status: RiskKri["last_status"]): string {
 }
 
 export default function RiskKriPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [linkDrafts, setLinkDrafts] = useState<Record<number, { risk_id: string; strategic_objective_id: string }>>({});
@@ -53,10 +55,10 @@ export default function RiskKriPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <ModulePageHeader
-        title="Key Risk Indicators"
-        subtitle="Automated KRIs from Nexus data (budget, assignments, leave, stock, risk register). Threshold breaches raise in-app alerts."
+        title="risk.kri.title"
+        subtitle="risk.kri.subtitle"
         breadcrumbs={
-          <PageBreadcrumbs items={[{ label: "Risk", href: "/risk" }, { label: "KRIs" }]} />
+          <PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.kri.title" }]} />
         }
         actions={
           <>
@@ -128,7 +130,7 @@ export default function RiskKriPage() {
                       {kri.risk && (
                         <div>
                           Risk:{" "}
-                          <Link className="text-blue-700 underline" href={`/risk/${kri.risk.id}`}>
+                          <Link className="font-medium text-primary" href={`/risk/${kri.risk.id}`}>
                             {kri.risk.risk_code}
                           </Link>
                         </div>

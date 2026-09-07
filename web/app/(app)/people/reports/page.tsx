@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
+import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
@@ -39,7 +40,7 @@ return (await peopleAuthorityApi.reports("directory")).data;
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
     if (!term) return rows;
-    return rows.filter((r) => JSON.stringify(r).toLowerCase().includes(term));
+    return rows.filter((r) => peopleRowMatchesQuery(r, q));
   }, [rows, q]);
 
   const columns = useMemo(() => {

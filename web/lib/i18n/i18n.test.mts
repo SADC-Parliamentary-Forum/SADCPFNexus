@@ -92,6 +92,8 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/audit/engagements/page.tsx",
     "components/audit/AuditChrome.tsx",
     "app/(app)/risk/create/page.tsx",
+    "app/(app)/hr/page.tsx",
+    "app/(app)/risk/dashboard/page.tsx",
     "app/a/[token]/page.tsx",
   ];
   for (const rel of files) {
@@ -174,6 +176,12 @@ test("risk create catalog covers form copy in EN, FR and PT", () => {
     "risk.create.impact.5",
     "risk.create.objectiveRequired",
     "risk.create.ownerRequired",
+    "risk.dashboard.title",
+    "risk.incidents.title",
+    "risk.controls.title",
+    "hr.hub",
+    "hr.subtitle",
+    "hr.timesheets.recent",
   ];
   for (const key of keys) {
     const en = translate("en", key);

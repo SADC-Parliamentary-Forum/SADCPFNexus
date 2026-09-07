@@ -72,7 +72,7 @@ export default function RiskControlTestingPage() {
         <ModulePageHeader
         title="Control Testing Campaigns"
         subtitle="Schedule control tests against Risk Register controls, record pass/fail with checklist evidence, and surface overdue items."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Control Testing Campaigns" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.testing.title" }]} />}
       />
         <div className="flex gap-2">
           <Link href="/risk/kri" className="btn-secondary">
