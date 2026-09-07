@@ -177,14 +177,20 @@ class AssetLabelController extends Controller
             'label_height_mm' => [$required, 'numeric', 'min:10', 'max:400'],
             'h_gap_mm' => ['nullable', 'numeric', 'min:0', 'max:40'],
             'v_gap_mm' => ['nullable', 'numeric', 'min:0', 'max:40'],
-            'rows' => [$required, 'integer', 'min:1', 'max:20'],
-            'columns' => [$required, 'integer', 'min:1', 'max:10'],
-            'font_pt' => ['nullable', 'integer', 'min:6', 'max:18'],
+            'rows' => [$required, 'numeric', 'min:1', 'max:20'],
+            'columns' => [$required, 'numeric', 'min:1', 'max:10'],
+            'font_pt' => ['nullable', 'numeric', 'min:6', 'max:18'],
             'qr_mm' => ['nullable', 'numeric', 'min:8', 'max:40'],
             'is_default' => ['nullable', 'boolean'],
             'is_active' => ['nullable', 'boolean'],
             'layout' => ['nullable', 'array', 'max:20'],
         ]);
+
+        foreach (['rows', 'columns', 'font_pt', 'qr_mm'] as $intKey) {
+            if (array_key_exists($intKey, $validated) && $validated[$intKey] !== null) {
+                $validated[$intKey] = (int) round((float) $validated[$intKey]);
+            }
+        }
 
         if (array_key_exists('layout', $validated)) {
             if ($validated['layout'] === null) {

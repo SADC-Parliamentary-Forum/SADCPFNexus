@@ -164,6 +164,82 @@ export function labelsPerPage(rows: number, columns: number): number {
   return Math.max(1, Math.floor(rows) || 1) * Math.max(1, Math.floor(columns) || 1);
 }
 
+export type TemplateSaveForm = {
+  code: string;
+  name: string;
+  kind: "permanent" | "custody";
+  page_size: string;
+  page_width_mm: number;
+  page_height_mm: number;
+  margin_top_mm: number;
+  margin_left_mm: number;
+  label_width_mm: number;
+  label_height_mm: number;
+  h_gap_mm: number;
+  v_gap_mm: number;
+  rows: number;
+  columns: number;
+  font_pt: number;
+  qr_mm: number;
+  is_default: boolean;
+  is_active: boolean;
+  layout: LayoutItem[];
+};
+
+export type TemplateSaveResult =
+  | { ok: true; payload: TemplateSaveForm }
+  | { ok: false; error: "name" | "code" };
+
+function intClamp(value: unknown, fallback: number, min: number, max: number): number {
+  const n = typeof value === "number" && Number.isFinite(value)
+    ? value
+    : typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))
+      ? Number(value)
+      : fallback;
+  return Math.round(Math.min(max, Math.max(min, n)));
+}
+
+export function toTemplateSavePayload(form: TemplateSaveForm): TemplateSaveResult {
+  const name = form.name.trim();
+  const code = form.code.trim().toLowerCase().replace(/\s+/g, "_");
+  if (!name) return { ok: false, error: "name" };
+  if (!/^[a-z0-9_-]+$/.test(code)) return { ok: false, error: "code" };
+
+  const labelWidthMm = num(form.label_width_mm, 10, 400);
+  const labelHeightMm = num(form.label_height_mm, 10, 400);
+  const layout = sanitizeLayout(form.layout, {
+    labelWidthMm,
+    labelHeightMm,
+    qrMm: form.qr_mm,
+  });
+  const qr = layout.find((item) => item.id === "qr");
+
+  return {
+    ok: true,
+    payload: {
+      code,
+      name,
+      kind: form.kind === "custody" ? "custody" : "permanent",
+      page_size: (form.page_size || "A4").slice(0, 32),
+      page_width_mm: num(form.page_width_mm, 20, 400),
+      page_height_mm: num(form.page_height_mm, 20, 400),
+      margin_top_mm: num(form.margin_top_mm, 0, 80),
+      margin_left_mm: num(form.margin_left_mm, 0, 80),
+      label_width_mm: labelWidthMm,
+      label_height_mm: labelHeightMm,
+      h_gap_mm: num(form.h_gap_mm, 0, 40),
+      v_gap_mm: num(form.v_gap_mm, 0, 40),
+      rows: intClamp(form.rows, 1, 1, 20),
+      columns: intClamp(form.columns, 1, 1, 10),
+      font_pt: intClamp(form.font_pt, 8, 6, 18),
+      qr_mm: intClamp(qr?.w_mm ?? form.qr_mm, 22, 8, 40),
+      is_default: Boolean(form.is_default),
+      is_active: Boolean(form.is_active),
+      layout,
+    },
+  };
+}
+
 export function pageOverflows(geo: PageGeometry): boolean {
   const cols = Math.max(1, geo.columns);
   const rows = Math.max(1, geo.rows);

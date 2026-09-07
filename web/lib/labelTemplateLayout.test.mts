@@ -9,6 +9,7 @@ import {
   pageOverflows,
   sanitizeLayout,
   setItemVisible,
+  toTemplateSavePayload,
 } from "./labelTemplateLayout.ts";
 
 test("default layout has every field and a square QR", () => {
@@ -104,6 +105,65 @@ test("hiding an item sets visible false", () => {
     false,
   );
   assert.equal(items.find((i) => i.id === "model")?.visible, false);
+});
+
+test("toTemplateSavePayload rejects a blank name instead of sending", () => {
+  const form = {
+    code: "avery_l7161_permanent",
+    name: "   ",
+    kind: "permanent" as const,
+    page_size: "A4",
+    page_width_mm: 210,
+    page_height_mm: 297,
+    margin_top_mm: 8.7,
+    margin_left_mm: 4.7,
+    label_width_mm: 63.5,
+    label_height_mm: 46.6,
+    h_gap_mm: 2.5,
+    v_gap_mm: 0,
+    rows: 6,
+    columns: 3,
+    font_pt: 8,
+    qr_mm: 22,
+    is_default: true,
+    is_active: true,
+    layout: defaultLayout({ labelWidthMm: 63.5, labelHeightMm: 46.6, qrMm: 22 }),
+  };
+  const result = toTemplateSavePayload(form);
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.error, "name");
+});
+
+test("toTemplateSavePayload coerces editor floats into API-safe integers", () => {
+  const layout = defaultLayout({ labelWidthMm: 63.5, labelHeightMm: 46.6, qrMm: 22 }).map((item) =>
+    item.id === "qr" ? { ...item, w_mm: 20.6, h_mm: 20.6 } : item,
+  );
+  const result = toTemplateSavePayload({
+    code: "avery_l7161_permanent",
+    name: "Avery L7161 permanent",
+    kind: "permanent",
+    page_size: "A4",
+    page_width_mm: 210,
+    page_height_mm: 297,
+    margin_top_mm: 8.7,
+    margin_left_mm: 4.7,
+    label_width_mm: 63.5,
+    label_height_mm: 46.6,
+    h_gap_mm: 2.5,
+    v_gap_mm: 0,
+    rows: 6,
+    columns: 3,
+    font_pt: 8.4,
+    qr_mm: 7.2,
+    is_default: true,
+    is_active: true,
+    layout,
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.payload.font_pt, 8);
+  assert.equal(result.payload.qr_mm, 21);
+  assert.equal(result.payload.layout.find((item) => item.id === "qr")?.w_mm, 20.6);
 });
 
 test("clampLayout shrinks items when the label gets smaller", () => {

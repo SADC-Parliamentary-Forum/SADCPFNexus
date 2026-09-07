@@ -2662,6 +2662,9 @@ return [
         'linked_routes' => ['/assets/labels'],
         'linked_endpoints' => [
             'GET /api/v1/assets/labels/templates',
+            'POST /api/v1/assets/labels/templates',
+            'PUT /api/v1/assets/labels/templates/{assetLabelTemplate}',
+            'DELETE /api/v1/assets/labels/templates/{assetLabelTemplate}',
             'POST /api/v1/assets/labels/print',
         ],
     ],

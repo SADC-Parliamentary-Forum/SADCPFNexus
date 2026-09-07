@@ -264,4 +264,60 @@ class AssetCategoryLabelOpsTest extends TestCase
             'layout' => null,
         ])->assertOk()->assertJsonPath('data.layout', null);
     }
+
+    public function test_visual_editor_payload_saves_layout_on_seeded_template(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $admin = $this->makeAdmin($tenant);
+        Sanctum::actingAs($admin);
+
+        $id = collect($this->getJson('/api/v1/assets/labels/templates')->assertOk()->json('data'))
+            ->firstWhere('code', 'avery_l7161_permanent')['id'];
+
+        $layout = [
+            ['id' => 'org', 'x_mm' => 2.25, 'y_mm' => 1.4, 'w_mm' => 58.5, 'h_mm' => 3.4, 'visible' => true],
+            ['id' => 'notice', 'x_mm' => 2.25, 'y_mm' => 5.1, 'w_mm' => 58.5, 'h_mm' => 3.0, 'visible' => true],
+            ['id' => 'tag', 'x_mm' => 2.0, 'y_mm' => 9.2, 'w_mm' => 36.5, 'h_mm' => 4.8, 'visible' => true],
+            ['id' => 'name', 'x_mm' => 2.0, 'y_mm' => 14.1, 'w_mm' => 36.5, 'h_mm' => 5.4, 'visible' => true],
+            ['id' => 'model', 'x_mm' => 2.0, 'y_mm' => 19.8, 'w_mm' => 36.5, 'h_mm' => 3.6, 'visible' => false],
+            ['id' => 'serial', 'x_mm' => 2.0, 'y_mm' => 23.6, 'w_mm' => 36.5, 'h_mm' => 3.6, 'visible' => true],
+            ['id' => 'location', 'x_mm' => 2.0, 'y_mm' => 27.4, 'w_mm' => 36.5, 'h_mm' => 3.6, 'visible' => true],
+            ['id' => 'custodian', 'x_mm' => 2.0, 'y_mm' => 31.2, 'w_mm' => 36.5, 'h_mm' => 3.6, 'visible' => true],
+            ['id' => 'qr', 'x_mm' => 40.1, 'y_mm' => 8.4, 'w_mm' => 20.6, 'h_mm' => 20.6, 'visible' => true],
+        ];
+
+        $this->putJson('/api/v1/assets/labels/templates/'.$id, [
+            'code' => 'avery_l7161_permanent',
+            'name' => 'Avery L7161 permanent (updated)',
+            'kind' => 'permanent',
+            'page_size' => 'A4',
+            'page_width_mm' => 210.0,
+            'page_height_mm' => 297.0,
+            'margin_top_mm' => 8.7,
+            'margin_left_mm' => 4.7,
+            'label_width_mm' => 63.5,
+            'label_height_mm' => 46.6,
+            'h_gap_mm' => 2.5,
+            'v_gap_mm' => 0,
+            'rows' => 6,
+            'columns' => 3,
+            'font_pt' => 8.4,
+            'qr_mm' => 20.6,
+            'is_default' => true,
+            'is_active' => true,
+            'layout' => $layout,
+        ])->assertOk()
+            ->assertJsonPath('data.name', 'Avery L7161 permanent (updated)')
+            ->assertJsonPath('data.font_pt', 8)
+            ->assertJsonPath('data.qr_mm', 21);
+
+        $row = collect($this->getJson('/api/v1/assets/labels/templates?include_inactive=1')->json('data'))
+            ->firstWhere('id', $id);
+        $this->assertSame('Avery L7161 permanent (updated)', $row['name']);
+        $this->assertSame(['org', 'notice', 'tag', 'name', 'model', 'serial', 'location', 'custodian', 'qr'], array_column($row['layout'], 'id'));
+        $this->assertFalse(collect($row['layout'])->firstWhere('id', 'model')['visible']);
+        $qr = collect($row['layout'])->firstWhere('id', 'qr');
+        $this->assertEqualsWithDelta(40.1, $qr['x_mm'], 0.05);
+        $this->assertEqualsWithDelta(20.6, $qr['w_mm'], 0.05);
+    }
 }

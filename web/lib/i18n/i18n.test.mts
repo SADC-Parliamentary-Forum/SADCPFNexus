@@ -107,6 +107,14 @@ test("label template editor is a live drag canvas", () => {
   assert.match(editor, /assets\.labels\.dragHint/);
 });
 
+test("label template save stays visible and reports validation errors", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/assets/labels/templates/page.tsx"), "utf8");
+  assert.match(page, /toTemplateSavePayload/);
+  assert.match(page, /assets\.labels\.nameRequired/);
+  assert.match(page, /sticky/);
+  assert.doesNotMatch(page, /if \(!form\.name\.trim\(\) \|\| !form\.code\.trim\(\)\) return;/);
+});
+
 test("API client sends Accept-Language from the stored locale", () => {
   const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
   assert.match(source, /Accept-Language/);

@@ -16,6 +16,7 @@ import {
   labelsPerPage,
   resizeItem,
   sanitizeLayout,
+  toTemplateSavePayload,
   type LayoutItem,
 } from "@/lib/labelTemplateLayout";
 
@@ -157,6 +158,7 @@ export default function AssetLabelTemplatesPage() {
   }
 
   function patchNumber(key: keyof FormState, value: number) {
+    if (!Number.isFinite(value)) return;
     setForm((prev) => {
       const next = { ...prev, [key]: value };
       if (key === "label_width_mm" || key === "label_height_mm") {
@@ -169,34 +171,33 @@ export default function AssetLabelTemplatesPage() {
     });
   }
 
+  function apiErrorMessage(err: unknown): string {
+    if (!err || typeof err !== "object" || !("response" in err)) return t("common.error");
+    const data = (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }).response?.data;
+    const field = data?.errors ? Object.values(data.errors).flat()[0] : undefined;
+    return field || data?.message || t("common.error");
+  }
+
   async function save() {
-    if (!form.name.trim() || !form.code.trim()) return;
+    const prepared = toTemplateSavePayload(form);
+    if (!prepared.ok) {
+      setError(t(prepared.error === "code" ? "assets.labels.codeRequired" : "assets.labels.nameRequired"));
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
-      const qr = form.layout.find((item) => item.id === "qr");
-      const payload = {
-        ...form,
-        qr_mm: qr ? Math.round(qr.w_mm) : form.qr_mm,
-        layout: form.layout,
-      };
-      if (editId) {
-        await assetLabelsApi.updateTemplate(editId, payload);
-        toast("success", t("assets.labels.templateUpdated"));
-      } else {
-        await assetLabelsApi.createTemplate(payload);
-        toast("success", t("assets.labels.templateCreated"));
-      }
-      setEditId(null);
-      setForm(EMPTY);
-      setEditorOpen(false);
+      const response = editId
+        ? await assetLabelsApi.updateTemplate(editId, prepared.payload)
+        : await assetLabelsApi.createTemplate(prepared.payload);
+      const saved = response.data.data;
+      toast("success", t(editId ? "assets.labels.templateUpdated" : "assets.labels.templateCreated"));
+      setEditId(saved.id);
+      setForm(fromTemplate(saved));
+      setEditorOpen(true);
       load();
     } catch (err: unknown) {
-      const msg =
-        err && typeof err === "object" && "response" in err
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : null;
-      setError(msg || t("common.error"));
+      setError(apiErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -276,7 +277,13 @@ export default function AssetLabelTemplatesPage() {
 
       {editorOpen && (
         <div className="card space-y-4 p-5">
-          <h3 className="text-sm font-semibold">{editId ? t("assets.labels.editTemplate") : t("assets.labels.newTemplate")}</h3>
+          <div className="sticky top-0 z-20 -mx-5 -mt-5 flex flex-wrap items-center gap-3 border-b border-neutral-200 bg-white/95 px-5 py-3 backdrop-blur">
+            <h3 className="text-sm font-semibold">{editId ? t("assets.labels.editTemplate") : t("assets.labels.newTemplate")}</h3>
+            <div className="ml-auto flex gap-2">
+              <Button type="button" variant="secondary" onClick={() => { setEditId(null); setForm(EMPTY); setEditorOpen(false); }}>{t("common.cancel")}</Button>
+              <Button type="button" disabled={saving} onClick={save}>{saving ? t("common.loading") : t("common.save")}</Button>
+            </div>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <label className="text-xs font-semibold">{t("assets.labels.fieldName")}
               <input className="form-input mt-1" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
@@ -300,7 +307,17 @@ export default function AssetLabelTemplatesPage() {
             {mmField("v_gap_mm", t("assets.labels.fieldVGap"))}
             {intField("rows", t("assets.labels.fieldRows"))}
             {intField("columns", t("assets.labels.fieldCols"))}
-            {mmField("font_pt", t("assets.labels.fieldFont"))}
+            <label className="text-xs font-semibold">{t("assets.labels.fieldFont")}
+              <input
+                type="number"
+                step="1"
+                min={6}
+                max={18}
+                className="form-input mt-1"
+                value={form.font_pt}
+                onChange={(e) => patchNumber("font_pt", Number(e.target.value))}
+              />
+            </label>
             {mmField("qr_mm", t("assets.labels.fieldQr"))}
           </div>
 
