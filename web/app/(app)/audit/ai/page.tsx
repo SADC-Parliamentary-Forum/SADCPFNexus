@@ -1,16 +1,44 @@
 "use client";
 
 import React, { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { auditApi } from "@/lib/api";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { FormSection } from "@/components/ui/FormSection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { AuditPageShell } from "@/components/audit/AuditChrome";
+
+function asRows(payload: unknown): Record<string, unknown>[] {
+  if (Array.isArray(payload)) return payload as Record<string, unknown>[];
+  if (payload && typeof payload === "object") {
+    const obj = payload as Record<string, unknown>;
+    if (Array.isArray(obj.data)) return obj.data as Record<string, unknown>[];
+  }
+  return [];
+}
+
+const KINDS = [
+  "workpaper_summary",
+  "duplicate_findings",
+  "root_cause",
+  "draft_report",
+  "evidence_index",
+  "nl_search",
+  "investigation_pack",
+] as const;
 
 export default function AuditAiAssistPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [kind, setKind] = useState("duplicate_findings");
   const [engagementId, setEngagementId] = useState("");
   const [last, setLast] = useState<Record<string, unknown> | null>(null);
   const [note, setNote] = useState("");
+
+  const engagementsQuery = useQuery({
+    queryKey: ["audit", "engagements", "ai-assist"],
+    queryFn: async () => asRows((await auditApi.listEngagements({ per_page: 50 })).data),
+  });
 
   const suggestion = (last?.suggestion ?? null) as Record<string, unknown> | null;
   const nextQuestions = Array.isArray(suggestion?.next_questions) ? suggestion.next_questions as string[] : [];
@@ -39,64 +67,78 @@ export default function AuditAiAssistPage() {
   });
 
   return (
-    <div className="p-6 space-y-4 max-w-3xl">
-      <h1 className="text-2xl font-semibold">AI assist</h1>
-      <div className="border border-amber-300 bg-amber-50 text-amber-950 text-sm p-3 rounded space-y-1">
-        <p>Suggestions only. Human confirmation is required before apply.</p>
-        <p>AI must never issue findings, assign blame, approve management responses, close findings, verify implementation, determine misconduct, or modify final conclusions.</p>
-        <p>Investigation packs never auto-closes.</p>
-      </div>
-
-      <div className="border rounded p-4 bg-white space-y-3 text-sm">
-        <label className="block">
-          Suggestion kind
-          <select className="mt-1 border rounded px-2 py-1 w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
-            <option value="workpaper_summary">Workpaper summary</option>
-            <option value="duplicate_findings">Duplicate findings</option>
-            <option value="root_cause">Root-cause suggestions</option>
-            <option value="draft_report">Draft report assistance</option>
-            <option value="evidence_index">Evidence indexing hints</option>
-            <option value="nl_search">NL search suggestions</option>
-            <option value="investigation_pack">Investigation pack (never auto-closes)</option>
-          </select>
-        </label>
-        <label className="block">
-          Engagement id (optional, used by investigation pack)
-          <input
-            className="mt-1 border rounded px-2 py-1 w-full"
-            data-testid="audit-engagement-id"
-            value={engagementId}
-            onChange={(e) => setEngagementId(e.target.value)}
-            inputMode="numeric"
-          />
-        </label>
-        <button type="button" className="px-3 py-1.5 bg-neutral-900 text-white rounded" onClick={() => suggest.mutate()} disabled={suggest.isPending}>
-          Generate suggestion
-        </button>
-      </div>
-
-      {last && (
-        <div className="border rounded p-4 bg-white space-y-3 text-sm">
-          <div>Status: <strong>{String(last.status)}</strong> · Provider: {String(last.provider)}</div>
-          {nextQuestions.length > 0 ? (
-            <ul className="list-disc pl-5" data-testid="audit-next-questions">
-              {nextQuestions.map((q) => <li key={q}>{q}</li>)}
-            </ul>
-          ) : null}
-          <LabelledRecord value={last.suggestion} />
-          {last.status === "pending_confirmation" && (
-            <>
-              <label className="block">
-                Confirmation note
-                <input className="mt-1 border rounded px-2 py-1 w-full" value={note} onChange={(e) => setNote(e.target.value)} />
-              </label>
-              <button type="button" className="px-3 py-1.5 border border-neutral-900 rounded" onClick={() => apply.mutate()} disabled={apply.isPending}>
-                Confirm &amp; attach note only
-              </button>
-            </>
-          )}
+    <AuditPageShell
+      title="audit.ai.title"
+      subtitle="audit.ai.subtitle"
+      actions={<div className="flex flex-wrap gap-2" />}
+    >
+      <div className="space-y-5">
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 space-y-1">
+          <p>{t("audit.ai.warnConfirm")}</p>
+          <p>{t("audit.ai.warnNever")}</p>
+          <p>{t("audit.ai.neverCloses")}</p>
         </div>
-      )}
-    </div>
+
+        <FormSection title="audit.ai.generate" icon="smart_toy">
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="audit-ai-kind" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("audit.ai.kind")}</label>
+              <select id="audit-ai-kind" className="form-input w-full" value={kind} onChange={(e) => setKind(e.target.value)}>
+                {KINDS.map((k) => (
+                  <option key={k} value={k}>{t(`audit.ai.kind.${k}`)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="audit-ai-engagement" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("audit.ai.engagement")}</label>
+              <select
+                id="audit-ai-engagement"
+                className="form-input w-full"
+                data-testid="audit-engagement-id"
+                value={engagementId}
+                onChange={(e) => setEngagementId(e.target.value)}
+              >
+                <option value="">{t("audit.ai.selectEngagement")}</option>
+                {(engagementsQuery.data ?? []).map((row) => (
+                  <option key={String(row.id)} value={String(row.id)}>
+                    {String(row.reference_number ?? row.id)} · {String(row.title ?? t("audit.engagements.title"))}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" className="btn-primary text-sm" onClick={() => suggest.mutate()} disabled={suggest.isPending}>
+                {suggest.isPending ? t("audit.ai.generating") : t("audit.ai.generate")}
+              </button>
+            </div>
+          </div>
+        </FormSection>
+
+        {last && (
+          <div className="card space-y-3 p-4 text-sm">
+            <div>{t("audit.ai.status")}: <strong>{String(last.status)}</strong> · {t("audit.ai.provider")}: {String(last.provider)}</div>
+            {nextQuestions.length > 0 ? (
+              <ul className="list-disc pl-5" data-testid="audit-next-questions">
+                {nextQuestions.map((q) => <li key={q}>{q}</li>)}
+              </ul>
+            ) : null}
+            <LabelledRecord value={last.suggestion} />
+            {last.status === "pending_confirmation" && (
+              <>
+                <div>
+                  <label htmlFor="audit-ai-note" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("audit.ai.note")}</label>
+                  <input id="audit-ai-note" className="form-input w-full" value={note} onChange={(e) => setNote(e.target.value)} />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" className="btn-secondary text-sm" onClick={() => apply.mutate()} disabled={apply.isPending}>
+                    {t("audit.ai.confirm")}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </AuditPageShell>
   );
 }

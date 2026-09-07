@@ -3,8 +3,12 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { auditApi } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { FormSection } from "@/components/ui/FormSection";
+import { AuditPageShell, AuditTable } from "@/components/audit/AuditChrome";
 
 export default function AuditAppointmentsPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "appointments"],
@@ -30,53 +34,51 @@ export default function AuditAppointmentsPage() {
   });
 
   return (
-    <div className="p-6 space-y-4 max-w-4xl">
-      <h1 className="text-2xl font-semibold">External audit appointments</h1>
-      <p className="text-sm text-neutral-600">
-        Plenary appointment tracking (firm, term, independence docs, renewals). Procurement owns the tender.
-      </p>
+    <AuditPageShell
+      title="audit.appointments.title"
+      subtitle="audit.appointments.subtitle"
+      loading={isLoading}
+      actions={<div className="flex flex-wrap gap-2" />}
+    >
+      <div className="space-y-5">
+        <FormSection title="audit.appointments.record" icon="handshake">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label htmlFor="audit-appointment-firm" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("audit.appointments.firm")}</label>
+              <input id="audit-appointment-firm" className="form-input w-full" value={firm} onChange={(e) => setFirm(e.target.value)} />
+            </div>
+            <div>
+              <label htmlFor="audit-appointment-plenary" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("audit.appointments.plenary")}</label>
+              <input id="audit-appointment-plenary" className="form-input w-full" value={plenary} onChange={(e) => setPlenary(e.target.value)} />
+            </div>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn-primary text-sm disabled:opacity-50"
+              disabled={!firm || create.isPending}
+              onClick={() => create.mutate()}
+            >
+              {create.isPending ? t("audit.appointments.recording") : t("audit.appointments.record")}
+            </button>
+          </div>
+        </FormSection>
 
-      <div className="border rounded p-4 bg-white space-y-3 text-sm">
-        <label className="block">
-          Firm name
-          <input className="mt-1 border rounded px-2 py-1 w-full" value={firm} onChange={(e) => setFirm(e.target.value)} />
-        </label>
-        <label className="block">
-          Plenary resolution ref
-          <input className="mt-1 border rounded px-2 py-1 w-full" value={plenary} onChange={(e) => setPlenary(e.target.value)} />
-        </label>
-        <button
-          type="button"
-          className="px-3 py-1.5 bg-neutral-900 text-white rounded disabled:opacity-50"
-          disabled={!firm || create.isPending}
-          onClick={() => create.mutate()}
-        >
-          Record appointment
-        </button>
-      </div>
-
-      {isLoading ? <p className="text-sm text-neutral-500">Loading…</p> : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left border-b">
-              <th className="p-2">Firm</th>
-              <th className="p-2">Plenary</th>
-              <th className="p-2">Status</th>
-              <th className="p-2">Independence docs</th>
-            </tr>
-          </thead>
-          <tbody>
+        {rows.length === 0 ? (
+          <p className="text-sm text-neutral-500">{t("audit.appointments.empty")}</p>
+        ) : (
+          <AuditTable columns={["audit.col.firm", "audit.col.plenary", "audit.col.status", "audit.col.independence"]}>
             {rows.map((r) => (
-              <tr key={String(r.id)} className="border-b">
-                <td className="p-2">{String(r.firm_name)}</td>
-                <td className="p-2">{String(r.plenary_resolution_ref ?? "—")}</td>
-                <td className="p-2">{String(r.status)}</td>
-                <td className="p-2">{r.independence_docs_on_file ? "Yes" : "No"}</td>
+              <tr key={String(r.id)} className="border-b border-neutral-100">
+                <td className="px-3 py-2.5">{String(r.firm_name)}</td>
+                <td className="px-3 py-2.5">{String(r.plenary_resolution_ref ?? "—")}</td>
+                <td className="px-3 py-2.5 capitalize">{String(r.status)}</td>
+                <td className="px-3 py-2.5">{r.independence_docs_on_file ? t("audit.yes") : t("audit.no")}</td>
               </tr>
             ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+          </AuditTable>
+        )}
+      </div>
+    </AuditPageShell>
   );
 }
