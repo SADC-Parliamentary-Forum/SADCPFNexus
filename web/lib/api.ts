@@ -7660,7 +7660,17 @@ export interface RiskDashboardData {
   }>;
 }
 
+export interface RiskObjectiveOption {
+  id: number;
+  code: string | null;
+  title: string;
+  goal_title?: string | null;
+  plan_name?: string | null;
+}
+
 export const riskApi = {
+  listObjectives: () =>
+    api.get<{ data: RiskObjectiveOption[] }>("/risk/lookups/objectives"),
   list: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Risk>>("/risk/risks", { params }),
   get: (id: number) =>

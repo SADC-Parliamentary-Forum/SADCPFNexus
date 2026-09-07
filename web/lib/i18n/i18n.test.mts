@@ -91,6 +91,7 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/assets/verification/page.tsx",
     "app/(app)/audit/engagements/page.tsx",
     "components/audit/AuditChrome.tsx",
+    "app/(app)/risk/create/page.tsx",
     "app/a/[token]/page.tsx",
   ];
   for (const rel of files) {
@@ -148,6 +149,31 @@ test("audit module catalog covers register chrome in EN, FR and PT", () => {
     "audit.findings.title",
     "audit.settings.title",
     "audit.ai.neverCloses",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
+test("risk create catalog covers form copy in EN, FR and PT", () => {
+  const keys = [
+    "risk.hub",
+    "risk.create.title",
+    "risk.create.subtitle",
+    "risk.create.submit",
+    "risk.create.saveDraft",
+    "risk.create.objective",
+    "risk.create.owner",
+    "risk.create.category.strategic",
+    "risk.create.likelihood.1",
+    "risk.create.impact.5",
+    "risk.create.objectiveRequired",
+    "risk.create.ownerRequired",
   ];
   for (const key of keys) {
     const en = translate("en", key);

@@ -244,4 +244,60 @@ class RiskTest extends TestCase
         $this->assertStringStartsWith('RSK-', $riskCode);
         $this->assertSame(12, strlen($riskCode)); // RSK- (4) + 8 chars
     }
+
+    public function test_unauthenticated_cannot_list_strategic_objectives(): void
+    {
+        $this->getJson('/api/v1/risk/lookups/objectives')->assertUnauthorized();
+    }
+
+    public function test_staff_can_list_own_tenant_strategic_objectives(): void
+    {
+        [$http, $user] = $this->asStaff();
+        $payload = $this->submittablePayload($user);
+        $objectiveId = $payload['strategic_objective_id'];
+
+        $response = $http->getJson('/api/v1/risk/lookups/objectives');
+
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id')->all();
+        $this->assertContains($objectiveId, $ids);
+        $this->assertNotEmpty($response->json('data.0.title'));
+    }
+
+    public function test_strategic_objective_lookup_is_tenant_isolated(): void
+    {
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+
+        [, $userA] = $this->asStaff($tenantA);
+        $payloadA = $this->submittablePayload($userA);
+        $idA = $payloadA['strategic_objective_id'];
+
+        [$httpB] = $this->asStaff($tenantB);
+        $response = $httpB->getJson('/api/v1/risk/lookups/objectives');
+
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id')->all();
+        $this->assertNotContains($idA, $ids);
+
+        $this->asUser($userA)
+            ->getJson('/api/v1/risk/lookups/objectives')
+            ->assertOk()
+            ->assertJsonFragment(['id' => $idA]);
+    }
+
+    public function test_strategic_objective_lookup_excludes_archived_plans(): void
+    {
+        [$http, $user] = $this->asStaff();
+        $payload = $this->submittablePayload($user);
+        $objectiveId = $payload['strategic_objective_id'];
+        $objective = StrategicObjective::findOrFail($objectiveId);
+        $objective->goal->plan->update(['status' => 'archived']);
+
+        $response = $http->getJson('/api/v1/risk/lookups/objectives');
+
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id')->all();
+        $this->assertNotContains($objectiveId, $ids);
+    }
 }

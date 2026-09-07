@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Risk;
 
 use App\Http\Controllers\Controller;
 use App\Models\Risk;
+use App\Models\StrategicObjective;
 use App\Modules\Risk\Services\RiskService;
 use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
@@ -20,6 +21,31 @@ class RiskController extends Controller
     {
         $filters = $request->only(['status', 'category', 'risk_level', 'search', 'per_page', 'register_scope', 'department_id']);
         return response()->json($this->riskService->list($filters, $request->user()));
+    }
+
+    public function listObjectives(Request $request): JsonResponse
+    {
+        $tenantId = (int) $request->user()->tenant_id;
+
+        $objectives = StrategicObjective::query()
+            ->where('tenant_id', $tenantId)
+            ->whereHas('goal.plan', function ($query) use ($tenantId) {
+                $query->where('tenant_id', $tenantId)
+                    ->where('status', '!=', 'archived');
+            })
+            ->with(['goal:id,title,code,strategic_plan_id', 'goal.plan:id,name,status'])
+            ->orderBy('sort_order')
+            ->orderBy('title')
+            ->get()
+            ->map(fn (StrategicObjective $objective) => [
+                'id' => $objective->id,
+                'code' => $objective->code,
+                'title' => $objective->title,
+                'goal_title' => $objective->goal?->title,
+                'plan_name' => $objective->goal?->plan?->name,
+            ]);
+
+        return response()->json(['data' => $objectives]);
     }
 
     public function show(Request $request, Risk $risk): JsonResponse
