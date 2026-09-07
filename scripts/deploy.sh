@@ -46,6 +46,13 @@ TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 log() { printf '\n\033[1;34m==>\033[0m %s\n' "$1"; }
 die() { printf '\n\033[1;31mERROR:\033[0m %s\n' "$1" >&2; exit 1; }
 
+if [ "$(id -u)" -eq 0 ]; then
+  die "Run deploy as sadcpf-nexus, not root. PHP bind mounts must stay uid 82 at runtime."
+fi
+if [ "$(id -un)" != "sadcpf-nexus" ]; then
+  die "Run deploy as sadcpf-nexus (got $(id -un))."
+fi
+
 # Bind-mounted api/storage and api/bootstrap/cache are owned by the PHP
 # container user (Alpine www-data, uid/gid 82). Host git cannot replace
 # those files while they are 82:82, but they must remain 82:82 at runtime.

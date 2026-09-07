@@ -1,14 +1,28 @@
 # Deploy & rollback
 
-Primary path: [`scripts/deploy.sh`](../../scripts/deploy.sh) on the CloudPanel / Docker Compose host.
+Primary path: [`scripts/deploy.sh`](../../scripts/deploy.sh) on the CloudPanel host **as `sadcpf-nexus`** (never root).
 
 ## Deploy
 
+On the server:
+
 ```bash
-# From the app root on the server (as the unprivileged app user)
-./scripts/deploy.sh              # origin/main
-./scripts/deploy.sh some-ref     # branch / tag / commit
+# Preferred — CloudPanel site user
+~/bin/deploy                     # origin/main
+~/bin/deploy origin/main
+~/bin/deploy <sha>
 ```
+
+Or from the app root:
+
+```bash
+cd ~/htdocs/nexus.sadcpf.org/app
+bash ./scripts/deploy.sh              # origin/main
+bash ./scripts/deploy.sh some-ref     # branch / tag / commit
+```
+
+From GitHub: **Actions → Deploy production (sadcpf-nexus) → Run workflow**.
+Requires repository secret `DEPLOY_SSH_PRIVATE_KEY` (private key for `github-actions-deploy@sadcpf-nexus`).
 
 What the script does (aborts on first failure):
 
@@ -22,6 +36,23 @@ What the script does (aborts on first failure):
 8. Health checks: API `/up` → 200; web `/` → 200 or 307
 
 See also [DOCKER.md](../../DOCKER.md#deploying-to-production-cloudpanel).
+
+## CI / CD (GitHub)
+
+Existing PR/push workflows stay the quality gate:
+
+- API — PHPUnit, Pint, Composer audit
+- Web — TypeScript build + Playwright E2E
+- Gitleaks
+- Production Readiness Gate
+
+**Via Git:** merge to `main`. Workflow **Deploy production (sadcpf-nexus)** waits until those checks finish, then SSHs as `sadcpf-nexus`. The server `git fetch` + `git merge --ff-only` and runs `scripts/deploy.sh`.
+
+**Direct:** `~/bin/deploy` on the host (same user, same script).
+
+**Manual:** Actions → Deploy production → Run workflow (`skip_ci_gate` only for an already-green emergency SHA).
+
+Repository secret: `DEPLOY_SSH_PRIVATE_KEY`.
 
 ## Rollback (code)
 
