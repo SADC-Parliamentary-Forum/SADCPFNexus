@@ -78,7 +78,7 @@ test("audit plans create draft locks duplicate submits while pending", () => {
   assert.match(source, /create\.mutate\(planTitle\)/);
   assert.match(source, /disabled=\{create\.isPending\}/);
   assert.match(source, /disabled=\{create\.isPending \|\| !title\.trim\(\)\}/);
-  assert.match(source, /Creating\.\.\./);
+  assert.match(source, /audit\.plans\.creating/);
 });
 
 test("audit engagements create locks duplicate submits while pending", () => {
@@ -88,7 +88,7 @@ test("audit engagements create locks duplicate submits while pending", () => {
   assert.match(source, /create\.mutate\(engagementTitle\)/);
   assert.match(source, /disabled=\{create\.isPending\}/);
   assert.match(source, /disabled=\{create\.isPending \|\| !title\.trim\(\)\}/);
-  assert.match(source, /Creating\.\.\./);
+  assert.match(source, /audit\.engagements\.creating/);
 });
 
 test("external audit create locks duplicate submits while pending", () => {
@@ -98,7 +98,7 @@ test("external audit create locks duplicate submits while pending", () => {
   assert.match(source, /create\.mutate\(externalTitle\)/);
   assert.match(source, /disabled=\{create\.isPending\}/);
   assert.match(source, /disabled=\{create\.isPending \|\| !title\.trim\(\)\}/);
-  assert.match(source, /Creating\.\.\./);
+  assert.match(source, /audit\.external\.creating/);
 });
 
 test("audit universe create locks duplicate submits while pending", () => {
@@ -108,7 +108,7 @@ test("audit universe create locks duplicate submits while pending", () => {
   assert.match(source, /create\.mutate\(entityName\)/);
   assert.match(source, /disabled=\{create\.isPending\}/);
   assert.match(source, /disabled=\{create\.isPending \|\| !name\.trim\(\)\}/);
-  assert.match(source, /Adding\.\.\./);
+  assert.match(source, /audit\.universe\.adding/);
 });
 
 test("risk control create locks duplicate submits while pending", () => {
@@ -454,18 +454,63 @@ test("salary advance exception employee field uses a selectable employee list", 
 
 test("audit quick-create forms have labels and explicit empty states", () => {
   const cases = [
-    ["app/(app)/audit/plans/page.tsx", "audit-plan-title", "No audit plans yet."],
-    ["app/(app)/audit/engagements/page.tsx", "audit-engagement-title", "No audit engagements yet."],
-    ["app/(app)/audit/external/page.tsx", "audit-external-title", "No external audit engagements yet."],
-    ["app/(app)/audit/universe/page.tsx", "audit-universe-name", "No audit universe entities yet."],
+    ["app/(app)/audit/plans/page.tsx", "audit-plan-title", "audit.plans.empty"],
+    ["app/(app)/audit/engagements/page.tsx", "audit-engagement-title", "audit.engagements.empty"],
+    ["app/(app)/audit/external/page.tsx", "audit-external-title", "audit.external.empty"],
+    ["app/(app)/audit/universe/page.tsx", "audit-universe-name", "audit.universe.empty"],
   ] as const;
 
-  for (const [path, id, emptyText] of cases) {
+  for (const [path, id, emptyKey] of cases) {
     const source = readFileSync(join(webRoot, path), "utf8");
     assert.match(source, new RegExp(`htmlFor="${id}"`));
     assert.match(source, new RegExp(`id="${id}"`));
-    assert.match(source, new RegExp(emptyText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(source, new RegExp(emptyKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.doesNotMatch(source, /<label className=/);
   }
+});
+
+test("audit module pages use shared chrome, i18n, and wrapping actions", () => {
+  const pages = [
+    "app/(app)/audit/page.tsx",
+    "app/(app)/audit/engagements/page.tsx",
+    "app/(app)/audit/findings/page.tsx",
+    "app/(app)/audit/corrective-actions/page.tsx",
+    "app/(app)/audit/qa/page.tsx",
+    "app/(app)/audit/analytics/page.tsx",
+    "app/(app)/audit/universe/page.tsx",
+    "app/(app)/audit/plans/page.tsx",
+    "app/(app)/audit/campaigns/page.tsx",
+    "app/(app)/audit/resources/page.tsx",
+    "app/(app)/audit/governance-packs/page.tsx",
+    "app/(app)/audit/appointments/page.tsx",
+    "app/(app)/audit/external/page.tsx",
+    "app/(app)/audit/templates/page.tsx",
+    "app/(app)/audit/ai/page.tsx",
+    "app/(app)/audit/settings/page.tsx",
+  ];
+
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, rel), "utf8");
+    assert.match(source, /useI18n/, `${rel} should call useI18n`);
+    assert.match(source, /ModulePageHeader|RegisterShell|AuditPageShell/, `${rel} should use shared page chrome`);
+    assert.match(source, /audit\.[a-z]/, `${rel} should use audit.* i18n keys`);
+    assert.doesNotMatch(source, /className="underline"/, `${rel} should not use underline action links`);
+    assert.doesNotMatch(source, /bg-neutral-900 text-white/, `${rel} should use btn-primary not a one-off black button`);
+    assert.match(source, /flex-wrap/, `${rel} should wrap actions on small screens`);
+  }
+
+  const engagements = readFileSync(join(webRoot, "app/(app)/audit/engagements/page.tsx"), "utf8");
+  assert.match(engagements, /btn-secondary/);
+  assert.doesNotMatch(engagements, /Engagement id/i);
+
+  const ai = readFileSync(join(webRoot, "app/(app)/audit/ai/page.tsx"), "utf8");
+  assert.match(ai, /<select/);
+  assert.match(ai, /listEngagements/);
+  assert.doesNotMatch(ai, /Engagement id \(optional/);
+
+  const resources = readFileSync(join(webRoot, "app/(app)/audit/resources/page.tsx"), "utf8");
+  assert.match(resources, /tenantUsersApi/);
+  assert.doesNotMatch(resources, /auditor_user_id \?\? "unassigned"/);
 });
 
 test("monthly timesheet chevrons and global search clear control have accessible names", () => {

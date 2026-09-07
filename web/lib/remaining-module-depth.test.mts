@@ -66,7 +66,7 @@ test("assignment detail couples timesheet hours without auto-complete", () => {
 test("audit AI includes investigation pack that never auto-closes", () => {
   const source = readFileSync(join(webRoot, "app/(app)/audit/ai/page.tsx"), "utf8");
   assert.match(source, /investigation_pack/);
-  assert.match(source, /never auto-closes/);
+  assert.match(source, /audit\.ai\.neverCloses/);
   assert.match(source, /audit-engagement-id/);
   assert.match(source, /audit-next-questions/);
 });

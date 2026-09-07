@@ -89,6 +89,8 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/assets/labels/templates/page.tsx",
     "components/assets/LabelTemplateVisualEditor.tsx",
     "app/(app)/assets/verification/page.tsx",
+    "app/(app)/audit/engagements/page.tsx",
+    "components/audit/AuditChrome.tsx",
     "app/a/[token]/page.tsx",
   ];
   for (const rel of files) {
@@ -136,6 +138,25 @@ test("asset import review table uses translated column headers", () => {
   assert.match(source, /assets\.import\.mapLocation/);
   assert.match(source, /assets\.import\.mapCustodian/);
   assert.match(source, /filterAll/);
+});
+
+test("audit module catalog covers register chrome in EN, FR and PT", () => {
+  const keys = [
+    "audit.hub",
+    "audit.engagements.title",
+    "audit.engagements.empty",
+    "audit.findings.title",
+    "audit.settings.title",
+    "audit.ai.neverCloses",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
 });
 
 test("language switcher remains available without logout", () => {

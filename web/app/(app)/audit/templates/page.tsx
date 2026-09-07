@@ -3,7 +3,9 @@
 import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { auditApi } from "@/lib/api";
-import { FormField } from "@/components/ui/FormSection";
+import { FormSection } from "@/components/ui/FormSection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { AuditPageShell } from "@/components/audit/AuditChrome";
 
 function asRows(payload: unknown): Record<string, unknown>[] {
   if (Array.isArray(payload)) return payload as Record<string, unknown>[];
@@ -15,6 +17,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 }
 
 export default function AuditTemplatesPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "templates"],
@@ -40,80 +43,96 @@ export default function AuditTemplatesPage() {
       }),
     onSuccess: () => {
       setErr(null);
-      setMsg("Template applied to the selected engagement. Human review of the report remains required.");
+      setMsg(t("audit.templates.applied"));
       qc.invalidateQueries({ queryKey: ["audit", "templates"] });
       qc.invalidateQueries({ queryKey: ["audit", "engagements"] });
     },
     onError: () => {
       setMsg(null);
-      setErr("Could not apply the template. Select an engagement and a donor template.");
+      setErr(t("audit.templates.applyError"));
     },
   });
 
   return (
-    <div className="p-6 space-y-4 max-w-4xl">
-      <h1 className="text-2xl font-semibold">Donor audit templates</h1>
-      <p className="text-sm text-neutral-600">Template library applied to engagements/reports.</p>
-
-      {isLoading ? <p className="text-sm text-neutral-500">Loading…</p> : (
-        <ul className="space-y-2 text-sm">
-          {templates.map((t) => (
-            <li key={String(t.id)} className="border rounded p-3 bg-white">
-              <div className="font-medium">{String(t.name)} <span className="text-neutral-500">({String(t.code)})</span></div>
-              <div className="text-neutral-600">{String(t.donor_name ?? "Generic")} · {String(t.applies_to)}</div>
-              <p className="mt-1">{String(t.guidance ?? "")}</p>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <form
-        className="border rounded p-4 bg-white space-y-3 text-sm"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!engagementId || !templateId) {
-            setErr("Select an engagement and a donor template.");
-            return;
-          }
-          apply.mutate();
-        }}
-      >
-        <FormField label="Engagement" htmlFor="audit-template-engagement" required>
-          <select
-            id="audit-template-engagement"
-            className="form-input"
-            value={engagementId}
-            onChange={(e) => setEngagementId(e.target.value)}
-          >
-            <option value="">Select engagement</option>
-            {engagements.map((row) => (
-              <option key={String(row.id)} value={String(row.id)}>
-                {String(row.reference_number ?? row.id)} · {String(row.title ?? "Engagement")}
-              </option>
+    <AuditPageShell
+      title="audit.templates.title"
+      subtitle="audit.templates.subtitle"
+      loading={isLoading}
+      actions={<div className="flex flex-wrap gap-2" />}
+    >
+      <div className="space-y-5">
+        {templates.length === 0 ? (
+          <p className="text-sm text-neutral-500">{t("audit.templates.empty")}</p>
+        ) : (
+          <ul className="space-y-2 text-sm">
+            {templates.map((tmpl) => (
+              <li key={String(tmpl.id)} className="card p-4">
+                <div className="font-medium">{String(tmpl.name)} <span className="text-neutral-500">({String(tmpl.code)})</span></div>
+                <div className="text-neutral-600">{String(tmpl.donor_name ?? "Generic")} · {String(tmpl.applies_to)}</div>
+                <p className="mt-1">{String(tmpl.guidance ?? "")}</p>
+              </li>
             ))}
-          </select>
-        </FormField>
-        <FormField label="Donor template" htmlFor="audit-template-select" required>
-          <select
-            id="audit-template-select"
-            className="form-input"
-            value={templateId}
-            onChange={(e) => setTemplateId(e.target.value)}
+          </ul>
+        )}
+
+        <FormSection title="audit.templates.apply" icon="description">
+          <form
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!engagementId || !templateId) {
+                setErr(t("audit.templates.applyError"));
+                return;
+              }
+              apply.mutate();
+            }}
           >
-            <option value="">Select template</option>
-            {templates.map((t) => (
-              <option key={String(t.id)} value={String(t.id)}>
-                {String(t.name)} ({String(t.code)})
-              </option>
-            ))}
-          </select>
-        </FormField>
-        <button type="submit" className="px-3 py-1.5 bg-neutral-900 text-white rounded" disabled={apply.isPending}>
-          {apply.isPending ? "Applying…" : "Apply template"}
-        </button>
-        {msg && <p className="text-sm text-green-700">{msg}</p>}
-        {err && <p className="text-sm text-red-700">{err}</p>}
-      </form>
-    </div>
+            <div>
+              <label htmlFor="audit-template-engagement" className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                {t("audit.templates.engagement")} <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="audit-template-engagement"
+                className="form-input w-full"
+                value={engagementId}
+                onChange={(e) => setEngagementId(e.target.value)}
+              >
+                <option value="">{t("audit.templates.selectEngagement")}</option>
+                {engagements.map((row) => (
+                  <option key={String(row.id)} value={String(row.id)}>
+                    {String(row.reference_number ?? row.id)} · {String(row.title ?? t("audit.engagements.title"))}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="audit-template-select" className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                {t("audit.templates.template")} <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="audit-template-select"
+                className="form-input w-full"
+                value={templateId}
+                onChange={(e) => setTemplateId(e.target.value)}
+              >
+                <option value="">{t("audit.templates.selectTemplate")}</option>
+                {templates.map((tmpl) => (
+                  <option key={String(tmpl.id)} value={String(tmpl.id)}>
+                    {String(tmpl.name)} ({String(tmpl.code)})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="submit" className="btn-primary text-sm" disabled={apply.isPending}>
+                {apply.isPending ? t("audit.templates.applying") : t("audit.templates.apply")}
+              </button>
+            </div>
+            {msg && <p className="text-sm text-green-700">{msg}</p>}
+            {err && <p className="text-sm text-red-700">{err}</p>}
+          </form>
+        </FormSection>
+      </div>
+    </AuditPageShell>
   );
 }
