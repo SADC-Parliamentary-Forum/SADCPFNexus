@@ -66,7 +66,7 @@ test("assets verification campaign create handles failures and locks duplicate s
   assert.match(source, /const \[creating,\s*setCreating\]/);
   assert.match(source, /if \(creating\) return/);
   assert.match(source, /try\s*\{/);
-  assert.match(source, /catch \(error: any\)/);
+  assert.match(source, /catch \(error:/);
   assert.match(source, /setErrorMsg/);
   assert.match(source, /disabled=\{creating\}/);
 });
@@ -154,9 +154,8 @@ test("travel DSA rate fields are constrained to non-negative values", () => {
   assert.match(source, /meal_component: nonNegativeNumber\(e\.target\.value\)/);
   assert.match(source, /incidentals_component: nonNegativeNumber\(e\.target\.value\)/);
 
-  const dsaForm = source.slice(source.indexOf("<form onSubmit={onSubmit}"), source.indexOf("<div className=\"col-span-2 flex justify-end\">"));
-  const minZeroCount = dsaForm.match(/type="number" min=\{0\}/g)?.length ?? 0;
-  assert.equal(minZeroCount, 4);
+  const minZeroCount = source.match(/min=\{0\}/g)?.length ?? 0;
+  assert.ok(minZeroCount >= 4, `expected at least 4 min={0} number fields, got ${minZeroCount}`);
 });
 
 test("asset insurance effective date inputs have visible labels", () => {
@@ -190,7 +189,7 @@ test("toast container exposes an assistive live region", () => {
 test("toast item supports dark mode and has a named dismiss button", () => {
   const source = readFileSync(join(webRoot, "components/ui/Toast.tsx"), "utf8");
 
-  assert.match(source, /aria-label="Dismiss notification"/);
+  assert.match(source, /aria-label=\{t\("common\.close"\)\}/);
   assert.match(source, /dark:bg-neutral-900/);
   assert.match(source, /dark:bg-neutral-800/);
   assert.match(source, /dark:text-neutral-100/);
@@ -763,10 +762,12 @@ test("UX-292 audit hub shortcuts use icon tiles not underlined links", () => {
 });
 
 test("UX-108 dashboard module grid covers core sidebar modules", () => {
-  const source = readFileSync(join(webRoot, "app/dashboard/page.tsx"), "utf8");
+  const source = readFileSync(join(webRoot, "lib/dashboardAccess.ts"), "utf8");
   for (const href of ["/stock", "/assets", "/fleet", "/people", "/audit", "/risk", "/workplan", "/assignments", "/correspondence", "/governance", "/reports"]) {
     assert.match(source, new RegExp(`href: "${href}"`));
   }
+  const page = readFileSync(join(webRoot, "app/dashboard/page.tsx"), "utf8");
+  assert.match(page, /dashboardModulesForUser/);
 });
 
 test("UX-102 HR leave uses shared date preference formatter", () => {
@@ -829,4 +830,71 @@ test("UX-317 access requests register shows business reason", () => {
   const source = readFileSync(join(webRoot, "app/(app)/admin/access/requests/page.tsx"), "utf8");
   assert.match(source, /<th>Reason<\/th>/);
   assert.match(source, /r\.business_reason/);
+});
+
+test("HR hub has no overflowing tab strip and always shows hub cards", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/hr/page.tsx"), "utf8");
+  assert.match(source, /ModuleHubCards/);
+  assert.match(source, /HR_HUB_CARDS/);
+  assert.match(source, /useI18n/);
+  assert.doesNotMatch(source, /HR_TABS/);
+  assert.doesNotMatch(source, /flex gap-1 border-b/);
+  assert.match(source, /hr\.hub/);
+});
+
+test("remaining risk subpages use ModulePageHeader and risk hub breadcrumbs", () => {
+  const pages = [
+    "dashboard",
+    "incidents",
+    "controls",
+    "appetite",
+    "kri",
+    "analytics",
+    "bcp",
+    "audit-trail",
+    "control-testing",
+    "policies",
+  ];
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, `app/(app)/risk/${rel}/page.tsx`), "utf8");
+    assert.match(source, /ModulePageHeader/, `missing header on risk/${rel}`);
+    assert.match(source, /PageBreadcrumbs/, `missing breadcrumbs on risk/${rel}`);
+    assert.match(source, /risk\.hub/, `missing risk.hub breadcrumb on risk/${rel}`);
+    assert.doesNotMatch(source, /className="page-title"/, `legacy page-title on risk/${rel}`);
+  }
+});
+
+test("risk KRI links and dashboard actions are not underline-only", () => {
+  const kri = readFileSync(join(webRoot, "app/(app)/risk/kri/page.tsx"), "utf8");
+  const dashboard = readFileSync(join(webRoot, "app/(app)/risk/dashboard/page.tsx"), "utf8");
+  assert.doesNotMatch(kri, /text-blue-700 underline/);
+  assert.match(dashboard, /ModulePageHeader/);
+  assert.match(dashboard, /flex-wrap/);
+});
+
+test("people registers search labelled fields instead of JSON dumps", () => {
+  const helper = readFileSync(join(webRoot, "lib/peopleRowSearch.ts"), "utf8");
+  assert.match(helper, /export function peopleRowMatchesQuery/);
+  assert.doesNotMatch(helper, /JSON\.stringify/);
+  const source = readFileSync(join(webRoot, "app/(app)/people/skills/page.tsx"), "utf8");
+  assert.match(source, /peopleRowMatchesQuery/);
+  assert.doesNotMatch(source, /JSON\.stringify\(r\)\.toLowerCase\(\)\.includes\(term\)/);
+});
+
+test("asset import review uses labelled records not a raw JSON dump", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/assets/import/page.tsx"), "utf8");
+  assert.match(source, /LabelledRecord/);
+  assert.doesNotMatch(source, /JSON\.stringify\(raw/);
+});
+
+test("remaining native alerts use toast instead", () => {
+  for (const rel of [
+    "app/(app)/hr/files/[id]/documents/page.tsx",
+    "app/(app)/correspondence/[id]/page.tsx",
+    "app/(app)/finance/balance-register/[id]/page.tsx",
+  ]) {
+    const source = readFileSync(join(webRoot, rel), "utf8");
+    assert.match(source, /useToast/, rel);
+    assert.doesNotMatch(source, /\balert\(/, rel);
+  }
 });

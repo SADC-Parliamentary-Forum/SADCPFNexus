@@ -115,7 +115,7 @@ export default function RiskAuditTrailPage() {
         <ModulePageHeader
         title="Risk Audit Trail"
         subtitle="Tamper-evident ledger of all risk register events."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Risk Audit Trail" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.auditTrail.title" }]} />}
       />
         <button onClick={handleExport} disabled={!events.length} className="btn-secondary flex items-center gap-1.5 text-sm disabled:opacity-40">
           <span className="material-symbols-outlined text-[16px]">download</span>

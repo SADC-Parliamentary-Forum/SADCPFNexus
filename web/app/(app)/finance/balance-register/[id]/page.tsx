@@ -11,6 +11,7 @@ import {
   type BalanceAcknowledgement,
 } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 const MODULE_LABELS: Record<string, string> = {
   salary_advance: "Salary Advance",
@@ -52,6 +53,7 @@ function fmt2(n: number | string) {
 export default function RegisterDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router  = useRouter();
+  const { error: toastError } = useToast();
 
   const [register, setRegister] = useState<BalanceRegister | null>(null);
   const [loading, setLoading]   = useState(true);
@@ -88,7 +90,7 @@ export default function RegisterDetailPage() {
       await bcreApi.lock(register.id);
       load();
     } catch (e: any) {
-      alert(e?.response?.data?.message ?? "Failed to lock register.");
+      toastError(e?.response?.data?.message ?? "Failed to lock register.");
     } finally {
       setLockLoading(false);
     }
@@ -101,7 +103,7 @@ export default function RegisterDetailPage() {
       await bcreApi.unlock(register.id);
       load();
     } catch (e: any) {
-      alert(e?.response?.data?.message ?? "Failed to unlock register.");
+      toastError(e?.response?.data?.message ?? "Failed to unlock register.");
     } finally {
       setLockLoading(false);
     }

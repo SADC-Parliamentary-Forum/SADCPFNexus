@@ -8,6 +8,7 @@ import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { SigningModal } from "@/components/saam/SigningModal";
 import { CreateAssignmentFromSourceModal } from "@/components/assignments/CreateAssignmentFromSourceModal";
+import { useToast } from "@/components/ui/Toast";
 
 const statusSteps = ["draft", "pending_review", "pending_approval", "approved", "sent"];
 const statusLabel: Record<string, string> = {
@@ -37,6 +38,7 @@ interface RecipientRow { contact_id: number; type: "to" | "cc" | "bcc"; name: st
 
 export default function CorrespondenceDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { success: toastSuccess } = useToast();
   const [letter, setLetter] = useState<CorrespondenceLetter | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +106,7 @@ export default function CorrespondenceDetailPage() {
       const res = await correspondenceApi.get(Number(id));
       setLetter(res.data.data);
       correspondenceApi.listNotes(Number(id)).then((n) => setNotes(n.data.data ?? [])).catch(() => {});
-      if (successMsg) alert(successMsg);
+      if (successMsg) toastSuccess(successMsg);
     } catch {
       setError("Action failed. Please try again.");
     } finally {

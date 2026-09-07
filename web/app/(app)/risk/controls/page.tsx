@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { riskApi } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function RiskControlsPage() {
+  const { t } = useI18n();
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -21,9 +23,10 @@ export default function RiskControlsPage() {
     try {
       await riskApi.createControl({ title: controlTitle, control_type: "preventive", effectiveness: "partial" });
       setTitle("");
-      setOk("Control created. Link it from a risk detail page.");
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? "Failed to create control");
+      setOk(t("risk.controls.created"));
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setError(message ?? t("risk.controls.createFailed"));
     } finally {
       setCreating(false);
     }
@@ -31,17 +34,16 @@ export default function RiskControlsPage() {
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="text-sm text-muted-foreground">
-        <Link href="/risk" className="hover:text-primary">Risk Register</Link>
-        <span className="mx-2">/</span>
-        <span>Controls</span>
-      </div>
-      <h1 className="page-title">Control Register</h1>
-      <p className="page-subtitle">Phase 1 control catalogue. Effectiveness informs residual judgment — it never auto-computes residual scores.</p>
-      <form onSubmit={createControl} className="flex gap-3 items-end">
-        <div className="flex-1">
-          <label className="text-sm font-medium">New control title</label>
+      <ModulePageHeader
+        title="risk.controls.title"
+        subtitle="risk.controls.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.controls.title" }]} />}
+      />
+      <form onSubmit={createControl} className="flex flex-wrap gap-3 items-end">
+        <div className="min-w-[12rem] flex-1">
+          <label htmlFor="risk-control-title" className="text-sm font-medium">{t("risk.controls.newTitle")}</label>
           <input
+            id="risk-control-title"
             className="form-input w-full mt-1 disabled:opacity-60"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -50,7 +52,7 @@ export default function RiskControlsPage() {
           />
         </div>
         <button type="submit" className="btn-primary disabled:opacity-60 disabled:cursor-not-allowed" disabled={creating || !title.trim()}>
-          {creating ? "Adding..." : "Add control"}
+          {creating ? "Adding..." : t("risk.controls.add")}
         </button>
       </form>
       {error && <p className="text-sm text-red-600">{error}</p>}

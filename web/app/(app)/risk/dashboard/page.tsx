@@ -5,6 +5,8 @@ import Link from "next/link";
 import { riskApi, type RiskDashboardData, type RiskMatrixData, type RiskDepartmentExposure } from "@/lib/api";
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -79,6 +81,7 @@ function KpiCard({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function RiskDashboardPage() {
+  const { t } = useI18n();
   const currentUser = typeof window !== "undefined" ? getStoredUser() : null;
 
   const { data: dashboard, isLoading: dashLoading } = useQuery({
@@ -96,22 +99,24 @@ export default function RiskDashboardPage() {
   const isExecutive = (currentUser?.roles ?? []).some((r) =>
     ["Secretary General", "Director", "System Admin", "super-admin"].includes(r)
   );
-  const dashTitle = isExecutive ? "Institutional Risk Dashboard" : "Risk Dashboard";
+  const dashTitle = isExecutive ? "risk.dashboard.titleExecutive" : "risk.dashboard.title";
 
   const kpis = dashboard?.kpis;
 
   return (
     <div className="space-y-6 max-w-6xl">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">{dashTitle}</h1>
-          <p className="page-subtitle">Real-time risk exposure across all departments and categories.</p>
-        </div>
-        <Link href="/risk" className="btn-secondary flex items-center gap-1.5 text-sm">
-          <span className="material-symbols-outlined text-[16px]">list</span>
-          Full Register
-        </Link>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <ModulePageHeader
+          title={dashTitle}
+          subtitle="risk.dashboard.subtitle"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: dashTitle }]} />}
+          actions={
+            <Link href="/risk" className="btn-secondary flex items-center gap-1.5 text-sm">
+              <span className="material-symbols-outlined text-[16px]">list</span>
+              {t("risk.dashboard.register")}
+            </Link>
+          }
+        />
       </div>
 
       {/* Row 1: 6 KPI Cards */}
@@ -237,7 +242,7 @@ export default function RiskDashboardPage() {
               <span className="material-symbols-outlined text-[16px] text-red-500">warning</span>
               Escalated Risks
             </h2>
-            <Link href="/risk?status=escalated" className="text-xs text-primary hover:underline">View all</Link>
+            <Link href="/risk?status=escalated" className="text-xs font-medium text-primary">{t("risk.dashboard.viewAll")}</Link>
           </div>
           {!dashboard?.escalated_risks?.length ? (
             <div className="py-4 text-center">
@@ -278,12 +283,12 @@ export default function RiskDashboardPage() {
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-center">
               <p className="text-3xl font-bold text-red-700">{kpis?.overdue_actions ?? "—"}</p>
               <p className="text-xs text-red-600 mt-1">Overdue Actions</p>
-              <Link href="/risk" className="text-[10px] text-red-500 hover:underline mt-1 block">View risks →</Link>
+              <Link href="/risk" className="text-[10px] font-medium text-red-500 mt-1 block">View risks →</Link>
             </div>
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-center">
               <p className="text-3xl font-bold text-blue-700">{kpis?.reviews_due ?? "—"}</p>
               <p className="text-xs text-blue-600 mt-1">Reviews Due (14d)</p>
-              <Link href="/risk" className="text-[10px] text-blue-500 hover:underline mt-1 block">View risks →</Link>
+              <Link href="/risk" className="text-[10px] font-medium text-blue-500 mt-1 block">View risks →</Link>
             </div>
           </div>
           <div className="pt-2 border-t border-neutral-100">
@@ -303,7 +308,7 @@ export default function RiskDashboardPage() {
             <span className="material-symbols-outlined text-[16px] text-primary">history</span>
             Recent Activity
           </h2>
-          <Link href="/risk/audit-trail" className="text-xs text-primary hover:underline">Full audit trail</Link>
+          <Link href="/risk/audit-trail" className="text-xs font-medium text-primary">Full audit trail</Link>
         </div>
 
         {!dashboard?.recent_activity?.length ? (
@@ -321,7 +326,7 @@ export default function RiskDashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0 pt-0.5">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={`/risk/${event.risk_id}`} className="font-mono text-xs text-primary hover:underline">{event.risk_code}</Link>
+                        <Link href={`/risk/${event.risk_id}`} className="font-mono text-xs font-medium text-primary">{event.risk_code}</Link>
                         <span className="text-xs text-neutral-600 capitalize">{event.change_type.replace(/_/g, " ")}</span>
                         <span className="text-[10px] text-neutral-400">by {event.actor_name}</span>
                       </div>

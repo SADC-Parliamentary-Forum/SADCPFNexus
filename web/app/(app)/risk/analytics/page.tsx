@@ -93,7 +93,7 @@ export default function RiskAnalyticsPage() {
         <ModulePageHeader
         title="Risk Analytics & Reports"
         subtitle="Institutional risk exposure analysis, departmental performance, and category breakdown."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Risk Analytics & Reports" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.analytics.title" }]} />}
       />
         <button onClick={handleExport} className="btn-secondary flex items-center gap-1.5 text-sm">
           <span className="material-symbols-outlined text-[16px]">download</span>

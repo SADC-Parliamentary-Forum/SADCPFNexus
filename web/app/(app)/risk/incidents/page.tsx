@@ -1,51 +1,51 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { riskApi } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function RiskIncidentsPage() {
-  const [data, setData] = useState<any[]>([]);
+  const { t } = useI18n();
+  const [data, setData] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     riskApi.listIncidents()
-      .then((r) => setData((r.data as any).data ?? r.data ?? []))
-      .catch((e) => setError(e?.response?.data?.message ?? "Failed to load incidents"));
-  }, []);
+      .then((r) => setData(((r.data as { data?: Record<string, unknown>[] }).data ?? r.data ?? []) as Record<string, unknown>[]))
+      .catch((e: { response?: { data?: { message?: string } } }) => setError(e?.response?.data?.message ?? t("risk.incidents.loadError")));
+  }, [t]);
 
   return (
-    <div className="p-6 space-y-4 max-w-5xl">
-      <div className="text-sm text-muted-foreground">
-        <Link href="/risk" className="hover:text-primary">Risk Register</Link>
-        <span className="mx-2">/</span>
-        <span>Incidents</span>
-      </div>
-      <h1 className="page-title">Incidents</h1>
-      <p className="page-subtitle">Incidents are distinct from risks. Materialising a risk does not auto-close it.</p>
+    <div className="space-y-4 max-w-5xl">
+      <ModulePageHeader
+        title="risk.incidents.title"
+        subtitle="risk.incidents.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "risk.hub", href: "/risk" }, { label: "risk.incidents.title" }]} />}
+      />
       {error && <p className="text-sm text-red-600">{error}</p>}
-      <div className="overflow-x-auto border rounded-lg">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white">
         <table className="w-full text-sm">
-          <thead className="bg-muted/40">
-            <tr>
-              <th className="text-left p-3">Code</th>
-              <th className="text-left p-3">Title</th>
-              <th className="text-left p-3">Severity</th>
-              <th className="text-left p-3">Status</th>
-              <th className="text-left p-3">Linked risk</th>
+          <thead>
+            <tr className="border-b border-neutral-100 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              <th className="px-3 py-2.5">{t("risk.incidents.col.code")}</th>
+              <th className="px-3 py-2.5">{t("risk.incidents.col.title")}</th>
+              <th className="px-3 py-2.5">{t("risk.incidents.col.severity")}</th>
+              <th className="px-3 py-2.5">{t("risk.incidents.col.status")}</th>
+              <th className="px-3 py-2.5">{t("risk.incidents.col.linked")}</th>
             </tr>
           </thead>
           <tbody>
             {data.length === 0 && (
-              <tr><td colSpan={5} className="p-4 text-muted-foreground">No incidents yet.</td></tr>
+              <tr><td colSpan={5} className="px-3 py-4 text-neutral-500">{t("risk.incidents.empty")}</td></tr>
             )}
-            {data.map((row: any) => (
-              <tr key={row.id} className="border-t">
-                <td className="p-3 font-mono text-xs">{row.incident_code}</td>
-                <td className="p-3">{row.title}</td>
-                <td className="p-3">{row.severity}</td>
-                <td className="p-3">{row.status}</td>
-                <td className="p-3">{row.risk_id ?? "—"}</td>
+            {data.map((row) => (
+              <tr key={String(row.id)} className="border-b border-neutral-100">
+                <td className="px-3 py-2.5 font-mono text-xs">{String(row.incident_code ?? "—")}</td>
+                <td className="px-3 py-2.5">{String(row.title ?? "—")}</td>
+                <td className="px-3 py-2.5">{String(row.severity ?? "—")}</td>
+                <td className="px-3 py-2.5">{String(row.status ?? "—")}</td>
+                <td className="px-3 py-2.5">{row.risk_id != null ? String(row.risk_id) : "—"}</td>
               </tr>
             ))}
           </tbody>

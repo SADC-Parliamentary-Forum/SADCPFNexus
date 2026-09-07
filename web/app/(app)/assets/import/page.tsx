@@ -7,6 +7,7 @@ import { FormSection } from "@/components/ui/FormSection";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { LabelledRecord } from "@/components/ui/LabelledRecord";
 
 type Counts = Record<string, number>;
 type StagingRow = {
@@ -546,7 +547,9 @@ export default function AssetImportPage() {
       )}
 
       {raw != null && (
-        <pre className="card overflow-auto p-3 text-xs">{JSON.stringify(raw, null, 2)}</pre>
+        <div className="card overflow-auto p-3">
+          <LabelledRecord value={raw} />
+        </div>
       )}
     </div>
   );

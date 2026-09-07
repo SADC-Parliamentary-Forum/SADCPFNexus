@@ -1,18 +1,18 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
 import { hrApi, type Timesheet } from "@/lib/api";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { HR_HUB_CARDS } from "@/lib/hubs/hr";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
-const statusConfig: Record<string, { label: string; cls: string }> = {
-  approved: { label: "Approved", cls: "badge-success" },
-  submitted: { label: "Submitted", cls: "badge-warning" },
-  rejected: { label: "Rejected", cls: "badge-danger" },
-  draft: { label: "Draft", cls: "badge-muted" },
+const statusConfig: Record<string, { labelKey: string; cls: string }> = {
+  approved: { labelKey: "hr.status.approved", cls: "badge-success" },
+  submitted: { labelKey: "hr.status.submitted", cls: "badge-warning" },
+  rejected: { labelKey: "hr.status.rejected", cls: "badge-danger" },
+  draft: { labelKey: "hr.status.draft", cls: "badge-muted" },
 };
 
 function formatPeriod(ts: Timesheet) {
@@ -28,22 +28,8 @@ interface HRSummary {
   lil_hours_available: number;
 }
 
-const HR_TABS = [
-  { key: "overview", label: "Overview", icon: "dashboard" },
-  { key: "timesheets", label: "Timesheets", icon: "calendar_today" },
-  { key: "leave", label: "Leave", icon: "event_available" },
-  { key: "payroll", label: "Payroll", icon: "account_balance" },
-  { key: "performance", label: "Performance", icon: "trending_up" },
-  { key: "appraisals", label: "Appraisals", icon: "rate_review" },
-  { key: "conduct", label: "Conduct", icon: "gavel" },
-  { key: "files", label: "Personal files", icon: "folder" },
-];
-
-function HRPageContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab") ?? "overview";
-
+export default function HRPage() {
+  const { t } = useI18n();
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [summary, setSummary] = useState<HRSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,290 +37,133 @@ function HRPageContent() {
 
   useEffect(() => {
     hrApi.listTimesheets()
-      .then((res) => setTimesheets((res.data as any).data ?? []))
-      .catch(() => setError("Failed to load timesheets."))
+      .then((res) => setTimesheets((res.data as { data?: Timesheet[] }).data ?? []))
+      .catch(() => setError(t("hr.timesheets.loadError")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [t]);
 
   useEffect(() => {
-    hrApi.getSummary().then((res) => setSummary(res.data)).catch(() => { });
+    hrApi.getSummary().then((res) => setSummary(res.data as HRSummary)).catch(() => { });
   }, []);
 
   const stats = [
-    { label: "Hours This Month", value: summary != null ? `${summary.hours_this_month} hrs` : "—", icon: "schedule", color: "text-primary", bg: "bg-primary/10" },
-    { label: "Overtime (MTD)", value: summary != null ? `${summary.overtime_mtd} hrs` : "—", icon: "more_time", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
-    { label: "Annual Leave Left", value: summary != null ? `${summary.annual_leave_left} days` : "—", icon: "event_available", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20" },
-    { label: "LIL Hours Available", value: summary != null ? `${summary.lil_hours_available} hrs` : "—", icon: "swap_horiz", color: "text-primary", bg: "bg-primary/10" },
+    { label: t("hr.stat.hours"), value: summary != null ? `${summary.hours_this_month} hrs` : "—", icon: "schedule", color: "text-primary", bg: "bg-primary/10" },
+    { label: t("hr.stat.overtime"), value: summary != null ? `${summary.overtime_mtd} hrs` : "—", icon: "more_time", color: "text-amber-600", bg: "bg-amber-50 dark:bg-amber-900/20" },
+    { label: t("hr.stat.leave"), value: summary != null ? `${summary.annual_leave_left}` : "—", icon: "event_available", color: "text-green-600", bg: "bg-green-50 dark:bg-green-900/20" },
+    { label: t("hr.stat.lil"), value: summary != null ? `${summary.lil_hours_available} hrs` : "—", icon: "swap_horiz", color: "text-primary", bg: "bg-primary/10" },
   ];
 
   const quickActions = [
-    { label: "Submit Timesheet", desc: "Log this week's hours", icon: "edit_calendar", href: "/hr/timesheets" },
-    { label: "Apply for Leave", desc: "Annual, sick, or LIL", icon: "event_available", href: "/leave/create" },
-    { label: "Salary Advance", desc: "Request a pay advance", icon: "account_balance", href: "/salary-advances/create" },
+    { label: t("hr.action.timesheet"), desc: t("hr.action.timesheetHint"), icon: "edit_calendar", href: "/hr/timesheets" },
+    { label: t("hr.action.leave"), desc: t("hr.action.leaveHint"), icon: "event_available", href: "/leave/create" },
+    { label: t("hr.action.advance"), desc: t("hr.action.advanceHint"), icon: "account_balance", href: "/salary-advances/create" },
   ];
 
   return (
     <div className="space-y-6 max-w-5xl">
       <ModulePageHeader
-        title="Human Resources"
-        subtitle="Timesheets, leave balances, payroll, and HR self-service."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Human Resources" }]} />}
+        title="hr.hub"
+        subtitle="hr.subtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "hr.hub" }]} />}
       />
 
-      {/* Sub-navigation tabs */}
-      <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-700">
-        {HR_TABS.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => router.push(`/hr${tab.key !== "overview" ? `?tab=${tab.key}` : ""}`)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${activeTab === tab.key
-                ? "border-primary text-primary"
-                : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600"
-              }`}
-          >
-            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 0" }}>{tab.icon}</span>
-            {tab.label}
-          </button>
+      <ModuleHubCards cards={HR_HUB_CARDS} />
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="card p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{s.label}</p>
+                <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">{s.value}</p>
+              </div>
+              <div className={`h-10 w-10 rounded-xl ${s.bg} flex items-center justify-center`}>
+                <span className={`material-symbols-outlined ${s.color} text-[20px]`}>{s.icon}</span>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Leave tab */}
-      {activeTab === "leave" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">View and manage all staff leave requests.</p>
-            <Link href="/hr/leave" className="btn-primary py-2 px-3 text-xs flex items-center gap-1">
-              <span className="material-symbols-outlined text-[15px]">open_in_new</span>
-              Full Leave Manager
-            </Link>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {quickActions.map((a) => (
+          <Link
+            key={a.href}
+            href={a.href}
+            className="card p-4 flex items-center gap-3 hover:border-primary/30 hover:shadow-elevated transition-all group"
+          >
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+              <span className="material-symbols-outlined text-primary text-[20px]">{a.icon}</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{a.label}</p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">{a.desc}</p>
+            </div>
+            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[18px] ml-auto">chevron_right</span>
+          </Link>
+        ))}
+      </div>
+
+      <div className="card">
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-neutral-400 dark:text-neutral-500 text-[18px]">calendar_today</span>
+            <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t("hr.timesheets.recent")}</h3>
           </div>
-          <Link href="/hr/leave" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors group">
-            <div className="h-12 w-12 rounded-xl bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
-              <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[24px]">event_available</span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Staff Leave Requests</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Approve, reject, and manage leave applications for all staff.</p>
-            </div>
-            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
-          </Link>
+          <Link href="/hr/timesheets" className="text-xs font-semibold text-primary">{t("hr.timesheets.viewAll")}</Link>
         </div>
-      )}
 
-      {/* Payroll tab */}
-      {activeTab === "payroll" && (
-        <div className="space-y-4">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Payroll management and payslip access.</p>
-          <Link href="/finance" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <span className="material-symbols-outlined text-primary text-[24px]">account_balance</span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Finance &amp; Payroll</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Access payslips, salary advances, and finance records.</p>
-            </div>
-            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
-          </Link>
-        </div>
-      )}
-
-      {/* Timesheets tab */}
-      {activeTab === "timesheets" && (
-        <Link href="/hr/timesheets" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors">
-          <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary text-[24px]">edit_calendar</span>
+        {error && (
+          <div className="px-5 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800/50 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
+            <span className="material-symbols-outlined text-[16px]">error_outline</span>
+            {error}
           </div>
-          <div>
-            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">My Timesheets</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">Log and submit your weekly hours.</p>
+        )}
+
+        {loading ? (
+          <div className="px-5 py-10 text-center">
+            <div className="flex items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
+              <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+              <span className="text-sm">{t("common.loading")}</span>
+            </div>
           </div>
-          <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
-        </Link>
-      )}
-
-      {/* Performance tab */}
-      {activeTab === "performance" && (
-        <div className="space-y-4">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Live performance tracking, status distribution, and employee profiles.</p>
-          <Link href="/hr/performance" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors group">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <span className="material-symbols-outlined text-primary text-[24px]">trending_up</span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Performance Tracker</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">View status distribution, watchlist, and employee performance profiles.</p>
-            </div>
-            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
-          </Link>
-        </div>
-      )}
-
-      {/* Appraisals tab */}
-      {activeTab === "appraisals" && (
-        <div className="space-y-4">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Formal performance review cycles, self-assessment, supervisor and HOD review, SG decision.</p>
-          <Link href="/hr/appraisals" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors group">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <span className="material-symbols-outlined text-primary text-[24px]">rate_review</span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Performance Appraisal</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">View and manage appraisal cycles and employee appraisals.</p>
-            </div>
-            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
-          </Link>
-        </div>
-      )}
-
-      {/* Conduct tab */}
-      {activeTab === "conduct" && (
-        <div className="space-y-4">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Commendations, warnings, and corrective actions that support performance review.</p>
-          <Link href="/hr/conduct" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors group">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <span className="material-symbols-outlined text-primary text-[24px]">gavel</span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Conduct &amp; Recognition</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">View conduct and recognition records.</p>
-            </div>
-            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
-          </Link>
-        </div>
-      )}
-
-      {/* Personal files tab */}
-      {activeTab === "files" && (
-        <div className="space-y-4">
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">Employee directory and digital HR personal files.</p>
-          <Link href="/hr/files" className="card p-5 flex items-center gap-4 hover:border-primary/30 transition-colors group">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <span className="material-symbols-outlined text-primary text-[24px]">folder</span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">HR Personal Files</p>
-              <p className="text-xs text-neutral-500 dark:text-neutral-400">Search employees, view file summaries, documents, and timeline.</p>
-            </div>
-            <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[20px] ml-auto">chevron_right</span>
-          </Link>
-        </div>
-      )}
-
-      {/* Overview tab (default) */}
-      {(activeTab === "overview" || !["leave", "payroll", "timesheets", "performance", "appraisals", "conduct", "files"].includes(activeTab)) && (
-        <>
-
-          <ModuleHubCards cards={HR_HUB_CARDS} />
-
-          {/* Summary stats */}
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {stats.map((s) => (
-              <div key={s.label} className="card p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{s.label}</p>
-                    <p className="text-xl font-bold text-neutral-900 dark:text-neutral-100 mt-1">{s.value}</p>
+        ) : (
+          <div className="divide-y divide-neutral-50 dark:divide-neutral-700/50">
+            {timesheets.map((ts) => {
+              const s = statusConfig[ts.status] ?? { labelKey: ts.status, cls: "badge-muted" };
+              return (
+                <Link
+                  key={ts.id}
+                  href={`/hr/timesheets?week=${ts.id}`}
+                  className="flex items-center justify-between px-5 py-4 hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{formatPeriod(ts)}</p>
+                      <p className="text-xs text-neutral-400 dark:text-neutral-500">
+                        {ts.total_hours} hrs{ts.overtime_hours ? ` · ${ts.overtime_hours} hrs OT` : ""}
+                      </p>
+                    </div>
                   </div>
-                  <div className={`h-10 w-10 rounded-xl ${s.bg} flex items-center justify-center`}>
-                    <span className={`material-symbols-outlined ${s.color} text-[20px]`}>{s.icon}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick actions */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {quickActions.map((a) => (
-              <Link
-                key={a.label}
-                href={a.href}
-                className="card p-4 flex items-center gap-3 hover:border-primary/30 hover:shadow-elevated transition-all group"
-              >
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                  <span className="material-symbols-outlined text-primary text-[20px]">{a.icon}</span>
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{a.label}</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">{a.desc}</p>
-                </div>
-                <span className="material-symbols-outlined text-neutral-300 dark:text-neutral-600 text-[18px] ml-auto">chevron_right</span>
-              </Link>
-            ))}
-          </div>
-
-          {/* Recent timesheets */}
-          <div className="card">
-            <div className="card-header">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-neutral-400 dark:text-neutral-500 text-[18px]">calendar_today</span>
-                <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Recent Timesheets</h3>
-              </div>
-              <Link href="/hr/timesheets" className="text-xs font-semibold text-primary hover:underline">View all</Link>
-            </div>
-
-            {error && (
-              <div className="px-5 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-800/50 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[16px]">error_outline</span>
-                {error}
-              </div>
-            )}
-
-            {loading ? (
-              <div className="px-5 py-10 text-center">
-                <div className="flex items-center justify-center gap-2 text-neutral-400 dark:text-neutral-500">
-                  <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-                  <span className="text-sm">Loading…</span>
-                </div>
-              </div>
-            ) : (
-              <div className="divide-y divide-neutral-50 dark:divide-neutral-700/50">
-                {timesheets.map((ts) => {
-                  const s = statusConfig[ts.status] ?? { label: ts.status, cls: "badge-muted" };
-                  return (
-                    <Link
-                      key={ts.id}
-                      href={`/hr/timesheets?week=${ts.id}`}
-                      className="flex items-center justify-between px-5 py-4 hover:bg-neutral-50/50 dark:hover:bg-neutral-800/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-primary text-[20px]">calendar_today</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{formatPeriod(ts)}</p>
-                          <p className="text-xs text-neutral-400 dark:text-neutral-500">
-                            {ts.total_hours} hrs{ts.overtime_hours ? ` · ${ts.overtime_hours} hrs OT` : ""}
-                          </p>
-                        </div>
-                      </div>
-                      <span className={`badge ${s.cls}`}>{s.label}</span>
-                    </Link>
-                  );
-                })}
-                {timesheets.length === 0 && (
-                  <div className="py-12 text-center">
-                    <span className="material-symbols-outlined text-4xl text-neutral-200 dark:text-neutral-600">calendar_today</span>
-                    <p className="mt-3 text-sm text-neutral-400 dark:text-neutral-500">No timesheets submitted yet.</p>
-                    <Link href="/hr/timesheets" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
-                      Submit your first timesheet
-                    </Link>
-                  </div>
-                )}
+                  <span className={`badge ${s.cls}`}>{statusConfig[ts.status] ? t(s.labelKey) : ts.status}</span>
+                </Link>
+              );
+            })}
+            {timesheets.length === 0 && (
+              <div className="py-12 text-center">
+                <span className="material-symbols-outlined text-4xl text-neutral-200 dark:text-neutral-600">calendar_today</span>
+                <p className="mt-3 text-sm text-neutral-400 dark:text-neutral-500">{t("hr.timesheets.empty")}</p>
+                <Link href="/hr/timesheets" className="mt-3 inline-block text-sm font-semibold text-primary">
+                  {t("hr.timesheets.submitFirst")}
+                </Link>
               </div>
             )}
           </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
-  );
-}
-
-export default function HRPage() {
-  return (
-    <Suspense fallback={<div className="p-10 text-center text-neutral-400">Loading...</div>}>
-      <HRPageContent />
-    </Suspense>
   );
 }

@@ -7,6 +7,7 @@ import { hrFilesApi, type HrPersonalFile, type HrFileDocument } from "@/lib/api"
 import { getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 const CONFIDENTIALITY_BADGE: Record<HrFileDocument["confidentiality_level"], string> = {
   standard: "badge-muted",
@@ -23,6 +24,7 @@ const DOC_TYPES = [
 export default function HrFileDocumentsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { error: toastError } = useToast();
   const user = getStoredUser();
   const isHR = user?.roles?.includes("hr") || user?.permissions?.includes("hr.admin");
 
@@ -83,7 +85,7 @@ export default function HrFileDocumentsPage() {
       setUploadForm({ document_type: "other", title: "", file_name: "", confidentiality_level: "standard", issue_date: "", remarks: "" });
       loadDocs();
     } catch {
-      alert("Failed to add document.");
+      toastError("Failed to add document.");
     } finally {
       setUploading(false);
     }
@@ -96,7 +98,7 @@ export default function HrFileDocumentsPage() {
       setDeleteConfirm(null);
       loadDocs();
     } catch {
-      alert("Failed to delete document.");
+      toastError("Failed to delete document.");
     } finally {
       setDeleting(false);
     }
