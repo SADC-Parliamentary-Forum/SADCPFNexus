@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { isAxiosError } from "axios";
 import { assetLabelsApi, assetsApi, type Asset, type AssetLabelTemplate } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RowCheckbox, SelectAllCheckbox, selectionColumnClass } from "@/components/ui/BulkSelectionBar";
+import { useRowSelection } from "@/lib/useRowSelection";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { openPdfBlob } from "@/lib/openPdfBlob";
 
@@ -14,13 +16,17 @@ export default function AssetLabelsPage() {
   const [templates, setTemplates] = useState<AssetLabelTemplate[]>([]);
   const [templateId, setTemplateId] = useState<number | "">("");
   const [assets, setAssets] = useState<Asset[]>([]);
-  const [selected, setSelected] = useState<number[]>([]);
   const [reprint, setReprint] = useState<Asset[]>([]);
   const [search, setSearch] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [printing, setPrinting] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const getId = useCallback((asset: Asset) => asset.id, []);
+  const selection = useRowSelection({ rows: assets, getId });
+  const reprintIds = reprint.map((asset) => asset.id);
+  const allReprintSelected = reprintIds.length > 0 && reprintIds.every((id) => selection.isSelected(id));
+  const someReprintSelected = reprintIds.some((id) => selection.isSelected(id));
 
   useEffect(() => {
     assetLabelsApi.templates().then((r) => {
@@ -51,7 +57,18 @@ export default function AssetLabelsPage() {
     };
   }, [pdfUrl]);
 
+  function toggleAllReprint() {
+    selection.setSelected((prev) => {
+      const next = new Set(prev);
+      const allOn = reprintIds.length > 0 && reprintIds.every((id) => next.has(id));
+      if (allOn) reprintIds.forEach((id) => next.delete(id));
+      else reprintIds.forEach((id) => next.add(id));
+      return next;
+    });
+  }
+
   async function printSelected(isReprint = false) {
+    const selected = selection.selectedIds.map(Number).filter((id) => Number.isFinite(id));
     if (!templateId) {
       setError(t("assets.labels.needTemplate"));
       return;
@@ -123,6 +140,14 @@ export default function AssetLabelsPage() {
             {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}
           </select>
         </label>
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={printing || assets.length === 0}
+          onClick={selection.toggleAllSelectable}
+        >
+          {selection.allSelectableSelected ? t("assets.labels.clearSelection") : t("assets.labels.selectAll")}
+        </Button>
         <Button type="button" disabled={printing} onClick={() => printSelected(false)}>
           {printing ? t("assets.labels.printing") : t("assets.labels.printSelected")}
         </Button>
@@ -135,7 +160,15 @@ export default function AssetLabelsPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th></th>
+              <th className={selectionColumnClass.th}>
+                <SelectAllCheckbox
+                  checked={selection.allSelectableSelected}
+                  indeterminate={selection.someSelectableSelected && !selection.allSelectableSelected}
+                  onChange={selection.toggleAllSelectable}
+                  disabled={assets.length === 0 || printing}
+                  label={t("assets.labels.selectAll")}
+                />
+              </th>
               <th>{t("assets.labels.colTag")}</th>
               <th>{t("assets.labels.colName")}</th>
               <th>{t("assets.labels.colStatus")}</th>
@@ -144,12 +177,11 @@ export default function AssetLabelsPage() {
           <tbody>
             {assets.map((asset) => (
               <tr key={asset.id}>
-                <td>
-                  <input
-                    type="checkbox"
-                    aria-label={asset.tag_number || asset.asset_code}
-                    checked={selected.includes(asset.id)}
-                    onChange={(e) => setSelected((cur) => e.target.checked ? [...cur, asset.id] : cur.filter((id) => id !== asset.id))}
+                <td className={selectionColumnClass.td}>
+                  <RowCheckbox
+                    checked={selection.isSelected(asset.id)}
+                    onChange={() => selection.toggle(asset.id)}
+                    label={asset.tag_number || asset.asset_code}
                   />
                 </td>
                 <td>{asset.tag_number || asset.asset_code}</td>
@@ -162,15 +194,23 @@ export default function AssetLabelsPage() {
         </table>
       </div>
 
-      <h2 className="text-sm font-semibold">{t("assets.labels.reprintQueue")}</h2>
+      <div className="flex items-center gap-2">
+        <h2 className="text-sm font-semibold">{t("assets.labels.reprintQueue")}</h2>
+        <SelectAllCheckbox
+          checked={allReprintSelected}
+          indeterminate={someReprintSelected && !allReprintSelected}
+          onChange={toggleAllReprint}
+          disabled={reprint.length === 0 || printing}
+          label={t("assets.labels.selectAllReprint")}
+        />
+      </div>
       <ul className="card p-4 text-sm">
         {reprint.map((asset) => (
           <li key={asset.id} className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              aria-label={asset.tag_number || asset.asset_code}
-              checked={selected.includes(asset.id)}
-              onChange={(e) => setSelected((cur) => e.target.checked ? [...cur, asset.id] : cur.filter((id) => id !== asset.id))}
+            <RowCheckbox
+              checked={selection.isSelected(asset.id)}
+              onChange={() => selection.toggle(asset.id)}
+              label={asset.tag_number || asset.asset_code}
             />
             {asset.tag_number || asset.asset_code} — {asset.name}
           </li>
