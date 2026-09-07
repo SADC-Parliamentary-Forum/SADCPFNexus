@@ -107,6 +107,14 @@ test("label template editor is a live drag canvas", () => {
   assert.match(editor, /assets\.labels\.dragHint/);
 });
 
+test("asset labels print table can select all visible rows", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/assets/labels/page.tsx"), "utf8");
+  assert.match(page, /SelectAllCheckbox/);
+  assert.match(page, /useRowSelection/);
+  assert.match(page, /assets\.labels\.selectAll/);
+  assert.match(page, /toggleAllSelectable/);
+});
+
 test("label template save stays visible and reports validation errors", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assets/labels/templates/page.tsx"), "utf8");
   assert.match(page, /toTemplateSavePayload/);
