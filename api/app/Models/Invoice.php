@@ -17,6 +17,7 @@ class Invoice extends Model
         'invoice_date', 'due_date', 'amount', 'currency',
         'status', 'match_status', 'match_notes', 'rejection_reason',
         'reviewed_by', 'reviewed_at',
+        'intake_id', 'file_hash', 'document_type',
     ];
 
     protected $casts = [

@@ -33,6 +33,7 @@ class PurchaseOrderService
             $q = "%{$filters['search']}%";
             $query->where(function ($qb) use ($q) {
                 $qb->where('reference_number', 'ilike', $q)
+                   ->orWhere('lpo_number', 'ilike', $q)
                    ->orWhere('title', 'ilike', $q);
             });
         }
@@ -65,6 +66,7 @@ class PurchaseOrderService
             'status'                 => 'draft',
             'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
             'created_by'             => $user->id,
+            'source_type'            => 'award',
         ]);
 
         if (!empty($data['items'])) {

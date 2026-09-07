@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   policyProfilesApi,
   procurementSettingsApi,
+  procurementWorkbenchApi,
   type ProcurementPolicyProfile,
   type ProcurementSettings,
 } from "@/lib/api";
@@ -31,6 +32,8 @@ export default function ProcurementSettingsPage() {
   const [form, setForm] = useState<ProcurementSettings | null>(null);
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [newProfile, setNewProfile] = useState(emptyProfile);
+  const [legacyNumber, setLegacyNumber] = useState("");
+  const [sequenceReason, setSequenceReason] = useState("");
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["procurement", "settings"],
@@ -79,6 +82,22 @@ export default function ProcurementSettingsPage() {
       qc.invalidateQueries({ queryKey: ["procurement", "policy-profiles"] });
       setNewProfile(emptyProfile);
       setSavedMsg("Policy profile created.");
+      setTimeout(() => setSavedMsg(null), 2500);
+    },
+  });
+
+  const sequenceQuery = useQuery({
+    queryKey: ["procurement", "lpo-sequence"],
+    queryFn: () => procurementWorkbenchApi.sequence().then((r) => r.data.data),
+    enabled: canAdmin,
+  });
+
+  const activateSequenceMut = useMutation({
+    mutationFn: () =>
+      procurementWorkbenchApi.activateSequence(Number(legacyNumber), sequenceReason.trim()),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["procurement", "lpo-sequence"] });
+      setSavedMsg("LPO sequence activated. Subsequent edits require a privileged reason.");
       setTimeout(() => setSavedMsg(null), 2500);
     },
   });
@@ -270,6 +289,49 @@ export default function ProcurementSettingsPage() {
                 {createProfileMut.isPending ? "Creating…" : "Create policy profile"}
               </button>
             </div>
+          </div>
+
+          <div className="card p-5 space-y-4">
+            <div>
+              <h2 className="text-base font-semibold text-neutral-900">LPO Sequence Setup</h2>
+              <p className="text-xs text-neutral-500 mt-1">
+                Before production issuance, activate the live LPO sequence with the <strong>real last legacy number</strong>.
+                Consecutive <code className="font-mono">S #####</code> numbers are allocated on submit (intake path). Award-path POs keep existing <code className="font-mono">PO-</code> references.
+                Do not infer the next number from the sample invoice S 04015.
+              </p>
+            </div>
+            {sequenceQuery.data && (
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                <div><dt className="text-xs text-neutral-500">Status</dt><dd className="font-medium">{String(sequenceQuery.data.status ?? "missing")}</dd></div>
+                <div><dt className="text-xs text-neutral-500">Next example</dt><dd className="font-mono">{String(sequenceQuery.data.next_example ?? "S 00001")}</dd></div>
+                <div><dt className="text-xs text-neutral-500">Current value</dt><dd className="font-mono">{String(sequenceQuery.data.current_value ?? 0)}</dd></div>
+                <div><dt className="text-xs text-neutral-500">Last legacy</dt><dd className="font-mono">{String(sequenceQuery.data.last_legacy_number ?? "—")}</dd></div>
+              </dl>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input
+                className="form-input"
+                type="number"
+                min={0}
+                placeholder="Last issued legacy number (not the sample)"
+                value={legacyNumber}
+                onChange={(e) => setLegacyNumber(e.target.value)}
+              />
+              <input
+                className="form-input"
+                placeholder="Reason / confirmation"
+                value={sequenceReason}
+                onChange={(e) => setSequenceReason(e.target.value)}
+              />
+            </div>
+            <button
+              type="button"
+              className="btn-secondary text-sm disabled:opacity-50"
+              disabled={activateSequenceMut.isPending || legacyNumber === "" || sequenceReason.trim().length < 3}
+              onClick={() => activateSequenceMut.mutate()}
+            >
+              {activateSequenceMut.isPending ? "Activating…" : "Confirm sequence"}
+            </button>
           </div>
         </>
       )}

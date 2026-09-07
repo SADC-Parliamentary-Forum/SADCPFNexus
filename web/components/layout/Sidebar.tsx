@@ -90,6 +90,7 @@ const NAV_ITEMS: NavItem[] = [
     i18nKey: "nav.procurement",
     children: [
       { label: "Requests", href: "/procurement", icon: "bar_chart_4_bars" },
+      { label: "From invoice / quote", href: "/procurement/from-document", icon: "upload_file" },
       { label: "New Request", href: "/procurement/create", icon: "add_shopping_cart" },
       { label: "Vendors", href: "/procurement/vendors", icon: "store" },
       { label: "Register", href: "/procurement/register", icon: "menu_book" },

@@ -32,6 +32,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po',
             'procurement.receive_goods', 'procurement.approve_invoice',
             'procurement.hod_approve', 'procurement.manage_budget',
+            'procurement.sequence.manage',
             'supplier.portal',
             'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
             'assets.import', 'assets.verify', 'assets.print',
@@ -273,7 +274,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::whereIn('name', [
                     'procurement.view', 'procurement.create', 'procurement.approve', 'procurement.admin',
                     'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po',
-                    'procurement.receive_goods',
+                    'procurement.receive_goods', 'procurement.sequence.manage',
                     'assets.view', 'assets.create', 'assets.import', 'assets.verify', 'assets.print',
                     'finance.view', 'governance.view',
                     // Procurement officers manage the consumables/stock register
