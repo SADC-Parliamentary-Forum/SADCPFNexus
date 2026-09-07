@@ -71,7 +71,9 @@ test.describe("Assets import (admin)", () => {
     await page.locator('input[name="asset-search"]').fill("CE-8811");
     const row = page.locator("tr", { hasText: "CE-8811" }).first();
     await expect(row).toBeVisible({ timeout: 10_000 });
-    await row.locator('input[type="checkbox"]').check();
+    // Styled checkboxes keep the native input sr-only; click the visible Select all control.
+    await page.getByRole("button", { name: /^(Select all|Tout sélectionner|Seleccionar tudo)$/ }).click();
+    await expect(row.getByRole("checkbox", { name: "CE-8811" })).toBeChecked();
     const printResp = page.waitForResponse((r) => r.url().includes("/assets/labels/print") && r.request().method() === "POST", { timeout: 20_000 });
     await page.getByRole("button", { name: /^(Print selected|Imprimer la sélection|Imprimir seleccionados)$/ }).click();
     const resp = await printResp;
