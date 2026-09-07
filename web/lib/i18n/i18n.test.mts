@@ -86,6 +86,7 @@ test("shared chrome components translate user-facing copy", () => {
     "app/dashboard/page.tsx",
     "app/(app)/assets/import/page.tsx",
     "app/(app)/assets/labels/page.tsx",
+    "app/(app)/assets/labels/templates/page.tsx",
     "app/(app)/assets/verification/page.tsx",
     "app/a/[token]/page.tsx",
   ];

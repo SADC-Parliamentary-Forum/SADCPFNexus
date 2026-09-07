@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
@@ -37,6 +38,16 @@ export default function AssetSettingsPage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Asset Settings" }]} />}
       />
       </div>
+
+      <section className="card" style={{ padding: "1rem", marginBottom: "1.5rem" }}>
+        <h2 style={{ fontSize: "1.05rem" }}>Categories and labels</h2>
+        <p className="text-muted">Add and edit asset classes, then print Avery or thermal QR labels.</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link href="/assets/categories" className="btn-secondary">Categories</Link>
+          <Link href="/assets/labels" className="btn-secondary">Print labels</Link>
+          <Link href="/assets/labels/templates" className="btn-secondary">Label templates</Link>
+        </div>
+      </section>
 
       <section className="card" style={{ padding: "1rem", marginBottom: "1.5rem" }}>
         <h2 style={{ fontSize: "1.05rem" }}>Capitalisation policies</h2>

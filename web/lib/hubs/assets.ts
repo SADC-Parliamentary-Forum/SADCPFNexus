@@ -27,6 +27,7 @@ export const ASSETS_HUB_CARDS: HubCard[] = [
   { href: "/assets/revaluation", title: "Revaluation", purpose: "Revaluation exercises.", icon: "currency_exchange", section: "views" },
   { href: "/assets/reports", title: "Reports", purpose: "Asset report packs.", icon: "summarize", section: "tools" },
   { href: "/assets/labels", title: "Labels", purpose: "Print Avery and thermal asset labels.", icon: "qr_code_2", section: "tools", permission: ["assets.print", "assets.admin", "assets.manage"] },
+  { href: "/assets/labels/templates", title: "Label templates", purpose: "Edit Avery and thermal label sizes before printing.", icon: "tune", section: "tools", permission: ["assets.print", "assets.admin", "assets.manage"] },
   { href: "/assets/settings", title: "Settings", purpose: "Categories and capitalisation rules.", icon: "settings", section: "tools" },
   { href: "/assets/categories", title: "Categories", purpose: "Asset classes and useful lives.", icon: "category", section: "tools" },
   { href: "/assets/insurance", title: "Insurance", purpose: "Cover and claims.", icon: "health_and_safety", section: "tools" },

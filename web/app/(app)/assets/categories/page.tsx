@@ -12,10 +12,11 @@ export default function AssetCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const [form, setForm] = useState<{ name: string; code: string; sort_order: number }>({
+  const [form, setForm] = useState<{ name: string; code: string; sort_order: number; useful_life_years: string }>({
     name: "",
     code: "",
     sort_order: 0,
+    useful_life_years: "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export default function AssetCategoriesPage() {
           name,
           code,
           sort_order: form.sort_order,
+          useful_life_years: form.useful_life_years === "" ? null : Number(form.useful_life_years),
         });
         toast("success", "Category updated");
       } else {
@@ -59,13 +61,14 @@ export default function AssetCategoriesPage() {
           name,
           code,
           sort_order: form.sort_order,
+          useful_life_years: form.useful_life_years === "" ? undefined : Number(form.useful_life_years),
         });
         toast("success", "Category created");
       }
       const res = await assetCategoriesApi.list();
       setCategories(res.data.data ?? []);
       setEditId(null);
-      setForm({ name: "", code: "", sort_order: 0 });
+      setForm({ name: "", code: "", sort_order: 0, useful_life_years: "" });
       setShowForm(false);
     } catch (err: unknown) {
       const msg =
@@ -85,6 +88,7 @@ export default function AssetCategoriesPage() {
       name: cat.name,
       code: cat.code,
       sort_order: cat.sort_order ?? 0,
+      useful_life_years: cat.useful_life_years ? String(cat.useful_life_years) : "",
     });
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -93,7 +97,7 @@ export default function AssetCategoriesPage() {
   const cancelForm = () => {
     setShowForm(false);
     setEditId(null);
-    setForm({ name: "", code: "", sort_order: 0 });
+    setForm({ name: "", code: "", sort_order: 0, useful_life_years: "" });
   };
 
   const handleDelete = async (id: number, name: string) => {
@@ -140,7 +144,7 @@ export default function AssetCategoriesPage() {
           onClick={() => {
             setShowForm(!showForm);
             setEditId(null);
-            setForm({ name: "", code: "", sort_order: 0 });
+            setForm({ name: "", code: "", sort_order: 0, useful_life_years: "" });
           }}
           className="btn-primary"
         >
@@ -186,10 +190,9 @@ export default function AssetCategoriesPage() {
                 onChange={(e) =>
                   setForm((p) => ({ ...p, code: e.target.value.toLowerCase().replace(/\s+/g, "_") }))
                 }
-                disabled={!!editId}
               />
               {editId && (
-                <p className="text-xs text-neutral-400">Code cannot be changed when editing.</p>
+                <p className="text-xs text-neutral-400">Code can change only when no assets use this category.</p>
               )}
             </div>
             <div className="space-y-1.5">
@@ -200,6 +203,18 @@ export default function AssetCategoriesPage() {
                 className="form-input"
                 value={form.sort_order}
                 onChange={(e) => setForm((p) => ({ ...p, sort_order: Number(e.target.value) || 0 }))}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-neutral-700">Useful life (years)</label>
+              <input
+                type="number"
+                min={1}
+                max={80}
+                className="form-input"
+                placeholder="e.g. 4"
+                value={form.useful_life_years}
+                onChange={(e) => setForm((p) => ({ ...p, useful_life_years: e.target.value }))}
               />
             </div>
           </div>
@@ -285,7 +300,10 @@ export default function AssetCategoriesPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-neutral-900">{cat.name}</p>
-                    <p className="text-xs font-mono text-neutral-500">{cat.code}</p>
+                    <p className="text-xs font-mono text-neutral-500">
+                      {cat.code}
+                      {cat.useful_life_years ? ` · ${cat.useful_life_years} yr` : ""}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

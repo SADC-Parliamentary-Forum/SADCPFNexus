@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Assets;
 
 use App\Http\Controllers\Controller;
 use App\Models\AssetCategory;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,8 +17,8 @@ class AssetCategoryController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! $user->isSystemAdmin() && ! $user->hasPermissionTo('assets.admin') && ! $user->hasPermissionTo('assets.manage')) {
-            abort(403, 'Only system administrators or asset managers can manage categories.');
+        if (! $this->canList($user)) {
+            abort(403, 'Not authorised to view asset categories.');
         }
 
         $categories = AssetCategory::forTenant($user->tenant_id)
@@ -34,13 +35,13 @@ class AssetCategoryController extends Controller
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (! $user->isSystemAdmin() && ! $user->hasPermissionTo('assets.admin') && ! $user->hasPermissionTo('assets.manage')) {
-            abort(403, 'Only system administrators or asset managers can manage categories.');
+        if (! $this->canMutate($user)) {
+            abort(403, 'Not authorised to manage asset categories.');
         }
 
         $data = $request->validate([
-            'name'       => ['required', 'string', 'max:255'],
-            'code'       => [
+            'name' => ['required', 'string', 'max:255'],
+            'code' => [
                 'required',
                 'string',
                 'max:32',
@@ -48,13 +49,15 @@ class AssetCategoryController extends Controller
                 Rule::unique('asset_categories', 'code')->where('tenant_id', $user->tenant_id),
             ],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'useful_life_years' => ['nullable', 'integer', 'min:1', 'max:80'],
         ]);
 
         $category = AssetCategory::create([
-            'tenant_id'  => $user->tenant_id,
-            'name'       => $data['name'],
-            'code'       => strtolower($data['code']),
+            'tenant_id' => $user->tenant_id,
+            'name' => $data['name'],
+            'code' => strtolower($data['code']),
             'sort_order' => $data['sort_order'] ?? 0,
+            'useful_life_years' => $data['useful_life_years'] ?? null,
         ]);
 
         return response()->json(['message' => 'Category created.', 'data' => $category], 201);
@@ -66,16 +69,16 @@ class AssetCategoryController extends Controller
     public function update(Request $request, AssetCategory $assetCategory): JsonResponse
     {
         $user = $request->user();
-        if (! $user->isSystemAdmin() && ! $user->hasPermissionTo('assets.admin') && ! $user->hasPermissionTo('assets.manage')) {
-            abort(403, 'Only system administrators or asset managers can manage categories.');
+        if (! $this->canMutate($user)) {
+            abort(403, 'Not authorised to manage asset categories.');
         }
         if ((int) $assetCategory->tenant_id !== (int) $user->tenant_id) {
             abort(404);
         }
 
         $data = $request->validate([
-            'name'       => ['sometimes', 'required', 'string', 'max:255'],
-            'code'       => [
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'code' => [
                 'sometimes',
                 'required',
                 'string',
@@ -84,10 +87,14 @@ class AssetCategoryController extends Controller
                 Rule::unique('asset_categories', 'code')->where('tenant_id', $user->tenant_id)->ignore($assetCategory->id),
             ],
             'sort_order' => ['nullable', 'integer', 'min:0'],
+            'useful_life_years' => ['nullable', 'integer', 'min:1', 'max:80'],
         ]);
 
         if (isset($data['code'])) {
             $data['code'] = strtolower($data['code']);
+            if ($data['code'] !== $assetCategory->code && $assetCategory->assets()->exists()) {
+                abort(422, 'Cannot change the code while assets use this category.');
+            }
         }
         $assetCategory->update($data);
 
@@ -100,8 +107,8 @@ class AssetCategoryController extends Controller
     public function destroy(Request $request, AssetCategory $assetCategory): JsonResponse
     {
         $user = $request->user();
-        if (! $user->isSystemAdmin() && ! $user->hasPermissionTo('assets.admin') && ! $user->hasPermissionTo('assets.manage')) {
-            abort(403, 'Only system administrators or asset managers can manage categories.');
+        if (! $this->canMutate($user)) {
+            abort(403, 'Not authorised to manage asset categories.');
         }
         if ((int) $assetCategory->tenant_id !== (int) $user->tenant_id) {
             abort(404);
@@ -112,6 +119,29 @@ class AssetCategoryController extends Controller
         }
 
         $assetCategory->delete();
+
         return response()->json(['message' => 'Category deleted.']);
+    }
+
+    private function canList(User $user): bool
+    {
+        if ($user->isSystemAdmin()) {
+            return true;
+        }
+
+        return $user->hasAnyPermission([
+            'assets.view', 'assets.create', 'assets.edit', 'assets.admin', 'assets.manage', 'assets.import',
+        ]);
+    }
+
+    private function canMutate(User $user): bool
+    {
+        if ($user->isSystemAdmin()) {
+            return true;
+        }
+
+        return $user->hasAnyPermission([
+            'assets.admin', 'assets.manage', 'assets.create', 'assets.import', 'assets.edit',
+        ]);
     }
 }

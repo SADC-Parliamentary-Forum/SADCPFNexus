@@ -340,7 +340,18 @@ export default function EditAssetPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label htmlFor="category" className={labelCls}>Category <span className="text-red-500">*</span></label>
-                <select id="category" value={category} onChange={(e) => setCategory(e.target.value)} className={inputCls} disabled={submitting}>
+                <select
+                  id="category"
+                  value={category}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    setCategory(code);
+                    const cat = categories.find((c) => c.code === code);
+                    if (cat?.useful_life_years) setUsefulLifeYears(String(cat.useful_life_years));
+                  }}
+                  className={inputCls}
+                  disabled={submitting}
+                >
                   {categories.length === 0 ? (
                     <option value="">— No categories —</option>
                   ) : (
@@ -349,6 +360,13 @@ export default function EditAssetPage() {
                     ))
                   )}
                 </select>
+                {categories.length === 0 && (
+                  <p className="text-xs text-neutral-500">
+                    <Link href="/assets/categories" className="text-primary hover:underline">
+                      Add a category
+                    </Link>
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <label htmlFor="status" className={labelCls}>Status</label>

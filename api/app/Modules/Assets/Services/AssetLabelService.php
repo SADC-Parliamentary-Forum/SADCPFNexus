@@ -138,4 +138,74 @@ class AssetLabelService
         $asset->label_reprint_reason = $reason;
         $asset->save();
     }
+
+    public function ensureDefaultTemplates(int $tenantId): void
+    {
+        AssetLabelTemplate::query()->firstOrCreate(
+            ['tenant_id' => $tenantId, 'code' => 'avery_l7161_permanent'],
+            [
+                'name' => 'Avery L7161 permanent (63.5 × 46.6 mm, 18-up)',
+                'kind' => 'permanent',
+                'page_size' => 'A4',
+                'page_width_mm' => 210,
+                'page_height_mm' => 297,
+                'margin_top_mm' => 8.7,
+                'margin_left_mm' => 4.7,
+                'label_width_mm' => 63.5,
+                'label_height_mm' => 46.6,
+                'h_gap_mm' => 2.5,
+                'v_gap_mm' => 0,
+                'rows' => 6,
+                'columns' => 3,
+                'font_pt' => 8,
+                'qr_mm' => 22,
+                'is_default' => true,
+                'is_active' => true,
+            ]
+        );
+        AssetLabelTemplate::query()->firstOrCreate(
+            ['tenant_id' => $tenantId, 'code' => 'avery_l7161_custody'],
+            [
+                'name' => 'Avery L7161 custody (63.5 × 46.6 mm, 18-up)',
+                'kind' => 'custody',
+                'page_size' => 'A4',
+                'page_width_mm' => 210,
+                'page_height_mm' => 297,
+                'margin_top_mm' => 8.7,
+                'margin_left_mm' => 4.7,
+                'label_width_mm' => 63.5,
+                'label_height_mm' => 46.6,
+                'h_gap_mm' => 2.5,
+                'v_gap_mm' => 0,
+                'rows' => 6,
+                'columns' => 3,
+                'font_pt' => 8,
+                'qr_mm' => 22,
+                'is_default' => false,
+                'is_active' => true,
+            ]
+        );
+        AssetLabelTemplate::query()->firstOrCreate(
+            ['tenant_id' => $tenantId, 'code' => 'thermal_70x40'],
+            [
+                'name' => 'Thermal 70 × 40 mm',
+                'kind' => 'permanent',
+                'page_size' => 'custom',
+                'page_width_mm' => 70,
+                'page_height_mm' => 40,
+                'margin_top_mm' => 2,
+                'margin_left_mm' => 2,
+                'label_width_mm' => 70,
+                'label_height_mm' => 40,
+                'h_gap_mm' => 0,
+                'v_gap_mm' => 0,
+                'rows' => 1,
+                'columns' => 1,
+                'font_pt' => 8,
+                'qr_mm' => 18,
+                'is_default' => false,
+                'is_active' => true,
+            ]
+        );
+    }
 }

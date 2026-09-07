@@ -619,6 +619,13 @@ return [
             'READ' => ['assets.print', 'assets.admin', 'assets.manage', 'assets.view'],
             'WRITE' => ['assets.print', 'assets.admin', 'assets.manage'],
         ]],
+        ['pattern' => 'api/v1/asset-categories*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.create', 'assets.edit', 'assets.admin', 'assets.manage', 'assets.import'],
+            'POST' => ['assets.create', 'assets.edit', 'assets.manage', 'assets.admin', 'assets.import'],
+            'PUT' => ['assets.create', 'assets.edit', 'assets.manage', 'assets.admin', 'assets.import'],
+            'PATCH' => ['assets.create', 'assets.edit', 'assets.manage', 'assets.admin', 'assets.import'],
+            'DELETE' => ['assets.admin', 'assets.manage', 'assets.create', 'assets.import'],
+        ]],
         ['pattern' => 'api/v1/assets/unregistered-finds*', 'permissions' => [
             'READ' => ['assets.verify', 'assets.admin', 'assets.manage', 'assets.view'],
             'WRITE' => ['assets.verify', 'assets.admin', 'assets.manage'],

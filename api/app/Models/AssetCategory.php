@@ -8,12 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AssetCategory extends Model
 {
-    protected $fillable = ['tenant_id', 'name', 'code', 'sort_order'];
+    protected $fillable = ['tenant_id', 'name', 'code', 'sort_order', 'useful_life_years'];
 
     protected function casts(): array
     {
         return [
             'sort_order' => 'integer',
+            'useful_life_years' => 'integer',
         ];
     }
 

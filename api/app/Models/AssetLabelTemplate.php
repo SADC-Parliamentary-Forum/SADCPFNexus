@@ -27,6 +27,10 @@ class AssetLabelTemplate extends Model
             'v_gap_mm' => 'decimal:2',
             'is_default' => 'boolean',
             'is_active' => 'boolean',
+            'qr_mm' => 'integer',
+            'font_pt' => 'integer',
+            'rows' => 'integer',
+            'columns' => 'integer',
         ];
     }
 

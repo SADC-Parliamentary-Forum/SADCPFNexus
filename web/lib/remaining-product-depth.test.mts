@@ -1577,6 +1577,7 @@ const OVERCROWDED_SIDEBARS: {
       "/assets/insurance",
       "/assets/import",
       "/assets/labels",
+      "/assets/labels/templates",
     ],
   },
   {

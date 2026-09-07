@@ -1588,13 +1588,14 @@ export interface AssetCategory {
   name: string;
   code: string;
   sort_order: number;
+  useful_life_years?: number | null;
 }
 
 export const assetCategoriesApi = {
   list: () => api.get<{ data: AssetCategory[] }>("/asset-categories"),
-  create: (data: { name: string; code: string; sort_order?: number }) =>
+  create: (data: { name: string; code: string; sort_order?: number; useful_life_years?: number | null }) =>
     api.post<{ data: AssetCategory; message: string }>("/asset-categories", data),
-  update: (id: number, data: { name?: string; code?: string; sort_order?: number }) =>
+  update: (id: number, data: { name?: string; code?: string; sort_order?: number; useful_life_years?: number | null }) =>
     api.put<{ data: AssetCategory; message: string }>(`/asset-categories/${id}`, data),
   delete: (id: number) => api.delete<{ message: string }>(`/asset-categories/${id}`),
 };
@@ -1975,8 +1976,36 @@ export const assetMetaApi = {
     api.post<{ data: { id: number; name: string; code: string } }>("/assets-meta/locations", data),
 };
 
+export interface AssetLabelTemplate {
+  id: number;
+  code: string;
+  name: string;
+  kind: "permanent" | "custody";
+  page_size?: string | null;
+  page_width_mm: number;
+  page_height_mm: number;
+  margin_top_mm: number;
+  margin_left_mm: number;
+  label_width_mm: number;
+  label_height_mm: number;
+  h_gap_mm: number;
+  v_gap_mm: number;
+  rows: number;
+  columns: number;
+  font_pt: number;
+  qr_mm: number;
+  is_default: boolean;
+  is_active: boolean;
+}
+
 export const assetLabelsApi = {
-  templates: () => api.get("/assets/labels/templates"),
+  templates: (params?: { include_inactive?: boolean }) =>
+    api.get<{ data: AssetLabelTemplate[] }>("/assets/labels/templates", { params }),
+  createTemplate: (data: Partial<AssetLabelTemplate> & { code: string; name: string }) =>
+    api.post<{ data: AssetLabelTemplate; message: string }>("/assets/labels/templates", data),
+  updateTemplate: (id: number, data: Partial<AssetLabelTemplate>) =>
+    api.put<{ data: AssetLabelTemplate; message: string }>(`/assets/labels/templates/${id}`, data),
+  deleteTemplate: (id: number) => api.delete<{ message: string }>(`/assets/labels/templates/${id}`),
   reprintQueue: (params?: { per_page?: number }) => api.get("/assets/labels/reprint-queue", { params }),
   batches: () => api.get("/assets/labels/batches"),
   print: (data: Record<string, unknown>) =>

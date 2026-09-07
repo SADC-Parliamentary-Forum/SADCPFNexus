@@ -89,7 +89,10 @@ export default function AddAssetPage() {
         setUserOptions((userRes.data as { data?: { id: number; name: string }[] }).data ?? []);
         const list = (catRes.data as { data?: AssetCategory[] }).data ?? [];
         setCategories(list);
-        if (list.length > 0 && !category) setCategory(list[0].code);
+        if (list.length > 0 && !category) {
+          setCategory(list[0].code);
+          if (list[0].useful_life_years) setUsefulLifeYears(String(list[0].useful_life_years));
+        }
       })
       .catch(() => {});
   }, [allowed, router]);
@@ -146,7 +149,7 @@ export default function AddAssetPage() {
       return;
     }
     if (categories.length === 0 || !category) {
-      setError("No asset categories defined. Create categories first.");
+      setError("No asset categories defined. Open Categories to add one, then return here.");
       return;
     }
     setSubmitting(true);
@@ -286,7 +289,12 @@ export default function AddAssetPage() {
                 <select
                   id="category"
                   value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    setCategory(code);
+                    const cat = categories.find((c) => c.code === code);
+                    if (cat?.useful_life_years) setUsefulLifeYears(String(cat.useful_life_years));
+                  }}
                   className={inputCls}
                   disabled={submitting}
                 >
@@ -298,6 +306,14 @@ export default function AddAssetPage() {
                     ))
                   )}
                 </select>
+                {categories.length === 0 && (
+                  <p className="text-xs text-neutral-500">
+                    <Link href="/assets/categories" className="text-primary hover:underline">
+                      Add a category
+                    </Link>{" "}
+                    before registering an asset.
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <label htmlFor="status" className={labelCls}>Status</label>

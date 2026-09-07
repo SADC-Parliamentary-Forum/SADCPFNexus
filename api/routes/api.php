@@ -1386,6 +1386,9 @@ Route::prefix('v1')->group(function () {
         Route::get('assets/import/{assetImportBatch}/report', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'report']);
 
         Route::get('assets/labels/templates', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'templates']);
+        Route::post('assets/labels/templates', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'storeTemplate']);
+        Route::put('assets/labels/templates/{assetLabelTemplate}', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'updateTemplate']);
+        Route::delete('assets/labels/templates/{assetLabelTemplate}', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'destroyTemplate']);
         Route::get('assets/labels/reprint-queue', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'reprintQueue']);
         Route::get('assets/labels/batches', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'batches']);
         Route::post('assets/labels/print', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'print']);

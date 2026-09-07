@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { assetLabelsApi, assetsApi, type Asset } from "@/lib/api";
+import Link from "next/link";
+import { isAxiosError } from "axios";
+import { assetLabelsApi, assetsApi, type Asset, type AssetLabelTemplate } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
-
-type Template = { id: number; name: string; kind: string; code: string };
+import { openPdfBlob } from "@/lib/openPdfBlob";
 
 export default function AssetLabelsPage() {
   const { t } = useI18n();
-  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templates, setTemplates] = useState<AssetLabelTemplate[]>([]);
   const [templateId, setTemplateId] = useState<number | "">("");
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
@@ -18,17 +19,22 @@ export default function AssetLabelsPage() {
   const [search, setSearch] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [printing, setPrinting] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     assetLabelsApi.templates().then((r) => {
-      const rows = (r.data as { data?: Template[] }).data ?? [];
+      const rows = r.data.data ?? [];
       setTemplates(rows);
       if (rows[0]) setTemplateId(rows[0].id);
-    }).catch(() => setTemplates([]));
+    }).catch(() => {
+      setTemplates([]);
+      setError(t("assets.labels.loadTemplatesFailed"));
+    });
     assetLabelsApi.reprintQueue().then((r) => {
       setReprint((r.data as { data?: Asset[] }).data ?? []);
     }).catch(() => setReprint([]));
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -39,9 +45,24 @@ export default function AssetLabelsPage() {
     return () => window.clearTimeout(handle);
   }, [search]);
 
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    };
+  }, [pdfUrl]);
+
   async function printSelected(isReprint = false) {
-    if (!templateId || selected.length === 0) return;
+    if (!templateId) {
+      setError(t("assets.labels.needTemplate"));
+      return;
+    }
+    if (selected.length === 0) {
+      setError(t("assets.labels.needSelection"));
+      return;
+    }
     setError(null);
+    setMsg(null);
+    setPrinting(true);
     try {
       const res = await assetLabelsApi.print({
         asset_ids: selected,
@@ -49,12 +70,25 @@ export default function AssetLabelsPage() {
         reprint: isReprint,
         reprint_reason: isReprint ? "MANUAL_REPRINT" : null,
       });
-      const blob = new Blob([res.data as BlobPart], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
-      setMsg(isReprint ? t("assets.labels.reprint") : t("assets.labels.printSelected"));
-    } catch {
-      setError(t("common.error"));
+      const blob = res.data as Blob;
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      const url = await openPdfBlob(blob, `asset-labels-${Date.now()}.pdf`);
+      setPdfUrl(url);
+      setMsg(isReprint ? t("assets.labels.reprintDone") : t("assets.labels.printDone"));
+    } catch (err: unknown) {
+      let message = t("common.error");
+      if (err instanceof Error && err.message) message = err.message;
+      if (isAxiosError(err) && err.response?.data instanceof Blob) {
+        try {
+          const parsed = JSON.parse(await err.response.data.text()) as { message?: string };
+          if (parsed.message) message = parsed.message;
+        } catch {
+          /* keep */
+        }
+      }
+      setError(message);
+    } finally {
+      setPrinting(false);
     }
   }
 
@@ -64,7 +98,12 @@ export default function AssetLabelsPage() {
         <ModulePageHeader
           title={t("assets.labels.title")}
           subtitle={t("assets.labels.subtitle")}
-          breadcrumbs={<PageBreadcrumbs items={[{ label: t("assets.labels.title") }]} />}
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "assets.labels.title" }]} />}
+          actions={
+            <Link href="/assets/labels/templates" className="btn-secondary">
+              {t("assets.labels.editTemplates")}
+            </Link>
+          }
         />
       </div>
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
@@ -74,13 +113,22 @@ export default function AssetLabelsPage() {
         <label className="text-sm">{t("common.search")}
           <input className="input mt-1" name="asset-search" value={search} onChange={(e) => setSearch(e.target.value)} />
         </label>
-        <label className="text-sm">{t("common.filter")}
-          <select className="input mt-1" value={templateId} onChange={(e) => setTemplateId(Number(e.target.value))}>
+        <label className="text-sm">{t("assets.labels.template")}
+          <select
+            className="input mt-1 min-w-[16rem]"
+            value={templateId}
+            onChange={(e) => setTemplateId(e.target.value ? Number(e.target.value) : "")}
+          >
+            {templates.length === 0 && <option value="">{t("assets.labels.noTemplates")}</option>}
             {templates.map((tpl) => <option key={tpl.id} value={tpl.id}>{tpl.name}</option>)}
           </select>
         </label>
-        <Button type="button" onClick={() => printSelected(false)}>{t("assets.labels.printSelected")}</Button>
-        <Button type="button" variant="secondary" onClick={() => printSelected(true)}>{t("assets.labels.reprint")}</Button>
+        <Button type="button" disabled={printing} onClick={() => printSelected(false)}>
+          {printing ? t("assets.labels.printing") : t("assets.labels.printSelected")}
+        </Button>
+        <Button type="button" variant="secondary" disabled={printing} onClick={() => printSelected(true)}>
+          {t("assets.labels.reprint")}
+        </Button>
       </div>
 
       <div className="table-wrap">
@@ -129,6 +177,16 @@ export default function AssetLabelsPage() {
         ))}
         {reprint.length === 0 && <li>{t("common.noResults")}</li>}
       </ul>
+
+      {pdfUrl && (
+        <section className="card overflow-hidden">
+          <div className="card-header">
+            <h3 className="text-sm font-semibold">{t("assets.labels.preview")}</h3>
+            <a href={pdfUrl} download="asset-labels.pdf" className="btn-secondary text-sm">{t("assets.labels.downloadPdf")}</a>
+          </div>
+          <iframe title={t("assets.labels.preview")} src={pdfUrl} className="h-[70vh] w-full border-0" />
+        </section>
+      )}
     </div>
   );
 }
