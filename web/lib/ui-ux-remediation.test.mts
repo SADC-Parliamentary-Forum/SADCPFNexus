@@ -398,6 +398,27 @@ test("risk create form binds visible labels to controls and labels choice groups
   assert.match(source, /role="radio"\s+aria-checked=\{form\.impact === im\.value\}/);
 });
 
+test("risk create form uses FormSection, i18n, wrapping actions, and name pickers not raw IDs", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/risk/create/page.tsx"), "utf8");
+
+  assert.match(source, /useI18n/);
+  assert.match(source, /FormSection/);
+  assert.doesNotMatch(source, /FormField/);
+  assert.match(source, /mx-auto max-w-2xl/);
+  assert.match(source, /flex-wrap/);
+  assert.match(source, /tenantUsersApi/);
+  assert.match(source, /listObjectives/);
+  assert.match(source, /<select[^>]*id="risk-owner-user-id"/);
+  assert.match(source, /<select[^>]*id="risk-strategic-objective-id"/);
+  assert.match(source, /risk\.create\.title/);
+  assert.match(source, /risk\.create\.submit/);
+  assert.match(source, /label: "risk\.hub"/);
+  assert.doesNotMatch(source, /Strategic objective ID/);
+  assert.doesNotMatch(source, /Risk owner user ID/);
+  assert.doesNotMatch(source, /hover:text-primary">Risk Register<\/Link>/);
+  assert.doesNotMatch(source, />Log New Risk</);
+});
+
 test("travel create date inputs expose field-level bounds", () => {
   const source = readFileSync(join(webRoot, "app/(app)/travel/create/page.tsx"), "utf8");
 

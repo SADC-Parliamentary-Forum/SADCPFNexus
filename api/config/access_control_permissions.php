@@ -2163,8 +2163,11 @@ return [
         'risk_level' => 'medium',
         'data_classification' => 'Confidential',
         'mfa_required' => false,
-        'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_routes' => ['/risk/create'],
+        'linked_endpoints' => [
+            'POST /api/v1/risk/risks',
+            'GET /api/v1/risk/lookups/objectives',
+        ],
     ],
     'risk.manage' => [
         'display_name' => 'Manage risk',
@@ -2190,7 +2193,9 @@ return [
         'data_classification' => 'Confidential',
         'mfa_required' => false,
         'linked_routes' => ['/risk'],
-        'linked_endpoints' => [],
+        'linked_endpoints' => [
+            'GET /api/v1/risk/lookups/objectives',
+        ],
     ],
     'salary_advance.approve.assigned' => [
         'display_name' => 'Approve salary advance',

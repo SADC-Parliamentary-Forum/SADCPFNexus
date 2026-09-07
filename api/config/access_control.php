@@ -366,6 +366,9 @@ return [
             // high/critical owner-alone acceptance; Director/SG still approve.
             'WRITE' => ['risk.create', 'risk.accept', 'risk.approve', 'risk.manage', 'risk.admin'],
         ]],
+        ['pattern' => 'api/v1/risk/lookups*', 'permissions' => [
+            'READ' => ['risk.view', 'risk.module.view', 'risk.create'],
+        ]],
         ['pattern' => 'api/v1/risk/risks*', 'permissions' => [
             'READ' => ['risk.view', 'risk.module.view', 'risk.create'],
             'POST' => [
