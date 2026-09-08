@@ -1,18 +1,27 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import {
   procurementIntakeApi,
   procurementWorkbenchApi,
   purchaseOrdersApi,
+  supplierCategoriesApi,
   type ProcurementIntake,
   type PurchaseOrder,
 } from "@/lib/api";
 
-type Step = "upload" | "review" | "project" | "request" | "preview";
+type Step = "upload" | "review" | "supplier" | "project" | "request" | "preview";
+
+const STEPS: Step[] = ["upload", "review", "supplier", "project", "request", "preview"];
+
+function needsNewSupplier(intake: ProcurementIntake | null | undefined) {
+  if (!intake) return false;
+  return !intake.vendor_id && intake.supplier_match_status === "unmatched";
+}
 
 function confidenceLabel(score: number | null | undefined) {
   const n = score ?? 0;
@@ -40,11 +49,60 @@ export default function CreateFromDocumentPage() {
   const [acknowledgeBank, setAcknowledgeBank] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [po, setPo] = useState<PurchaseOrder | null>(null);
+  const [inviteNotice, setInviteNotice] = useState<string | null>(null);
+  const [sendInvitation, setSendInvitation] = useState(true);
+  const [supplierForm, setSupplierForm] = useState({
+    name: "",
+    contact_name: "",
+    contact_email: "",
+    contact_phone: "",
+    tax_number: "",
+    registration_number: "",
+    address: "",
+    country: "Namibia",
+    bank_name: "",
+    bank_account: "",
+    category_ids: [] as number[],
+  });
+  const searchParams = useSearchParams();
+  const intakeParam = searchParams.get("intake");
 
   const projects = useQuery({
     queryKey: ["procurement", "projects"],
     queryFn: () => procurementWorkbenchApi.projects().then((r) => r.data.data),
   });
+
+  const categories = useQuery({
+    queryKey: ["supplier-categories"],
+    queryFn: () => supplierCategoriesApi.list().then((r) => r.data.data),
+  });
+
+  const existingIntake = useQuery({
+    queryKey: ["procurement", "intake", intakeParam],
+    queryFn: () => procurementIntakeApi.get(Number(intakeParam)).then((r) => r.data.data),
+    enabled: !!intakeParam && !intake,
+  });
+
+  useEffect(() => {
+    if (!existingIntake.data || intake) return;
+    setIntake(existingIntake.data);
+    setStep("review");
+  }, [existingIntake.data, intake]);
+
+  useEffect(() => {
+    if (!intake || step !== "supplier") return;
+    const bank = intake.bank_details_raw ?? {};
+    setSupplierForm((current) => ({
+      ...current,
+      name: intake.vendor?.name ?? intake.supplier_name_raw ?? current.name,
+      contact_email: intake.supplier_email_raw ?? current.contact_email,
+      contact_phone: intake.supplier_phone_raw ?? current.contact_phone,
+      tax_number: intake.supplier_tax_number_raw ?? current.tax_number,
+      registration_number: intake.supplier_registration_raw ?? current.registration_number,
+      bank_name: bank.bank ?? current.bank_name,
+      bank_account: bank.account ?? current.bank_account,
+    }));
+  }, [intake, step]);
 
   const matches = useQuery({
     queryKey: ["procurement", "intake-matches", intake?.id],
@@ -111,6 +169,27 @@ export default function CreateFromDocumentPage() {
     },
   });
 
+  const saveSupplier = useMutation({
+    mutationFn: (payload: Record<string, unknown>) => procurementIntakeApi.createSupplier(intake!.id, payload),
+    onSuccess: (res) => {
+      setIntake(res.data.data);
+      setError(null);
+      const invitation = res.data.invitation;
+      if (invitation?.sent) {
+        setInviteNotice(
+          `Invitation sent to ${invitation.email}. They activate at /activate-account, then sign in at ${invitation.login_url}. Nexus never emails a password.`
+        );
+      } else {
+        setInviteNotice("Supplier saved on this document. You can invite them to the portal later from Supplier Master.");
+      }
+      setStep("project");
+    },
+    onError: (e: { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }) => {
+      const errors = e.response?.data?.errors;
+      setError(errors ? Object.values(errors).flat().join(" ") : e.response?.data?.message ?? "Could not save the supplier.");
+    },
+  });
+
   const submitLpo = useMutation({
     mutationFn: () => purchaseOrdersApi.submit(po!.id),
     onSuccess: (res) => {
@@ -141,12 +220,12 @@ export default function CreateFromDocumentPage() {
     <div className="mx-auto max-w-6xl space-y-6">
       <ModulePageHeader
         title="Create from Invoice / Quote"
-        subtitle="Upload a supplier document. Nexus extracts, matches and prepares the LPO. You review exceptions."
+        subtitle="Upload a supplier document. Nexus extracts, matches and prepares the LPO. Unmatched suppliers are created here and sent login instructions — Nexus never emails a password."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement", href: "/procurement" }, { label: "From document" }]} />}
       />
 
       <ol className="flex flex-wrap gap-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
-        {(["upload", "review", "project", "request", "preview"] as Step[]).map((s) => (
+        {STEPS.map((s) => (
           <li key={s} className={`rounded-full border px-3 py-1 ${step === s ? "border-primary bg-primary/10 text-primary" : "border-neutral-200"}`}>
             {s}
           </li>
@@ -156,6 +235,11 @@ export default function CreateFromDocumentPage() {
       {error && (
         <div className="rounded-md border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">
           {error}
+        </div>
+      )}
+      {inviteNotice && (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900" role="status">
+          {inviteNotice}
         </div>
       )}
 
@@ -225,6 +309,11 @@ export default function CreateFromDocumentPage() {
               <h2 className="font-semibold">Supplier</h2>
               <p>{intake.vendor?.name ?? intake.supplier_name_raw ?? "Unmatched"}</p>
               <p className="text-sm text-neutral-500">{intake.supplier_match_status}</p>
+              {needsNewSupplier(intake) && (
+                <p className="mt-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                  This supplier is not on Supplier Master. Next you will create their record and send portal login instructions. Nexus never emails a password.
+                </p>
+              )}
               {(intake.supplier_differences ?? []).map((d) => (
                 <p key={d.field} className="mt-2 text-sm text-amber-800">
                   {d.field}: Master {d.master} vs document {d.document}
@@ -275,12 +364,254 @@ export default function CreateFromDocumentPage() {
                 type="button"
                 className="btn-primary"
                 disabled={intake.extraction_status === "duplicate_blocked"}
-                onClick={() => setStep("project")}
+                onClick={() => setStep(needsNewSupplier(intake) ? "supplier" : "project")}
               >
-                Confirm & Continue
+                {needsNewSupplier(intake) ? "Create supplier & continue" : "Confirm & Continue"}
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {step === "supplier" && intake && (
+        <div className="grid gap-6 lg:grid-cols-5">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="rounded-xl border border-neutral-200 bg-white p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary">New supplier</p>
+              <h2 className="mt-1 text-lg font-semibold text-neutral-900">Create supplier details</h2>
+              <p className="mt-2 text-sm text-neutral-600">
+                Fields are prefilled from the document. Confirm them before they become Supplier Master. The vendor stays pending approval — this does not auto-approve or auto-pay.
+              </p>
+            </div>
+            {(intake.supplier_candidates ?? []).length > 0 && (
+              <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm">
+                <p className="font-semibold text-sky-950">Possible existing suppliers</p>
+                <p className="mt-1 text-sky-900">Link one of these instead of creating a duplicate.</p>
+                <ul className="mt-3 space-y-2">
+                  {(intake.supplier_candidates ?? []).map((row) => (
+                    <li key={row.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-sky-200 bg-white px-3 py-2">
+                      <span>
+                        <strong>{row.name}</strong>
+                        <span className="block text-xs text-neutral-500">{row.contact_email ?? "No email"} · score {row.score}</span>
+                      </span>
+                      <button
+                        type="button"
+                        className="btn-secondary text-xs"
+                        disabled={saveSupplier.isPending}
+                        onClick={() => saveSupplier.mutate({ vendor_id: row.id, send_invitation: false })}
+                      >
+                        Use this supplier
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+          <form
+            className="lg:col-span-3 space-y-4 rounded-xl border border-neutral-200 bg-white p-6"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!supplierForm.name.trim()) {
+                setError("Supplier name is required.");
+                return;
+              }
+              if (supplierForm.category_ids.length < 1) {
+                setError("Select at least one supplier category.");
+                return;
+              }
+              if (sendInvitation && !supplierForm.contact_email.trim()) {
+                setError("An email is required to send login instructions.");
+                return;
+              }
+              saveSupplier.mutate({
+                name: supplierForm.name.trim(),
+                contact_name: supplierForm.contact_name.trim() || undefined,
+                contact_email: supplierForm.contact_email.trim() || undefined,
+                contact_phone: supplierForm.contact_phone.trim() || undefined,
+                tax_number: supplierForm.tax_number.trim() || undefined,
+                registration_number: supplierForm.registration_number.trim() || undefined,
+                address: supplierForm.address.trim() || undefined,
+                country: supplierForm.country.trim() || undefined,
+                bank_name: supplierForm.bank_name.trim() || undefined,
+                bank_account: supplierForm.bank_account.trim() || undefined,
+                category_ids: supplierForm.category_ids,
+                send_invitation: sendInvitation,
+              });
+            }}
+          >
+            <div>
+              <label htmlFor="intake-supplier-name" className="block text-sm font-medium text-neutral-800">
+                Supplier / company name
+              </label>
+              <input
+                id="intake-supplier-name"
+                className="form-input mt-1"
+                value={supplierForm.name}
+                onChange={(e) => setSupplierForm((f) => ({ ...f, name: e.target.value }))}
+                required
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="intake-supplier-contact" className="block text-sm font-medium text-neutral-800">
+                  Primary contact
+                </label>
+                <input
+                  id="intake-supplier-contact"
+                  className="form-input mt-1"
+                  value={supplierForm.contact_name}
+                  onChange={(e) => setSupplierForm((f) => ({ ...f, contact_name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="intake-supplier-phone" className="block text-sm font-medium text-neutral-800">
+                  Phone
+                </label>
+                <input
+                  id="intake-supplier-phone"
+                  className="form-input mt-1"
+                  value={supplierForm.contact_phone}
+                  onChange={(e) => setSupplierForm((f) => ({ ...f, contact_phone: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="intake-supplier-email" className="block text-sm font-medium text-neutral-800">
+                Portal login email
+              </label>
+              <input
+                id="intake-supplier-email"
+                type="email"
+                className="form-input mt-1"
+                value={supplierForm.contact_email}
+                onChange={(e) => setSupplierForm((f) => ({ ...f, contact_email: e.target.value }))}
+              />
+              <p className="mt-1 text-xs text-neutral-500">This is the email they will use to sign in after activating the account.</p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="intake-supplier-reg" className="block text-sm font-medium text-neutral-800">
+                  Registration number
+                </label>
+                <input
+                  id="intake-supplier-reg"
+                  className="form-input mt-1"
+                  value={supplierForm.registration_number}
+                  onChange={(e) => setSupplierForm((f) => ({ ...f, registration_number: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="intake-supplier-tax" className="block text-sm font-medium text-neutral-800">
+                  Tax / VAT number
+                </label>
+                <input
+                  id="intake-supplier-tax"
+                  className="form-input mt-1"
+                  value={supplierForm.tax_number}
+                  onChange={(e) => setSupplierForm((f) => ({ ...f, tax_number: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="intake-supplier-address" className="block text-sm font-medium text-neutral-800">
+                Address
+              </label>
+              <textarea
+                id="intake-supplier-address"
+                className="form-input mt-1"
+                rows={2}
+                value={supplierForm.address}
+                onChange={(e) => setSupplierForm((f) => ({ ...f, address: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label htmlFor="intake-supplier-country" className="block text-sm font-medium text-neutral-800">
+                Country
+              </label>
+              <input
+                id="intake-supplier-country"
+                className="form-input mt-1"
+                value={supplierForm.country}
+                onChange={(e) => setSupplierForm((f) => ({ ...f, country: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="intake-supplier-bank" className="block text-sm font-medium text-neutral-800">
+                  Bank name (from document)
+                </label>
+                <input
+                  id="intake-supplier-bank"
+                  className="form-input mt-1"
+                  value={supplierForm.bank_name}
+                  onChange={(e) => setSupplierForm((f) => ({ ...f, bank_name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="intake-supplier-account" className="block text-sm font-medium text-neutral-800">
+                  Bank account (from document)
+                </label>
+                <input
+                  id="intake-supplier-account"
+                  className="form-input mt-1"
+                  value={supplierForm.bank_account}
+                  onChange={(e) => setSupplierForm((f) => ({ ...f, bank_account: e.target.value }))}
+                />
+              </div>
+            </div>
+            <fieldset>
+              <legend className="text-sm font-medium text-neutral-800">Supplier categories (1–3)</legend>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {(categories.data ?? []).map((category) => {
+                  const id = `intake-supplier-cat-${category.id}`;
+                  const checked = supplierForm.category_ids.includes(category.id);
+                  return (
+                    <div key={category.id} className={`rounded-lg border px-3 py-2 ${checked ? "border-primary bg-primary/5" : "border-neutral-200"}`}>
+                      <label htmlFor={id} className="flex items-start gap-2 text-sm">
+                        <input
+                          id={id}
+                          type="checkbox"
+                          className="mt-0.5"
+                          checked={checked}
+                          onChange={() =>
+                            setSupplierForm((current) => ({
+                              ...current,
+                              category_ids: checked
+                                ? current.category_ids.filter((item) => item !== category.id)
+                                : current.category_ids.length >= 3
+                                  ? current.category_ids
+                                  : [...current.category_ids, category.id],
+                            }))
+                          }
+                        />
+                        {category.name}
+                      </label>
+                    </div>
+                  );
+                })}
+              </div>
+            </fieldset>
+            <label htmlFor="intake-supplier-invite" className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-950">
+              <input
+                id="intake-supplier-invite"
+                type="checkbox"
+                className="mt-1"
+                checked={sendInvitation}
+                onChange={(e) => setSendInvitation(e.target.checked)}
+              />
+              <span>
+                Send portal login instructions to this email. The supplier activates the account and chooses their own password.
+                <strong className="block font-semibold">Nexus never emails a password.</strong>
+              </span>
+            </label>
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <button type="button" className="btn-secondary" onClick={() => setStep("review")}>Back</button>
+              <button type="submit" className="btn-primary" disabled={saveSupplier.isPending}>
+                {saveSupplier.isPending ? "Saving supplier…" : sendInvitation ? "Create supplier & send login details" : "Create supplier without invite"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

@@ -22,3 +22,16 @@ test("from-document invoice-first form fields are labelled and spaced", () => {
   assert.match(source, /<label htmlFor="intake-exception-justification"/);
   assert.match(source, /htmlFor="intake-project"/);
 });
+
+test("from-document unmatched supplier step creates vendor and sends login invitation", () => {
+  assert.match(source, /type Step = "upload" \| "review" \| "supplier" \| "project" \| "request" \| "preview"/);
+  assert.match(source, /<label htmlFor="intake-supplier-name"/);
+  assert.match(source, /<label htmlFor="intake-supplier-email"/);
+  assert.match(source, /<label htmlFor="intake-supplier-phone"/);
+  assert.match(source, /<label htmlFor="intake-supplier-contact"/);
+  assert.match(source, /<label htmlFor="intake-supplier-invite"/);
+  assert.match(source, /procurementIntakeApi.createSupplier/);
+  assert.match(source, /Nexus never emails a password/);
+  assert.match(source, /supplier_match_status === "unmatched"/);
+  assert.doesNotMatch(source, /<label className=/);
+});

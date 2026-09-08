@@ -4138,6 +4138,28 @@ export interface ProcurementIntake {
   }>;
   original_filename?: string;
   duplicate_matches?: Array<{ reason: string; intake_id?: number; document_number?: string }>;
+  supplier_email_raw?: string | null;
+  supplier_phone_raw?: string | null;
+  supplier_tax_number_raw?: string | null;
+  supplier_registration_raw?: string | null;
+  bank_details_raw?: { account?: string | null; bank?: string | null } | null;
+  supplier_candidates?: Array<{
+    id: number;
+    name: string;
+    contact_email: string | null;
+    contact_phone: string | null;
+    status: string | null;
+    is_approved: boolean;
+    score: number;
+  }>;
+}
+
+export interface IntakeSupplierInvitation {
+  sent: boolean;
+  email: string | null;
+  password_emailed: boolean;
+  login_url: string;
+  activation_hint: string;
 }
 
 export const procurementIntakeApi = {
@@ -4157,6 +4179,11 @@ export const procurementIntakeApi = {
     api.post(`/procurement/intakes/${id}/link-request`, { procurement_request_id }),
   createRequest: (id: number, data: Record<string, unknown>) =>
     api.post(`/procurement/intakes/${id}/create-request`, data),
+  createSupplier: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: ProcurementIntake; message: string; invitation: IntakeSupplierInvitation }>(
+      `/procurement/intakes/${id}/supplier`,
+      data
+    ),
   generateLpo: (id: number) =>
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/intakes/${id}/purchase-orders`),
 };

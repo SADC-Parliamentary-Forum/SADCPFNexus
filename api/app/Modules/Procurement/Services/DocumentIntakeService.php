@@ -444,6 +444,22 @@ class DocumentIntakeService
         return $request->fresh(['items']);
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function supplierCandidates(ProcurementDocumentIntake $intake): array
+    {
+        $raw = $intake->effectiveExtraction();
+        $fields = is_array($raw['fields'] ?? null) ? $raw['fields'] : [];
+        $fields['supplier_name'] = $fields['supplier_name'] ?? $intake->supplier_name_raw;
+        $fields['supplier_email'] = $fields['supplier_email'] ?? $intake->supplier_email_raw;
+        $fields['supplier_phone'] = $fields['supplier_phone'] ?? $intake->supplier_phone_raw;
+        $fields['supplier_tax_number'] = $fields['supplier_tax_number'] ?? $intake->supplier_tax_number_raw;
+        $fields['supplier_registration_number'] = $fields['supplier_registration_number'] ?? $intake->supplier_registration_raw;
+
+        return $this->matcher->candidates((int) $intake->tenant_id, $fields, $intake->vendor_id);
+    }
+
     private function recordRetrospectiveException(ProcurementDocumentIntake $intake, User $user, array $data, array $decision): void
     {
         $required = ['reason', 'requesting_officer', 'request_date', 'service_or_goods_date', 'already_received', 'emergency', 'justification', 'project'];

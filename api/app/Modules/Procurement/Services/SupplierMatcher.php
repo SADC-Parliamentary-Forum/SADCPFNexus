@@ -16,28 +16,7 @@ final class SupplierMatcher
         $bestScore = 0;
 
         foreach ($candidates as $vendor) {
-            $score = 0;
-            $name = strtolower((string) ($extracted['supplier_name'] ?? ''));
-            $vName = strtolower((string) $vendor->name);
-            if ($name !== '' && $vName !== '') {
-                similar_text($this->normalizeName($name), $this->normalizeName($vName), $percent);
-                $score += (int) round($percent);
-            }
-            if (! empty($extracted['supplier_email']) && strcasecmp((string) $vendor->contact_email, (string) $extracted['supplier_email']) === 0) {
-                $score += 40;
-            }
-            if (! empty($extracted['supplier_tax_number']) && $vendor->tax_number && strcasecmp((string) $vendor->tax_number, (string) $extracted['supplier_tax_number']) === 0) {
-                $score += 40;
-            }
-            if (! empty($extracted['supplier_registration_number']) && $vendor->registration_number
-                && strcasecmp((string) $vendor->registration_number, (string) $extracted['supplier_registration_number']) === 0) {
-                $score += 35;
-            }
-            $phone = preg_replace('/\D+/', '', (string) ($extracted['supplier_phone'] ?? ''));
-            $vPhone = preg_replace('/\D+/', '', (string) ($vendor->contact_phone ?? ''));
-            if ($phone !== '' && $vPhone !== '' && $phone === $vPhone) {
-                $score += 30;
-            }
+            $score = $this->score($vendor, $extracted);
             if ($score > $bestScore) {
                 $bestScore = $score;
                 $best = $vendor;
@@ -58,6 +37,65 @@ final class SupplierMatcher
             'differences' => $differences,
             'bank_mismatch' => $bankMismatch,
         ];
+    }
+
+    /**
+     * Near-miss vendors so an officer can link an existing record instead of creating a duplicate.
+     *
+     * @return list<array{id: int, name: string, contact_email: ?string, contact_phone: ?string, status: ?string, is_approved: bool, score: int}>
+     */
+    public function candidates(int $tenantId, array $extracted, ?int $excludeVendorId = null, int $limit = 5): array
+    {
+        $rows = [];
+        foreach (Vendor::query()->where('tenant_id', $tenantId)->get() as $vendor) {
+            if ($excludeVendorId && (int) $vendor->id === (int) $excludeVendorId) {
+                continue;
+            }
+            $score = $this->score($vendor, $extracted);
+            if ($score <= 0) {
+                continue;
+            }
+            $rows[] = [
+                'id' => $vendor->id,
+                'name' => $vendor->name,
+                'contact_email' => $vendor->contact_email,
+                'contact_phone' => $vendor->contact_phone,
+                'status' => $vendor->status,
+                'is_approved' => (bool) $vendor->is_approved,
+                'score' => min(99, $score),
+            ];
+        }
+        usort($rows, fn (array $a, array $b) => $b['score'] <=> $a['score']);
+
+        return array_slice($rows, 0, max(1, $limit));
+    }
+
+    private function score(Vendor $vendor, array $extracted): int
+    {
+        $score = 0;
+        $name = strtolower((string) ($extracted['supplier_name'] ?? ''));
+        $vName = strtolower((string) $vendor->name);
+        if ($name !== '' && $vName !== '') {
+            similar_text($this->normalizeName($name), $this->normalizeName($vName), $percent);
+            $score += (int) round($percent);
+        }
+        if (! empty($extracted['supplier_email']) && strcasecmp((string) $vendor->contact_email, (string) $extracted['supplier_email']) === 0) {
+            $score += 40;
+        }
+        if (! empty($extracted['supplier_tax_number']) && $vendor->tax_number && strcasecmp((string) $vendor->tax_number, (string) $extracted['supplier_tax_number']) === 0) {
+            $score += 40;
+        }
+        if (! empty($extracted['supplier_registration_number']) && $vendor->registration_number
+            && strcasecmp((string) $vendor->registration_number, (string) $extracted['supplier_registration_number']) === 0) {
+            $score += 35;
+        }
+        $phone = preg_replace('/\D+/', '', (string) ($extracted['supplier_phone'] ?? ''));
+        $vPhone = preg_replace('/\D+/', '', (string) ($vendor->contact_phone ?? ''));
+        if ($phone !== '' && $vPhone !== '' && $phone === $vPhone) {
+            $score += 30;
+        }
+
+        return $score;
     }
 
     /**
