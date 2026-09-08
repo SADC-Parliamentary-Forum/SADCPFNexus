@@ -1230,8 +1230,78 @@ export const workflowApi = {
     api.post(`/workflow-engine/approval-tasks/${taskId}/decide`, data),
 };
 
+export interface WorkflowSimulationFieldOption {
+  value: string;
+  label_key: string;
+}
+
+export interface WorkflowSimulationField {
+  key: string;
+  type: "number" | "text" | "select" | "boolean" | "date";
+  required?: boolean;
+  label_key: string;
+  hint_key?: string;
+  default?: string | number | boolean;
+  min?: number;
+  step?: number;
+  options?: WorkflowSimulationFieldOption[];
+}
+
+export interface WorkflowSimulationPreset {
+  key: string;
+  label_key: string;
+  hint_key?: string;
+  context: Record<string, unknown>;
+}
+
+export interface WorkflowSimulationModule {
+  module_type: string;
+  label_key: string;
+  description_key: string;
+  fields: WorkflowSimulationField[];
+  presets: WorkflowSimulationPreset[];
+  workflows: { id: number; name: string; record_type?: string | null; self_approval_policy?: string | null }[];
+}
+
+export interface WorkflowSimulationPathStep {
+  step_order: number;
+  step_name?: string | null;
+  stage_type?: string | null;
+  skip_reason?: string | null;
+}
+
+export interface WorkflowSimulationStage {
+  step_index: number;
+  step_order: number;
+  step_name?: string | null;
+  stage_type?: string | null;
+  applies: boolean;
+  condition_matched?: boolean;
+  skip_reason?: string | null;
+  condition_summary?: string | null;
+  actors?: { id: number; name: string; email?: string }[];
+  actor_reason?: string;
+  due_at?: string | null;
+}
+
+export interface WorkflowSimulationResult {
+  simulation_id?: string;
+  module_type?: string;
+  scenario_key?: string | null;
+  scenario_label_key?: string | null;
+  requester?: { id: number; name: string; email?: string };
+  normalized_context?: Record<string, unknown>;
+  stages?: WorkflowSimulationStage[];
+  applicable_path?: WorkflowSimulationPathStep[];
+  skipped_path?: WorkflowSimulationPathStep[];
+  created_production_approval?: boolean;
+  note?: string;
+}
+
 export const workflowEngineApi = {
   definitions: () => api.get<{ data: ApprovalWorkflow[] }>("/workflow-engine/definitions"),
+  simulationCatalog: () =>
+    api.get<{ data: { modules: WorkflowSimulationModule[] } }>("/workflow-engine/simulation-catalog"),
   updatePolicy: (workflowId: number, self_approval_policy: string) =>
     api.patch<{ data: ApprovalWorkflow }>(`/workflow-engine/definitions/${workflowId}/policy`, { self_approval_policy }),
   createVersion: (workflowId: number, data?: Record<string, unknown>) =>
@@ -1242,8 +1312,15 @@ export const workflowEngineApi = {
   validate: (versionId: number) => api.post(`/workflow-engine/versions/${versionId}/validate`),
   approveVersion: (versionId: number) => api.post(`/workflow-engine/versions/${versionId}/approve`),
   publishVersion: (versionId: number) => api.post(`/workflow-engine/versions/${versionId}/publish`),
-  simulate: (workflowId: number, data?: { test_context?: Record<string, unknown>; definition_version_id?: number }) =>
-    api.post(`/workflow-engine/definitions/${workflowId}/simulate`, data ?? {}),
+  simulate: (
+    workflowId: number,
+    data?: {
+      test_context?: Record<string, unknown>;
+      definition_version_id?: number;
+      requester_user_id?: number;
+      scenario_key?: string;
+    },
+  ) => api.post(`/workflow-engine/definitions/${workflowId}/simulate`, data ?? {}),
   analytics: (params?: { since?: string }) => api.get<{ data: Record<string, unknown> }>("/workflow-engine/analytics", { params }),
   recordGovernance: (approvalId: number, data: Record<string, unknown>) =>
     api.post(`/workflow-engine/workflows/${approvalId}/governance`, data),
