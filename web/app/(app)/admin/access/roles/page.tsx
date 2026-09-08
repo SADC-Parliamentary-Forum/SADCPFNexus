@@ -9,6 +9,11 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import {
+  extractRolePermissions,
+  scrollRoleBuilderIntoView,
+  suggestedCopyName,
+} from "@/lib/access-role-starting-point";
 
 type Role = {
   id: number;
@@ -123,14 +128,23 @@ export default function AccessRolesPage() {
   };
 
   const startFromRole = (role: Role) => {
-    const rolePermissions = role.latest_version?.permissions ?? role.current_version?.permissions ?? [];
+    const rolePermissions = extractRolePermissions(role);
+    if (rolePermissions.length === 0) {
+      setMessage(`${role.name} has no published permissions to copy.`);
+      scrollRoleBuilderIntoView();
+      return;
+    }
     setSelected(new Set(rolePermissions));
+    setName((current) => suggestedCopyName(current, role.name));
     setPurpose(role.purpose ?? "");
     setRisk(role.risk_level ?? "medium");
     setReadOnly(Boolean(role.read_only));
     setNoBusinessApprove(Boolean(role.no_business_approve));
-    setMessage(`${role.name} permissions copied into the draft builder.`);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setExpandedModules(new Set(
+      permissions.filter((permission) => rolePermissions.includes(permission.key)).map((permission) => permission.module),
+    ));
+    setMessage(`${role.name}: ${rolePermissions.length} permission${rolePermissions.length === 1 ? "" : "s"} copied into the draft builder.`);
+    scrollRoleBuilderIntoView();
   };
 
   const createDraft = async () => {
@@ -190,6 +204,7 @@ export default function AccessRolesPage() {
         actions={<Link href="/admin/access/roles/matrix" className="btn-secondary text-sm">Open permission matrix</Link>}
       />
 
+      <div id="role-draft">
       <FormSection title="Create feature-based role" description="Select only the capabilities this role needs. Permissions are versioned and reviewed before publication." icon="badge">
         <div className="grid gap-3 md:grid-cols-4">
           <FormField label="Role name" htmlFor="role-name" required className="md:col-span-1">
@@ -214,8 +229,9 @@ export default function AccessRolesPage() {
           {message ? <p className="text-sm text-neutral-600" role="status">{message}</p> : null}
         </div>
       </FormSection>
+      </div>
 
-      <div className="card p-4">
+      <div id="role-builder" className="card p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="font-semibold text-neutral-900">Feature permission builder</h2>
