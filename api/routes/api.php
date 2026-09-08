@@ -1849,6 +1849,7 @@ Route::prefix('v1')->group(function () {
             // Phase 2 + Phase 3
             Route::post('versions/{version}/lint', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'lint']);
             Route::put('versions/{version}/draft', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'updateDraft']);
+            Route::get('simulation-catalog', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'simulationCatalog']);
             Route::post('definitions/{workflow}/simulate', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'simulate']);
             Route::get('analytics', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'analytics']);
             Route::post('workflows/{approvalRequest}/governance', [\App\Http\Controllers\Api\V1\WorkflowEngine\WorkflowEnginePhase23Controller::class, 'recordGovernance']);

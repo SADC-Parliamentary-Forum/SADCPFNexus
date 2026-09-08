@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\WorkflowEngine;
 use App\Http\Controllers\Controller;
 use App\Models\ApprovalRequest;
 use App\Models\ApprovalWorkflow;
+use App\Models\User;
 use App\Models\WorkflowEngine\WorkflowAiSuggestion;
 use App\Models\WorkflowEngine\WorkflowDefinitionVersion;
 use App\Models\WorkflowEngine\WorkflowTask;
@@ -52,6 +53,15 @@ class WorkflowEnginePhase23Controller extends Controller
         return response()->json(['data' => $this->definitions->updateDraft($version, $data, $request->user())]);
     }
 
+    public function simulationCatalog(Request $request): JsonResponse
+    {
+        $this->authorizeAny($request, 'workflows.simulate', 'workflows.manage-definitions', 'workflows.admin');
+
+        return response()->json([
+            'data' => $this->simulator->catalogForTenant((int) $request->user()->tenant_id),
+        ]);
+    }
+
     public function simulate(Request $request, ApprovalWorkflow $workflow): JsonResponse
     {
         $this->authorizeAny($request, 'workflows.simulate', 'workflows.manage-definitions', 'workflows.admin');
@@ -60,6 +70,8 @@ class WorkflowEnginePhase23Controller extends Controller
         $data = $request->validate([
             'test_context' => ['nullable', 'array'],
             'definition_version_id' => ['nullable', 'integer'],
+            'requester_user_id' => ['nullable', 'integer'],
+            'scenario_key' => ['nullable', 'string', 'max:80'],
         ]);
 
         $version = null;
@@ -67,7 +79,23 @@ class WorkflowEnginePhase23Controller extends Controller
             $version = WorkflowDefinitionVersion::findOrFail($data['definition_version_id']);
         }
 
-        $sim = $this->simulator->simulate($workflow, $request->user(), $data['test_context'] ?? [], $version);
+        $requester = $request->user();
+        if (! empty($data['requester_user_id'])) {
+            $requester = User::query()
+                ->where('tenant_id', $request->user()->tenant_id)
+                ->whereKey($data['requester_user_id'])
+                ->first();
+            abort_unless($requester !== null, 404);
+        }
+
+        $sim = $this->simulator->simulate(
+            $workflow,
+            $request->user(),
+            $data['test_context'] ?? [],
+            $version,
+            $requester,
+            $data['scenario_key'] ?? null
+        );
 
         return response()->json([
             'data' => $sim,
