@@ -35,7 +35,8 @@ jobs:
     name: CI gate
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || github.event.inputs.skip_ci_gate != 'true'
-    timeout-minutes: 45
+    # PHPUnit on main has exceeded 80 minutes; keep this above WAIT_TIMEOUT_SECONDS.
+    timeout-minutes: 130
     steps:
       - uses: actions/checkout@v4
         with:
@@ -45,7 +46,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           WAIT_SHA: ${{ github.sha }}
-          WAIT_TIMEOUT_SECONDS: "2400"
+          WAIT_TIMEOUT_SECONDS: "7200"
         run: bash scripts/ci/wait-for-commit-checks.sh
 
   deploy:
