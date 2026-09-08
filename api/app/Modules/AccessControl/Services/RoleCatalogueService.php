@@ -118,7 +118,11 @@ class RoleCatalogueService
             ]);
         }
 
-        if ($catalogue->tenant_id !== null && (int) $catalogue->owner_user_id === (int) $actor->id) {
+        if (
+            $catalogue->tenant_id !== null
+            && (int) $catalogue->owner_user_id === (int) $actor->id
+            && ! $actor->isSystemAdmin()
+        ) {
             throw ValidationException::withMessages([
                 'approver' => ['The role draft owner cannot publish their own tenant role. An independent approver is required.'],
             ]);
