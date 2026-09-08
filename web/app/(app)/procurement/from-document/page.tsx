@@ -176,24 +176,27 @@ export default function CreateFromDocumentPage() {
           <span className="material-symbols-outlined text-4xl text-primary">upload_file</span>
           <p className="mt-3 text-lg font-semibold text-neutral-800">Drop supplier document here</p>
           <p className="text-sm text-neutral-500">PDF or Word (DOCX) with selectable text is the live extraction path. Image OCR is not configured — scans need manual classification. IMAP is not configured.</p>
-          <label className="btn-primary mt-4 inline-flex cursor-pointer items-center gap-1.5">
-            <input
-              type="file"
-              className="hidden"
-              accept=".pdf,.docx,.jpg,.jpeg,.png,application/pdf"
-              onChange={(e) => onDrop(e.target.files)}
-            />
-            Browse files
-          </label>
-          {file && <p className="mt-3 text-sm text-neutral-700">{file.name}</p>}
-          <button
-            type="button"
-            className="btn-primary mt-4"
-            disabled={!file || upload.isPending}
-            onClick={() => file && upload.mutate(file)}
-          >
-            {upload.isPending ? "Extracting…" : "Upload Invoice / Quote"}
-          </button>
+          {file && <p className="mt-4 text-sm text-neutral-700">{file.name}</p>}
+          <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap">
+            <label htmlFor="intake-file" className="btn-secondary cursor-pointer">
+              <input
+                id="intake-file"
+                type="file"
+                className="hidden"
+                accept=".pdf,.docx,.jpg,.jpeg,.png,application/pdf"
+                onChange={(e) => onDrop(e.target.files)}
+              />
+              Browse files
+            </label>
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={!file || upload.isPending}
+              onClick={() => file && upload.mutate(file)}
+            >
+              {upload.isPending ? "Extracting…" : "Upload Invoice / Quote"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -266,7 +269,7 @@ export default function CreateFromDocumentPage() {
             {intake.arithmetic && !intake.arithmetic.ok && (
               <p className="text-sm text-amber-800">Arithmetic does not reconcile: {intake.arithmetic.issues.join(" ")}</p>
             )}
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-3">
               <button type="button" className="btn-secondary" onClick={() => setStep("upload")}>Reject / start over</button>
               <button
                 type="button"
@@ -283,10 +286,13 @@ export default function CreateFromDocumentPage() {
 
       {step === "project" && intake && (
         <div className="max-w-xl space-y-4 rounded-xl border border-neutral-200 bg-white p-6">
-          <label className="block text-sm font-medium">
-            Project
+          <div>
+            <label htmlFor="intake-project" className="block text-sm font-medium text-neutral-800">
+              Project
+            </label>
             <select
-              className="mt-1 w-full rounded border border-neutral-300 px-3 py-2"
+              id="intake-project"
+              className="form-input mt-1"
               value={projectId}
               onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : "")}
             >
@@ -295,27 +301,55 @@ export default function CreateFromDocumentPage() {
                 <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
               ))}
             </select>
-          </label>
+          </div>
           {intake.document_type === "invoice" && (
-            <div className="space-y-2 rounded border border-amber-200 bg-amber-50 p-3 text-sm">
+            <div className="space-y-3 rounded border border-amber-200 bg-amber-50 p-4 text-sm">
               <p className="font-semibold">Invoice-first control</p>
               <p>The official LPO date will be today. The supplier invoice date {intake.document_date} is stored as source evidence only.</p>
-              <input className="w-full rounded border px-2 py-1" placeholder="Why did procurement precede the LPO?" value={exception.reason} onChange={(e) => setException({ ...exception, reason: e.target.value })} />
-              <input className="w-full rounded border px-2 py-1" placeholder="Requesting officer" value={exception.requesting_officer} onChange={(e) => setException({ ...exception, requesting_officer: e.target.value })} />
-              <input className="w-full rounded border px-2 py-1" type="date" value={exception.request_date} onChange={(e) => setException({ ...exception, request_date: e.target.value })} />
-              <input className="w-full rounded border px-2 py-1" type="date" value={exception.service_or_goods_date} onChange={(e) => setException({ ...exception, service_or_goods_date: e.target.value })} />
-              <textarea className="w-full rounded border px-2 py-1" placeholder="Supplier justification" value={exception.justification} onChange={(e) => setException({ ...exception, justification: e.target.value })} />
+              <div>
+                <label htmlFor="intake-exception-reason" className="block text-sm font-medium text-neutral-800">
+                  Why did procurement precede the LPO?
+                </label>
+                <input id="intake-exception-reason" className="form-input mt-1" value={exception.reason} onChange={(e) => setException({ ...exception, reason: e.target.value })} />
+              </div>
+              <div>
+                <label htmlFor="intake-exception-officer" className="block text-sm font-medium text-neutral-800">
+                  Requesting officer
+                </label>
+                <input id="intake-exception-officer" className="form-input mt-1" value={exception.requesting_officer} onChange={(e) => setException({ ...exception, requesting_officer: e.target.value })} />
+              </div>
+              <div>
+                <label htmlFor="intake-exception-request-date" className="block text-sm font-medium text-neutral-800">
+                  Request date
+                </label>
+                <input id="intake-exception-request-date" className="form-input mt-1" type="date" value={exception.request_date} onChange={(e) => setException({ ...exception, request_date: e.target.value })} />
+              </div>
+              <div>
+                <label htmlFor="intake-exception-service-date" className="block text-sm font-medium text-neutral-800">
+                  Service or goods date
+                </label>
+                <input id="intake-exception-service-date" className="form-input mt-1" type="date" value={exception.service_or_goods_date} onChange={(e) => setException({ ...exception, service_or_goods_date: e.target.value })} />
+              </div>
+              <div>
+                <label htmlFor="intake-exception-justification" className="block text-sm font-medium text-neutral-800">
+                  Supplier justification
+                </label>
+                <textarea id="intake-exception-justification" className="form-input mt-1" rows={3} value={exception.justification} onChange={(e) => setException({ ...exception, justification: e.target.value })} />
+              </div>
             </div>
           )}
           {intake.bank_mismatch && (
-            <label className="flex items-start gap-2 text-sm">
-              <input type="checkbox" className="mt-1" checked={acknowledgeBank} onChange={(e) => setAcknowledgeBank(e.target.checked)} />
+            <label htmlFor="intake-ack-bank" className="flex items-start gap-2 text-sm">
+              <input id="intake-ack-bank" type="checkbox" className="mt-1" checked={acknowledgeBank} onChange={(e) => setAcknowledgeBank(e.target.checked)} />
               I acknowledge the bank-detail hold. Supplier Master will not be overwritten from this invoice.
             </label>
           )}
-          <button type="button" className="btn-primary" disabled={!projectId || confirm.isPending || (intake.bank_mismatch && !acknowledgeBank)} onClick={() => confirm.mutate()}>
-            {confirm.isPending ? "Checking policy…" : "Apply project & policy"}
-          </button>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <button type="button" className="btn-secondary" onClick={() => setStep("review")}>Back</button>
+            <button type="button" className="btn-primary" disabled={!projectId || confirm.isPending || (intake.bank_mismatch && !acknowledgeBank)} onClick={() => confirm.mutate()}>
+              {confirm.isPending ? "Checking policy…" : "Apply project & policy"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -336,7 +370,7 @@ export default function CreateFromDocumentPage() {
                 <div className="rounded border border-sky-200 bg-sky-50 p-3 text-sm">
                   <p className="font-semibold">Possible procurement request found</p>
                   {(matches.data ?? []).slice(0, 3).map((row) => (
-                    <div key={row.id} className="mt-2 flex items-center justify-between gap-2">
+                    <div key={row.id} className="mt-2 flex flex-wrap items-center justify-between gap-3">
                       <span>{row.reference_number} · {row.title} · {row.estimated_value}</span>
                       <button type="button" className="btn-secondary text-xs" disabled={linkRequest.isPending} onClick={() => linkRequest.mutate(row.id)}>Link</button>
                     </div>
@@ -360,7 +394,7 @@ export default function CreateFromDocumentPage() {
           <p>Total: {po.currency === "NAD" ? "N$" : po.currency} {po.total_amount}</p>
           {po.retrospective && <p className="text-amber-800">Retrospective invoice path — not backdated.</p>}
           {submitLpo.isSuccess && <p className="text-emerald-800">Sent for sequential approval. Official number: {po.lpo_number}</p>}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               className="btn-primary"
