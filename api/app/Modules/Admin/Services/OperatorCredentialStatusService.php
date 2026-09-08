@@ -3,6 +3,7 @@
 namespace App\Modules\Admin\Services;
 
 use App\Models\CorrespondenceMailboxSetting;
+use App\Models\TenantMailSetting;
 
 /**
  * Aggregated operator credential / integration status.
@@ -14,8 +15,10 @@ final class OperatorCredentialStatusService
     public function status(): array
     {
         return [
+            $this->outgoingSmtp(),
             $this->googleCalendar(),
             $this->correspondenceImap(),
+            $this->procurementImap(),
             $this->fleetTelematics(),
             $this->weeklyAi(),
             $this->procurementAi(),
@@ -31,6 +34,29 @@ final class OperatorCredentialStatusService
             $this->siem(),
             $this->playStore(),
             $this->appStoreConnect(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function outgoingSmtp(): array
+    {
+        $envConfigured = strtolower((string) config('mail.default')) === 'smtp'
+            && filled(config('mail.mailers.smtp.host'))
+            && filled(config('mail.mailers.smtp.username'))
+            && filled(config('mail.mailers.smtp.password'));
+        $dbConfigured = TenantMailSetting::query()->get()->contains(fn (TenantMailSetting $row) => $row->smtpConfigured());
+
+        return [
+            'key' => 'smtp_mailer',
+            'label' => 'Outgoing email (SMTP)',
+            'configured' => $envConfigured || $dbConfigured,
+            'driver' => 'smtp',
+            'secret_source' => 'admin_or_env',
+            'guidance' => 'Set host, username, and password under Admin → Email. Env MAIL_* remains a fallback. Passwords are never shown.',
+            'details' => [
+                'admin_configured' => $dbConfigured,
+                'env_mailer' => config('mail.default'),
+            ],
         ];
     }
 
@@ -73,11 +99,36 @@ final class OperatorCredentialStatusService
             'configured' => $envPassword || $dbConfigured,
             'driver' => 'imap',
             'secret_source' => 'env_or_encrypted_db',
-            'guidance' => 'Set CORRESPONDENCE_IMAP_PASSWORD via server env (preferred). Host/user live in Correspondence mailbox settings.',
+            'guidance' => 'Configure the designated registry mailbox under Admin → Email (or Correspondence → Mailbox). Not all-employee ingest.',
             'details' => [
                 'ext_imap_loaded' => extension_loaded('imap'),
                 'env_password_set' => $envPassword,
                 'mailbox_row_configured' => $dbConfigured,
+            ],
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function procurementImap(): array
+    {
+        $envConfigured = filled(config('procurement.inbox_imap_host'))
+            && filled(config('procurement.inbox_imap_user'))
+            && filled(config('procurement.inbox_imap_password'));
+        $dbConfigured = TenantMailSetting::query()->get()->contains(
+            fn (TenantMailSetting $row) => $row->procurementImapConfiguredFromDb()
+        );
+
+        return [
+            'key' => 'procurement_imap',
+            'label' => 'Procurement invoice IMAP',
+            'configured' => $envConfigured || $dbConfigured,
+            'driver' => 'imap',
+            'secret_source' => 'admin_or_env',
+            'guidance' => 'Set the designated invoice mailbox under Admin → Email. Host + username + password required. Intakes are never auto-confirmed.',
+            'details' => [
+                'ext_imap_loaded' => extension_loaded('imap'),
+                'admin_configured' => $dbConfigured,
+                'env_configured' => $envConfigured,
             ],
         ];
     }

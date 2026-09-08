@@ -47,6 +47,8 @@ use App\Support\FrontendUrl;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -149,5 +151,12 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(HrAppraisalTemplate::class, HrAppraisalTemplatePolicy::class);
         Gate::policy(HrPersonnelFileSection::class, HrPersonnelFileSectionPolicy::class);
         Gate::policy(HrApprovalMatrix::class, HrApprovalMatrixPolicy::class);
+
+        Event::listen(MessageSending::class, function (): void {
+            $tenantId = auth()->user()?->tenant_id;
+            if ($tenantId) {
+                app(\App\Modules\Admin\Services\TenantMailRuntime::class)->apply((int) $tenantId);
+            }
+        });
     }
 }

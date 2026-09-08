@@ -42,6 +42,11 @@ export default function ProcurementInboxPage() {
         subtitle={subtitle}
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement", href: "/procurement" }, { label: "Inbox" }]} />}
       />
+      <p className="text-sm text-neutral-600">
+        System Admins configure the designated invoice mailbox under{" "}
+        <Link href="/admin/email" className="text-primary hover:underline">Admin → Email</Link>.
+        Attachments become intakes for review and are never auto-confirmed.
+      </p>
       {note && (
         <p className={`rounded-lg border px-4 py-3 text-sm ${configured ? "border-sky-200 bg-sky-50 text-sky-950" : "border-amber-200 bg-amber-50 text-amber-900"}`}>{note}</p>
       )}

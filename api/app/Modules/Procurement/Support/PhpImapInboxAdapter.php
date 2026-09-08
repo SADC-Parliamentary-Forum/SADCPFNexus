@@ -12,11 +12,16 @@ final class PhpImapInboxAdapter implements ProcurementInboxAdapter
 {
     public const METHOD = 'php_imap';
 
+    /**
+     * @param  array{host?: string, user?: string, password?: string, port?: int, encryption?: string, mailbox?: string}|null  $resolved
+     */
+    public function __construct(private readonly ?array $resolved = null) {}
+
     public function isConfigured(): bool
     {
-        return trim((string) config('procurement.inbox_imap_host')) !== ''
-            && trim((string) config('procurement.inbox_imap_user')) !== ''
-            && (string) config('procurement.inbox_imap_password') !== '';
+        return trim($this->host()) !== ''
+            && trim($this->user()) !== ''
+            && $this->password() !== '';
     }
 
     public function adapterName(): string
@@ -33,7 +38,7 @@ final class PhpImapInboxAdapter implements ProcurementInboxAdapter
     {
         if (! $this->isConfigured()) {
             throw ValidationException::withMessages([
-                'imap' => ['Procurement IMAP is not fully configured. Set PROCUREMENT_INBOX_IMAP_HOST, USER, and PASSWORD.'],
+                'imap' => ['Procurement IMAP is not fully configured. Set host, username, and password in Admin → Email, or PROCUREMENT_INBOX_IMAP_* env.'],
             ]);
         }
         if (! function_exists('imap_open')) {
@@ -42,12 +47,12 @@ final class PhpImapInboxAdapter implements ProcurementInboxAdapter
             ]);
         }
 
-        $host = trim((string) config('procurement.inbox_imap_host'));
-        $user = trim((string) config('procurement.inbox_imap_user'));
-        $password = (string) config('procurement.inbox_imap_password');
-        $port = (int) config('procurement.inbox_imap_port', 993);
-        $encryption = strtolower((string) config('procurement.inbox_imap_encryption', 'ssl'));
-        $folder = (string) config('procurement.inbox_imap_mailbox', 'INBOX');
+        $host = $this->host();
+        $user = $this->user();
+        $password = $this->password();
+        $port = $this->port();
+        $encryption = strtolower($this->encryption());
+        $folder = $this->mailbox();
 
         $flags = '/imap';
         if ($encryption === 'ssl') {
@@ -180,6 +185,36 @@ final class PhpImapInboxAdapter implements ProcurementInboxAdapter
         $subtype = strtolower((string) ($structure->subtype ?? 'octet-stream'));
 
         return $type.'/'.$subtype;
+    }
+
+    private function host(): string
+    {
+        return trim((string) ($this->resolved['host'] ?? config('procurement.inbox_imap_host')));
+    }
+
+    private function user(): string
+    {
+        return trim((string) ($this->resolved['user'] ?? config('procurement.inbox_imap_user')));
+    }
+
+    private function password(): string
+    {
+        return (string) ($this->resolved['password'] ?? config('procurement.inbox_imap_password'));
+    }
+
+    private function port(): int
+    {
+        return (int) ($this->resolved['port'] ?? config('procurement.inbox_imap_port', 993));
+    }
+
+    private function encryption(): string
+    {
+        return (string) ($this->resolved['encryption'] ?? config('procurement.inbox_imap_encryption', 'ssl'));
+    }
+
+    private function mailbox(): string
+    {
+        return (string) ($this->resolved['mailbox'] ?? config('procurement.inbox_imap_mailbox', 'INBOX'));
     }
 
     private function decodeHeader(string $value): string

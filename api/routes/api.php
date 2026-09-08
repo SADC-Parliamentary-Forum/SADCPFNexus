@@ -504,6 +504,8 @@ Route::prefix('v1')->group(function () {
             // System Settings
             Route::get('settings', [\App\Http\Controllers\Api\V1\Admin\SettingsController::class, 'index']);
             Route::put('settings', [\App\Http\Controllers\Api\V1\Admin\SettingsController::class, 'update']);
+            Route::get('email', [\App\Http\Controllers\Api\V1\Admin\AdminEmailSettingsController::class, 'show']);
+            Route::put('email', [\App\Http\Controllers\Api\V1\Admin\AdminEmailSettingsController::class, 'update']);
             Route::get('operator-credentials', \App\Http\Controllers\Api\V1\Admin\OperatorCredentialStatusController::class);
 
             // Notification Templates

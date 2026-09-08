@@ -90,8 +90,11 @@ return [
         'risk_level' => 'critical',
         'data_classification' => 'Internal',
         'mfa_required' => true,
-        'linked_routes' => ['/admin'],
-        'linked_endpoints' => [],
+        'linked_routes' => ['/admin', '/admin/email'],
+        'linked_endpoints' => [
+            'GET /api/v1/admin/email',
+            'PUT /api/v1/admin/email',
+        ],
     ],
     'admin-console.view' => [
         'display_name' => 'View Admin Console',

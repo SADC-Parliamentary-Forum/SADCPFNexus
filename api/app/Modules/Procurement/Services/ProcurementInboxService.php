@@ -45,7 +45,7 @@ class ProcurementInboxService
         $errors = [];
 
         try {
-            $messages = $this->loadMessages($options);
+            $messages = $this->loadMessages($tenant, $options);
         } catch (ValidationException $e) {
             return [
                 'status' => 'degraded',
@@ -125,7 +125,7 @@ class ProcurementInboxService
      * @param  array<string, mixed>  $options
      * @return list<array<string, mixed>>|null
      */
-    private function loadMessages(array $options): ?array
+    private function loadMessages(Tenant $tenant, array $options): ?array
     {
         if (isset($options['messages']) && is_array($options['messages'])) {
             return array_values($options['messages']);
@@ -134,7 +134,7 @@ class ProcurementInboxService
             return $this->loadFixture((string) $options['fixture']);
         }
 
-        $adapter = $this->factory->make();
+        $adapter = $this->factory->make((int) $tenant->id);
         if (! $adapter->isConfigured()) {
             return null;
         }
@@ -177,7 +177,7 @@ class ProcurementInboxService
             $fromEmail = 'unknown@invalid';
         }
 
-        if (! $this->senderAllowed($fromEmail)) {
+        if (! $this->senderAllowed($tenant, $fromEmail)) {
             if (! $dryRun) {
                 ProcurementInboxMessage::create([
                     'tenant_id' => $tenant->id,
@@ -250,9 +250,9 @@ class ProcurementInboxService
             ->exists();
     }
 
-    private function senderAllowed(string $fromEmail): bool
+    private function senderAllowed(Tenant $tenant, string $fromEmail): bool
     {
-        $allowlist = $this->allowlist();
+        $allowlist = $this->allowlist($tenant);
         if ($allowlist === []) {
             return true;
         }
@@ -263,9 +263,10 @@ class ProcurementInboxService
     /**
      * @return list<string>
      */
-    private function allowlist(): array
+    private function allowlist(Tenant $tenant): array
     {
-        $raw = config('procurement.inbox_imap_allowlist');
+        $resolved = \App\Models\TenantMailSetting::resolvedProcurementImap((int) $tenant->id);
+        $raw = $resolved['allowlist'] ?? config('procurement.inbox_imap_allowlist');
         if (is_array($raw)) {
             $parts = $raw;
         } else {

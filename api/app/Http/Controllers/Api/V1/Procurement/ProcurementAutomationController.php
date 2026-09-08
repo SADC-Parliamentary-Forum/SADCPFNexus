@@ -106,7 +106,7 @@ class ProcurementAutomationController extends Controller
     public function inbox(Request $request, ProcurementInboxFactory $factory): JsonResponse
     {
         $this->assertOfficer($request);
-        $imap = $factory->make();
+        $imap = $factory->make((int) $request->user()->tenant_id);
         $rows = ProcurementInboxMessage::query()
             ->where('tenant_id', $request->user()->tenant_id)
             ->orderByDesc('id')

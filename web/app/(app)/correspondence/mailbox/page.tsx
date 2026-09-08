@@ -101,7 +101,7 @@ export default function CorrespondenceMailboxPage() {
     <div className="mx-auto max-w-4xl space-y-6">
       <ModulePageHeader
         title="Registry Mailbox"
-        subtitle="Suggestion-only intake for the designated registry mailbox. Not all-employee email ingest, and nothing auto-submits.\r\n          Poll via php artisan corresponde"
+        subtitle="Suggestion-only intake for the designated registry mailbox. Not all-employee email ingest, and nothing auto-submits."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Registry Mailbox" }]} />}
       />
 
@@ -114,6 +114,9 @@ export default function CorrespondenceMailboxPage() {
           {" · "}
           IMAP {settings?.imap_configured ? "ready" : "not fully configured"}
           {settings?.last_polled_at ? ` · last poll ${new Date(settings.last_polled_at).toLocaleString()}` : ""}
+          {" · "}
+          System Admins can also set this mailbox under{" "}
+          <Link href="/admin/email" className="text-primary hover:underline">Admin → Email</Link>.
         </p>
         <div className="grid gap-3 md:grid-cols-2">
           <input className="form-input" placeholder="registry@sadcpf.org" value={settingsForm.mailbox_address} onChange={(e) => setSettingsForm((f) => ({ ...f, mailbox_address: e.target.value }))} />
