@@ -175,7 +175,7 @@ export default function CreateFromDocumentPage() {
         >
           <span className="material-symbols-outlined text-4xl text-primary">upload_file</span>
           <p className="mt-3 text-lg font-semibold text-neutral-800">Drop supplier document here</p>
-          <p className="text-sm text-neutral-500">PDF or Word (DOCX) with selectable text is the live extraction path. Image OCR is not configured — scans need manual classification. IMAP is not configured.</p>
+          <p className="text-sm text-neutral-500">PDF or Word (DOCX) with selectable text extracts first. Image-only PDFs and scans are read with OCR when Tesseract is installed on the API. Review extracted fields before confirming.</p>
           {file && <p className="mt-4 text-sm text-neutral-700">{file.name}</p>}
           <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap">
             <label htmlFor="intake-file" className="btn-secondary cursor-pointer">
@@ -216,8 +216,8 @@ export default function CreateFromDocumentPage() {
                 If it is not in Nexus yet, continue to regularise; the next official number is allocated on submit and will not reuse {intake.document_number ?? "the number on this file"}.
               </p>
             )}
-            {(intake.text_method === "ocr_unconfigured" || intake.text_method === "pdf_no_text" || intake.ocr_available === false) && (
-              <p className="mt-3 text-amber-900">{intake.extraction_message ?? "Image OCR is not configured. Upload a PDF or DOCX, or enter fields manually."}</p>
+            {(intake.text_method === "ocr_unconfigured" || intake.text_method === "pdf_no_text") && (
+              <p className="mt-3 text-amber-900">{intake.extraction_message ?? "No selectable text was found. Upload a PDF or DOCX with selectable text, or enter fields manually."}</p>
             )}
           </div>
           <div className="lg:col-span-3 space-y-4">

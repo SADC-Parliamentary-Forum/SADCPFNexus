@@ -5,12 +5,11 @@ namespace App\Http\Controllers\Api\V1\Procurement;
 use App\Http\Controllers\Controller;
 use App\Models\ProcurementException;
 use App\Models\ProcurementInboxMessage;
-use App\Models\ProcurementProject;
 use App\Models\Tenant;
 use App\Modules\Procurement\Services\LpoSequenceAllocator;
 use App\Modules\Procurement\Services\ProcurementProjectService;
 use App\Modules\Procurement\Services\ProcurementWorkbenchService;
-use App\Modules\Procurement\Support\ImapUnconfiguredAdapter;
+use App\Modules\Procurement\Support\ProcurementInboxFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -104,10 +103,10 @@ class ProcurementAutomationController extends Controller
         return response()->json(['data' => $exception]);
     }
 
-    public function inbox(Request $request): JsonResponse
+    public function inbox(Request $request, ProcurementInboxFactory $factory): JsonResponse
     {
         $this->assertOfficer($request);
-        $imap = new ImapUnconfiguredAdapter();
+        $imap = $factory->make((int) $request->user()->tenant_id);
         $rows = ProcurementInboxMessage::query()
             ->where('tenant_id', $request->user()->tenant_id)
             ->orderByDesc('id')
@@ -116,7 +115,7 @@ class ProcurementAutomationController extends Controller
         return response()->json([
             'data' => $rows,
             'imap_configured' => $imap->isConfigured(),
-            'imap_adapter' => ImapUnconfiguredAdapter::METHOD,
+            'imap_adapter' => $imap->adapterName(),
             'note' => $imap->statusNote(),
         ]);
     }

@@ -14,7 +14,12 @@ RUN set -eux; \
         freetype \
         libjpeg-turbo \
         libpng \
-        libwebp; \
+        libwebp \
+        tesseract-ocr \
+        tesseract-ocr-data-eng \
+        tesseract-ocr-data-fra \
+        tesseract-ocr-data-por \
+        poppler-utils; \
     apk add --no-cache --virtual .build-deps \
         $PHPIZE_DEPS \
         libpq-dev \

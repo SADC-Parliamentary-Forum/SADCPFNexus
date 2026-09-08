@@ -6,14 +6,24 @@ namespace App\Modules\Procurement\Support;
  * Image OCR is not wired. Never invent extracted text from a scan.
  * Upload of PDF/DOCX with selectable text remains the live extraction path.
  */
-final class OcrUnconfiguredAdapter
+final class OcrUnconfiguredAdapter implements \App\Modules\Procurement\Support\Ocr\OcrEngine
 {
     public const METHOD = 'ocr_unconfigured';
+
+    public function isAvailable(): bool
+    {
+        return false;
+    }
 
     /**
      * @return array{text: string, method: string, ocr_available: false, message: string}
      */
     public function extract(): array
+    {
+        return $this->recognize('', 'image/jpeg');
+    }
+
+    public function recognize(string $bytes, string $mime, string $filename = ''): array
     {
         return [
             'text' => '',

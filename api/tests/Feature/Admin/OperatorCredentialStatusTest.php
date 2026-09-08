@@ -42,7 +42,9 @@ class OperatorCredentialStatusTest extends TestCase
         $keys = collect($items)->pluck('key')->all();
 
         $this->assertContains('google_calendar', $keys);
+        $this->assertContains('smtp_mailer', $keys);
         $this->assertContains('correspondence_imap', $keys);
+        $this->assertContains('procurement_imap', $keys);
         $this->assertContains('fleet_telematics', $keys);
         $this->assertContains('weekly_ai', $keys);
         $this->assertContains('procurement_ai', $keys);

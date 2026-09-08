@@ -28,7 +28,12 @@ final class SupplierDocumentParser
     public function parse(string $text, array $extractMeta = []): array
     {
         $method = $extractMeta['method'] ?? '';
-        if ($method === OcrUnconfiguredAdapter::METHOD || $method === DocumentTextExtractor::METHOD_PDF_NO_TEXT || trim($text) === '') {
+        $honestEmpty = in_array($method, [
+            OcrUnconfiguredAdapter::METHOD,
+            DocumentTextExtractor::METHOD_PDF_NO_TEXT,
+            'ocr_empty',
+        ], true);
+        if ($honestEmpty || trim($text) === '') {
             return [
                 'document_type' => 'other',
                 'classification_confidence' => 20,
@@ -176,7 +181,7 @@ final class SupplierDocumentParser
     {
         $lines = [];
         $n = 1;
-        foreach (preg_split("/\\r?\\n/", $text) ?: [] as $row) {
+        foreach (preg_split('/\\r?\\n/', $text) ?: [] as $row) {
             if (! str_contains($row, '|')) {
                 continue;
             }
@@ -230,6 +235,7 @@ final class SupplierDocumentParser
             if ($next !== null && preg_match('/^\\d{2}$/', $next) && ! str_contains($current, '.')) {
                 $out[] = Money::fromCents(Money::toCents($current.'.'.$next));
                 $i += 2;
+
                 continue;
             }
             if (preg_match('/\\.\\d{2}$/', $current) || str_contains($current, ',')) {

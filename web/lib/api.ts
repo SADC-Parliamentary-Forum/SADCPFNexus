@@ -6249,9 +6249,37 @@ export interface SystemSettings {
   letterhead_website?: string;
 }
 
+export interface AdminEmailChannel {
+  enabled: boolean;
+  configured: boolean;
+  host: string | null;
+  port: number;
+  encryption: string;
+  username: string | null;
+  has_password: boolean;
+}
+
+export interface AdminEmailSettings {
+  smtp: AdminEmailChannel & {
+    from_address: string | null;
+    from_name: string | null;
+  };
+  correspondence_imap: AdminEmailChannel & {
+    mailbox_address: string | null;
+    notes: string | null;
+  };
+  procurement_imap: AdminEmailChannel & {
+    mailbox_address: string | null;
+    allowlist: string | null;
+  };
+}
+
 export const settingsApi = {
   get: () => api.get<SystemSettings>("/admin/settings"),
   update: (data: Partial<SystemSettings>) => api.put<SystemSettings>("/admin/settings", data),
+  email: () => api.get<{ data: AdminEmailSettings }>("/admin/email"),
+  updateEmail: (data: Record<string, unknown>) =>
+    api.put<{ data: AdminEmailSettings }>("/admin/email", data),
   operatorCredentials: () =>
     api.get<{
       data: Array<{

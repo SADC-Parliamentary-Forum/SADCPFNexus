@@ -72,6 +72,15 @@ const adminLinks = [
     border: "border-amber-100",
   },
   {
+    title: "Email",
+    description: "Outgoing SMTP plus designated correspondence and procurement mailboxes.",
+    href: "/admin/email",
+    icon: "forward_to_inbox",
+    color: "text-sky-700",
+    bg: "bg-sky-50",
+    border: "border-sky-100",
+  },
+  {
     title: "Approval Workflows",
     description: "Define approval chains and thresholds for each module.",
     href: "/admin/workflows",

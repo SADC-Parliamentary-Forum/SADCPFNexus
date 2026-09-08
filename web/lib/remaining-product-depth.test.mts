@@ -1663,6 +1663,7 @@ const ADMIN_SIDEBAR_HREFS = [
   "/admin/workflows/analytics",
   "/admin/workflows/ai",
   "/admin/settings",
+  "/admin/email",
   "/settings/hr",
   "/admin/governance",
   "/admin/notifications",
@@ -1820,6 +1821,7 @@ test("Administration sidebar and hub keep every control-plane destination", () =
     "/admin/access/roles",
     "/admin/workflows",
     "/admin/settings",
+    "/admin/email",
     "/admin/documents",
     "/admin/notifications",
   ]) {

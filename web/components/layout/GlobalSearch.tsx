@@ -43,6 +43,7 @@ const SEARCH_INDEX: SearchResult[] = [
   { id: "a-depts",       label: "Departments",               description: "Organisational structure",             href: "/admin/departments",   category: "Admin",       icon: "corporate_fare"         },
   { id: "a-payslips",    label: "Issue payslips",            description: "Drop a pay-period envelope and assign files to staff", href: "/admin/payslips",      category: "Admin",       icon: "receipt_long"           },
   { id: "a-settings",    label: "System Settings",           description: "Organisation, fiscal year, timezone",  href: "/admin/settings",      category: "Admin",       icon: "settings"               },
+  { id: "a-email",       label: "Email",                     description: "Outgoing SMTP and designated IMAP mailboxes", href: "/admin/email",   category: "Admin",       icon: "forward_to_inbox", keywords: "smtp imap mailbox incoming outgoing" },
   { id: "a-workflows",   label: "Approval Workflows",        description: "Configure approval chains",            href: "/admin/workflows",     category: "Admin",       icon: "account_tree"           },
   { id: "a-notifs",      label: "Notification Templates",    description: "Email and system notification content",href: "/admin/notifications", category: "Admin",       icon: "notifications"          },
   { id: "a-audit",       label: "Platform Audit Trail",      description: "System activity trail",                href: "/admin/audit-trail",   category: "Admin",       icon: "policy"                 },

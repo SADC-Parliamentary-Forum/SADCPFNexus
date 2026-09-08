@@ -340,6 +340,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Workflow Analytics", href: "/admin/workflows/analytics", icon: "analytics" },
       { label: "Workflow AI Assist", href: "/admin/workflows/ai", icon: "psychology" },
       { label: "System Settings", href: "/admin/settings", icon: "settings" },
+      { label: "Email", href: "/admin/email", icon: "forward_to_inbox" },
       { label: "HR Settings", href: "/settings/hr", icon: "tune" },
       { label: "Governance Configuration", href: "/admin/governance", icon: "account_balance" },
       { label: "Notifications", href: "/admin/notifications", icon: "notifications" },

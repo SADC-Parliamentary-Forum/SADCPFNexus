@@ -173,7 +173,9 @@ export default function AdminSettingsPage() {
               <h2 className="text-sm font-semibold text-neutral-900">Operator credentials</h2>
             </div>
             <p className="text-xs text-neutral-500">
-              Secrets stay in server env only. Non-secret org settings save above; integration keys are never shown here.
+              Outgoing SMTP and designated IMAP mailboxes are configured on{" "}
+              <Link href="/admin/email" className="text-primary hover:underline">Admin → Email</Link>.
+              Other integration keys stay in server env and are never shown here.
             </p>
             <ul className="divide-y divide-neutral-100">
               {credentials.map((row) => (
@@ -190,7 +192,11 @@ export default function AdminSettingsPage() {
                       row.configured ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-800"
                     }`}
                   >
-                    {row.configured ? "Configured" : "Not configured — set via server env"}
+                    {row.configured
+                      ? "Configured"
+                      : ["smtp_mailer", "correspondence_imap", "procurement_imap"].includes(row.key)
+                        ? "Not configured — set in Admin → Email"
+                        : "Not configured — set via server env"}
                   </span>
                 </li>
               ))}

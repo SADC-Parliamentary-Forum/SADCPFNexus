@@ -20,6 +20,7 @@ const ADMIN_ROUTES = [
   "/admin/workflows",
   "/admin/audit",
   "/admin/settings",
+  "/admin/email",
   "/admin/weekly-summary",
 ];
 
