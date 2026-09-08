@@ -2,18 +2,32 @@
 
 namespace App\Modules\Procurement\Support;
 
+use App\Support\Utf8;
+
 /**
  * Pulls visible text from PDF content streams and DOCX XML without executing the file.
  */
 final class DocumentTextExtractor
 {
+    public const METHOD_PDF_NO_TEXT = 'pdf_no_text';
+
     public function extract(string $contents, string $mime, string $filename = ''): array
     {
         $mime = strtolower($mime);
         $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
         if ($mime === 'application/pdf' || $ext === 'pdf' || str_starts_with($contents, '%PDF')) {
-            return ['text' => $this->fromPdf($contents), 'method' => 'pdf_text'];
+            $text = Utf8::string($this->fromPdf($contents));
+            if ($this->isUsablePdfText($text)) {
+                return ['text' => $text, 'method' => 'pdf_text'];
+            }
+
+            return [
+                'text' => '',
+                'method' => self::METHOD_PDF_NO_TEXT,
+                'ocr_available' => false,
+                'message' => 'This PDF has no selectable text. Upload a PDF or Word file with selectable text, or classify the invoice manually. Image OCR is not configured.',
+            ];
         }
 
         if (
@@ -24,11 +38,11 @@ final class DocumentTextExtractor
         }
 
         if (str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
-            return (new OcrUnconfiguredAdapter())->extract();
+            return (new OcrUnconfiguredAdapter)->extract();
         }
 
         if (str_starts_with($mime, 'text/') || $ext === 'txt') {
-            return ['text' => $contents, 'method' => 'plain_text'];
+            return ['text' => Utf8::string($contents), 'method' => 'plain_text'];
         }
 
         return ['text' => '', 'method' => 'unsupported'];
@@ -55,15 +69,11 @@ final class DocumentTextExtractor
         }
 
         $joined = trim(preg_replace('/[ \\t]+/', ' ', implode("\n", $texts)) ?? '');
-        if ($joined !== '') {
+        if ($this->isUsablePdfText($joined)) {
             return $joined;
         }
 
-        // Fallback: printable runs (uncompressed PDFs / test fixtures).
-        $stripped = preg_replace('/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]/', ' ', $contents) ?? '';
-        $stripped = preg_replace('/\\s+/', ' ', $stripped) ?? '';
-
-        return trim($stripped);
+        return '';
     }
 
     public function fromDocx(string $contents): string
@@ -73,7 +83,7 @@ final class DocumentTextExtractor
             return '';
         }
         file_put_contents($tmp, $contents);
-        $zip = new \ZipArchive();
+        $zip = new \ZipArchive;
         if ($zip->open($tmp) !== true) {
             @unlink($tmp);
 
@@ -85,7 +95,23 @@ final class DocumentTextExtractor
         $xml = preg_replace('/<w:p[^>]*>/', "\n", $xml) ?? $xml;
         $text = strip_tags(str_replace('</w:t>', ' ', $xml));
 
-        return trim(html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8'));
+        return Utf8::string(trim(html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8')));
+    }
+
+    private function isUsablePdfText(string $text): bool
+    {
+        $trimmed = trim($text);
+        if ($trimmed === '' || str_starts_with($trimmed, '%PDF')) {
+            return false;
+        }
+        if (! mb_check_encoding($trimmed, 'UTF-8')) {
+            return false;
+        }
+        if (strlen($trimmed) > 200000) {
+            return false;
+        }
+
+        return (bool) preg_match('/[A-Za-z]{4,}/', $trimmed);
     }
 
     private function unescapePdf(string $value): string

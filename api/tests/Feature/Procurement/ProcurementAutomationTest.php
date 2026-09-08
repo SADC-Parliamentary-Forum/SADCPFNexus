@@ -5,7 +5,6 @@ namespace Tests\Feature\Procurement;
 use App\Models\ApprovalWorkflow;
 use App\Models\Invoice;
 use App\Models\ProcurementException;
-use App\Models\ProcurementProject;
 use App\Models\PurchaseOrder;
 use App\Models\Tenant;
 use App\Models\Vendor;
@@ -365,5 +364,24 @@ class ProcurementAutomationTest extends TestCase
         $this->assertFalse($res->json('imap_configured'));
         $this->assertSame('imap_unconfigured', $res->json('imap_adapter'));
         $this->assertStringContainsString('Upload', (string) $res->json('note'));
+    }
+
+    public function test_rendered_invoice_pdf_upload_does_not_fail_json_encoding(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->seedVendorAndProject($tenant);
+        [$http] = $this->asProcurementOfficer($tenant);
+
+        $file = UploadedFile::fake()->createWithContent(
+            'Invoice_INV0001.pdf',
+            InvoicePdfFixture::renderedInvoicePdf()
+        );
+        $res = $http->post('/api/v1/procurement/intakes', ['file' => $file], ['Accept' => 'application/json']);
+        $res->assertCreated();
+        $this->assertNotNull($res->json('data.id'));
+        $this->assertTrue((bool) $res->json('data.needs_manual_classification'));
+        $this->assertSame('pdf_no_text', $res->json('data.text_method'));
+        $this->assertStringContainsString('selectable text', (string) $res->json('data.extraction_message'));
+        $this->assertNotSame('extraction_failed', $res->json('data.extraction_status'));
     }
 }
