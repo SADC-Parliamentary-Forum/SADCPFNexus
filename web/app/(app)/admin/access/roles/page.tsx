@@ -37,6 +37,17 @@ function riskVariant(risk?: string): "muted" | "warning" | "danger" {
   return "muted";
 }
 
+function apiErrorMessage(error: unknown, fallback: string): string {
+  const data = (error as { response?: { data?: { message?: string; errors?: Record<string, string[] | string> } } })?.response?.data;
+  const fromErrors = data?.errors
+    ? Object.values(data.errors).flat().filter(Boolean).join(" ")
+    : "";
+  if (fromErrors) return fromErrors;
+  if (data?.message) return data.message;
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
+
 export default function AccessRolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [permissions, setPermissions] = useState<PermissionRow[]>([]);
@@ -144,8 +155,8 @@ export default function AccessRolesPage() {
       setSelected(new Set());
       setMessage("Draft role created with the selected feature permissions.");
       await load();
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message ?? "Unable to create the draft role.");
+    } catch (error: unknown) {
+      setMessage(apiErrorMessage(error, "Unable to create the draft role."));
     } finally {
       setSaving(false);
     }
@@ -163,8 +174,8 @@ export default function AccessRolesPage() {
       });
       setMessage(`${role.name} was published as an active role version.`);
       await load();
-    } catch (error: any) {
-      setMessage(error?.response?.data?.message ?? "Unable to publish this role. Independent approval may be required.");
+    } catch (error: unknown) {
+      setMessage(apiErrorMessage(error, "Unable to publish this role. Independent approval may be required."));
     } finally {
       setSaving(false);
     }

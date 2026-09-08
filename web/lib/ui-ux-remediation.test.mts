@@ -898,3 +898,10 @@ test("remaining native alerts use toast instead", () => {
     assert.doesNotMatch(source, /\balert\(/, rel);
   }
 });
+
+test("role catalogue publish surfaces API validation errors", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/admin/access/roles/page.tsx"), "utf8");
+  assert.match(source, /function apiErrorMessage/);
+  assert.match(source, /Object\.values\(data\.errors\)\.flat\(\)/);
+  assert.match(source, /\/admin\/access\/roles\/\$\{role\.id\}\/publish/);
+});

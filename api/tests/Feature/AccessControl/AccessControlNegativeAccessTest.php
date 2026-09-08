@@ -436,6 +436,63 @@ class AccessControlNegativeAccessTest extends TestCase
             ->publishVersion($catalogue, ['dashboard.view'], $owner);
     }
 
+    public function test_system_admin_can_publish_own_tenant_role_draft(): void
+    {
+        $admin = $this->makeUser('System Admin');
+        $catalogue = \App\Models\AccessControl\AccessRoleCatalogue::create([
+            'tenant_id' => $admin->tenant_id,
+            'key' => 'unaro-role-publish',
+            'name' => 'Unaro Role',
+            'owner_user_id' => $admin->id,
+            'status' => 'draft',
+            'risk_level' => 'medium',
+            'default_scopes' => ['organisation'],
+        ]);
+        \App\Models\AccessControl\AccessRoleVersion::create([
+            'role_catalogue_id' => $catalogue->id,
+            'version' => 1,
+            'status' => 'draft',
+            'permissions' => ['dashboard.view', 'assets.view'],
+            'changelog' => 'Created from feature permission builder',
+        ]);
+
+        Sanctum::actingAs($admin);
+        $this->postJson("/api/v1/admin/access/roles/{$catalogue->id}/publish", [
+            'permissions' => ['dashboard.view', 'assets.view'],
+            'changelog' => 'Published from the governed role catalogue',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.status', 'active');
+
+        $this->assertDatabaseHas('access_role_catalogues', [
+            'id' => $catalogue->id,
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_security_access_admin_cannot_publish_own_tenant_role_via_http(): void
+    {
+        $owner = $this->makeUser('Security and Access Administrator');
+        $owner->givePermissionTo('admin.roles.approve');
+        $catalogue = \App\Models\AccessControl\AccessRoleCatalogue::create([
+            'tenant_id' => $owner->tenant_id,
+            'key' => 'owner-http-publish',
+            'name' => 'Owner HTTP Publish',
+            'owner_user_id' => $owner->id,
+            'status' => 'draft',
+            'risk_level' => 'low',
+            'default_scopes' => ['self'],
+        ]);
+
+        Sanctum::actingAs($owner);
+        $this->postJson("/api/v1/admin/access/roles/{$catalogue->id}/publish", [
+            'permissions' => ['dashboard.view'],
+            'changelog' => 'Published from the governed role catalogue',
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('approver');
+    }
+
     public function test_direct_permission_grant_rejects_unregistered_key(): void
     {
         $admin = $this->makeUser('Security and Access Administrator');
