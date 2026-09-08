@@ -141,8 +141,13 @@ class UserService
         });
     }
 
-    public function issueInvitation(User $user, User $invitedBy, bool $sendEmail = true): AccountInvitation
-    {
+    public function issueInvitation(
+        User $user,
+        User $invitedBy,
+        bool $sendEmail = true,
+        string $trigger = 'user.invited',
+        array $extraVars = [],
+    ): AccountInvitation {
         [$plainToken, $tokenHash] = $this->makeInvitationToken();
         $expiresAt = now()->addHours(max(1, (int) config('auth_lifecycle.invitation_expire_hours', 48)));
 
@@ -161,15 +166,18 @@ class UserService
         ]);
 
         if ($sendEmail) {
-            $this->notifications->dispatch($user, 'user.invited', [
+            $vars = array_merge([
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->getRoleNames()->first() ?? 'Staff',
                 'activation_url' => $this->activationUrl($plainToken),
                 'expires_at' => $expiresAt->toDayDateTimeString(),
-            ], [
-                'module' => 'auth',
+            ], $extraVars);
+            unset($vars['module']);
+            $this->notifications->dispatch($user, $trigger, $vars, [
+                'module' => $extraVars['module'] ?? 'auth',
                 'invitation_id' => $invitation->id,
+                'allow_inactive' => true,
             ], true, false);
         }
 

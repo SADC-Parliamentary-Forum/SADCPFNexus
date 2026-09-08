@@ -33,7 +33,8 @@ class RecipientResolutionService
             if (! $user instanceof User || isset($seen[$user->id])) {
                 continue;
             }
-            if (! $this->isEligible($user)) {
+            $allowInactive = (bool) ($instruction['allow_inactive'] ?? false);
+            if (! $this->isEligible($user) && ! $allowInactive) {
                 continue;
             }
             $seen[$user->id] = true;

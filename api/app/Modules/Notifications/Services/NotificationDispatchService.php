@@ -62,6 +62,7 @@ class NotificationDispatchService
                     'user_ids' => [$recipient->id],
                     'include_acting' => (bool) ($meta['include_acting'] ?? false),
                     'include_delegates' => (bool) ($meta['include_delegates'] ?? false),
+                    'allow_inactive' => (bool) ($meta['allow_inactive'] ?? false),
                 ],
                 'send_email' => $sendEmail,
                 'send_push' => $sendPush,

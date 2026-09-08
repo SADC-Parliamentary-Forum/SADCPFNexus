@@ -334,6 +334,10 @@ class NotificationService
             ],
 
             // Supplier portal
+            'supplier.portal_invited' => [
+                'subject' => 'Activate your SADC-PF Nexus supplier portal account',
+                'body'    => "Dear {{name}},\n\nSADC Parliamentary Forum has registered {{supplier}} as a supplier on Nexus.\n\nSign-in email: {{email}}\n\nActivate your account and choose your own password here:\n{{activation_url}}\n\nAfter activation, sign in at {{login_url}} to view purchase orders, quotations and invoices.\n\nThis invitation expires on {{expires_at}}. Nexus will never email you a password.\n\nRegards,\nSADC-PF Procurement",
+            ],
             'supplier.application_submitted' => [
                 'subject' => 'New supplier application awaiting review',
                 'body'    => "Dear {{name}},\n\nA new supplier application has been submitted.\n\nSupplier: {{supplier}}\nPrimary contact: {{contact}}\n\nPlease log in to procurement and review the application.\n\nRegards,\nSADC-PF Procurement",

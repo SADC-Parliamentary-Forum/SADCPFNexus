@@ -780,6 +780,7 @@ Route::prefix('v1')->group(function () {
             Route::get('intakes/{intake}/matches', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'matches']);
             Route::post('intakes/{intake}/link-request', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'linkRequest']);
             Route::post('intakes/{intake}/create-request', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'createRequest']);
+            Route::post('intakes/{intake}/supplier', [\App\Http\Controllers\Api\V1\Procurement\DocumentIntakeController::class, 'createSupplier']);
             Route::post('intakes/{intake}/purchase-orders', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class, 'generateFromIntake']);
             Route::apiResource('purchase-orders', \App\Http\Controllers\Api\V1\Procurement\PurchaseOrderController::class)
                 ->parameters(['purchase-orders' => 'purchaseOrder'])

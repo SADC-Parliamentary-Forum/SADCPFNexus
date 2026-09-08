@@ -10,7 +10,10 @@ use Illuminate\Http\Request;
 
 class DocumentIntakeController extends Controller
 {
-    public function __construct(private readonly DocumentIntakeService $service) {}
+    public function __construct(
+        private readonly DocumentIntakeService $service,
+        private readonly \App\Modules\Procurement\Services\IntakeSupplierOnboardingService $onboarding,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -113,6 +116,46 @@ class DocumentIntakeController extends Controller
         return response()->json(['message' => 'Procurement request created from document.', 'data' => $pr], 201);
     }
 
+    public function createSupplier(Request $request, ProcurementDocumentIntake $intake): JsonResponse
+    {
+        $this->authorizeOfficer($request);
+        $this->assertTenant($request, $intake);
+        $data = $request->validate([
+            'vendor_id' => ['nullable', 'integer'],
+            'name' => ['required_without:vendor_id', 'nullable', 'string', 'max:300'],
+            'contact_name' => ['nullable', 'string', 'max:255'],
+            'contact_email' => ['nullable', 'email', 'max:255'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'contact_phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'tax_number' => ['nullable', 'string', 'max:100'],
+            'registration_number' => ['nullable', 'string', 'max:100'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'payment_terms' => ['nullable', 'string', 'max:50'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account' => ['nullable', 'string', 'max:100'],
+            'bank_branch' => ['nullable', 'string', 'max:255'],
+            'category_ids' => ['required_without:vendor_id', 'nullable', 'array', 'min:1', 'max:3'],
+            'category_ids.*' => ['integer'],
+            'send_invitation' => ['sometimes', 'boolean'],
+        ]);
+        $result = $this->onboarding->onboard($intake, $request->user(), $data);
+        $message = $result['created']
+            ? ($result['invitation']['sent']
+                ? 'Supplier created. An activation email with login instructions was sent. Nexus never emails a password.'
+                : 'Supplier created and linked to this document.')
+            : ($result['invitation']['sent']
+                ? 'Existing supplier linked. An activation email with login instructions was sent. Nexus never emails a password.'
+                : 'Existing supplier linked to this document.');
+
+        return response()->json([
+            'message' => $message,
+            'data' => $this->payload($result['intake']),
+            'invitation' => $result['invitation'],
+        ], $result['created'] ? 201 : 200);
+    }
+
     private function payload(ProcurementDocumentIntake $intake): array
     {
         $data = $intake->toArray();
@@ -124,6 +167,7 @@ class DocumentIntakeController extends Controller
         $data['ocr_available'] = $raw['ocr_available'] ?? null;
         $data['extraction_message'] = $raw['message'] ?? null;
         $data['text_method'] = $raw['text_method'] ?? $intake->classification_method;
+        $data['supplier_candidates'] = $this->service->supplierCandidates($intake);
 
         return $data;
     }
