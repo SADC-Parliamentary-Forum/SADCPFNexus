@@ -88,7 +88,7 @@ class ProcurementInboxService
         $imported = 0;
         $skipped = 0;
         $previous = Auth::user();
-        Auth::login($actor);
+        Auth::setUser($actor);
 
         try {
             foreach ($messages as $message) {
@@ -106,9 +106,9 @@ class ProcurementInboxService
             }
         } finally {
             if ($previous) {
-                Auth::login($previous);
+                Auth::setUser($previous);
             } else {
-                Auth::logout();
+                Auth::forgetUser();
             }
         }
 

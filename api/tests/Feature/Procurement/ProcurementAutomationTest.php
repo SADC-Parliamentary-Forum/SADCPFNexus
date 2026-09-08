@@ -483,10 +483,10 @@ class ProcurementAutomationTest extends TestCase
             ]],
         ]]));
 
-        $this->artisan('procurement:poll-inbox', [
+        $this->assertSame(0, \Illuminate\Support\Facades\Artisan::call('procurement:poll-inbox', [
             '--tenant' => $tenant->id,
             '--fixture' => $fixture,
-        ])->assertSuccessful();
+        ]), \Illuminate\Support\Facades\Artisan::output());
 
         $this->assertDatabaseHas('procurement_inbox_messages', [
             'tenant_id' => $tenant->id,
@@ -501,10 +501,10 @@ class ProcurementAutomationTest extends TestCase
         $this->assertSame('needs_review', $intake->extraction_status);
         $this->assertSame($officer->id, $intake->uploaded_by);
 
-        $this->artisan('procurement:poll-inbox', [
+        $this->assertSame(0, \Illuminate\Support\Facades\Artisan::call('procurement:poll-inbox', [
             '--tenant' => $tenant->id,
             '--fixture' => $fixture,
-        ])->assertSuccessful();
+        ]));
         $this->assertSame(1, \App\Models\ProcurementInboxMessage::query()->where('tenant_id', $tenant->id)->count());
         @unlink($fixture);
     }
@@ -525,7 +525,10 @@ class ProcurementAutomationTest extends TestCase
                 'base64' => base64_encode(InvoicePdfFixture::inv0001Pdf()),
             ]],
         ]]));
-        $this->artisan('procurement:poll-inbox', ['--tenant' => $tenant->id, '--fixture' => $fixture])->assertSuccessful();
+        $this->assertSame(0, \Illuminate\Support\Facades\Artisan::call('procurement:poll-inbox', [
+            '--tenant' => $tenant->id,
+            '--fixture' => $fixture,
+        ]), \Illuminate\Support\Facades\Artisan::output());
         $this->assertDatabaseHas('procurement_inbox_messages', [
             'message_id' => '<spam@example.test>',
             'status' => 'rejected_sender',
