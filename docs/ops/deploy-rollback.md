@@ -46,7 +46,7 @@ Existing PR/push workflows stay the quality gate:
 - Gitleaks
 - Production Readiness Gate
 
-**Via Git:** merge to `main`. Workflow **Deploy production (sadcpf-nexus)** waits until those checks finish, then SSHs as `sadcpf-nexus`. The server `git fetch` + `git merge --ff-only` and runs `scripts/deploy.sh`.
+**Via Git:** merge to `main`. Workflow **Deploy production (sadcpf-nexus)** waits until those checks finish (up to 120 minutes — PHPUnit on `main` has exceeded 80 minutes), then SSHs as `sadcpf-nexus`. The server `git fetch` + `git merge --ff-only` and runs `scripts/deploy.sh`.
 
 **Direct:** `~/bin/deploy` on the host (same user, same script).
 

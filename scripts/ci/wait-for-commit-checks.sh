@@ -6,13 +6,13 @@
 #   GITHUB_REPOSITORY   owner/repo
 #   WAIT_SHA            commit SHA (defaults to GITHUB_SHA)
 #   GH_TOKEN            GitHub token with checks:read
-#   WAIT_TIMEOUT_SECONDS  default 2400
+#   WAIT_TIMEOUT_SECONDS  default 7200 (PHPUnit on main has exceeded 80 minutes)
 #   WAIT_IGNORE_PATTERN   regex of check names to ignore
 set -euo pipefail
 
 REPO="${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required}"
 SHA="${WAIT_SHA:-${GITHUB_SHA:?WAIT_SHA or GITHUB_SHA is required}}"
-TIMEOUT="${WAIT_TIMEOUT_SECONDS:-2400}"
+TIMEOUT="${WAIT_TIMEOUT_SECONDS:-7200}"
 IGNORE_PATTERN="${WAIT_IGNORE_PATTERN:-Deploy production|CI gate|SSH as sadcpf-nexus}"
 
 command -v gh >/dev/null || { echo "gh CLI is required" >&2; exit 1; }
