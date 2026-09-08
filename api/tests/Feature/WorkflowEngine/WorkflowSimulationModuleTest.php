@@ -77,6 +77,8 @@ class WorkflowSimulationModuleTest extends TestCase
         $this->assertSame('procurement', $low->json('data.result.module_type'));
         $this->assertFalse($low->json('data.result.created_production_approval'));
         $this->assertFalse($low->json('created_production_approval'));
+        $this->assertIsArray($low->json('result.applicable_path'));
+        $this->assertSame($low->json('data.result.module_type'), $low->json('result.module_type'));
 
         $high = $this->asUser($admin)->postJson("/api/v1/workflow-engine/definitions/{$wf->id}/simulate", [
             'test_context' => [

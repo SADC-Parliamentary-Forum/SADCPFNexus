@@ -22,10 +22,15 @@ test("workflow simulate page is module-centric, labelled, and translated", () =>
   assert.match(source, /simulationCatalog/);
   assert.match(source, /scenario_key/);
   assert.match(source, /requester_user_id/);
-  assert.match(source, /applicable_path/);
+  assert.match(source, /formatApplicablePath/);
   assert.match(source, /EmptyState/);
   assert.match(source, /preset/);
   assert.match(source, /module_type/);
+  assert.match(source, /id="wf-sim-result"/);
+  assert.match(source, /parseSimulationResponse/);
+  assert.match(source, /scrollIntoView/);
+  assert.match(source, /workflows\.simulate\.successPath/);
+  assert.match(source, /wf-sim-change-module/);
 
   assert.doesNotMatch(source, /ObjectSummary/);
   assert.doesNotMatch(source, /FormField/);
@@ -50,6 +55,9 @@ test("workflow simulate catalog covers chrome in EN, FR and PT", () => {
     "workflows.simulate.requester",
     "workflows.simulate.scenario",
     "workflows.simulate.run",
+    "workflows.simulate.successPath",
+    "workflows.simulate.changeModule",
+    "workflows.simulate.parseError",
     "workflows.simulate.dryRun",
     "workflows.simulate.path",
     "workflows.simulate.emptyModule",
