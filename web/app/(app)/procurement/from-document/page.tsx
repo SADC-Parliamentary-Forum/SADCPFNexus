@@ -206,6 +206,13 @@ export default function CreateFromDocumentPage() {
             {intake.needs_manual_classification && (
               <p className="mt-3 text-amber-800">Needs manual classification — confidence is too low to guess silently.</p>
             )}
+            {intake.document_type === "purchase_order" && (
+              <p className="mt-3 rounded border border-sky-200 bg-sky-50 px-3 py-2 text-sky-900">
+                This file is an official purchase order (LPO {intake.document_number ?? "number not read"}), not a supplier quote.
+                If that LPO already exists in Nexus, continue to open it — a second LPO will not be created.
+                If it is not in Nexus yet, continue to regularise; the next official number is allocated on submit and will not reuse {intake.document_number ?? "the number on this file"}.
+              </p>
+            )}
             {(intake.text_method === "ocr_unconfigured" || intake.text_method === "pdf_no_text" || intake.ocr_available === false) && (
               <p className="mt-3 text-amber-900">{intake.extraction_message ?? "Image OCR is not configured. Upload a PDF or DOCX, or enter fields manually."}</p>
             )}

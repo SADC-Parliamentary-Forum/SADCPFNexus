@@ -31,7 +31,7 @@ class LpoIssuanceService
     {
         if ($intake->invoice_first_case === InvoiceFirstDecisionService::CASE_MATCH_EXISTING_LPO && $intake->purchase_order_id) {
             throw ValidationException::withMessages([
-                'purchase_order' => 'An existing LPO already matches this invoice. Match the invoice instead of creating another LPO.',
+                'purchase_order' => 'An existing LPO already matches this document. Open that LPO instead of creating another one.',
             ]);
         }
         if ($intake->invoice_first_case === InvoiceFirstDecisionService::CASE_NO_PO_PAYMENT) {

@@ -11,6 +11,7 @@ use App\Models\Vendor;
 use App\Modules\Procurement\Services\LpoSequenceAllocator;
 use Illuminate\Http\UploadedFile;
 use Tests\Support\InvoicePdfFixture;
+use Tests\Support\LpoDocxFixture;
 use Tests\TestCase;
 
 class ProcurementAutomationTest extends TestCase
@@ -353,6 +354,45 @@ class ProcurementAutomationTest extends TestCase
         ])->assertOk();
         $this->assertSame('existing_lpo', $confirm->json('data.invoice_first_case'));
         $http->postJson("/api/v1/procurement/intakes/{$intakeId}/purchase-orders")->assertUnprocessable();
+    }
+
+    public function test_official_lpo_docx_extracts_and_matches_existing_s04015(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$vendor, $project] = $this->seedVendorAndProject($tenant);
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        PurchaseOrder::create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'JVJ Plumbing SADC Forum House',
+            'total_amount' => 4499.69,
+            'currency' => 'NAD',
+            'status' => 'issued',
+            'created_by' => $officer->id,
+            'lpo_number' => 'S 04015',
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent(
+            'LPO S04015 JVJ Plumbing SADC Forum House.docx',
+            LpoDocxFixture::s04015Docx()
+        );
+        $res = $http->post('/api/v1/procurement/intakes', ['file' => $file], ['Accept' => 'application/json']);
+        $res->assertCreated();
+        $data = $res->json('data');
+        $this->assertSame('purchase_order', $data['document_type']);
+        $this->assertFalse((bool) $data['needs_manual_classification']);
+        $this->assertSame('S 04015', $data['document_number']);
+        $this->assertCount(5, $data['lines']);
+        $this->assertEquals('4499.69', $data['grand_total']);
+        $this->assertTrue((bool) ($data['arithmetic']['ok'] ?? false), implode(' ', $data['arithmetic']['issues'] ?? []));
+        $this->assertNotEmpty($data['vendor_id']);
+        $this->assertGreaterThanOrEqual(70, (int) $data['extraction_confidence']);
+
+        $confirm = $http->postJson('/api/v1/procurement/intakes/'.$data['id'].'/confirm', [
+            'procurement_project_id' => $project->id,
+        ])->assertOk();
+        $this->assertSame('existing_lpo', $confirm->json('data.invoice_first_case'));
+        $http->postJson('/api/v1/procurement/intakes/'.$data['id'].'/purchase-orders')->assertUnprocessable();
     }
 
     public function test_inbox_imap_stays_unconfigured_even_when_host_env_is_set(): void

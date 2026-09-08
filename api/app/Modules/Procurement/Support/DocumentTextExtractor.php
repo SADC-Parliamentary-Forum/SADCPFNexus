@@ -92,10 +92,24 @@ final class DocumentTextExtractor
         $xml = $zip->getFromName('word/document.xml') ?: '';
         $zip->close();
         @unlink($tmp);
-        $xml = preg_replace('/<w:p[^>]*>/', "\n", $xml) ?? $xml;
-        $text = strip_tags(str_replace('</w:t>', ' ', $xml));
 
-        return Utf8::string(trim(html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8')));
+        $tables = [];
+        $xml = preg_replace_callback('/<w:tbl\b[\s\S]*?<\/w:tbl>/', function (array $m) use (&$tables) {
+            $tables[] = $this->docxTableToText($m[0]);
+
+            return "<w:p><w:t>[[TBL".(count($tables) - 1)."]]</w:t></w:p>";
+        }, $xml) ?? $xml;
+
+        $text = $this->docxParagraphsToText($xml);
+        foreach ($tables as $i => $table) {
+            $text = str_replace('[[TBL'.$i.']]', $table, $text);
+        }
+
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $text = preg_replace("/[ \t]+/u", ' ', $text) ?? $text;
+        $text = preg_replace("/\n{3,}/", "\n\n", $text) ?? $text;
+
+        return Utf8::string(trim($text));
     }
 
     private function isUsablePdfText(string $text): bool
@@ -112,6 +126,52 @@ final class DocumentTextExtractor
         }
 
         return (bool) preg_match('/[A-Za-z]{4,}/', $trimmed);
+    }
+
+    private function docxParagraphsToText(string $xml): string
+    {
+        $lines = [];
+        if (preg_match_all('/<w:p\b[\s\S]*?<\/w:p>/', $xml, $matches)) {
+            foreach ($matches[0] as $paragraph) {
+                $line = $this->docxRuns($paragraph);
+                if ($line !== '') {
+                    $lines[] = $line;
+                }
+            }
+        }
+
+        return implode("\n", $lines);
+    }
+
+    private function docxTableToText(string $tableXml): string
+    {
+        $rows = [];
+        if (! preg_match_all('/<w:tr\b[\s\S]*?<\/w:tr>/', $tableXml, $trs)) {
+            return '';
+        }
+        foreach ($trs[0] as $tr) {
+            $cells = [];
+            if (preg_match_all('/<w:tc\b[\s\S]*?<\/w:tc>/', $tr, $tcs)) {
+                foreach ($tcs[0] as $tc) {
+                    $cells[] = trim(preg_replace('/\s+/u', ' ', $this->docxRuns($tc)) ?? '');
+                }
+            }
+            if (implode('', $cells) === '') {
+                continue;
+            }
+            $rows[] = implode(' | ', $cells);
+        }
+
+        return implode("\n", $rows);
+    }
+
+    private function docxRuns(string $fragment): string
+    {
+        if (! preg_match_all('/<w:t\b[^>]*>([^<]*)<\/w:t>/', $fragment, $matches)) {
+            return '';
+        }
+
+        return implode('', $matches[1]);
     }
 
     private function unescapePdf(string $value): string
