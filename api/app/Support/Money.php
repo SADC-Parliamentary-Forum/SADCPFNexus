@@ -12,7 +12,7 @@ final class Money
         if ($value === null || $value === '') {
             return 0;
         }
-        $normalized = preg_replace('/[^\d.\-]/', '', str_replace(',', '', (string) $value)) ?? '0';
+        $normalized = self::normalizeDecimal((string) $value);
         if ($normalized === '' || $normalized === '-' || $normalized === '.') {
             return 0;
         }
@@ -39,5 +39,24 @@ final class Money
     public static function equals(string|int|float|null $a, string|int|float|null $b): bool
     {
         return self::toCents($a) === self::toCents($b);
+    }
+
+    /**
+     * US 4,499.69 keeps the period as decimal. NAD/Wave $4 499,69 uses a comma decimal.
+     */
+    private static function normalizeDecimal(string $value): string
+    {
+        $s = preg_replace('/[^\d,.\-\s]/', '', $value) ?? '0';
+        $s = trim($s);
+        if ($s === '' || $s === '-' || $s === '.' || $s === ',') {
+            return '0';
+        }
+        if (preg_match('/,\d{1,2}$/', $s) && ! preg_match('/\.\d{1,2}$/', $s)) {
+            $s = str_replace([' ', "\u{00A0}", '.'], '', $s);
+
+            return str_replace(',', '.', $s);
+        }
+
+        return preg_replace('/[^\d.\-]/', '', str_replace(',', '', $s)) ?? '0';
     }
 }

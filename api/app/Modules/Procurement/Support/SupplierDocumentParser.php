@@ -27,7 +27,8 @@ final class SupplierDocumentParser
      */
     public function parse(string $text, array $extractMeta = []): array
     {
-        if (($extractMeta['method'] ?? '') === OcrUnconfiguredAdapter::METHOD || trim($text) === '') {
+        $method = $extractMeta['method'] ?? '';
+        if ($method === OcrUnconfiguredAdapter::METHOD || $method === DocumentTextExtractor::METHOD_PDF_NO_TEXT || trim($text) === '') {
             return [
                 'document_type' => 'other',
                 'classification_confidence' => 20,
@@ -121,31 +122,45 @@ final class SupplierDocumentParser
      */
     public function extractLines(string $text): array
     {
-        $lines = [];
+        $wave = '/^\\s*(.+?)\\s+(?:N\\$|\\$)\\s*([0-9][0-9 ]*,[0-9]{2})\\s+(\\d+(?:[.,]\\d+)?)\\s+(?:N\\$|\\$)\\s*([0-9][0-9 ]*,[0-9]{2})\\s*$/m';
+        if (preg_match_all($wave, $text, $matches, PREG_SET_ORDER)) {
+            return $this->mapLineMatches($matches, qtyIndex: 3, rateIndex: 2, totalIndex: 4);
+        }
+
         $pattern = '/^\\s*(.+?)\\s+(\\d+(?:[.,]\\d+)?)\\s+([0-9]{1,3}(?:,[0-9]{3})*(?:\\.[0-9]{2})|[0-9]+\\.[0-9]{2})\\s+([0-9]{1,3}(?:,[0-9]{3})*(?:\\.[0-9]{2})|[0-9]+\\.[0-9]{2})\\s*$/m';
         if (preg_match_all($pattern, $text, $matches, PREG_SET_ORDER)) {
-            $n = 1;
-            foreach ($matches as $row) {
-                $desc = trim($row[1]);
-                if ($this->isHeaderOrTotal($desc)) {
-                    continue;
-                }
-                $qty = (float) str_replace(',', '', $row[2]);
-                $rate = Money::fromCents(Money::toCents($row[3]));
-                $total = Money::fromCents(Money::toCents($row[4]));
-                $lines[] = [
-                    'line_no' => $n++,
-                    'source_description' => $desc,
-                    'lpo_description' => $desc,
-                    'quantity' => $qty,
-                    'unit' => 'unit',
-                    'unit_price' => $rate,
-                    'discount' => null,
-                    'vat' => null,
-                    'line_total' => $total,
-                    'confidence_score' => 95,
-                ];
+            return $this->mapLineMatches($matches, qtyIndex: 2, rateIndex: 3, totalIndex: 4);
+        }
+
+        return [];
+    }
+
+    /**
+     * @param  list<array<int, string>>  $matches
+     * @return list<array<string, mixed>>
+     */
+    private function mapLineMatches(array $matches, int $qtyIndex, int $rateIndex, int $totalIndex): array
+    {
+        $lines = [];
+        $n = 1;
+        foreach ($matches as $row) {
+            $desc = trim($row[1]);
+            if ($this->isHeaderOrTotal($desc)) {
+                continue;
             }
+            $qty = (float) str_replace(',', '', $row[$qtyIndex]);
+            $lines[] = [
+                'line_no' => $n++,
+                'source_description' => $desc,
+                'lpo_description' => $desc,
+                'quantity' => $qty,
+                'unit' => 'unit',
+                'unit_price' => Money::fromCents(Money::toCents($row[$rateIndex])),
+                'discount' => null,
+                'vat' => null,
+                'line_total' => Money::fromCents(Money::toCents($row[$totalIndex])),
+                'confidence_score' => 95,
+            ];
         }
 
         return $lines;
@@ -174,18 +189,20 @@ final class SupplierDocumentParser
         return min(99, $points + (int) floor($classification['confidence'] / 10));
     }
 
+    private const MONEY_CAPTURE = '(?:N\\$|R|USD|NAD|\\$)?\\s*([0-9]{1,3}(?:[,\\s][0-9]{3})*(?:[.,][0-9]{2})|[0-9]+[.,][0-9]{2})';
+
     private function extractTotals(string $text): array
     {
-        $subtotal = $this->matchMoney($text, '/subtotal\\s*[:]?\\s*(?:N\\$|R|USD|NAD)?\\s*([0-9,]+\.\\d{2})/i');
-        $vat = $this->matchMoney($text, '/(?:vat|tax)\\s*(?:amount|total)?\\s*[:]?\\s*(?:N\\$|R)?\\s*([0-9,]+\.\\d{2})/i');
-        $total = $this->matchMoney($text, '/(?:grand\\s*)?total\\s*[:]?\\s*(?:N\\$|R|USD|NAD)?\\s*([0-9,]+\.\\d{2})/i');
+        $subtotal = $this->matchMoney($text, '/subtotal\\s*[:]?\\s*'.self::MONEY_CAPTURE.'/i');
+        $vat = $this->matchMoney($text, '/(?:vat|tax)\\s*(?:amount|total)?\\s*[:]?\\s*'.self::MONEY_CAPTURE.'/i');
+        $total = $this->matchMoney($text, '/(?:grand\\s*)?total\\s*[:]?\\s*'.self::MONEY_CAPTURE.'/i');
         $vatIdentified = $vat !== null && ! preg_match('/vat\\s+not/i', $text);
 
         return [
             'subtotal' => $subtotal,
             'vat_amount' => $vatIdentified ? $vat : null,
             'vat_identified' => $vatIdentified,
-            'discount_amount' => $this->matchMoney($text, '/discount\\s*[:]?\\s*(?:N\\$)?\\s*([0-9,]+\.\\d{2})/i'),
+            'discount_amount' => $this->matchMoney($text, '/discount\\s*[:]?\\s*'.self::MONEY_CAPTURE.'/i'),
             'grand_total' => $total ?? $subtotal,
         ];
     }
