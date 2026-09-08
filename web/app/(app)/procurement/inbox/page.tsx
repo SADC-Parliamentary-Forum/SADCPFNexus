@@ -25,21 +25,30 @@ export default function ProcurementInboxPage() {
     note?: string | null;
   };
   const rows = payload?.data?.data ?? [];
+  const configured = Boolean(payload?.imap_configured);
+  const note = payload?.note?.trim() || null;
+  const subtitle = note
+    ?? (configured
+      ? "Unread PDF, Word, or image attachments from the designated procurement mailbox are ingested for review. They are never auto-confirmed."
+      : "IMAP is not configured. Upload remains the live invoice intake path.");
+  const emptyCopy = configured
+    ? "No invoice attachments yet. Forward supplier documents to the designated procurement mailbox, then review them here before confirming."
+    : (note ?? "No forwarded invoices. IMAP is not configured — upload a PDF or DOCX from Create from Invoice / Quote.");
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <ModulePageHeader
         title="Procurement Inbox"
-        subtitle="IMAP is not configured. Upload remains the live invoice intake path."
+        subtitle={subtitle}
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement", href: "/procurement" }, { label: "Inbox" }]} />}
       />
-      {payload?.note && (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{payload.note}</p>
+      {note && (
+        <p className={`rounded-lg border px-4 py-3 text-sm ${configured ? "border-sky-200 bg-sky-50 text-sky-950" : "border-amber-200 bg-amber-50 text-amber-900"}`}>{note}</p>
       )}
       {isLoading && <p className="text-sm text-neutral-500">Loading inbox…</p>}
       {isError && <p className="text-sm text-rose-700">Could not load the procurement inbox.</p>}
       {!isLoading && rows.length === 0 && (
-        <p className="text-sm text-neutral-500">No forwarded invoices. IMAP is not configured — upload a PDF or DOCX from Create from Invoice / Quote.</p>
+        <p className="text-sm text-neutral-500">{emptyCopy}</p>
       )}
       <ul className="space-y-2">
         {rows.map((row) => (

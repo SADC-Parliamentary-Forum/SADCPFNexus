@@ -20,6 +20,8 @@ use App\Modules\Finance\Contracts\PayrollRecoveryAdapterInterface;
 use App\Modules\Finance\Services\PayrollRecoveryAdapterFactory;
 use App\Modules\Fleet\Contracts\TelematicsProvider;
 use App\Modules\Fleet\Telematics\TelematicsProviderFactory;
+use App\Modules\Procurement\Support\Ocr\OcrEngine;
+use App\Modules\Procurement\Support\Ocr\OcrEngineFactory;
 use App\Modules\Travel\Contracts\AirlineItineraryParserInterface;
 use App\Modules\Travel\Contracts\FxRateFeedInterface;
 use App\Modules\Travel\Contracts\GdsProviderInterface;
@@ -100,6 +102,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\AccessControl\Services\PolicyDecisionPoint::class);
         $this->app->singleton(\App\Modules\AccessControl\Services\NavigationManifestService::class);
         $this->app->singleton(\App\Modules\AccessControl\Services\RoleCatalogueService::class);
+
+        // Procurement invoice OCR — Tesseract when installed; otherwise honest unconfigured adapter.
+        $this->app->singleton(OcrEngineFactory::class);
+        $this->app->bind(OcrEngine::class, function ($app) {
+            return $app->make(OcrEngineFactory::class)->make();
+        });
     }
 
     /**

@@ -58,14 +58,30 @@ return [
     | Never auto-awards.
     */
     /*
-    | Image OCR and procurement IMAP are explicit unconfigured adapters.
-    | Env values below are reserved for a future real poller — they must not
-    | be treated as a live mailbox. Upload of PDF/DOCX remains the live path.
+    | Procurement invoice OCR (Tesseract). Falls back to OcrUnconfiguredAdapter
+    | when the binary is missing. Never invents text. CI should set
+    | PROCUREMENT_OCR_DRIVER=unconfigured and bind a fake engine in tests.
     */
-    'ocr_adapter' => 'unconfigured',
-    'inbox_imap_adapter' => 'unconfigured',
+    'ocr_adapter' => env('PROCUREMENT_OCR_DRIVER', 'tesseract'),
+    'ocr_tesseract_bin' => env('PROCUREMENT_OCR_TESSERACT_BIN', 'tesseract'),
+    'ocr_pdftoppm_bin' => env('PROCUREMENT_OCR_PDFTOPPM_BIN', 'pdftoppm'),
+    'ocr_languages' => env('PROCUREMENT_OCR_LANGUAGES', 'eng+fra+por'),
+    'ocr_max_pages' => (int) env('PROCUREMENT_OCR_MAX_PAGES', 4),
+    'ocr_timeout_seconds' => (int) env('PROCUREMENT_OCR_TIMEOUT_SECONDS', 60),
+
+    /*
+    | Designated procurement invoice mailbox only — not the organisation inbox
+    | and not the correspondence registry mailbox. Host alone is not enough;
+    | USER and PASSWORD are required before the php_imap adapter is live.
+    | Poller never auto-confirms intakes or issues LPOs.
+    */
+    'inbox_imap_adapter' => env('PROCUREMENT_INBOX_IMAP_ADAPTER', 'php_imap'),
     'inbox_imap_host' => env('PROCUREMENT_INBOX_IMAP_HOST'),
     'inbox_imap_user' => env('PROCUREMENT_INBOX_IMAP_USER'),
     'inbox_imap_password' => env('PROCUREMENT_INBOX_IMAP_PASSWORD'),
+    'inbox_imap_port' => (int) env('PROCUREMENT_INBOX_IMAP_PORT', 993),
+    'inbox_imap_encryption' => env('PROCUREMENT_INBOX_IMAP_ENCRYPTION', 'ssl'),
+    'inbox_imap_mailbox' => env('PROCUREMENT_INBOX_IMAP_MAILBOX', 'INBOX'),
+    'inbox_imap_allowlist' => env('PROCUREMENT_INBOX_IMAP_ALLOWLIST'),
     'notice_llm_token' => env('PROCUREMENT_NOTICE_LLM_TOKEN'),
 ];

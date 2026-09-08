@@ -397,7 +397,11 @@ class ProcurementAutomationTest extends TestCase
 
     public function test_inbox_imap_stays_unconfigured_even_when_host_env_is_set(): void
     {
-        config(['procurement.inbox_imap_host' => 'imap.example.test']);
+        config([
+            'procurement.inbox_imap_host' => 'imap.example.test',
+            'procurement.inbox_imap_user' => null,
+            'procurement.inbox_imap_password' => null,
+        ]);
         $tenant = Tenant::factory()->create();
         [$http] = $this->asProcurementOfficer($tenant);
         $res = $http->getJson('/api/v1/procurement/inbox')->assertOk();
@@ -423,5 +427,110 @@ class ProcurementAutomationTest extends TestCase
         $this->assertSame('pdf_no_text', $res->json('data.text_method'));
         $this->assertStringContainsString('selectable text', (string) $res->json('data.extraction_message'));
         $this->assertNotSame('extraction_failed', $res->json('data.extraction_status'));
+    }
+
+    public function test_rendered_invoice_pdf_ocr_fills_lines_when_engine_available(): void
+    {
+        $this->app->bind(\App\Modules\Procurement\Support\Ocr\OcrEngine::class, fn () => new \Tests\Support\FakeOcrEngine(InvoicePdfFixture::inv0001LiveText()));
+        $tenant = Tenant::factory()->create();
+        $this->seedVendorAndProject($tenant);
+        [$http] = $this->asProcurementOfficer($tenant);
+
+        $file = UploadedFile::fake()->createWithContent(
+            'Invoice_INV0001.pdf',
+            InvoicePdfFixture::renderedInvoicePdf()
+        );
+        $res = $http->post('/api/v1/procurement/intakes', ['file' => $file], ['Accept' => 'application/json']);
+        $res->assertCreated();
+        $this->assertSame('pdf_ocr', $res->json('data.text_method'));
+        $this->assertTrue((bool) $res->json('data.ocr_available'));
+        $this->assertSame('INV0001', $res->json('data.document_number'));
+        $this->assertCount(5, $res->json('data.lines'));
+    }
+
+    public function test_inbox_is_configured_when_host_user_and_password_are_set(): void
+    {
+        config([
+            'procurement.inbox_imap_adapter' => 'php_imap',
+            'procurement.inbox_imap_host' => 'imap.example.test',
+            'procurement.inbox_imap_user' => 'invoices@sadcpf.org',
+            'procurement.inbox_imap_password' => 'secret',
+        ]);
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asProcurementOfficer($tenant);
+        $res = $http->getJson('/api/v1/procurement/inbox')->assertOk();
+        $this->assertTrue((bool) $res->json('imap_configured'));
+        $this->assertSame('php_imap', $res->json('imap_adapter'));
+        $this->assertStringContainsString('designated', (string) $res->json('note'));
+    }
+
+    public function test_poll_inbox_fixture_creates_intake_without_confirming(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->seedVendorAndProject($tenant);
+        [, $officer] = $this->asProcurementOfficer($tenant);
+
+        $fixture = sys_get_temp_dir().'/proc-inbox-'.uniqid().'.json';
+        file_put_contents($fixture, json_encode([[
+            'message_id' => '<inv0001@example.test>',
+            'from_email' => 'jvj@example.test',
+            'subject' => 'Invoice INV0001',
+            'received_at' => '2026-05-27T10:00:00+02:00',
+            'attachments' => [[
+                'filename' => 'Invoice_INV0001.pdf',
+                'mime' => 'application/pdf',
+                'base64' => base64_encode(InvoicePdfFixture::inv0001Pdf()),
+            ]],
+        ]]));
+
+        $this->artisan('procurement:poll-inbox', [
+            '--tenant' => $tenant->id,
+            '--fixture' => $fixture,
+        ])->assertSuccessful();
+
+        $this->assertDatabaseHas('procurement_inbox_messages', [
+            'tenant_id' => $tenant->id,
+            'message_id' => '<inv0001@example.test>',
+            'status' => 'extracted',
+        ]);
+        $msg = \App\Models\ProcurementInboxMessage::query()->where('message_id', '<inv0001@example.test>')->first();
+        $this->assertNotNull($msg?->intake_id);
+        $intake = \App\Models\ProcurementDocumentIntake::find($msg->intake_id);
+        $this->assertSame('email', $intake->source_type);
+        $this->assertSame('INV0001', $intake->document_number);
+        $this->assertSame('needs_review', $intake->extraction_status);
+        $this->assertSame($officer->id, $intake->uploaded_by);
+
+        $this->artisan('procurement:poll-inbox', [
+            '--tenant' => $tenant->id,
+            '--fixture' => $fixture,
+        ])->assertSuccessful();
+        $this->assertSame(1, \App\Models\ProcurementInboxMessage::query()->where('tenant_id', $tenant->id)->count());
+        @unlink($fixture);
+    }
+
+    public function test_poll_inbox_allowlist_skips_unknown_senders(): void
+    {
+        config(['procurement.inbox_imap_allowlist' => 'trusted@example.test']);
+        $tenant = Tenant::factory()->create();
+        $this->asProcurementOfficer($tenant);
+        $fixture = sys_get_temp_dir().'/proc-inbox-deny-'.uniqid().'.json';
+        file_put_contents($fixture, json_encode([[
+            'message_id' => '<spam@example.test>',
+            'from_email' => 'random@example.test',
+            'subject' => 'Invoice',
+            'attachments' => [[
+                'filename' => 'Invoice_INV0001.pdf',
+                'mime' => 'application/pdf',
+                'base64' => base64_encode(InvoicePdfFixture::inv0001Pdf()),
+            ]],
+        ]]));
+        $this->artisan('procurement:poll-inbox', ['--tenant' => $tenant->id, '--fixture' => $fixture])->assertSuccessful();
+        $this->assertDatabaseHas('procurement_inbox_messages', [
+            'message_id' => '<spam@example.test>',
+            'status' => 'rejected_sender',
+        ]);
+        $this->assertDatabaseMissing('procurement_document_intakes', ['original_filename' => 'Invoice_INV0001.pdf']);
+        @unlink($fixture);
     }
 }

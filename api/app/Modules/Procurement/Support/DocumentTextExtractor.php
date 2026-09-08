@@ -11,6 +11,14 @@ final class DocumentTextExtractor
 {
     public const METHOD_PDF_NO_TEXT = 'pdf_no_text';
 
+    public function __construct(private readonly ?Ocr\OcrEngine $ocr = null) {}
+
+    private function ocr(): Ocr\OcrEngine
+    {
+        // Unit tests construct the extractor without DI; do not resolve Tesseract from the container.
+        return $this->ocr ?? new OcrUnconfiguredAdapter;
+    }
+
     public function extract(string $contents, string $mime, string $filename = ''): array
     {
         $mime = strtolower($mime);
@@ -20,6 +28,21 @@ final class DocumentTextExtractor
             $text = Utf8::string($this->fromPdf($contents));
             if ($this->isUsablePdfText($text)) {
                 return ['text' => $text, 'method' => 'pdf_text'];
+            }
+            $ocr = $this->ocr();
+            if ($ocr->isAvailable()) {
+                $recognized = $ocr->recognize($contents, 'application/pdf', $filename);
+                if ($this->isUsablePdfText((string) ($recognized['text'] ?? ''))) {
+                    return $recognized;
+                }
+                if (($recognized['ocr_available'] ?? false) === true) {
+                    return [
+                        'text' => '',
+                        'method' => self::METHOD_PDF_NO_TEXT,
+                        'ocr_available' => true,
+                        'message' => (string) ($recognized['message'] ?? 'OCR ran but found no readable text. Classify the invoice manually.'),
+                    ];
+                }
             }
 
             return [
@@ -38,7 +61,7 @@ final class DocumentTextExtractor
         }
 
         if (str_starts_with($mime, 'image/') || in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'], true)) {
-            return (new OcrUnconfiguredAdapter)->extract();
+            return $this->ocr()->recognize($contents, $mime !== '' ? $mime : 'image/jpeg', $filename);
         }
 
         if (str_starts_with($mime, 'text/') || $ext === 'txt') {
@@ -97,7 +120,7 @@ final class DocumentTextExtractor
         $xml = preg_replace_callback('/<w:tbl\b[\s\S]*?<\/w:tbl>/', function (array $m) use (&$tables) {
             $tables[] = $this->docxTableToText($m[0]);
 
-            return "<w:p><w:t>[[TBL".(count($tables) - 1)."]]</w:t></w:p>";
+            return '<w:p><w:t>[[TBL'.(count($tables) - 1).']]</w:t></w:p>';
         }, $xml) ?? $xml;
 
         $text = $this->docxParagraphsToText($xml);

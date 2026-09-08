@@ -70,6 +70,9 @@ Schedule::command('workflow:escalate-overdue')->hourly()->withoutOverlapping();
 // Poll designated registry mailbox into suggestions only (requires IMAP config or is a no-op when disabled).
 Schedule::command('correspondence:poll-mailbox')->everyFifteenMinutes()->withoutOverlapping();
 
+// Poll designated procurement invoice mailbox into intakes for review (no-op when IMAP is unconfigured; never auto-confirms).
+Schedule::command('procurement:poll-inbox')->everyFifteenMinutes()->withoutOverlapping();
+
 // Drain HTTP OCR jobs when DOCUMENT_OCR_DRIVER=http (no-op for null driver / empty queue).
 Schedule::command('documents:process-ocr-jobs')->everyFiveMinutes()->withoutOverlapping();
 

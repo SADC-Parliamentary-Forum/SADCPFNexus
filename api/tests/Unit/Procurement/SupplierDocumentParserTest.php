@@ -100,9 +100,34 @@ class SupplierDocumentParserTest extends TestCase
         $this->assertStringContainsString('selectable text', (string) ($result['message'] ?? ''));
     }
 
+    public function test_fake_ocr_reads_rendered_pdf_and_image(): void
+    {
+        $ocr = new \Tests\Support\FakeOcrEngine(InvoicePdfFixture::inv0001LiveText());
+        $extractor = new DocumentTextExtractor($ocr);
+
+        $pdf = $extractor->extract(InvoicePdfFixture::renderedInvoicePdf(), 'application/pdf', 'Invoice_INV0001.pdf');
+        $this->assertSame('pdf_ocr', $pdf['method']);
+        $this->assertTrue($pdf['ocr_available']);
+        $this->assertStringContainsString('INV0001', $pdf['text']);
+
+        $image = $extractor->extract('not-an-image', 'image/jpeg', 'scan.jpg');
+        $this->assertSame('image_ocr', $image['method']);
+        $this->assertTrue($image['ocr_available']);
+        $this->assertStringContainsString('INV0001', $image['text']);
+    }
+
+    public function test_tesseract_engine_is_unavailable_when_binary_missing(): void
+    {
+        $engine = new \App\Modules\Procurement\Support\Ocr\TesseractOcrEngine('/no/such/tesseract', '/no/such/pdftoppm');
+        $this->assertFalse($engine->isAvailable());
+        $result = $engine->recognize('%PDF-1.4', 'application/pdf', 'x.pdf');
+        $this->assertSame('', $result['text']);
+        $this->assertFalse($result['ocr_available']);
+    }
+
     public function test_parses_official_lpo_s04015(): void
     {
-        $parsed = (new SupplierDocumentParser())->parse(LpoDocxFixture::s04015Text());
+        $parsed = (new SupplierDocumentParser)->parse(LpoDocxFixture::s04015Text());
 
         $this->assertSame('purchase_order', $parsed['document_type']);
         $this->assertGreaterThanOrEqual(80, $parsed['classification_confidence']);
@@ -122,7 +147,7 @@ class SupplierDocumentParserTest extends TestCase
 
     public function test_docx_extractor_joins_split_runs_and_table_rows(): void
     {
-        $text = (new DocumentTextExtractor())->fromDocx(LpoDocxFixture::s04015Docx());
+        $text = (new DocumentTextExtractor)->fromDocx(LpoDocxFixture::s04015Docx());
         $this->assertStringContainsString('PURCHASE ORDER', $text);
         $this->assertMatchesRegularExpression('/S\\s*0?\\s*4015/', preg_replace('/\\s+/', ' ', $text) ?? $text);
         $this->assertStringContainsString('Call out', $text);
@@ -133,8 +158,8 @@ class SupplierDocumentParserTest extends TestCase
 
     public function test_arithmetic_accepts_lpo_s04015_totals(): void
     {
-        $parsed = (new SupplierDocumentParser())->parse(LpoDocxFixture::s04015Text());
-        $result = (new ArithmeticValidator())->validate(
+        $parsed = (new SupplierDocumentParser)->parse(LpoDocxFixture::s04015Text());
+        $result = (new ArithmeticValidator)->validate(
             $parsed['lines'],
             $parsed['fields']['subtotal'],
             $parsed['fields']['vat_amount'],

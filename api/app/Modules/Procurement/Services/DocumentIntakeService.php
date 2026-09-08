@@ -157,7 +157,14 @@ class DocumentIntakeService
             ? ProcurementDocumentIntake::STATUS_NEEDS_REVIEW
             : ProcurementDocumentIntake::STATUS_NEEDS_REVIEW;
         $textMethod = $textResult['method'] ?? '';
-        if ($textMethod === OcrUnconfiguredAdapter::METHOD || $textMethod === DocumentTextExtractor::METHOD_PDF_NO_TEXT) {
+        $needsHumanReview = in_array($textMethod, [
+            OcrUnconfiguredAdapter::METHOD,
+            DocumentTextExtractor::METHOD_PDF_NO_TEXT,
+            'pdf_ocr',
+            'image_ocr',
+            'ocr_empty',
+        ], true);
+        if ($needsHumanReview) {
             $status = ProcurementDocumentIntake::STATUS_NEEDS_REVIEW;
         } elseif ($textMethod === 'unsupported' || ($parsed['extraction_confidence'] ?? 0) === 0) {
             $status = ProcurementDocumentIntake::STATUS_EXTRACTION_FAILED;
