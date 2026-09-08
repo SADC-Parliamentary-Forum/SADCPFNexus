@@ -94,6 +94,9 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/risk/create/page.tsx",
     "app/(app)/hr/page.tsx",
     "app/(app)/risk/dashboard/page.tsx",
+    "app/(app)/admin/documents/page.tsx",
+    "app/(app)/admin/documents/retention/page.tsx",
+    "app/(app)/admin/documents/governance/page.tsx",
     "app/a/[token]/page.tsx",
   ];
   for (const rel of files) {
