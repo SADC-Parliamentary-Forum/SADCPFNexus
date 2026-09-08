@@ -19,6 +19,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { formatApplicablePath, parseSimulationResponse } from "@/lib/workflowSimulation";
 
 type FieldValue = string | boolean;
 type FieldValues = Record<string, FieldValue>;
@@ -59,11 +60,6 @@ function contextFromValues(fields: WorkflowSimulationField[], values: FieldValue
   return out;
 }
 
-function asSimulationPayload(payload: unknown): { result: WorkflowSimulationResult | null } {
-  const root = payload as { data?: { result?: WorkflowSimulationResult }; result?: WorkflowSimulationResult };
-  return { result: root?.data?.result ?? root?.result ?? null };
-}
-
 export default function WorkflowSimulatePage() {
   const { t } = useI18n();
   const { toast } = useToast();
@@ -77,6 +73,7 @@ export default function WorkflowSimulatePage() {
   const [result, setResult] = useState<WorkflowSimulationResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
+  const [browseModules, setBrowseModules] = useState(true);
 
   const selected = useMemo(
     () => modules.find((item) => item.module_type === moduleType) ?? null,
@@ -91,7 +88,8 @@ export default function WorkflowSimulatePage() {
       adminApi.listUsers({ per_page: 200 }).catch(() => null),
     ])
       .then(([catalogRes, userRes]) => {
-        const rows = catalogRes.data.data?.modules ?? [];
+        const body = catalogRes.data as { data?: { modules?: WorkflowSimulationModule[] }; modules?: WorkflowSimulationModule[] };
+        const rows = body.data?.modules ?? body.modules ?? [];
         setModules(rows);
         const listed = userRes?.data?.data ?? [];
         setUsers(listed);
@@ -108,6 +106,7 @@ export default function WorkflowSimulatePage() {
   const applyModule = useCallback((nextType: string) => {
     setModuleType(nextType);
     setResult(null);
+    setBrowseModules(!nextType);
     const next = modules.find((item) => item.module_type === nextType);
     if (!next) {
       setWorkflowId(null);
@@ -137,9 +136,21 @@ export default function WorkflowSimulatePage() {
         scenario_key: scenarioKey || undefined,
         requester_user_id: requesterId === "" ? undefined : Number(requesterId),
       });
-      const parsed = asSimulationPayload(res.data);
-      setResult(parsed.result);
-      toast("success", t("workflows.simulate.success"), t("workflows.simulate.successHint"));
+      const parsed = parseSimulationResponse(res.data) ?? parseSimulationResponse(res);
+      if (!parsed) {
+        toast("error", "workflows.simulate.parseError", "workflows.simulate.successHint");
+        return;
+      }
+      setResult(parsed as WorkflowSimulationResult);
+      const path = formatApplicablePath(parsed);
+      toast(
+        "success",
+        path ? t("workflows.simulate.successPath", { path }) : "workflows.simulate.success",
+        "workflows.simulate.successHint",
+      );
+      window.setTimeout(() => {
+        document.getElementById("wf-sim-result")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
     } catch (err: unknown) {
       toast("error", t("workflows.simulate.failed"), apiErrorMessage(err, t("workflows.simulate.failed")));
     } finally {
@@ -170,49 +181,63 @@ export default function WorkflowSimulatePage() {
       />
 
       <FormSection title="workflows.simulate.module" description="workflows.simulate.modulePickerHint" icon="view_module" dense>
-        <div className="space-y-3">
-          <div>
-            <label htmlFor="wf-sim-module" className="mb-1 block text-xs font-semibold text-neutral-700">
-              {t("workflows.simulate.module")}
-            </label>
-            <select
-              id="wf-sim-module"
-              className="form-input max-w-md"
-              value={moduleType}
-              disabled={loading}
-              onChange={(e) => applyModule(e.target.value)}
-            >
-              <option value="">{loading ? t("common.loading") : t("workflows.simulate.selectModuleFirst")}</option>
-              {modules.map((item) => (
-                <option key={item.module_type} value={item.module_type}>
-                  {t(item.label_key)}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[12rem] flex-1">
+              <label htmlFor="wf-sim-module" className="mb-1 block text-xs font-semibold text-neutral-700">
+                {t("workflows.simulate.module")}
+              </label>
+              <select
+                id="wf-sim-module"
+                className="form-input max-w-md"
+                value={moduleType}
+                disabled={loading}
+                onChange={(e) => applyModule(e.target.value)}
+              >
+                <option value="">{loading ? t("common.loading") : t("workflows.simulate.selectModuleFirst")}</option>
+                {modules.map((item) => (
+                  <option key={item.module_type} value={item.module_type}>
+                    {t(item.label_key)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {selected && !browseModules ? (
+              <button
+                id="wf-sim-change-module"
+                type="button"
+                className="btn-secondary text-sm"
+                onClick={() => setBrowseModules(true)}
+              >
+                {t("workflows.simulate.changeModule")}
+              </button>
+            ) : null}
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {modules.map((item) => {
-              const active = item.module_type === moduleType;
-              return (
-                <button
-                  key={item.module_type}
-                  type="button"
-                  onClick={() => applyModule(item.module_type)}
-                  className={`rounded-xl border px-3 py-3 text-left transition ${
-                    active
-                      ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                      : "border-neutral-200 bg-white hover:border-primary/40"
-                  }`}
-                >
-                  <p className="text-sm font-semibold text-neutral-900">{t(item.label_key)}</p>
-                  <p className="mt-1 text-xs text-neutral-500">{t(item.description_key)}</p>
-                  <p className="mt-2 text-[11px] text-neutral-400">
-                    {item.workflows.length} {t("workflows.simulate.workflowCount")}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
+          {browseModules ? (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {modules.map((item) => {
+                const active = item.module_type === moduleType;
+                return (
+                  <button
+                    key={item.module_type}
+                    type="button"
+                    onClick={() => applyModule(item.module_type)}
+                    className={`rounded-xl border px-3 py-3 text-left transition ${
+                      active
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-neutral-200 bg-white hover:border-primary/40"
+                    }`}
+                  >
+                    <p className="text-sm font-semibold text-neutral-900">{t(item.label_key)}</p>
+                    <p className="mt-1 text-xs text-neutral-500">{t(item.description_key)}</p>
+                    <p className="mt-2 text-[11px] text-neutral-400">
+                      {item.workflows.length} {t("workflows.simulate.workflowCount")}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
           {!loading && modules.length === 0 ? (
             <EmptyState icon="account_tree" title="workflows.simulate.noCatalog" description="workflows.simulate.noCatalogHint" />
           ) : null}
@@ -342,6 +367,7 @@ export default function WorkflowSimulatePage() {
               <p className="text-xs text-neutral-500">{t("workflows.simulate.dryRun")}</p>
             </div>
           </FormSection>
+          {result ? <SimulationResult result={result} /> : null}
         </>
       ) : (
         !loading ? (
@@ -356,8 +382,6 @@ export default function WorkflowSimulatePage() {
           <EmptyState icon="account_tree" title="workflows.simulate.noWorkflows" description="workflows.simulate.noWorkflowsHint" />
         </div>
       ) : null}
-
-      {result ? <SimulationResult result={result} /> : null}
     </div>
   );
 }
@@ -365,21 +389,20 @@ export default function WorkflowSimulatePage() {
 function SimulationResult({ result }: { result: WorkflowSimulationResult }) {
   const { t } = useI18n();
   const stages = result.stages ?? [];
-  const applicable_path = result.applicable_path ?? [];
+  const path = formatApplicablePath(result);
   const contextEntries = Object.entries(result.normalized_context ?? {});
 
   return (
-    <FormSection title="workflows.simulate.path" icon="route">
+    <div id="wf-sim-result">
+      <FormSection title="workflows.simulate.path" icon="route">
       <div className="mb-4 flex flex-wrap gap-2 text-xs">
         {result.module_type ? <Badge variant="primary">{t(`workflows.simulate.module.${result.module_type}`)}</Badge> : null}
         {result.scenario_label_key ? <Badge variant="info">{t(result.scenario_label_key)}</Badge> : null}
         <Badge variant="success">{t("workflows.simulate.dryRun")}</Badge>
       </div>
 
-      {applicable_path.length > 0 ? (
-        <p className="mb-3 text-xs text-neutral-500">
-          {applicable_path.map((step) => step.step_name || step.stage_type).filter(Boolean).join(" → ")}
-        </p>
+      {path ? (
+        <p className="mb-4 text-base font-semibold text-neutral-900">{path}</p>
       ) : null}
 
       <ol className="space-y-3">
@@ -411,7 +434,8 @@ function SimulationResult({ result }: { result: WorkflowSimulationResult }) {
           {t("workflows.simulate.requester")}: {result.requester.name}
         </p>
       ) : null}
-    </FormSection>
+      </FormSection>
+    </div>
   );
 }
 

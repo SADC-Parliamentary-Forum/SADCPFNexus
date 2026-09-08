@@ -99,6 +99,7 @@ class WorkflowEnginePhase23Controller extends Controller
 
         return response()->json([
             'data' => $sim,
+            'result' => $sim->result,
             'created_production_approval' => false,
         ], 201);
     }
