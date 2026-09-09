@@ -20,19 +20,19 @@ export type RiskCreateFields = {
 /** Normalise owner lookup payloads (array, `{ data }`, or paginator). */
 export function asOwnerOptions(payload: unknown): RiskOwnerOption[] {
   const rows = getListData<Record<string, unknown>>(payload);
-  return rows
-    .map((row) => {
-      const id = Number(row.id);
-      if (!Number.isFinite(id) || id <= 0) return null;
-      const name = String(row.name ?? row.display_name ?? row.email ?? `User #${id}`).trim();
-      return {
-        id,
-        name: name || `User #${id}`,
-        email: typeof row.email === "string" ? row.email : null,
-        job_title: typeof row.job_title === "string" ? row.job_title : null,
-      } satisfies RiskOwnerOption;
-    })
-    .filter((row): row is RiskOwnerOption => row !== null);
+  const owners: RiskOwnerOption[] = [];
+  for (const row of rows) {
+    const id = Number(row.id);
+    if (!Number.isFinite(id) || id <= 0) continue;
+    const name = String(row.name ?? row.display_name ?? row.email ?? `User #${id}`).trim();
+    owners.push({
+      id,
+      name: name || `User #${id}`,
+      email: typeof row.email === "string" ? row.email : null,
+      job_title: typeof row.job_title === "string" ? row.job_title : null,
+    });
+  }
+  return owners;
 }
 
 /** Matches POST /risk/mitigations `risk_ids` max:50. */
