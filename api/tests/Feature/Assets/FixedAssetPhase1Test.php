@@ -282,6 +282,11 @@ class FixedAssetPhase1Test extends TestCase
             'status' => 'scrapped',
         ]);
         $this->assertNotNull(Asset::find($asset->id));
+        $this->assertNull($asset->fresh()->deleted_at);
+        $this->assertDatabaseHas('asset_movements', [
+            'asset_id' => $asset->id,
+            'movement_type' => 'dispose',
+        ]);
 
         $http->postJson("/api/v1/assets/{$asset->id}/assign", [
             'assigned_to' => $this->makeUser('staff', $tenant)->id,

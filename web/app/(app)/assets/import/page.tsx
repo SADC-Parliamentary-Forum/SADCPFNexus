@@ -107,6 +107,7 @@ export default function AssetImportPage() {
   const [error, setError] = useState<string | null>(null);
   const [raw, setRaw] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  const [autoApproveAllowed, setAutoApproveAllowed] = useState(false);
 
   const loadPreview = useCallback(async (id: number) => {
     const r = await assetImportApi.show(id);
@@ -115,12 +116,14 @@ export default function AssetImportPage() {
       counts?: Counts;
       equation?: Equation;
       discrepancies?: Discrepancy[];
+      auto_approve_allowed?: boolean;
     };
     setBatchId(payload.batch?.id ?? id);
     setBatchStatus(payload.batch?.status ?? "");
     setCounts(payload.counts ?? null);
     setEquation(payload.equation ?? null);
     setDiscrepancies(Array.isArray(payload.discrepancies) ? payload.discrepancies : []);
+    setAutoApproveAllowed(Boolean(payload.auto_approve_allowed));
   }, []);
 
   const loadStaging = useCallback(async (id: number, nextFilter = filter, nextPage = page, nextSearch = search) => {
@@ -162,7 +165,13 @@ export default function AssetImportPage() {
     form.set("mode", mode);
     try {
       const res = await assetImportApi.upload(form);
-      const payload = res.data.data as { batch?: { id: number; status: string }; counts?: Counts; equation?: Equation };
+      const payload = res.data.data as {
+        batch?: { id: number; status: string };
+        counts?: Counts;
+        equation?: Equation;
+        auto_approve_allowed?: boolean;
+      };
+      setAutoApproveAllowed(Boolean(payload.auto_approve_allowed));
       setBatchId(payload.batch?.id ?? null);
       setBatchStatus(payload.batch?.status ?? "");
       setCounts(payload.counts ?? null);
@@ -216,7 +225,7 @@ export default function AssetImportPage() {
     if (!batchId) return;
     setBusy(true);
     try {
-      const r = await assetImportApi.commit(batchId, { approve_non_blocking: true });
+      const r = await assetImportApi.commit(batchId, { approve_non_blocking: autoApproveAllowed });
       const payload = r.data as { message?: string; data?: { batch?: { status: string }; equation?: Equation } };
       setMsg(payload.message ?? t("assets.import.commit"));
       setBatchStatus(payload.data?.batch?.status ?? batchStatus);

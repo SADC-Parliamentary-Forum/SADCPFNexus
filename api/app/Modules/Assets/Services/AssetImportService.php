@@ -15,6 +15,7 @@ use App\Models\AuditLog;
 use App\Models\User;
 use App\Modules\Assets\Import\AssetCategoryMapper;
 use App\Modules\Assets\Import\AssetDescriptionParser;
+use App\Modules\Assets\Import\AssetExistingMatcher;
 use App\Modules\Assets\Import\CrystalAssetListingParser;
 use App\Modules\Assets\Import\NexusAssetTemplateParser;
 use App\Modules\Assets\Import\StagingWorkbookParser;
@@ -30,6 +31,7 @@ class AssetImportService
         private readonly StagingWorkbookParser $stagingParser,
         private readonly NexusAssetTemplateParser $templateParser,
         private readonly AssetDescriptionParser $descriptions,
+        private readonly AssetExistingMatcher $matcher,
     ) {}
 
     /**
@@ -189,7 +191,21 @@ class AssetImportService
             'location_mappings' => AssetLocationMapping::query()->where('tenant_id', $user->tenant_id)->orderBy('legacy_location')->get(),
             'custodian_mappings' => AssetCustodianMapping::query()->where('tenant_id', $user->tenant_id)->orderBy('legacy_key')->get(),
             'discrepancies' => $batch->discrepancies()->orderBy('asset_tag')->limit(200)->get(),
+            'auto_approve_allowed' => $this->autoApproveAllowed(),
         ];
+    }
+
+    /**
+     * Demo/local/testing and artisan --commit may auto-approve non-blocking rows.
+     * Production HTTP must use explicit Approve, then Commit.
+     */
+    public function autoApproveAllowed(): bool
+    {
+        if (app()->environment(['local', 'testing', 'demo'])) {
+            return true;
+        }
+
+        return app()->runningInConsole() && ! app()->runningUnitTests();
     }
 
     /**
@@ -391,12 +407,23 @@ class AssetImportService
 
         foreach ($byTag as $tag => $items) {
             $merged = $this->mergeTagGroup($batch, $tag, $items);
-            $existing = Asset::query()
-                ->where('tenant_id', $user->tenant_id)
-                ->where(function ($q) use ($tag) {
-                    $q->where('tag_number', $tag)->orWhere('asset_code', $tag);
-                })
-                ->first();
+            $parsedDesc = $this->descriptions->parse($merged['legacy_description'] ?? null);
+            $make = $merged['make'] ?? $parsedDesc['make'];
+            $model = $merged['model'] ?? $parsedDesc['model'];
+            $serial = $merged['serial_number'] ?? $parsedDesc['serial'];
+            $name = $merged['asset_name'] ?? $parsedDesc['asset_name'] ?? $merged['legacy_description'];
+
+            $serialForMatch = is_scalar($serial) && trim((string) $serial) !== ''
+                ? trim((string) $serial)
+                : null;
+            $existing = $this->matcher->match(
+                (int) $user->tenant_id,
+                $tag,
+                $serialForMatch,
+                $merged,
+                $items,
+                (int) $batch->id,
+            );
 
             $proposed = 'CREATE';
             $diff = null;
@@ -409,12 +436,6 @@ class AssetImportService
                     $proposed = 'UPDATE';
                 }
             }
-
-            $parsedDesc = $this->descriptions->parse($merged['legacy_description'] ?? null);
-            $make = $merged['make'] ?? $parsedDesc['make'];
-            $model = $merged['model'] ?? $parsedDesc['model'];
-            $serial = $merged['serial_number'] ?? $parsedDesc['serial'];
-            $name = $merged['asset_name'] ?? $parsedDesc['asset_name'] ?? $merged['legacy_description'];
 
             $locationId = $this->mapLocation($batch, $user, $merged['legacy_location'] ?? null);
             $custodian = $this->suggestCustodian($user, $merged['custodian_candidate'] ?? null, $merged['legacy_location'] ?? null);
