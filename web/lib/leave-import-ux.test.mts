@@ -15,6 +15,8 @@ test("leave import page fills the content column and previews before commit", ()
   assert.match(source, /leaveApi\.importTemplate/);
   assert.match(source, /leave\.import\.preview/);
   assert.match(source, /leave\.import\.commit/);
+  assert.match(source, /canAccessRoute/);
+  assert.match(source, /leave\.import\.duplicate/);
   assert.doesNotMatch(source, /mx-auto max-w-/);
   assert.match(source, /htmlFor="leave-import-file"/);
   assert.match(source, /id="leave-import-file"/);

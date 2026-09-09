@@ -7,7 +7,7 @@ import { FormSection } from "@/components/ui/FormSection";
 import { ContentCanvas } from "@/components/ui/ContentCanvas";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
-import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { getStoredUser, canAccessRoute } from "@/lib/auth";
 
 type ImportRow = Record<string, string | number | null>;
 type ImportError = { row: number; message: string };
@@ -20,9 +20,7 @@ type ImportResult = {
 };
 
 function canImportLeave(): boolean {
-  const user = getStoredUser();
-  if (isSystemAdmin(user)) return true;
-  return hasPermission(user, ["hr.admin", "hr.edit", "leave.admin", "leave.balance.import"]);
+  return canAccessRoute(getStoredUser(), "/hr/leave/import");
 }
 
 export default function LeaveImportPage() {
@@ -103,7 +101,9 @@ export default function LeaveImportPage() {
 
   const leaveRows = preview?.rows.filter((row) => row.record_type === "leave") ?? [];
   const balanceRows = preview?.rows.filter((row) => row.record_type === "balance") ?? [];
-  const canCommit = Boolean(file && preview && preview.errors.length === 0 && preview.rows.length > 0);
+  const canCommit = Boolean(
+    file && preview && preview.errors.length === 0 && (preview.created > 0 || preview.balances > 0),
+  );
 
   return (
     <ContentCanvas>
@@ -206,6 +206,7 @@ export default function LeaveImportPage() {
                     <th className="px-3 py-2">{t("leave.import.colDates")}</th>
                     <th className="px-3 py-2">{t("leave.import.colDays")}</th>
                     <th className="px-3 py-2">{t("leave.import.colStatus")}</th>
+                    <th className="px-3 py-2">{t("leave.import.colDuplicate")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -220,6 +221,9 @@ export default function LeaveImportPage() {
                       </td>
                       <td className="px-3 py-2">{row.days_requested}</td>
                       <td className="px-3 py-2">{row.status}</td>
+                      <td className="px-3 py-2">
+                        {row.duplicate ? t("leave.import.duplicate") : t("leave.import.newRow")}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

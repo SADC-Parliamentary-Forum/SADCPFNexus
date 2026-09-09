@@ -47,11 +47,13 @@ class LeaveImportTest extends TestCase
         ], ['Accept' => 'application/json']);
 
         $response->assertOk()
-            ->assertJsonPath('data.created', 0)
+            ->assertJsonPath('data.created', 1)
+            ->assertJsonPath('data.skipped', 0)
             ->assertJsonPath('data.errors', [])
             ->assertJsonPath('data.rows.0.record_type', 'leave')
             ->assertJsonPath('data.rows.0.email', $staff->email)
-            ->assertJsonPath('data.rows.0.days_requested', 5);
+            ->assertJsonPath('data.rows.0.days_requested', 5)
+            ->assertJsonPath('data.rows.0.duplicate', false);
 
         $this->assertDatabaseMissing('leave_requests', [
             'requester_id' => $staff->id,
@@ -128,6 +130,47 @@ class LeaveImportTest extends TestCase
             ->assertJsonPath('data.skipped', 1);
 
         $this->assertSame(1, LeaveRequest::query()->where('requester_id', $staff->id)->count());
+    }
+
+    public function test_import_skips_duplicate_leave_rows_in_the_same_file(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asHrManager($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $line = LeaveImportCsv::leaveLine($staff, '2025-01-06', '2025-01-10');
+        $csv = LeaveImportCsv::header().$line.$line;
+
+        $http->post('/api/v1/leave/import', [
+            'file' => $this->csvFile($csv),
+            'commit' => '1',
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('data.created', 1)
+            ->assertJsonPath('data.skipped', 1)
+            ->assertJsonPath('data.rows.1.duplicate', true);
+
+        $this->assertSame(1, LeaveRequest::query()->where('requester_id', $staff->id)->count());
+    }
+
+    public function test_leave_balance_import_permission_can_commit(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $importer = $this->makeUser('staff', $tenant);
+        $importer->givePermissionTo('leave.balance.import');
+        $staff = $this->makeUser('staff', $tenant);
+        $http = $this->asUser($importer);
+
+        $http->post('/api/v1/leave/import', [
+            'file' => $this->csvFile(LeaveImportCsv::leaveRow($staff, '2025-01-06', '2025-01-10')),
+            'commit' => '1',
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('data.created', 1);
+
+        $this->assertDatabaseHas('leave_requests', [
+            'requester_id' => $staff->id,
+            'leave_type' => 'annual',
+        ]);
     }
 
     public function test_unknown_email_is_reported_and_does_not_commit(): void

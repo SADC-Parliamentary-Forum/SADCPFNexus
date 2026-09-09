@@ -59,23 +59,50 @@ class LeaveImportService
             'balances' => 0,
         ];
 
+        if ($errors === []) {
+            $seen = [];
+            foreach ($prepared as &$row) {
+                if ($row['kind'] === 'balance') {
+                    $result['balances']++;
+                    $row['preview']['duplicate'] = false;
+                    continue;
+                }
+
+                $key = implode('|', [
+                    (string) $row['requester']->id,
+                    $row['leave_type'],
+                    $row['start_date'],
+                    $row['end_date'],
+                ]);
+                $duplicate = isset($seen[$key])
+                    || $this->leaveExists($row['requester'], $row['leave_type'], $row['start_date'], $row['end_date']);
+                $seen[$key] = true;
+                $row['duplicate'] = $duplicate;
+                $row['preview']['duplicate'] = $duplicate;
+                if ($duplicate) {
+                    $result['skipped']++;
+                } else {
+                    $result['created']++;
+                }
+            }
+            unset($row);
+            $result['rows'] = array_map(fn (array $row) => $row['preview'], $prepared);
+        }
+
         if ($errors !== [] || ! $commit) {
             return $result;
         }
 
-        DB::transaction(function () use ($prepared, $actor, $policy, &$result) {
+        DB::transaction(function () use ($prepared, $actor, $policy) {
             foreach ($prepared as $row) {
                 if ($row['kind'] === 'balance') {
                     $this->applyBalance($row, $actor, $policy->id);
-                    $result['balances']++;
                     continue;
                 }
-                if ($this->leaveExists($row['requester'], $row['leave_type'], $row['start_date'], $row['end_date'])) {
-                    $result['skipped']++;
+                if (! empty($row['duplicate'])) {
                     continue;
                 }
                 $this->storeLeave($row, $actor, $policy->id);
-                $result['created']++;
             }
         });
 
@@ -97,6 +124,7 @@ class LeaveImportService
             $actor->can('hr.admin')
             || $actor->can('hr.edit')
             || $actor->can('leave.admin')
+            || $actor->can('leave.balance.import')
             || $actor->hasAnyRole(['HR Manager', 'HR Administrator', 'System Admin'])
         ) {
             return;
