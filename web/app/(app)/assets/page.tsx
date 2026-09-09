@@ -1,15 +1,28 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { loadPdfLibs } from "@/lib/pdf-libs";
-import api from "@/lib/api";
 import { assetsApi, assetRequestsApi, tenantUsersApi, type Asset, type AssetRequest, type TenantUserOption } from "@/lib/api";
-import { canDisposeAssets, canManageAssets, canRetireAssets, getStoredUser } from "@/lib/auth";
+import { canDisposeAssets, canManageAssets, canPrintAssetLabels, canRetireAssets, getStoredUser } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { useToast } from "@/components/ui/Toast";
+import { useRowSelection } from "@/lib/useRowSelection";
+import {
+  A4_LANDSCAPE_WIDTH_MM,
+  REGISTER_PDF_COLUMNS,
+  REGISTER_PDF_MARGIN_MM,
+  collectPaginatedRows,
+  printPageHref,
+  registerExportQuery,
+  registerPdfAvailableWidth,
+  registerPdfColumnWidths,
+  resolveExportAssets,
+} from "@/lib/asset-register-print";
+import { BulkSelectionBar, RowCheckbox, SelectAllCheckbox } from "@/components/ui/BulkSelectionBar";
+import { AssetLabelsQuickPrintModal } from "@/components/assets/AssetLabelsQuickPrintModal";
 
 const LIVE_STATUSES = new Set(["pending", "active", "service_due", "loan_out", "pending_disposal"]);
 const DISPOSED_STATUSES = new Set(["disposed", "sold", "written_off", "scrapped", "donated_out"]);
@@ -552,13 +565,16 @@ const requestStatusConfig: Record<string, { label: string; cls: string }> = {
   rejected: { label: "Rejected", cls: "badge-danger" },
 };
 
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
+function downloadBlob(data: Blob, filename: string) {
+  const url = URL.createObjectURL(data);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 export default function AssetsPage() {
@@ -576,6 +592,9 @@ export default function AssetsPage() {
   const [canDispose, setCanDispose] = useState(false);
   const [canRetire, setCanRetire] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [showPrintLabels, setShowPrintLabels] = useState(false);
+  const [labelsOpen, setLabelsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("live");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -585,77 +604,13 @@ export default function AssetsPage() {
   const [retiringId, setRetiringId] = useState<number | null>(null);
   const [confirmingReturnId, setConfirmingReturnId] = useState<number | null>(null);
 
-  const handleExportPdf = useCallback(async () => {
-    setExportingPdf(true);
-    try {
-      const res = await assetsApi.list({ per_page: 100 });
-      const list: Asset[] = (res.data as { data?: Asset[] }).data ?? [];
-      if (list.length === 0) {
-        setError("No assets to export.");
-        return;
-      }
-      const qrBase64: string[] = [];
-      for (const asset of list) {
-        try {
-          const r = await api.get<Blob>(`/assets/${asset.id}/qr`, { responseType: "blob" });
-          const b64 = await blobToBase64(r.data);
-          qrBase64.push(b64);
-        } catch {
-          qrBase64.push("");
-        }
-      }
-      const { jsPDF, autoTable } = await loadPdfLibs();
-      const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-      doc.setFontSize(14);
-      doc.text("Asset Register", 14, 15);
-      doc.setFontSize(10);
-      doc.text(`Generated ${new Date().toLocaleDateString("en-GB")} – ${list.length} item(s)`, 14, 22);
-      const tableStart = 28;
-      const headers = ["Code", "Name", "Category", "Status", "QR"];
-      const body = list.map((a) => [
-        a.asset_code,
-        a.name,
-        a.category,
-        statusConfig[a.status]?.label ?? a.status,
-        "",
-      ]);
-      autoTable(doc, {
-        head: [headers],
-        body,
-        startY: tableStart,
-        didDrawCell: (data: { section: string; column: { index: number }; row: { index: number }; cell?: { width: number; height: number; x: number; y: number } }) => {
-          if (data.section === "body" && data.column.index === 4 && data.row.index < qrBase64.length) {
-            const img = qrBase64[data.row.index];
-            if (img && data.cell) {
-              const cell = data.cell;
-              const size = Math.min(18, cell.width - 2, cell.height - 2);
-              doc.addImage(img, "PNG", cell.x + 2, cell.y + 2, size, size);
-            }
-          }
-        },
-        styles: { fontSize: 8 },
-        columnStyles: {
-          0: { cellWidth: 28 },
-          1: { cellWidth: 45 },
-          2: { cellWidth: 25 },
-          3: { cellWidth: 28 },
-          4: { cellWidth: 22 },
-        },
-      });
-      doc.save(`assets-register-${new Date().toISOString().slice(0, 10)}.pdf`);
-    } catch {
-      setError("Failed to export PDF.");
-    } finally {
-      setExportingPdf(false);
-    }
-  }, []);
-
   useEffect(() => {
     const user = getStoredUser();
     setShowRequestButton(!!user);
     setShowAddAssetButton(canManageAssets(user));
     setCanDispose(canDisposeAssets(user));
     setCanRetire(canRetireAssets(user));
+    setShowPrintLabels(canPrintAssetLabels(user));
     if (typeof window !== "undefined") {
       const status = new URLSearchParams(window.location.search).get("status");
       if (status) setFilterStatus(status);
@@ -665,9 +620,13 @@ export default function AssetsPage() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    assetsApi
-      .list({ per_page: 100 })
-      .then((res) => setAssets((res.data as { data?: Asset[] }).data ?? []))
+    collectPaginatedRows((page) =>
+      assetsApi.list({ per_page: 100, page }).then((res) => ({
+        data: (res.data as { data?: Asset[]; last_page?: number }).data ?? [],
+        last_page: (res.data as { last_page?: number }).last_page,
+      })),
+    )
+      .then(setAssets)
       .catch(() => setError("Failed to load assets."))
       .finally(() => setLoading(false));
   }, []);
@@ -690,6 +649,96 @@ export default function AssetsPage() {
     const matchCat = filterCategory === "all" || a.category === filterCategory;
     return matchSearch && matchStatus && matchCat;
   });
+
+  const getAssetId = useCallback((asset: Asset) => asset.id, []);
+  const selection = useRowSelection({ rows: filteredAssets, getId: getAssetId });
+  const exportTargets = useMemo(
+    () => resolveExportAssets(filteredAssets, selection.selectedIds),
+    [filteredAssets, selection.selectedIds],
+  );
+  const exportIds = useMemo(() => exportTargets.map((asset) => asset.id), [exportTargets]);
+
+  const handleExportPdf = async () => {
+    if (exportTargets.length === 0) {
+      setError(t("assets.register.exportEmpty"));
+      return;
+    }
+    setExportingPdf(true);
+    setError(null);
+    try {
+      const { jsPDF, autoTable } = await loadPdfLibs();
+      // Positional constructor so UMD builds honour landscape (object form can stay portrait).
+      const doc = new jsPDF("landscape", "mm", "a4");
+      const pageWidth = Number(doc.internal.pageSize.getWidth()) || A4_LANDSCAPE_WIDTH_MM;
+      const margin = REGISTER_PDF_MARGIN_MM;
+      const available = registerPdfAvailableWidth(pageWidth, margin);
+      const widths = registerPdfColumnWidths(pageWidth, margin);
+      const columnStyles = Object.fromEntries(widths.map((cellWidth, index) => [index, { cellWidth }]));
+      doc.setFontSize(14);
+      doc.text("Asset Register", margin, 15);
+      doc.setFontSize(9);
+      doc.text(
+        `Generated ${new Date().toLocaleDateString("en-GB")} – ${exportTargets.length} item(s)`,
+        margin,
+        22,
+      );
+      autoTable(doc, {
+        head: [REGISTER_PDF_COLUMNS.map((col) => col.header)],
+        body: exportTargets.map((asset) => [
+          asset.asset_code,
+          asset.name,
+          asset.category,
+          statusConfig[asset.status]?.label ?? asset.status,
+          asset.assigned_user?.name ?? "",
+        ]),
+        startY: 28,
+        margin: { left: margin, right: margin, top: 28, bottom: 12 },
+        tableWidth: available,
+        styles: {
+          fontSize: 8,
+          cellPadding: 1.2,
+          overflow: "linebreak",
+          minCellWidth: 8,
+          valign: "middle",
+        },
+        columnStyles,
+      });
+      doc.save(`assets-register-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch {
+      setError(t("assets.register.exportFailed"));
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (exportIds.length === 0) {
+      setError(t("assets.register.exportEmpty"));
+      return;
+    }
+    setExportingExcel(true);
+    setError(null);
+    try {
+      const res = await assetsApi.registerExport(
+        registerExportQuery(selection.selectedCount > 0 ? exportIds : [], {
+          status: filterStatus,
+          category: filterCategory,
+          search,
+        }),
+      );
+      const blob = res.data as Blob;
+      const type = (blob.type || "").toLowerCase();
+      const peek = await blob.slice(0, 8).text();
+      if (type.includes("json") || peek.trim().startsWith("{")) {
+        throw new Error(t("assets.register.exportFailed"));
+      }
+      downloadBlob(blob, `fixed-asset-register-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch {
+      setError(t("assets.register.exportFailed"));
+    } finally {
+      setExportingExcel(false);
+    }
+  };
 
   const statusCounts = {
     live: assets.filter((a) => LIVE_STATUSES.has(a.status)).length,
@@ -762,23 +811,61 @@ export default function AssetsPage() {
         <div className="flex gap-2 flex-wrap">
           {(showAddAssetButton || showRequestButton) && (
             <>
-              <Link href="/assets/print" className="btn-secondary" target="_blank" rel="noopener noreferrer">
+              <Link
+                href={printPageHref(exportIds)}
+                className="btn-secondary"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="asset-register-print"
+              >
                 <span className="material-symbols-outlined text-[18px]">print</span>
-                Print
+                {t("assets.register.print")}
               </Link>
               <button
                 type="button"
-                onClick={handleExportPdf}
+                onClick={() => void handleExportPdf()}
                 disabled={exportingPdf}
                 className="btn-secondary"
+                data-testid="asset-register-export-pdf"
               >
                 {exportingPdf ? (
                   <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
                 ) : (
                   <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
                 )}
-                Export PDF
+                {t("assets.register.exportPdf")}
               </button>
+              <button
+                type="button"
+                onClick={() => void handleExportExcel()}
+                disabled={exportingExcel}
+                className="btn-secondary"
+                data-testid="asset-register-export-excel"
+              >
+                {exportingExcel ? (
+                  <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined text-[18px]">table_view</span>
+                )}
+                {t("assets.register.exportExcel")}
+              </button>
+              {showPrintLabels && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (exportIds.length === 0) {
+                      setError(t("assets.register.exportEmpty"));
+                      return;
+                    }
+                    setLabelsOpen(true);
+                  }}
+                  className="btn-secondary"
+                  data-testid="asset-register-print-labels"
+                >
+                  <span className="material-symbols-outlined text-[18px]">qr_code_2</span>
+                  {t("assets.register.printLabels")}
+                </button>
+              )}
             </>
           )}
           {showAddAssetButton && (
@@ -977,6 +1064,38 @@ export default function AssetsPage() {
               </div>
             </div>
           ) : filteredAssets.length > 0 ? (
+            <>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="inline-flex items-center gap-2 text-sm text-neutral-600">
+                <SelectAllCheckbox
+                  checked={selection.allSelectableSelected}
+                  indeterminate={selection.someSelectableSelected && !selection.allSelectableSelected}
+                  onChange={selection.toggleAllSelectable}
+                  disabled={filteredAssets.length === 0}
+                  label={t("assets.register.selectAll")}
+                />
+                <span data-testid="asset-register-select-all">{t("assets.register.selectAll")}</span>
+              </label>
+              <p className="text-xs text-neutral-500">{t("assets.register.selectHint")}</p>
+            </div>
+            <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear}>
+              <Link
+                href={printPageHref(exportIds)}
+                className="btn-secondary text-xs"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t("assets.register.print")}
+              </Link>
+              <button type="button" className="btn-secondary text-xs" onClick={() => void handleExportExcel()}>
+                {t("assets.register.exportExcel")}
+              </button>
+              {showPrintLabels && (
+                <button type="button" className="btn-secondary text-xs" onClick={() => setLabelsOpen(true)}>
+                  {t("assets.register.printLabels")}
+                </button>
+              )}
+            </BulkSelectionBar>
             <div className="grid gap-4 sm:grid-cols-2">
               {filteredAssets.map((asset) => {
                 const s = statusConfig[asset.status] ?? { label: asset.status, cls: "badge-muted" };
@@ -984,12 +1103,23 @@ export default function AssetsPage() {
                   <div key={asset.id} className="card p-5 hover:shadow-elevated transition-shadow">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-3 min-w-0">
+                        <RowCheckbox
+                          checked={selection.isSelected(asset.id)}
+                          onChange={() => selection.toggle(asset.id)}
+                          label={asset.asset_code}
+                        />
                         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10">
                           <span className="material-symbols-outlined text-primary text-[20px]">inventory_2</span>
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs font-mono text-neutral-400">{asset.asset_code}</span>
+                            <Link
+                              href={`/assets/${asset.id}`}
+                              className="text-xs font-mono text-neutral-400 hover:text-primary"
+                              data-testid="asset-register-view"
+                            >
+                              {asset.asset_code}
+                            </Link>
                             <span className={`badge ${s.cls}`}>{s.label}</span>
                             {asset.custody_state === "pending_acceptance" && (
                               <span className="badge badge-warning">{t("assets.register.pendingAcceptance")}</span>
@@ -998,7 +1128,13 @@ export default function AssetsPage() {
                               <span className="badge badge-warning">{t("assets.register.pendingReturn")}</span>
                             )}
                           </div>
-                          <p className="text-sm font-semibold text-neutral-900 mt-0.5 truncate">{asset.name}</p>
+                          <Link
+                            href={`/assets/${asset.id}`}
+                            className="text-sm font-semibold text-neutral-900 mt-0.5 truncate hover:text-primary block"
+                            data-testid="asset-register-view"
+                          >
+                            {asset.name}
+                          </Link>
                           <p className="text-xs text-neutral-500 mt-1 capitalize">{asset.category}</p>
                           {(asset.current_value != null || asset.value != null) && (
                             <p className="text-xs text-neutral-500 mt-0.5">
@@ -1102,6 +1238,7 @@ export default function AssetsPage() {
                 );
               })}
             </div>
+            </>
           ) : assets.length > 0 ? (
             <div className="card p-10 text-center">
               <span className="material-symbols-outlined text-3xl text-neutral-300">search_off</span>
@@ -1146,6 +1283,11 @@ export default function AssetsPage() {
           }}
         />
       )}
+      <AssetLabelsQuickPrintModal
+        open={labelsOpen}
+        assetIds={exportIds}
+        onClose={() => setLabelsOpen(false)}
+      />
     </div>
   );
 }

@@ -1867,6 +1867,8 @@ export const assetsApi = {
     api.post<{ data: Asset; message: string }>(`/assets/${id}/transfer`, data),
   returnAsset: (id: number, data?: { location_id?: number; notes?: string; condition?: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/return`, data ?? {}),
+  registerExport: (params?: Record<string, string | number>) =>
+    api.get<Blob>("/assets/register-export", { params, responseType: "blob" }),
   uploadInvoice: (assetId: number, file: File) => {
     const formData = new FormData();
     formData.append("invoice", file);
