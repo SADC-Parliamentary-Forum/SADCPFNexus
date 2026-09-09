@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
@@ -67,7 +68,7 @@ export default function RiskControlTestingPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <RiskPageFrame>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
         title="Control Testing Campaigns"
@@ -185,6 +186,6 @@ export default function RiskControlTestingPage() {
           </div>
         </div>
       )}
-    </div>
+    </RiskPageFrame>
   );
 }

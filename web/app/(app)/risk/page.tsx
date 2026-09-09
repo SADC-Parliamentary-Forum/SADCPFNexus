@@ -2,7 +2,7 @@
 
 import React, { useCallback, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { riskApi, type Risk, type RiskMatrixData } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToXls } from "@/lib/csvExport";
@@ -16,6 +16,11 @@ import {
 import { useRowSelection } from "@/lib/useRowSelection";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { RISK_HUB_CARDS } from "@/lib/hubs/risk";
+import { Modal } from "@/components/ui/Modal";
+import { ApplyMitigationFields, EMPTY_MITIGATION, type MitigationDraft } from "@/components/risk/ApplyMitigationFields";
+import { buildMitigationFormData } from "@/lib/riskLookups";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -71,9 +76,15 @@ const filterMap: Record<string, string | undefined> = {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function RiskRegisterPage() {
+  const { t } = useI18n();
+  const qc = useQueryClient();
   const [statusFilter, setStatusFilter] = useState<string>("All");
   const [matrixFilter, setMatrixFilter] = useState<{ likelihood?: number; impact?: number } | null>(null);
   const [density, setDensity] = useState<RegisterDensity>("comfortable");
+  const [mitigationOpen, setMitigationOpen] = useState(false);
+  const [mitigation, setMitigation] = useState<MitigationDraft>(EMPTY_MITIGATION);
+  const [mitigationError, setMitigationError] = useState<string | null>(null);
+  const [mitigationSaving, setMitigationSaving] = useState(false);
 
   const { data: pageData, isLoading, isError } = useQuery({
     queryKey: ["risk", "list", statusFilter],
@@ -172,7 +183,41 @@ export default function RiskRegisterPage() {
     doc.save(`risk-register-${new Date().toISOString().slice(0, 10)}.pdf`);
   }
 
+  async function applySelectedMitigation() {
+    if (!mitigation.description.trim()) {
+      setMitigationError(t("risk.mitigation.descriptionRequired"));
+      return;
+    }
+    const ids = selection.selectedIds
+      .map((id) => Number(id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+    if (ids.length === 0) return;
+    setMitigationSaving(true);
+    setMitigationError(null);
+    try {
+      await riskApi.applyMitigations(
+        buildMitigationFormData({
+          riskIds: ids,
+          description: mitigation.description,
+          treatmentType: mitigation.treatment_type,
+          dueDate: mitigation.due_date || undefined,
+          file: mitigation.file,
+          documentType: "risk_mitigation_plan",
+        }),
+      );
+      setMitigationOpen(false);
+      setMitigation(EMPTY_MITIGATION);
+      selection.clear();
+      await qc.invalidateQueries({ queryKey: ["risk", "list"] });
+    } catch (err: unknown) {
+      setMitigationError(apiErrorMessage(err, t("risk.mitigation.failed")));
+    } finally {
+      setMitigationSaving(false);
+    }
+  }
+
   return (
+    <>
     <RegisterShell
       title="Risk Register"
       subtitle="Institutional risk management — identify, assess, and mitigate risks across all departments."
@@ -180,7 +225,18 @@ export default function RiskRegisterPage() {
       onDensityChange={setDensity}
       loading={isLoading}
       bulkBar={
-        <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear}>
+        <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear} disabled={mitigationSaving}>
+          <button
+            type="button"
+            className="btn-secondary text-xs"
+            disabled={selection.selectedCount === 0 || mitigationSaving}
+            onClick={() => {
+              setMitigationError(null);
+              setMitigationOpen(true);
+            }}
+          >
+            {t("risk.mitigation.applySelected")}
+          </button>
           <button
             type="button"
             className="btn-secondary text-xs"
@@ -525,5 +581,49 @@ export default function RiskRegisterPage() {
       </div>
     </div>
     </RegisterShell>
+    <Modal
+      open={mitigationOpen}
+      onClose={() => {
+        if (mitigationSaving) return;
+        setMitigationOpen(false);
+      }}
+      size="lg"
+      title={t("risk.mitigation.title")}
+      description={t("risk.mitigation.applyCount", { count: selection.selectedCount })}
+      footer={
+        <>
+          <button
+            type="button"
+            className="btn-secondary flex-1"
+            disabled={mitigationSaving}
+            onClick={() => setMitigationOpen(false)}
+          >
+            {t("common.cancel")}
+          </button>
+          <button
+            type="button"
+            className="btn-primary flex-1 flex items-center justify-center gap-1.5"
+            disabled={mitigationSaving}
+            onClick={() => void applySelectedMitigation()}
+          >
+            {mitigationSaving ? (
+              <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : null}
+            {t("risk.mitigation.apply")}
+          </button>
+        </>
+      }
+    >
+      {mitigationError && (
+        <p className="mb-3 text-sm text-red-700" role="alert">{mitigationError}</p>
+      )}
+      <ApplyMitigationFields
+        idPrefix="risk-register-mitigation"
+        value={mitigation}
+        onChange={setMitigation}
+        required
+      />
+    </Modal>
+    </>
   );
 }
