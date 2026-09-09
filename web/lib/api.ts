@@ -1772,6 +1772,7 @@ export interface Asset {
   tag_number?: string | null;
   label_status?: string | null;
   acknowledgement_at?: string | null;
+  custody_state?: "pending_acceptance" | "accepted" | "pending_return" | null;
   funding_source?: string | null;
   book_value?: number | null;
 }
@@ -1849,9 +1850,13 @@ export const assetsApi = {
     api.post<{ data: Asset; message: string }>(`/assets/${id}/assign`, data),
   acknowledge: (id: number) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/acknowledge`, {}),
+  declineAssignment: (id: number, reason: string) =>
+    api.post<{ data: Asset; message: string }>(`/assets/${id}/decline`, { reason }),
+  requestReturn: (id: number) =>
+    api.post<{ data: Asset; message: string }>(`/assets/${id}/request-return`, {}),
   transfer: (id: number, data: { to_user_id: number; department?: string; location_id?: number; notes?: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/transfer`, data),
-  returnAsset: (id: number, data?: { location_id?: number; notes?: string }) =>
+  returnAsset: (id: number, data?: { location_id?: number; notes?: string; condition?: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/return`, data ?? {}),
   uploadInvoice: (assetId: number, file: File) => {
     const formData = new FormData();

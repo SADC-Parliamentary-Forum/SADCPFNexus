@@ -1443,6 +1443,8 @@ Route::prefix('v1')->group(function () {
         Route::post('assets/{asset}/reject-capitalisation', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'rejectCapitalisation']);
         Route::post('assets/{asset}/assign', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'assign']);
         Route::post('assets/{asset}/acknowledge', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'acknowledge']);
+        Route::post('assets/{asset}/decline', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'decline']);
+        Route::post('assets/{asset}/request-return', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'requestReturn']);
         Route::post('assets/{asset}/transfer', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'transfer']);
         Route::post('assets/{asset}/return', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'returnAsset']);
         Route::post('assets/{asset}/mark-condition', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'markCondition']);

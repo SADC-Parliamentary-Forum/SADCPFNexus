@@ -559,6 +559,7 @@ export default function AssetsPage() {
   const [capitaliseAsset, setCapitaliseAsset] = useState<Asset | null>(null);
   const [assignAsset, setAssignAsset] = useState<Asset | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [confirmingReturnId, setConfirmingReturnId] = useState<number | null>(null);
 
   const handleExportPdf = useCallback(async () => {
     setExportingPdf(true);
@@ -684,6 +685,19 @@ export default function AssetsPage() {
       setError("Failed to reject capitalisation.");
     } finally {
       setRejectingId(null);
+    }
+  };
+
+  const handleConfirmReturn = async (asset: Asset) => {
+    setConfirmingReturnId(asset.id);
+    setError(null);
+    try {
+      const res = await assetsApi.returnAsset(asset.id);
+      setAssets((prev) => prev.map((a) => (a.id === asset.id ? res.data.data : a)));
+    } catch {
+      setError(t("assets.register.returnFailed"));
+    } finally {
+      setConfirmingReturnId(null);
     }
   };
 
@@ -912,6 +926,12 @@ export default function AssetsPage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs font-mono text-neutral-400">{asset.asset_code}</span>
                             <span className={`badge ${s.cls}`}>{s.label}</span>
+                            {asset.custody_state === "pending_acceptance" && (
+                              <span className="badge badge-warning">{t("assets.register.pendingAcceptance")}</span>
+                            )}
+                            {asset.custody_state === "pending_return" && (
+                              <span className="badge badge-warning">{t("assets.register.pendingReturn")}</span>
+                            )}
                           </div>
                           <p className="text-sm font-semibold text-neutral-900 mt-0.5 truncate">{asset.name}</p>
                           <p className="text-xs text-neutral-500 mt-1 capitalize">{asset.category}</p>
@@ -951,8 +971,8 @@ export default function AssetsPage() {
                               </button>
                             </>
                           ) : (
-                            <div className="flex flex-col items-end gap-1">
-                              {canAssignAsset(asset.status) && (
+                            <>
+                              {canAssignAsset(asset.status) && asset.custody_state !== "pending_return" && (
                                 <button
                                   type="button"
                                   onClick={() => setAssignAsset(asset)}
@@ -968,7 +988,17 @@ export default function AssetsPage() {
                               >
                                 <span className="material-symbols-outlined text-[20px]">edit</span>
                               </Link>
-                            </div>
+                              {asset.custody_state === "pending_return" && (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleConfirmReturn(asset)}
+                                  disabled={confirmingReturnId === asset.id}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:opacity-90 disabled:opacity-50"
+                                >
+                                  {confirmingReturnId === asset.id ? t("common.loading") : t("assets.register.confirmReturn")}
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       )}

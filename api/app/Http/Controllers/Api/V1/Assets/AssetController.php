@@ -206,7 +206,24 @@ class AssetController extends Controller
     {
         $updated = $this->assetService->acknowledge($asset, $request->user());
 
-        return response()->json(['data' => $updated, 'message' => 'Custody acknowledged.']);
+        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Custody acknowledged.']);
+    }
+
+    public function decline(Request $request, Asset $asset): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:2000'],
+        ]);
+        $updated = $this->assetService->declineAssignment($asset, $request->user(), $validated['reason']);
+
+        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Assignment declined.']);
+    }
+
+    public function requestReturn(Request $request, Asset $asset): JsonResponse
+    {
+        $updated = $this->assetService->requestReturn($asset, $request->user());
+
+        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Return requested.']);
     }
 
     public function transfer(Request $request, Asset $asset): JsonResponse
@@ -228,10 +245,11 @@ class AssetController extends Controller
         $validated = $request->validate([
             'location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'condition' => ['nullable', 'string', 'max:64'],
         ]);
         $updated = $this->assetService->returnAsset($asset, $request->user(), $validated);
 
-        return response()->json(['data' => $updated, 'message' => 'Asset returned.']);
+        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Asset returned.']);
     }
 
     public function markCondition(Request $request, Asset $asset): JsonResponse
@@ -398,13 +416,12 @@ class AssetController extends Controller
             $this->qr->generate($asset, $request->user(), (bool) $asset->qr_token);
         }
 
+        $fresh = $asset->fresh();
         if ($nextAssignee && (int) $nextAssignee !== (int) $previousAssignee) {
-            $asset = $this->assetService->assign($asset, User::findOrFail($nextAssignee), $request->user());
-        } elseif (! $nextAssignee && $previousAssignee) {
-            $asset = $this->assetService->returnAsset($asset, $request->user());
+            $fresh = $this->assetService->assign($fresh, User::findOrFail($nextAssignee), $user);
         }
 
-        return response()->json($this->presentAsset($asset));
+        return response()->json($this->presentAsset($fresh));
     }
 
     /**
