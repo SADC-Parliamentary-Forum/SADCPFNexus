@@ -27,7 +27,7 @@ export default function AssignmentHandoverPage() {
   const docxHref = me?.id ? assignmentsApi.handoverPackDocxUrl({ from_user_id: Number(me.id) }) : null;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <ModulePageHeader
           title="Handover pack"

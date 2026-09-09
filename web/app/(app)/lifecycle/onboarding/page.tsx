@@ -17,7 +17,7 @@ export default function LifecycleOnboardingQueuePage() {
   const cases = casesQuery.data ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Onboarding queue"
         subtitle="Open onboarding cases and readiness status."

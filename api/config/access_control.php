@@ -559,6 +559,11 @@ return [
             'PATCH' => ['pif.create', 'pif.approve', 'programme.finance-review', 'pif.admin'],
             'DELETE' => ['pif.admin'],
         ]],
+        ['pattern' => 'api/v1/leave/import*', 'permissions' => [
+            'READ' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import'],
+            'POST' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import'],
+            'WRITE' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import'],
+        ]],
         ['pattern' => 'api/v1/leave*', 'permissions' => [
             'READ' => [
                 'leave.view', 'leave.approve', 'leave.admin', 'leave.module.view',

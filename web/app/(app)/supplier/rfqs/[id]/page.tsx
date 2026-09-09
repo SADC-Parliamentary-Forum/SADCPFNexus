@@ -61,7 +61,7 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
   const isAwarded = request.status === "awarded";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title={request.title}
         subtitle={request.reference_number}

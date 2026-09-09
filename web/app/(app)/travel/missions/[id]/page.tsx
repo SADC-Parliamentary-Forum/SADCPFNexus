@@ -44,7 +44,7 @@ export default function TravelMissionDetailPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-5" data-testid="travel-mission-readiness">
+    <div className="p-6 w-full min-w-0 space-y-5" data-testid="travel-mission-readiness">
       <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
         <Link href="/travel/missions" className="hover:text-primary">Missions</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>

@@ -60,6 +60,13 @@ export const LEAVE_HUB_CARDS: LeaveHubCard[] = [
     section: "views",
   },
   {
+    href: "/hr/leave/import",
+    title: "leave.import.hubTitle",
+    purpose: "leave.import.hubPurpose",
+    icon: "upload_file",
+    section: "tools",
+  },
+  {
     href: "/leave/toil",
     title: "TOIL / leave in lieu",
     purpose: "Credits you can attach when applying for leave in lieu.",

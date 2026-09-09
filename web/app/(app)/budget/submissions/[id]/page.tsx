@@ -85,7 +85,7 @@ export default function BudgetSubmissionDetailPage() {
   const total = (pack.items ?? []).reduce((sum, i) => sum + Number(i.requested_amount || 0), 0);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link

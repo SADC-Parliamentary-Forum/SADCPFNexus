@@ -368,7 +368,7 @@ export default function LeaveBalancesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
 
       {showInitModal && (
         <InitializeModal
@@ -420,6 +420,10 @@ export default function LeaveBalancesPage() {
             <span className="material-symbols-outlined text-[16px]">bolt</span>
             Initialize {selectedYear}
           </button>
+          <Link href="/hr/leave/import" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[16px]">upload_file</span>
+            Bulk import
+          </Link>
           <Link href="/hr/leave" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[16px]">event_note</span>
             Leave Requests

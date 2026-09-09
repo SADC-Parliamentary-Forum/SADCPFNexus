@@ -340,7 +340,7 @@ export default function WorkplanEventDetailPage() {
   // ─── Loading / error states ───────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="space-y-4 max-w-4xl">
+      <div className="w-full min-w-0 space-y-4">
         <div className="h-6 w-48 bg-neutral-100 rounded animate-pulse" />
         <div className="h-10 w-80 bg-neutral-100 rounded animate-pulse" />
         <div className="grid grid-cols-3 gap-4">

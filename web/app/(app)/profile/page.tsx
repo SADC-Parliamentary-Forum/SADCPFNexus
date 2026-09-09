@@ -147,7 +147,7 @@ export default function MyProfilePage() {
   ];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full min-w-0 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <ModulePageHeader
         title="My Profile"
         subtitle="Manage your personal information, documents and security settings."

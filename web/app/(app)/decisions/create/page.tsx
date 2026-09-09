@@ -56,7 +56,7 @@ export default function CreateDecisionPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <Link href="/decisions" className="text-sm text-neutral-500 hover:text-primary">← Decision Register</Link>
         <h1 className="mt-2 text-2xl font-semibold">New decision</h1>

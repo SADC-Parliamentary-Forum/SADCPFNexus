@@ -93,6 +93,7 @@ test("shared chrome components translate user-facing copy", () => {
     "components/audit/AuditChrome.tsx",
     "app/(app)/risk/create/page.tsx",
     "app/(app)/hr/page.tsx",
+    "app/(app)/hr/leave/import/page.tsx",
     "app/(app)/risk/dashboard/page.tsx",
     "app/(app)/admin/documents/page.tsx",
     "app/(app)/admin/documents/retention/page.tsx",

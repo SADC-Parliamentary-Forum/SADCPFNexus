@@ -38,7 +38,7 @@ export default function FleetUtilisationPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Fleet utilisation"
         subtitle="Booking days, km travelled, and idle days by vehicle."

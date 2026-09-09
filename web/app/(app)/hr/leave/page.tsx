@@ -270,6 +270,10 @@ export default function HRLeavePage() {
           <Link href="/leave" className="btn-secondary text-sm">
             My Leave
           </Link>
+          <Link href="/hr/leave/import" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1">
+            <span className="material-symbols-outlined text-[18px]">upload_file</span>
+            Bulk import
+          </Link>
           <button
             type="button"
             className="btn-secondary py-2 px-3 text-sm flex items-center gap-1 disabled:opacity-50"

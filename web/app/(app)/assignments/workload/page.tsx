@@ -16,7 +16,7 @@ export default function AssignmentsWorkloadPage() {
   const assignees = (data?.assignees ?? []) as Array<Record<string, unknown>>;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <ModulePageHeader
         title="Workload forecast"

@@ -109,7 +109,7 @@ export default function RiskAuditTrailPage() {
   const hasActiveFilters = filters.date_from || filters.date_to || filters.change_type;
 
   return (
-    <div className="space-y-5 max-w-6xl">
+    <div className="w-full min-w-0 space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader

@@ -403,7 +403,7 @@ test("risk create form uses FormSection, i18n, wrapping actions, and name picker
   assert.match(source, /useI18n/);
   assert.match(source, /FormSection/);
   assert.doesNotMatch(source, /FormField/);
-  assert.match(source, /mx-auto max-w-2xl/);
+  assert.match(source, /w-full min-w-0 space-y-6/);
   assert.match(source, /flex-wrap/);
   assert.match(source, /tenantUsersApi/);
   assert.match(source, /listObjectives/);

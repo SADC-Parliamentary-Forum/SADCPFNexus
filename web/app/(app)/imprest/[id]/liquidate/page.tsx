@@ -73,7 +73,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
 
   if (!Number.isFinite(requestId) || requestId <= 0) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
           Invalid imprest request ID.
         </div>
@@ -87,7 +87,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-5 animate-pulse">
+      <div className="w-full min-w-0 space-y-5 animate-pulse">
         <div className="h-4 w-48 rounded bg-neutral-100" />
         <div className="card p-6 space-y-3">
           <div className="h-6 w-56 rounded bg-neutral-100" />
@@ -104,7 +104,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
 
   if (isError || !request) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700">
           Failed to load this imprest request.
         </div>
@@ -134,7 +134,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
 
   if (request.status === "liquidated") {
     return (
-      <div className="max-w-3xl mx-auto space-y-5">
+      <div className="w-full min-w-0 space-y-5">
         <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
           <Link href="/imprest" className="hover:text-primary transition-colors">Imprest</Link>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -180,7 +180,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
 
   if (request.status !== "approved") {
     return (
-      <div className="max-w-3xl mx-auto space-y-5">
+      <div className="w-full min-w-0 space-y-5">
         <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
           <Link href="/imprest" className="hover:text-primary transition-colors">Imprest</Link>
           <span className="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -204,7 +204,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
         <Link href="/imprest" className="hover:text-primary transition-colors">Imprest</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>

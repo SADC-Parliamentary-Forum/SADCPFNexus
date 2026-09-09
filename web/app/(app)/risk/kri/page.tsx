@@ -53,7 +53,7 @@ export default function RiskKriPage() {
   const catalogByCode = Object.fromEntries(catalog.map((c) => [c.code, c]));
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="risk.kri.title"
         subtitle="risk.kri.subtitle"

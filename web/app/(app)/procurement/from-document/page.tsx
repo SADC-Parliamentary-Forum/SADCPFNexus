@@ -217,7 +217,7 @@ export default function CreateFromDocumentPage() {
   }, [intake?.invoice_first_case]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Create from Invoice / Quote"
         subtitle="Upload a supplier document. Nexus extracts, matches and prepares the LPO. Unmatched suppliers are created here and sent login instructions — Nexus never emails a password."

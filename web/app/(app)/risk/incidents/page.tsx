@@ -17,7 +17,7 @@ export default function RiskIncidentsPage() {
   }, [t]);
 
   return (
-    <div className="space-y-4 max-w-5xl">
+    <div className="w-full min-w-0 space-y-4">
       <ModulePageHeader
         title="risk.incidents.title"
         subtitle="risk.incidents.subtitle"

@@ -99,7 +99,7 @@ export default function CreateBudgetChangePage() {
   });
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <Link href="/budget/changes" className="text-sm text-[var(--primary)] hover:underline">
           ← Changes

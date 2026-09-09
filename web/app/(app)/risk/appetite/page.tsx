@@ -17,7 +17,7 @@ export default function RiskAppetitePage() {
   }, [t]);
 
   return (
-    <div className="space-y-4 max-w-4xl">
+    <div className="w-full min-w-0 space-y-4">
       <ModulePageHeader
         title="risk.appetite.title"
         subtitle="risk.appetite.subtitle"

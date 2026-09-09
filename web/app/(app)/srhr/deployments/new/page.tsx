@@ -76,7 +76,7 @@ function NewDeploymentPageInner() {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm text-neutral-500">
         <Link href="/srhr" className="hover:text-primary">SRHR</Link>

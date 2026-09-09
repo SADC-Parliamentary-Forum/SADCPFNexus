@@ -175,7 +175,7 @@ export default function ProcurementCreatePage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="New Procurement Requisition"
         subtitle="Submit the requisition first. Specific items, pricing, and supplier quotations can be finalized later in the procurement process."

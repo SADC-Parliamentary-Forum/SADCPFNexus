@@ -39,7 +39,7 @@ export default function TimesheetCapacityPage() {
   }, [people]);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Timesheet capacity"
         subtitle="Recorded hours versus expected hours for a selected week. Not a performance score and not invented overtime rates."

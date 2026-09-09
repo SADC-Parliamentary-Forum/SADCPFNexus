@@ -143,7 +143,7 @@ export default function WorkflowAnalyticsPage() {
   const maxBottleneckHours = Math.max(1, ...bottlenecks.map((b) => b.avg_hours ?? 0));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5" data-testid="workflow-analytics-page">
+    <div className="w-full min-w-0 space-y-5" data-testid="workflow-analytics-page">
       <ModulePageHeader
         title="Workflow Analytics"
         subtitle="Cycle time, bottlenecks, overdue work, return rates, delegation usage, and exceptions."

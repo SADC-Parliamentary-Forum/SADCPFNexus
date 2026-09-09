@@ -174,7 +174,7 @@ export default function BudgetDetailPage() {
   const budgetBarColor = budgetPct >= 90 ? "bg-red-500" : budgetPct >= 70 ? "bg-amber-500" : "bg-green-500";
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumbs */}
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/finance" className="hover:text-primary transition-colors">Finance</Link>

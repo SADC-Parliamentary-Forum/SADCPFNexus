@@ -34,6 +34,7 @@ test("General Employee can open self-service inboxes and timesheets", () => {
 test("General Employee still cannot open org-HR or module-admin prefixes", () => {
   assert.equal(canAccessRoute(ge, "/hr"), false);
   assert.equal(canAccessRoute(ge, "/hr/leave/balances"), false);
+  assert.equal(canAccessRoute(ge, "/hr/leave/import"), false);
   assert.equal(canAccessRoute(ge, "/hr/files"), false);
   assert.equal(canAccessRoute(ge, "/travel"), false);
   assert.equal(canAccessRoute(ge, "/travel/register"), false);
@@ -81,6 +82,14 @@ test("travel.view unlocks the travel hub that create-only staff cannot open", ()
   assert.equal(canAccessRoute(officer, "/travel/missions"), true);
   assert.equal(canAccessRoute(officer, "/travel/register"), true);
   assert.equal(canAccessRoute(ge, "/travel/missions"), false);
+});
+
+test("leave bulk import stays gated to HR administrators", () => {
+  const staff = { roles: ["staff"], permissions: ["leave.view", "leave.create", "hr.view"] };
+  const hr = { roles: ["HR Manager"], permissions: ["hr.admin", "leave.balance.import"] };
+  assert.equal(canAccessRoute(ge, "/hr/leave/import"), false);
+  assert.equal(canAccessRoute(staff, "/hr/leave/import"), false);
+  assert.equal(canAccessRoute(hr, "/hr/leave/import"), true);
 });
 
 test("asset import and labels stay gated to import/print permissions", () => {

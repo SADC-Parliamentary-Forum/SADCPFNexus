@@ -53,7 +53,7 @@ export default function AuditTrailIngestionPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Ingestion Health"
         subtitle="Outbox and dead-letter visibility for the platform audit trail."

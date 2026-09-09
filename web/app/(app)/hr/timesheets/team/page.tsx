@@ -317,7 +317,7 @@ export default function TeamTimesheetsPage() {
   const weekDays     = weekStart ? getWeekDays(weekStart) : [];
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <AppToast toast={toast} onClose={() => setToast(null)} />
 
       {/* Header */}

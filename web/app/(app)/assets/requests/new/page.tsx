@@ -33,7 +33,7 @@ export default function NewAssetRequestPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="w-full min-w-0 space-y-6">
       {/* Page header */}
       <div>
         <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
