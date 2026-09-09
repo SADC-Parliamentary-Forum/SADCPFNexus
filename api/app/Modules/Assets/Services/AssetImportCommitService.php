@@ -36,7 +36,7 @@ class AssetImportCommitService
             return ['batch' => $batch, 'equation' => $this->imports->equation($batch)];
         }
 
-        if ($approveNonBlocking) {
+        if ($approveNonBlocking && $this->imports->autoApproveAllowed()) {
             $this->imports->approve($batch, $user, [], true);
         }
 

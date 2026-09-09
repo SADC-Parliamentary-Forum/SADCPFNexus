@@ -1930,6 +1930,8 @@ Route::prefix('v1')->group(function () {
         Route::prefix('risk')->group(function () {
             Route::get('dashboard', [\App\Http\Controllers\Api\V1\Risk\RiskDashboardController::class, 'summary']);
             Route::get('lookups/objectives', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'listObjectives']);
+            Route::get('lookups/owners', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'listOwners']);
+            Route::post('mitigations', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'applyToRisks']);
             Route::get('audit-trail', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'auditTrail']);
             Route::get('matrix', [\App\Http\Controllers\Api\V1\Risk\RiskMatrixController::class, 'matrix']);
 

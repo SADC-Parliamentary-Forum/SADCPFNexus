@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { riskApi, type RiskMatrixData, type RiskDashboardData, type RiskCategory } from "@/lib/api";
@@ -87,7 +88,7 @@ export default function RiskAnalyticsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <RiskPageFrame>
       {/* Header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader
@@ -295,6 +296,6 @@ export default function RiskAnalyticsPage() {
           </div>
         )}
       </div>
-    </div>
+    </RiskPageFrame>
   );
 }

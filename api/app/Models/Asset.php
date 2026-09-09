@@ -6,10 +6,13 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Asset extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'tenant_id', 'asset_code', 'serial_number', 'tag_number', 'name',
         'manufacturer', 'model', 'category', 'asset_class', 'status', 'condition',
