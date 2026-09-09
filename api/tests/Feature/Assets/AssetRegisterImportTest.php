@@ -49,8 +49,11 @@ class AssetRegisterImportTest extends TestCase
         $res->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $this->assertStringContainsString('sadcpf-asset-import-template.xlsx', (string) $res->headers->get('content-disposition'));
 
+        $body = (string) $res->getContent();
+        $this->assertSame("PK\x03\x04", substr($body, 0, 4));
+
         $path = sys_get_temp_dir().'/downloaded-asset-template-'.uniqid().'.xlsx';
-        file_put_contents($path, $res->getContent());
+        file_put_contents($path, $body);
         $rows = (new \App\Modules\Assets\Import\NexusAssetTemplateParser)->parseFile($path, 'sadcpf-asset-import-template.xlsx');
         unlink($path);
 
