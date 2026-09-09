@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\User;
+use App\Modules\Assets\Export\AssetRegisterExportWorkbook;
 use App\Modules\Assets\Services\AssetQrService;
 use App\Modules\Assets\Services\AssetService;
 use Carbon\Carbon;
@@ -278,13 +279,31 @@ class AssetController extends Controller
     public function registerExport(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
     {
         $user = $request->user();
-        $rows = Asset::where('tenant_id', $user->tenant_id)
-            ->where('status', '!=', 'pending')
-            ->orderBy('asset_code')
-            ->get();
+        $query = Asset::where('tenant_id', $user->tenant_id)
+            ->with(['assignedUser:id,name,email', 'location:id,name,code']);
+
+        if (! $request->boolean('include_pending')) {
+            $query->where('status', '!=', 'pending');
+        }
+
+        $ids = $this->parseExportIds($request);
+        if ($ids !== []) {
+            $query->whereIn('id', $ids);
+        }
+
+        $rows = $query->orderBy('asset_code')->get();
 
         if ($request->input('format') === 'json') {
             return response()->json(['data' => $rows]);
+        }
+
+        if ($request->input('format') === 'xlsx') {
+            $filename = AssetRegisterExportWorkbook::FILENAME_PREFIX.now()->format('Ymd-His').'.xlsx';
+            $workbook = new AssetRegisterExportWorkbook($rows);
+
+            return response()->streamDownload(function () use ($workbook) {
+                $workbook->stream('php://output');
+            }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
         }
 
         $filename = 'fixed-asset-register-'.now()->format('Ymd-His').'.csv';
@@ -305,6 +324,28 @@ class AssetController extends Controller
             }
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    /** @return list<int> */
+    private function parseExportIds(Request $request): array
+    {
+        $raw = $request->input('ids');
+        $parts = [];
+        if (is_array($raw)) {
+            $parts = $raw;
+        } elseif (is_string($raw) && trim($raw) !== '') {
+            $parts = explode(',', $raw);
+        }
+
+        $ids = [];
+        foreach ($parts as $part) {
+            $id = (int) $part;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+
+        return array_values($ids);
     }
 
     public function dashboard(Request $request): JsonResponse

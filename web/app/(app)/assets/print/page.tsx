@@ -5,9 +5,13 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { assetsApi, type Asset } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { parsePrintAssetIds } from "@/lib/asset-register-print";
 
 const statusConfig: Record<string, string> = {
+  pending: "Pending capitalisation",
   active: "Active",
+  assigned: "Assigned",
+  available: "Available",
   service_due: "Service Due",
   loan_out: "Loan Out",
   retired: "Retired",
@@ -26,26 +30,25 @@ export default function AssetsPrintPage() {
       window.location.href = "/login";
       return;
     }
+    const wanted = parsePrintAssetIds(window.location.search);
     assetsApi
       .list({ per_page: 100 })
       .then((res) => {
         const data = (res.data as { data?: Asset[] }).data ?? [];
-        setAssets(data);
-        return data;
+        const want = new Set(wanted);
+        return want.size > 0 ? data.filter((asset) => want.has(asset.id)) : data;
       })
       .then((list) => {
+        setAssets(list);
         const blobs: Record<number, string> = {};
-        const promises = list
-          .filter((a) => a.qr_url || a.id)
-          .map((asset) =>
-            api
-              .get<Blob>(`/assets/${asset.id}/qr`, { responseType: "blob" })
-              .then((r) => {
-                const url = URL.createObjectURL(r.data);
-                blobs[asset.id] = url;
-              })
-              .catch(() => {})
-          );
+        const promises = list.map((asset) =>
+          api
+            .get<Blob>(`/assets/${asset.id}/qr`, { responseType: "blob" })
+            .then((r) => {
+              blobs[asset.id] = URL.createObjectURL(r.data);
+            })
+            .catch(() => {}),
+        );
         return Promise.all(promises).then(() => blobs);
       })
       .then((blobs) => {
@@ -108,26 +111,28 @@ export default function AssetsPrintPage() {
         <p className="text-sm text-neutral-500 mb-4">
           Generated {new Date().toLocaleDateString("en-GB")} – {assets.length} item(s)
         </p>
-        <table className="w-full border-collapse text-sm">
+        <table className="register-print-table w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-neutral-200">
-              <th className="text-left py-2 pr-4 font-semibold text-neutral-700">Code</th>
-              <th className="text-left py-2 pr-4 font-semibold text-neutral-700">Name</th>
-              <th className="text-left py-2 pr-4 font-semibold text-neutral-700">Category</th>
-              <th className="text-left py-2 pr-4 font-semibold text-neutral-700">Status</th>
-              <th className="text-left py-2 pr-4 font-semibold text-neutral-700 w-20">QR</th>
+              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">Code</th>
+              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">Name</th>
+              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">Category</th>
+              <th className="text-left py-2 pr-3 font-semibold text-neutral-700">Status</th>
+              <th className="text-left py-2 font-semibold text-neutral-700">Assigned to</th>
+              <th className="text-left py-2 font-semibold text-neutral-700 w-[12mm]">QR</th>
             </tr>
           </thead>
           <tbody>
             {assets.map((asset) => (
               <tr key={asset.id} className="border-b border-neutral-100">
-                <td className="py-2 pr-4 font-mono text-neutral-700">{asset.asset_code}</td>
-                <td className="py-2 pr-4 text-neutral-900">{asset.name}</td>
-                <td className="py-2 pr-4 capitalize text-neutral-700">{asset.category}</td>
-                <td className="py-2 pr-4 text-neutral-700">{statusConfig[asset.status] ?? asset.status}</td>
-                <td className="py-2 pr-4">
+                <td className="py-2 pr-3 font-mono text-neutral-700">{asset.asset_code}</td>
+                <td className="py-2 pr-3 text-neutral-900">{asset.name}</td>
+                <td className="py-2 pr-3 capitalize text-neutral-700">{asset.category}</td>
+                <td className="py-2 pr-3 text-neutral-700">{statusConfig[asset.status] ?? asset.status}</td>
+                <td className="py-2 pr-3 text-neutral-700">{asset.assigned_user?.name ?? "—"}</td>
+                <td className="py-2">
                   {qrBlobs[asset.id] ? (
-                    <img src={qrBlobs[asset.id]} alt="" className="h-14 w-14 object-contain" />
+                    <img src={qrBlobs[asset.id]} alt="" className="h-12 w-12 object-contain" />
                   ) : (
                     <span className="text-neutral-400">—</span>
                   )}
@@ -149,11 +154,24 @@ export default function AssetsPrintPage() {
         only the dedicated print block.
       */}
       <style jsx global>{`
+        @page {
+          size: A4 landscape;
+          margin: 10mm;
+        }
+        .register-print-table {
+          table-layout: fixed;
+          width: 100%;
+        }
+        .register-print-table th,
+        .register-print-table td {
+          overflow: hidden;
+          word-wrap: break-word;
+        }
         @media print {
           body * { visibility: hidden; }
           .print-only,
           .print-only * { visibility: visible; }
-          .print-only { position: absolute; left: 0; top: 0; width: 100%; }
+          .print-only { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; }
           .no-print { display: none !important; }
         }
       `}</style>
