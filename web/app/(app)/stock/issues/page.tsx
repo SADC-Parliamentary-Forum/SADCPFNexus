@@ -3,6 +3,7 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import { stockIssuesApi, type StockIssue } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 
 export default function StockIssuesPage() {
@@ -48,7 +49,7 @@ export default function StockIssuesPage() {
           {rows.map((r) => (
             <tr key={r.id} className="border-t border-neutral-100">
               <td className="px-4 py-2 font-medium">{r.voucher_number}</td>
-              <td className="px-4 py-2">{r.issue_date}</td>
+              <td className="px-4 py-2">{formatDateShort(r.issue_date)}</td>
               <td className="px-4 py-2">{r.issued_to_user?.name ?? "—"}</td>
               <td className="px-4 py-2">{r.status}</td>
               <td className="px-4 py-2">

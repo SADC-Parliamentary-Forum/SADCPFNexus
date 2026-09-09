@@ -8,6 +8,7 @@ import { canIssueStock, canManageStock, getStoredUser } from "@/lib/auth";
 import { StockMovementModal } from "@/components/stock/StockMovementModal";
 import { StockItemFormModal } from "@/components/stock/StockItemFormModal";
 import { stockCategoriesApi, type StockCategory } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 
 export default function StockItemDetailPage() {
   const params = useParams();
@@ -92,7 +93,7 @@ export default function StockItemDetailPage() {
           <tbody>
             {(item.transactions ?? []).map((t) => (
               <tr key={t.id} className="border-t border-neutral-100">
-                <td className="px-4 py-2">{String(t.transaction_date).slice(0, 10)}</td>
+                <td className="px-4 py-2">{formatDateShort(t.transaction_date)}</td>
                 <td className="px-4 py-2 capitalize">{t.type}</td>
                 <td className="px-4 py-2">{t.quantity}</td>
                 <td className="px-4 py-2">{t.reason_code ?? t.reason ?? "—"}</td>

@@ -63,3 +63,31 @@ test("stock catalogue copy is translated in EN, FR and PT", () => {
     assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
   }
 });
+
+test("stock pages format dates as 9 Sep 2026 and never dump ISO timestamps", () => {
+  const pages = [
+    ["app/(app)/stock/movements/page.tsx", /formatDateShort\(t\.transaction_date/],
+    ["app/(app)/stock/[id]/page.tsx", /formatDateShort\(t\.transaction_date/],
+    ["app/(app)/stock/issues/page.tsx", /formatDateShort\(r\.issue_date/],
+    ["app/(app)/stock/stocktakes/page.tsx", /formatDateShort\(r\.count_date/],
+    ["app/(app)/stock/stocktakes/[id]/page.tsx", /formatDateShort\(stocktake\.count_date/],
+    ["app/(app)/stock/batches/page.tsx", /formatDateShort\(/],
+  ] as const;
+
+  for (const [rel, pattern] of pages) {
+    const source = readFileSync(join(webRoot, rel), "utf8");
+    assert.match(source, /formatDateShort/, `${rel} should import/use formatDateShort`);
+    assert.match(source, pattern, `${rel} should format the visible date field`);
+    assert.doesNotMatch(source, /\{t\.transaction_date\}/, `${rel} dumps raw transaction_date`);
+    assert.doesNotMatch(source, /\{r\.issue_date\}/, `${rel} dumps raw issue_date`);
+    assert.doesNotMatch(source, /\{r\.count_date/, `${rel} dumps raw count_date`);
+    assert.doesNotMatch(source, /String\(r\.expiry_date \?\?/, `${rel} dumps raw expiry_date`);
+    assert.doesNotMatch(source, /count_date\)\.slice\(0,\s*10\)/, `${rel} shows YYYY-MM-DD via slice`);
+  }
+});
+
+test("object summaries format ISO timestamps as short dates", () => {
+  const source = readFileSync(join(webRoot, "components/ui/ObjectSummary.tsx"), "utf8");
+  assert.match(source, /formatDateShort/);
+  assert.match(source, /ISO_DATE|looksLikeIsoDate|formatDateShort\(/);
+});

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { stocktakesApi, type Stocktake, type StocktakeLine } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 
@@ -199,7 +200,7 @@ export default function StocktakeDetailPage() {
           <p className="text-xs font-mono text-neutral-400">{stocktake.reference_number}</p>
           <h1 className="page-title">{stocktake.name}</h1>
           <p className="page-subtitle capitalize">
-            Status: {stocktake.status.replace("_", " ")} · Count date: {String(stocktake.count_date).slice(0, 10)}
+            Status: {stocktake.status.replace("_", " ")} · Count date: {formatDateShort(stocktake.count_date)}
             {stocktake.is_blind ? " · Blind count" : ""}
           </p>
         </div>

@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { stocktakesApi, type Stocktake } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 
@@ -90,7 +91,7 @@ export default function StocktakesPage() {
                   <Link href={`/stock/stocktakes/${r.id}`} className="text-primary hover:underline">{r.reference_number}</Link>
                 </td>
                 <td className="px-4 py-2">{r.name}</td>
-                <td className="px-4 py-2">{r.count_date?.slice?.(0, 10) ?? r.count_date}</td>
+                <td className="px-4 py-2">{formatDateShort(r.count_date)}</td>
                 <td className="px-4 py-2 capitalize">{r.status.replace("_", " ")}</td>
                 <td className="px-4 py-2">{r.lines_count ?? "—"}</td>
               </tr>

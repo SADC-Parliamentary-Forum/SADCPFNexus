@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { stockTransactionsApi, stockItemsApi, type StockTransaction, type StockItem } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
+import { formatDateShort } from "@/lib/utils";
 import { StockMovementModal } from "@/components/stock/StockMovementModal";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
@@ -105,7 +106,7 @@ export default function StockMovementsPage() {
                   const cfg = typeConfig[t.type] ?? { label: t.type, cls: "badge-muted", icon: "swap_vert" };
                   return (
                     <tr key={t.id} className="hover:bg-neutral-50/80 transition-colors">
-                      <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">{t.transaction_date}</td>
+                      <td className="px-4 py-3 text-neutral-500 whitespace-nowrap">{formatDateShort(t.transaction_date)}</td>
                       <td className="px-4 py-3">
                         <p className="font-medium text-neutral-900">{t.item?.name ?? `#${t.stock_item_id}`}</p>
                         <p className="text-xs font-mono text-neutral-400">{t.item?.item_code}</p>
