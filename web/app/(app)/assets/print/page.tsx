@@ -5,7 +5,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { assetsApi, type Asset } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
-import { parsePrintAssetIds } from "@/lib/asset-register-print";
+import { collectPaginatedRows, parsePrintAssetIds } from "@/lib/asset-register-print";
 
 const statusConfig: Record<string, string> = {
   pending: "Pending capitalisation",
@@ -31,10 +31,13 @@ export default function AssetsPrintPage() {
       return;
     }
     const wanted = parsePrintAssetIds(window.location.search);
-    assetsApi
-      .list({ per_page: 100 })
-      .then((res) => {
-        const data = (res.data as { data?: Asset[] }).data ?? [];
+    collectPaginatedRows((page) =>
+      assetsApi.list({ per_page: 100, page }).then((res) => ({
+        data: (res.data as { data?: Asset[]; last_page?: number }).data ?? [],
+        last_page: (res.data as { last_page?: number }).last_page,
+      })),
+    )
+      .then((data) => {
         const want = new Set(wanted);
         return want.size > 0 ? data.filter((asset) => want.has(asset.id)) : data;
       })

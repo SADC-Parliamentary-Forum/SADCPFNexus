@@ -74,11 +74,45 @@ export function printPageHref(ids: number[]): string {
   return `/assets/print?ids=${ids.join(",")}`;
 }
 
-export function registerExportQuery(ids: number[]): Record<string, string | number> {
+export type RegisterExportFilters = {
+  status?: string;
+  category?: string;
+  search?: string;
+};
+
+export function registerExportQuery(
+  ids: number[],
+  filters?: RegisterExportFilters,
+): Record<string, string | number> {
   const params: Record<string, string | number> = {
     format: "xlsx",
     include_pending: 1,
   };
-  if (ids.length > 0) params.ids = ids.join(",");
+  if (ids.length > 0) {
+    params.ids = ids.join(",");
+    return params;
+  }
+  if (filters?.status && filters.status !== "all") params.status = filters.status;
+  if (filters?.category && filters.category !== "all") params.category = filters.category;
+  const search = filters?.search?.trim();
+  if (search) params.search = search;
   return params;
+}
+
+export type PaginatedSlice<T> = { data: T[]; last_page?: number };
+
+/** Walk Laravel-style pages until last_page so print/export is not capped at 100. */
+export async function collectPaginatedRows<T>(
+  fetchPage: (page: number) => Promise<PaginatedSlice<T>>,
+  maxPages = 50,
+): Promise<T[]> {
+  const all: T[] = [];
+  for (let page = 1; page <= maxPages; page += 1) {
+    const slice = await fetchPage(page);
+    const rows = slice.data ?? [];
+    all.push(...rows);
+    const last = Math.max(1, Number(slice.last_page) || page);
+    if (page >= last || rows.length === 0) break;
+  }
+  return all;
 }

@@ -78,4 +78,42 @@ class AssetRegisterExportTest extends TestCase
 
         $http->get('/api/v1/assets/register-export')->assertOk();
     }
+
+    public function test_staff_without_assets_view_cannot_export_register(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+
+        $http->get('/api/v1/assets/register-export?format=json')->assertForbidden();
+    }
+
+    public function test_assets_view_can_export_register(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeUser('staff', $tenant);
+        $user->givePermissionTo('assets.view');
+        $http = $this->asUser($user);
+
+        $http->getJson('/api/v1/assets/register-export?format=json')->assertOk();
+    }
+
+    public function test_json_export_applies_status_and_search_when_ids_omitted(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $category = $this->makeCategory($tenant);
+        $keep = $this->makeAsset($tenant, $category, ['name' => 'Keep Laptop', 'asset_code' => 'KEEP-F1', 'status' => 'active']);
+        $this->makeAsset($tenant, $category, ['name' => 'Other Laptop', 'asset_code' => 'SKIP-F1', 'status' => 'retired']);
+        $this->makeAsset($tenant, $category, ['name' => 'Keep Chair', 'asset_code' => 'SKIP-F2', 'status' => 'active']);
+
+        $codes = collect(
+            $http->getJson('/api/v1/assets/register-export?format=json&include_pending=1&status=active&search=Keep')
+                ->assertOk()
+                ->json('data')
+        )->pluck('asset_code')->all();
+
+        $this->assertContains($keep->asset_code, $codes);
+        $this->assertNotContains('SKIP-F1', $codes);
+        $this->assertNotContains('SKIP-F2', $codes);
+    }
 }

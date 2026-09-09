@@ -12,6 +12,7 @@ import {
   A4_LANDSCAPE_WIDTH_MM,
   REGISTER_PDF_COLUMNS,
   REGISTER_PDF_MARGIN_MM,
+  collectPaginatedRows,
   printPageHref,
   registerExportQuery,
   registerPdfAvailableWidth,
@@ -593,9 +594,13 @@ export default function AssetsPage() {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    assetsApi
-      .list({ per_page: 100 })
-      .then((res) => setAssets((res.data as { data?: Asset[] }).data ?? []))
+    collectPaginatedRows((page) =>
+      assetsApi.list({ per_page: 100, page }).then((res) => ({
+        data: (res.data as { data?: Asset[]; last_page?: number }).data ?? [],
+        last_page: (res.data as { last_page?: number }).last_page,
+      })),
+    )
+      .then(setAssets)
       .catch(() => setError("Failed to load assets."))
       .finally(() => setLoading(false));
   }, []);
@@ -688,7 +693,13 @@ export default function AssetsPage() {
     setExportingExcel(true);
     setError(null);
     try {
-      const res = await assetsApi.registerExport(registerExportQuery(exportIds));
+      const res = await assetsApi.registerExport(
+        registerExportQuery(selection.selectedCount > 0 ? exportIds : [], {
+          status: filterStatus,
+          category: filterCategory,
+          search,
+        }),
+      );
       const blob = res.data as Blob;
       const type = (blob.type || "").toLowerCase();
       const peek = await blob.slice(0, 8).text();
@@ -1037,7 +1048,13 @@ export default function AssetsPage() {
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs font-mono text-neutral-400">{asset.asset_code}</span>
+                            <Link
+                              href={`/assets/${asset.id}`}
+                              className="text-xs font-mono text-neutral-400 hover:text-primary"
+                              data-testid="asset-register-view"
+                            >
+                              {asset.asset_code}
+                            </Link>
                             <span className={`badge ${s.cls}`}>{s.label}</span>
                             {asset.custody_state === "pending_acceptance" && (
                               <span className="badge badge-warning">{t("assets.register.pendingAcceptance")}</span>
@@ -1046,7 +1063,13 @@ export default function AssetsPage() {
                               <span className="badge badge-warning">{t("assets.register.pendingReturn")}</span>
                             )}
                           </div>
-                          <p className="text-sm font-semibold text-neutral-900 mt-0.5 truncate">{asset.name}</p>
+                          <Link
+                            href={`/assets/${asset.id}`}
+                            className="text-sm font-semibold text-neutral-900 mt-0.5 truncate hover:text-primary block"
+                            data-testid="asset-register-view"
+                          >
+                            {asset.name}
+                          </Link>
                           <p className="text-xs text-neutral-500 mt-1 capitalize">{asset.category}</p>
                           {(asset.current_value != null || asset.value != null) && (
                             <p className="text-xs text-neutral-500 mt-0.5">

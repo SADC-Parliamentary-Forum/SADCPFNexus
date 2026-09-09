@@ -9,6 +9,7 @@ import {
   A4_PORTRAIT_WIDTH_MM,
   REGISTER_PDF_COLUMNS,
   REGISTER_PDF_MARGIN_MM,
+  collectPaginatedRows,
   parsePrintAssetIds,
   printPageHref,
   registerExportQuery,
@@ -61,13 +62,46 @@ test("print page href carries selected ids", () => {
   assert.deepEqual(parsePrintAssetIds(""), []);
 });
 
-test("excel export query uses xlsx and optional ids", () => {
+test("excel export query uses xlsx, optional ids, and list filters when exporting all", () => {
   assert.deepEqual(registerExportQuery([]), { format: "xlsx", include_pending: 1 });
   assert.deepEqual(registerExportQuery([4, 5]), {
     format: "xlsx",
     include_pending: 1,
     ids: "4,5",
   });
+  assert.deepEqual(
+    registerExportQuery([], { status: "active", category: "it", search: "laptop" }),
+    { format: "xlsx", include_pending: 1, status: "active", category: "it", search: "laptop" },
+  );
+});
+
+test("collectPaginatedRows walks every Laravel page", async () => {
+  const rows = await collectPaginatedRows(async (page) => {
+    if (page === 1) return { data: [{ id: 1 }, { id: 2 }], last_page: 2 };
+    return { data: [{ id: 3 }], last_page: 2 };
+  });
+  assert.deepEqual(rows.map((row) => row.id), [1, 2, 3]);
+});
+
+test("asset register loads every page and links through to a view page", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
+  const detail = readFileSync(join(webRoot, "app/(app)/assets/[id]/page.tsx"), "utf8");
+  assert.match(page, /collectPaginatedRows/);
+  assert.match(page, /data-testid=["']asset-register-view["']/);
+  assert.match(page, /href=\{`\/assets\/\$\{asset\.id\}`\}/);
+  assert.match(detail, /assetsApi\s*\n\s*\.get\(/);
+  assert.match(detail, /formatDateShort/);
+  assert.match(detail, /data-testid=["']asset-view-title["']/);
+  assert.match(detail, /href=["']\/assets["']/);
+});
+
+test("print page walks every register page so Print all is not capped at 100", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/assets/print/page.tsx"), "utf8");
+  assert.match(page, /collectPaginatedRows\(\(page\)/);
+  assert.match(page, /parsePrintAssetIds/);
+  assert.match(page, /size:\s*A4 landscape/);
+  assert.match(page, /table-layout:\s*fixed/);
+  assert.match(page, /h-12 w-12|12mm/);
 });
 
 test("assets.print (or manage/admin) can print labels from the register", () => {
@@ -94,14 +128,6 @@ test("asset register offers select, print, excel, and quick labels", () => {
   assert.doesNotMatch(page, /href=["']\/assets\/print["']/);
 });
 
-test("print page filters by ids and uses a landscape sheet that fits", () => {
-  const page = readFileSync(join(webRoot, "app/(app)/assets/print/page.tsx"), "utf8");
-  assert.match(page, /parsePrintAssetIds/);
-  assert.match(page, /size:\s*A4 landscape/);
-  assert.match(page, /table-layout:\s*fixed/);
-  assert.match(page, /h-12 w-12|12mm/);
-});
-
 test("assetsApi can download an Excel register export", () => {
   const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
   assert.match(api, /registerExport:\s*\(params/);
@@ -120,6 +146,13 @@ test("register print and export copy is translated in EN, FR and PT", () => {
     "assets.register.exportEmpty",
     "assets.register.exportFailed",
     "assets.register.needTemplate",
+    "assets.view",
+    "assets.viewTitle",
+    "assets.notFound",
+    "assets.loadFailed",
+    "assets.register.title",
+    "assets.view.fieldCode",
+    "assets.view.fieldNotes",
   ];
   for (const key of keys) {
     const en = translate("en", key);
