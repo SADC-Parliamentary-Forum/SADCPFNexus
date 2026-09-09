@@ -284,6 +284,22 @@ class NotificationService
                 'subject' => 'SADC Parliamentary Forum — Local Purchase Order {{reference}}',
                 'body'    => "Dear {{name}},\n\nPlease find Local Purchase Order {{reference}} ({{amount}}).\n\nRegards,\nSADC Parliamentary Forum Procurement",
             ],
+            'assets.acknowledgement_required' => [
+                'subject' => 'Accept custody of {{tag}}',
+                'body'    => "Dear {{name}},\n\n{{asset}} ({{tag}}) has been assigned to you. Please open My Assets and Accept or Decline to verify custody.\n\nRegards,\nSADC-PF Administration",
+            ],
+            'assets.assignment_declined' => [
+                'subject' => 'Assignment declined — {{tag}}',
+                'body'    => "Dear {{name}},\n\n{{asset}} ({{tag}}) was declined by the recipient.\n\nReason: {{reason}}\n\nRegards,\nSADC-PF Administration",
+            ],
+            'assets.return_requested' => [
+                'subject' => 'Asset return requested — {{tag}}',
+                'body'    => "Dear {{name}},\n\nA return has been requested for {{asset}} ({{tag}}). Please confirm in Nexus.\n\nRegards,\nSADC-PF Administration",
+            ],
+            'assets.returned' => [
+                'subject' => 'Asset return confirmed — {{tag}}',
+                'body'    => "Dear {{name}},\n\nReturn of {{asset}} ({{tag}}) has been confirmed. You are no longer the custodian.\n\nRegards,\nSADC-PF Administration",
+            ],
             'procurement.submitted' => [
                 'subject' => 'Procurement request submitted — Action required',
                 'body'    => "Dear {{name}},\n\nA procurement request ({{reference}}) has been submitted by {{requester}} for approval.\n\nDescription: {{description}}\nEstimated value: {{amount}}\n\nPlease review and action this request.\n\nRegards,\nSADC-PF Nexus",
