@@ -185,7 +185,7 @@ export default function AssignmentDetailPage() {
   const canCancel = !["completed", "cancelled"].includes(assignment.status);
 
   return (
-    <div className="p-6 space-y-5 max-w-4xl mx-auto">
+    <div className="w-full min-w-0 space-y-5">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-sm text-neutral-500">
         <Link href="/hr" className="hover:text-primary">HR</Link>

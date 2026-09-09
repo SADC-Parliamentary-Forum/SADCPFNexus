@@ -596,7 +596,7 @@ export default function PifEditPage() {
   );
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 pb-4">
+    <div className="w-full min-w-0 space-y-6 pb-4">
       <ModulePageHeader
         title="Edit Programme Implementation Form"
         subtitle="Answer only what this activity needs. Each page saves when you continue — leave and return anytime."

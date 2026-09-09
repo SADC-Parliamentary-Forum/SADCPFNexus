@@ -39,7 +39,7 @@ export default function StockDashboardPage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Consumables dashboard"
         subtitle="Stores KPIs for paper, toner, stationery and other consumables — separate from fixed assets."

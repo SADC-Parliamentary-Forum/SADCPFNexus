@@ -93,7 +93,7 @@ export default function BudgetDashboardPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/finance" className="hover:text-primary transition-colors">
           Finance

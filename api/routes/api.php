@@ -665,6 +665,8 @@ Route::prefix('v1')->group(function () {
             Route::get('team-calendar', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'teamCalendar']);
             Route::get('my-calendar', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'myCalendar']);
             Route::get('register/export', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'registerExport']);
+            Route::get('import/template', [\App\Http\Controllers\Api\V1\Leave\LeaveImportController::class, 'template']);
+            Route::post('import', [\App\Http\Controllers\Api\V1\Leave\LeaveImportController::class, 'store']);
             Route::get('requests/{badLeaveRequest}', fn () => abort(404))->where('badLeaveRequest', '[^0-9]+');
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
                 ->parameters(['requests' => 'leaveRequest'])
@@ -1929,6 +1931,8 @@ Route::prefix('v1')->group(function () {
         Route::prefix('risk')->group(function () {
             Route::get('dashboard', [\App\Http\Controllers\Api\V1\Risk\RiskDashboardController::class, 'summary']);
             Route::get('lookups/objectives', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'listObjectives']);
+            Route::get('lookups/owners', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'listOwners']);
+            Route::post('mitigations', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'applyToRisks']);
             Route::get('audit-trail', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'auditTrail']);
             Route::get('matrix', [\App\Http\Controllers\Api\V1\Risk\RiskMatrixController::class, 'matrix']);
 

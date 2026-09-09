@@ -620,7 +620,7 @@ function TravelCreatePageInner() {
 
   if (loadingDraft) {
     return (
-      <div className="mx-auto max-w-4xl space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <div className="h-6 w-48 animate-pulse rounded bg-neutral-100" />
         <div className="h-40 animate-pulse rounded-xl bg-neutral-50" />
         <p className="text-sm text-neutral-400">Loading travel request…</p>
@@ -629,7 +629,7 @@ function TravelCreatePageInner() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={editId ? "Edit Travel Request" : "New Travel Request"}
         subtitle={

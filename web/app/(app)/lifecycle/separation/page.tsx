@@ -17,7 +17,7 @@ export default function LifecycleSeparationQueuePage() {
   const cases = casesQuery.data ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Separation queue"
         subtitle="Clearance cases — terminal payment stays blocked until authorised clearance."

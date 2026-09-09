@@ -55,7 +55,7 @@ export default function CataloguePage() {
   const vendorList = Array.isArray(vendors) ? vendors : [];
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Supplier Catalogue"
         subtitle="Price/rate catalogue with version history on updates. Usable when linking PR/stock items."

@@ -240,7 +240,7 @@ export default function HrDocumentsPage() {
   // ── Skeleton loading ──
   if (loading) {
     return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
         <SkeletonPage />
       </div>
     );
@@ -253,7 +253,7 @@ export default function HrDocumentsPage() {
   const showFallback = apiAvailable === null || (apiAvailable && documents.length === 0);
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-neutral-400">
         <Link href="/hr" className="hover:text-neutral-600">HR</Link>

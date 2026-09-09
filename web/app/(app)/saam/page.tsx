@@ -708,7 +708,7 @@ export default function SaamPage() {
   });
 
   return (
-    <div className="max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Page header */}
       <ModulePageHeader
         title="Signatures & Authority"

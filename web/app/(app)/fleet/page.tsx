@@ -94,7 +94,7 @@ export default function FleetListPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Fleet"
         subtitle="Ops layer on Fixed Assets with category fleet — vehicles, drivers roster, and booking calendar. GPS uses a pluggable telematics provider when configured, or a manual override otherwise."

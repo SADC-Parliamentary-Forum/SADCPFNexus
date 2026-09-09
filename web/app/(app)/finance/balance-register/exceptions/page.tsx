@@ -98,7 +98,7 @@ export default function ExceptionsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/finance" className="hover:text-primary transition-colors">Finance</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>

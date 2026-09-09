@@ -121,7 +121,7 @@ export default function NewConductRecordPage() {
   const selectedType = RECORD_TYPES.find((t) => t.id === recordType)!;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-2">
         <Link href="/hr/conduct" className="text-neutral-400 hover:text-neutral-600 transition-colors">

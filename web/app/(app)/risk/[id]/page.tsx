@@ -1,15 +1,21 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { riskApi, riskAttachmentsApi, policyApi, type Risk, type RiskAction, type RiskHistory, type RiskAttachment, type RiskDocumentType, type Policy } from "@/lib/api";
 import { readStoredUser } from "@/lib/session";
 import { useFormatDate } from "@/lib/useFormatDate";
 import RiskDocumentsPanel from "@/components/ui/RiskDocumentsPanel";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
+import { ApplyMitigationFields, EMPTY_MITIGATION, type MitigationDraft } from "@/components/risk/ApplyMitigationFields";
+import { buildMitigationFormData } from "@/lib/riskLookups";
+import { apiErrorMessage } from "@/lib/apiError";
 import axios from "axios";
 import { useToast } from "@/components/ui/Toast";
 import { Modal } from "@/components/ui/Modal";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -84,6 +90,7 @@ function SectionIcon({ icon, color, bg }: { icon: string; color: string; bg: str
 export default function RiskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: paramId } = use(params);
   const { fmt } = useFormatDate();
+  const { t } = useI18n();
 
   const [risk, setRisk]       = useState<Risk | null>(null);
   const [actions, setActions] = useState<RiskAction[]>([]);
@@ -94,7 +101,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
   // Action form
   const [showActionForm, setShowActionForm] = useState(false);
-  const [actionForm, setActionForm] = useState({ description: "", treatment_type: "mitigate", due_date: "" });
+  const [actionForm, setActionForm] = useState<MitigationDraft>(EMPTY_MITIGATION);
   const [savingAction, setSavingAction] = useState(false);
 
   // Workflow modals
@@ -177,15 +184,32 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
   async function handleAddAction(e: React.FormEvent) {
     e.preventDefault();
-    if (!risk) return;
+    if (!risk || !actionForm.description.trim()) return;
     setSavingAction(true);
     try {
-      const res = await riskApi.addAction(risk.id, actionForm as any);
-      setActions((prev) => [...prev, res.data.data]);
-      setActionForm({ description: "", treatment_type: "mitigate", due_date: "" });
+      await riskApi.applyMitigations(
+        buildMitigationFormData({
+          riskIds: [risk.id],
+          description: actionForm.description,
+          treatmentType: actionForm.treatment_type,
+          dueDate: actionForm.due_date || undefined,
+          file: actionForm.file,
+          documentType: "risk_mitigation_plan",
+        }),
+      );
+      const [acts, atts] = await Promise.all([
+        riskApi.listActions(risk.id),
+        riskAttachmentsApi.list(risk.id),
+      ]);
+      setActions(acts.data.data ?? []);
+      setAttachments(atts.data.data ?? []);
+      setActionForm(EMPTY_MITIGATION);
       setShowActionForm(false);
-    } catch { /* silent */ }
-    finally { setSavingAction(false); }
+    } catch (err: unknown) {
+      setError(apiErrorMessage(err, t("risk.mitigation.failed")));
+    } finally {
+      setSavingAction(false);
+    }
   }
 
   async function completeAction(action: RiskAction) {
@@ -198,7 +222,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
   if (loading) {
     return (
-      <div className="max-w-4xl space-y-4 animate-pulse">
+      <div className="mx-auto max-w-6xl space-y-4 animate-pulse">
         <div className="h-6 w-48 bg-neutral-200 rounded" />
         <div className="h-10 w-96 bg-neutral-200 rounded" />
         <div className="grid grid-cols-3 gap-4">
@@ -210,7 +234,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
   if (error || !risk) {
     return (
-      <div className="max-w-4xl">
+      <div className="mx-auto max-w-6xl">
         <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-sm text-red-700">{error ?? "Risk not found."}</div>
         <Link href="/risk" className="btn-secondary mt-4 inline-flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back
@@ -258,13 +282,19 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   return (
-    <div className="max-w-4xl space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm text-neutral-500">
-        <Link href="/risk" className="hover:text-primary">Risk Register</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="font-mono text-xs text-neutral-600">{risk.risk_code}</span>
-      </div>
+    <RiskPageFrame>
+      <ModulePageHeader
+        title={risk.title}
+        subtitle={risk.risk_code}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "risk.hub", href: "/risk" },
+              { label: risk.risk_code },
+            ]}
+          />
+        }
+      />
 
       <WorkflowStatusBanner
         status={risk.status}
@@ -466,46 +496,18 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
             {showActionForm && (
               <form onSubmit={handleAddAction} className="bg-neutral-50 rounded-xl border border-neutral-200 p-4 mb-4 space-y-3">
-                <h3 className="text-xs font-semibold text-neutral-700">New Mitigation Action</h3>
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-1">Description <span className="text-red-500">*</span></label>
-                  <textarea
-                    className="form-input w-full h-20 resize-none text-sm"
-                    placeholder="Describe the action to be taken…"
-                    value={actionForm.description}
-                    onChange={(e) => setActionForm((p) => ({ ...p, description: e.target.value }))}
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-neutral-500 mb-1">Treatment Type</label>
-                    <select
-                      className="form-input w-full text-sm"
-                      value={actionForm.treatment_type}
-                      onChange={(e) => setActionForm((p) => ({ ...p, treatment_type: e.target.value }))}
-                    >
-                      <option value="mitigate">Mitigate</option>
-                      <option value="accept">Accept</option>
-                      <option value="transfer">Transfer</option>
-                      <option value="avoid">Avoid</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-neutral-500 mb-1">Due Date</label>
-                    <input
-                      type="date"
-                      className="form-input w-full text-sm"
-                      value={actionForm.due_date}
-                      onChange={(e) => setActionForm((p) => ({ ...p, due_date: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setShowActionForm(false)} className="btn-secondary text-xs py-1.5">Cancel</button>
+                <h3 className="text-xs font-semibold text-neutral-700">{t("risk.mitigation.hint")}</h3>
+                <ApplyMitigationFields
+                  idPrefix="risk-detail-mitigation"
+                  value={actionForm}
+                  onChange={setActionForm}
+                  required
+                />
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => setShowActionForm(false)} className="btn-secondary text-xs py-1.5">{t("common.cancel")}</button>
                   <button type="submit" disabled={savingAction} className="btn-primary text-xs py-1.5 flex items-center gap-1">
                     {savingAction && <span className="h-3 w-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
-                    Add Action
+                    {t("risk.mitigation.apply")}
                   </button>
                 </div>
               </form>
@@ -850,6 +852,6 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
             )}
         </Modal>
       )}
-    </div>
+    </RiskPageFrame>
   );
 }

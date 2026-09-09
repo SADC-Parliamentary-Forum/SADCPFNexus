@@ -29,7 +29,7 @@ export default function LowStockPage() {
   }, [load]);
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Low Stock / Reorder"
         subtitle="Items at or below their reorder level — replenish to avoid stock-outs."

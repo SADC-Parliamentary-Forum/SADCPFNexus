@@ -91,7 +91,7 @@ export default function CorrespondenceRetentionPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Retention & Legal Holds"
         subtitle="Set retention schedules and legal holds. Purge is blocked while a hold is active."

@@ -152,7 +152,7 @@ export default function FleetVehicleDetailPage() {
     : "Provider: disabled (manual stub)";
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={vehicle ? `${vehicle.asset_code} — ${vehicle.name}` : "Fleet vehicle"}
         subtitle="Trip / mileage, fuel, service due, GPS, and telematics mapping for this Fixed Asset vehicle."

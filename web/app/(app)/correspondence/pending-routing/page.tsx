@@ -55,7 +55,7 @@ export default function PendingSgRoutingPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Pending SG Routing"
         subtitle="Registered incoming items awaiting Secretary General routing and primary ownership."

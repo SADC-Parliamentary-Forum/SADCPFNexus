@@ -158,7 +158,7 @@ export default function HrProfileRequestsPage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full min-w-0 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {modal && (
         <ReviewModal
           request={modal.request}

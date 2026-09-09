@@ -18,7 +18,7 @@ export default function AuditAnalyticsPage() {
   const rating = (data?.rating_distribution ?? {}) as Record<string, number>;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <ModulePageHeader
           title="audit.analytics.title"

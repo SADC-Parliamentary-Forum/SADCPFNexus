@@ -417,7 +417,7 @@ export default function WeeklyDepartmentPage() {
   const rollupPeriod = report?.period ? periodLabel(report.period) : selectedPeriod ? periodLabel(selectedPeriod) : "—";
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Department Summary"
         subtitle="Consolidates selected employee items — does not rewrite original reports. AI draft never auto-submits."

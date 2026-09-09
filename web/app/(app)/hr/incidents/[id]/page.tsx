@@ -86,7 +86,7 @@ export default function IncidentDetailPage() {
 
   if (error && !incident) {
     return (
-      <div className="space-y-4 max-w-2xl">
+      <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
         <Link href="/hr/incidents" className="text-sm font-semibold text-primary hover:underline">Back to Incidents</Link>
       </div>
@@ -102,7 +102,7 @@ export default function IncidentDetailPage() {
   const canClose       = incident.status === "resolved";
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/hr" className="hover:text-primary transition-colors">HR</Link>

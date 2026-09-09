@@ -86,14 +86,14 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
   });
 
   if (isLoading) return (
-    <div className="max-w-3xl mx-auto space-y-5 animate-pulse">
+    <div className="w-full min-w-0 space-y-5 animate-pulse">
       <div className="h-4 w-48 bg-neutral-100 rounded" />
       <div className="card p-6 space-y-3"><div className="h-6 w-64 bg-neutral-100 rounded" /><div className="h-4 w-40 bg-neutral-100 rounded" /></div>
     </div>
   );
 
   if (isError || !po) return (
-    <div className="max-w-3xl mx-auto card p-8 text-center space-y-3">
+    <div className="w-full min-w-0 card p-8 text-center space-y-3">
       <span className="material-symbols-outlined text-4xl text-neutral-300">error</span>
       <p className="text-sm text-neutral-500">Purchase order not found.</p>
       <Link href="/procurement/purchase-orders" className="btn-secondary inline-flex items-center gap-1.5 text-sm py-2 px-4">Back</Link>
@@ -104,7 +104,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
   const items = po.items ?? [];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       {/* Tab Bar */}
       <div className="flex gap-1 border-b border-neutral-200">
         {(["details", "documents"] as const).map((tab) => (

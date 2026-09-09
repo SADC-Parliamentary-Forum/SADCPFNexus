@@ -188,7 +188,7 @@ export default function StrategicPlanDetailPage() {
   const goals = plan.goals ?? [];
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <Link href="/mande/strategic-plan" className="text-xs text-primary hover:underline">← Strategic plans</Link>
         <h1 className="page-title mt-1">{plan.name}</h1>

@@ -21,7 +21,7 @@ export default function TravelFinanceDashboardPage() {
   });
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-5">
+    <div className="p-6 w-full min-w-0 space-y-5">
       <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Finance Travel Dashboard"

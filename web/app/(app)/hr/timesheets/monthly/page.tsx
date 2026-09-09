@@ -187,7 +187,7 @@ export default function MonthlyTimesheetPage() {
   const draftCount     = timesheets.filter((ts) => ts.status === "draft" || !ts.status).length;
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

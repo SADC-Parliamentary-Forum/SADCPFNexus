@@ -133,7 +133,7 @@ export default function TimesheetDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="w-full min-w-0 space-y-6">
         <div className="h-4 w-48 bg-neutral-100 rounded animate-pulse" />
         <div className="h-7 w-64 bg-neutral-100 rounded animate-pulse" />
         <SkeletonCard />
@@ -144,7 +144,7 @@ export default function TimesheetDetailPage() {
 
   if (error || !timesheet) {
     return (
-      <div className="max-w-5xl mx-auto">
+      <div className="w-full min-w-0">
         <div className="card p-8 text-center">
           <span className="material-symbols-outlined text-[48px] text-neutral-300">error</span>
           <p className="mt-3 text-sm text-neutral-600">{error ?? "Timesheet not found."}</p>
@@ -197,7 +197,7 @@ export default function TimesheetDetailPage() {
   ];
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-neutral-500">
         <Link href="/hr/timesheets" className="hover:text-primary transition-colors">Timesheets</Link>

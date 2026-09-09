@@ -388,7 +388,7 @@ export default function GenerateLedgerReportPage() {
   const stepContent = [renderStep0, renderStep1, renderStep2];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 text-sm text-neutral-500">
         <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>

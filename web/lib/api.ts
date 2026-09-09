@@ -2935,6 +2935,23 @@ export const leaveApi = {
     api.delete(`/leave/requests/${id}/attachments/${attachmentId}`),
   downloadAttachmentUrl: (id: number, attachmentId: number) =>
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/leave/requests/${id}/attachments/${attachmentId}/download`,
+  importTemplate: () =>
+    api.get<Blob>("/leave/import/template", { responseType: "blob" }),
+  import: (file: File, commit = false) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("commit", commit ? "1" : "0");
+    return api.post<{
+      message: string;
+      data: {
+        rows: Array<Record<string, string | number | null>>;
+        errors: Array<{ row: number; message: string }>;
+        created: number;
+        skipped: number;
+        balances: number;
+      };
+    }>("/leave/import", fd);
+  },
 };
 
 export interface LilAccrual {
@@ -7989,6 +8006,8 @@ export interface RiskObjectiveOption {
 export const riskApi = {
   listObjectives: () =>
     api.get<{ data: RiskObjectiveOption[] }>("/risk/lookups/objectives"),
+  listOwners: () =>
+    api.get<{ data: TenantUserOption[] }>("/risk/lookups/owners"),
   list: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Risk>>("/risk/risks", { params }),
   get: (id: number) =>
@@ -8029,6 +8048,10 @@ export const riskApi = {
     api.post<{ data: RiskAction; message: string }>(`/risk/risks/${riskId}/actions/${actionId}/complete`),
   deleteAction: (riskId: number, actionId: number) =>
     api.delete<{ message: string }>(`/risk/risks/${riskId}/actions/${actionId}`),
+  applyMitigations: (data: FormData) =>
+    api.post<{ message: string; applied: number }>("/risk/mitigations", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 
   // Matrix
   getMatrix: (params?: { exclude_closed?: boolean }) =>

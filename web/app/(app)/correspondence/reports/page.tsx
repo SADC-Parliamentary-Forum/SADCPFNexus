@@ -22,7 +22,7 @@ export default function CorrespondenceReportsPage() {
   ];
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Correspondence Reports"
         subtitle="Operational summary for the register (access-scoped)."

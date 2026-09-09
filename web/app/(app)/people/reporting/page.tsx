@@ -85,7 +85,7 @@ const chart = (await peopleAuthorityApi.orgChart()).data.data as any; return cha
   }, [filtered]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Reporting Relationships"
         subtitle="People & Authority register"

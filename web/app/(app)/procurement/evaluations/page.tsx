@@ -13,7 +13,7 @@ export default function EvaluationsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Evaluations"
         subtitle="Technical-first / two-envelope scoring for opened tenders. COI still required before assess/award. Financials stay sealed until open."

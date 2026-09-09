@@ -98,7 +98,7 @@ export default function CorrespondenceMailboxPage() {
   const settings = settingsQuery.data;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Registry Mailbox"
         subtitle="Suggestion-only intake for the designated registry mailbox. Not all-employee email ingest, and nothing auto-submits."
