@@ -378,7 +378,7 @@ export default function WorkplanEventDetailPage() {
   const statusColor = isUpcoming ? "bg-blue-100 text-blue-700 border-blue-200" : isPast ? "bg-green-100 text-green-700 border-green-200" : "bg-amber-100 text-amber-700 border-amber-200";
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1 text-sm text-neutral-500">
         <Link href="/workplan" className="hover:text-primary transition-colors">Workplan</Link>

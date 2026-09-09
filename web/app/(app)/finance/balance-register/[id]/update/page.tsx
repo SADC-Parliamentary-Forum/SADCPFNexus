@@ -110,7 +110,7 @@ export default function UpdateBalancePage() {
   }
 
   return (
-    <div className="p-6 space-y-5 max-w-2xl">
+    <div className="w-full min-w-0 p-6 space-y-5">
       {/* Breadcrumb */}
       <nav className="text-sm text-neutral-500 flex items-center gap-1 flex-wrap">
         <Link href="/finance/balance-register" className="hover:text-primary">Balance Register</Link>

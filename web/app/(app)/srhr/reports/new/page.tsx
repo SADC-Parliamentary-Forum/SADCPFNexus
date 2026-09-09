@@ -380,7 +380,7 @@ function NewReportPageInner() {
 
 export default function NewReportPage() {
   return (
-    <Suspense fallback={<div className="max-w-2xl p-6 text-sm text-neutral-500">Loading…</div>}>
+    <Suspense fallback={<div className="w-full min-w-0 p-6 text-sm text-neutral-500">Loading…</div>}>
       <NewReportPageInner />
     </Suspense>
   );

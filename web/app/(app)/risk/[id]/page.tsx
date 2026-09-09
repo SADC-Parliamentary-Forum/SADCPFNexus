@@ -198,7 +198,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
   if (loading) {
     return (
-      <div className="max-w-4xl space-y-4 animate-pulse">
+      <div className="w-full min-w-0 space-y-4 animate-pulse">
         <div className="h-6 w-48 bg-neutral-200 rounded" />
         <div className="h-10 w-96 bg-neutral-200 rounded" />
         <div className="grid grid-cols-3 gap-4">
@@ -210,7 +210,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
 
   if (error || !risk) {
     return (
-      <div className="max-w-4xl">
+      <div className="w-full min-w-0">
         <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-sm text-red-700">{error ?? "Risk not found."}</div>
         <Link href="/risk" className="btn-secondary mt-4 inline-flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back
@@ -258,7 +258,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm text-neutral-500">
         <Link href="/risk" className="hover:text-primary">Risk Register</Link>

@@ -80,7 +80,7 @@ export default function UploadSignaturePage() {
   }
 
   return (
-    <div className="max-w-xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Upload Your Signature"
         subtitle="Upload a PNG or SVG image of your signature. Max file size: 512 KB."

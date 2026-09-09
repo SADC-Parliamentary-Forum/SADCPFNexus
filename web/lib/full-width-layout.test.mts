@@ -37,12 +37,42 @@ test("HR module pages do not centre a max-width column", () => {
     "app/(app)/hr/files/page.tsx",
     "app/(app)/hr/departments/page.tsx",
     "app/(app)/hr/positions/page.tsx",
+    "app/dashboard/page.tsx",
+    "app/(app)/analytics/page.tsx",
+    "app/(app)/workplan/page.tsx",
+    "app/(app)/correspondence/letterhead/page.tsx",
   ];
   for (const rel of pages) {
     const source = readFileSync(join(webRoot, rel), "utf8");
     assert.doesNotMatch(
       source,
-      /className="[^"]*mx-auto max-w-(2xl|3xl|4xl|5xl|6xl)/,
+      /className="[^"]*mx-auto max-w-(2xl|3xl|4xl|5xl|6xl|7xl)/,
+      `${rel} still centres a max-width page shell`,
+    );
+    assert.doesNotMatch(
+      source,
+      /className="[^"]*w-full min-w-0[^"]*mx-auto/,
+      `${rel} still centres after filling the column`,
+    );
+  }
+});
+
+test("authenticated module canvases fill the AppShell column", () => {
+  const pages = [
+    "app/(app)/admin/settings/page.tsx",
+    "app/(app)/risk/[id]/page.tsx",
+    "app/(app)/salary-advances/[id]/page.tsx",
+    "app/(app)/people/onboarding/page.tsx",
+    "app/(app)/people/offboarding/page.tsx",
+    "app/(app)/saam/verify/page.tsx",
+    "app/(app)/saam/verify/upload/page.tsx",
+  ];
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, rel), "utf8");
+    assert.match(source, /w-full min-w-0/, `${rel} should fill the content column`);
+    assert.doesNotMatch(
+      source,
+      /className="[^"]*mx-auto max-w-(lg|xl|2xl|3xl|4xl|5xl|6xl|7xl)/,
       `${rel} still centres a max-width page shell`,
     );
   }

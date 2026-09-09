@@ -13,6 +13,8 @@ import {
   type AdminLeaveBalanceRow,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { canAccessRoute, getStoredUser } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Initialize Year Modal ────────────────────────────────────────────────────
 
@@ -179,6 +181,8 @@ const YEAR_OPTIONS = [CURRENT_YEAR + 1, CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function LeaveBalancesPage() {
+  const { t } = useI18n();
+  const canImport = canAccessRoute(getStoredUser(), "/hr/leave/import");
   const [users, setUsers] = useState<TenantUserOption[]>([]);
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [adminBalances, setAdminBalances] = useState<AdminLeaveBalanceRow[]>([]);
@@ -420,10 +424,12 @@ export default function LeaveBalancesPage() {
             <span className="material-symbols-outlined text-[16px]">bolt</span>
             Initialize {selectedYear}
           </button>
-          <Link href="/hr/leave/import" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[16px]">upload_file</span>
-            Bulk import
-          </Link>
+          {canImport && (
+            <Link href="/hr/leave/import" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">upload_file</span>
+              {t("leave.import.cta")}
+            </Link>
+          )}
           <Link href="/hr/leave" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[16px]">event_note</span>
             Leave Requests

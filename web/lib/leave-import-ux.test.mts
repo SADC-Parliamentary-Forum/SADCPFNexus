@@ -25,6 +25,10 @@ test("staff leave register and balances link to bulk import", () => {
   const balances = readFileSync(join(webRoot, "app/(app)/hr/leave/balances/page.tsx"), "utf8");
   assert.match(register, /href="\/hr\/leave\/import"/);
   assert.match(balances, /href="\/hr\/leave\/import"/);
+  assert.match(register, /canAccessRoute/);
+  assert.match(balances, /canAccessRoute/);
+  assert.match(register, /leave\.import\.cta/);
+  assert.match(balances, /leave\.import\.cta/);
 });
 
 test("leave API client exposes import preview and template download", () => {

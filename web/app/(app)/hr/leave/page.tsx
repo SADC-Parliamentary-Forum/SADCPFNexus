@@ -9,6 +9,8 @@ import { RegisterShell, type RegisterDensity } from "@/components/registers/Regi
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
 import { useFormatDate } from "@/lib/useFormatDate";
+import { canAccessRoute, getStoredUser } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_BADGE: Record<string, string> = {
   approved:  "badge-success",
@@ -109,6 +111,8 @@ function SkeletonRow() {
 export default function HRLeavePage() {
   const { success, error: showErrorToast, info } = useToast();
   const { fmt } = useFormatDate();
+  const { t } = useI18n();
+  const canImport = canAccessRoute(getStoredUser(), "/hr/leave/import");
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -270,10 +274,12 @@ export default function HRLeavePage() {
           <Link href="/leave" className="btn-secondary text-sm">
             My Leave
           </Link>
-          <Link href="/hr/leave/import" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1">
-            <span className="material-symbols-outlined text-[18px]">upload_file</span>
-            Bulk import
-          </Link>
+          {canImport && (
+            <Link href="/hr/leave/import" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span>
+              {t("leave.import.cta")}
+            </Link>
+          )}
           <button
             type="button"
             className="btn-secondary py-2 px-3 text-sm flex items-center gap-1 disabled:opacity-50"

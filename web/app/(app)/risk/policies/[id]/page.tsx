@@ -33,7 +33,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   if (loading) {
     return (
-      <div className="max-w-4xl space-y-4 animate-pulse">
+      <div className="w-full min-w-0 space-y-4 animate-pulse">
         <div className="h-6 w-48 bg-neutral-200 rounded" />
         <div className="h-32 bg-neutral-100 rounded-xl" />
       </div>
@@ -42,7 +42,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   if (error || !policy) {
     return (
-      <div className="max-w-4xl">
+      <div className="w-full min-w-0">
         <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-sm text-red-700">{error ?? "Policy not found."}</div>
         <Link href="/risk/policies" className="btn-secondary mt-4 inline-flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back
@@ -56,7 +56,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
   const daysToRenewal = renewalDate ? Math.floor((renewalDate.getTime() - Date.now()) / 86_400_000) : null;
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm text-neutral-500">
         <Link href="/risk" className="hover:text-primary">Risk Register</Link>

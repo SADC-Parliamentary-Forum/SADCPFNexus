@@ -36,7 +36,7 @@ export default function AuditTrailAlertsPage() {
   };
 
   return (
-    <div className="p-6 space-y-4 max-w-5xl">
+    <div className="w-full min-w-0 p-6 space-y-4">
       <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Security alerts"

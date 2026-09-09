@@ -89,7 +89,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
 
   if (loading) {
     return (
-      <div className="space-y-6 max-w-3xl">
+      <div className="w-full min-w-0 space-y-6">
         <div className="h-6 bg-neutral-100 rounded animate-pulse w-1/3" />
         <div className="card p-6 space-y-4">
           {Array.from({ length: 8 }).map((_, i) => (
@@ -107,7 +107,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
   const status = statusConfig[report.status];
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm text-neutral-500">
         <Link href="/srhr" className="hover:text-primary">SRHR</Link>
