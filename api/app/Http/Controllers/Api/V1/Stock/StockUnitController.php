@@ -5,15 +5,21 @@ namespace App\Http\Controllers\Api\V1\Stock;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\StockUnit;
+use App\Modules\Stock\Services\StockCatalogueService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class StockUnitController extends Controller
 {
+    public function __construct(private readonly StockCatalogueService $catalogue) {}
+
     public function index(Request $request): JsonResponse
     {
-        $units = StockUnit::forTenant($request->user()->tenant_id)
+        $tenantId = (int) $request->user()->tenant_id;
+        $this->catalogue->ensureUnits($tenantId);
+
+        $units = StockUnit::forTenant($tenantId)
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();

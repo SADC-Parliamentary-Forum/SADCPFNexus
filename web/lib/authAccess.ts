@@ -70,6 +70,9 @@ const STOCK_MANAGE_PERMISSIONS = ["stock.admin", "stock.manage", "stock.create",
 /** Permission(s) that allow recording stock movements (in/out/adjustment). */
 const STOCK_ISSUE_PERMISSIONS = ["stock.admin", "stock.manage", "stock.issue"];
 
+/** Matches API: only stock managers may create categories and units of measure. */
+const STOCK_CATALOGUE_PERMISSIONS = ["stock.admin", "stock.manage"];
+
 /**
  * True if the user can add or manage consumable stock items (not just view).
  */
@@ -77,6 +80,15 @@ export function canManageStock(user: AuthAccessUser | null | undefined): boolean
   if (!user) return false;
   if (isSystemAdmin(user)) return true;
   return hasPermission(user, STOCK_MANAGE_PERMISSIONS);
+}
+
+/**
+ * True if the user can create or edit stock categories and units of measure.
+ */
+export function canConfigureStockCatalogue(user: AuthAccessUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, STOCK_CATALOGUE_PERMISSIONS);
 }
 
 /**

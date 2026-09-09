@@ -7,17 +7,23 @@ use App\Http\Requests\Stock\StoreStockCategoryRequest;
 use App\Http\Requests\Stock\UpdateStockCategoryRequest;
 use App\Models\AuditLog;
 use App\Models\StockCategory;
+use App\Modules\Stock\Services\StockCatalogueService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class StockCategoryController extends Controller
 {
+    public function __construct(private readonly StockCatalogueService $catalogue) {}
+
     /**
      * List stock categories for the current tenant.
      */
     public function index(Request $request): JsonResponse
     {
-        $categories = StockCategory::forTenant($request->user()->tenant_id)
+        $tenantId = (int) $request->user()->tenant_id;
+        $this->catalogue->ensureCategories($tenantId);
+
+        $categories = StockCategory::forTenant($tenantId)
             ->withCount('items')
             ->orderBy('sort_order')
             ->orderBy('name')

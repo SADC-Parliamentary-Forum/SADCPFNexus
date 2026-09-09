@@ -69,12 +69,12 @@ class StockTest extends TestCase
 
         $http->postJson('/api/v1/stock/categories', [
             'name' => 'Toner & Cartridges',
-            'code' => 'toner',
-        ])->assertCreated()->assertJsonPath('data.code', 'toner');
+            'code' => 'toner_cartridges',
+        ])->assertCreated()->assertJsonPath('data.code', 'toner_cartridges');
 
         $this->assertDatabaseHas('stock_categories', [
             'tenant_id' => $tenant->id,
-            'code'      => 'toner',
+            'code'      => 'toner_cartridges',
         ]);
     }
 

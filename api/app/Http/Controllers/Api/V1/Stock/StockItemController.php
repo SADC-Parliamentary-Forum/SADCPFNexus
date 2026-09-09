@@ -95,7 +95,10 @@ class StockItemController extends Controller
             $item->refresh();
         }
 
-        return response()->json(['message' => 'Stock item created.', 'data' => $item->fresh()->load('category:id,name,code')], 201);
+        return response()->json([
+            'message' => 'Stock item created.',
+            'data'    => $item->fresh()->load(['category:id,name,code', 'unitOfMeasure:id,code,name']),
+        ], 201);
     }
 
     /**
@@ -131,7 +134,10 @@ class StockItemController extends Controller
     {
         $item = $this->stockService->updateItem($stockItem, $request->validated(), $request->user());
 
-        return response()->json(['message' => 'Stock item updated.', 'data' => $item->load('category:id,name,code')]);
+        return response()->json([
+            'message' => 'Stock item updated.',
+            'data'    => $item->load(['category:id,name,code', 'unitOfMeasure:id,code,name']),
+        ]);
     }
 
     /**

@@ -4,7 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { stockUnitsApi, type StockUnit } from "@/lib/api";
-import { canManageStock, getStoredUser } from "@/lib/auth";
+import { canConfigureStockCatalogue, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 
 export default function StockUnitsPage() {
@@ -24,7 +24,7 @@ export default function StockUnitsPage() {
   }, [toast]);
 
   useEffect(() => {
-    setCanManage(canManageStock(getStoredUser()));
+    setCanManage(canConfigureStockCatalogue(getStoredUser()));
     load();
   }, [load]);
 
@@ -48,7 +48,7 @@ export default function StockUnitsPage() {
       <ModulePageHeader
         title="Units of measure"
         subtitle="Controlled UoM for consumables (ream, box, pack, each…)."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Units of measure" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "Stock", href: "/stock" }, { label: "Units of measure" }]} />}
       />
 
       {canManage && (
@@ -67,6 +67,11 @@ export default function StockUnitsPage() {
 
       {loading ? (
         <p className="text-sm text-neutral-500">Loading…</p>
+      ) : items.length === 0 ? (
+        <div className="card p-12 text-center">
+          <p className="text-sm font-semibold text-neutral-600">No units of measure yet</p>
+          <p className="text-xs text-neutral-400 mt-1">Add units such as ream, box, pack, or each so items can be measured consistently.</p>
+        </div>
       ) : (
         <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
           <thead className="bg-neutral-50 text-left text-xs text-neutral-500">
