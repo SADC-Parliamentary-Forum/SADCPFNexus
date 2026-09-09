@@ -2,10 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import api from "@/lib/api";
 import { assetsApi, type Asset } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
-import { collectPaginatedRows, parsePrintAssetIds } from "@/lib/asset-register-print";
+import {
+  chunkIds,
+  collectPaginatedRows,
+  parsePrintAssetIds,
+  qrImagesFromBatch,
+} from "@/lib/asset-register-print";
 
 const statusConfig: Record<string, string> = {
   pending: "Pending capitalisation",
@@ -41,31 +45,25 @@ export default function AssetsPrintPage() {
         const want = new Set(wanted);
         return want.size > 0 ? data.filter((asset) => want.has(asset.id)) : data;
       })
-      .then((list) => {
+      .then(async (list) => {
         setAssets(list);
-        const blobs: Record<number, string> = {};
-        const promises = list.map((asset) =>
-          api
-            .get<Blob>(`/assets/${asset.id}/qr`, { responseType: "blob" })
-            .then((r) => {
-              blobs[asset.id] = URL.createObjectURL(r.data);
-            })
-            .catch(() => {}),
-        );
-        return Promise.all(promises).then(() => blobs);
+        const images: Record<number, string> = {};
+        for (const chunk of chunkIds(list.map((asset) => asset.id))) {
+          try {
+            const res = await assetsApi.qrBatch(chunk);
+            Object.assign(images, qrImagesFromBatch(res.data.data ?? []));
+          } catch {
+            // Keep any images already loaded if a later chunk fails.
+          }
+        }
+        return images;
       })
-      .then((blobs) => {
-        setQrBlobs(blobs);
+      .then((images) => {
+        setQrBlobs(images);
       })
       .catch(() => setError("Failed to load assets."))
       .finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    return () => {
-      Object.values(qrBlobs).forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [qrBlobs]);
 
   const handlePrint = () => {
     window.print();
