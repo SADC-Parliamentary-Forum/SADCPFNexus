@@ -7,6 +7,7 @@ import { loadPdfLibs } from "@/lib/pdf-libs";
 import api from "@/lib/api";
 import { assetsApi, assetRequestsApi, type Asset, type AssetRequest } from "@/lib/api";
 import { canManageAssets, getStoredUser } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   pending:      { label: "Pending capitalisation", cls: "badge-warning" },
@@ -416,6 +417,7 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 export default function AssetsPage() {
+  const { t } = useI18n();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [requests, setRequests] = useState<AssetRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -430,6 +432,7 @@ export default function AssetsPage() {
   const [filterCategory, setFilterCategory] = useState("all");
   const [capitaliseAsset, setCapitaliseAsset] = useState<Asset | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [confirmingReturnId, setConfirmingReturnId] = useState<number | null>(null);
 
   const handleExportPdf = useCallback(async () => {
     setExportingPdf(true);
@@ -555,6 +558,19 @@ export default function AssetsPage() {
       setError("Failed to reject capitalisation.");
     } finally {
       setRejectingId(null);
+    }
+  };
+
+  const handleConfirmReturn = async (asset: Asset) => {
+    setConfirmingReturnId(asset.id);
+    setError(null);
+    try {
+      const res = await assetsApi.returnAsset(asset.id);
+      setAssets((prev) => prev.map((a) => (a.id === asset.id ? res.data.data : a)));
+    } catch {
+      setError(t("assets.register.returnFailed"));
+    } finally {
+      setConfirmingReturnId(null);
     }
   };
 
@@ -779,6 +795,12 @@ export default function AssetsPage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs font-mono text-neutral-400">{asset.asset_code}</span>
                             <span className={`badge ${s.cls}`}>{s.label}</span>
+                            {asset.custody_state === "pending_acceptance" && (
+                              <span className="badge badge-warning">{t("assets.register.pendingAcceptance")}</span>
+                            )}
+                            {asset.custody_state === "pending_return" && (
+                              <span className="badge badge-warning">{t("assets.register.pendingReturn")}</span>
+                            )}
                           </div>
                           <p className="text-sm font-semibold text-neutral-900 mt-0.5 truncate">{asset.name}</p>
                           <p className="text-xs text-neutral-500 mt-1 capitalize">{asset.category}</p>
@@ -813,13 +835,25 @@ export default function AssetsPage() {
                               </button>
                             </>
                           ) : (
-                            <Link
-                              href={`/assets/${asset.id}/edit`}
-                              className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-primary transition-colors"
-                              aria-label="Edit asset"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">edit</span>
-                            </Link>
+                            <>
+                              <Link
+                                href={`/assets/${asset.id}/edit`}
+                                className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-primary transition-colors"
+                                aria-label="Edit asset"
+                              >
+                                <span className="material-symbols-outlined text-[20px]">edit</span>
+                              </Link>
+                              {asset.custody_state === "pending_return" && (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleConfirmReturn(asset)}
+                                  disabled={confirmingReturnId === asset.id}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:opacity-90 disabled:opacity-50"
+                                >
+                                  {confirmingReturnId === asset.id ? t("common.loading") : t("assets.register.confirmReturn")}
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       )}

@@ -111,6 +111,7 @@ class AssetController extends Controller
         $method = $validated['depreciation_method'] ?? 'straight_line';
         $computedValue = Asset::computeDepreciatedValue($purchaseValue, $usefulLife, $salvage, $refDate, $method);
         $storedValue = $computedValue ?? (isset($validated['value']) ? (float) $validated['value'] : null);
+        $assigneeId = $validated['assigned_to'] ?? null;
 
         $asset = Asset::create([
             'tenant_id' => $user->tenant_id,
@@ -118,7 +119,7 @@ class AssetController extends Controller
             'name' => $validated['name'],
             'category' => $validated['category'],
             'status' => $validated['status'] ?? 'active',
-            'assigned_to' => $validated['assigned_to'] ?? null,
+            'assigned_to' => null,
             'issued_at' => $validated['issued_at'] ?? null,
             'value' => $storedValue,
             'notes' => $validated['notes'] ?? null,
@@ -133,7 +134,12 @@ class AssetController extends Controller
 
         $this->generateAndSaveQr($asset);
 
-        return response()->json($asset->fresh(), 201);
+        if ($assigneeId) {
+            $assignee = \App\Models\User::findOrFail($assigneeId);
+            $asset = $this->assetService->assign($asset, $assignee, $user);
+        }
+
+        return response()->json($this->presentAsset($asset), 201);
     }
 
     /**
@@ -193,14 +199,31 @@ class AssetController extends Controller
         $assignee = \App\Models\User::findOrFail($validated['assigned_to']);
         $updated = $this->assetService->assign($asset, $assignee, $request->user(), $validated);
 
-        return response()->json(['data' => $updated, 'message' => 'Asset assigned.']);
+        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Asset assigned.']);
     }
 
     public function acknowledge(Request $request, Asset $asset): JsonResponse
     {
         $updated = $this->assetService->acknowledge($asset, $request->user());
 
-        return response()->json(['data' => $updated, 'message' => 'Custody acknowledged.']);
+        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Custody acknowledged.']);
+    }
+
+    public function decline(Request $request, Asset $asset): JsonResponse
+    {
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'min:5', 'max:2000'],
+        ]);
+        $updated = $this->assetService->declineAssignment($asset, $request->user(), $validated['reason']);
+
+        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Assignment declined.']);
+    }
+
+    public function requestReturn(Request $request, Asset $asset): JsonResponse
+    {
+        $updated = $this->assetService->requestReturn($asset, $request->user());
+
+        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Return requested.']);
     }
 
     public function transfer(Request $request, Asset $asset): JsonResponse
@@ -222,10 +245,11 @@ class AssetController extends Controller
         $validated = $request->validate([
             'location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'condition' => ['nullable', 'string', 'max:64'],
         ]);
         $updated = $this->assetService->returnAsset($asset, $request->user(), $validated);
 
-        return response()->json(['data' => $updated, 'message' => 'Asset returned.']);
+        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Asset returned.']);
     }
 
     public function markCondition(Request $request, Asset $asset): JsonResponse
@@ -369,12 +393,13 @@ class AssetController extends Controller
         $storedValue = $computedValue ?? (isset($validated['value']) ? (float) $validated['value'] : null);
 
         $oldAssetCode = $asset->asset_code;
+        $currentAssignee = $asset->assigned_to;
+        $requestedAssignee = $validated['assigned_to'] ?? null;
 
         $asset->asset_code = $validated['asset_code'];
         $asset->name = $validated['name'];
         $asset->category = $validated['category'];
         $asset->status = $validated['status'] ?? 'active';
-        $asset->assigned_to = $validated['assigned_to'] ?? null;
         $asset->issued_at = $validated['issued_at'] ?? null;
         $asset->value = $storedValue;
         $asset->notes = $validated['notes'] ?? null;
@@ -391,7 +416,13 @@ class AssetController extends Controller
             $this->qr->generate($asset, $request->user(), (bool) $asset->qr_token);
         }
 
-        return response()->json($asset->fresh());
+        $fresh = $asset->fresh();
+        if ($requestedAssignee && (int) $requestedAssignee !== (int) $currentAssignee) {
+            $assignee = \App\Models\User::findOrFail($requestedAssignee);
+            $fresh = $this->assetService->assign($fresh, $assignee, $user);
+        }
+
+        return response()->json($this->presentAsset($fresh));
     }
 
     /**
@@ -426,6 +457,16 @@ class AssetController extends Controller
     private function generateAndSaveQr(Asset $asset, $actor = null): void
     {
         $this->qr->ensure($asset, $actor);
+    }
+
+    private function presentAsset(Asset $asset): Asset
+    {
+        $fresh = $asset->fresh() ?? $asset;
+        if ($fresh->relationLoaded('assignedUser') || method_exists($fresh, 'assignedUser')) {
+            $fresh->load(['assignedUser:id,name,email']);
+        }
+
+        return $fresh;
     }
 
     /**

@@ -679,6 +679,25 @@ return [
         ]],
         ['pattern' => 'api/v1/assets/{asset}/acknowledge', 'permissions' => [
             'WRITE' => [
+                'assets.view',
+                'assets.edit',
+                'assets.manage',
+                'assets.admin',
+                'profile.read.self',
+            ],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/decline', 'permissions' => [
+            'WRITE' => [
+                'assets.view',
+                'assets.edit',
+                'assets.manage',
+                'assets.admin',
+                'profile.read.self',
+            ],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/request-return', 'permissions' => [
+            'WRITE' => [
+                'assets.view',
                 'assets.edit',
                 'assets.manage',
                 'assets.admin',
