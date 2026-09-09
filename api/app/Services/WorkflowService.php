@@ -7,10 +7,12 @@ use App\Models\ApprovalRequest;
 use App\Models\ApprovalStep;
 use App\Models\ApprovalWorkflow;
 use App\Models\Department;
+use App\Models\SignatureProfile;
 use App\Models\User;
 use App\Models\WorkflowDelegation;
 use App\Modules\WorkflowEngine\Services\WorkflowOrchestrator;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -108,12 +110,18 @@ class WorkflowService
      *
      * Returns ['advanced_to_step' => int|null, 'notified_approvers' => string[]]
      * so controllers can include the notified role labels in the JSON response (sequential toast).
+     *
+     * @param  array{confirm_password?: ?string, auth_level?: ?string, ip?: ?string, user_agent?: ?string}  $signatureContext
      */
-    public function approve(ApprovalRequest $request, User $actor, ?string $comment = null, ?string $idempotencyKey = null): array
+    public function approve(ApprovalRequest $request, User $actor, ?string $comment = null, ?string $idempotencyKey = null, array $signatureContext = []): array
     {
         $this->verifyActorCanApprove($request, $actor);
 
+        $request->loadMissing(['workflow.steps', 'approvable']);
         $step = $request->workflow->steps->get($request->current_step_index);
+        $signatureContext = array_merge(self::signatureContextFromRequest(), $signatureContext);
+        $this->applyRequiredSignature($request, $actor, $step, $signatureContext);
+
         $decisionType = $step?->stage_type && in_array($step->stage_type, ['recommend', 'certify', 'authorise', 'sign', 'verify', 'acknowledge'], true)
             ? $step->stage_type
             : 'approve';
@@ -135,6 +143,93 @@ class WorkflowService
             'decision_id'        => $result['decision_id'] ?? null,
             'authority'          => $result['authority'] ?? null,
         ];
+    }
+
+    /**
+     * Pull SAAM re-auth fields from the current HTTP request so every module
+     * that calls approve() (inbox, LPO, PIF, travel, …) uses the same path.
+     *
+     * @return array{confirm_password?: ?string, ip?: ?string, user_agent?: ?string}
+     */
+    public static function signatureContextFromRequest(?Request $http = null): array
+    {
+        $http ??= request();
+        if (! $http instanceof Request) {
+            return [];
+        }
+
+        $password = $http->input('confirm_password');
+
+        return [
+            'confirm_password' => is_string($password) ? $password : null,
+            'ip' => $http->ip(),
+            'user_agent' => $http->userAgent(),
+        ];
+    }
+
+    /**
+     * When the current step requires a SAAM specimen, re-authenticate the
+     * approver and pin their active signature version to the document hash
+     * before the workflow engine records the decision.
+     *
+     * @param  array{confirm_password?: ?string, ip?: ?string, user_agent?: ?string, auth_level?: ?string}  $signatureContext
+     */
+    private function applyRequiredSignature(ApprovalRequest $request, User $actor, ?ApprovalStep $step, array $signatureContext): void
+    {
+        if ($step === null || ! $step->requires_signature) {
+            return;
+        }
+
+        if (($signatureContext['auth_level'] ?? null) === 'email_token') {
+            throw ValidationException::withMessages([
+                'signature' => 'This approval requires your enrolled signature. Open the request in Nexus, re-enter your password, and sign.',
+            ]);
+        }
+
+        $password = $signatureContext['confirm_password'] ?? null;
+        if (! is_string($password) || $password === '') {
+            throw ValidationException::withMessages([
+                'confirm_password' => 'Re-enter your password to apply your signature to this document.',
+            ]);
+        }
+
+        $saam = app(SaamService::class);
+        if (! $saam->reAuthenticate($actor, $password)) {
+            throw ValidationException::withMessages([
+                'confirm_password' => 'Password is incorrect.',
+            ]);
+        }
+
+        $profile = SignatureProfile::activeForUser((int) $actor->id);
+        $version = $profile?->activeVersion;
+        if ($profile === null || $version === null) {
+            throw ValidationException::withMessages([
+                'signature' => 'Enrol your signature specimen in SAAM before approving this step.',
+            ]);
+        }
+
+        $approvable = $request->approvable;
+        if ($approvable === null) {
+            throw ValidationException::withMessages([
+                'signature' => 'This request has no document to sign.',
+            ]);
+        }
+
+        $saam->recordSignatureEvent([
+            'tenant_id' => $actor->tenant_id,
+            'signable_type' => $approvable->getMorphClass(),
+            'signable_id' => $approvable->getKey(),
+            'step_key' => $step->stage_type ?: $step->step_name,
+            'signer_user_id' => $actor->id,
+            'signature_version_id' => $version->id,
+            'action' => 'approve',
+            'auth_level' => 'password',
+            'ip_address' => $signatureContext['ip'] ?? null,
+            'user_agent' => $signatureContext['user_agent'] ?? null,
+            'document_hash' => $saam->computeDocumentHash($approvable),
+            'is_delegated' => false,
+            'signed_at' => now(),
+        ]);
     }
 
     /**

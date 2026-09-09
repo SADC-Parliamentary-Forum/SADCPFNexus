@@ -3,12 +3,13 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { workflowApi, type ApprovalRequest } from "@/lib/api";
+import { workflowApi, type ApprovalRequest, type ApprovalStep } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SigningModal } from "@/components/saam/SigningModal";
 
 type InboxStatus = "awaiting" | "due" | "overdue" | "delegated" | "acting" | "completed";
 
@@ -173,6 +174,41 @@ function stageActionLabel(req: ApprovalRequest): string {
   return STAGE_ACTION_LABELS[stageType ?? ""] ?? "Approve";
 }
 
+function currentApprovalStep(req?: ApprovalRequest | null): ApprovalStep | undefined {
+  if (!req?.workflow?.steps?.length) return undefined;
+  return (
+    req.workflow.steps.find((s) => s.step_order === req.current_step_index) ??
+    req.workflow.steps[req.current_step_index]
+  );
+}
+
+function stepRequiresSignature(req?: ApprovalRequest | null): boolean {
+  return Boolean(currentApprovalStep(req)?.requires_signature);
+}
+
+function signableTypeFromRequest(req?: ApprovalRequest | null): string {
+  const moduleType = req?.workflow?.module_type;
+  if (moduleType === "programmes" || moduleType === "pif") return "programmes";
+  if (moduleType) return moduleType;
+  const morph = req?.approvable_type ?? "";
+  if (morph.includes("PurchaseOrder")) return "purchase_order";
+  if (morph.includes("Programme")) return "programmes";
+  return "purchase_order";
+}
+
+function apiErrorMessage(err: unknown, fallback: string): string {
+  const data = (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })
+    ?.response?.data;
+  const field = data?.errors ? Object.values(data.errors).flat()[0] : undefined;
+  return field || data?.message || fallback;
+}
+
+function isSignatureChallenge(err: unknown): boolean {
+  const data = (err as { response?: { data?: { errors?: Record<string, string[]>; reason?: string } } })
+    ?.response?.data;
+  return Boolean(data?.errors?.confirm_password || data?.errors?.signature || data?.reason === "requires_signature");
+}
+
 const DEFAULT_MODULE = {
   icon: "description",
   color: "text-neutral-600 dark:text-neutral-400",
@@ -201,6 +237,14 @@ export default function ApprovalsPage() {
   const [selfApproveComment, setSelfApproveComment] = useState("");
   const [recuseTarget, setRecuseTarget] = useState<{ id: number; label: string } | null>(null);
   const [recuseReason, setRecuseReason] = useState("");
+  const [signTarget, setSignTarget] = useState<{
+    approvalId: number;
+    taskId?: number;
+    label: string;
+    signableType: string;
+    signableId: number;
+    comment?: string;
+  } | null>(null);
 
   const { data: pending = [], isLoading: pendingLoading, isError: pendingError } = useQuery({
     queryKey: ["approvals", "pending"],
@@ -252,41 +296,83 @@ export default function ApprovalsPage() {
     );
   };
 
-  const handleApproveLegacy = async (req: ApprovalRequest) => {
+  const handleApproveLegacy = async (req: ApprovalRequest, confirmPassword?: string, comment?: string) => {
+    if (!confirmPassword && stepRequiresSignature(req)) {
+      setSignTarget({
+        approvalId: req.id,
+        label: req.approvable?.reference_number ?? `#${req.approvable_id}`,
+        signableType: signableTypeFromRequest(req),
+        signableId: req.approvable_id,
+      });
+      return;
+    }
     setActionLoading(req.id);
     try {
-      await workflowApi.approve(req.id);
+      await workflowApi.approve(req.id, comment, undefined, confirmPassword);
       removeFromCache(req.id);
       queryClient.invalidateQueries({ queryKey: ["approvals"] });
       toast(
         "success",
-        "Approved",
+        confirmPassword ? "Signed & approved" : "Approved",
         `Request ${req.approvable?.reference_number ?? `#${req.approvable_id}`} has been approved.`,
       );
-    } catch {
-      toast("error", "Action Failed", "Could not approve the request.");
+    } catch (err) {
+      if (!confirmPassword && isSignatureChallenge(err)) {
+        setSignTarget({
+          approvalId: req.id,
+          label: req.approvable?.reference_number ?? `#${req.approvable_id}`,
+          signableType: signableTypeFromRequest(req),
+          signableId: req.approvable_id,
+        });
+        return;
+      }
+      toast("error", "Action Failed", apiErrorMessage(err, "Could not approve the request."));
     } finally {
       setActionLoading(null);
     }
   };
 
-  const decideTask = async (task: any, decision: "approve" | "reject", comment?: string) => {
+  const decideTask = async (task: any, decision: "approve" | "reject", comment?: string, confirmPassword?: string) => {
+    const req = (task.approval_request ?? pending.find((p) => p.id === task.approval_request_id)) as
+      | ApprovalRequest
+      | undefined;
+    if (decision === "approve" && !confirmPassword && stepRequiresSignature(req)) {
+      setSignTarget({
+        approvalId: task.approval_request_id ?? req?.id,
+        taskId: task.uuid ? task.id : undefined,
+        label: String(task.approval_request?.reference ?? task.approval_request_id ?? task.id),
+        signableType: signableTypeFromRequest(req),
+        signableId: req?.approvable_id ?? 0,
+      });
+      return;
+    }
     setActionLoading(task.id);
     try {
       if (task.approval_request_id && !task.uuid) {
-        if (decision === "approve") await workflowApi.approve(task.approval_request_id);
+        if (decision === "approve") await workflowApi.approve(task.approval_request_id, comment, undefined, confirmPassword);
         else await workflowApi.reject(task.approval_request_id, comment || "Rejected");
       } else {
         await workflowApi.decideTask(task.id, {
           decision_type: decision,
-          comment: decision === "reject" ? comment || null : null,
+          comment: decision === "reject" ? comment || null : comment || null,
           idempotency_key: `inbox-${task.id}-${decision}-${Date.now()}`,
+          confirm_password: confirmPassword,
         });
       }
       queryClient.invalidateQueries({ queryKey: ["approvals"] });
       toast("success", decision === "approve" ? "Approved" : "Rejected", "Decision recorded.");
-    } catch {
-      toast("error", "Action failed", "Could not record decision.");
+    } catch (err) {
+      if (decision === "approve" && !confirmPassword && isSignatureChallenge(err)) {
+        setSignTarget({
+          approvalId: task.approval_request_id ?? req?.id ?? task.id,
+          taskId: task.uuid ? task.id : undefined,
+          label: String(task.approval_request?.reference ?? task.approval_request_id ?? task.id),
+          signableType: signableTypeFromRequest(req),
+          signableId: req?.approvable_id ?? 0,
+        });
+        return;
+      }
+      toast("error", "Action failed", apiErrorMessage(err, "Could not record decision."));
     } finally {
       setActionLoading(null);
     }
@@ -340,6 +426,18 @@ export default function ApprovalsPage() {
       setSelfApproveTarget(null);
       setSelfApproveComment("");
     } catch (err: any) {
+      if (isSignatureChallenge(err)) {
+        const req = pending.find((p) => p.id === selfApproveTarget.id);
+        setSelfApproveTarget(null);
+        setSignTarget({
+          approvalId: selfApproveTarget.id,
+          label: selfApproveTarget.label,
+          signableType: signableTypeFromRequest(req),
+          signableId: req?.approvable_id ?? 0,
+          comment: selfApproveComment.trim(),
+        });
+        return;
+      }
       const message =
         err?.response?.data?.message ??
         "This workflow does not permit self-authorisation. It must be actioned by another approver.";
@@ -802,6 +900,36 @@ export default function ApprovalsPage() {
             </div>
           </div>
         </div>
+      )}
+      {signTarget && (
+        <SigningModal
+          isOpen
+          onClose={() => setSignTarget(null)}
+          signableType={signTarget.signableType}
+          signableId={signTarget.signableId}
+          action="approve"
+          title="Sign & approve"
+          onWorkflowApprove={async ({ password, comment }) => {
+            const combined = comment || signTarget.comment;
+            if (signTarget.taskId) {
+              const task = inboxRows.find((r: { id: number }) => r.id === signTarget.taskId);
+              if (task) {
+                await decideTask(task, "approve", combined, password);
+              }
+            } else {
+              const req = pending.find((p) => p.id === signTarget.approvalId);
+              if (req) {
+                await handleApproveLegacy(req, password, combined);
+              } else {
+                await workflowApi.approve(signTarget.approvalId, combined, undefined, password);
+                removeFromCache(signTarget.approvalId);
+                queryClient.invalidateQueries({ queryKey: ["approvals"] });
+                toast("success", "Signed & approved", `Request ${signTarget.label} has been approved.`);
+              }
+            }
+            setSignTarget(null);
+          }}
+        />
       )}
     </div>
   );

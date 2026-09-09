@@ -166,6 +166,7 @@ class WorkflowEngineController extends Controller
             'decision_type' => ['required', 'string', 'in:approve,reject,return,recommend,certify,authorise,sign,verify,acknowledge'],
             'comment' => ['nullable', 'string', 'max:2000'],
             'idempotency_key' => ['nullable', 'string', 'max:128'],
+            'confirm_password' => ['nullable', 'string', 'max:255'],
         ]);
 
         $approval = ApprovalRequest::findOrFail($task->approval_request_id);
@@ -176,7 +177,13 @@ class WorkflowEngineController extends Controller
         } elseif ($data['decision_type'] === 'return') {
             $result = $this->workflows->returnForCorrection($approval, $request->user(), $data['comment'] ?? 'Returned');
         } else {
-            $result = $this->workflows->approve($approval, $request->user(), $data['comment'] ?? null, $data['idempotency_key'] ?? null);
+            $result = $this->workflows->approve(
+                $approval,
+                $request->user(),
+                $data['comment'] ?? null,
+                $data['idempotency_key'] ?? null,
+                WorkflowService::signatureContextFromRequest($request)
+            );
             if ($data['decision_type'] === 'sign') {
                 $this->lockPackageDocumentVersions($request->user(), $approval);
             }

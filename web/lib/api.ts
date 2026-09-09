@@ -504,6 +504,7 @@ export interface ApprovalStep {
   allow_delegate: boolean;
   sla_hours?: number | null;
   requires_comment: boolean;
+  requires_signature?: boolean;
   stage_type?: string | null;
 }
 
@@ -1219,15 +1220,21 @@ export const workflowApi = {
   getPending: () => api.get<{ data: ApprovalRequest[] }>("/approvals/pending"),
   getInbox: (params?: { status?: string; module?: string }) =>
     api.get<{ data: unknown[] }>("/approvals/inbox", { params }),
-  approve: (id: number, comment?: string, idempotencyKey?: string) =>
-    api.post(`/approvals/${id}/approve`, { comment, idempotency_key: idempotencyKey }),
+  approve: (id: number, comment?: string, idempotencyKey?: string, confirmPassword?: string) =>
+    api.post(`/approvals/${id}/approve`, {
+      comment,
+      idempotency_key: idempotencyKey,
+      confirm_password: confirmPassword,
+    }),
   reject: (id: number, comment: string, idempotencyKey?: string) =>
     api.post(`/approvals/${id}/reject`, { comment, idempotency_key: idempotencyKey }),
   recuse: (id: number, reason: string) => api.post(`/approvals/${id}/recuse`, { reason }),
   getHistory: (id: number) => api.get<{ data: ApprovalHistory[] }>(`/approvals/${id}/history`),
   getSnapshot: (id: number) => api.get<{ data: Record<string, unknown> }>(`/approvals/${id}/snapshot`),
-  decideTask: (taskId: number, data: { decision_type: string; comment?: string | null; idempotency_key?: string }) =>
-    api.post(`/workflow-engine/approval-tasks/${taskId}/decide`, data),
+  decideTask: (
+    taskId: number,
+    data: { decision_type: string; comment?: string | null; idempotency_key?: string; confirm_password?: string },
+  ) => api.post(`/workflow-engine/approval-tasks/${taskId}/decide`, data),
 };
 
 export interface WorkflowSimulationFieldOption {
@@ -4109,8 +4116,11 @@ export const purchaseOrdersApi = {
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/cancel`, { reason }),
   submit: (id: number, idempotency_key?: string) =>
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/submit`, { idempotency_key }),
-  approve: (id: number, comment?: string) =>
-    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/approve`, { comment }),
+  approve: (id: number, comment?: string, confirmPassword?: string) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/approve`, {
+      comment,
+      confirm_password: confirmPassword,
+    }),
   returnLpo: (id: number, comment: string) =>
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/return`, { comment }),
   reject: (id: number, reason: string) =>
@@ -5582,8 +5592,11 @@ export const programmeApi = {
   delete: (id: number) => api.delete(`/programmes/${id}`),
   submit: (id: number, data: { declaration_confirmed: boolean }) =>
     api.post<{ data: Programme; message: string }>(`/programmes/${id}/submit`, data),
-  approve: (id: number) =>
-    api.post<{ data: Programme; message: string }>(`/programmes/${id}/approve`),
+  approve: (id: number, comment?: string, confirmPassword?: string) =>
+    api.post<{ data: Programme; message: string }>(`/programmes/${id}/approve`, {
+      comment,
+      confirm_password: confirmPassword,
+    }),
   reject: (id: number, reason: string) =>
     api.post<{ data: Programme; message: string }>(`/programmes/${id}/reject`, { reason }),
 
