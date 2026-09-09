@@ -55,7 +55,7 @@ export default function WeeklySummaryDetailPage() {
   const items = (report?.items ?? []) as Array<Record<string, unknown>>;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={report?.reference ?? "Weekly summary"}
         subtitle="Open a submitted digest, export it, or return it with a labelled reason. Accept and return never run automatically."

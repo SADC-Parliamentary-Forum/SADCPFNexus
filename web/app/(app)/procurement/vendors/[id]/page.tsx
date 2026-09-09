@@ -113,7 +113,7 @@ const categoryConfig: Record<string, { icon: string; color: string; bg: string }
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonDetail() {
   return (
-    <div className="mx-auto max-w-5xl space-y-6 animate-pulse">
+    <div className="w-full min-w-0 space-y-6 animate-pulse">
       <div className="h-5 w-40 rounded bg-neutral-100" />
       <div className="card p-6 space-y-4">
         <div className="h-6 w-64 rounded bg-neutral-100" />
@@ -547,7 +547,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
 
   if (isError || !data) {
     return (
-      <div className="mx-auto max-w-5xl">
+      <div className="w-full min-w-0">
         <div className="card p-8 text-center space-y-3">
           <span className="material-symbols-outlined text-4xl text-neutral-300">error</span>
           <p className="text-sm text-neutral-500">Vendor not found or failed to load.</p>
@@ -584,7 +584,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
 
   return (
     <>
-      <div className="mx-auto max-w-5xl space-y-6">
+      <div className="w-full min-w-0 space-y-6">
         {/* Toast */}
         {ratingToast && (
           <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-neutral-800 px-4 py-3 text-sm font-medium text-white shadow-lg">

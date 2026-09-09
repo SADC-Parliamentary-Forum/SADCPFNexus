@@ -35,7 +35,7 @@ export default function AccessGovernanceHomePage() {
   }, []);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Access Governance"
         subtitle="Role catalogue, simulator, explorer, requests and reviews — backend is authoritative."

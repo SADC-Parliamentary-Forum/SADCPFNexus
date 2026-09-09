@@ -667,7 +667,7 @@ export default function AppraisalDetailPage() {
 
   if (error && !appraisal) {
     return (
-      <div className="space-y-4 max-w-3xl">
+      <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
         <Link href="/hr/appraisals" className="text-sm font-semibold text-primary hover:underline">Back to Appraisals</Link>
       </div>
@@ -676,7 +676,7 @@ export default function AppraisalDetailPage() {
 
   if (!appraisal) {
     return (
-      <div className="space-y-4 max-w-3xl">
+      <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-neutral-50 border border-neutral-200 px-4 py-3 text-sm text-neutral-600">Appraisal not found.</div>
         <Link href="/hr/appraisals" className="text-sm font-semibold text-primary hover:underline">Back to Appraisals</Link>
       </div>
@@ -712,7 +712,7 @@ export default function AppraisalDetailPage() {
   );
 
   return (
-    <div className="space-y-5 max-w-4xl">
+    <div className="w-full min-w-0 space-y-5">
 
       {/* Header */}
       <div>

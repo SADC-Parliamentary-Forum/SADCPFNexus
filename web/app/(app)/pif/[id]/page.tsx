@@ -391,7 +391,7 @@ export default function PifDetailPage() {
   }
   if (error || !programme) {
     return (
-      <div className="mx-auto max-w-5xl space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
           {error ?? "Programme not found."}
@@ -429,7 +429,7 @@ export default function PifDetailPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
 
       <ModulePageHeader
         title={programme.title || "Untitled programme"}

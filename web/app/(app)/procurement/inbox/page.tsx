@@ -36,7 +36,7 @@ export default function ProcurementInboxPage() {
     : (note ?? "No forwarded invoices. IMAP is not configured — upload a PDF or DOCX from Create from Invoice / Quote.");
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Procurement Inbox"
         subtitle={subtitle}

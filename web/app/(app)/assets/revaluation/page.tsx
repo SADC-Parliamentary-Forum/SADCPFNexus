@@ -67,7 +67,7 @@ export default function AssetRevaluationPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <div className="page-header flex items-start justify-between gap-3">
         <ModulePageHeader
         title="Asset Revaluations"

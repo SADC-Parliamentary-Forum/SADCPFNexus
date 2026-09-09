@@ -13,7 +13,7 @@ export default function LifecycleTemplatesAdminPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Journey templates"
         subtitle="Operational stages and tasks only — notice, probation, and terminal-payment gates stay in HR settings."

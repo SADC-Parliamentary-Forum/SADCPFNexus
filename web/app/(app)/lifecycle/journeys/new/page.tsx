@@ -43,7 +43,7 @@ function JourneyCreateForm() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Start internal journey"
         subtitle="Opens a transfer, promotion, or probation case from a published template."

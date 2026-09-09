@@ -195,7 +195,7 @@ export default function WeeklySummariesReviewPage() {
   }, [missing, departmentName, staffTerm]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Review queue"
         subtitle="Pending and missing weekly summaries for supervisors and the Secretary General. Accept and return happen on the report detail page — this queue never auto-accepts."

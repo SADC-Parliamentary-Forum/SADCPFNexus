@@ -2931,6 +2931,23 @@ export const leaveApi = {
     api.delete(`/leave/requests/${id}/attachments/${attachmentId}`),
   downloadAttachmentUrl: (id: number, attachmentId: number) =>
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/leave/requests/${id}/attachments/${attachmentId}/download`,
+  importTemplate: () =>
+    api.get<Blob>("/leave/import/template", { responseType: "blob" }),
+  import: (file: File, commit = false) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("commit", commit ? "1" : "0");
+    return api.post<{
+      message: string;
+      data: {
+        rows: Array<Record<string, string | number | null>>;
+        errors: Array<{ row: number; message: string }>;
+        created: number;
+        skipped: number;
+        balances: number;
+      };
+    }>("/leave/import", fd);
+  },
 };
 
 export interface LilAccrual {

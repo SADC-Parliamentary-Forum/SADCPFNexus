@@ -220,7 +220,7 @@
      modules that still use page-container / btn / table-wrap / alert
      render consistently without inventing a second aesthetic. */
   .page-container {
-    @apply mx-auto max-w-6xl space-y-5;
+    @apply w-full min-w-0 space-y-5;
   }
 
   .page-header {

@@ -390,7 +390,7 @@ export default function AdvanceDetailPage() {
 
   if (loading) {
     return (
-      <div className="space-y-4 max-w-3xl animate-pulse">
+      <div className="w-full min-w-0 space-y-4 animate-pulse">
         <div className="h-6 w-48 bg-neutral-200 rounded" />
         <div className="h-48 bg-neutral-100 rounded-xl" />
       </div>
@@ -399,7 +399,7 @@ export default function AdvanceDetailPage() {
 
   if (error || !advance) {
     return (
-      <div className="space-y-3 max-w-3xl">
+      <div className="w-full min-w-0 space-y-3">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error ?? "Not found"}
         </div>
@@ -449,7 +449,7 @@ export default function AdvanceDetailPage() {
   })();
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="w-full min-w-0 space-y-6">
       <WorkflowStatusBanner
         status={advance.status}
         currentStage={currentStep?.role_name ?? currentStep?.name ?? null}

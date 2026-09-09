@@ -208,7 +208,7 @@ export default function TimesheetTemplatesAdminPage() {
     projects.find((p) => p.id === id)?.label ?? (id ? `#${id}` : "—");
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
 <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/hr/timesheets" className="transition-colors hover:text-primary">
           Timesheets

@@ -62,7 +62,7 @@ export default function PermissionMatrixPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Permission matrix"
         subtitle="Assign individual feature actions to roles. Rows are roles; columns are canonical permissions from the registry."

@@ -97,7 +97,7 @@ export default function EditPositionPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <div className="h-8 w-48 bg-neutral-100 animate-pulse rounded-lg" />
         <div className="card p-6 space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -109,7 +109,7 @@ export default function EditPositionPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb + header */}
       <div>
         <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">

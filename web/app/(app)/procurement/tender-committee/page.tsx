@@ -22,7 +22,7 @@ export default function TenderCommitteePage() {
   });
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Tender Committee"
         subtitle="Standing or ad-hoc committees with quorum enforcement on meetings."

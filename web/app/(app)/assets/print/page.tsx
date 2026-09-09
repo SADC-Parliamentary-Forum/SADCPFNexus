@@ -67,7 +67,7 @@ export default function AssetsPrintPage() {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-5xl mx-auto">
+      <div className="p-8 w-full min-w-0">
         <div className="flex items-center gap-2 text-neutral-500">
           <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
           <span className="text-sm">Loading assets…</span>
@@ -78,7 +78,7 @@ export default function AssetsPrintPage() {
 
   if (error) {
     return (
-      <div className="p-8 max-w-5xl mx-auto">
+      <div className="p-8 w-full min-w-0">
         <p className="text-red-600">{error}</p>
         <Link href="/assets" className="text-primary mt-2 inline-block">Back to Assets</Link>
       </div>
@@ -87,7 +87,7 @@ export default function AssetsPrintPage() {
 
   return (
     <>
-      <div className="no-print p-8 max-w-5xl mx-auto space-y-4">
+      <div className="no-print p-8 w-full min-w-0 space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <Link href="/assets" className="text-sm text-neutral-500 hover:text-primary">← Back to Assets</Link>
@@ -103,7 +103,7 @@ export default function AssetsPrintPage() {
         </div>
       </div>
 
-      <div ref={printRef} className="print-only p-8 max-w-5xl mx-auto">
+      <div ref={printRef} className="print-only p-8 w-full min-w-0">
         <h2 className="text-lg font-bold text-neutral-900 mb-4">Asset Register</h2>
         <p className="text-sm text-neutral-500 mb-4">
           Generated {new Date().toLocaleDateString("en-GB")} – {assets.length} item(s)

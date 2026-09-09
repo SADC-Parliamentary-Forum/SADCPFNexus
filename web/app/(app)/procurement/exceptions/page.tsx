@@ -18,7 +18,7 @@ export default function ProcurementExceptionsPage() {
   const rows = (data as { data?: Array<{ id: number; exception_type: string; reason: string; status: string }> })?.data ?? [];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Procurement exception register"
         subtitle="Retrospective invoice-to-LPO, sole source, emergency, void and related controls."

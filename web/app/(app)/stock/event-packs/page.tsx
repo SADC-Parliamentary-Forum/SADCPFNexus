@@ -69,7 +69,7 @@ export default function StockEventPacksPage() {
   });
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Event packs"
         subtitle="Reusable kits of consumables. Instantiating a pack drafts a stock request — it never auto-issues stock."

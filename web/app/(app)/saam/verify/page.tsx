@@ -24,7 +24,7 @@ export default function VerifyDocumentPage() {
   }
 
   return (
-    <div className="max-w-xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
         <Link href="/saam" className="hover:text-primary transition-colors">Signatures</Link>

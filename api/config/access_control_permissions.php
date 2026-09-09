@@ -1038,8 +1038,11 @@ return [
         'risk_level' => 'high',
         'data_classification' => 'Confidential',
         'mfa_required' => true,
-        'linked_routes' => [],
-        'linked_endpoints' => [],
+        'linked_routes' => ['/hr/leave/import'],
+        'linked_endpoints' => [
+            'GET /api/v1/leave/import/template',
+            'POST /api/v1/leave/import',
+        ],
     ],
     'leave.balance.read.assigned_staff' => [
         'display_name' => 'Read staff balances',

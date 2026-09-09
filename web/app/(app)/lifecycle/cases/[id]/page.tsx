@@ -38,7 +38,7 @@ export default function LifecycleCaseDetailPage() {
   const stages = (data?.stages as Array<{ name: string; tasks: Array<Record<string, unknown>> }>) ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title={String(data?.reference ?? "Lifecycle case")}
         subtitle={`${String(data?.lifecycle_type ?? "")} · ${String(data?.status ?? "")}`}

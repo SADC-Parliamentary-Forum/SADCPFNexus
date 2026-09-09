@@ -24,7 +24,7 @@ export default function PlanningPage() {
   });
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Annual Procurement Planning"
         subtitle="Plan year CRUD with line items for upcoming procurements."

@@ -193,7 +193,7 @@ export default function StocktakeDetailPage() {
   if (!stocktake) return <p className="text-sm text-neutral-500">Loading…</p>;
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs font-mono text-neutral-400">{stocktake.reference_number}</p>

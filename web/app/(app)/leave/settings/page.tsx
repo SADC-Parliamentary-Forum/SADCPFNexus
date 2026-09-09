@@ -74,7 +74,7 @@ export default function LeaveSettingsPage() {
   const active = policies.find((p) => p.is_active);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Leave workflow settings"
         subtitle="Configure Finance-first and Director-principal routing. Versions are immutable — create a new version to change mode."

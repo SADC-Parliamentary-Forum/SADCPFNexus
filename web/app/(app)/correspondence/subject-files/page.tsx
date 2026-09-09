@@ -37,7 +37,7 @@ export default function SubjectFilesPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Subject Files"
         subtitle="Institutional file plan. Correspondence links here — documents are not triplicated."

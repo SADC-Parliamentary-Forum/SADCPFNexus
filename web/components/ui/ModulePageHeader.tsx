@@ -38,7 +38,7 @@ export function ModulePageHeader({
 }: ModulePageHeaderProps) {
   const { t } = useI18n();
   return (
-    <div className={cn(MAX_WIDTH[maxWidth], maxWidth !== "none" && "mx-auto", className)}>
+    <div className={cn(MAX_WIDTH[maxWidth], className)}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           {breadcrumbs}

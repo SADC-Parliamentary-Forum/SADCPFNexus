@@ -166,7 +166,7 @@ export default function TravelAdminDashboardPage() {
   const totalNeedsAction = needsAction.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 p-6">
+    <div className="w-full min-w-0 space-y-6 p-6">
       <ModulePageHeader
         title="Administration Travel Dashboard"
         subtitle="Logistics readiness across itineraries, bookings, visas, and accommodation for approved trips."

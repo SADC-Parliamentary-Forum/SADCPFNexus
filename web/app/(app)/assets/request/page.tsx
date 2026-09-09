@@ -39,7 +39,7 @@ export default function AssetRequestPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <Link href="/assets" className="text-sm font-medium text-neutral-500 hover:text-primary flex items-center gap-1 mb-2">
           <span className="material-symbols-outlined text-[18px]">arrow_back</span>

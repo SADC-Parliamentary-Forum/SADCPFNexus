@@ -12,7 +12,7 @@ export default function PeopleOnboardingRedirectPage() {
   }, [router]);
 
   return (
-    <div className="mx-auto max-w-lg py-16 text-center text-sm text-neutral-600">
+    <div className="w-full min-w-0 py-16 text-center text-sm text-neutral-600">
       Redirecting to Employee Lifecycle onboarding…
     </div>
   );

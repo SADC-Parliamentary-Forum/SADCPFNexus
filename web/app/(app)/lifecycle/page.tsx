@@ -24,7 +24,7 @@ export default function LifecycleDashboardPage() {
   const cases = casesQuery.data ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Employee Lifecycle"
         subtitle="Onboarding, separation, and internal journeys with departmental tasks, clearance, and audit trail."

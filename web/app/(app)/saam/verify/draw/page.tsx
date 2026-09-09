@@ -160,7 +160,7 @@ export default function DrawSignaturePage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Draw Your Signature"
         subtitle="Use your mouse or touch to draw your signature on the canvas below."

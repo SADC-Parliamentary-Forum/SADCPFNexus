@@ -28,7 +28,7 @@ export default function StockIssuesPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Issue Vouchers"
         subtitle="Ledgered stock-out vouchers with recipient acknowledgement."

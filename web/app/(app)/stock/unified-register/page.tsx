@@ -12,7 +12,7 @@ export default function UnifiedInventoryRegisterPage() {
   const rows = query.data ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Unified inventory register"
         subtitle="Linked fixed-asset and stock rows from GRN handoff (including split). This is not a merged accounting ledger."

@@ -48,7 +48,7 @@ export default function AccessCutoverPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title={t("Access cutover")}
         subtitle={t("Freeze legacy Spatie role edits. Assign published role versions. Operator evidence stays unsigned here.")}
