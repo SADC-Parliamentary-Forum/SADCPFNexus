@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { riskApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function RiskIncidentsPage() {
@@ -17,7 +18,7 @@ export default function RiskIncidentsPage() {
   }, [t]);
 
   return (
-    <div className="w-full min-w-0 space-y-4">
+    <RiskPageFrame>
       <ModulePageHeader
         title="risk.incidents.title"
         subtitle="risk.incidents.subtitle"
@@ -51,6 +52,6 @@ export default function RiskIncidentsPage() {
           </tbody>
         </table>
       </div>
-    </div>
+    </RiskPageFrame>
   );
 }

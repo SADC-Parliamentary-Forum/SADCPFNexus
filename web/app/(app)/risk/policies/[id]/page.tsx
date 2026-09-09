@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { policyApi, type Policy, type RiskAttachment, type RiskDocumentType } from "@/lib/api";
 import RiskDocumentsPanel from "@/components/ui/RiskDocumentsPanel";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { formatDateShort } from "@/lib/utils";
 
 const LEVEL_CLS: Record<string, string> = {
@@ -33,7 +34,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   if (loading) {
     return (
-      <div className="w-full min-w-0 space-y-4 animate-pulse">
+      <div className="mx-auto max-w-6xl space-y-4 animate-pulse">
         <div className="h-6 w-48 bg-neutral-200 rounded" />
         <div className="h-32 bg-neutral-100 rounded-xl" />
       </div>
@@ -42,7 +43,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   if (error || !policy) {
     return (
-      <div className="w-full min-w-0">
+      <div className="mx-auto max-w-6xl">
         <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 text-sm text-red-700">{error ?? "Policy not found."}</div>
         <Link href="/risk/policies" className="btn-secondary mt-4 inline-flex items-center gap-1.5">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back
@@ -56,7 +57,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
   const daysToRenewal = renewalDate ? Math.floor((renewalDate.getTime() - Date.now()) / 86_400_000) : null;
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <RiskPageFrame>
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-sm text-neutral-500">
         <Link href="/risk" className="hover:text-primary">Risk Register</Link>
@@ -188,6 +189,6 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Policy Library
       </Link>
-    </div>
+    </RiskPageFrame>
   );
 }

@@ -2,16 +2,22 @@
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
+import { ApplyMitigationFields, EMPTY_MITIGATION, type MitigationDraft } from "@/components/risk/ApplyMitigationFields";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { riskApi, type RiskObjectiveOption } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
+import { apiErrorMessage } from "@/lib/apiError";
 import {
-  riskApi,
-  tenantUsersApi,
-  type RiskObjectiveOption,
-  type TenantUserOption,
-} from "@/lib/api";
+  asOwnerOptions,
+  buildMitigationFormData,
+  mergeCurrentUserIntoOwners,
+  validateRiskCreateForm,
+  type RiskOwnerOption,
+} from "@/lib/riskLookups";
 import axios from "axios";
 
 const CATEGORIES = [
@@ -82,19 +88,48 @@ export default function CreateRiskPage() {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [apiError, setApiError] = useState<string | null>(null);
-  const [owners, setOwners] = useState<TenantUserOption[]>([]);
+  const [owners, setOwners] = useState<RiskOwnerOption[]>([]);
+  const [ownersError, setOwnersError] = useState<string | null>(null);
+  const [ownersLoading, setOwnersLoading] = useState(true);
   const [objectives, setObjectives] = useState<RiskObjectiveOption[]>([]);
+  const [mitigation, setMitigation] = useState<MitigationDraft>(EMPTY_MITIGATION);
+
+  function loadOwners() {
+    const current = getStoredUser();
+    setOwnersLoading(true);
+    setOwnersError(null);
+    riskApi
+      .listOwners()
+      .then((r) => {
+        const rows = mergeCurrentUserIntoOwners(asOwnerOptions(r.data), current);
+        setOwners(rows);
+        setForm((prev) => {
+          if (prev.risk_owner_id) return prev;
+          const fallback = rows[0]?.id ? String(rows[0].id) : current?.id ? String(current.id) : "";
+          return fallback ? { ...prev, risk_owner_id: fallback } : prev;
+        });
+      })
+      .catch(() => {
+        const fallback = mergeCurrentUserIntoOwners([], getStoredUser());
+        setOwners(fallback);
+        setForm((prev) => {
+          if (prev.risk_owner_id || !fallback[0]) return prev;
+          return { ...prev, risk_owner_id: String(fallback[0].id) };
+        });
+        setOwnersError(t("risk.create.ownerEmpty"));
+      })
+      .finally(() => setOwnersLoading(false));
+  }
 
   const score = form.likelihood * form.impact;
   const level = score > 0 ? riskLevelFromScore(score) : null;
 
   useEffect(() => {
-    tenantUsersApi.list()
-      .then((r) => setOwners(r.data.data ?? []))
-      .catch(() => setOwners([]));
+    loadOwners();
     riskApi.listObjectives()
       .then((r) => setObjectives(r.data.data ?? []))
       .catch(() => setObjectives([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once on mount
   }, []);
 
   function set(field: string, value: string | number) {
@@ -110,14 +145,14 @@ export default function CreateRiskPage() {
     e.preventDefault();
     setApiError(null);
 
-    if (andSubmit) {
-      const next: Record<string, string[]> = {};
-      if (!form.strategic_objective_id) next.strategic_objective_id = [t("risk.create.objectiveRequired")];
-      if (!form.risk_owner_id) next.risk_owner_id = [t("risk.create.ownerRequired")];
-      if (Object.keys(next).length > 0) {
-        setErrors((prev) => ({ ...prev, ...next }));
-        return;
-      }
+    const next = validateRiskCreateForm(form, {
+      requireOwner: andSubmit,
+      requireObjective: andSubmit && objectives.length > 0,
+    });
+    if (Object.keys(next).length > 0) {
+      setErrors(Object.fromEntries(Object.entries(next).map(([k, v]) => [k, v.map((key) => t(key))])));
+      setApiError(t("risk.create.basicsRequired"));
+      return;
     }
 
     setSaving(true);
@@ -136,6 +171,23 @@ export default function CreateRiskPage() {
       const res = await riskApi.create(payload as Parameters<typeof riskApi.create>[0]);
       const created = res.data.data;
 
+      if (mitigation.description.trim() || mitigation.file) {
+        try {
+          await riskApi.applyMitigations(
+            buildMitigationFormData({
+              riskIds: [created.id],
+              description: mitigation.description.trim() || t("risk.mitigation.defaultDescription"),
+              treatmentType: mitigation.treatment_type,
+              dueDate: mitigation.due_date || undefined,
+              file: mitigation.file,
+              documentType: "risk_mitigation_plan",
+            }),
+          );
+        } catch {
+          /* Risk is saved; staff can attach the mitigation from the detail page. */
+        }
+      }
+
       if (andSubmit) {
         await riskApi.submit(created.id);
       }
@@ -143,12 +195,9 @@ export default function CreateRiskPage() {
     } catch (err: unknown) {
       if (axios.isAxiosError(err) && err.response?.status === 422) {
         setErrors(err.response.data.errors ?? {});
+        setApiError(apiErrorMessage(err, t("risk.create.error")));
       } else {
-        setApiError(
-          axios.isAxiosError(err)
-            ? err.response?.data?.message ?? t("risk.create.error")
-            : t("risk.create.error"),
-        );
+        setApiError(apiErrorMessage(err, t("risk.create.error")));
       }
     } finally {
       setSaving(false);
@@ -156,7 +205,7 @@ export default function CreateRiskPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <RiskPageFrame>
       <ModulePageHeader
         title="risk.create.title"
         subtitle="risk.create.subtitle"
@@ -378,12 +427,20 @@ export default function CreateRiskPage() {
                   value={form.risk_owner_id}
                   onChange={(e) => set("risk_owner_id", e.target.value)}
                 >
-                  <option value="">{t("risk.create.ownerPlaceholder")}</option>
+                  <option value="">{ownersLoading ? t("risk.create.ownerLoading") : t("risk.create.ownerPlaceholder")}</option>
                   {owners.map((u) => (
-                    <option key={u.id} value={u.id}>{u.email ? `${u.name} (${u.email})` : u.name}</option>
+                    <option key={u.id} value={String(u.id)}>{u.email ? `${u.name} (${u.email})` : u.name}</option>
                   ))}
                 </select>
                 <p className="text-[11px] text-neutral-500 mt-1">{t("risk.create.ownerHint")}</p>
+                {ownersError && (
+                  <p className="text-xs text-amber-700 mt-1 flex flex-wrap items-center gap-2">
+                    {ownersError}
+                    <button type="button" className="text-primary font-semibold hover:underline" onClick={loadOwners}>
+                      {t("risk.create.ownerRetry")}
+                    </button>
+                  </p>
+                )}
                 {errors.risk_owner_id && <p className="text-xs text-red-600 mt-1">{errors.risk_owner_id[0]}</p>}
               </div>
             </div>
@@ -393,6 +450,14 @@ export default function CreateRiskPage() {
               {t("risk.create.confidential")}
             </label>
           </div>
+        </FormSection>
+
+        <FormSection
+          title="risk.create.section.mitigation"
+          description="risk.create.section.mitigationHint"
+          icon="task_alt"
+        >
+          <ApplyMitigationFields idPrefix="risk-create-mitigation" value={mitigation} onChange={setMitigation} />
         </FormSection>
 
         <FormSection
@@ -452,6 +517,6 @@ export default function CreateRiskPage() {
           </button>
         </div>
       </form>
-    </div>
+    </RiskPageFrame>
   );
 }

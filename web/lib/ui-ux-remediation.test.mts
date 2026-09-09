@@ -403,10 +403,12 @@ test("risk create form uses FormSection, i18n, wrapping actions, and name picker
   assert.match(source, /useI18n/);
   assert.match(source, /FormSection/);
   assert.doesNotMatch(source, /FormField/);
-  assert.match(source, /w-full min-w-0 space-y-6/);
+  assert.match(source, /RiskPageFrame/);
   assert.match(source, /flex-wrap/);
-  assert.match(source, /tenantUsersApi/);
+  assert.match(source, /listOwners/);
   assert.match(source, /listObjectives/);
+  assert.match(source, /ApplyMitigationFields/);
+  assert.match(source, /applyMitigations/);
   assert.match(source, /<select[^>]*id="risk-owner-user-id"/);
   assert.match(source, /<select[^>]*id="risk-strategic-objective-id"/);
   assert.match(source, /risk\.create\.title/);
@@ -862,6 +864,41 @@ test("remaining risk subpages use ModulePageHeader and risk hub breadcrumbs", ()
     assert.match(source, /risk\.hub/, `missing risk.hub breadcrumb on risk/${rel}`);
     assert.doesNotMatch(source, /className="page-title"/, `legacy page-title on risk/${rel}`);
   }
+});
+
+test("risk module pages share a centered max-w-6xl frame", () => {
+  const pages = [
+    "create/page.tsx",
+    "[id]/page.tsx",
+    "dashboard/page.tsx",
+    "incidents/page.tsx",
+    "controls/page.tsx",
+    "appetite/page.tsx",
+    "kri/page.tsx",
+    "analytics/page.tsx",
+    "bcp/page.tsx",
+    "audit-trail/page.tsx",
+    "control-testing/page.tsx",
+    "policies/page.tsx",
+    "policies/[id]/page.tsx",
+  ];
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, `app/(app)/risk/${rel}`), "utf8");
+    assert.match(
+      source,
+      /RiskPageFrame|mx-auto max-w-6xl/,
+      `risk/${rel} should use the shared centered frame`,
+    );
+    assert.doesNotMatch(
+      source,
+      /className="(?:space-y-\d+ )?max-w-(?:2xl|4xl|5xl)"/,
+      `risk/${rel} should not use an uncentered narrower shell`,
+    );
+  }
+  const register = readFileSync(join(webRoot, "app/(app)/risk/page.tsx"), "utf8");
+  assert.match(register, /RegisterShell/);
+  assert.match(register, /applyMitigations/);
+  assert.match(register, /risk\.mitigation\.applySelected/);
 });
 
 test("risk KRI links and dashboard actions are not underline-only", () => {

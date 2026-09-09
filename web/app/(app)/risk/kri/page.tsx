@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { riskApi, type RiskKri, type RiskKriCatalogEntry } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function statusBadge(status: RiskKri["last_status"]): string {
@@ -53,7 +54,7 @@ export default function RiskKriPage() {
   const catalogByCode = Object.fromEntries(catalog.map((c) => [c.code, c]));
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <RiskPageFrame>
       <ModulePageHeader
         title="risk.kri.title"
         subtitle="risk.kri.subtitle"
@@ -208,6 +209,6 @@ export default function RiskKriPage() {
           ))}
         </ul>
       </div>
-    </div>
+    </RiskPageFrame>
   );
 }

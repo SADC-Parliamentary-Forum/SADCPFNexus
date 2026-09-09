@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
@@ -122,7 +123,7 @@ export default function RiskBcpPage() {
   const renewals = (renewalsQuery.data ?? []) as AssetInsurancePolicyLite[];
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <RiskPageFrame>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
         title="BCP / Insurance Ops"
@@ -371,6 +372,6 @@ export default function RiskBcpPage() {
           </tbody>
         </table>
       </div>
-    </div>
+    </RiskPageFrame>
   );
 }

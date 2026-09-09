@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useState, useRef } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -171,7 +172,7 @@ export default function PolicyLibraryPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <RiskPageFrame>
       {/* Header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader
@@ -511,6 +512,6 @@ export default function PolicyLibraryPage() {
           </div>
         </div>
       )}
-    </div>
+    </RiskPageFrame>
   );
 }

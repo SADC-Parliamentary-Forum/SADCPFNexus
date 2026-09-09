@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { riskApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function RiskAppetitePage() {
@@ -17,7 +18,7 @@ export default function RiskAppetitePage() {
   }, [t]);
 
   return (
-    <div className="w-full min-w-0 space-y-4">
+    <RiskPageFrame>
       <ModulePageHeader
         title="risk.appetite.title"
         subtitle="risk.appetite.subtitle"
@@ -40,6 +41,6 @@ export default function RiskAppetitePage() {
           <p className="text-sm text-neutral-500">{t("risk.appetite.empty")}</p>
         )}
       </div>
-    </div>
+    </RiskPageFrame>
   );
 }

@@ -398,6 +398,9 @@ return [
         ['pattern' => 'api/v1/risk/lookups*', 'permissions' => [
             'READ' => ['risk.view', 'risk.module.view', 'risk.create'],
         ]],
+        ['pattern' => 'api/v1/risk/mitigations', 'permissions' => [
+            'POST' => ['risk.create', 'risk.manage', 'risk.admin', 'risk.submit'],
+        ]],
         ['pattern' => 'api/v1/risk/risks*', 'permissions' => [
             'READ' => ['risk.view', 'risk.module.view', 'risk.create'],
             'POST' => [
@@ -770,7 +773,10 @@ return [
             'READ' => ['dashboard.view', 'reports.view'],
         ]],
         ['pattern' => 'api/v1/tenant-users', 'permissions' => [
-            'READ' => ['users.view', 'people.view-directory', 'dashboard.view', 'reports.view'],
+            'READ' => [
+                'users.view', 'people.view-directory', 'dashboard.view', 'reports.view',
+                'risk.view', 'risk.create', 'risk.module.view',
+            ],
         ]],
         ['pattern' => 'api/v1/users*', 'permissions' => [
             'READ' => ['users.view', 'people.view-directory'],

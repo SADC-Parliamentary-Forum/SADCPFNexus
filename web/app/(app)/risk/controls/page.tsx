@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { riskApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function RiskControlsPage() {
@@ -33,7 +34,7 @@ export default function RiskControlsPage() {
   }
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <RiskPageFrame>
       <ModulePageHeader
         title="risk.controls.title"
         subtitle="risk.controls.subtitle"
@@ -57,6 +58,6 @@ export default function RiskControlsPage() {
       </form>
       {error && <p className="text-sm text-red-600">{error}</p>}
       {ok && <p className="text-sm text-green-700">{ok}</p>}
-    </div>
+    </RiskPageFrame>
   );
 }

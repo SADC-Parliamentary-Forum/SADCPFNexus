@@ -6,6 +6,7 @@ import { riskApi, type RiskDashboardData, type RiskMatrixData, type RiskDepartme
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -104,7 +105,7 @@ export default function RiskDashboardPage() {
   const kpis = dashboard?.kpis;
 
   return (
-    <div className="w-full min-w-0 space-y-6">
+    <RiskPageFrame>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
           title={dashTitle}
@@ -339,6 +340,6 @@ export default function RiskDashboardPage() {
           </div>
         )}
       </div>
-    </div>
+    </RiskPageFrame>
   );
 }
