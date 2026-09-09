@@ -370,7 +370,10 @@ class ProgrammeController extends Controller
      */
     public function approve(Request $request, Programme $programme): JsonResponse
     {
-        $data = $request->validate(['comment' => ['nullable', 'string', 'max:1000']]);
+        $data = $request->validate([
+            'comment' => ['nullable', 'string', 'max:1000'],
+            'confirm_password' => ['nullable', 'string', 'max:255'],
+        ]);
 
         $approvalRequest = $programme->approvalRequest;
         if (!$approvalRequest) {
@@ -381,7 +384,13 @@ class ProgrammeController extends Controller
             return response()->json(['message' => 'Programme approved.', 'data' => $result]);
         }
 
-        $this->workflowService->approve($approvalRequest, $request->user(), $data['comment'] ?? null);
+        $this->workflowService->approve(
+            $approvalRequest,
+            $request->user(),
+            $data['comment'] ?? null,
+            null,
+            \App\Services\WorkflowService::signatureContextFromRequest($request)
+        );
 
         return response()->json([
             'message' => 'Decision recorded.',

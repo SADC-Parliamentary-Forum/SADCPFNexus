@@ -665,6 +665,8 @@ Route::prefix('v1')->group(function () {
             Route::get('team-calendar', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'teamCalendar']);
             Route::get('my-calendar', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'myCalendar']);
             Route::get('register/export', [\App\Http\Controllers\Api\V1\Leave\LeaveController::class, 'registerExport']);
+            Route::get('import/template', [\App\Http\Controllers\Api\V1\Leave\LeaveImportController::class, 'template']);
+            Route::post('import', [\App\Http\Controllers\Api\V1\Leave\LeaveImportController::class, 'store']);
             Route::get('requests/{badLeaveRequest}', fn () => abort(404))->where('badLeaveRequest', '[^0-9]+');
             Route::apiResource('requests', \App\Http\Controllers\Api\V1\Leave\LeaveController::class)
                 ->parameters(['requests' => 'leaveRequest'])
@@ -1409,6 +1411,7 @@ Route::prefix('v1')->group(function () {
         Route::get('assets/qr/{token}', [\App\Http\Controllers\Api\V1\Assets\PublicAssetQrController::class, 'authenticated'])
             ->where('token', '[A-Za-z0-9_-]+');
 
+        Route::get('assets/import/template', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'downloadTemplate']);
         Route::get('assets/import', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'index']);
         Route::post('assets/import', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'store']);
         Route::get('assets/import/{assetImportBatch}', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'show']);
@@ -1440,6 +1443,8 @@ Route::prefix('v1')->group(function () {
         Route::post('assets/{asset}/reject-capitalisation', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'rejectCapitalisation']);
         Route::post('assets/{asset}/assign', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'assign']);
         Route::post('assets/{asset}/acknowledge', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'acknowledge']);
+        Route::post('assets/{asset}/decline', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'decline']);
+        Route::post('assets/{asset}/request-return', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'requestReturn']);
         Route::post('assets/{asset}/transfer', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'transfer']);
         Route::post('assets/{asset}/return', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'returnAsset']);
         Route::post('assets/{asset}/mark-condition', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'markCondition']);
@@ -1929,6 +1934,8 @@ Route::prefix('v1')->group(function () {
         Route::prefix('risk')->group(function () {
             Route::get('dashboard', [\App\Http\Controllers\Api\V1\Risk\RiskDashboardController::class, 'summary']);
             Route::get('lookups/objectives', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'listObjectives']);
+            Route::get('lookups/owners', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'listOwners']);
+            Route::post('mitigations', [\App\Http\Controllers\Api\V1\Risk\RiskActionController::class, 'applyToRisks']);
             Route::get('audit-trail', [\App\Http\Controllers\Api\V1\Risk\RiskController::class, 'auditTrail']);
             Route::get('matrix', [\App\Http\Controllers\Api\V1\Risk\RiskMatrixController::class, 'matrix']);
 

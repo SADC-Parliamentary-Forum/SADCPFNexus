@@ -197,7 +197,7 @@ export default function AddAssetPage() {
   const cardCls = "rounded-xl bg-white border border-neutral-100 shadow-card p-6 space-y-5";
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Header - same style as leave/create, imprest/create */}
       <div>
         <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
@@ -344,6 +344,7 @@ export default function AddAssetPage() {
                   <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
               </select>
+              <p className="text-xs text-neutral-500">Optional. Leave unassigned if the asset is not in someone&apos;s custody.</p>
             </div>
             <div className="space-y-2">
               <label htmlFor="issued_at" className={labelCls}>Issued date</label>

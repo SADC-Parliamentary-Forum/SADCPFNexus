@@ -398,6 +398,9 @@ return [
         ['pattern' => 'api/v1/risk/lookups*', 'permissions' => [
             'READ' => ['risk.view', 'risk.module.view', 'risk.create'],
         ]],
+        ['pattern' => 'api/v1/risk/mitigations', 'permissions' => [
+            'POST' => ['risk.create', 'risk.manage', 'risk.admin', 'risk.submit'],
+        ]],
         ['pattern' => 'api/v1/risk/risks*', 'permissions' => [
             'READ' => ['risk.view', 'risk.module.view', 'risk.create'],
             'POST' => [
@@ -559,6 +562,11 @@ return [
             'PATCH' => ['pif.create', 'pif.approve', 'programme.finance-review', 'pif.admin'],
             'DELETE' => ['pif.admin'],
         ]],
+        ['pattern' => 'api/v1/leave/import*', 'permissions' => [
+            'READ' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import'],
+            'POST' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import'],
+            'WRITE' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import'],
+        ]],
         ['pattern' => 'api/v1/leave*', 'permissions' => [
             'READ' => [
                 'leave.view', 'leave.approve', 'leave.admin', 'leave.module.view',
@@ -671,6 +679,25 @@ return [
         ]],
         ['pattern' => 'api/v1/assets/{asset}/acknowledge', 'permissions' => [
             'WRITE' => [
+                'assets.view',
+                'assets.edit',
+                'assets.manage',
+                'assets.admin',
+                'profile.read.self',
+            ],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/decline', 'permissions' => [
+            'WRITE' => [
+                'assets.view',
+                'assets.edit',
+                'assets.manage',
+                'assets.admin',
+                'profile.read.self',
+            ],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/request-return', 'permissions' => [
+            'WRITE' => [
+                'assets.view',
                 'assets.edit',
                 'assets.manage',
                 'assets.admin',
@@ -765,7 +792,10 @@ return [
             'READ' => ['dashboard.view', 'reports.view'],
         ]],
         ['pattern' => 'api/v1/tenant-users', 'permissions' => [
-            'READ' => ['users.view', 'people.view-directory', 'dashboard.view', 'reports.view'],
+            'READ' => [
+                'users.view', 'people.view-directory', 'dashboard.view', 'reports.view',
+                'risk.view', 'risk.create', 'risk.module.view',
+            ],
         ]],
         ['pattern' => 'api/v1/users*', 'permissions' => [
             'READ' => ['users.view', 'people.view-directory'],

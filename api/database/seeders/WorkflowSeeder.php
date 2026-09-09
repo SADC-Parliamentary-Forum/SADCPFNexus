@@ -65,7 +65,7 @@ class WorkflowSeeder extends Seeder
 
         $this->makeWorkflow($tenant, 'Purchase Order / LPO Approval', 'purchase_order', [
             ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance Certification', 'authority_action' => 'finance.certify', 'allow_return' => true]] : []),
-            ...($sgRole  ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'SG / Authorised Signatory', 'allow_return' => true]] : []),
+            ...($sgRole  ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'SG / Authorised Signatory', 'allow_return' => true, 'requires_signature' => true]] : []),
         ]);
 
         $this->makeWorkflow($tenant, 'Procurement Approval', 'procurement', [

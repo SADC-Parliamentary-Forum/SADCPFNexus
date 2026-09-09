@@ -112,7 +112,7 @@ export default function TravelCalendarPage() {
   for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, key: `d-${d}` });
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Travel calendar"
         subtitle={`Departures, returns, and travellers away in ${bounds.label}.`}

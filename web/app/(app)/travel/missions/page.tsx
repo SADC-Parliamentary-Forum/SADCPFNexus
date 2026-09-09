@@ -76,7 +76,7 @@ export default function TravelMissionsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">

@@ -79,7 +79,7 @@ export default function BudgetChangeDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <Link href="/budget/changes" className="text-sm text-[var(--primary)] hover:underline">

@@ -384,7 +384,7 @@ export default function ConductDetailPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6 max-w-5xl">
+      <div className="w-full min-w-0 space-y-6">
         {/* Skeleton header */}
         <div className="space-y-2">
           <div className="h-3 w-40 bg-neutral-100 rounded animate-pulse" />
@@ -422,7 +422,7 @@ export default function ConductDetailPage() {
 
   if (error || !record) {
     return (
-      <div className="space-y-4 max-w-3xl">
+      <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           {error ?? "Conduct record not found."}
@@ -565,7 +565,7 @@ export default function ConductDetailPage() {
   const applicableSteps = WORKFLOW_STEPS.filter((s) => s.applicableWhen(record));
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       {/* ── Breadcrumb ── */}
       <div>
         <div className="flex items-center gap-1.5 text-xs text-neutral-500 mb-3">

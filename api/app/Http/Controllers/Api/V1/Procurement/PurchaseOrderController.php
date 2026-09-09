@@ -153,8 +153,18 @@ class PurchaseOrderController extends Controller
     public function approve(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
         $this->assertTenant($request, $purchaseOrder);
-        $data = $request->validate(['comment' => ['nullable', 'string'], 'idempotency_key' => ['nullable', 'string']]);
-        $po = $this->lpo->approve($purchaseOrder, $request->user(), $data['comment'] ?? null, $data['idempotency_key'] ?? null);
+        $data = $request->validate([
+            'comment' => ['nullable', 'string'],
+            'idempotency_key' => ['nullable', 'string'],
+            'confirm_password' => ['nullable', 'string', 'max:255'],
+        ]);
+        $po = $this->lpo->approve(
+            $purchaseOrder,
+            $request->user(),
+            $data['comment'] ?? null,
+            $data['idempotency_key'] ?? null,
+            \App\Services\WorkflowService::signatureContextFromRequest($request)
+        );
 
         return response()->json(['message' => 'LPO approved.', 'data' => $po]);
     }

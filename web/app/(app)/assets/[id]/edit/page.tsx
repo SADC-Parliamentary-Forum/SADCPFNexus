@@ -192,7 +192,7 @@ export default function EditAssetPage() {
         name: assetName,
         category,
         status: status || "active",
-        assigned_to: assignedTo === "" ? undefined : Number(assignedTo),
+        assigned_to: assignedTo === "" ? null : Number(assignedTo),
         issued_at: issuedAt || undefined,
         notes: notes.trim() || undefined,
         invoice_number: invoiceNumber.trim() || undefined,
@@ -228,7 +228,7 @@ export default function EditAssetPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto p-8 flex items-center justify-center gap-2 text-neutral-500">
+      <div className="w-full min-w-0 p-8 flex items-center justify-center gap-2 text-neutral-500">
         <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
         <span className="text-sm">Loading asset…</span>
       </div>
@@ -237,7 +237,7 @@ export default function EditAssetPage() {
 
   if (error && !asset) {
     return (
-      <div className="max-w-3xl mx-auto p-8">
+      <div className="w-full min-w-0 p-8">
         <p className="text-red-600">{error}</p>
         <Link href="/assets" className="text-primary mt-2 inline-block text-sm">Back to Assets</Link>
       </div>
@@ -254,7 +254,7 @@ export default function EditAssetPage() {
   const cardCls = "rounded-xl bg-white border border-neutral-100 shadow-card p-6 space-y-5";
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
           <Link href="/assets" className="hover:text-primary transition-colors">
@@ -391,6 +391,7 @@ export default function EditAssetPage() {
                   <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
               </select>
+              <p className="text-xs text-neutral-500">Optional. Leave unassigned if the asset is not in someone&apos;s custody.</p>
             </div>
             <div className="space-y-2">
               <label htmlFor="issued_at" className={labelCls}>Issued date</label>

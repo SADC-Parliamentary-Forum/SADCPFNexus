@@ -43,7 +43,7 @@ export default function StockReturnsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Stock Returns"
         subtitle="Returned stock is ledgered in; damaged/expired returns go to quarantine."

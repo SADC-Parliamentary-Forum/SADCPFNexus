@@ -3,7 +3,9 @@
 namespace Tests\Feature\Assets;
 
 use App\Models\Asset;
+use App\Models\AssetAssignmentHistory;
 use App\Models\AssetImportBatch;
+use App\Models\AssetImportLineage;
 use App\Models\AssetImportRaw;
 use App\Models\AssetQrToken;
 use App\Models\Tenant;
@@ -33,7 +35,159 @@ class AssetRegisterImportTest extends TestCase
         [$http] = $this->asStaff($tenant);
 
         $http->getJson('/api/v1/assets/import')->assertForbidden();
+        $http->get('/api/v1/assets/import/template')->assertForbidden();
         $http->post('/api/v1/assets/import', [])->assertForbidden();
+    }
+
+    public function test_admin_can_download_excel_import_template(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+
+        $res = $http->get('/api/v1/assets/import/template');
+        $res->assertOk();
+        $res->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $this->assertStringContainsString('sadcpf-asset-import-template.xlsx', (string) $res->headers->get('content-disposition'));
+
+        $body = (string) $res->getContent();
+        $this->assertSame("PK\x03\x04", substr($body, 0, 4));
+
+        $path = sys_get_temp_dir().'/downloaded-asset-template-'.uniqid().'.xlsx';
+        file_put_contents($path, $body);
+        $rows = (new \App\Modules\Assets\Import\NexusAssetTemplateParser)->parseFile($path, 'sadcpf-asset-import-template.xlsx');
+        unlink($path);
+
+        $this->assertSame([], $rows);
+        $this->assertContains('asset_tag', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('asset_name', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('original_cost', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('assigned_to_email', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+    }
+
+    public function test_template_assigned_to_email_optionally_resolves_tenant_user(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+
+        $path = sys_get_temp_dir().'/template-assign-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'assigned_to_email'],
+            ['CE-5101', 'Matched laptop', $staff->email],
+            ['CE-5102', 'Unknown custodian', 'nobody-at-sadcpf@example.test'],
+            ['CE-5103', 'Unassigned laptop', ''],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        $batch = AssetImportBatch::find($res->json('data.batch.id'));
+        $matched = $batch->stagingRows()->where('asset_tag', 'CE-5101')->first();
+        $unknown = $batch->stagingRows()->where('asset_tag', 'CE-5102')->first();
+        $blank = $batch->stagingRows()->where('asset_tag', 'CE-5103')->first();
+
+        $this->assertNotNull($matched);
+        $this->assertSame($staff->id, (int) $matched->custodian_user_id);
+        $this->assertSame('user', $matched->custodian_type);
+
+        $this->assertNull($unknown->custodian_user_id);
+        $this->assertContains('ASSIGNED_USER_UNMATCHED', $unknown->data_quality_flags ?? []);
+        $this->assertNotContains('ASSIGNED_USER_UNMATCHED', $blank->data_quality_flags ?? []);
+        $this->assertNull($blank->custodian_user_id);
+
+        $http->postJson("/api/v1/assets/import/{$batch->id}/commit", ['approve_non_blocking' => true])->assertOk();
+
+        $asset = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5101')->first();
+        $this->assertNotNull($asset);
+        $this->assertSame($staff->id, (int) $asset->assigned_to);
+        $this->assertDatabaseHas('asset_assignment_histories', [
+            'asset_id' => $asset->id,
+            'assigned_to' => $staff->id,
+            'returned_at' => null,
+        ]);
+
+        $unassigned = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5103')->first();
+        $this->assertNull($unassigned?->assigned_to);
+    }
+
+    public function test_map_custodian_to_user_assigns_on_commit(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+
+        $path = sys_get_temp_dir().'/template-map-user-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'custodian_candidate'],
+            ['CE-5201', 'Mapped to person', 'Jane Officer'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        $batchId = $res->json('data.batch.id');
+        unlink($path);
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/map-custodian", [
+            'legacy_key' => 'Jane Officer',
+            'custodian_type' => 'user',
+            'user_id' => $staff->id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('asset_import_staging', [
+            'import_batch_id' => $batchId,
+            'asset_tag' => 'CE-5201',
+            'custodian_type' => 'user',
+            'custodian_user_id' => $staff->id,
+        ]);
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/commit", ['approve_non_blocking' => true])->assertOk();
+        $asset = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5201')->first();
+        $this->assertSame($staff->id, (int) $asset->assigned_to);
+        $this->assertDatabaseHas('asset_assignment_histories', [
+            'asset_id' => $asset->id,
+            'assigned_to' => $staff->id,
+        ]);
+    }
+
+    public function test_template_xlsx_carries_cost_and_skips_blank_rows(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+
+        $path = sys_get_temp_dir().'/template-cost-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'serial_number', 'legacy_category', 'original_cost', 'current_book_value', 'legacy_location', 'acquisition_date'],
+            ['CE-4101', 'Bulk laptop', 'SN-4101', 'Computer Equipment', 12500.5, 9800, 'Head Office', '2024-03-01'],
+            ['', '', '', '', '', '', '', ''],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        $this->assertSame(1, (int) $res->json('data.counts.unique_asset_tags'));
+        $row = AssetImportBatch::find($res->json('data.batch.id'))->stagingRows()->where('asset_tag', 'CE-4101')->first();
+        $this->assertNotNull($row);
+        $this->assertEqualsWithDelta(12500.5, (float) $row->original_cost, 0.01);
+        $this->assertEqualsWithDelta(9800, (float) $row->current_book_value, 0.01);
+        $this->assertSame('2024-03-01', optional($row->acquisition_date)?->toDateString() ?? $row->acquisition_date);
+        $this->assertSame('Head Office', $row->legacy_location);
     }
 
     public function test_legacy_ingest_commit_qr_and_identity_equation(): void
@@ -53,6 +207,9 @@ class AssetRegisterImportTest extends TestCase
         $this->assertSame(323, (int) $response->json('data.counts.unique_asset_tags'));
         $this->assertSame(0, (int) $response->json('data.counts.blocking_errors'));
         $this->assertContains('FF-0172', AssetImportBatch::find($batchId)->stagingRows()->pluck('asset_tag')->all());
+        $ff0208 = AssetImportBatch::find($batchId)->stagingRows()->where('asset_tag', 'FF-0208')->first();
+        $this->assertNotNull($ff0208);
+        $this->assertNotEmpty($ff0208->legacy_location);
 
         $ce = AssetImportBatch::find($batchId)->stagingRows()->where('asset_tag', 'CE-0092')->first();
         $this->assertNotNull($ce);
@@ -539,5 +696,186 @@ class AssetRegisterImportTest extends TestCase
             'result' => 'verified',
             'verification_method' => 'qr',
         ])->assertCreated();
+    }
+
+    public function test_matcher_cascade_tag_serial_description_never_fuzzy(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->asAdmin($tenant);
+        $matcher = app(\App\Modules\Assets\Import\AssetExistingMatcher::class);
+
+        $byTag = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CE-8101',
+            'tag_number' => 'CE-8101',
+            'name' => 'Tagged laptop',
+            'category' => 'it',
+            'status' => 'active',
+            'serial_number' => 'SN-OTHER',
+        ]);
+        $this->assertSame($byTag->id, $matcher->match($tenant->id, 'CE-8101', 'SN-IGNORED', [], [], 0)?->id);
+
+        $bySerial = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CE-8102',
+            'tag_number' => 'CE-8102',
+            'name' => 'Serial laptop',
+            'category' => 'it',
+            'status' => 'active',
+            'serial_number' => 'SN-UNIQUE-8102',
+        ]);
+        $this->assertSame($bySerial->id, $matcher->match($tenant->id, 'CE-9999', 'SN-UNIQUE-8102', [], [], 0)?->id);
+
+        $byDesc = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'FF-8103',
+            'tag_number' => 'FF-8103',
+            'name' => 'Oak desk',
+            'category' => 'furniture',
+            'status' => 'active',
+            'legacy_description' => 'Oak desk',
+            'legacy_location' => 'Office 9',
+            'purchase_date' => '2019-01-15',
+        ]);
+        $this->assertSame($byDesc->id, $matcher->match($tenant->id, 'FF-0000', null, [
+            'legacy_description' => 'Oak desk',
+            'legacy_location' => 'Office 9',
+            'acquisition_date' => '2019-01-15',
+        ], [], 0)?->id);
+
+        $this->assertNull($matcher->match($tenant->id, 'FF-0001', null, [
+            'legacy_description' => 'Oak desk extra drawer',
+            'legacy_location' => 'Office 9',
+            'acquisition_date' => '2019-01-15',
+        ], [], 0));
+        $this->assertNull($matcher->match($tenant->id, 'FF-0002', null, [
+            'legacy_description' => 'Oak desk',
+            'legacy_location' => 'Office 9',
+            'acquisition_date' => null,
+        ], [], 0));
+
+        $prior = AssetImportBatch::create([
+            'tenant_id' => $tenant->id,
+            'batch_number' => 'AST-IMPORT-TEST-FP',
+            'mode' => 'template',
+            'status' => 'committed',
+            'fingerprint' => str_repeat('a', 64),
+        ]);
+        $raw = AssetImportRaw::create([
+            'import_batch_id' => $prior->id,
+            'source_filename' => 'prior.xlsx',
+            'source_row_number' => 2,
+            'source_kind' => 'template',
+            'raw_json' => ['asset_tag' => 'CE-FP01'],
+            'row_fingerprint' => hash('sha256', 'fingerprint-row'),
+        ]);
+        $fpAsset = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CE-FP01',
+            'tag_number' => 'CE-FP01',
+            'name' => 'Fingerprint laptop',
+            'category' => 'it',
+            'status' => 'active',
+        ]);
+        AssetImportLineage::create([
+            'import_batch_id' => $prior->id,
+            'asset_tag' => 'CE-FP01',
+            'raw_id' => $raw->id,
+            'source_kind' => 'template',
+        ]);
+        $current = AssetImportBatch::create([
+            'tenant_id' => $tenant->id,
+            'batch_number' => 'AST-IMPORT-TEST-FP2',
+            'mode' => 'template',
+            'status' => 'review',
+            'fingerprint' => str_repeat('b', 64),
+        ]);
+        $currentRaw = AssetImportRaw::create([
+            'import_batch_id' => $current->id,
+            'source_filename' => 'current.xlsx',
+            'source_row_number' => 2,
+            'source_kind' => 'template',
+            'raw_json' => ['asset_tag' => 'CE-NEW'],
+            'row_fingerprint' => hash('sha256', 'fingerprint-row'),
+        ]);
+        $this->assertSame($fpAsset->id, $matcher->match($tenant->id, 'CE-NEW', null, [], [
+            ['raw_id' => $currentRaw->id],
+        ], (int) $current->id)?->id);
+    }
+
+    public function test_template_import_matches_existing_unique_serial(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'SADCPF-OLD-4401',
+            'tag_number' => 'SADCPF-OLD-4401',
+            'name' => 'Existing laptop',
+            'category' => 'it',
+            'status' => 'active',
+            'serial_number' => 'SN-MATCH-1',
+        ]);
+
+        $path = sys_get_temp_dir().'/template-serial-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'serial_number'],
+            ['CE-4401', 'Imported laptop', 'SN-MATCH-1'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        $row = \App\Models\AssetImportStaging::query()
+            ->where('import_batch_id', $res->json('data.batch.id'))
+            ->where('asset_tag', 'CE-4401')
+            ->first();
+        $this->assertNotNull($row);
+        $this->assertNotNull($row->matched_asset_id);
+        $this->assertContains($row->proposed_action, ['UPDATE', 'REQUIRES_REVIEW']);
+        $this->assertTrue((bool) $res->json('data.auto_approve_allowed'));
+    }
+
+    public function test_production_commit_ignores_auto_approve(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeUser('staff', $tenant);
+        $user->givePermissionTo('assets.import');
+        $http = $this->asUser($user);
+
+        $path = sys_get_temp_dir().'/template-prod-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name'],
+            ['CE-5501', 'Prod gate laptop'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+        $batchId = $res->json('data.batch.id');
+
+        config(['app.env' => 'production']);
+        $http->getJson("/api/v1/assets/import/{$batchId}")
+            ->assertOk()
+            ->assertJsonPath('data.auto_approve_allowed', false);
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/commit", ['approve_non_blocking' => true])
+            ->assertStatus(422);
+        $this->assertDatabaseHas('asset_import_staging', [
+            'import_batch_id' => $batchId,
+            'asset_tag' => 'CE-5501',
+            'review_status' => 'pending',
+        ]);
+        $this->assertSame(0, Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5501')->count());
     }
 }

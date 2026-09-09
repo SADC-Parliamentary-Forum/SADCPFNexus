@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { loadPdfLibs } from "@/lib/pdf-libs";
 import api from "@/lib/api";
-import { assetsApi, assetRequestsApi, type Asset, type AssetRequest } from "@/lib/api";
+import { assetsApi, assetRequestsApi, tenantUsersApi, type Asset, type AssetRequest, type TenantUserOption } from "@/lib/api";
 import { canDisposeAssets, canManageAssets, canRetireAssets, getStoredUser } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
@@ -18,6 +18,8 @@ const RETIREABLE_STATUSES = new Set(["active", "service_due", "loan_out"]);
 const statusConfig: Record<string, { label: string; cls: string }> = {
   pending:           { label: "Pending capitalisation", cls: "badge-warning" },
   active:            { label: "Active",       cls: "badge-success" },
+  assigned:          { label: "Assigned",     cls: "badge-info" },
+  available:         { label: "Available",    cls: "badge-success" },
   service_due:       { label: "Service Due",  cls: "badge-warning" },
   loan_out:          { label: "Loan Out",      cls: "badge-info" },
   pending_disposal:  { label: "Pending disposal", cls: "badge-warning" },
@@ -34,6 +36,21 @@ function matchesStatusFilter(status: string, filterStatus: string): boolean {
   if (filterStatus === "live") return LIVE_STATUSES.has(status);
   if (filterStatus === "disposed") return DISPOSED_STATUSES.has(status);
   return status === filterStatus;
+}
+
+const UNASSIGNABLE_STATUSES = [
+  "pending",
+  "retired",
+  "disposed",
+  "sold",
+  "written_off",
+  "scrapped",
+  "donated_out",
+  "pending_disposal",
+];
+
+function canAssignAsset(status: string): boolean {
+  return !UNASSIGNABLE_STATUSES.includes(status);
 }
 
 // ─── Depreciation helpers ────────────────────────────────────────────────────
@@ -420,6 +437,115 @@ function DepreciationModal({
   );
 }
 
+function AssignModal({
+  asset,
+  onClose,
+  onSaved,
+}: {
+  asset: Asset;
+  onClose: () => void;
+  onSaved: (updated: Asset) => void;
+}) {
+  const { t } = useI18n();
+  const [users, setUsers] = useState<TenantUserOption[]>([]);
+  const [assignedTo, setAssignedTo] = useState<number | "">(asset.assigned_to ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    tenantUsersApi.list()
+      .then((r) => setUsers(r.data.data ?? []))
+      .catch(() => setUsers([]));
+  }, []);
+
+  const handleSave = async () => {
+    if (assignedTo === "") {
+      onClose();
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await assetsApi.assign(asset.id, { assigned_to: Number(assignedTo) });
+      onSaved(res.data.data);
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data
+          ?.message ||
+        Object.values(
+          (e as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors ?? {},
+        )
+          .flat()
+          .join(" ") ||
+        t("assets.assignFailed");
+      setError(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <span className="material-symbols-outlined text-primary text-[18px]">person_add</span>
+            </div>
+            <div>
+              <h3 className="font-semibold text-neutral-900 text-sm">{t("assets.assignTitle")}</h3>
+              <p className="text-xs text-neutral-400">
+                {asset.asset_code} — {asset.name}
+              </p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} aria-label={t("common.cancel")} className="text-neutral-400 hover:text-neutral-600">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[14px]">error_outline</span>
+              {error}
+            </div>
+          )}
+          <p className="text-xs text-neutral-500">{t("assets.assignHint")}</p>
+          <div>
+            <label htmlFor="assign-user" className="block text-xs font-semibold text-neutral-700 mb-1">
+              {t("assets.assignedTo")}
+            </label>
+            <select
+              id="assign-user"
+              className="form-input"
+              value={assignedTo === "" ? "" : assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value === "" ? "" : Number(e.target.value))}
+              disabled={saving}
+            >
+              <option value="">{t("assets.notAssigned")}</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
+          <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving || assignedTo === ""}
+            className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[16px]">person_add</span>
+            {saving ? "…" : t("assets.assignSave")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const requestStatusConfig: Record<string, { label: string; cls: string }> = {
   pending:  { label: "Pending",  cls: "badge-warning" },
   approved: { label: "Approved", cls: "badge-success" },
@@ -454,8 +580,10 @@ export default function AssetsPage() {
   const [filterStatus, setFilterStatus] = useState("live");
   const [filterCategory, setFilterCategory] = useState("all");
   const [capitaliseAsset, setCapitaliseAsset] = useState<Asset | null>(null);
+  const [assignAsset, setAssignAsset] = useState<Asset | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
   const [retiringId, setRetiringId] = useState<number | null>(null);
+  const [confirmingReturnId, setConfirmingReturnId] = useState<number | null>(null);
 
   const handleExportPdf = useCallback(async () => {
     setExportingPdf(true);
@@ -610,8 +738,21 @@ export default function AssetsPage() {
     }
   };
 
+  const handleConfirmReturn = async (asset: Asset) => {
+    setConfirmingReturnId(asset.id);
+    setError(null);
+    try {
+      const res = await assetsApi.returnAsset(asset.id);
+      setAssets((prev) => prev.map((a) => (a.id === asset.id ? res.data.data : a)));
+    } catch {
+      setError(t("assets.register.returnFailed"));
+    } finally {
+      setConfirmingReturnId(null);
+    }
+  };
+
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-4">
         <ModulePageHeader
         title="Fixed Asset Register"
@@ -646,6 +787,10 @@ export default function AssetsPage() {
                 <span className="material-symbols-outlined text-[18px]">category</span>
                 Categories
               </Link>
+              <Link href="/assets/import" className="btn-secondary">
+                <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                Import
+              </Link>
               <Link href="/assets/add" className="btn-primary">
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 Add Asset
@@ -665,7 +810,7 @@ export default function AssetsPage() {
             </Link>
           )}
           {showRequestButton && (
-            <Link href="/assets/request" className="btn-primary">
+            <Link href="/assets/requests?new=1" className="btn-primary">
               <span className="material-symbols-outlined text-[18px]">add_circle</span>
               Request Asset
             </Link>
@@ -815,7 +960,7 @@ export default function AssetsPage() {
               </div>
               <p className="mt-4 text-sm font-semibold text-neutral-600">No asset requests yet</p>
               <p className="text-xs text-neutral-400 mt-1">Submit a request with a justification for managers to review.</p>
-              <Link href="/assets/request" className="btn-primary mt-5 inline-flex">
+              <Link href="/assets/requests?new=1" className="btn-primary mt-5 inline-flex">
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 Request Asset
               </Link>
@@ -846,6 +991,12 @@ export default function AssetsPage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-xs font-mono text-neutral-400">{asset.asset_code}</span>
                             <span className={`badge ${s.cls}`}>{s.label}</span>
+                            {asset.custody_state === "pending_acceptance" && (
+                              <span className="badge badge-warning">{t("assets.register.pendingAcceptance")}</span>
+                            )}
+                            {asset.custody_state === "pending_return" && (
+                              <span className="badge badge-warning">{t("assets.register.pendingReturn")}</span>
+                            )}
                           </div>
                           <p className="text-sm font-semibold text-neutral-900 mt-0.5 truncate">{asset.name}</p>
                           <p className="text-xs text-neutral-500 mt-1 capitalize">{asset.category}</p>
@@ -857,9 +1008,14 @@ export default function AssetsPage() {
                           {asset.age_display && (
                             <p className="text-xs text-neutral-500 mt-0.5">Age: {asset.age_display}</p>
                           )}
+                          <p className={`text-xs mt-0.5 ${asset.assigned_user?.name ? "text-neutral-500" : "text-neutral-400"}`}>
+                            {asset.assigned_user?.name
+                              ? `${t("assets.assignedTo")}: ${asset.assigned_user.name}`
+                              : t("assets.notAssigned")}
+                          </p>
                         </div>
                       </div>
-                      {(showAddAssetButton || canDispose || canRetire) && (
+                      {(showAddAssetButton || canDispose || canRetire || asset.custody_state === "pending_return") && (
                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
                           {asset.status === "pending" ? (
                             showAddAssetButton ? (
@@ -883,6 +1039,15 @@ export default function AssetsPage() {
                             ) : null
                           ) : (
                             <>
+                              {showAddAssetButton && canAssignAsset(asset.status) && asset.custody_state !== "pending_return" && (
+                                <button
+                                  type="button"
+                                  onClick={() => setAssignAsset(asset)}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/10"
+                                >
+                                  {t("assets.assign")}
+                                </button>
+                              )}
                               {showAddAssetButton && (
                                 <Link
                                   href={`/assets/${asset.id}/edit`}
@@ -891,6 +1056,16 @@ export default function AssetsPage() {
                                 >
                                   <span className="material-symbols-outlined text-[20px]">edit</span>
                                 </Link>
+                              )}
+                              {showAddAssetButton && asset.custody_state === "pending_return" && (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleConfirmReturn(asset)}
+                                  disabled={confirmingReturnId === asset.id}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:opacity-90 disabled:opacity-50"
+                                >
+                                  {confirmingReturnId === asset.id ? t("common.loading") : t("assets.register.confirmReturn")}
+                                </button>
                               )}
                               {canDispose && asset.status === "pending_disposal" && (
                                 <Link
@@ -941,7 +1116,7 @@ export default function AssetsPage() {
               <p className="mt-4 text-sm font-semibold text-neutral-600">No assets in inventory</p>
               <p className="text-xs text-neutral-400 mt-1">You can still request an asset; managers will process requests.</p>
               {showRequestButton && (
-                <Link href="/assets/request" className="btn-primary mt-5 inline-flex">
+                <Link href="/assets/requests?new=1" className="btn-primary mt-5 inline-flex">
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   Request Asset
                 </Link>
@@ -958,6 +1133,16 @@ export default function AssetsPage() {
           onSaved={(updated) => {
             setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
             setCapitaliseAsset(null);
+          }}
+        />
+      )}
+      {assignAsset && (
+        <AssignModal
+          asset={assignAsset}
+          onClose={() => setAssignAsset(null)}
+          onSaved={(updated) => {
+            setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+            setAssignAsset(null);
           }}
         />
       )}

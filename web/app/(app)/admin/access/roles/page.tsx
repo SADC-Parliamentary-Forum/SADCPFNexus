@@ -196,7 +196,7 @@ export default function AccessRolesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Role catalogue"
         subtitle="Build roles from precise module, feature, action, and scope permissions. A role can grant read without edit, edit without delete, or any other approved combination."

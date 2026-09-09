@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { adminApi, assetImportApi, assetMetaApi } from "@/lib/api";
+import { adminApi, assetImportApi, assetMetaApi, tenantUsersApi, type TenantUserOption } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { FormSection } from "@/components/ui/FormSection";
 import { ListPagination } from "@/components/ui/ListPagination";
@@ -83,7 +83,7 @@ function filterKey(filter: string): string {
 
 export default function AssetImportPage() {
   const { t } = useI18n();
-  const [mode, setMode] = useState<"legacy" | "template">("legacy");
+  const [mode, setMode] = useState<"legacy" | "template">("template");
   const [counts, setCounts] = useState<Counts | null>(null);
   const [equation, setEquation] = useState<Equation | null>(null);
   const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([]);
@@ -103,10 +103,25 @@ export default function AssetImportPage() {
   const [mapLocationId, setMapLocationId] = useState<number | "">("");
   const [custodianType, setCustodianType] = useState("shared");
   const [custodianDepartmentId, setCustodianDepartmentId] = useState<number | "">("");
+  const [custodianUserId, setCustodianUserId] = useState<number | "">("");
+  const [users, setUsers] = useState<TenantUserOption[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [raw, setRaw] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  const [autoApproveAllowed, setAutoApproveAllowed] = useState(false);
+
+  async function downloadTemplate() {
+    setBusy(true);
+    setError(null);
+    try {
+      await assetImportApi.downloadTemplate();
+    } catch {
+      setError(t("assets.import.downloadTemplateFailed"));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const loadPreview = useCallback(async (id: number) => {
     const r = await assetImportApi.show(id);
@@ -115,12 +130,14 @@ export default function AssetImportPage() {
       counts?: Counts;
       equation?: Equation;
       discrepancies?: Discrepancy[];
+      auto_approve_allowed?: boolean;
     };
     setBatchId(payload.batch?.id ?? id);
     setBatchStatus(payload.batch?.status ?? "");
     setCounts(payload.counts ?? null);
     setEquation(payload.equation ?? null);
     setDiscrepancies(Array.isArray(payload.discrepancies) ? payload.discrepancies : []);
+    setAutoApproveAllowed(Boolean(payload.auto_approve_allowed));
   }, []);
 
   const loadStaging = useCallback(async (id: number, nextFilter = filter, nextPage = page, nextSearch = search) => {
@@ -146,6 +163,7 @@ export default function AssetImportPage() {
     adminApi.listDepartments().then((r) => {
       setDepartments((r.data as { data?: Department[] }).data ?? []);
     }).catch(() => setDepartments([]));
+    tenantUsersApi.list().then((r) => setUsers(r.data.data ?? [])).catch(() => setUsers([]));
   }, []);
 
   useEffect(() => {
@@ -162,7 +180,13 @@ export default function AssetImportPage() {
     form.set("mode", mode);
     try {
       const res = await assetImportApi.upload(form);
-      const payload = res.data.data as { batch?: { id: number; status: string }; counts?: Counts; equation?: Equation };
+      const payload = res.data.data as {
+        batch?: { id: number; status: string };
+        counts?: Counts;
+        equation?: Equation;
+        auto_approve_allowed?: boolean;
+      };
+      setAutoApproveAllowed(Boolean(payload.auto_approve_allowed));
       setBatchId(payload.batch?.id ?? null);
       setBatchStatus(payload.batch?.status ?? "");
       setCounts(payload.counts ?? null);
@@ -216,7 +240,7 @@ export default function AssetImportPage() {
     if (!batchId) return;
     setBusy(true);
     try {
-      const r = await assetImportApi.commit(batchId, { approve_non_blocking: true });
+      const r = await assetImportApi.commit(batchId, { approve_non_blocking: autoApproveAllowed });
       const payload = r.data as { message?: string; data?: { batch?: { status: string }; equation?: Equation } };
       setMsg(payload.message ?? t("assets.import.commit"));
       setBatchStatus(payload.data?.batch?.status ?? batchStatus);
@@ -320,6 +344,7 @@ export default function AssetImportPage() {
       await assetImportApi.mapCustodian(batchId, {
         legacy_key: legacyKey,
         custodian_type: custodianType,
+        user_id: custodianType === "user" && custodianUserId !== "" ? custodianUserId : null,
         department_id: custodianType === "department" && custodianDepartmentId !== "" ? custodianDepartmentId : null,
         location_id: custodianType === "store" && mapLocationId !== "" ? mapLocationId : null,
       });
@@ -335,13 +360,16 @@ export default function AssetImportPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
-      <div className="page-header">
+    <div className="w-full min-w-0 space-y-5">
+      <div className="page-header flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
           title={t("assets.import.title")}
           subtitle={t("assets.import.subtitle")}
           breadcrumbs={<PageBreadcrumbs items={[{ label: t("assets.import.title") }]} />}
         />
+        <Button type="button" variant="secondary" onClick={() => void downloadTemplate()} disabled={busy}>
+          {t("assets.import.downloadTemplate")}
+        </Button>
       </div>
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
       {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
@@ -378,7 +406,15 @@ export default function AssetImportPage() {
             <label className="text-sm">{t("assets.import.stagingFile")}<input className="input mt-1" type="file" name="staging" accept=".xlsx" /></label>
           </div>
         ) : (
-          <label className="text-sm">{t("assets.import.template")}<input className="input mt-1" type="file" name="template" accept=".xlsx" required /></label>
+          <div className="space-y-2">
+            <p className="text-sm text-neutral-600">{t("assets.import.downloadTemplateHint")}</p>
+            <div className="flex flex-wrap items-end gap-3">
+              <Button type="button" variant="secondary" onClick={() => void downloadTemplate()} disabled={busy}>
+                {t("assets.import.downloadTemplate")}
+              </Button>
+              <label className="text-sm">{t("assets.import.template")}<input className="input mt-1" type="file" name="template" accept=".xlsx" required /></label>
+            </div>
+          </div>
         )}
         <Button type="submit" disabled={busy}>{busy ? t("common.loading") : t("assets.import.upload")}</Button>
       </form>
@@ -539,8 +575,16 @@ export default function AssetImportPage() {
                 </select>
               </label>
             )}
+            {custodianType === "user" && (
+              <label className="text-sm">{t("assets.import.selectUser")}
+                <select className="input mt-1" value={custodianUserId} onChange={(e) => setCustodianUserId(e.target.value === "" ? "" : Number(e.target.value))}>
+                  <option value="">{t("assets.notAssigned")}</option>
+                  {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              </label>
+            )}
             <div className="self-end">
-              <Button type="button" onClick={confirmCustodianMap} disabled={busy}>{t("assets.import.mapCustodian")}</Button>
+              <Button type="button" onClick={confirmCustodianMap} disabled={busy || (custodianType === "user" && custodianUserId === "")}>{t("assets.import.mapCustodian")}</Button>
             </div>
           </div>
         </FormSection>

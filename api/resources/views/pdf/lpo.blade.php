@@ -106,7 +106,14 @@
                 <td>{{ $hist->step_name ?? $hist->decision }}</td>
                 <td>{{ $hist->actor?->name ?? $hist->user?->name }}</td>
                 <td>{{ optional($hist->created_at)->format('Y/m/d H:i') }}</td>
-                <td class="sig">Approved in Nexus</td>
+                <td class="sig">
+                    @php $stamp = ($signatureStamps ?? [])[$hist->user_id] ?? null; @endphp
+                    @if($stamp)
+                        <img src="{{ $stamp }}" alt="Signature" style="height:36px;max-width:160px;">
+                    @else
+                        Approved in Nexus
+                    @endif
+                </td>
             </tr>
         @empty
             <tr><td colspan="4" class="muted">{{ $po->status === 'issued' || $po->status === 'approved' ? 'Authorised in Nexus workflow' : 'Pending' }}</td></tr>

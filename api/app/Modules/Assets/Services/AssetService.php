@@ -10,6 +10,7 @@ use App\Models\AssetLocationHistory;
 use App\Models\AssetMovement;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\NotificationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -198,7 +199,9 @@ class AssetService
             throw ValidationException::withMessages(['assigned_to' => 'Assignee must belong to the same tenant.']);
         }
 
-        return DB::transaction(function () use ($asset, $assignee, $actor, $data) {
+        $skipHandshake = (bool) ($data['skip_handshake'] ?? false);
+
+        $fresh = DB::transaction(function () use ($asset, $assignee, $actor, $data, $skipHandshake) {
             $this->closeOpenAssignment($asset);
 
             AssetAssignmentHistory::create([
@@ -210,12 +213,14 @@ class AssetService
                 'assigned_at' => now(),
                 'assigned_by' => $actor->id,
                 'notes' => $data['notes'] ?? null,
+                'acknowledged_at' => $skipHandshake ? now() : null,
             ]);
 
             $asset->assigned_to = $assignee->id;
             $asset->issued_at = now()->toDateString();
-            $asset->acknowledgement_at = null;
-            $asset->acknowledged_by = null;
+            $asset->acknowledgement_at = $skipHandshake ? now() : null;
+            $asset->acknowledged_by = $skipHandshake ? $assignee->id : null;
+            $asset->custody_state = $skipHandshake ? 'accepted' : 'pending_acceptance';
             if (! empty($data['department'])) {
                 $asset->department = $data['department'];
             }
@@ -234,12 +239,18 @@ class AssetService
             AuditLog::record('assets.assigned', [
                 'auditable_type' => Asset::class,
                 'auditable_id' => $asset->id,
-                'new_values' => ['assigned_to' => $assignee->id],
+                'new_values' => ['assigned_to' => $assignee->id, 'custody_state' => $asset->custody_state],
                 'tags' => 'assets',
             ]);
 
             return $asset->fresh();
         });
+
+        if (! $skipHandshake) {
+            $this->notifyCustody($assignee, 'assets.acknowledgement_required', $fresh);
+        }
+
+        return $fresh;
     }
 
     public function acknowledge(Asset $asset, User $user): Asset
@@ -250,14 +261,18 @@ class AssetService
             abort(403, 'Only the assigned custodian can acknowledge this asset.');
         }
 
-        $open = AssetAssignmentHistory::where('asset_id', $asset->id)
-            ->whereNull('returned_at')
-            ->orderByDesc('id')
-            ->first();
+        if (($asset->custody_state ?? 'pending_acceptance') === 'pending_return') {
+            throw ValidationException::withMessages([
+                'custody_state' => 'This asset is awaiting return confirmation, not acceptance.',
+            ]);
+        }
+
+        $open = $this->openHistory($asset);
 
         return DB::transaction(function () use ($asset, $user, $open) {
             $asset->acknowledgement_at = now();
             $asset->acknowledged_by = $user->id;
+            $asset->custody_state = 'accepted';
             $asset->save();
 
             if ($open) {
@@ -276,6 +291,100 @@ class AssetService
         });
     }
 
+    public function declineAssignment(Asset $asset, User $user, string $reason): Asset
+    {
+        $this->assertTenant($asset, $user);
+
+        if ((int) $asset->assigned_to !== (int) $user->id) {
+            abort(403, 'Only the assigned custodian can decline this asset.');
+        }
+        if (($asset->custody_state ?? 'pending_acceptance') !== 'pending_acceptance') {
+            throw ValidationException::withMessages([
+                'custody_state' => 'Only a pending assignment can be declined.',
+            ]);
+        }
+
+        $open = $this->openHistory($asset);
+        $officer = $open?->assigned_by ? User::find($open->assigned_by) : null;
+
+        $fresh = DB::transaction(function () use ($asset, $user, $reason, $open) {
+            if ($open) {
+                $open->declined_at = now();
+                $open->decline_reason = $reason;
+                $open->returned_at = now();
+                $open->notes = trim(($open->notes ?? '')."\nDeclined: ".$reason);
+                $open->save();
+            }
+
+            $asset->assigned_to = null;
+            $asset->acknowledgement_at = null;
+            $asset->acknowledged_by = null;
+            $asset->custody_state = null;
+            $asset->status = 'available';
+            $this->flagCustodyReprint($asset);
+            $asset->save();
+
+            AuditLog::record('assets.assignment_declined', [
+                'auditable_type' => Asset::class,
+                'auditable_id' => $asset->id,
+                'new_values' => ['declined_by' => $user->id, 'reason' => $reason],
+                'tags' => 'assets',
+            ]);
+
+            return $asset->fresh();
+        });
+
+        if ($officer) {
+            $this->notifyCustody($officer, 'assets.assignment_declined', $fresh, ['reason' => $reason]);
+        }
+
+        return $fresh;
+    }
+
+    public function requestReturn(Asset $asset, User $actor): Asset
+    {
+        $this->assertTenant($asset, $actor);
+        $isCustodian = (int) $asset->assigned_to === (int) $actor->id;
+        if (! $isCustodian) {
+            $this->assertCanManage($actor);
+        }
+        if (! $asset->assigned_to) {
+            throw ValidationException::withMessages(['assigned_to' => 'Asset is not currently assigned.']);
+        }
+        if (($asset->custody_state ?? null) === 'pending_return') {
+            return $asset->fresh() ?? $asset;
+        }
+
+        $open = $this->openHistory($asset);
+        $fresh = DB::transaction(function () use ($asset, $actor, $open) {
+            $asset->custody_state = 'pending_return';
+            $asset->save();
+            if ($open) {
+                $open->return_requested_at = now();
+                $open->return_requested_by = $actor->id;
+                $open->save();
+            }
+
+            AuditLog::record('assets.return_requested', [
+                'auditable_type' => Asset::class,
+                'auditable_id' => $asset->id,
+                'new_values' => ['requested_by' => $actor->id],
+                'tags' => 'assets',
+            ]);
+
+            return $asset->fresh();
+        });
+
+        $other = $isCustodian
+            ? ($open?->assigned_by ? User::find($open->assigned_by) : null)
+            : $asset->assignedUser;
+        if ($other) {
+            $this->notifyCustody($other, 'assets.return_requested', $fresh);
+        }
+
+        return $fresh;
+    }
+
     public function transfer(Asset $asset, User $toUser, User $actor, array $data = []): Asset
     {
         return $this->assign($asset, $toUser, $actor, array_merge($data, [
@@ -289,12 +398,29 @@ class AssetService
         $this->assertCanManage($actor);
         $this->assertAssignable($asset);
 
-        return DB::transaction(function () use ($asset, $actor, $data) {
-            $this->closeOpenAssignment($asset);
+        if (($asset->custody_state ?? null) !== 'pending_return') {
+            throw ValidationException::withMessages([
+                'custody_state' => 'Return must be requested before an officer can confirm receipt.',
+            ]);
+        }
+
+        $custodian = $asset->assignedUser;
+        $open = $this->openHistory($asset);
+
+        $fresh = DB::transaction(function () use ($asset, $actor, $data, $open) {
+            if ($open) {
+                $open->returned_at = now();
+                $open->condition_at_return = $data['condition'] ?? null;
+                if (! empty($data['notes'])) {
+                    $open->notes = trim(($open->notes ?? '')."\n".$data['notes']);
+                }
+                $open->save();
+            }
 
             $asset->assigned_to = null;
             $asset->acknowledgement_at = null;
             $asset->acknowledged_by = null;
+            $asset->custody_state = null;
             $asset->status = 'available';
             if (! empty($data['location_id'])) {
                 $this->recordLocationMove($asset, (int) $data['location_id'], $actor, 'Return');
@@ -314,6 +440,12 @@ class AssetService
 
             return $asset->fresh();
         });
+
+        if ($custodian) {
+            $this->notifyCustody($custodian, 'assets.returned', $fresh);
+        }
+
+        return $fresh;
     }
 
     public function markCondition(Asset $asset, string $status, User $actor, ?string $notes = null): Asset
@@ -502,6 +634,28 @@ class AssetService
         }
         $asset->label_status = 'reprint_required';
         $asset->label_reprint_reason = 'CUSTODY_OR_LOCATION_CHANGED';
+    }
+
+    private function openHistory(Asset $asset): ?AssetAssignmentHistory
+    {
+        return AssetAssignmentHistory::where('asset_id', $asset->id)
+            ->whereNull('returned_at')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    private function notifyCustody(User $user, string $trigger, Asset $asset, array $extra = []): void
+    {
+        app(NotificationService::class)->dispatch(
+            $user,
+            $trigger,
+            array_merge([
+                'name' => $user->name,
+                'asset' => $asset->name,
+                'tag' => $asset->tag_number ?: $asset->asset_code,
+            ], $extra),
+            ['module' => 'assets', 'record_id' => $asset->id, 'url' => '/assets/mine']
+        );
     }
 
     private function closeOpenAssignment(Asset $asset): void

@@ -21,6 +21,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import ReadOnlySections from "./ReadOnlySections";
 import PifFinanceBudgetCertify from "@/components/budget/PifFinanceBudgetCertify";
 import { CreateAssignmentFromSourceModal } from "@/components/assignments/CreateAssignmentFromSourceModal";
+import { SigningModal } from "@/components/saam/SigningModal";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { unwrapEntity } from "@/lib/unwrapEntity";
@@ -169,6 +170,7 @@ export default function PifDetailPage() {
   const [sendTravelSubmitting, setSendTravelSubmitting] = useState(false);
   const [missionTitle, setMissionTitle] = useState("");
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [signModal, setSignModal] = useState(false);
   const { confirm } = useConfirm();
 
 
@@ -334,14 +336,20 @@ export default function PifDetailPage() {
     finally { setSubmitting(false); }
   };
 
-  const handleApproveProgramme = async () => {
+  const handleApproveProgramme = async (confirmPassword?: string) => {
     if (!programme) return;
     setSubmitting(true);
     try {
-      await programmeApi.approve(programme.id);
-      success("Programme approved.");
+      await programmeApi.approve(programme.id, undefined, confirmPassword);
+      success(confirmPassword ? "Programme signed and approved." : "Programme approved.");
+      setSignModal(false);
       load();
     } catch (err) {
+      const ax = err as { response?: { data?: { errors?: Record<string, string[]> } } };
+      if (!confirmPassword && (ax.response?.data?.errors?.confirm_password || ax.response?.data?.errors?.signature)) {
+        setSignModal(true);
+        return;
+      }
       showErrorToast(getApiError(err) || "Failed to approve.");
     }
     finally { setSubmitting(false); }
@@ -391,7 +399,7 @@ export default function PifDetailPage() {
   }
   if (error || !programme) {
     return (
-      <div className="mx-auto max-w-5xl space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
           {error ?? "Programme not found."}
@@ -429,7 +437,7 @@ export default function PifDetailPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
 
       <ModulePageHeader
         title={programme.title || "Untitled programme"}
@@ -1458,7 +1466,7 @@ export default function PifDetailPage() {
                 <>
                   <button
                     type="button"
-                    onClick={handleApproveProgramme}
+                    onClick={() => void handleApproveProgramme()}
                     disabled={submitting}
                     className="btn-primary px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-60 bg-green-600 hover:bg-green-700"
                   >
@@ -1675,6 +1683,19 @@ export default function PifDetailPage() {
         sourceReference={programme.reference_number}
         sourceTitle={programme.title}
       />
+      {signModal && (
+        <SigningModal
+          isOpen
+          onClose={() => setSignModal(false)}
+          signableType="programmes"
+          signableId={programme.id}
+          action="approve"
+          title="Sign & approve"
+          onWorkflowApprove={async ({ password }) => {
+            await handleApproveProgramme(password);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -109,7 +109,7 @@ export default function AppraisalsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">

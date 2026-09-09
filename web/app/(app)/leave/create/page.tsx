@@ -257,7 +257,7 @@ function LeaveCreatePageInner() {
   const primaryType = segments[0]?.leave_type;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title={editing ? "Edit leave request" : "New leave request"}
         subtitle="Choose the type, then the dates."
@@ -550,7 +550,7 @@ export default function LeaveCreatePage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-3xl space-y-4">
+        <div className="w-full min-w-0 space-y-4">
           <div className="h-10 w-64 animate-pulse rounded-lg bg-neutral-100" />
           <div className="h-24 animate-pulse rounded-xl bg-neutral-100" />
         </div>

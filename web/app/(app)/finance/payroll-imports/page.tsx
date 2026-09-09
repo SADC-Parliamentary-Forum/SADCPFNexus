@@ -22,7 +22,7 @@ export default function PayrollImportsPage() {
   const list = Array.isArray(data?.data) ? data.data : (data?.data?.data ?? []);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Payroll vendor import"
         subtitle="Stage payslip lines from JSON or configured HTTP vendor. No OT rates invented."

@@ -480,7 +480,7 @@ export default function SalaryAdvanceCreatePage() {
   const stepContent = [renderStep0, renderStep1, renderStep2];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Salary Advance Request"
         subtitle="Subject to policy limits and Secretary General approval."

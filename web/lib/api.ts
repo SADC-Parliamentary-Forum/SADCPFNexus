@@ -504,6 +504,7 @@ export interface ApprovalStep {
   allow_delegate: boolean;
   sla_hours?: number | null;
   requires_comment: boolean;
+  requires_signature?: boolean;
   stage_type?: string | null;
 }
 
@@ -1219,15 +1220,21 @@ export const workflowApi = {
   getPending: () => api.get<{ data: ApprovalRequest[] }>("/approvals/pending"),
   getInbox: (params?: { status?: string; module?: string }) =>
     api.get<{ data: unknown[] }>("/approvals/inbox", { params }),
-  approve: (id: number, comment?: string, idempotencyKey?: string) =>
-    api.post(`/approvals/${id}/approve`, { comment, idempotency_key: idempotencyKey }),
+  approve: (id: number, comment?: string, idempotencyKey?: string, confirmPassword?: string) =>
+    api.post(`/approvals/${id}/approve`, {
+      comment,
+      idempotency_key: idempotencyKey,
+      confirm_password: confirmPassword,
+    }),
   reject: (id: number, comment: string, idempotencyKey?: string) =>
     api.post(`/approvals/${id}/reject`, { comment, idempotency_key: idempotencyKey }),
   recuse: (id: number, reason: string) => api.post(`/approvals/${id}/recuse`, { reason }),
   getHistory: (id: number) => api.get<{ data: ApprovalHistory[] }>(`/approvals/${id}/history`),
   getSnapshot: (id: number) => api.get<{ data: Record<string, unknown> }>(`/approvals/${id}/snapshot`),
-  decideTask: (taskId: number, data: { decision_type: string; comment?: string | null; idempotency_key?: string }) =>
-    api.post(`/workflow-engine/approval-tasks/${taskId}/decide`, data),
+  decideTask: (
+    taskId: number,
+    data: { decision_type: string; comment?: string | null; idempotency_key?: string; confirm_password?: string },
+  ) => api.post(`/workflow-engine/approval-tasks/${taskId}/decide`, data),
 };
 
 export interface WorkflowSimulationFieldOption {
@@ -1752,6 +1759,7 @@ export interface Asset {
   asset_class?: string | null;
   status: string;
   assigned_to: number | null;
+  assigned_user?: { id: number; name: string; email: string } | null;
   issued_at: string | null;
   value: number | null;
   notes: string | null;
@@ -1771,6 +1779,7 @@ export interface Asset {
   tag_number?: string | null;
   label_status?: string | null;
   acknowledgement_at?: string | null;
+  custody_state?: "pending_acceptance" | "accepted" | "pending_return" | null;
   funding_source?: string | null;
   book_value?: number | null;
 }
@@ -1780,7 +1789,7 @@ export interface AssetRequest {
   tenant_id: number;
   requester_id: number;
   justification: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "fulfilled";
   document_path: string | null;
   created_at: string;
   updated_at: string;
@@ -1796,7 +1805,7 @@ export const assetsApi = {
     name: string;
     category: string;
     status?: string;
-    assigned_to?: number;
+    assigned_to?: number | null;
     issued_at?: string;
     value?: number;
     notes?: string;
@@ -1813,7 +1822,7 @@ export const assetsApi = {
     name: string;
     category: string;
     status?: string;
-    assigned_to?: number;
+    assigned_to?: number | null;
     issued_at?: string;
     value?: number;
     notes?: string;
@@ -1850,9 +1859,13 @@ export const assetsApi = {
     api.post<{ data: Asset; message: string }>(`/assets/${id}/assign`, data),
   acknowledge: (id: number) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/acknowledge`, {}),
+  declineAssignment: (id: number, reason: string) =>
+    api.post<{ data: Asset; message: string }>(`/assets/${id}/decline`, { reason }),
+  requestReturn: (id: number) =>
+    api.post<{ data: Asset; message: string }>(`/assets/${id}/request-return`, {}),
   transfer: (id: number, data: { to_user_id: number; department?: string; location_id?: number; notes?: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/transfer`, data),
-  returnAsset: (id: number, data?: { location_id?: number; notes?: string }) =>
+  returnAsset: (id: number, data?: { location_id?: number; notes?: string; condition?: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/return`, data ?? {}),
   uploadInvoice: (assetId: number, file: File) => {
     const formData = new FormData();
@@ -1910,8 +1923,12 @@ export interface AssetInsuranceClaim {
 export const assetRequestsApi = {
   list: (params?: { per_page?: number; page?: number }) =>
     api.get<PaginatedResponse<AssetRequest>>("/asset-requests", { params }),
+  get: (id: number) => api.get<AssetRequest>(`/asset-requests/${id}`),
   create: (data: { justification: string; document_path?: string }) =>
     api.post<AssetRequest>("/asset-requests", data),
+  update: (id: number, data: { justification?: string; status?: "pending" | "approved" | "rejected" | "fulfilled" }) =>
+    api.put<AssetRequest>(`/asset-requests/${id}`, data),
+  remove: (id: number) => api.delete(`/asset-requests/${id}`),
 };
 
 // ─── Fleet (ops layer on vehicle Fixed Assets) ───────────────────────────────
@@ -2080,6 +2097,15 @@ export const assetMovementsApi = {
 export const assetImportApi = {
   list: (params?: { per_page?: number; page?: number }) =>
     api.get("/assets/import", { params }),
+  downloadTemplate: () =>
+    api.get<Blob>("/assets/import/template", { responseType: "blob" }).then((res) => {
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sadcpf-asset-import-template.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    }),
   upload: (form: FormData) =>
     api.post<{ message: string; data: unknown }>("/assets/import", form, {
       headers: { "Content-Type": "multipart/form-data" },
@@ -2933,6 +2959,23 @@ export const leaveApi = {
     api.delete(`/leave/requests/${id}/attachments/${attachmentId}`),
   downloadAttachmentUrl: (id: number, attachmentId: number) =>
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/leave/requests/${id}/attachments/${attachmentId}/download`,
+  importTemplate: () =>
+    api.get<Blob>("/leave/import/template", { responseType: "blob" }),
+  import: (file: File, commit = false) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("commit", commit ? "1" : "0");
+    return api.post<{
+      message: string;
+      data: {
+        rows: Array<Record<string, string | number | null>>;
+        errors: Array<{ row: number; message: string }>;
+        created: number;
+        skipped: number;
+        balances: number;
+      };
+    }>("/leave/import", fd);
+  },
 };
 
 export interface LilAccrual {
@@ -4075,8 +4118,11 @@ export const purchaseOrdersApi = {
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/cancel`, { reason }),
   submit: (id: number, idempotency_key?: string) =>
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/submit`, { idempotency_key }),
-  approve: (id: number, comment?: string) =>
-    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/approve`, { comment }),
+  approve: (id: number, comment?: string, confirmPassword?: string) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/approve`, {
+      comment,
+      confirm_password: confirmPassword,
+    }),
   returnLpo: (id: number, comment: string) =>
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/return`, { comment }),
   reject: (id: number, reason: string) =>
@@ -5548,8 +5594,11 @@ export const programmeApi = {
   delete: (id: number) => api.delete(`/programmes/${id}`),
   submit: (id: number, data: { declaration_confirmed: boolean }) =>
     api.post<{ data: Programme; message: string }>(`/programmes/${id}/submit`, data),
-  approve: (id: number) =>
-    api.post<{ data: Programme; message: string }>(`/programmes/${id}/approve`),
+  approve: (id: number, comment?: string, confirmPassword?: string) =>
+    api.post<{ data: Programme; message: string }>(`/programmes/${id}/approve`, {
+      comment,
+      confirm_password: confirmPassword,
+    }),
   reject: (id: number, reason: string) =>
     api.post<{ data: Programme; message: string }>(`/programmes/${id}/reject`, { reason }),
 
@@ -7987,6 +8036,8 @@ export interface RiskObjectiveOption {
 export const riskApi = {
   listObjectives: () =>
     api.get<{ data: RiskObjectiveOption[] }>("/risk/lookups/objectives"),
+  listOwners: () =>
+    api.get<{ data: TenantUserOption[] }>("/risk/lookups/owners"),
   list: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Risk>>("/risk/risks", { params }),
   get: (id: number) =>
@@ -8027,6 +8078,10 @@ export const riskApi = {
     api.post<{ data: RiskAction; message: string }>(`/risk/risks/${riskId}/actions/${actionId}/complete`),
   deleteAction: (riskId: number, actionId: number) =>
     api.delete<{ message: string }>(`/risk/risks/${riskId}/actions/${actionId}`),
+  applyMitigations: (data: FormData) =>
+    api.post<{ message: string; applied: number }>("/risk/mitigations", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 
   // Matrix
   getMatrix: (params?: { exclude_closed?: boolean }) =>

@@ -34,7 +34,7 @@ export default function LifecycleOnboardingCreatePage() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Start onboarding"
         subtitle="Opens a versioned onboarding case — notice and probation policy come from HR settings, not this form."

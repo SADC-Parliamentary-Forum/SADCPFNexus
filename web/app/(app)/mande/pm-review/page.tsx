@@ -29,7 +29,7 @@ export default function ProgrammeReviewQueuePage() {
   });
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Programme Manager Review"
         subtitle="Clear or return reports when programme manager review is enabled in M&amp;E settings."

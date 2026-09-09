@@ -2,6 +2,7 @@
 
 namespace App\Modules\Assets\Import;
 
+use OpenSpout\Reader\XLSX\Reader as XlsxReader;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
@@ -9,6 +10,9 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 /**
  * Loads an XLS/XLSX worksheet into a simple row/column grid.
+ *
+ * BIFF .xls uses PhpSpreadsheet. Clean XLSX uses OpenSpout (ZIP/PK magic),
+ * including upload temp paths that may lack a .xlsx extension.
  */
 final class SpreadsheetGrid
 {
@@ -17,15 +21,9 @@ final class SpreadsheetGrid
      */
     public static function loadFirstSheet(string $path): array
     {
-        $reader = IOFactory::createReaderForFile($path);
-        $reader->setReadDataOnly(true);
-        $spreadsheet = $reader->load($path);
-        $sheet = $spreadsheet->getSheet(0);
+        $sheets = self::loadAllSheets($path);
 
-        return [
-            'sheet' => $sheet->getTitle(),
-            'rows' => self::worksheetToRows($sheet),
-        ];
+        return $sheets[0] ?? ['sheet' => 'Sheet1', 'rows' => []];
     }
 
     /**
@@ -33,6 +31,10 @@ final class SpreadsheetGrid
      */
     public static function loadAllSheets(string $path): array
     {
+        if (self::shouldUseOpenSpout($path)) {
+            return self::loadXlsxWithOpenSpout($path);
+        }
+
         $reader = IOFactory::createReaderForFile($path);
         $reader->setReadDataOnly(true);
         $spreadsheet = $reader->load($path);
@@ -45,6 +47,55 @@ final class SpreadsheetGrid
         }
 
         return $out;
+    }
+
+    public static function shouldUseOpenSpout(string $path): bool
+    {
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (in_array($ext, ['xls', 'xlt'], true)) {
+            return false;
+        }
+
+        $handle = @fopen($path, 'rb');
+        $magic = $handle ? (string) fread($handle, 4) : '';
+        if ($handle) {
+            fclose($handle);
+        }
+        if (str_starts_with($magic, 'PK')) {
+            return true;
+        }
+
+        return in_array($ext, ['xlsx', 'xlsm'], true);
+    }
+
+    /**
+     * @return list<array{sheet: string, rows: list<list<mixed>>}>
+     */
+    private static function loadXlsxWithOpenSpout(string $path): array
+    {
+        $reader = new XlsxReader;
+        $reader->open($path);
+        try {
+            $out = [];
+            foreach ($reader->getSheetIterator() as $sheet) {
+                $rows = [];
+                foreach ($sheet->getRowIterator() as $row) {
+                    $cells = [];
+                    foreach ($row->toArray() as $value) {
+                        $cells[] = self::normalizeCell($value);
+                    }
+                    $rows[] = $cells;
+                }
+                $out[] = [
+                    'sheet' => $sheet->getName(),
+                    'rows' => $rows,
+                ];
+            }
+
+            return $out;
+        } finally {
+            $reader->close();
+        }
     }
 
     /**
@@ -80,5 +131,14 @@ final class SpreadsheetGrid
         }
 
         return $rows;
+    }
+
+    private static function normalizeCell(mixed $value): mixed
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        return $value;
     }
 }

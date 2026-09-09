@@ -239,7 +239,7 @@ export default function NewAppraisalPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">HR</Link>
         <Link href="/hr/appraisals" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 block">Appraisals</Link>

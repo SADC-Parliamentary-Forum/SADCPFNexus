@@ -197,13 +197,13 @@ class LpoIssuanceService
         return $po->fresh(['vendor', 'items', 'project']);
     }
 
-    public function approve(PurchaseOrder $po, User $user, ?string $comment = null, ?string $idempotencyKey = null): PurchaseOrder
+    public function approve(PurchaseOrder $po, User $user, ?string $comment = null, ?string $idempotencyKey = null, array $signatureContext = []): PurchaseOrder
     {
         $approval = $po->approvalRequest()->whereIn('status', ['pending', 'returned'])->latest('id')->first();
         if (! $approval) {
             abort(403, 'No open approval step.');
         }
-        $this->workflow->approve($approval, $user, $comment, $idempotencyKey);
+        $this->workflow->approve($approval, $user, $comment, $idempotencyKey, $signatureContext);
 
         return $po->fresh();
     }

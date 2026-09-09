@@ -122,7 +122,7 @@ export default function ProcurementSettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Procurement Settings"
         subtitle="Thresholds, multi-donor policy profiles, and optional AI comparison assist (never auto-awards)."

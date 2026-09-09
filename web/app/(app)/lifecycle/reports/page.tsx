@@ -54,7 +54,7 @@ export default function LifecycleReportsPage() {
   const aging = analytics?.clearance_aging;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Lifecycle reports"
         subtitle="Cycle time, bottlenecks, and clearance aging for onboarding, separation, transfer, promotion, and probation."

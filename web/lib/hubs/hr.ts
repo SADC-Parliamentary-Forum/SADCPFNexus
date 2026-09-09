@@ -14,6 +14,7 @@ export const HR_HUB_CARDS: HubCard[] = [
   { href: "/hr/incidents", title: "Incidents", purpose: "HR incident records.", icon: "report", section: "queues" },
   { href: "/hr/leave", title: "Staff leave register", purpose: "Institutional register of staff leave.", icon: "menu_book", section: "views" },
   { href: "/hr/leave/balances", title: "Leave balances", purpose: "Balances by staff member and type.", icon: "balance", section: "views" },
+  { href: "/hr/leave/import", title: "leave.import.hubTitle", purpose: "leave.import.hubPurpose", icon: "upload_file", section: "tools" },
   { href: "/leave/toil", title: "TOIL credits", purpose: "Leave in lieu credits.", icon: "more_time", section: "views" },
   { href: "/hr/appraisals", title: "Appraisals", purpose: "Appraisal cycles and forms.", icon: "rate_review", section: "views" },
   { href: "/hr/conduct", title: "Conduct", purpose: "Commendations and warnings.", icon: "gavel", section: "views" },

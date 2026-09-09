@@ -16,7 +16,7 @@ export default function LifecycleMyTasksPage() {
   const tasks = tasksQuery.data ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="My lifecycle tasks"
         subtitle="Operational tasks from open onboarding and separation cases."

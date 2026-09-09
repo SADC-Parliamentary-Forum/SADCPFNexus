@@ -75,7 +75,7 @@ return (await peopleAuthorityApi.listUnits()).data;
   }, [filtered]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Organisational Units"
         subtitle="People & Authority register"

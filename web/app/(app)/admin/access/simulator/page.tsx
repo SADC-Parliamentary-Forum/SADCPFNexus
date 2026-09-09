@@ -27,7 +27,7 @@ export default function AccessSimulatorPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Access simulator"
         subtitle="Preview what a user can see and do. Does not create a live impersonation session."

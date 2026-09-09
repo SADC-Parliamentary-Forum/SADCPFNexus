@@ -23,12 +23,12 @@ export default function ImprestCertificatePage() {
   }, [id]);
 
   if (loading) {
-    return <div className="max-w-3xl mx-auto h-96 bg-neutral-50 rounded-xl animate-pulse" />;
+    return <div className="w-full min-w-0 h-96 bg-neutral-50 rounded-xl animate-pulse" />;
   }
 
   if (error || !request) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-4 text-sm text-red-700">{error ?? "Certificate not found."}</div>
         <Link href={`/imprest/${id}`} className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary transition-colors">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>Back to Request
@@ -42,7 +42,7 @@ export default function ImprestCertificatePage() {
   const steps = approvalRequest?.workflow?.steps ?? [];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <div className="flex items-center justify-between">
         <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
           <Link href="/imprest" className="hover:text-primary font-medium transition-colors">Imprest</Link>

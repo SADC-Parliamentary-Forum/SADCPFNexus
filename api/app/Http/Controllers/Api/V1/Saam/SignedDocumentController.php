@@ -19,6 +19,8 @@ class SignedDocumentController extends Controller
         'imprest'        => \App\Models\ImprestRequest::class,
         'leave'          => \App\Models\LeaveRequest::class,
         'procurement'    => \App\Models\ProcurementRequest::class,
+        'purchase_order' => \App\Models\PurchaseOrder::class,
+        'programmes'     => \App\Models\Programme::class,
     ];
 
     public function __construct(private SaamService $saam) {}

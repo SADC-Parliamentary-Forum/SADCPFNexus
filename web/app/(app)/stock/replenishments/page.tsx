@@ -27,7 +27,7 @@ export default function StockReplenishmentsPage() {
   }, [load]);
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Replenishment Requests"
         subtitle="Stores → Procurement signal to buy before stockouts. Does not create budget commitments."

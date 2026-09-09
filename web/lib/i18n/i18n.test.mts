@@ -90,10 +90,14 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/assets/labels/templates/page.tsx",
     "components/assets/LabelTemplateVisualEditor.tsx",
     "app/(app)/assets/verification/page.tsx",
+    "app/(app)/assets/mine/page.tsx",
     "app/(app)/audit/engagements/page.tsx",
     "components/audit/AuditChrome.tsx",
     "app/(app)/risk/create/page.tsx",
     "app/(app)/hr/page.tsx",
+    "app/(app)/hr/leave/page.tsx",
+    "app/(app)/hr/leave/balances/page.tsx",
+    "app/(app)/hr/leave/import/page.tsx",
     "app/(app)/risk/dashboard/page.tsx",
     "app/(app)/admin/documents/page.tsx",
     "app/(app)/admin/documents/retention/page.tsx",
@@ -181,12 +185,37 @@ test("risk create catalog covers form copy in EN, FR and PT", () => {
     "risk.create.impact.5",
     "risk.create.objectiveRequired",
     "risk.create.ownerRequired",
+    "risk.create.ownerEmpty",
+    "risk.create.section.mitigation",
+    "risk.mitigation.apply",
+    "risk.mitigation.applySelected",
     "risk.dashboard.title",
     "risk.incidents.title",
     "risk.controls.title",
     "hr.hub",
     "hr.subtitle",
     "hr.timesheets.recent",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
+test("asset custody handshake catalog covers mine and register copy in EN, FR and PT", () => {
+  const keys = [
+    "assets.mine.title",
+    "assets.mine.subtitle",
+    "assets.mine.accept",
+    "assets.mine.decline",
+    "assets.mine.requestReturn",
+    "assets.mine.pendingAcceptance",
+    "assets.register.confirmReturn",
+    "assets.register.pendingReturn",
   ];
   for (const key of keys) {
     const en = translate("en", key);

@@ -142,6 +142,7 @@ return [
         'permissions' => [
             'leave.module.view', 'leave.balance.certify.assigned', 'leave.balance.read.assigned_staff',
             'leave.calendar.view.organisation', 'leave.report.view', 'leave.balance.export',
+            'leave.balance.import',
             'leave.view', 'leave.approve',
             'approvals.inbox.view', 'approvals.task.act.assigned',
             'workflows.view-own', 'workflows.act',

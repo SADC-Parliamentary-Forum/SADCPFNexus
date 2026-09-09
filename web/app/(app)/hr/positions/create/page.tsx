@@ -73,7 +73,7 @@ export default function CreatePositionPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb + header */}
       <div>
         <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">

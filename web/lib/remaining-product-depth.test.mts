@@ -1439,6 +1439,7 @@ const OVERCROWDED_SIDEBARS: {
     formerHrefs: [
       "/hr/leave",
       "/hr/leave/balances",
+      "/hr/leave/import",
       "/leave/queues/certify",
       "/leave/toil",
       "/hr/appraisals",

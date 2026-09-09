@@ -4,11 +4,15 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { assetRequestsApi, type AssetRequest } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { NewAssetRequestModal } from "@/components/assets/NewAssetRequestModal";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
-  pending:  { label: "Pending",  badge: "badge-warning" },
+  pending: { label: "Pending", badge: "badge-warning" },
   approved: { label: "Approved", badge: "badge-success" },
   rejected: { label: "Rejected", badge: "badge-danger" },
+  fulfilled: { label: "Fulfilled", badge: "badge-info" },
 };
 
 function padId(id: number): string {
@@ -18,22 +22,33 @@ function padId(id: number): string {
 const FILTER_TABS = ["all", "pending", "approved", "rejected"] as const;
 type FilterTab = (typeof FILTER_TABS)[number];
 
+function syncNewQuery(open: boolean) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (open) url.searchParams.set("new", "1");
+  else url.searchParams.delete("new");
+  window.history.replaceState({}, "", url.pathname + url.search);
+}
+
 export default function AssetRequestsPage() {
+  const { success } = useToast();
   const [requests, setRequests] = useState<AssetRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<FilterTab>("all");
   const [page, setPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
+  const [showNew, setShowNew] = useState(false);
 
   const load = useCallback(async (pg = 1) => {
     setLoading(true);
     setError(null);
     try {
       const res = await assetRequestsApi.list({ per_page: 15, page: pg });
-      const data = (res.data as any).data ?? res.data;
+      const payload = res.data;
+      const data = payload.data ?? [];
       setRequests(Array.isArray(data) ? data : []);
-      setLastPage((res.data as any).last_page ?? 1);
+      setLastPage(payload.last_page ?? 1);
       setPage(pg);
     } catch {
       setError("Failed to load asset requests.");
@@ -42,7 +57,24 @@ export default function AssetRequestsPage() {
     }
   }, []);
 
-  useEffect(() => { load(1); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    void load(1);
+  }, [load]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("new") === "1") setShowNew(true);
+  }, []);
+
+  const openNew = () => {
+    setShowNew(true);
+    syncNewQuery(true);
+  };
+
+  const closeNew = () => {
+    setShowNew(false);
+    syncNewQuery(false);
+  };
 
   const filtered =
     filter === "all"
@@ -50,28 +82,26 @@ export default function AssetRequestsPage() {
       : requests.filter((r) => r.status === filter);
 
   return (
-    <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
-            <Link href="/assets" className="hover:text-neutral-700 transition-colors">Assets</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Requests</span>
-          </div>
-          <h1 className="page-title">Asset Requests</h1>
-          <p className="page-subtitle">Submit and track requests for new or replacement assets.</p>
-        </div>
-        <Link
-          href="/assets/requests/new"
-          className="btn-primary flex items-center gap-2 py-2 px-4 text-sm"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          New request
-        </Link>
-      </div>
+    <div className="w-full space-y-6">
+      <ModulePageHeader
+        title="Asset Requests"
+        subtitle="Submit and track requests for new or replacement assets."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Assets", href: "/assets" },
+              { label: "Requests" },
+            ]}
+          />
+        }
+        actions={
+          <button type="button" onClick={openNew} className="btn-primary flex items-center gap-2 py-2 px-4 text-sm">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            New request
+          </button>
+        }
+      />
 
-      {/* Filter tabs */}
       <div className="flex flex-wrap gap-2">
         {FILTER_TABS.map((tab) => (
           <button
@@ -108,13 +138,14 @@ export default function AssetRequestsPage() {
               ? "No requests match the selected filter."
               : "You have not submitted any asset requests yet."}
           </p>
-          <Link
-            href="/assets/requests/new"
+          <button
+            type="button"
+            onClick={openNew}
             className="btn-primary inline-flex items-center gap-2 mt-5 py-2 px-4 text-sm"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
             New request
-          </Link>
+          </button>
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -165,7 +196,6 @@ export default function AssetRequestsPage() {
             </table>
           </div>
 
-          {/* Pagination */}
           {lastPage > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-neutral-200">
               <p className="text-xs text-neutral-500">Page {page} of {lastPage}</p>
@@ -173,7 +203,7 @@ export default function AssetRequestsPage() {
                 <button
                   type="button"
                   disabled={page <= 1}
-                  onClick={() => load(page - 1)}
+                  onClick={() => void load(page - 1)}
                   className="btn-secondary py-1.5 px-3 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Previous
@@ -181,7 +211,7 @@ export default function AssetRequestsPage() {
                 <button
                   type="button"
                   disabled={page >= lastPage}
-                  onClick={() => load(page + 1)}
+                  onClick={() => void load(page + 1)}
                   className="btn-secondary py-1.5 px-3 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Next
@@ -191,6 +221,16 @@ export default function AssetRequestsPage() {
           )}
         </div>
       )}
+
+      <NewAssetRequestModal
+        open={showNew}
+        onClose={closeNew}
+        onCreated={() => {
+          closeNew();
+          success("Asset request submitted.");
+          void load(1);
+        }}
+      />
     </div>
   );
 }

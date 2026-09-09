@@ -79,7 +79,7 @@ function CreateActivityReportForm() {
       !createMut.isPending;
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <Link href="/mande/intake" className="text-xs text-primary hover:underline">← Intake Queue</Link>
         <h1 className="page-title mt-2">Create Activity Report</h1>

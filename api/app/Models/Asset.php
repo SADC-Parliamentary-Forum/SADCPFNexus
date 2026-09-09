@@ -6,10 +6,13 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Asset extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'tenant_id', 'asset_code', 'serial_number', 'tag_number', 'name',
         'manufacturer', 'model', 'category', 'asset_class', 'status', 'condition',
@@ -20,7 +23,7 @@ class Asset extends Model
         'funding_source', 'donor_name', 'donor_restrictions', 'department',
         'location_id', 'warranty_expiry', 'warranty_provider',
         'capitalisation_policy_id', 'accumulated_depreciation', 'book_value',
-        'currency', 'last_verified_at', 'acknowledgement_at', 'acknowledged_by',
+        'currency', 'last_verified_at', 'acknowledgement_at', 'acknowledged_by', 'custody_state',
         'serial_duplicate_override',
         'gps_lat', 'gps_lng', 'gps_recorded_at',
         'telematics_device_id', 'telematics_provider', 'telematics_raw_payload',

@@ -23,6 +23,7 @@ test.describe("Assets import (admin)", () => {
     await skipIfAccessDenied(page, "assets import");
     await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('input[type="file"]').first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Download Excel template|Télécharger le modèle Excel|Descarregar modelo Excel/i }).first()).toBeVisible();
   });
 
   test("labels page is authorised", async ({ page }) => {
@@ -41,11 +42,14 @@ test.describe("Assets import (admin)", () => {
 
     await page.getByRole("radio", { name: /Standard template|Modèle standard|Modelo padrão/i }).check();
     await page.locator('input[name="template"]').setInputFiles(templateXlsx);
-    const uploaded = page.waitForResponse((r) => r.url().includes("/assets/import") && r.request().method() === "POST" && !r.url().includes("/commit"), { timeout: 30_000 });
+    const uploaded = page.waitForResponse((r) => r.url().includes("/assets/import") && r.request().method() === "POST" && !r.url().includes("/commit") && !r.url().includes("/approve"), { timeout: 30_000 });
     await page.getByRole("button", { name: /Upload and stage|Téléverser et préparer|Carregar e preparar/i }).click();
     expect((await uploaded).ok()).toBeTruthy();
     await expect(page.getByText(/unique tags|étiquettes uniques|etiquetas únicas/i).first()).toBeVisible({ timeout: 30_000 });
 
+    const approved = page.waitForResponse((r) => r.url().includes("/approve") && r.request().method() === "POST", { timeout: 20_000 });
+    await page.getByRole("button", { name: /Approve non-blocking|Approuver les lignes non bloquantes|Aprovar linhas não bloqueantes/i }).click();
+    expect((await approved).ok()).toBeTruthy();
     await page.getByRole("button", { name: /Commit to register|Valider dans le registre|Confirmar no registo/i }).click();
     await expect(page.getByText(/Import committed|committed with incomplete/i)).toBeVisible({ timeout: 30_000 });
 

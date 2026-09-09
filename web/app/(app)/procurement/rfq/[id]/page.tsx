@@ -257,14 +257,14 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
       setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to award quote."),
   });
 
-  if (requestQuery.isLoading) return <div className="max-w-4xl mx-auto card p-6">Loading RFQ...</div>;
-  if (requestQuery.isError || !req) return <div className="max-w-4xl mx-auto card p-6">RFQ not found.</div>;
+  if (requestQuery.isLoading) return <div className="w-full min-w-0 card p-6">Loading RFQ...</div>;
+  if (requestQuery.isError || !req) return <div className="w-full min-w-0 card p-6">RFQ not found.</div>;
 
   const budgetConfirmed = isBudgetConfirmed(req);
   const canIssueNow = budgetConfirmed;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
         <Link href="/procurement" className="hover:text-primary">Procurement</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>

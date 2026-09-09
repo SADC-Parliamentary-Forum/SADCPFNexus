@@ -27,7 +27,7 @@ export default function PeopleAiPage() {
   const suggestionId = suggestion?.id as number | undefined;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="AI Assist"
         subtitle="Suggestions only - never auto-grants access, authority, delegation, or signing rights."

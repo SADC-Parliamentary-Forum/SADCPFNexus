@@ -45,7 +45,7 @@ export default function StockLocationsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Store locations"
         subtitle="Physical stores / cupboards for consumables inventory."

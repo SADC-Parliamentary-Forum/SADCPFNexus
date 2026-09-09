@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -109,7 +110,7 @@ export default function RiskAuditTrailPage() {
   const hasActiveFilters = filters.date_from || filters.date_to || filters.change_type;
 
   return (
-    <div className="space-y-5 max-w-6xl">
+    <RiskPageFrame>
       {/* Header */}
       <div className="flex items-start justify-between">
         <ModulePageHeader
@@ -312,6 +313,6 @@ export default function RiskAuditTrailPage() {
           )}
         </div>
       )}
-    </div>
+    </RiskPageFrame>
   );
 }
