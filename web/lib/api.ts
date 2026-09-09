@@ -1869,6 +1869,8 @@ export const assetsApi = {
     api.post<{ data: Asset; message: string }>(`/assets/${id}/return`, data ?? {}),
   registerExport: (params?: Record<string, string | number>) =>
     api.get<Blob>("/assets/register-export", { params, responseType: "blob" }),
+  qrBatch: (ids: number[]) =>
+    api.post<{ data: Array<{ id: number; image: string }> }>("/assets/qr-batch", { ids }),
   uploadInvoice: (assetId: number, file: File) => {
     const formData = new FormData();
     formData.append("invoice", file);

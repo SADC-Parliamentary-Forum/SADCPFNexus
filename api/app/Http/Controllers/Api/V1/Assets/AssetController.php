@@ -531,6 +531,62 @@ class AssetController extends Controller
     }
 
     /**
+     * Return QR images for many assets in one round trip (print view).
+     */
+    public function qrBatch(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->isSystemAdmin()
+                || $user->can('assets.view')
+                || $user->can('assets.verify')
+                || $user->can('assets.admin')
+                || $user->can('assets.manage'),
+            403
+        );
+
+        $validated = $request->validate([
+            'ids' => ['present', 'array', 'max:500'],
+            'ids.*' => ['integer', 'min:1'],
+        ]);
+
+        $ids = array_values(array_unique(array_map('intval', $validated['ids'])));
+        if ($ids === []) {
+            return response()->json(['data' => []]);
+        }
+
+        $assets = Asset::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        $data = [];
+        foreach ($ids as $id) {
+            $asset = $assets->get($id);
+            if (! $asset) {
+                continue;
+            }
+            if (! $asset->qr_path || ! Storage::disk('local')->exists($asset->qr_path) || empty($asset->qr_token)) {
+                $this->qr->ensure($asset, $user);
+                $asset->refresh();
+            }
+            if (! $asset->qr_path || ! Storage::disk('local')->exists($asset->qr_path)) {
+                continue;
+            }
+            $contents = Storage::disk('local')->get($asset->qr_path);
+            $isPng = str_ends_with($asset->qr_path, '.png');
+            $mime = $isPng ? 'image/png' : 'image/svg+xml';
+            $data[] = [
+                'id' => $asset->id,
+                'image' => 'data:'.$mime.';base64,'.base64_encode($contents),
+            ];
+        }
+
+        return response()->json(['data' => $data]);
+    }
+
+    /**
      * Generate an opaque QR URL token and persist the SVG image.
      */
     private function generateAndSaveQr(Asset $asset, $actor = null): void

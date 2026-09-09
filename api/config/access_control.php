@@ -674,6 +674,10 @@ return [
             'READ' => ['assets.verify', 'assets.admin', 'assets.manage', 'assets.view'],
             'WRITE' => ['assets.verify', 'assets.admin', 'assets.manage'],
         ]],
+        ['pattern' => 'api/v1/assets/qr-batch', 'permissions' => [
+            'READ' => ['assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
+        ]],
         ['pattern' => 'api/v1/assets/qr*', 'permissions' => [
             'READ' => ['assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
         ]],

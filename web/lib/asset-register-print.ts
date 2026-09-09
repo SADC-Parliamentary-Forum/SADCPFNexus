@@ -99,6 +99,31 @@ export function registerExportQuery(
   return params;
 }
 
+export const QR_BATCH_MAX_IDS = 500;
+
+export function chunkIds(ids: number[], size = QR_BATCH_MAX_IDS): number[][] {
+  const chunkSize = Math.max(1, size);
+  const chunks: number[][] = [];
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    chunks.push(ids.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+export function qrImagesFromBatch(
+  rows: Array<{ id?: number; image?: string }>,
+): Record<number, string> {
+  const images: Record<number, string> = {};
+  for (const row of rows) {
+    const id = Number(row.id);
+    const image = row.image;
+    if (!Number.isFinite(id) || id <= 0) continue;
+    if (typeof image !== "string" || !image.startsWith("data:")) continue;
+    images[id] = image;
+  }
+  return images;
+}
+
 export type PaginatedSlice<T> = { data: T[]; last_page?: number };
 
 /** Walk Laravel-style pages until last_page so print/export is not capped at 100. */
