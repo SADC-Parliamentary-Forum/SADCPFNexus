@@ -78,7 +78,7 @@ export default function CreateAssignmentPage() {
     `form-input ${errors[field] ? "border-red-400 focus:ring-red-300" : ""}`;
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-sm text-neutral-500">
         <Link href="/assignments" className="hover:text-primary">Assignments</Link>

@@ -80,7 +80,7 @@ export default function DocumentGovernancePage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="documents.governance.title"
         subtitle="documents.governance.subtitle"

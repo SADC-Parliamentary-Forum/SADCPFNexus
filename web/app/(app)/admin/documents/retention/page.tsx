@@ -76,7 +76,7 @@ export default function DocumentRetentionPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="documents.retention.title"
         subtitle="documents.retention.subtitle"

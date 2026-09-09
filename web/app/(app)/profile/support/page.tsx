@@ -80,7 +80,7 @@ export default function SupportTicketsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb + header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>

@@ -374,7 +374,7 @@ export default function ApprovalsPage() {
   const loading = tab === "awaiting" ? pendingLoading || tasksLoading : tasksLoading;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Approvals"
         subtitle="Review awaiting, due, overdue, delegated, acting and completed approval tasks."

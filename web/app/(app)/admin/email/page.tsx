@@ -161,7 +161,7 @@ export default function AdminEmailPage() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/admin" className="transition-colors hover:text-primary">Admin</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>

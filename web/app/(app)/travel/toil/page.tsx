@@ -80,7 +80,7 @@ export default function TravelToilPage() {
   const awaitsHr = (s: string) => s === "pending_hr" || s === "duty_confirmed";
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-4">
+    <div className="p-6 w-full min-w-0 space-y-4">
       <h1 className="text-2xl font-semibold text-neutral-900">Auto-TOIL approval queue</h1>
       <p className="text-sm text-neutral-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
         Weekend / public-holiday duty days are auto-calculated and notified to supervisor + HR.

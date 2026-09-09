@@ -88,7 +88,7 @@ export default function BudgetReportsPage() {
   const years = yearsQuery.data ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
         title="Budget reports"

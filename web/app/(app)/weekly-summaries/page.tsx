@@ -281,7 +281,7 @@ export default function WeeklySummariesPage() {
     : "Current period";
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pb-8">
+    <div className="w-full min-w-0 space-y-6 pb-8">
       <ModulePageHeader
         title="My Weekly Summary"
         subtitle="Add what you did this week, confirm suggested items, then submit for review. Nothing is sent until you declare and submit."

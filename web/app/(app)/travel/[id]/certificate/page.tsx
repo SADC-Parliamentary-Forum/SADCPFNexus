@@ -28,7 +28,7 @@ export default function TravelCertificatePage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4 animate-pulse">
+      <div className="w-full min-w-0 space-y-4 animate-pulse">
         <div className="h-4 w-48 bg-neutral-100 rounded" />
         <div className="h-96 bg-neutral-50 rounded-xl" />
       </div>
@@ -37,7 +37,7 @@ export default function TravelCertificatePage() {
 
   if (error || !request) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-4 text-sm text-red-700">
           {error ?? "Certificate not found."}
         </div>
@@ -54,7 +54,7 @@ export default function TravelCertificatePage() {
   const steps = approvalRequest?.workflow?.steps ?? [];
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <div className="flex items-center justify-between">
         <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
           <Link href="/travel" className="hover:text-primary font-medium transition-colors">Travel</Link>

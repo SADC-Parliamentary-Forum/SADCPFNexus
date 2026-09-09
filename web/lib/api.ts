@@ -1780,7 +1780,7 @@ export interface AssetRequest {
   tenant_id: number;
   requester_id: number;
   justification: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "fulfilled";
   document_path: string | null;
   created_at: string;
   updated_at: string;
@@ -1908,8 +1908,12 @@ export interface AssetInsuranceClaim {
 export const assetRequestsApi = {
   list: (params?: { per_page?: number; page?: number }) =>
     api.get<PaginatedResponse<AssetRequest>>("/asset-requests", { params }),
+  get: (id: number) => api.get<AssetRequest>(`/asset-requests/${id}`),
   create: (data: { justification: string; document_path?: string }) =>
     api.post<AssetRequest>("/asset-requests", data),
+  update: (id: number, data: { justification?: string; status?: "pending" | "approved" | "rejected" | "fulfilled" }) =>
+    api.put<AssetRequest>(`/asset-requests/${id}`, data),
+  remove: (id: number) => api.delete(`/asset-requests/${id}`),
 };
 
 // ─── Fleet (ops layer on vehicle Fixed Assets) ───────────────────────────────
@@ -2940,6 +2944,23 @@ export const leaveApi = {
     api.delete(`/leave/requests/${id}/attachments/${attachmentId}`),
   downloadAttachmentUrl: (id: number, attachmentId: number) =>
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/leave/requests/${id}/attachments/${attachmentId}/download`,
+  importTemplate: () =>
+    api.get<Blob>("/leave/import/template", { responseType: "blob" }),
+  import: (file: File, commit = false) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("commit", commit ? "1" : "0");
+    return api.post<{
+      message: string;
+      data: {
+        rows: Array<Record<string, string | number | null>>;
+        errors: Array<{ row: number; message: string }>;
+        created: number;
+        skipped: number;
+        balances: number;
+      };
+    }>("/leave/import", fd);
+  },
 };
 
 export interface LilAccrual {

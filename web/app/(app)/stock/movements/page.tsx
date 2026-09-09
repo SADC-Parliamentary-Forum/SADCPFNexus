@@ -43,7 +43,7 @@ export default function StockMovementsPage() {
     t.issued_to_user?.name || t.issued_to_department?.name || t.issued_to_other || "—";
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Stock Movements"
         subtitle="Stock-in receipts, stock-out issues and adjustments."

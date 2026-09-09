@@ -331,7 +331,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="w-full min-w-0 space-y-6">
         <div className="h-4 w-48 bg-neutral-100 rounded animate-pulse" />
         <div className="h-7 w-64 bg-neutral-100 rounded animate-pulse" />
         <SkeletonCard />
@@ -343,7 +343,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
 
   if (error || !request) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-4 flex items-start gap-3">
           <span className="material-symbols-outlined text-red-500 text-[20px] flex-shrink-0 mt-0.5">error_outline</span>
           <div>
@@ -372,7 +372,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
   const hasWorkflowApprovalPending = approvalRequest?.status === "pending" && request.status === "submitted";
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="w-full min-w-0 space-y-5">
 
       {/* Toast */}
 

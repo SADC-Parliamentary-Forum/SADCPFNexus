@@ -28,7 +28,7 @@ export default function PermissionExplorerPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Permission explorer"
         subtitle="Which roles contain a permission, and who holds direct grants or denials."

@@ -69,7 +69,7 @@ return (await peopleAuthorityApi.listDirectorySync()).data;
   }, [filtered]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Directory Sync"
         subtitle="People & Directory Sync"

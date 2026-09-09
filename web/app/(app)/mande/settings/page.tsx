@@ -42,7 +42,7 @@ export default function MandeSettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="M&E Settings"
         subtitle="Tenant defaults for intake, due dates and programme-manager review."

@@ -440,7 +440,7 @@ export function PayslipDistributionDesk({
   );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <RegisterShell
         title="Issue payslips"
         subtitle="Pick the pay month once, drop the files, assign anyone the filename missed, then issue."

@@ -55,7 +55,7 @@ export default function GovernanceChecklistPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Governance checklist"
         subtitle="Institutional decisions (MFA policy, review cadence, break-glass). Status and notes are recorded here; live secrets stay in operator env."

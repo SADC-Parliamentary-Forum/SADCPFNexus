@@ -218,7 +218,7 @@ export default function HrFileDetailPage() {
 
   if (loading) {
     return (
-      <div className="space-y-6 max-w-5xl">
+      <div className="w-full min-w-0 space-y-6">
         <div className="flex items-center justify-center py-20 text-neutral-500">
           <span className="material-symbols-outlined animate-spin text-[28px]">progress_activity</span>
           <span className="ml-2">Loading file…</span>
@@ -229,7 +229,7 @@ export default function HrFileDetailPage() {
 
   if (error || !file) {
     return (
-      <div className="space-y-6 max-w-5xl">
+      <div className="w-full min-w-0 space-y-6">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error ?? "Not found"}
         </div>
@@ -247,7 +247,7 @@ export default function HrFileDetailPage() {
   );
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
           HR

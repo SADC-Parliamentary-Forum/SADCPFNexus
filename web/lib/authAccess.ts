@@ -284,6 +284,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   // Own timesheets — must beat the /hr prefix (hr.view is org-HR admin, not self-service).
   { path: "/hr/timesheets", permission: ["timesheets.view", "timesheets.create", "timesheets.view-own", "timesheet.module.view", "hr.view", "hr.admin"] },
   { path: "/hr/payslips", permission: ["hr.admin", "hr.edit"], roles: ["HR Manager", "HR Administrator"] },
+  { path: "/hr/leave/import", permission: ["hr.admin", "hr.edit", "leave.admin", "leave.balance.import"] },
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
   { path: "/assets/import", permission: ["assets.import", "assets.admin", "assets.manage"] },

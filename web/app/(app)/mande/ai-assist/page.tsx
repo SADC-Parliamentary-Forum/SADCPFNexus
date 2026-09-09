@@ -24,7 +24,7 @@ export default function MandeAiAssistPage() {
   const filters = (last?.suggested_filters ?? []) as Array<{ key: string; label: string; href?: string }>;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-6">
+    <div className="w-full min-w-0 space-y-4 p-6">
       <ModulePageHeader
         title="M&E narrative assist"
         subtitle="Stub drafts and filter suggestions only. Human confirm required. Live LLM stays operator-owned (CR-8). Never auto-mutates indicators."
