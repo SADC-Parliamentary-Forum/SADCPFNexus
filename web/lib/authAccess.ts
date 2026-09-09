@@ -64,6 +64,20 @@ export function canManageAssets(user: AuthAccessUser | null | undefined): boolea
   return hasPermission(user, ASSETS_MANAGE_PERMISSIONS);
 }
 
+/** True if the user can raise or complete a disposal workflow. */
+export function canDisposeAssets(user: AuthAccessUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, ["assets.dispose", "assets.admin", "assets.manage"]);
+}
+
+/** True if the user can retire an unused asset (soft-status, never a hard delete). */
+export function canRetireAssets(user: AuthAccessUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, ["assets.admin", "assets.manage"]);
+}
+
 /** Permission(s) that allow managing the consumables/stock register. */
 const STOCK_MANAGE_PERMISSIONS = ["stock.admin", "stock.manage", "stock.create", "stock.edit"];
 
@@ -287,6 +301,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
   { path: "/assets/import", permission: ["assets.import", "assets.admin", "assets.manage"] },
+  { path: "/assets/disposal", permission: ["assets.dispose", "assets.admin", "assets.manage"] },
+  { path: "/assets/depreciation", permission: ["assets.admin", "assets.manage"] },
   { path: "/assets/labels/templates", permission: ["assets.print", "assets.admin", "assets.manage"] },
   { path: "/assets/labels", permission: ["assets.print", "assets.admin", "assets.manage"] },
   { path: "/assets/verification", permission: ["assets.verify", "assets.admin", "assets.manage"] },

@@ -1569,7 +1569,7 @@ const OVERCROWDED_SIDEBARS: {
     hubFile: "lib/hubs/assets.ts",
     page: "app/(app)/assets/dashboard/page.tsx",
     mustInclude: ["/assets/dashboard", "/assets", "/assets/settings"],
-    mustExclude: ["/assets/revaluation", "/assets/insurance", "/assets/depreciation"],
+    mustExclude: ["/assets/revaluation", "/assets/insurance", "/assets/depreciation", "/assets/disposal"],
     formerHrefs: [
       "/assets",
       "/fleet",

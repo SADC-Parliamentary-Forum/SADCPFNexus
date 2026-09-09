@@ -2,9 +2,11 @@
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
+import { assetsApi, type Asset } from "@/lib/api";
 
 type AssetOption = { id: number; asset_code: string; name: string; status: string; book_value?: number };
 type Disposal = {
@@ -27,6 +29,15 @@ const REASONS = ["obsolete", "damaged", "lost", "stolen", "surplus", "other"] as
 const METHODS = ["sale", "donation", "scrap", "write_off", "transfer"] as const;
 
 export default function AssetDisposalPage() {
+  return (
+    <Suspense fallback={<div className="w-full min-w-0 space-y-5 text-sm text-neutral-500">Loading disposal…</div>}>
+      <AssetDisposalPageInner />
+    </Suspense>
+  );
+}
+
+function AssetDisposalPageInner() {
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<Disposal[]>([]);
   const [assets, setAssets] = useState<AssetOption[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
@@ -57,9 +68,10 @@ export default function AssetDisposalPage() {
 
   async function loadAssets() {
     try {
-      const r = await api.get<{ data: AssetOption[] }>("/assets", { params: { status: "active", per_page: 100 } });
+      const r = await api.get<{ data: AssetOption[] }>("/assets", { params: { per_page: 100 } });
       const body = r.data as { data?: AssetOption[] };
-      setAssets(Array.isArray(body.data) ? body.data : []);
+      const list = Array.isArray(body.data) ? body.data : [];
+      setAssets(list.filter((a) => !["retired", "disposed", "sold", "written_off", "scrapped", "donated_out"].includes(a.status)));
     } catch {
       setAssets([]);
     }
@@ -69,6 +81,21 @@ export default function AssetDisposalPage() {
     load().catch(() => setRows([]));
     loadAssets();
   }, []);
+
+  useEffect(() => {
+    const assetId = searchParams.get("asset");
+    if (!assetId) return;
+    setForm((current) => ({ ...current, asset_id: assetId }));
+    setShowCreate(true);
+    assetsApi.get(Number(assetId)).then((res) => {
+      const asset = res.data as Asset;
+      if (!asset?.id) return;
+      setAssets((prev) => (prev.some((row) => row.id === asset.id) ? prev : [
+        { id: asset.id, asset_code: asset.asset_code, name: asset.name, status: asset.status },
+        ...prev,
+      ]));
+    }).catch(() => undefined);
+  }, [searchParams]);
 
   async function createDisposal(e: FormEvent) {
     e.preventDefault();

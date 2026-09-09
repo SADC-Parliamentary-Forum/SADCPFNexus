@@ -1844,6 +1844,8 @@ export const assetsApi = {
   }) => api.post<{ data: Asset; message: string }>(`/assets/${id}/capitalise`, data),
   rejectCapitalisation: (id: number, data: { reason: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/reject-capitalisation`, data),
+  retire: (id: number) =>
+    api.delete<{ message: string }>(`/assets/${id}`),
   assign: (id: number, data: { assigned_to: number; department?: string; location_id?: number; notes?: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/assign`, data),
   acknowledge: (id: number) =>

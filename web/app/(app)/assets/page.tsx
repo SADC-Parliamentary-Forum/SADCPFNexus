@@ -6,15 +6,35 @@ import Link from "next/link";
 import { loadPdfLibs } from "@/lib/pdf-libs";
 import api from "@/lib/api";
 import { assetsApi, assetRequestsApi, type Asset, type AssetRequest } from "@/lib/api";
-import { canManageAssets, getStoredUser } from "@/lib/auth";
+import { canDisposeAssets, canManageAssets, canRetireAssets, getStoredUser } from "@/lib/auth";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
+
+const LIVE_STATUSES = new Set(["pending", "active", "service_due", "loan_out", "pending_disposal"]);
+const DISPOSED_STATUSES = new Set(["disposed", "sold", "written_off", "scrapped", "donated_out"]);
+const RETIREABLE_STATUSES = new Set(["active", "service_due", "loan_out"]);
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
-  pending:      { label: "Pending capitalisation", cls: "badge-warning" },
-  active:       { label: "Active",       cls: "badge-success" },
-  service_due:  { label: "Service Due",  cls: "badge-warning" },
-  loan_out:     { label: "Loan Out",      cls: "badge-info" },
-  retired:      { label: "Retired",       cls: "badge-muted" },
+  pending:           { label: "Pending capitalisation", cls: "badge-warning" },
+  active:            { label: "Active",       cls: "badge-success" },
+  service_due:       { label: "Service Due",  cls: "badge-warning" },
+  loan_out:          { label: "Loan Out",      cls: "badge-info" },
+  pending_disposal:  { label: "Pending disposal", cls: "badge-warning" },
+  retired:           { label: "Retired",       cls: "badge-muted" },
+  disposed:          { label: "Disposed",      cls: "badge-muted" },
+  sold:              { label: "Sold",          cls: "badge-muted" },
+  written_off:       { label: "Written off",   cls: "badge-muted" },
+  scrapped:          { label: "Scrapped",      cls: "badge-muted" },
+  donated_out:       { label: "Donated",       cls: "badge-muted" },
 };
+
+function matchesStatusFilter(status: string, filterStatus: string): boolean {
+  if (filterStatus === "all") return true;
+  if (filterStatus === "live") return LIVE_STATUSES.has(status);
+  if (filterStatus === "disposed") return DISPOSED_STATUSES.has(status);
+  return status === filterStatus;
+}
 
 // ─── Depreciation helpers ────────────────────────────────────────────────────
 
@@ -416,6 +436,9 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 export default function AssetsPage() {
+  const { t } = useI18n();
+  const { confirm } = useConfirm();
+  const { success } = useToast();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [requests, setRequests] = useState<AssetRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -424,12 +447,15 @@ export default function AssetsPage() {
   const [view, setView] = useState<"inventory" | "my-requests">("inventory");
   const [showRequestButton, setShowRequestButton] = useState(false);
   const [showAddAssetButton, setShowAddAssetButton] = useState(false);
+  const [canDispose, setCanDispose] = useState(false);
+  const [canRetire, setCanRetire] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("live");
   const [filterCategory, setFilterCategory] = useState("all");
   const [capitaliseAsset, setCapitaliseAsset] = useState<Asset | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [retiringId, setRetiringId] = useState<number | null>(null);
 
   const handleExportPdf = useCallback(async () => {
     setExportingPdf(true);
@@ -500,6 +526,8 @@ export default function AssetsPage() {
     const user = getStoredUser();
     setShowRequestButton(!!user);
     setShowAddAssetButton(canManageAssets(user));
+    setCanDispose(canDisposeAssets(user));
+    setCanRetire(canRetireAssets(user));
     if (typeof window !== "undefined") {
       const status = new URLSearchParams(window.location.search).get("status");
       if (status) setFilterStatus(status);
@@ -530,17 +558,17 @@ export default function AssetsPage() {
   const filteredAssets = assets.filter((a) => {
     const q = search.toLowerCase();
     const matchSearch = !q || a.name.toLowerCase().includes(q) || a.asset_code?.toLowerCase().includes(q);
-    const matchStatus = filterStatus === "all" || a.status === filterStatus;
+    const matchStatus = matchesStatusFilter(a.status, filterStatus);
     const matchCat = filterCategory === "all" || a.category === filterCategory;
     return matchSearch && matchStatus && matchCat;
   });
 
   const statusCounts = {
+    live: assets.filter((a) => LIVE_STATUSES.has(a.status)).length,
     pending: assets.filter((a) => a.status === "pending").length,
     active: assets.filter((a) => a.status === "active").length,
-    service_due: assets.filter((a) => a.status === "service_due").length,
-    loan_out: assets.filter((a) => a.status === "loan_out").length,
     retired: assets.filter((a) => a.status === "retired").length,
+    disposed: assets.filter((a) => DISPOSED_STATUSES.has(a.status)).length,
   };
 
   const handleRejectCapitalisation = async (asset: Asset) => {
@@ -555,6 +583,30 @@ export default function AssetsPage() {
       setError("Failed to reject capitalisation.");
     } finally {
       setRejectingId(null);
+    }
+  };
+
+  const handleRetire = async (asset: Asset) => {
+    const ok = await confirm({
+      title: t("assets.register.retireConfirmTitle"),
+      message: t("assets.register.retireConfirm"),
+      confirmText: t("assets.register.retire"),
+      variant: "danger",
+    });
+    if (!ok) return;
+    setRetiringId(asset.id);
+    setError(null);
+    try {
+      await assetsApi.retire(asset.id);
+      setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, status: "retired" } : a)));
+      success(t("assets.register.retired"));
+    } catch (e: unknown) {
+      const msg =
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? "Failed to retire asset.";
+      setError(msg);
+    } finally {
+      setRetiringId(null);
     }
   };
 
@@ -600,6 +652,18 @@ export default function AssetsPage() {
               </Link>
             </>
           )}
+          {canDispose && (
+            <Link href="/assets/disposal" className="btn-secondary">
+              <span className="material-symbols-outlined text-[18px]">delete_forever</span>
+              {t("assets.register.disposalQueue")}
+            </Link>
+          )}
+          {canRetire && (
+            <Link href="/assets/depreciation" className="btn-secondary">
+              <span className="material-symbols-outlined text-[18px]">trending_down</span>
+              {t("assets.register.depreciation")}
+            </Link>
+          )}
           {showRequestButton && (
             <Link href="/assets/request" className="btn-primary">
               <span className="material-symbols-outlined text-[18px]">add_circle</span>
@@ -637,11 +701,11 @@ export default function AssetsPage() {
       {view === "inventory" && !loading && assets.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
+            { label: t("assets.register.live"), count: statusCounts.live, icon: "inventory_2", color: "text-primary", bg: "bg-primary/10", status: "live" },
             { label: "Pending",     count: statusCounts.pending,     icon: "pending_actions", color: "text-amber-600",  bg: "bg-amber-50",   status: "pending" },
             { label: "Active",      count: statusCounts.active,      icon: "check_circle",    color: "text-green-600",  bg: "bg-green-50",   status: "active" },
-            { label: "Service Due", count: statusCounts.service_due, icon: "build",           color: "text-amber-600",  bg: "bg-amber-50",   status: "service_due" },
-            { label: "Loan Out",    count: statusCounts.loan_out,    icon: "swap_horiz",      color: "text-blue-600",   bg: "bg-blue-50",    status: "loan_out" },
             { label: "Retired",     count: statusCounts.retired,     icon: "archive",         color: "text-neutral-500", bg: "bg-neutral-100", status: "retired" },
+            { label: t("assets.register.disposed"), count: statusCounts.disposed, icon: "delete_forever", color: "text-red-700", bg: "bg-red-50", status: "disposed" },
           ].map((s) => (
             <button
               key={s.label}
@@ -681,12 +745,15 @@ export default function AssetsPage() {
           <div className="min-w-[130px]">
             <label className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
             <select className="form-input text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+              <option value="live">{t("assets.register.live")}</option>
               <option value="all">All Statuses</option>
               <option value="pending">Pending capitalisation</option>
               <option value="active">Active</option>
               <option value="service_due">Service Due</option>
               <option value="loan_out">Loan Out</option>
+              <option value="pending_disposal">{t("assets.register.pendingDisposal")}</option>
               <option value="retired">Retired</option>
+              <option value="disposed">{t("assets.register.disposed")}</option>
             </select>
           </div>
           {categories.length > 0 && (
@@ -698,10 +765,10 @@ export default function AssetsPage() {
               </select>
             </div>
           )}
-          {(search || filterStatus !== "all" || filterCategory !== "all") && (
+          {(search || filterStatus !== "live" || filterCategory !== "all") && (
             <button
               type="button"
-              onClick={() => { setSearch(""); setFilterStatus("all"); setFilterCategory("all"); }}
+              onClick={() => { setSearch(""); setFilterStatus("live"); setFilterCategory("all"); }}
               className="text-xs text-neutral-500 hover:text-neutral-700 flex items-center gap-1 mt-5"
             >
               <span className="material-symbols-outlined text-[15px]">close</span>
@@ -792,9 +859,10 @@ export default function AssetsPage() {
                           )}
                         </div>
                       </div>
-                      {showAddAssetButton && (
+                      {(showAddAssetButton || canDispose || canRetire) && (
                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
                           {asset.status === "pending" ? (
+                            showAddAssetButton ? (
                             <>
                               <button
                                 type="button"
@@ -812,14 +880,45 @@ export default function AssetsPage() {
                                 {rejectingId === asset.id ? "…" : "Reject"}
                               </button>
                             </>
+                            ) : null
                           ) : (
-                            <Link
-                              href={`/assets/${asset.id}/edit`}
-                              className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-primary transition-colors"
-                              aria-label="Edit asset"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">edit</span>
-                            </Link>
+                            <>
+                              {showAddAssetButton && (
+                                <Link
+                                  href={`/assets/${asset.id}/edit`}
+                                  className="p-2 rounded-lg text-neutral-500 hover:bg-neutral-100 hover:text-primary transition-colors"
+                                  aria-label="Edit asset"
+                                >
+                                  <span className="material-symbols-outlined text-[20px]">edit</span>
+                                </Link>
+                              )}
+                              {canDispose && asset.status === "pending_disposal" && (
+                                <Link
+                                  href="/assets/disposal"
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-800 hover:bg-amber-50"
+                                >
+                                  {t("assets.register.pendingDisposal")}
+                                </Link>
+                              )}
+                              {canDispose && RETIREABLE_STATUSES.has(asset.status) && (
+                                <Link
+                                  href={`/assets/disposal?asset=${asset.id}`}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-700 hover:bg-red-50"
+                                >
+                                  {t("assets.register.dispose")}
+                                </Link>
+                              )}
+                              {canRetire && RETIREABLE_STATUSES.has(asset.status) && (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleRetire(asset)}
+                                  disabled={retiringId === asset.id}
+                                  className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-neutral-600 hover:bg-neutral-100 disabled:opacity-50"
+                                >
+                                  {retiringId === asset.id ? "…" : t("assets.register.retire")}
+                                </button>
+                              )}
+                            </>
                           )}
                         </div>
                       )}
@@ -832,7 +931,7 @@ export default function AssetsPage() {
             <div className="card p-10 text-center">
               <span className="material-symbols-outlined text-3xl text-neutral-300">search_off</span>
               <p className="mt-2 text-sm font-semibold text-neutral-600">No assets match your filters</p>
-              <button type="button" onClick={() => { setSearch(""); setFilterStatus("all"); setFilterCategory("all"); }} className="mt-3 text-xs text-primary hover:underline">Clear filters</button>
+              <button type="button" onClick={() => { setSearch(""); setFilterStatus("live"); setFilterCategory("all"); }} className="mt-3 text-xs text-primary hover:underline">Clear filters</button>
             </div>
           ) : (
             <div className="card p-16 text-center">
