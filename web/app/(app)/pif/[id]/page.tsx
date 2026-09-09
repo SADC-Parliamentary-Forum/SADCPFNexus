@@ -21,6 +21,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import ReadOnlySections from "./ReadOnlySections";
 import PifFinanceBudgetCertify from "@/components/budget/PifFinanceBudgetCertify";
 import { CreateAssignmentFromSourceModal } from "@/components/assignments/CreateAssignmentFromSourceModal";
+import { SigningModal } from "@/components/saam/SigningModal";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { unwrapEntity } from "@/lib/unwrapEntity";
@@ -169,6 +170,7 @@ export default function PifDetailPage() {
   const [sendTravelSubmitting, setSendTravelSubmitting] = useState(false);
   const [missionTitle, setMissionTitle] = useState("");
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [signModal, setSignModal] = useState(false);
   const { confirm } = useConfirm();
 
 
@@ -334,14 +336,20 @@ export default function PifDetailPage() {
     finally { setSubmitting(false); }
   };
 
-  const handleApproveProgramme = async () => {
+  const handleApproveProgramme = async (confirmPassword?: string) => {
     if (!programme) return;
     setSubmitting(true);
     try {
-      await programmeApi.approve(programme.id);
-      success("Programme approved.");
+      await programmeApi.approve(programme.id, undefined, confirmPassword);
+      success(confirmPassword ? "Programme signed and approved." : "Programme approved.");
+      setSignModal(false);
       load();
     } catch (err) {
+      const ax = err as { response?: { data?: { errors?: Record<string, string[]> } } };
+      if (!confirmPassword && (ax.response?.data?.errors?.confirm_password || ax.response?.data?.errors?.signature)) {
+        setSignModal(true);
+        return;
+      }
       showErrorToast(getApiError(err) || "Failed to approve.");
     }
     finally { setSubmitting(false); }
@@ -1675,6 +1683,19 @@ export default function PifDetailPage() {
         sourceReference={programme.reference_number}
         sourceTitle={programme.title}
       />
+      {signModal && (
+        <SigningModal
+          isOpen
+          onClose={() => setSignModal(false)}
+          signableType="programmes"
+          signableId={programme.id}
+          action="approve"
+          title="Sign & approve"
+          onWorkflowApprove={async ({ password }) => {
+            await handleApproveProgramme(password);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -55,7 +55,7 @@ class EmailActionController extends Controller
             if ($record->isUsed()) {
                 return response()->json(['error' => 'This link has already been used.', 'reason' => 'used'], 409);
             }
-            $approvalRequest = $record->approvalRequest()->with('approvable')->first();
+            $approvalRequest = $record->approvalRequest()->with(['approvable', 'workflow.steps'])->first();
 
             if (!$approvalRequest) {
                 return response()->json(['error' => 'Request not found.'], 404);
@@ -72,6 +72,7 @@ class EmailActionController extends Controller
                 ?? null;
             $step = $approvalRequest->workflow?->steps?->get($approvalRequest->current_step_index);
             $highRisk = (bool) ($step?->high_risk);
+            $requiresSignature = (bool) ($step?->requires_signature);
 
             return response()->json([
                 'token_action'  => $record->action,
@@ -86,6 +87,7 @@ class EmailActionController extends Controller
                 'record_version' => $approvalRequest->record_version,
                 'package_hash' => $approvalRequest->approval_package_hash,
                 'high_risk' => $highRisk,
+                'requires_signature' => $requiresSignature,
                 'mfa_note' => $highRisk
                     ? (string) config('workflow_engine.email_high_risk_mfa_note')
                     : null,
@@ -114,6 +116,21 @@ class EmailActionController extends Controller
         ]);
 
         $user = $request->user();
+
+        $pendingToken = SignedActionToken::where('token', $data['token'])->first();
+        if ($pendingToken && $data['action'] === 'approve') {
+            $pendingApproval = $pendingToken->approvalRequest;
+            if ($pendingApproval) {
+                $pendingApproval->loadMissing('workflow.steps');
+                $pendingStep = $pendingApproval->workflow?->steps?->get($pendingApproval->current_step_index);
+                if ($pendingStep?->requires_signature) {
+                    return response()->json([
+                        'error' => 'This approval requires your enrolled signature. Open the request in Nexus, re-enter your password, and sign.',
+                        'reason' => 'requires_signature',
+                    ], 422);
+                }
+            }
+        }
 
         try {
             $record = $this->tokenService->consume($data['token'], $data['action']);

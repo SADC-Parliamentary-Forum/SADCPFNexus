@@ -42,13 +42,15 @@ class ApprovalController extends Controller
         $data = $request->validate([
             'comment' => ['nullable', 'string', 'max:1000'],
             'idempotency_key' => ['nullable', 'string', 'max:128'],
+            'confirm_password' => ['nullable', 'string', 'max:255'],
         ]);
 
         $result = $this->workflowService->approve(
             $approvalRequest,
             $request->user(),
             $data['comment'] ?? null,
-            $data['idempotency_key'] ?? $request->header('Idempotency-Key')
+            $data['idempotency_key'] ?? $request->header('Idempotency-Key'),
+            WorkflowService::signatureContextFromRequest($request)
         );
 
         return response()->json(['message' => 'Request approved.', 'data' => $result]);

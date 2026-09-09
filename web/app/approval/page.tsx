@@ -16,6 +16,7 @@ interface PreviewData {
   requester: string;
   summary: string;
   approver_id: number;
+  requires_signature?: boolean;
 }
 
 interface SigProfile {
@@ -161,7 +162,14 @@ function ApprovalPage() {
       const body = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setErrorMsg(body.error ?? "Something went wrong. Please try again.");
+        if (body.reason === "requires_signature") {
+          setErrorMsg(
+            body.error ??
+              "This approval requires your enrolled signature. Open the request in Nexus, re-enter your password, and sign.",
+          );
+        } else {
+          setErrorMsg(body.error ?? "Something went wrong. Please try again.");
+        }
         setState("error");
         return;
       }
@@ -398,7 +406,17 @@ function ApprovalPage() {
 
             {/* Action buttons */}
             <div className="ap-actions">
-              {action === "approve" ? (
+              {action === "approve" && preview.requires_signature ? (
+                <>
+                  <p className="ap-hint-box">
+                    This step requires your enrolled signature. Email links cannot apply it.
+                    Open Nexus, re-enter your password, and sign from My Approvals.
+                  </p>
+                  <a href="/approvals" className="ap-btn-outline ap-full">
+                    Open My Approvals →
+                  </a>
+                </>
+              ) : action === "approve" ? (
                 <button className="ap-btn-approve ap-full" onClick={handleProcess}>
                   <span>✓</span>
                   {useSignature && signature ? "Sign & Approve" : "Approve"}

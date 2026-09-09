@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { saamApi, type SignatureProfile, type SignatureEvent } from "@/lib/api";
-import api from "@/lib/api";
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSigned: (event: SignatureEvent) => void;
+  /** Correspondence and other SAAM-first flows. Omit when onWorkflowApprove is set. */
+  onSigned?: (event: SignatureEvent) => void;
+  /**
+   * Workflow inbox / module approve+sign. Calls the workflow approve endpoint
+   * with confirm_password so the backend pins the specimen — do not also call saamApi.signDocument.
+   */
+  onWorkflowApprove?: (payload: { password: string; comment?: string }) => Promise<void>;
   signableType: string;   // e.g. 'correspondence'
   signableId: number;
   action: "approve" | "reject" | "review" | "return" | "acknowledge";
@@ -33,7 +38,7 @@ const actionColor: Record<Props["action"], string> = {
 };
 
 export function SigningModal({
-  isOpen, onClose, onSigned, signableType, signableId,
+  isOpen, onClose, onSigned, onWorkflowApprove, signableType, signableId,
   action, stepKey, requirePassword = true, title,
 }: Props) {
   const [profile, setProfile] = useState<SignatureProfile | null>(null);
@@ -65,9 +70,24 @@ export function SigningModal({
       setError("Please enter your password to sign.");
       return;
     }
+    if (onWorkflowApprove && !profile?.active_version) {
+      setError("Enrol your signature specimen in SAAM before approving this step.");
+      return;
+    }
+    if ((action === "reject" || action === "return") && !comment.trim()) {
+      setError("Please add a comment.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
+      if (onWorkflowApprove) {
+        await onWorkflowApprove({
+          password,
+          comment: comment || undefined,
+        });
+        return;
+      }
       const res = await saamApi.signDocument(signableType, signableId, {
         action,
         step_key: stepKey,
@@ -75,11 +95,14 @@ export function SigningModal({
         signature_type: "full",
         confirm_password: password,
       });
-      onSigned(res.data.data);
+      onSigned?.(res.data.data);
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })
-        ?.response?.data?.message ?? "Failed to sign. Please try again.";
-      setError(msg);
+      const data = (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })
+        ?.response?.data;
+      const fieldError = data?.errors
+        ? Object.values(data.errors).flat()[0]
+        : undefined;
+      setError(fieldError || data?.message || "Failed to sign. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -137,7 +160,9 @@ export function SigningModal({
                 <a href="/profile/signature" target="_blank" className="font-semibold underline">
                   Set up now
                 </a>
-                . You can still sign without a graphical signature.
+                {onWorkflowApprove
+                  ? ". This step cannot be approved until your specimen is enrolled."
+                  : ". You can still sign without a graphical signature."}
               </span>
             </div>
           )}
@@ -196,7 +221,7 @@ export function SigningModal({
           </button>
           <button
             onClick={handleSign}
-            disabled={loading}
+            disabled={loading || (Boolean(onWorkflowApprove) && !profile?.active_version)}
             className={`${actionColor[action]} text-sm disabled:opacity-60 flex items-center gap-1.5`}
           >
             {loading ? (
