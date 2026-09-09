@@ -144,6 +144,58 @@ class AssetsTest extends TestCase
             'id'     => $asset->id,
             'status' => 'retired',
         ]);
+
+        $this->assertDatabaseHas('audit_logs', [
+            'event'        => 'assets.retired',
+            'auditable_id' => $asset->id,
+        ]);
+    }
+
+    public function test_staff_cannot_retire_asset(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+        $category = $this->makeCategory($tenant);
+        $asset = $this->makeAsset($tenant, $category);
+
+        $http->deleteJson("/api/v1/assets/{$asset->id}")->assertForbidden();
+
+        $this->assertDatabaseHas('assets', [
+            'id'     => $asset->id,
+            'status' => 'active',
+        ]);
+    }
+
+    public function test_disposed_and_pending_assets_cannot_be_retired(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $category = $this->makeCategory($tenant);
+
+        $disposed = $this->makeAsset($tenant, $category);
+        $disposed->status = 'sold';
+        $disposed->save();
+
+        $http->deleteJson("/api/v1/assets/{$disposed->id}")
+            ->assertUnprocessable();
+
+        $pending = $this->makeAsset($tenant, $category);
+        $pending->status = 'pending';
+        $pending->save();
+
+        $http->deleteJson("/api/v1/assets/{$pending->id}")
+            ->assertUnprocessable();
+
+        $inFlight = $this->makeAsset($tenant, $category);
+        $inFlight->status = 'pending_disposal';
+        $inFlight->save();
+
+        $http->deleteJson("/api/v1/assets/{$inFlight->id}")
+            ->assertUnprocessable();
+
+        $this->assertDatabaseHas('assets', ['id' => $disposed->id, 'status' => 'sold']);
+        $this->assertDatabaseHas('assets', ['id' => $pending->id, 'status' => 'pending']);
+        $this->assertDatabaseHas('assets', ['id' => $inFlight->id, 'status' => 'pending_disposal']);
     }
 
     // ─── Asset Requests ──────────────────────────────────────────────────────

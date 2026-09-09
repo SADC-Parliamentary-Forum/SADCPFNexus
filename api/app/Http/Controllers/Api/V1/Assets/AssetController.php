@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Assets;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Models\AuditLog;
 use App\Models\User;
 use App\Modules\Assets\Export\AssetRegisterExportWorkbook;
 use App\Modules\Assets\Services\AssetQrService;
@@ -565,13 +566,31 @@ class AssetController extends Controller
             abort(404);
         }
 
+        if ($asset->status === 'pending') {
+            return response()->json(['message' => 'Pending GRN drafts cannot be retired. Reject capitalisation instead.'], 422);
+        }
+        if ($asset->status === 'pending_disposal') {
+            return response()->json(['message' => 'Complete or cancel the open disposal request first.'], 422);
+        }
+        if ($asset->status === 'retired') {
+            return response()->json(['message' => 'Asset is already retired.'], 422);
+        }
         if ($asset->isDisposed()) {
             return response()->json(['message' => 'Disposed assets are retained for audit; status unchanged.'], 422);
         }
 
-        // Mark as retired rather than hard-delete to preserve audit history
+        $previous = $asset->status;
         $asset->status = 'retired';
+        $asset->assigned_to = null;
         $asset->save();
+
+        AuditLog::record('assets.retired', [
+            'auditable_type' => Asset::class,
+            'auditable_id' => $asset->id,
+            'old_values' => ['status' => $previous],
+            'new_values' => ['status' => 'retired'],
+            'tags' => 'assets',
+        ]);
 
         return response()->json(['message' => 'Asset retired.']);
     }
