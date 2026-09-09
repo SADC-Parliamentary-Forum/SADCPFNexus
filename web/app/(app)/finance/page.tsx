@@ -121,7 +121,7 @@ export default function FinancePage() {
   const ytdStr = summary?.ytd_gross != null ? `${currency} ${Number(summary.ytd_gross).toLocaleString()}` : "—";
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Finance"
         subtitle="Payslips, salary advances, imprest, and voted funds."

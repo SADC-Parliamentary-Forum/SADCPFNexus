@@ -57,7 +57,7 @@ export default function PifCreatePage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Start a Programme Implementation Form"
         subtitle="Give the programme a title to create a draft. You will complete objectives, activities, budget, travel, procurement and documents on the next screen."

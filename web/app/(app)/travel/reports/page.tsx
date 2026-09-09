@@ -393,7 +393,7 @@ export default function TravelReportsPage() {
   const hasPackRows = Object.values(packCounts).some((count) => count > 0);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Travel Reports"
         subtitle="Secretariat briefing pack: status, programme cost, donor lines, and exportable register slices."

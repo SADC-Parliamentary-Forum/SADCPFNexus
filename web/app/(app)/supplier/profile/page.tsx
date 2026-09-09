@@ -76,7 +76,7 @@ export default function SupplierProfilePage() {
   if (profileQuery.isError || categoriesQuery.isError || !profileQuery.data) return <div className="card p-6">Failed to load supplier profile.</div>;
 
   return (
-    <div className="max-w-4xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Supplier Profile"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Supplier Profile" }]} />}

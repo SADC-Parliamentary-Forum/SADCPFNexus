@@ -56,7 +56,7 @@ export default function LeaveToilPage() {
   const expiring = credits.filter((c) => typeof c.days_until_expiry === "number" && c.days_until_expiry <= 30);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="TOIL / Leave-in-Lieu Credits"
         subtitle="Expiry monitoring — overdue credits are expired by the daily job."

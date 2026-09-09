@@ -160,7 +160,7 @@ function NewAssetMovementPageContent() {
   const selectedType = MOVEMENT_TYPES.find((t) => t.id === movementType)!;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-2">
         <Link href="/assets" className="text-neutral-400 hover:text-neutral-600 transition-colors">
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
@@ -262,7 +262,7 @@ function NewAssetMovementPageContent() {
 
 export default function NewAssetMovementPage() {
   return (
-    <Suspense fallback={<div className="max-w-2xl mx-auto card p-6 text-sm text-neutral-500">Loading asset movement form...</div>}>
+    <Suspense fallback={<div className="w-full min-w-0 card p-6 text-sm text-neutral-500">Loading asset movement form...</div>}>
       <NewAssetMovementPageContent />
     </Suspense>
   );

@@ -159,7 +159,7 @@ export default function CorrespondenceDetailPage() {
   const canSend = isSystemAdmin(currentUser) || hasPermission(currentUser, "correspondence.send");
 
   return (
-    <div className="max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/correspondence" className="hover:text-neutral-700">Correspondence</Link>

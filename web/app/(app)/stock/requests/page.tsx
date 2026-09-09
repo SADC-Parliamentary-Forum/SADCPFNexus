@@ -59,7 +59,7 @@ export default function StockRequestsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Stock Requests"
         subtitle="Request → approve (reserves) → issue against voucher."

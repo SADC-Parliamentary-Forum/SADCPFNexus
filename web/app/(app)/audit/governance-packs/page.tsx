@@ -55,7 +55,7 @@ export default function AuditGovernancePacksPage() {
   const findings = pack?.payload?.critical_high_findings ?? [];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="audit.packs.title"
         subtitle="audit.packs.subtitle"

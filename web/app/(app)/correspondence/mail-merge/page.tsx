@@ -99,7 +99,7 @@ export default function CorrespondenceMailMergePage() {
   });
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div>
         <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
           <Link href="/correspondence" className="hover:text-neutral-700">Correspondence</Link>

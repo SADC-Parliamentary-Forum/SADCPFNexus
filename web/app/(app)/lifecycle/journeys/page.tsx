@@ -31,7 +31,7 @@ export default function LifecycleInternalJourneysPage() {
   const cases = casesQuery.data ?? [];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Internal journeys"
         subtitle="Open transfer, promotion, and probation cases from published templates."

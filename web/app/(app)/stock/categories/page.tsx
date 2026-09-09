@@ -100,7 +100,7 @@ export default function StockCategoriesPage() {
   if (allowed === null || allowed === false) return null;
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Stock Categories"
         subtitle="Configure consumable categories (stationery, toner, regalia, event material…)."

@@ -27,7 +27,7 @@ export default function MandeImportPage() {
 
   if (!canAdmin) {
     return (
-      <div className="max-w-3xl">
+      <div className="w-full min-w-0 space-y-6">
         <h1 className="page-title">Historical Import</h1>
         <p className="page-subtitle mt-2">You need M&amp;E admin permission to import historical activity reports.</p>
       </div>
@@ -35,7 +35,7 @@ export default function MandeImportPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Historical Import"
         subtitle="Upload a CSV or Excel (.xlsx) file with columns: activity_title, start_date, end_date, pif_number, non_pif_reason.\r\n          Preview first, then commit to crea"

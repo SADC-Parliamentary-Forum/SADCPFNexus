@@ -1008,7 +1008,7 @@ export default function WorkplanListPage() {
   }, [list, calYear]);
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="w-full min-w-0 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <ModulePageHeader

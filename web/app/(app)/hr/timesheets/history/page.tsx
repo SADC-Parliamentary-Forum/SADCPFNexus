@@ -75,7 +75,7 @@ export default function TimesheetHistoryPage() {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

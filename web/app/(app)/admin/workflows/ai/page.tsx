@@ -62,7 +62,7 @@ export default function WorkflowAiPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="AI Configuration Assist"
         subtitle="Workflow suggestions with guardrails and human-confirmed application."

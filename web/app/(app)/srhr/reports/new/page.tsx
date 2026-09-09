@@ -146,7 +146,7 @@ function NewReportPageInner() {
   };
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-1.5 text-sm text-neutral-500">
         <Link href="/srhr" className="hover:text-primary">SRHR</Link>
         <span className="material-symbols-outlined text-[14px]">chevron_right</span>
@@ -380,7 +380,7 @@ function NewReportPageInner() {
 
 export default function NewReportPage() {
   return (
-    <Suspense fallback={<div className="max-w-2xl p-6 text-sm text-neutral-500">Loading…</div>}>
+    <Suspense fallback={<div className="w-full min-w-0 p-6 text-sm text-neutral-500">Loading…</div>}>
       <NewReportPageInner />
     </Suspense>
   );

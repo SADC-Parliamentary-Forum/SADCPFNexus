@@ -120,7 +120,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
       .procurement_request?.quotes ?? [];
 
   return (
-    <div className="space-y-5 max-w-3xl">
+    <div className="w-full min-w-0 space-y-5">
       <Link href="/procurement/tenders" className="text-sm text-neutral-500 hover:text-neutral-800">
         ← Tenders
       </Link>

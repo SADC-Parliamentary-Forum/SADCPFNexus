@@ -196,7 +196,7 @@ export default function ImprestDetailPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="w-full min-w-0 space-y-6">
         <div className="h-4 w-48 bg-neutral-100 rounded animate-pulse" />
         <div className="h-7 w-64 bg-neutral-100 rounded animate-pulse" />
         <div className="grid grid-cols-3 gap-4">
@@ -210,7 +210,7 @@ export default function ImprestDetailPage() {
 
   if (error || !request) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-4 flex items-start gap-3">
           <span className="material-symbols-outlined text-red-500 text-[20px] flex-shrink-0 mt-0.5">error_outline</span>
           <div>
@@ -237,7 +237,7 @@ export default function ImprestDetailPage() {
     : 0;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <WorkflowStatusBanner
         status={request.status}
         currentStage={currentStep?.name ?? currentStep?.role_name ?? null}

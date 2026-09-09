@@ -150,7 +150,7 @@ export default function CorrespondenceContactsPage() {
   const canAdmin = isSystemAdmin(currentUser) || hasPermission(currentUser, "correspondence.admin");
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <ModulePageHeader

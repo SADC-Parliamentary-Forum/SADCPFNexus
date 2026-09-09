@@ -79,7 +79,7 @@ export default function ImprestCreatePage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="New Imprest Request"
         subtitle="Initiate a new petty cash request for operational expenses."

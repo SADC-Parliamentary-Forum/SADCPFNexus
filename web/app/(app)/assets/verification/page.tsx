@@ -111,7 +111,7 @@ export default function AssetVerificationPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <div className="page-header">
         <ModulePageHeader
           title={t("assets.verify.title")}

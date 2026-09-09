@@ -44,7 +44,7 @@ export default function WorkSchedulesPage() {
   }, [load]);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between">
         <ModulePageHeader
         title="Work Schedules"

@@ -53,7 +53,7 @@ export function RegisterShell({
   const showPagination = typeof onPageChange === "function" && pageCount > 1;
 
   return (
-    <div className={cn("mx-auto max-w-6xl space-y-5", className)}>
+    <div className={cn("w-full min-w-0 space-y-5", className)}>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           {breadcrumbs}

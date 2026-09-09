@@ -291,7 +291,7 @@ export default function AssignmentDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl space-y-6">
+      <div className="w-full min-w-0 space-y-6">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="card p-5 animate-pulse">
             <div className="h-4 bg-neutral-200 rounded w-1/3 mb-3" />
@@ -317,7 +317,7 @@ export default function AssignmentDetailPage() {
   const isOverdue = !["closed", "cancelled"].includes(assignment.status) && new Date(assignment.due_date) < new Date();
 
   return (
-    <div className="max-w-3xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-sm text-neutral-500">
         <Link href="/assignments" className="hover:text-primary">Assignments</Link>

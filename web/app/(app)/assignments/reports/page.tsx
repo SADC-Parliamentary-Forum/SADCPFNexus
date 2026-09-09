@@ -13,7 +13,7 @@ export default function AssignmentReportsPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Assignment Reports"
         subtitle="Institutional workload and blocker analysis. Automated performance scores and leaderboards are disabled."

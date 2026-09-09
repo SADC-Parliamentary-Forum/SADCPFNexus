@@ -117,7 +117,7 @@ export default function AssignmentsCalendarPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Assignment Calendar"
         subtitle={`Due dates for ${bounds.label}. Download ICS with your session, or subscribe in Google Calendar / Outlook with a private feed URL.`}

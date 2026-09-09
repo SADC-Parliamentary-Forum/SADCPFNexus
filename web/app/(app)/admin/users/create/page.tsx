@@ -307,7 +307,7 @@ export default function AdminUserCreatePage() {
   const totalGranted = permissions.reduce((s, p) => s + p.granted.length, 0);
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/admin/users" className="hover:text-primary transition-colors">User Management</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>

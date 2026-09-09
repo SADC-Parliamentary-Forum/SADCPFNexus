@@ -360,7 +360,7 @@ export default function AssetImportPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <div className="page-header flex flex-wrap items-start justify-between gap-3">
         <ModulePageHeader
           title={t("assets.import.title")}

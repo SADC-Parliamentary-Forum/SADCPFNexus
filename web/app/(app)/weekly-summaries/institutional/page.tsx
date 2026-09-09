@@ -209,7 +209,7 @@ export default function WeeklyInstitutionalPage() {
     : null;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Institutional summary"
         subtitle="Tenant rollup for the selected reporting week. Periods are chosen by name and dates — this page never auto-submits or auto-publishes."

@@ -35,7 +35,7 @@ class AssetRequestController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'justification' => ['required', 'string', 'max:2000'],
+            'justification' => ['required', 'string', 'min:20', 'max:2000'],
             'document_path' => ['nullable', 'string', 'max:500'],
         ]);
 

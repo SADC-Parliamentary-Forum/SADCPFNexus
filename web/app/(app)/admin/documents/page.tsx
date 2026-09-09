@@ -330,7 +330,7 @@ export default function AdminDocumentsPage() {
       </RegisterShell>
 
       {holdTarget ? (
-        <div className="mx-auto max-w-6xl">
+        <div className="w-full min-w-0">
           <FormSection
             title="documents.register.placeHold"
             description={holdTarget.title}
@@ -372,14 +372,14 @@ export default function AdminDocumentsPage() {
       ) : null}
 
       {backup != null ? (
-        <div className="mx-auto max-w-6xl">
+        <div className="w-full min-w-0">
           <FormSection title="documents.register.backup" description="documents.register.backupHint" icon="backup">
             <LabelledRecord value={backup} />
           </FormSection>
         </div>
       ) : null}
 
-      <div className="mx-auto max-w-6xl">
+      <div className="w-full min-w-0">
         <FormSection
           title="documents.register.retention"
           description="documents.register.retentionHint"

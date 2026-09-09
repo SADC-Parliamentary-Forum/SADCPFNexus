@@ -76,7 +76,7 @@ export default function LeaveCertificationQueuePage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Leave Certification Queue"
         subtitle="Recommended requests awaiting Administration / HR certification."

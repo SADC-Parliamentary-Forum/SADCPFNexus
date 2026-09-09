@@ -62,7 +62,7 @@ export default function AdminSettingsPage() {
   const MONTHS = MONTHS_OF_YEAR;
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="w-full min-w-0 space-y-6">
 <div className="flex items-center gap-2 text-sm text-neutral-500">
         <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
         <span className="material-symbols-outlined text-[16px]">chevron_right</span>

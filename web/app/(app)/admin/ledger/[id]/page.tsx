@@ -130,7 +130,7 @@ export default function LedgerVerificationDetailPage({ params }: { params: Promi
   const isPassed = verification.status === "pass";
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-6 w-full min-w-0">
       {/* Toast */}
       <ModulePageHeader
         title="Ledger Verification Report"

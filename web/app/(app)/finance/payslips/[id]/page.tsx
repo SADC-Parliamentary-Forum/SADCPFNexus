@@ -74,7 +74,7 @@ export default function PayslipViewerPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl space-y-6 animate-pulse">
+      <div className="w-full min-w-0 space-y-6 animate-pulse">
         <div className="h-5 w-48 rounded bg-neutral-100" />
         <div className="h-8 w-64 rounded bg-neutral-100" />
         <div className="card h-[400px]" />
@@ -84,7 +84,7 @@ export default function PayslipViewerPage() {
 
   if (error || !payslip) {
     return (
-      <div className="mx-auto max-w-5xl">
+      <div className="w-full min-w-0">
         <div className="card">
           <EmptyState
             icon="error"
@@ -101,7 +101,7 @@ export default function PayslipViewerPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title={`Payslip — ${periodLabel(payslip)}`}
         subtitle="Official payslip record. Download or view inline."

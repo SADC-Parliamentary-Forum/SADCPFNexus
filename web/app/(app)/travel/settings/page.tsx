@@ -235,7 +235,7 @@ export default function TravelSettingsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
         title="Travel settings"
         subtitle="DSA rate types 1–3, FX snapshots, and host/donor meal deductions used by Finance — not ad-hoc percentages."

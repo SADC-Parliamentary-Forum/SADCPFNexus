@@ -36,7 +36,7 @@ export default function LifecycleSeparationCreatePage() {
   });
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
         title="Start separation"
         subtitle="Notice period is resolved from published grade band or contract type — not editable here."
