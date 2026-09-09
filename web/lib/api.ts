@@ -1752,6 +1752,7 @@ export interface Asset {
   asset_class?: string | null;
   status: string;
   assigned_to: number | null;
+  assigned_user?: { id: number; name: string; email: string } | null;
   issued_at: string | null;
   value: number | null;
   notes: string | null;
@@ -1797,7 +1798,7 @@ export const assetsApi = {
     name: string;
     category: string;
     status?: string;
-    assigned_to?: number;
+    assigned_to?: number | null;
     issued_at?: string;
     value?: number;
     notes?: string;
@@ -1814,7 +1815,7 @@ export const assetsApi = {
     name: string;
     category: string;
     status?: string;
-    assigned_to?: number;
+    assigned_to?: number | null;
     issued_at?: string;
     value?: number;
     notes?: string;
@@ -2087,6 +2088,15 @@ export const assetMovementsApi = {
 export const assetImportApi = {
   list: (params?: { per_page?: number; page?: number }) =>
     api.get("/assets/import", { params }),
+  downloadTemplate: () =>
+    api.get<Blob>("/assets/import/template", { responseType: "blob" }).then((res) => {
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sadcpf-asset-import-template.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    }),
   upload: (form: FormData) =>
     api.post<{ message: string; data: unknown }>("/assets/import", form, {
       headers: { "Content-Type": "multipart/form-data" },

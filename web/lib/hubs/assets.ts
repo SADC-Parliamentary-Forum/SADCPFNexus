@@ -12,7 +12,7 @@ export const ASSETS_SIDEBAR_CHILDREN = [
 export const ASSETS_HUB_CARDS: HubCard[] = [
   { href: "/assets/intake", title: "Intake / pending", purpose: "GRN drafts waiting to be capitalised.", icon: "pending_actions", section: "queues" },
   { href: "/assets/verification", title: "Verification", purpose: "Physical verification exercises.", icon: "fact_check", section: "queues", permission: ["assets.verify", "assets.admin", "assets.manage"] },
-  { href: "/assets/import", title: "Import", purpose: "Review staged Crystal listings before committing the register.", icon: "upload_file", section: "queues", permission: ["assets.import", "assets.admin", "assets.manage"] },
+  { href: "/assets/import", title: "Import", purpose: "Download the Excel template, stage rows, then commit to the register.", icon: "upload_file", section: "queues", permission: ["assets.import", "assets.admin", "assets.manage"] },
   { href: "/assets/disposal", title: "Disposal", purpose: "Assets pending disposal.", icon: "delete_forever", section: "queues" },
   { href: "/assets/requests", title: "My requests", purpose: "Asset issue and transfer requests.", icon: "request_quote", section: "queues" },
   { href: "/assets", title: "Register", purpose: "Fixed asset register.", icon: "inventory_2", section: "views" },

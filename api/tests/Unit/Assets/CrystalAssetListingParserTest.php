@@ -89,6 +89,25 @@ class CrystalAssetListingParserTest extends TestCase
         $this->assertSame('No tag', $rows[1]['asset_name']);
     }
 
+    public function test_generated_template_workbook_parses_and_skips_blank_rows(): void
+    {
+        $path = sys_get_temp_dir().'/nexus-generated-template-'.uniqid().'.xlsx';
+        (new \App\Modules\Assets\Import\NexusAssetTemplateWorkbook)->write($path);
+
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
+        $this->assertSame('Assets', $spreadsheet->getSheet(0)->getTitle());
+        $this->assertSame('Instructions', $spreadsheet->getSheetByName('Instructions')?->getTitle());
+        $headers = array_values(array_filter(
+            array_map(fn ($c) => strtolower(trim((string) $c)), $spreadsheet->getSheet(0)->toArray()[0] ?? []),
+            fn ($c) => $c !== ''
+        ));
+        $this->assertSame(NexusAssetTemplateParser::HEADERS, $headers);
+
+        $rows = (new NexusAssetTemplateParser)->parseFile($path, 'template.xlsx');
+        unlink($path);
+        $this->assertSame([], $rows);
+    }
+
     public function test_description_parser_never_invents_unknown_or_na_serials(): void
     {
         $parser = new AssetDescriptionParser;

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Assets;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Models\User;
 use App\Modules\Assets\Services\AssetQrService;
 use App\Modules\Assets\Services\AssetService;
 use Carbon\Carbon;
@@ -86,7 +87,7 @@ class AssetController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:32', Rule::in($allowedCategories)],
             'status' => ['nullable', 'string', 'in:active,service_due,loan_out,retired'],
-            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'assigned_to' => ['nullable', 'integer', $this->tenantActiveUserRule((int) $user->tenant_id)],
             'issued_at' => ['nullable', 'date'],
             'value' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -135,8 +136,7 @@ class AssetController extends Controller
         $this->generateAndSaveQr($asset);
 
         if ($assigneeId) {
-            $assignee = \App\Models\User::findOrFail($assigneeId);
-            $asset = $this->assetService->assign($asset, $assignee, $user);
+            $asset = $this->assetService->assign($asset, User::findOrFail($assigneeId), $user);
         }
 
         return response()->json($this->presentAsset($asset), 201);
@@ -152,7 +152,7 @@ class AssetController extends Controller
             abort(404);
         }
 
-        return response()->json($asset);
+        return response()->json($this->presentAsset($asset));
     }
 
     /**
@@ -190,13 +190,13 @@ class AssetController extends Controller
     public function assign(Request $request, Asset $asset): JsonResponse
     {
         $validated = $request->validate([
-            'assigned_to' => ['required', 'integer', 'exists:users,id'],
+            'assigned_to' => ['required', 'integer', $this->tenantActiveUserRule((int) $request->user()->tenant_id)],
             'department' => ['nullable', 'string', 'max:128'],
             'location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
             'assignment_type' => ['nullable', 'string', 'in:custody,loan,shared'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
-        $assignee = \App\Models\User::findOrFail($validated['assigned_to']);
+        $assignee = User::findOrFail($validated['assigned_to']);
         $updated = $this->assetService->assign($asset, $assignee, $request->user(), $validated);
 
         return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Asset assigned.']);
@@ -229,12 +229,12 @@ class AssetController extends Controller
     public function transfer(Request $request, Asset $asset): JsonResponse
     {
         $validated = $request->validate([
-            'to_user_id' => ['required', 'integer', 'exists:users,id'],
+            'to_user_id' => ['required', 'integer', $this->tenantActiveUserRule((int) $request->user()->tenant_id)],
             'department' => ['nullable', 'string', 'max:128'],
             'location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
-        $to = \App\Models\User::findOrFail($validated['to_user_id']);
+        $to = User::findOrFail($validated['to_user_id']);
         $updated = $this->assetService->transfer($asset, $to, $request->user(), $validated);
 
         return response()->json(['data' => $updated, 'message' => 'Asset transferred.']);
@@ -366,7 +366,7 @@ class AssetController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:32', Rule::in($allowedCategories)],
             'status' => ['nullable', 'string', 'in:active,service_due,loan_out,retired'],
-            'assigned_to' => ['nullable', 'integer', 'exists:users,id'],
+            'assigned_to' => ['nullable', 'integer', $this->tenantActiveUserRule((int) $user->tenant_id)],
             'issued_at' => ['nullable', 'date'],
             'value' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -393,8 +393,8 @@ class AssetController extends Controller
         $storedValue = $computedValue ?? (isset($validated['value']) ? (float) $validated['value'] : null);
 
         $oldAssetCode = $asset->asset_code;
-        $currentAssignee = $asset->assigned_to;
-        $requestedAssignee = $validated['assigned_to'] ?? null;
+        $previousAssignee = $asset->assigned_to;
+        $nextAssignee = array_key_exists('assigned_to', $validated) ? $validated['assigned_to'] : $previousAssignee;
 
         $asset->asset_code = $validated['asset_code'];
         $asset->name = $validated['name'];
@@ -417,9 +417,8 @@ class AssetController extends Controller
         }
 
         $fresh = $asset->fresh();
-        if ($requestedAssignee && (int) $requestedAssignee !== (int) $currentAssignee) {
-            $assignee = \App\Models\User::findOrFail($requestedAssignee);
-            $fresh = $this->assetService->assign($fresh, $assignee, $user);
+        if ($nextAssignee && (int) $nextAssignee !== (int) $previousAssignee) {
+            $fresh = $this->assetService->assign($fresh, User::findOrFail($nextAssignee), $user);
         }
 
         return response()->json($this->presentAsset($fresh));
@@ -459,12 +458,17 @@ class AssetController extends Controller
         $this->qr->ensure($asset, $actor);
     }
 
+    private function tenantActiveUserRule(int $tenantId): \Illuminate\Validation\Rules\Exists
+    {
+        return Rule::exists('users', 'id')->where(
+            fn ($q) => $q->where('tenant_id', $tenantId)->where('is_active', true)
+        );
+    }
+
     private function presentAsset(Asset $asset): Asset
     {
         $fresh = $asset->fresh() ?? $asset;
-        if ($fresh->relationLoaded('assignedUser') || method_exists($fresh, 'assignedUser')) {
-            $fresh->load(['assignedUser:id,name,email']);
-        }
+        $fresh->load(['assignedUser:id,name,email']);
 
         return $fresh;
     }
