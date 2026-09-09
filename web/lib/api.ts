@@ -7994,6 +7994,8 @@ export interface RiskObjectiveOption {
 export const riskApi = {
   listObjectives: () =>
     api.get<{ data: RiskObjectiveOption[] }>("/risk/lookups/objectives"),
+  listOwners: () =>
+    api.get<{ data: TenantUserOption[] }>("/risk/lookups/owners"),
   list: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Risk>>("/risk/risks", { params }),
   get: (id: number) =>
@@ -8034,6 +8036,10 @@ export const riskApi = {
     api.post<{ data: RiskAction; message: string }>(`/risk/risks/${riskId}/actions/${actionId}/complete`),
   deleteAction: (riskId: number, actionId: number) =>
     api.delete<{ message: string }>(`/risk/risks/${riskId}/actions/${actionId}`),
+  applyMitigations: (data: FormData) =>
+    api.post<{ message: string; applied: number }>("/risk/mitigations", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
 
   // Matrix
   getMatrix: (params?: { exclude_closed?: boolean }) =>

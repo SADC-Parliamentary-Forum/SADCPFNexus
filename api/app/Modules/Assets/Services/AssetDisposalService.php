@@ -156,6 +156,13 @@ class AssetDisposalService
                 'write_off' => 'written_off',
                 default => 'disposed',
             };
+            $movementType = $disposal->method === 'write_off' ? 'write_off' : 'dispose';
+            app(AssetService::class)->recordMovement($asset, $user, $movementType, [
+                'reason' => $disposal->reason,
+                'notes' => $disposal->justification,
+                'reference_document' => $disposal->accounting_reference,
+                'from_location_id' => $asset->location_id,
+            ]);
             $asset->status = $finalStatus;
             $asset->assigned_to = null;
             $asset->save();
