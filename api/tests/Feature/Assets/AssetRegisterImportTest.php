@@ -3,6 +3,7 @@
 namespace Tests\Feature\Assets;
 
 use App\Models\Asset;
+use App\Models\AssetAssignmentHistory;
 use App\Models\AssetImportBatch;
 use App\Models\AssetImportRaw;
 use App\Models\AssetQrToken;
@@ -56,6 +57,103 @@ class AssetRegisterImportTest extends TestCase
         $this->assertContains('asset_tag', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('asset_name', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('original_cost', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('assigned_to_email', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+    }
+
+    public function test_template_assigned_to_email_optionally_resolves_tenant_user(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+
+        $path = sys_get_temp_dir().'/template-assign-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'assigned_to_email'],
+            ['CE-5101', 'Matched laptop', $staff->email],
+            ['CE-5102', 'Unknown custodian', 'nobody-at-sadcpf@example.test'],
+            ['CE-5103', 'Unassigned laptop', ''],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        $batch = AssetImportBatch::find($res->json('data.batch.id'));
+        $matched = $batch->stagingRows()->where('asset_tag', 'CE-5101')->first();
+        $unknown = $batch->stagingRows()->where('asset_tag', 'CE-5102')->first();
+        $blank = $batch->stagingRows()->where('asset_tag', 'CE-5103')->first();
+
+        $this->assertNotNull($matched);
+        $this->assertSame($staff->id, (int) $matched->custodian_user_id);
+        $this->assertSame('user', $matched->custodian_type);
+
+        $this->assertNull($unknown->custodian_user_id);
+        $this->assertContains('ASSIGNED_USER_UNMATCHED', $unknown->data_quality_flags ?? []);
+        $this->assertNotContains('ASSIGNED_USER_UNMATCHED', $blank->data_quality_flags ?? []);
+        $this->assertNull($blank->custodian_user_id);
+
+        $http->postJson("/api/v1/assets/import/{$batch->id}/commit", ['approve_non_blocking' => true])->assertOk();
+
+        $asset = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5101')->first();
+        $this->assertNotNull($asset);
+        $this->assertSame($staff->id, (int) $asset->assigned_to);
+        $this->assertDatabaseHas('asset_assignment_histories', [
+            'asset_id' => $asset->id,
+            'assigned_to' => $staff->id,
+            'returned_at' => null,
+        ]);
+
+        $unassigned = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5103')->first();
+        $this->assertNull($unassigned?->assigned_to);
+    }
+
+    public function test_map_custodian_to_user_assigns_on_commit(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+
+        $path = sys_get_temp_dir().'/template-map-user-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'custodian_candidate'],
+            ['CE-5201', 'Mapped to person', 'Jane Officer'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        $batchId = $res->json('data.batch.id');
+        unlink($path);
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/map-custodian", [
+            'legacy_key' => 'Jane Officer',
+            'custodian_type' => 'user',
+            'user_id' => $staff->id,
+        ])->assertOk();
+
+        $this->assertDatabaseHas('asset_import_staging', [
+            'import_batch_id' => $batchId,
+            'asset_tag' => 'CE-5201',
+            'custodian_type' => 'user',
+            'custodian_user_id' => $staff->id,
+        ]);
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/commit", ['approve_non_blocking' => true])->assertOk();
+        $asset = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5201')->first();
+        $this->assertSame($staff->id, (int) $asset->assigned_to);
+        $this->assertDatabaseHas('asset_assignment_histories', [
+            'asset_id' => $asset->id,
+            'assigned_to' => $staff->id,
+        ]);
     }
 
     public function test_template_xlsx_carries_cost_and_skips_blank_rows(): void

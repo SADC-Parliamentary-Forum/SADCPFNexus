@@ -192,7 +192,7 @@ export default function EditAssetPage() {
         name: assetName,
         category,
         status: status || "active",
-        assigned_to: assignedTo === "" ? undefined : Number(assignedTo),
+        assigned_to: assignedTo === "" ? null : Number(assignedTo),
         issued_at: issuedAt || undefined,
         notes: notes.trim() || undefined,
         invoice_number: invoiceNumber.trim() || undefined,
@@ -391,6 +391,7 @@ export default function EditAssetPage() {
                   <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
               </select>
+              <p className="text-xs text-neutral-500">Optional. Leave unassigned if the asset is not in someone&apos;s custody.</p>
             </div>
             <div className="space-y-2">
               <label htmlFor="issued_at" className={labelCls}>Issued date</label>

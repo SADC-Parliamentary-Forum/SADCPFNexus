@@ -418,6 +418,19 @@ class AssetImportService
 
             $locationId = $this->mapLocation($batch, $user, $merged['legacy_location'] ?? null);
             $custodian = $this->suggestCustodian($user, $merged['custodian_candidate'] ?? null, $merged['legacy_location'] ?? null);
+            $resolved = $this->resolveAssignedUser((int) $user->tenant_id, $merged);
+            $qualityFlags = array_values(array_unique(array_merge(
+                $parsedDesc['flags'],
+                ! empty($merged['duplicate_in_source']) ? ['ASSET_TAG_CONFLICT'] : [],
+                $resolved['unmatched'] ? ['ASSIGNED_USER_UNMATCHED'] : []
+            )));
+            if ($resolved['user_id']) {
+                $custodian = [
+                    'type' => 'user',
+                    'candidate' => $merged['custodian_candidate'] ?? $custodian['candidate'],
+                    'confidence' => 1.0,
+                ];
+            }
 
             $staging = AssetImportStaging::create([
                 'import_batch_id' => $batch->id,
@@ -443,7 +456,7 @@ class AssetImportService
                 'location_id' => $locationId,
                 'custodian_candidate' => $merged['custodian_candidate'] ?? $custodian['candidate'],
                 'custodian_type' => $custodian['type'],
-                'custodian_user_id' => null,
+                'custodian_user_id' => $resolved['user_id'],
                 'custodian_department_id' => null,
                 'custodian_confidence' => $custodian['confidence'],
                 'status' => 'active',
@@ -454,10 +467,7 @@ class AssetImportService
                 'source_refs' => $merged['source_refs'],
                 'blocking' => ! empty($merged['duplicate_in_source']),
                 'blocking_errors' => ! empty($merged['duplicate_in_source']) ? ['DUPLICATE_ASSET_TAG'] : null,
-                'data_quality_flags' => array_values(array_unique(array_merge(
-                    $parsedDesc['flags'],
-                    ! empty($merged['duplicate_in_source']) ? ['ASSET_TAG_CONFLICT'] : []
-                ))),
+                'data_quality_flags' => $qualityFlags,
             ]);
 
             foreach ($items as $item) {
@@ -539,6 +549,7 @@ class AssetImportService
             $merged['model'] = $staging['model'] ?? $merged['model'] ?? null;
             $merged['serial_number'] = $staging['serial_number'] ?? $merged['serial_number'] ?? null;
             $merged['custodian_candidate'] = $staging['custodian_candidate'] ?? null;
+            $merged['assigned_to_email'] = $staging['assigned_to_email'] ?? $merged['assigned_to_email'] ?? null;
             $merged['original_cost'] = $staging['original_cost'] ?? $merged['original_cost'] ?? null;
             $merged['current_book_value'] = $staging['current_book_value'] ?? $merged['current_book_value'] ?? null;
             $merged['accumulated_depreciation'] = $staging['accumulated_depreciation'] ?? $merged['accumulated_depreciation'] ?? null;
@@ -714,6 +725,9 @@ class AssetImportService
             $flags[] = 'UNMAPPED_CUSTODIAN';
             $warnings[] = 'Custodian not confirmed';
         }
+        if (in_array('ASSIGNED_USER_UNMATCHED', $flags, true)) {
+            $warnings[] = 'Assigned user email did not match a staff account';
+        }
         if (empty($row->acquisition_date)) {
             $flags[] = 'MISSING_ACQUISITION_DATE';
             $warnings[] = 'Missing acquisition date';
@@ -818,6 +832,39 @@ class AssetImportService
         }
 
         return ['type' => 'user', 'candidate' => $legacy, 'confidence' => 0.4];
+    }
+
+    /**
+     * @param  array<string, mixed>  $merged
+     * @return array{user_id: int|null, unmatched: bool}
+     */
+    private function resolveAssignedUser(int $tenantId, array $merged): array
+    {
+        $email = strtolower(trim((string) ($merged['assigned_to_email'] ?? '')));
+        if ($email === '') {
+            $candidate = trim((string) ($merged['custodian_candidate'] ?? ''));
+            if (str_contains($candidate, '@')) {
+                $email = strtolower($candidate);
+            }
+        }
+        if ($email === '') {
+            return ['user_id' => null, 'unmatched' => false];
+        }
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['user_id' => null, 'unmatched' => true];
+        }
+
+        $match = User::query()
+            ->where('tenant_id', $tenantId)
+            ->where('is_active', true)
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+
+        if ($match) {
+            return ['user_id' => (int) $match->id, 'unmatched' => false];
+        }
+
+        return ['user_id' => null, 'unmatched' => true];
     }
 
     private function isSharedLocation(string $location): bool

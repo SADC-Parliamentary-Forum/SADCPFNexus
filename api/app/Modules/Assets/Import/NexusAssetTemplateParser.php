@@ -25,6 +25,7 @@ final class NexusAssetTemplateParser
         'funding_source',
         'legacy_location',
         'custodian_candidate',
+        'assigned_to_email',
         'legacy_description',
     ];
 

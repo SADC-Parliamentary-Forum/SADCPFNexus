@@ -3,6 +3,7 @@
 namespace Tests\Feature\Assets;
 
 use App\Models\Asset;
+use App\Models\AssetAssignmentHistory;
 use App\Models\AssetCategory;
 use App\Models\AssetRequest;
 use App\Models\Tenant;
@@ -71,6 +72,48 @@ class AssetsTest extends TestCase
             'asset_code' => 'AST-TEST-001',
             'tenant_id'  => $tenant->id,
         ]);
+        $this->assertNull($response->json('assigned_to'));
+        $this->assertSame(0, AssetAssignmentHistory::query()->where('asset_id', $response->json('id'))->count());
+    }
+
+    public function test_create_optionally_assigns_a_tenant_user_and_writes_history(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $category = $this->makeCategory($tenant);
+
+        $response = $http->postJson('/api/v1/assets', [
+            'asset_code' => 'AST-ASSIGN-001',
+            'name' => 'Staff laptop',
+            'category' => $category->code,
+            'status' => 'active',
+            'assigned_to' => $staff->id,
+        ]);
+
+        $response->assertCreated();
+        $this->assertSame($staff->id, (int) $response->json('assigned_to'));
+        $this->assertSame($staff->name, $response->json('assigned_user.name'));
+        $this->assertDatabaseHas('asset_assignment_histories', [
+            'asset_id' => $response->json('id'),
+            'assigned_to' => $staff->id,
+            'returned_at' => null,
+        ]);
+    }
+
+    public function test_create_rejects_assignee_from_another_tenant(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $foreign = $this->makeUser('staff', Tenant::factory()->create());
+        $category = $this->makeCategory($tenant);
+
+        $http->postJson('/api/v1/assets', [
+            'asset_code' => 'AST-ASSIGN-FOREIGN',
+            'name' => 'Foreign assignee',
+            'category' => $category->code,
+            'assigned_to' => $foreign->id,
+        ])->assertStatus(422);
     }
 
     public function test_staff_cannot_create_asset(): void

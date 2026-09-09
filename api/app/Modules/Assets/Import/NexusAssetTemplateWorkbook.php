@@ -42,11 +42,13 @@ final class NexusAssetTemplateWorkbook
             $assets->getColumnDimensionByColumn($col)->setWidth(18);
         }
         $assets->getColumnDimension('B')->setWidth(28);
-        $assets->getColumnDimension('O')->setWidth(36);
+        $assets->getColumnDimension('O')->setWidth(28);
+        $assets->getColumnDimension('P')->setWidth(36);
         $assets->getRowDimension(1)->setRowHeight(22);
         $assets->getComment('A1')->getText()->createTextRun('Required. Unique asset tag / code (e.g. CE-0001).');
         $assets->getComment('B1')->getText()->createTextRun('Required. Short name shown on the register.');
         $assets->getComment('G1')->getText()->createTextRun('Use YYYY-MM-DD (e.g. 2024-03-01).');
+        $assets->getComment('O1')->getText()->createTextRun('Optional. Staff email in this organisation. Matched to a user on import; leave blank to leave unassigned.');
 
         $instructions = $spreadsheet->createSheet();
         $instructions->setTitle('Instructions');
@@ -59,8 +61,9 @@ final class NexusAssetTemplateWorkbook
             ['4. Required columns: asset_tag, asset_name.'],
             ['5. Dates must be YYYY-MM-DD. Amounts are numeric (NAD unless currency is set).'],
             ['6. legacy_category examples: Computer Equipment, Office Equipment, Motor Vehicles, Furniture, Land & Buildings.'],
-            ['7. Save as .xlsx and upload on Assets → Import (Standard template).'],
-            ['8. Review staged rows, map locations/custodians if prompted, then commit to the register.'],
+            ['7. assigned_to_email is optional. Use a live staff email to assign custody; leave blank to leave the asset unassigned.'],
+            ['8. Save as .xlsx and upload on Assets → Import (Standard template).'],
+            ['9. Review staged rows, map locations/custodians if prompted, then commit to the register.'],
             [''],
             ['Column', 'Required', 'Meaning'],
             ['asset_tag', 'Yes', 'Unique tag or code. Becomes the register asset code.'],
@@ -77,6 +80,7 @@ final class NexusAssetTemplateWorkbook
             ['funding_source', 'No', 'Donor or budget line, if known.'],
             ['legacy_location', 'No', 'Current location name (mapped during review).'],
             ['custodian_candidate', 'No', 'Person, department, or store name to match later.'],
+            ['assigned_to_email', 'No', 'Optional staff email. Matched to a user in this organisation; blank leaves the asset unassigned.'],
             ['legacy_description', 'No', 'Longer source description if different from the name.'],
             [''],
             ['Example (copy onto Assets, then replace with live data)'],
@@ -96,11 +100,12 @@ final class NexusAssetTemplateWorkbook
                 'Core budget',
                 'Head Office ICT',
                 'ICT Department',
+                'jane.officer@sadcpf.org',
                 'HP ZBOOK 15 G6 S/N CNU1234567',
             ],
         ], null, 'A1');
         $instructions->getStyle('A1')->getFont()->setBold(true)->setSize(14);
-        $instructions->getStyle('A12:C12')->getFont()->setBold(true);
+        $instructions->getStyle('A13:C13')->getFont()->setBold(true);
         $instructions->getColumnDimension('A')->setWidth(28);
         $instructions->getColumnDimension('B')->setWidth(12);
         $instructions->getColumnDimension('C')->setWidth(62);

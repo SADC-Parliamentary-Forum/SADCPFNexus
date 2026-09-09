@@ -1752,6 +1752,7 @@ export interface Asset {
   asset_class?: string | null;
   status: string;
   assigned_to: number | null;
+  assigned_user?: { id: number; name: string; email: string } | null;
   issued_at: string | null;
   value: number | null;
   notes: string | null;
@@ -1796,7 +1797,7 @@ export const assetsApi = {
     name: string;
     category: string;
     status?: string;
-    assigned_to?: number;
+    assigned_to?: number | null;
     issued_at?: string;
     value?: number;
     notes?: string;
@@ -1813,7 +1814,7 @@ export const assetsApi = {
     name: string;
     category: string;
     status?: string;
-    assigned_to?: number;
+    assigned_to?: number | null;
     issued_at?: string;
     value?: number;
     notes?: string;

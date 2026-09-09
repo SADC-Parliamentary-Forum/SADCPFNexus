@@ -3,6 +3,7 @@
 namespace App\Modules\Assets\Services;
 
 use App\Models\Asset;
+use App\Models\AssetAssignmentHistory;
 use App\Models\AssetImportBatch;
 use App\Models\AssetImportStaging;
 use App\Models\AssetVerificationCampaign;
@@ -11,6 +12,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class AssetImportCommitService
 {
@@ -177,6 +179,9 @@ class AssetImportCommitService
                 app(\App\Modules\Assets\Services\AssetService::class)->recordLocationBaseline($existing, $user, 'Imported location');
             }
             $this->qr->ensure($existing, $user);
+            if (! $existing->last_verified_at) {
+                $this->applyImportedAssignment($existing, $row, $user);
+            }
             AuditLog::record('assets.import_updated', [
                 'auditable_type' => Asset::class,
                 'auditable_id' => $existing->id,
@@ -196,6 +201,7 @@ class AssetImportCommitService
             app(\App\Modules\Assets\Services\AssetService::class)->recordLocationBaseline($asset, $user, 'Imported from Crystal register');
         }
         $this->qr->ensure($asset, $user);
+        $this->applyImportedAssignment($asset, $row, $user);
         AuditLog::record('assets.import_created', [
             'auditable_type' => Asset::class,
             'auditable_id' => $asset->id,
@@ -204,6 +210,51 @@ class AssetImportCommitService
         ]);
 
         return 'created';
+    }
+
+    private function applyImportedAssignment(Asset $asset, AssetImportStaging $row, User $user): void
+    {
+        if (! $row->custodian_user_id) {
+            return;
+        }
+
+        $assignee = User::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->where('id', $row->custodian_user_id)
+            ->where('is_active', true)
+            ->first();
+        if (! $assignee) {
+            return;
+        }
+
+        $openSame = $asset->assignmentHistories()
+            ->whereNull('returned_at')
+            ->where('assigned_to', $assignee->id)
+            ->exists();
+        if ($openSame && (int) $asset->assigned_to === (int) $assignee->id) {
+            return;
+        }
+
+        try {
+            app(AssetService::class)->assign($asset->fresh() ?? $asset, $assignee, $user, [
+                'notes' => 'Imported assignment',
+            ]);
+        } catch (ValidationException|HttpException) {
+            $fresh = $asset->fresh() ?? $asset;
+            $fresh->assigned_to = $assignee->id;
+            $fresh->save();
+            if (! $fresh->assignmentHistories()->whereNull('returned_at')->where('assigned_to', $assignee->id)->exists()) {
+                AssetAssignmentHistory::create([
+                    'tenant_id' => $fresh->tenant_id,
+                    'asset_id' => $fresh->id,
+                    'assigned_to' => $assignee->id,
+                    'assignment_type' => 'custody',
+                    'assigned_at' => now(),
+                    'assigned_by' => $user->id,
+                    'notes' => 'Imported assignment',
+                ]);
+            }
+        }
     }
 
     private function ensureIdentity(Asset $asset, User $user): void

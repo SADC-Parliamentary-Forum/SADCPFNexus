@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { adminApi, assetImportApi, assetMetaApi } from "@/lib/api";
+import { adminApi, assetImportApi, assetMetaApi, tenantUsersApi, type TenantUserOption } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { FormSection } from "@/components/ui/FormSection";
 import { ListPagination } from "@/components/ui/ListPagination";
@@ -103,6 +103,8 @@ export default function AssetImportPage() {
   const [mapLocationId, setMapLocationId] = useState<number | "">("");
   const [custodianType, setCustodianType] = useState("shared");
   const [custodianDepartmentId, setCustodianDepartmentId] = useState<number | "">("");
+  const [custodianUserId, setCustodianUserId] = useState<number | "">("");
+  const [users, setUsers] = useState<TenantUserOption[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [raw, setRaw] = useState<unknown>(null);
@@ -158,6 +160,7 @@ export default function AssetImportPage() {
     adminApi.listDepartments().then((r) => {
       setDepartments((r.data as { data?: Department[] }).data ?? []);
     }).catch(() => setDepartments([]));
+    tenantUsersApi.list().then((r) => setUsers(r.data.data ?? [])).catch(() => setUsers([]));
   }, []);
 
   useEffect(() => {
@@ -332,6 +335,7 @@ export default function AssetImportPage() {
       await assetImportApi.mapCustodian(batchId, {
         legacy_key: legacyKey,
         custodian_type: custodianType,
+        user_id: custodianType === "user" && custodianUserId !== "" ? custodianUserId : null,
         department_id: custodianType === "department" && custodianDepartmentId !== "" ? custodianDepartmentId : null,
         location_id: custodianType === "store" && mapLocationId !== "" ? mapLocationId : null,
       });
@@ -562,8 +566,16 @@ export default function AssetImportPage() {
                 </select>
               </label>
             )}
+            {custodianType === "user" && (
+              <label className="text-sm">{t("assets.import.selectUser")}
+                <select className="input mt-1" value={custodianUserId} onChange={(e) => setCustodianUserId(e.target.value === "" ? "" : Number(e.target.value))}>
+                  <option value="">{t("assets.notAssigned")}</option>
+                  {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              </label>
+            )}
             <div className="self-end">
-              <Button type="button" onClick={confirmCustodianMap} disabled={busy}>{t("assets.import.mapCustodian")}</Button>
+              <Button type="button" onClick={confirmCustodianMap} disabled={busy || (custodianType === "user" && custodianUserId === "")}>{t("assets.import.mapCustodian")}</Button>
             </div>
           </div>
         </FormSection>
