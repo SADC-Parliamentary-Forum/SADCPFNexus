@@ -104,7 +104,7 @@ class AssetRegisterExportTest extends TestCase
         $category = $this->makeCategory($tenant);
         $keep = $this->makeAsset($tenant, $category, ['name' => 'Keep Laptop', 'asset_code' => 'KEEP-F1', 'status' => 'active']);
         $this->makeAsset($tenant, $category, ['name' => 'Other Laptop', 'asset_code' => 'SKIP-F1', 'status' => 'retired']);
-        $this->makeAsset($tenant, $category, ['name' => 'Keep Chair', 'asset_code' => 'SKIP-F2', 'status' => 'active']);
+        $this->makeAsset($tenant, $category, ['name' => 'Office Chair', 'asset_code' => 'SKIP-F2', 'status' => 'active']);
 
         $codes = collect(
             $http->getJson('/api/v1/assets/register-export?format=json&include_pending=1&status=active&search=Keep')
