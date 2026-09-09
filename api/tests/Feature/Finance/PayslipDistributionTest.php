@@ -66,7 +66,14 @@ class PayslipDistributionTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $other = Tenant::factory()->create();
-        [$http] = $this->asHrManager($tenant);
+        [$http, $hr] = $this->asHrManager($tenant);
+        // Faker names/emails can contain "emp" (Kemp, temple@…). Pin the actor
+        // so q=EMP only tests employee-number tenant scoping.
+        $hr->forceFill([
+            'name' => 'HR Officer',
+            'email' => 'hr.officer@sadcpf.test',
+            'employee_number' => 'HR-DIR-1',
+        ])->save();
         User::factory()->create([
             'tenant_id' => $tenant->id,
             'name' => 'Local Staff',
@@ -80,10 +87,11 @@ class PayslipDistributionTest extends TestCase
             'employee_number' => 'EMP200',
         ]);
 
-        $http->getJson('/api/v1/admin/payslips/directory?q=EMP')
+        $names = collect($http->getJson('/api/v1/admin/payslips/directory?q=EMP')
             ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.name', 'Local Staff');
+            ->json('data'))->pluck('name')->all();
+
+        $this->assertSame(['Local Staff'], $names);
     }
 
     public function test_distribute_issues_matched_file_and_rejects_cross_tenant_assignment(): void

@@ -12,8 +12,8 @@ use App\Modules\Assets\Services\AssetImportService;
 use App\Modules\Assets\Services\AssetReconciliationReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AssetImportController extends Controller
 {
@@ -33,14 +33,23 @@ class AssetImportController extends Controller
         return response()->json($rows);
     }
 
-    public function downloadTemplate(): BinaryFileResponse
+    public function downloadTemplate(): Response
     {
         $path = sys_get_temp_dir().'/'.uniqid('sadcpf-asset-tpl-', true).'.xlsx';
-        (new NexusAssetTemplateWorkbook)->write($path);
+        try {
+            (new NexusAssetTemplateWorkbook)->write($path);
+            $binary = (string) file_get_contents($path);
+        } finally {
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
 
-        return response()->download($path, NexusAssetTemplateWorkbook::FILENAME, [
+        return response($binary, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ])->deleteFileAfterSend(true);
+            'Content-Disposition' => 'attachment; filename="'.NexusAssetTemplateWorkbook::FILENAME.'"',
+            'Content-Length' => (string) strlen($binary),
+        ]);
     }
 
     public function store(Request $request): JsonResponse
