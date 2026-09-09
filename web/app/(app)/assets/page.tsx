@@ -601,7 +601,7 @@ export default function AssetsPage() {
             </>
           )}
           {showRequestButton && (
-            <Link href="/assets/request" className="btn-primary">
+            <Link href="/assets/requests?new=1" className="btn-primary">
               <span className="material-symbols-outlined text-[18px]">add_circle</span>
               Request Asset
             </Link>
@@ -748,7 +748,7 @@ export default function AssetsPage() {
               </div>
               <p className="mt-4 text-sm font-semibold text-neutral-600">No asset requests yet</p>
               <p className="text-xs text-neutral-400 mt-1">Submit a request with a justification for managers to review.</p>
-              <Link href="/assets/request" className="btn-primary mt-5 inline-flex">
+              <Link href="/assets/requests?new=1" className="btn-primary mt-5 inline-flex">
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 Request Asset
               </Link>
@@ -842,7 +842,7 @@ export default function AssetsPage() {
               <p className="mt-4 text-sm font-semibold text-neutral-600">No assets in inventory</p>
               <p className="text-xs text-neutral-400 mt-1">You can still request an asset; managers will process requests.</p>
               {showRequestButton && (
-                <Link href="/assets/request" className="btn-primary mt-5 inline-flex">
+                <Link href="/assets/requests?new=1" className="btn-primary mt-5 inline-flex">
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   Request Asset
                 </Link>

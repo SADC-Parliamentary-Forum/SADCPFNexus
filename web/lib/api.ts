@@ -1780,7 +1780,7 @@ export interface AssetRequest {
   tenant_id: number;
   requester_id: number;
   justification: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "fulfilled";
   document_path: string | null;
   created_at: string;
   updated_at: string;
@@ -1908,8 +1908,12 @@ export interface AssetInsuranceClaim {
 export const assetRequestsApi = {
   list: (params?: { per_page?: number; page?: number }) =>
     api.get<PaginatedResponse<AssetRequest>>("/asset-requests", { params }),
+  get: (id: number) => api.get<AssetRequest>(`/asset-requests/${id}`),
   create: (data: { justification: string; document_path?: string }) =>
     api.post<AssetRequest>("/asset-requests", data),
+  update: (id: number, data: { justification?: string; status?: "pending" | "approved" | "rejected" | "fulfilled" }) =>
+    api.put<AssetRequest>(`/asset-requests/${id}`, data),
+  remove: (id: number) => api.delete(`/asset-requests/${id}`),
 };
 
 // ─── Fleet (ops layer on vehicle Fixed Assets) ───────────────────────────────
