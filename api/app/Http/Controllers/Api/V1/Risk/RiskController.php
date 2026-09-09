@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Risk;
 use App\Http\Controllers\Controller;
 use App\Models\Risk;
 use App\Models\StrategicObjective;
+use App\Models\User;
 use App\Modules\Risk\Services\RiskService;
 use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
@@ -46,6 +47,37 @@ class RiskController extends Controller
             ]);
 
         return response()->json(['data' => $objectives]);
+    }
+
+    public function listOwners(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        $tenantId = (int) $actor->tenant_id;
+
+        $others = User::query()
+            ->where('tenant_id', $tenantId)
+            ->where('id', '!=', $actor->id)
+            ->where(function ($query) {
+                $query->where('is_active', true)->orWhereNull('is_active');
+            })
+            ->orderBy('name')
+            ->limit(500)
+            ->get(['id', 'name', 'email', 'job_title'])
+            ->map(fn (User $user) => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'job_title' => $user->job_title,
+            ]);
+
+        $owners = collect([[
+            'id' => $actor->id,
+            'name' => $actor->name,
+            'email' => $actor->email,
+            'job_title' => $actor->job_title ?? null,
+        ]])->concat($others)->values();
+
+        return response()->json(['data' => $owners]);
     }
 
     public function show(Request $request, Risk $risk): JsonResponse
