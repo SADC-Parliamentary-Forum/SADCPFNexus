@@ -2078,6 +2078,15 @@ export const assetMovementsApi = {
 export const assetImportApi = {
   list: (params?: { per_page?: number; page?: number }) =>
     api.get("/assets/import", { params }),
+  downloadTemplate: () =>
+    api.get<Blob>("/assets/import/template", { responseType: "blob" }).then((res) => {
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sadcpf-asset-import-template.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    }),
   upload: (form: FormData) =>
     api.post<{ message: string; data: unknown }>("/assets/import", form, {
       headers: { "Content-Type": "multipart/form-data" },

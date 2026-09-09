@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\AssetImportBatch;
 use App\Models\AssetImportRaw;
 use App\Models\AssetImportStaging;
+use App\Modules\Assets\Import\NexusAssetTemplateWorkbook;
 use App\Modules\Assets\Services\AssetImportCommitService;
 use App\Modules\Assets\Services\AssetImportService;
 use App\Modules\Assets\Services\AssetReconciliationReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AssetImportController extends Controller
 {
@@ -29,6 +31,16 @@ class AssetImportController extends Controller
             ->paginate($request->integer('per_page', 20));
 
         return response()->json($rows);
+    }
+
+    public function downloadTemplate(): BinaryFileResponse
+    {
+        $path = sys_get_temp_dir().'/'.uniqid('sadcpf-asset-tpl-', true).'.xlsx';
+        (new NexusAssetTemplateWorkbook)->write($path);
+
+        return response()->download($path, NexusAssetTemplateWorkbook::FILENAME, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
     }
 
     public function store(Request $request): JsonResponse

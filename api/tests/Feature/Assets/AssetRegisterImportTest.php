@@ -33,7 +33,59 @@ class AssetRegisterImportTest extends TestCase
         [$http] = $this->asStaff($tenant);
 
         $http->getJson('/api/v1/assets/import')->assertForbidden();
+        $http->get('/api/v1/assets/import/template')->assertForbidden();
         $http->post('/api/v1/assets/import', [])->assertForbidden();
+    }
+
+    public function test_admin_can_download_excel_import_template(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+
+        $res = $http->get('/api/v1/assets/import/template');
+        $res->assertOk();
+        $res->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $this->assertStringContainsString('sadcpf-asset-import-template.xlsx', (string) $res->headers->get('content-disposition'));
+
+        $path = sys_get_temp_dir().'/downloaded-asset-template-'.uniqid().'.xlsx';
+        file_put_contents($path, $res->getContent());
+        $rows = (new \App\Modules\Assets\Import\NexusAssetTemplateParser)->parseFile($path, 'sadcpf-asset-import-template.xlsx');
+        unlink($path);
+
+        $this->assertSame([], $rows);
+        $this->assertContains('asset_tag', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('asset_name', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('original_cost', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+    }
+
+    public function test_template_xlsx_carries_cost_and_skips_blank_rows(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+
+        $path = sys_get_temp_dir().'/template-cost-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'serial_number', 'legacy_category', 'original_cost', 'current_book_value', 'legacy_location', 'acquisition_date'],
+            ['CE-4101', 'Bulk laptop', 'SN-4101', 'Computer Equipment', 12500.5, 9800, 'Head Office', '2024-03-01'],
+            ['', '', '', '', '', '', '', ''],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        $this->assertSame(1, (int) $res->json('data.counts.unique_asset_tags'));
+        $row = AssetImportBatch::find($res->json('data.batch.id'))->stagingRows()->where('asset_tag', 'CE-4101')->first();
+        $this->assertNotNull($row);
+        $this->assertEqualsWithDelta(12500.5, (float) $row->original_cost, 0.01);
+        $this->assertEqualsWithDelta(9800, (float) $row->current_book_value, 0.01);
+        $this->assertSame('2024-03-01', optional($row->acquisition_date)?->toDateString() ?? $row->acquisition_date);
+        $this->assertSame('Head Office', $row->legacy_location);
     }
 
     public function test_legacy_ingest_commit_qr_and_identity_equation(): void

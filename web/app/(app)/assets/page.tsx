@@ -594,6 +594,10 @@ export default function AssetsPage() {
                 <span className="material-symbols-outlined text-[18px]">category</span>
                 Categories
               </Link>
+              <Link href="/assets/import" className="btn-secondary">
+                <span className="material-symbols-outlined text-[18px]">upload_file</span>
+                Import
+              </Link>
               <Link href="/assets/add" className="btn-primary">
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 Add Asset

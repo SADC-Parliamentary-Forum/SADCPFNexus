@@ -1409,6 +1409,7 @@ Route::prefix('v1')->group(function () {
         Route::get('assets/qr/{token}', [\App\Http\Controllers\Api\V1\Assets\PublicAssetQrController::class, 'authenticated'])
             ->where('token', '[A-Za-z0-9_-]+');
 
+        Route::get('assets/import/template', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'downloadTemplate']);
         Route::get('assets/import', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'index']);
         Route::post('assets/import', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'store']);
         Route::get('assets/import/{assetImportBatch}', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'show']);

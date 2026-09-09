@@ -535,9 +535,15 @@ class AssetImportService
         }
         if ($staging) {
             $merged['asset_name'] = $staging['asset_name'] ?? $merged['asset_name'] ?? null;
-            $merged['model'] = $staging['model'] ?? null;
-            $merged['serial_number'] = $staging['serial_number'] ?? null;
+            $merged['make'] = $staging['make'] ?? $merged['make'] ?? null;
+            $merged['model'] = $staging['model'] ?? $merged['model'] ?? null;
+            $merged['serial_number'] = $staging['serial_number'] ?? $merged['serial_number'] ?? null;
             $merged['custodian_candidate'] = $staging['custodian_candidate'] ?? null;
+            $merged['original_cost'] = $staging['original_cost'] ?? $merged['original_cost'] ?? null;
+            $merged['current_book_value'] = $staging['current_book_value'] ?? $merged['current_book_value'] ?? null;
+            $merged['accumulated_depreciation'] = $staging['accumulated_depreciation'] ?? $merged['accumulated_depreciation'] ?? null;
+            $merged['currency'] = $staging['currency'] ?? $merged['currency'] ?? null;
+            $merged['funding_source'] = $staging['funding_source'] ?? $merged['funding_source'] ?? null;
             if (empty($merged['legacy_location'])) {
                 $merged['legacy_location'] = $staging['legacy_location'] ?? null;
             } elseif (! empty($staging['legacy_location']) && $staging['legacy_location'] !== $merged['legacy_location']) {

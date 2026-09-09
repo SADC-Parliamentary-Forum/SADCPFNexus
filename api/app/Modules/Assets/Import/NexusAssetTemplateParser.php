@@ -9,6 +9,25 @@ final class NexusAssetTemplateParser
 {
     public const REQUIRED_HEADERS = ['asset_tag', 'asset_name'];
 
+    /** Snake_case headers the bulk-upload workbook must use (first row of the Assets sheet). */
+    public const HEADERS = [
+        'asset_tag',
+        'asset_name',
+        'serial_number',
+        'make',
+        'model',
+        'legacy_category',
+        'acquisition_date',
+        'original_cost',
+        'current_book_value',
+        'accumulated_depreciation',
+        'currency',
+        'funding_source',
+        'legacy_location',
+        'custodian_candidate',
+        'legacy_description',
+    ];
+
     /**
      * @return list<array<string, mixed>>
      */
@@ -42,6 +61,16 @@ final class NexusAssetTemplateParser
                     continue;
                 }
                 $assoc[$key] = $rows[$i][$idx] ?? null;
+            }
+            $hasValue = false;
+            foreach ($assoc as $value) {
+                if (trim((string) ($value ?? '')) !== '') {
+                    $hasValue = true;
+                    break;
+                }
+            }
+            if (! $hasValue) {
+                continue;
             }
             $tag = strtoupper(trim((string) ($assoc['asset_tag'] ?? '')));
             $assoc['asset_tag'] = $tag !== '' ? $tag : null;

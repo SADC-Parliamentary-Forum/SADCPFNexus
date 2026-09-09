@@ -23,6 +23,7 @@ test.describe("Assets import (admin)", () => {
     await skipIfAccessDenied(page, "assets import");
     await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('input[type="file"]').first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Download Excel template|Télécharger le modèle Excel|Descarregar modelo Excel/i }).first()).toBeVisible();
   });
 
   test("labels page is authorised", async ({ page }) => {
