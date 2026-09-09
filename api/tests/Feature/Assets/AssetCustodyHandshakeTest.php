@@ -112,21 +112,22 @@ class AssetCustodyHandshakeTest extends TestCase
     {
         Mail::fake();
         $tenant = Tenant::factory()->create();
-        [$adminHttp] = $this->asAdmin($tenant);
+        [, $admin] = $this->asAdmin($tenant);
         $staff = $this->makeUser('staff', $tenant);
         $asset = $this->makeAsset($tenant, $this->makeCategory($tenant));
 
-        $adminHttp->postJson("/api/v1/assets/{$asset->id}/assign", [
+        $this->asUser($admin)->postJson("/api/v1/assets/{$asset->id}/assign", [
             'assigned_to' => $staff->id,
         ])->assertOk();
-        $this->actingAs($staff, 'sanctum')
+        $this->asUser($staff)
             ->postJson("/api/v1/assets/{$asset->id}/acknowledge")
             ->assertOk();
 
-        $adminHttp->postJson("/api/v1/assets/{$asset->id}/return")
+        // Officer confirm-return is gated on pending_return — not a permission miss.
+        $this->asUser($admin)->postJson("/api/v1/assets/{$asset->id}/return")
             ->assertStatus(422);
 
-        $this->actingAs($staff, 'sanctum')
+        $this->asUser($staff)
             ->postJson("/api/v1/assets/{$asset->id}/request-return")
             ->assertOk()
             ->assertJsonPath('data.custody_state', 'pending_return')
@@ -137,11 +138,11 @@ class AssetCustodyHandshakeTest extends TestCase
             'status' => 'published',
         ]);
 
-        $this->actingAs($staff, 'sanctum')
+        $this->asUser($staff)
             ->postJson("/api/v1/assets/{$asset->id}/return")
             ->assertForbidden();
 
-        $adminHttp->postJson("/api/v1/assets/{$asset->id}/return", [
+        $this->asUser($admin)->postJson("/api/v1/assets/{$asset->id}/return", [
             'notes' => 'Received in good condition',
             'condition' => 'good',
         ])->assertOk()
