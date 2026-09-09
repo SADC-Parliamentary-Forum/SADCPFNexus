@@ -64,6 +64,15 @@ export function canManageAssets(user: AuthAccessUser | null | undefined): boolea
   return hasPermission(user, ASSETS_MANAGE_PERMISSIONS);
 }
 
+const ASSET_LABEL_PRINT_PERMISSIONS = ["assets.print", "assets.admin", "assets.manage"];
+
+/** True if the user can print Avery/thermal labels from the register. */
+export function canPrintAssetLabels(user: AuthAccessUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, ASSET_LABEL_PRINT_PERMISSIONS);
+}
+
 /** Permission(s) that allow managing the consumables/stock register. */
 const STOCK_MANAGE_PERMISSIONS = ["stock.admin", "stock.manage", "stock.create", "stock.edit"];
 

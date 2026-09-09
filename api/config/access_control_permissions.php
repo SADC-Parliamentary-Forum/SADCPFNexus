@@ -2691,6 +2691,9 @@ return [
         'mfa_required' => false,
         'linked_routes' => ['/assets'],
         'linked_endpoints' => [
+            'GET /api/v1/assets',
+            'GET /api/v1/assets/{asset}',
+            'GET /api/v1/assets/register-export',
             'GET /api/v1/assets/qr/{token}',
         ],
     ],
