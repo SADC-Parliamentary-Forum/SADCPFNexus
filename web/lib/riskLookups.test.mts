@@ -5,7 +5,14 @@ import {
   mergeCurrentUserIntoOwners,
   validateRiskCreateForm,
   buildMitigationFormData,
+  assertMitigationRiskIds,
 } from "./riskLookups.ts";
+
+test("assertMitigationRiskIds rejects empty and over-limit selections", () => {
+  assert.equal(assertMitigationRiskIds([]), "risk.mitigation.noneSelected");
+  assert.equal(assertMitigationRiskIds(Array.from({ length: 51 }, (_, i) => i + 1)), "risk.mitigation.tooMany");
+  assert.equal(assertMitigationRiskIds([3, 8]), null);
+});
 
 test("asOwnerOptions reads Laravel { data: [] } owner lookups", () => {
   const rows = asOwnerOptions({

@@ -35,6 +35,16 @@ export function asOwnerOptions(payload: unknown): RiskOwnerOption[] {
     .filter((row): row is RiskOwnerOption => row !== null);
 }
 
+/** Matches POST /risk/mitigations `risk_ids` max:50. */
+export const MAX_BULK_MITIGATIONS = 50;
+
+export function assertMitigationRiskIds(ids: number[]): string | null {
+  const unique = [...new Set(ids.filter((id) => Number.isFinite(id) && id > 0))];
+  if (unique.length === 0) return "risk.mitigation.noneSelected";
+  if (unique.length > MAX_BULK_MITIGATIONS) return "risk.mitigation.tooMany";
+  return null;
+}
+
 /** Always keep the signed-in user selectable when the directory lookup is empty or incomplete. */
 export function mergeCurrentUserIntoOwners(
   owners: RiskOwnerOption[],

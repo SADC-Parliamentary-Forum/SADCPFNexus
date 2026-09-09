@@ -18,7 +18,7 @@ import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { RISK_HUB_CARDS } from "@/lib/hubs/risk";
 import { Modal } from "@/components/ui/Modal";
 import { ApplyMitigationFields, EMPTY_MITIGATION, type MitigationDraft } from "@/components/risk/ApplyMitigationFields";
-import { buildMitigationFormData } from "@/lib/riskLookups";
+import { buildMitigationFormData, assertMitigationRiskIds } from "@/lib/riskLookups";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
@@ -191,7 +191,11 @@ export default function RiskRegisterPage() {
     const ids = selection.selectedIds
       .map((id) => Number(id))
       .filter((id) => Number.isFinite(id) && id > 0);
-    if (ids.length === 0) return;
+    const idError = assertMitigationRiskIds(ids);
+    if (idError) {
+      setMitigationError(t(idError));
+      return;
+    }
     setMitigationSaving(true);
     setMitigationError(null);
     try {
