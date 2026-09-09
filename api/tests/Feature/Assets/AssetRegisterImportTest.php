@@ -711,7 +711,7 @@ class AssetRegisterImportTest extends TestCase
         unlink($path);
         $batchId = $res->json('data.batch.id');
 
-        $this->app['env'] = 'production';
+        config(['app.env' => 'production']);
         $http->getJson("/api/v1/assets/import/{$batchId}")
             ->assertOk()
             ->assertJsonPath('data.auto_approve_allowed', false);

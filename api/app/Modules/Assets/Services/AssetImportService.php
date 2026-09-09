@@ -198,10 +198,15 @@ class AssetImportService
     /**
      * Demo/local/testing and artisan --commit may auto-approve non-blocking rows.
      * Production HTTP must use explicit Approve, then Commit.
+     *
+     * Uses config('app.env') rather than app()->environment(): PHPUnit keeps the
+     * Application environment property as "testing" even if the container 'env'
+     * binding is overwritten.
      */
     public function autoApproveAllowed(): bool
     {
-        if (app()->environment(['local', 'testing', 'demo'])) {
+        $env = (string) config('app.env', 'production');
+        if (in_array($env, ['local', 'testing', 'demo'], true)) {
             return true;
         }
 
