@@ -1466,7 +1466,7 @@ export default function PifDetailPage() {
                 <>
                   <button
                     type="button"
-                    onClick={handleApproveProgramme}
+                    onClick={() => void handleApproveProgramme()}
                     disabled={submitting}
                     className="btn-primary px-4 py-2 text-sm flex items-center gap-2 disabled:opacity-60 bg-green-600 hover:bg-green-700"
                   >
