@@ -40,6 +40,38 @@ class CanonicalRoleManager
         return in_array($name, array_merge($this->canonicalRoleNames(), self::SYSTEM_ROLES), true);
     }
 
+    /**
+     * Ensure a named Spatie role exists on both guards so catalogue assignment
+     * can call assignRole() without RoleDoesNotExist. Canonical/system roles
+     * keep seed-owned permissions; custom catalogue roles receive the published set.
+     *
+     * @param  list<string>  $permissionKeys
+     */
+    public function ensureNamedRole(string $name, array $permissionKeys = []): void
+    {
+        $name = trim($name);
+        if ($name === '') {
+            return;
+        }
+
+        $permissionKeys = array_values(array_unique(array_filter($permissionKeys, 'is_string')));
+        $canonical = $this->isAssignableRole($name);
+
+        foreach (['web', 'sanctum'] as $guard) {
+            $role = Role::findOrCreate($name, $guard);
+            if ($canonical || $permissionKeys === []) {
+                continue;
+            }
+            $models = Permission::query()
+                ->where('guard_name', $guard)
+                ->whereIn('name', $permissionKeys)
+                ->get();
+            $role->syncPermissions($models);
+        }
+
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+    }
+
     public function legacyRoleMap(): array
     {
         return [

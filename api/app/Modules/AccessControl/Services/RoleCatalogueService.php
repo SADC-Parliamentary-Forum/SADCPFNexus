@@ -7,6 +7,7 @@ use App\Models\AccessControl\AccessReviewCampaign;
 use App\Models\AccessControl\AccessReviewItem;
 use App\Models\AccessControl\AccessRoleAssignment;
 use App\Models\AccessControl\AccessRoleCatalogue;
+use App\Models\AccessControl\AccessRoleSyncRequest;
 use App\Models\AccessControl\AccessRoleVersion;
 use App\Models\AccessControl\UserPermissionDenial;
 use App\Models\AccessControl\UserPermissionGrant;
@@ -146,6 +147,8 @@ class RoleCatalogueService
         $catalogue->update(['status' => 'active']);
         $catalogue->versions()->where('id', '!=', $version->id)->where('status', 'active')->update(['status' => 'retired']);
 
+        app(CanonicalRoleManager::class)->ensureNamedRole((string) $catalogue->name, $permissions);
+
         AuditLog::record('access.role_version_published', [
             'auditable_type' => AccessRoleVersion::class,
             'auditable_id' => $version->id,
@@ -242,6 +245,11 @@ class RoleCatalogueService
                 ->get(),
             'direct_grants' => UserPermissionGrant::query()->where('user_id', $user->id)->get(),
             'denials' => UserPermissionDenial::query()->where('user_id', $user->id)->where('status', 'active')->get(),
+            'pending_role_sync_requests' => AccessRoleSyncRequest::query()
+                ->where('user_id', $user->id)
+                ->where('status', 'pending_approval')
+                ->orderByDesc('id')
+                ->get(),
             'upcoming_expiries' => AccessRoleAssignment::query()
                 ->where('user_id', $user->id)
                 ->whereNotNull('valid_until')

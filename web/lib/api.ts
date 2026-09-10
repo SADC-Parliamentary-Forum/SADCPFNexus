@@ -376,16 +376,51 @@ export interface AccessRegistryPayload {
   sod_rules: Record<string, unknown>;
 }
 
+export interface AccessCatalogueRole {
+  id: number;
+  name: string;
+  purpose?: string | null;
+  risk_level?: string;
+  status?: string;
+  current_version?: { id: number; version: number; status: string; permissions?: string[] } | null;
+}
+
+export interface AccessCatalogueAssignment {
+  id: number;
+  status: string;
+  requested_by?: number | null;
+  reason?: string | null;
+  role_version?: {
+    id: number;
+    version: number;
+    catalogue?: { id: number; name: string; risk_level?: string } | null;
+  } | null;
+}
+
+export interface AccessRoleSyncRequest {
+  id: number;
+  status: string;
+  requested_by: number;
+  roles: string[];
+  reason?: string | null;
+}
+
 export const accessApi = {
   effective: () => api.get<{ data: AccessEffectivePayload }>("/access/effective"),
   navigation: () => api.get<{ data: AccessEffectivePayload["navigation"] }>("/access/navigation"),
   registry: () => api.get<{ data: AccessRegistryPayload }>("/admin/access/registry"),
   publishRoleVersion: (catalogueId: number, data: { permissions: string[]; changelog?: string }) =>
     api.post<{ data: { id: number; version: number; status: string } }>(`/admin/access/roles/${catalogueId}/publish`, data),
+  listCatalogueRoles: () => api.get<{ data: AccessCatalogueRole[] }>("/admin/access/roles"),
+  assignRoleVersion: (userId: number, versionId: number, data: { reason: string }) =>
+    api.post<{ data: AccessCatalogueAssignment }>(`/admin/access/users/${userId}/role-versions/${versionId}`, data),
+  approveRoleAssignment: (assignmentId: number) =>
+    api.post<{ data: AccessCatalogueAssignment }>(`/admin/access/role-assignments/${assignmentId}/approve`),
   userProfile: (id: number) => api.get<{ data: {
     user: User;
     effective_permissions: string[];
-    role_assignments: unknown[];
+    role_assignments: AccessCatalogueAssignment[];
+    pending_role_sync_requests: AccessRoleSyncRequest[];
     direct_grants: unknown[];
     denials: unknown[];
   } }>(`/admin/access/users/${id}/profile`),
@@ -622,7 +657,9 @@ export const adminApi = {
   syncRolePermissions: (roleId: number, permissions: string[]) =>
     api.put<{ data: Role; message: string }>(`/admin/roles/${roleId}/permissions`, { permissions }),
   updateUserRoles: (id: number, roles: string[]) =>
-    api.patch<{ user: User; message: string }>(`/admin/users/${id}/roles`, { roles }),
+    api.patch<{ user: User; message: string; data?: { status?: string; request_id?: number } }>(`/admin/users/${id}/roles`, { roles }),
+  approveRoleSync: (id: number) =>
+    api.post(`/admin/users/role-sync-requests/${id}/approve`),
   // Workflows
   listWorkflows: () => api.get<{ data: ApprovalWorkflow[] }>("/admin/workflows"),
   createWorkflow: (data: any) => api.post("/admin/workflows", data),
