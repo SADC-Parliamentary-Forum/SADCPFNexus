@@ -33,9 +33,9 @@ class ConsumablesStockPhase1Test extends TestCase
         [$http] = $this->asAdmin($tenant);
 
         $http->postJson('/api/v1/stock/units', [
-            'code' => 'ream',
-            'name' => 'Ream',
-        ])->assertCreated()->assertJsonPath('data.code', 'ream');
+            'code' => 'bundle',
+            'name' => 'Bundle',
+        ])->assertCreated()->assertJsonPath('data.code', 'bundle');
 
         $http->postJson('/api/v1/stock/locations', [
             'code' => 'MAIN',

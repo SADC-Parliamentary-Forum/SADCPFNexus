@@ -1,26 +1,46 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { stockItemsApi, stockLocationsApi, stockUnitsApi, type StockCategory, type StockItem, type StockItemInput } from "@/lib/api";
+import { useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  stockCategoriesApi,
+  stockItemsApi,
+  stockLocationsApi,
+  stockUnitsApi,
+  type StockCategory,
+  type StockItem,
+  type StockItemInput,
+} from "@/lib/api";
+import { canConfigureStockCatalogue, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import Link from "next/link";
 
 interface ApiError {
   response?: { data?: { message?: string; errors?: Record<string, string[]> } };
 }
 
-function errorMessage(err: unknown): string {
+function errorMessage(err: unknown, fallback: string): string {
   const e = err as ApiError;
   const errors = e?.response?.data?.errors;
   if (errors) {
     const first = Object.values(errors)[0];
     if (first?.[0]) return first[0];
   }
-  return e?.response?.data?.message || "Failed to save stock item.";
+  return e?.response?.data?.message || fallback;
+}
+
+function slugCode(name: string, max = 32): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return (slug || "item").slice(0, max);
 }
 
 export function StockItemFormModal({
-  categories,
+  categories: initialCategories = [],
   item,
   onClose,
   onSaved,
@@ -31,7 +51,16 @@ export function StockItemFormModal({
   onSaved: () => void;
 }) {
   const { toast } = useToast();
+  const { t } = useI18n();
+  const queryClient = useQueryClient();
   const editing = !!item;
+  const canConfigure = useMemo(() => canConfigureStockCatalogue(getStoredUser()), []);
+
+  const categoriesQuery = useQuery({
+    queryKey: ["stock-categories"],
+    queryFn: () => stockCategoriesApi.list().then((r) => r.data.data ?? []),
+    initialData: initialCategories.length > 0 ? initialCategories : undefined,
+  });
   const unitsQuery = useQuery({
     queryKey: ["stock-units"],
     queryFn: () => stockUnitsApi.list().then((r) => r.data.data ?? []),
@@ -40,6 +69,9 @@ export function StockItemFormModal({
     queryKey: ["stock-locations"],
     queryFn: () => stockLocationsApi.list().then((r) => r.data.data ?? []),
   });
+
+  const categories = categoriesQuery.data ?? [];
+  const units = (unitsQuery.data ?? []).filter((u) => u.is_active !== false);
 
   const [form, setForm] = useState({
     item_code: item?.item_code ?? "",
@@ -56,8 +88,57 @@ export function StockItemFormModal({
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [addingUnit, setAddingUnit] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newUnitCode, setNewUnitCode] = useState("");
+  const [newUnitName, setNewUnitName] = useState("");
+  const [savingCatalogue, setSavingCatalogue] = useState(false);
 
   const set = (k: keyof typeof form, v: string) => setForm((p) => ({ ...p, [k]: v }));
+
+  const handleCreateCategory = async () => {
+    const name = newCategoryName.trim();
+    if (!name) return;
+    setSavingCatalogue(true);
+    try {
+      const res = await stockCategoriesApi.create({ name, code: slugCode(name) });
+      await queryClient.invalidateQueries({ queryKey: ["stock-categories"] });
+      set("stock_category_id", String(res.data.data.id));
+      setNewCategoryName("");
+      setAddingCategory(false);
+      toast("success", t("stock.categoryCreated"));
+    } catch (err: unknown) {
+      const msg = errorMessage(err, t("stock.categoryCreateFailed"));
+      setError(msg);
+      toast("error", msg);
+    } finally {
+      setSavingCatalogue(false);
+    }
+  };
+
+  const handleCreateUnit = async () => {
+    const code = slugCode(newUnitCode || newUnitName);
+    const name = newUnitName.trim() || newUnitCode.trim();
+    if (!code || !name) return;
+    setSavingCatalogue(true);
+    try {
+      const res = await stockUnitsApi.create({ code, name });
+      await queryClient.invalidateQueries({ queryKey: ["stock-units"] });
+      set("stock_unit_id", String(res.data.data.id));
+      set("unit", res.data.data.code);
+      setNewUnitCode("");
+      setNewUnitName("");
+      setAddingUnit(false);
+      toast("success", t("stock.unitCreated"));
+    } catch (err: unknown) {
+      const msg = errorMessage(err, t("stock.unitCreateFailed"));
+      setError(msg);
+      toast("error", msg);
+    } finally {
+      setSavingCatalogue(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!form.item_code.trim() || !form.name.trim()) {
@@ -66,7 +147,7 @@ export function StockItemFormModal({
     }
     setSaving(true);
     setError(null);
-    const selectedUnit = (unitsQuery.data ?? []).find((u) => String(u.id) === form.stock_unit_id);
+    const selectedUnit = units.find((u) => String(u.id) === form.stock_unit_id);
     const selectedLoc = (locationsQuery.data ?? []).find((l) => String(l.id) === form.stock_location_id);
     const payload: StockItemInput = {
       item_code: form.item_code.trim(),
@@ -93,7 +174,7 @@ export function StockItemFormModal({
       }
       onSaved();
     } catch (err: unknown) {
-      const msg = errorMessage(err);
+      const msg = errorMessage(err, "Failed to save stock item.");
       setError(msg);
       toast("error", msg);
     } finally {
@@ -111,7 +192,7 @@ export function StockItemFormModal({
             </div>
             <h3 className="font-semibold text-neutral-900 text-sm">{editing ? "Edit Stock Item" : "New Stock Item"}</h3>
           </div>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+          <button type="button" onClick={onClose} className="text-neutral-400 hover:text-neutral-600" aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -133,20 +214,120 @@ export function StockItemFormModal({
               <input className="form-input" placeholder="e.g. A4 Paper Ream" value={form.name} onChange={(e) => set("name", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Category</label>
-              <select className="form-input" value={form.stock_category_id} onChange={(e) => set("stock_category_id", e.target.value)}>
-                <option value="">Uncategorised</option>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <label htmlFor="stock-item-category" className="block text-xs font-semibold text-neutral-700">{t("stock.category")}</label>
+                {canConfigure && (
+                  <button
+                    type="button"
+                    data-testid="stock-add-category"
+                    className="text-xs font-semibold text-primary hover:underline"
+                    onClick={() => setAddingCategory((v) => !v)}
+                  >
+                    {t("stock.addCategory")}
+                  </button>
+                )}
+              </div>
+              <select
+                id="stock-item-category"
+                data-testid="stock-item-category-select"
+                className="form-input"
+                value={form.stock_category_id}
+                onChange={(e) => set("stock_category_id", e.target.value)}
+              >
+                <option value="">{t("stock.uncategorised")}</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
+              {canConfigure && addingCategory && (
+                <div className="mt-2 flex gap-2">
+                  <input
+                    data-testid="stock-new-category-name"
+                    className="form-input text-sm"
+                    placeholder={t("stock.categoryName")}
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    aria-label={t("stock.categoryName")}
+                  />
+                  <button
+                    type="button"
+                    className="btn-primary text-xs px-3"
+                    disabled={savingCatalogue || !newCategoryName.trim()}
+                    onClick={() => void handleCreateCategory()}
+                  >
+                    {t("stock.saveCategory")}
+                  </button>
+                </div>
+              )}
+              {categories.length === 0 && (
+                <p className="text-xs text-neutral-400 mt-1">
+                  {t("stock.noCategoriesHint")}{" "}
+                  {canConfigure && (
+                    <Link href="/stock/categories" className="text-primary hover:underline">{t("stock.manageCategories")}</Link>
+                  )}
+                </p>
+              )}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Unit of Measure</label>
-              <select className="form-input" value={form.stock_unit_id} onChange={(e) => set("stock_unit_id", e.target.value)}>
-                <option value="">Select unit…</option>
-                {(unitsQuery.data ?? []).map((u) => (
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <label htmlFor="stock-item-unit" className="block text-xs font-semibold text-neutral-700">{t("stock.unitOfMeasure")}</label>
+                {canConfigure && (
+                  <button
+                    type="button"
+                    data-testid="stock-add-unit"
+                    className="text-xs font-semibold text-primary hover:underline"
+                    onClick={() => setAddingUnit((v) => !v)}
+                  >
+                    {t("stock.addUnit")}
+                  </button>
+                )}
+              </div>
+              <select
+                id="stock-item-unit"
+                data-testid="stock-item-unit-select"
+                className="form-input"
+                value={form.stock_unit_id}
+                onChange={(e) => set("stock_unit_id", e.target.value)}
+              >
+                <option value="">{t("stock.selectUnit")}</option>
+                {units.map((u) => (
                   <option key={u.id} value={u.id}>{u.code} — {u.name}</option>
                 ))}
               </select>
+              {canConfigure && addingUnit && (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <input
+                    data-testid="stock-new-unit-code"
+                    className="form-input text-sm font-mono"
+                    placeholder={t("stock.unitCode")}
+                    value={newUnitCode}
+                    onChange={(e) => setNewUnitCode(e.target.value)}
+                    aria-label={t("stock.unitCode")}
+                  />
+                  <input
+                    data-testid="stock-new-unit-name"
+                    className="form-input text-sm"
+                    placeholder={t("stock.unitName")}
+                    value={newUnitName}
+                    onChange={(e) => setNewUnitName(e.target.value)}
+                    aria-label={t("stock.unitName")}
+                  />
+                  <button
+                    type="button"
+                    className="btn-primary text-xs px-3 col-span-2"
+                    disabled={savingCatalogue || !(newUnitCode.trim() || newUnitName.trim())}
+                    onClick={() => void handleCreateUnit()}
+                  >
+                    {t("stock.saveUnit")}
+                  </button>
+                </div>
+              )}
+              {units.length === 0 && (
+                <p className="text-xs text-neutral-400 mt-1">
+                  {t("stock.noUnitsHint")}{" "}
+                  {canConfigure && (
+                    <Link href="/stock/units" className="text-primary hover:underline">{t("stock.manageUnits")}</Link>
+                  )}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-semibold text-neutral-700 mb-1">Unit Cost</label>
@@ -180,7 +361,7 @@ export function StockItemFormModal({
         </div>
 
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
-          <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+          <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
           <button type="button" onClick={handleSave} disabled={saving} className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
             <span className="material-symbols-outlined text-[16px]">save</span>
             {saving ? "Saving…" : editing ? "Update Item" : "Create Item"}

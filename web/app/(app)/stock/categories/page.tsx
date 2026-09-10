@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { stockCategoriesApi, type StockCategory } from "@/lib/api";
-import { canManageStock, getStoredUser } from "@/lib/auth";
+import { canConfigureStockCatalogue, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
@@ -24,7 +24,7 @@ export default function StockCategoriesPage() {
   const { confirm } = useConfirm();
 
   useEffect(() => {
-    setAllowed(canManageStock(getStoredUser()));
+    setAllowed(canConfigureStockCatalogue(getStoredUser()));
   }, []);
 
   useEffect(() => {

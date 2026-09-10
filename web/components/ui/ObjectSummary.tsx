@@ -1,4 +1,7 @@
-import { cn } from "@/lib/utils";
+import { cn, formatDateShort } from "@/lib/utils";
+
+const ISO_DATE_VALUE =
+  /^\d{4}-\d{2}-\d{2}(?:[T ][\d:.]+(?:Z|[+-]\d{2}:?\d{2})?)?$/;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -12,7 +15,9 @@ function formatPrimitive(value: unknown): string {
   if (value === null || value === undefined || value === "") return "None";
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (typeof value === "number") return value.toLocaleString();
-  return String(value);
+  const text = String(value);
+  if (ISO_DATE_VALUE.test(text)) return formatDateShort(text);
+  return text;
 }
 
 function getColumns(rows: Record<string, unknown>[]) {

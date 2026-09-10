@@ -5,7 +5,8 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { stockItemsApi, stockCategoriesApi, type StockItem, type StockCategory } from "@/lib/api";
-import { canManageStock, canIssueStock, getStoredUser } from "@/lib/auth";
+import { canManageStock, canIssueStock, canConfigureStockCatalogue, getStoredUser } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { StockItemFormModal } from "@/components/stock/StockItemFormModal";
 import { StockMovementModal } from "@/components/stock/StockMovementModal";
 
@@ -15,6 +16,7 @@ function fmtMoney(n: number | string | null | undefined): string {
 }
 
 export default function StockItemsPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -24,6 +26,7 @@ export default function StockItemsPage() {
   const [error, setError] = useState<string | null>(null);
   const [canManage, setCanManage] = useState(false);
   const [canIssue, setCanIssue] = useState(false);
+  const [canConfigure, setCanConfigure] = useState(false);
 
   const [search, setSearch] = useState(() => searchParams.get("q") ?? "");
   const [filterCategory, setFilterCategory] = useState(() => searchParams.get("category") ?? "all");
@@ -48,6 +51,7 @@ export default function StockItemsPage() {
     const user = getStoredUser();
     setCanManage(canManageStock(user));
     setCanIssue(canIssueStock(user));
+    setCanConfigure(canConfigureStockCatalogue(user));
     loadItems();
     stockCategoriesApi.list().then((res) => setCategories(res.data.data ?? [])).catch(() => {});
   }, [loadItems]);
@@ -76,7 +80,12 @@ export default function StockItemsPage() {
   const openEdit = (i: StockItem) => { setEditItem(i); setShowItemForm(true); };
   const openMovement = (i: StockItem | null) => { setMovementItem(i); setShowMovement(true); };
 
-  const afterSave = () => { setShowItemForm(false); setEditItem(null); loadItems(); };
+  const afterSave = () => {
+    setShowItemForm(false);
+    setEditItem(null);
+    loadItems();
+    stockCategoriesApi.list().then((res) => setCategories(res.data.data ?? [])).catch(() => {});
+  };
   const afterMovement = () => { setShowMovement(false); setMovementItem(null); loadItems(); };
 
   return (
@@ -104,11 +113,17 @@ export default function StockItemsPage() {
             <span className="material-symbols-outlined text-[18px]">swap_vert</span>
             Movements
           </Link>
-          {canManage && (
-            <Link href="/stock/categories" className="btn-secondary">
-              <span className="material-symbols-outlined text-[18px]">category</span>
-              Categories
-            </Link>
+          {canConfigure && (
+            <>
+              <Link href="/stock/units" className="btn-secondary" data-testid="stock-manage-units">
+                <span className="material-symbols-outlined text-[18px]">straighten</span>
+                {t("stock.manageUnits")}
+              </Link>
+              <Link href="/stock/categories" className="btn-secondary" data-testid="stock-manage-categories">
+                <span className="material-symbols-outlined text-[18px]">category</span>
+                {t("stock.manageCategories")}
+              </Link>
+            </>
           )}
           {canIssue && (
             <button type="button" onClick={() => openMovement(null)} className="btn-secondary">
@@ -162,15 +177,13 @@ export default function StockItemsPage() {
               <input className="form-input pl-8 text-sm" placeholder="Name or item code…" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           </div>
-          {categories.length > 0 && (
-            <div className="min-w-[150px]">
-              <label className="block text-xs font-semibold text-neutral-600 mb-1">Category</label>
-              <select className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-                <option value="all">All Categories</option>
-                {categories.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-              </select>
-            </div>
-          )}
+          <div className="min-w-[150px]">
+            <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("stock.category")}</label>
+            <select className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+              <option value="all">All Categories</option>
+              {categories.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
+            </select>
+          </div>
           <div className="min-w-[130px]">
             <label className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
             <select className="form-input text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>

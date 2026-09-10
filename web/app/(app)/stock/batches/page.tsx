@@ -3,6 +3,7 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useCallback, useEffect, useState } from "react";
 import { stockBatchesApi, stockItemsApi, type StockItem } from "@/lib/api";
+import { formatDateShort } from "@/lib/utils";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 
@@ -75,7 +76,7 @@ export default function StockBatchesPage() {
             <tr key={String(r.id)} className="border-t border-neutral-100">
               <td className="px-4 py-2">{(r.item as { name?: string } | undefined)?.name ?? "—"}</td>
               <td className="px-4 py-2">{String(r.batch_number)}</td>
-              <td className="px-4 py-2">{String(r.expiry_date ?? "—")}</td>
+              <td className="px-4 py-2">{r.expiry_date ? formatDateShort(String(r.expiry_date)) : "—"}</td>
               <td className="px-4 py-2">{String(r.quantity)}</td>
               <td className="px-4 py-2">{String(r.status)}</td>
             </tr>
