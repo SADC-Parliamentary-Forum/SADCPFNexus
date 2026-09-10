@@ -47,13 +47,11 @@ class AssetController extends Controller
             $query->where('category', $category);
         }
 
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
-        }
-
         if ($class = $request->input('asset_class')) {
             $query->where('asset_class', $class);
         }
+
+        $this->applyStatusFilter($query, $request->input('status'));
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -338,6 +336,28 @@ class AssetController extends Controller
     }
 
     /**
+     * @param  Builder<Asset>  $query
+     */
+    private function applyStatusFilter(Builder $query, mixed $status): void
+    {
+        if (! is_string($status) || $status === '' || $status === 'all') {
+            return;
+        }
+        if ($status === 'live') {
+            $query->whereIn('status', Asset::LIVE_STATUSES);
+
+            return;
+        }
+        if ($status === 'disposed') {
+            $query->whereIn('status', Asset::DISPOSED_STATUSES);
+
+            return;
+        }
+
+        $query->where('status', $status);
+    }
+
+    /**
      * Same category / status / search filters as index(), plus include_pending
      * when the caller is exporting the current register view rather than ids.
      *
@@ -349,8 +369,9 @@ class AssetController extends Controller
             $query->where('category', $category);
         }
 
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
+        $status = $request->input('status');
+        if (is_string($status) && $status !== '') {
+            $this->applyStatusFilter($query, $status);
         } elseif (! $request->boolean('include_pending')) {
             $query->where('status', '!=', 'pending');
         }

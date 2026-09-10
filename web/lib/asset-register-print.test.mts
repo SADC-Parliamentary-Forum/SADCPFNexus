@@ -65,6 +65,18 @@ test("print page href carries selected ids", () => {
   assert.deepEqual(parsePrintAssetIds(""), []);
 });
 
+test("print page href uses list filters when nothing is selected", () => {
+  assert.equal(
+    printPageHref([], { status: "live", category: "it", search: "laptop" }),
+    "/assets/print?status=live&category=it&search=laptop",
+  );
+  assert.equal(printPageHref([], { status: "all" }), "/assets/print");
+  assert.equal(
+    printPageHref([11], { status: "live" }),
+    "/assets/print?ids=11",
+  );
+});
+
 test("excel export query uses xlsx, optional ids, and list filters when exporting all", () => {
   assert.deepEqual(registerExportQuery([]), { format: "xlsx", include_pending: 1 });
   assert.deepEqual(registerExportQuery([4, 5]), {
@@ -102,9 +114,20 @@ test("print page walks every register page so Print all is not capped at 100", (
   const page = readFileSync(join(webRoot, "app/(app)/assets/print/page.tsx"), "utf8");
   assert.match(page, /collectPaginatedRows\(\(page\)/);
   assert.match(page, /parsePrintAssetIds/);
+  assert.match(page, /parsePrintListFilters/);
   assert.match(page, /size:\s*A4 landscape/);
   assert.match(page, /table-layout:\s*fixed/);
   assert.match(page, /h-12 w-12|12mm/);
+});
+
+test("asset register paginates the visible cards without dropping select-all", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
+  assert.match(page, /ListPagination/);
+  assert.match(page, /slicePage/);
+  assert.match(page, /DEFAULT_PAGE_SIZE/);
+  assert.match(page, /data-testid=["']asset-register-pagination["']/);
+  assert.match(page, /printPageHref\(selection\.selectedCount > 0 \? exportIds : \[\],/);
+  assert.match(page, /pagedAssets\.map/);
 });
 
 test("QR ids are chunked so one print does not overflow the batch limit", () => {

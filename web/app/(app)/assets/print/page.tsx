@@ -8,6 +8,7 @@ import {
   chunkIds,
   collectPaginatedRows,
   parsePrintAssetIds,
+  parsePrintListFilters,
   qrImagesFromBatch,
 } from "@/lib/asset-register-print";
 
@@ -35,8 +36,19 @@ export default function AssetsPrintPage() {
       return;
     }
     const wanted = parsePrintAssetIds(window.location.search);
+    const filters = parsePrintListFilters(window.location.search);
     collectPaginatedRows((page) =>
-      assetsApi.list({ per_page: 100, page }).then((res) => ({
+      assetsApi.list({
+        per_page: 100,
+        page,
+        ...(wanted.length === 0
+          ? {
+              status: filters.status,
+              category: filters.category,
+              search: filters.search,
+            }
+          : {}),
+      }).then((res) => ({
         data: (res.data as { data?: Asset[]; last_page?: number }).data ?? [],
         last_page: (res.data as { last_page?: number }).last_page,
       })),

@@ -69,9 +69,29 @@ export function parsePrintAssetIds(search: string): number[] {
     .filter((id) => Number.isFinite(id) && id > 0);
 }
 
-export function printPageHref(ids: number[]): string {
-  if (ids.length === 0) return "/assets/print";
-  return `/assets/print?ids=${ids.join(",")}`;
+export function parsePrintListFilters(search: string): RegisterExportFilters {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  const status = params.get("status")?.trim() || undefined;
+  const category = params.get("category")?.trim() || undefined;
+  const q = params.get("search")?.trim() || undefined;
+  return {
+    ...(status ? { status } : {}),
+    ...(category ? { category } : {}),
+    ...(q ? { search: q } : {}),
+  };
+}
+
+export function printPageHref(ids: number[], filters?: RegisterExportFilters): string {
+  if (ids.length > 0) {
+    return `/assets/print?ids=${ids.join(",")}`;
+  }
+  const params = new URLSearchParams();
+  if (filters?.status && filters.status !== "all") params.set("status", filters.status);
+  if (filters?.category && filters.category !== "all") params.set("category", filters.category);
+  const q = filters?.search?.trim();
+  if (q) params.set("search", q);
+  const qs = params.toString();
+  return qs ? `/assets/print?${qs}` : "/assets/print";
 }
 
 export type RegisterExportFilters = {

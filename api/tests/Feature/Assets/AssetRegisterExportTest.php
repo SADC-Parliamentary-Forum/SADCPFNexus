@@ -116,4 +116,37 @@ class AssetRegisterExportTest extends TestCase
         $this->assertNotContains('SKIP-F1', $codes);
         $this->assertNotContains('SKIP-F2', $codes);
     }
+
+    public function test_live_status_excludes_retired_and_disposed_on_list_and_export(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $category = $this->makeCategory($tenant);
+        $live = $this->makeAsset($tenant, $category, ['asset_code' => 'LIVE-1', 'status' => 'active']);
+        $pending = $this->makeAsset($tenant, $category, ['asset_code' => 'LIVE-P', 'status' => 'pending']);
+        $this->makeAsset($tenant, $category, ['asset_code' => 'DEAD-R', 'status' => 'retired']);
+        $this->makeAsset($tenant, $category, ['asset_code' => 'DEAD-D', 'status' => 'disposed']);
+
+        $listed = collect(
+            $http->getJson('/api/v1/assets?status=live&per_page=100')
+                ->assertOk()
+                ->json('data')
+        )->pluck('asset_code')->all();
+
+        $this->assertContains($live->asset_code, $listed);
+        $this->assertContains($pending->asset_code, $listed);
+        $this->assertNotContains('DEAD-R', $listed);
+        $this->assertNotContains('DEAD-D', $listed);
+
+        $exported = collect(
+            $http->getJson('/api/v1/assets/register-export?format=json&status=live')
+                ->assertOk()
+                ->json('data')
+        )->pluck('asset_code')->all();
+
+        $this->assertContains($live->asset_code, $exported);
+        $this->assertContains($pending->asset_code, $exported);
+        $this->assertNotContains('DEAD-R', $exported);
+        $this->assertNotContains('DEAD-D', $exported);
+    }
 }
