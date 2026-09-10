@@ -9,7 +9,11 @@ import { ASSETS_HUB_CARDS } from "@/lib/hubs/assets";
 
 type Dash = {
   total: number;
+  live: number;
   pending: number;
+  active: number;
+  retired: number;
+  disposed: number;
   capital: number;
   controlled: number;
   assigned: number;
@@ -31,7 +35,11 @@ export default function AssetsDashboardPage() {
 
   const cards: { label: string; key: keyof Dash; href: string }[] = [
     { label: "Total assets", key: "total", href: "/assets" },
+    { label: "Live", key: "live", href: "/assets?status=live" },
     { label: "Pending intake", key: "pending", href: "/assets/intake" },
+    { label: "Active", key: "active", href: "/assets?status=active" },
+    { label: "Retired", key: "retired", href: "/assets?status=retired" },
+    { label: "Disposed", key: "disposed", href: "/assets?status=disposed" },
     { label: "Capital", key: "capital", href: "/assets?asset_class=capital" },
     { label: "Controlled", key: "controlled", href: "/assets?asset_class=controlled" },
     { label: "Assigned", key: "assigned", href: "/assets/mine" },

@@ -4,7 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { loadPdfLibs } from "@/lib/pdf-libs";
-import { assetsApi, assetRequestsApi, tenantUsersApi, type Asset, type AssetRequest, type TenantUserOption } from "@/lib/api";
+import { assetsApi, assetRequestsApi, tenantUsersApi, type Asset, type AssetRegisterSummary, type AssetRequest, type TenantUserOption } from "@/lib/api";
 import { canDisposeAssets, canManageAssets, canPrintAssetLabels, canRetireAssets, getStoredUser } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
@@ -14,21 +14,28 @@ import {
   A4_LANDSCAPE_WIDTH_MM,
   REGISTER_PDF_COLUMNS,
   REGISTER_PDF_MARGIN_MM,
-  collectPaginatedRows,
+  parseRegisterExportJson,
   printPageHref,
   registerExportQuery,
+  registerListParams,
   registerPdfAvailableWidth,
   registerPdfColumnWidths,
-  resolveExportAssets,
 } from "@/lib/asset-register-print";
-import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { DEFAULT_PAGE_SIZE, getLastPage, getListData, getTotal } from "@/lib/listPagination";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { BulkSelectionBar, RowCheckbox, SelectAllCheckbox } from "@/components/ui/BulkSelectionBar";
 import { AssetLabelsQuickPrintModal } from "@/components/assets/AssetLabelsQuickPrintModal";
 
-const LIVE_STATUSES = new Set(["pending", "active", "service_due", "loan_out", "pending_disposal"]);
-const DISPOSED_STATUSES = new Set(["disposed", "sold", "written_off", "scrapped", "donated_out"]);
 const RETIREABLE_STATUSES = new Set(["active", "service_due", "loan_out"]);
+const EMPTY_SUMMARY: AssetRegisterSummary = {
+  total: 0,
+  live: 0,
+  pending: 0,
+  active: 0,
+  retired: 0,
+  disposed: 0,
+  categories: [],
+};
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   pending:           { label: "Pending capitalisation", cls: "badge-warning" },
@@ -45,13 +52,6 @@ const statusConfig: Record<string, { label: string; cls: string }> = {
   scrapped:          { label: "Scrapped",      cls: "badge-muted" },
   donated_out:       { label: "Donated",       cls: "badge-muted" },
 };
-
-function matchesStatusFilter(status: string, filterStatus: string): boolean {
-  if (filterStatus === "all") return true;
-  if (filterStatus === "live") return LIVE_STATUSES.has(status);
-  if (filterStatus === "disposed") return DISPOSED_STATUSES.has(status);
-  return status === filterStatus;
-}
 
 const UNASSIGNABLE_STATUSES = [
   "pending",
@@ -561,6 +561,72 @@ function AssignModal({
   );
 }
 
+function RejectCapitalisationModal({
+  asset,
+  onClose,
+  onSaved,
+}: {
+  asset: Asset;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { t } = useI18n();
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    if (!reason.trim()) {
+      setError(t("assets.register.rejectReasonRequired"));
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await assetsApi.rejectCapitalisation(asset.id, { reason: reason.trim() });
+      onSaved();
+    } catch {
+      setError(t("assets.register.rejectFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4">
+        <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+          {t("assets.register.rejectTitle")}
+        </h2>
+        <p className="text-sm text-neutral-600">{asset.asset_code} — {asset.name}</p>
+        <label className="block text-xs font-semibold text-neutral-600">
+          {t("assets.register.rejectReason")}
+          <textarea
+            className="form-input mt-1 text-sm min-h-[96px]"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            autoFocus
+          />
+        </label>
+        {error && <p className="text-sm text-red-700">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button type="button" className="btn-secondary px-4 py-2 text-sm" onClick={onClose} disabled={saving}>
+            {t("common.cancel")}
+          </button>
+          <button
+            type="button"
+            className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
+            onClick={() => void handleSave()}
+            disabled={saving}
+          >
+            {saving ? "…" : t("assets.register.reject")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const requestStatusConfig: Record<string, { label: string; cls: string }> = {
   pending:  { label: "Pending",  cls: "badge-warning" },
   approved: { label: "Approved", cls: "badge-success" },
@@ -597,13 +663,24 @@ export default function AssetsPage() {
   const [exportingExcel, setExportingExcel] = useState(false);
   const [showPrintLabels, setShowPrintLabels] = useState(false);
   const [labelsOpen, setLabelsOpen] = useState(false);
+  const [labelIds, setLabelIds] = useState<number[]>([]);
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("live");
+  const [filterStatus, setFilterStatus] = useState(() => {
+    if (typeof window === "undefined") return "live";
+    return new URLSearchParams(window.location.search).get("status") || "live";
+  });
   const [filterCategory, setFilterCategory] = useState("all");
   const [page, setPage] = useState(1);
+  const [lastPage, setLastPage] = useState(1);
+  const [filteredTotal, setFilteredTotal] = useState(0);
+  const [summary, setSummary] = useState<AssetRegisterSummary>(EMPTY_SUMMARY);
+  const [reqPage, setReqPage] = useState(1);
+  const [reqLastPage, setReqLastPage] = useState(1);
+  const [reqTotal, setReqTotal] = useState(0);
   const [capitaliseAsset, setCapitaliseAsset] = useState<Asset | null>(null);
   const [assignAsset, setAssignAsset] = useState<Asset | null>(null);
-  const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [rejectAsset, setRejectAsset] = useState<Asset | null>(null);
   const [retiringId, setRetiringId] = useState<number | null>(null);
   const [confirmingReturnId, setConfirmingReturnId] = useState<number | null>(null);
 
@@ -614,76 +691,105 @@ export default function AssetsPage() {
     setCanDispose(canDisposeAssets(user));
     setCanRetire(canRetireAssets(user));
     setShowPrintLabels(canPrintAssetLabels(user));
-    if (typeof window !== "undefined") {
-      const status = new URLSearchParams(window.location.search).get("status");
-      if (status) setFilterStatus(status);
-    }
   }, []);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  const loadAssets = useCallback(() => {
     setLoading(true);
     setError(null);
-    collectPaginatedRows((page) =>
-      assetsApi.list({ per_page: 100, page }).then((res) => ({
-        data: (res.data as { data?: Asset[]; last_page?: number }).data ?? [],
-        last_page: (res.data as { last_page?: number }).last_page,
-      })),
-    )
-      .then(setAssets)
-      .catch(() => setError("Failed to load assets."))
+    return assetsApi
+      .list(registerListParams({
+        page,
+        perPage: DEFAULT_PAGE_SIZE,
+        status: filterStatus,
+        category: filterCategory,
+        search,
+      }))
+      .then((res) => {
+        const payload = res.data;
+        const rows = getListData<Asset>(payload);
+        const nextLast = getLastPage(payload);
+        setAssets(rows);
+        setLastPage(nextLast);
+        setFilteredTotal(getTotal(payload, rows.length));
+        if (payload.summary) setSummary(payload.summary);
+        if (page > nextLast) setPage(nextLast);
+      })
+      .catch(() => setError(t("assets.register.loadFailed")))
       .finally(() => setLoading(false));
-  }, []);
+  }, [page, filterStatus, filterCategory, search, t]);
 
   useEffect(() => {
-    setPage(1);
-  }, [search, filterStatus, filterCategory]);
+    void loadAssets();
+  }, [loadAssets]);
 
   useEffect(() => {
     setReqLoading(true);
     assetRequestsApi
-      .list({ per_page: 20 })
-      .then((res) => setRequests((res.data as { data?: AssetRequest[] }).data ?? []))
+      .list({ per_page: DEFAULT_PAGE_SIZE, page: reqPage })
+      .then((res) => {
+        const rows = getListData<AssetRequest>(res.data);
+        const nextLast = getLastPage(res.data);
+        setRequests(rows);
+        setReqLastPage(nextLast);
+        setReqTotal(getTotal(res.data, rows.length));
+        if (reqPage > nextLast) setReqPage(nextLast);
+      })
       .catch(() => {})
       .finally(() => setReqLoading(false));
-  }, []);
+  }, [reqPage]);
 
-  const categories = Array.from(new Set(assets.map((a) => a.category).filter(Boolean)));
-
-  const filteredAssets = assets.filter((a) => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || a.name.toLowerCase().includes(q) || a.asset_code?.toLowerCase().includes(q);
-    const matchStatus = matchesStatusFilter(a.status, filterStatus);
-    const matchCat = filterCategory === "all" || a.category === filterCategory;
-    return matchSearch && matchStatus && matchCat;
-  });
-
-  const lastPage = clientPageCount(filteredAssets.length, DEFAULT_PAGE_SIZE);
-  const currentPage = Math.min(page, lastPage);
-  const pagedAssets = slicePage(filteredAssets, currentPage, DEFAULT_PAGE_SIZE);
+  const categories = summary.categories ?? [];
+  const pagedAssets = assets;
+  const hasInventory = summary.total > 0;
   const listFilters = useMemo(
     () => ({ status: filterStatus, category: filterCategory, search }),
     [filterStatus, filterCategory, search],
   );
 
   const getAssetId = useCallback((asset: Asset) => asset.id, []);
-  const selection = useRowSelection({ rows: filteredAssets, getId: getAssetId });
-  const exportTargets = useMemo(
-    () => resolveExportAssets(filteredAssets, selection.selectedIds),
-    [filteredAssets, selection.selectedIds],
+  const selection = useRowSelection({ rows: pagedAssets, getId: getAssetId });
+  const exportIds = useMemo(
+    () => selection.selectedIds.map((id) => Number(id)).filter((id) => Number.isFinite(id) && id > 0),
+    [selection.selectedIds],
   );
-  const exportIds = useMemo(() => exportTargets.map((asset) => asset.id), [exportTargets]);
   const printHref = printPageHref(selection.selectedCount > 0 ? exportIds : [], listFilters);
 
-  const handleExportPdf = async () => {
-    if (exportTargets.length === 0) {
-      setError(t("assets.register.exportEmpty"));
-      return;
+  const loadFilteredExportRows = useCallback(async (ids: number[]): Promise<Asset[]> => {
+    const res = await assetsApi.registerExport({
+      ...registerExportQuery(ids, listFilters),
+      format: "json",
+    });
+    const text = await (res.data as Blob).text();
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return [];
     }
+    return parseRegisterExportJson(parsed) as unknown as Asset[];
+  }, [listFilters]);
+
+  const handleExportPdf = async () => {
     setExportingPdf(true);
     setError(null);
     try {
+      const exportTargets =
+        selection.selectedCount > 0
+          ? pagedAssets.filter((asset) => selection.isSelected(asset.id))
+          : await loadFilteredExportRows([]);
+      if (exportTargets.length === 0) {
+        setError(t("assets.register.exportEmpty"));
+        return;
+      }
       const { jsPDF, autoTable } = await loadPdfLibs();
-      // Positional constructor so UMD builds honour landscape (object form can stay portrait).
       const doc = new jsPDF("landscape", "mm", "a4");
       const pageWidth = Number(doc.internal.pageSize.getWidth()) || A4_LANDSCAPE_WIDTH_MM;
       const margin = REGISTER_PDF_MARGIN_MM;
@@ -728,19 +834,11 @@ export default function AssetsPage() {
   };
 
   const handleExportExcel = async () => {
-    if (exportIds.length === 0) {
-      setError(t("assets.register.exportEmpty"));
-      return;
-    }
     setExportingExcel(true);
     setError(null);
     try {
       const res = await assetsApi.registerExport(
-        registerExportQuery(selection.selectedCount > 0 ? exportIds : [], {
-          status: filterStatus,
-          category: filterCategory,
-          search,
-        }),
+        registerExportQuery(selection.selectedCount > 0 ? exportIds : [], listFilters),
       );
       const blob = res.data as Blob;
       const type = (blob.type || "").toLowerCase();
@@ -756,27 +854,32 @@ export default function AssetsPage() {
     }
   };
 
-  const statusCounts = {
-    live: assets.filter((a) => LIVE_STATUSES.has(a.status)).length,
-    pending: assets.filter((a) => a.status === "pending").length,
-    active: assets.filter((a) => a.status === "active").length,
-    retired: assets.filter((a) => a.status === "retired").length,
-    disposed: assets.filter((a) => DISPOSED_STATUSES.has(a.status)).length,
-  };
-
-  const handleRejectCapitalisation = async (asset: Asset) => {
-    const reason = window.prompt("Reason for rejecting capitalisation:");
-    if (!reason || !reason.trim()) return;
-    setRejectingId(asset.id);
+  const openLabels = async () => {
     setError(null);
     try {
-      const res = await assetsApi.rejectCapitalisation(asset.id, { reason: reason.trim() });
-      setAssets((prev) => prev.map((a) => (a.id === asset.id ? res.data.data : a)));
+      const ids =
+        selection.selectedCount > 0 ? exportIds : (await loadFilteredExportRows([])).map((asset) => asset.id);
+      if (ids.length === 0) {
+        setError(t("assets.register.exportEmpty"));
+        return;
+      }
+      setLabelIds(ids);
+      setLabelsOpen(true);
     } catch {
-      setError("Failed to reject capitalisation.");
-    } finally {
-      setRejectingId(null);
+      setError(t("assets.register.exportFailed"));
     }
+  };
+
+  const statusCounts = {
+    live: summary.live,
+    pending: summary.pending,
+    active: summary.active,
+    retired: summary.retired,
+    disposed: summary.disposed,
+  };
+
+  const handleRejectCapitalisation = (asset: Asset) => {
+    setRejectAsset(asset);
   };
 
   const handleRetire = async (asset: Asset) => {
@@ -791,12 +894,12 @@ export default function AssetsPage() {
     setError(null);
     try {
       await assetsApi.retire(asset.id);
-      setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, status: "retired" } : a)));
+      await loadAssets();
       success(t("assets.register.retired"));
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? "Failed to retire asset.";
+        ?? t("assets.register.retireFailed");
       setError(msg);
     } finally {
       setRetiringId(null);
@@ -807,8 +910,8 @@ export default function AssetsPage() {
     setConfirmingReturnId(asset.id);
     setError(null);
     try {
-      const res = await assetsApi.returnAsset(asset.id);
-      setAssets((prev) => prev.map((a) => (a.id === asset.id ? res.data.data : a)));
+      await assetsApi.returnAsset(asset.id);
+      await loadAssets();
     } catch {
       setError(t("assets.register.returnFailed"));
     } finally {
@@ -820,9 +923,9 @@ export default function AssetsPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-4">
         <ModulePageHeader
-        title="Fixed Asset Register"
+        title="assets.register.title"
         subtitle="Capital assets, movements, and GRN capitalisation queue."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Fixed Asset Register" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("assets.register.title") }]} />}
       />
         <div className="flex gap-2 flex-wrap">
           {(showAddAssetButton || showRequestButton) && (
@@ -869,11 +972,11 @@ export default function AssetsPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (exportIds.length === 0) {
+                    if (exportIds.length === 0 && filteredTotal === 0) {
                       setError(t("assets.register.exportEmpty"));
                       return;
                     }
-                    setLabelsOpen(true);
+                    void openLabels();
                   }}
                   className="btn-secondary"
                   data-testid="asset-register-print-labels"
@@ -934,31 +1037,34 @@ export default function AssetsPage() {
           onClick={() => setView("inventory")}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${view === "inventory" ? "bg-primary text-white" : "text-neutral-600 hover:bg-neutral-100"}`}
         >
-          Inventory
+          {t("assets.register.inventory")}
         </button>
         <button
           type="button"
           onClick={() => setView("my-requests")}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${view === "my-requests" ? "bg-primary text-white" : "text-neutral-600 hover:bg-neutral-100"}`}
         >
-          My Requests ({requests.length})
+          {t("assets.register.myRequests")} ({reqTotal})
         </button>
       </div>
 
       {/* Summary stats — only when viewing inventory */}
-      {view === "inventory" && !loading && assets.length > 0 && (
+      {view === "inventory" && !loading && hasInventory && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
             { label: t("assets.register.live"), count: statusCounts.live, icon: "inventory_2", color: "text-primary", bg: "bg-primary/10", status: "live" },
-            { label: "Pending",     count: statusCounts.pending,     icon: "pending_actions", color: "text-amber-600",  bg: "bg-amber-50",   status: "pending" },
-            { label: "Active",      count: statusCounts.active,      icon: "check_circle",    color: "text-green-600",  bg: "bg-green-50",   status: "active" },
-            { label: "Retired",     count: statusCounts.retired,     icon: "archive",         color: "text-neutral-500", bg: "bg-neutral-100", status: "retired" },
+            { label: t("assets.register.pending"), count: statusCounts.pending,     icon: "pending_actions", color: "text-amber-600",  bg: "bg-amber-50",   status: "pending" },
+            { label: t("assets.register.active"),  count: statusCounts.active,      icon: "check_circle",    color: "text-green-600",  bg: "bg-green-50",   status: "active" },
+            { label: t("assets.register.retiredStatus"), count: statusCounts.retired, icon: "archive",         color: "text-neutral-500", bg: "bg-neutral-100", status: "retired" },
             { label: t("assets.register.disposed"), count: statusCounts.disposed, icon: "delete_forever", color: "text-red-700", bg: "bg-red-50", status: "disposed" },
           ].map((s) => (
             <button
               key={s.label}
               type="button"
-              onClick={() => setFilterStatus(s.status)}
+              onClick={() => {
+                setFilterStatus(s.status);
+                setPage(1);
+              }}
               className={`card p-4 text-left transition-shadow hover:shadow-elevated ${filterStatus === s.status ? "ring-2 ring-primary/40" : ""}`}
             >
               <div className="flex items-center justify-between">
@@ -976,39 +1082,53 @@ export default function AssetsPage() {
       )}
 
       {/* Search + filter — only when viewing inventory */}
-      {view === "inventory" && !loading && assets.length > 0 && (
+      {view === "inventory" && !loading && hasInventory && (
         <div className="card p-3 flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[160px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">Search</label>
+            <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.search")}</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-neutral-400 text-[18px]">search</span>
               <input
                 className="form-input pl-8 text-sm"
-                placeholder="Name or asset code…"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t("assets.register.searchPlaceholder")}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
               />
             </div>
           </div>
           <div className="min-w-[130px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
-            <select className="form-input text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.status")}</label>
+            <select
+              className="form-input text-sm"
+              value={filterStatus}
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setPage(1);
+              }}
+            >
               <option value="live">{t("assets.register.live")}</option>
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending capitalisation</option>
-              <option value="active">Active</option>
-              <option value="service_due">Service Due</option>
-              <option value="loan_out">Loan Out</option>
+              <option value="all">{t("assets.register.allStatuses")}</option>
+              <option value="pending">{t("assets.register.pendingCapitalisation")}</option>
+              <option value="active">{t("assets.register.active")}</option>
+              <option value="service_due">{t("assets.register.serviceDue")}</option>
+              <option value="loan_out">{t("assets.register.loanOut")}</option>
               <option value="pending_disposal">{t("assets.register.pendingDisposal")}</option>
-              <option value="retired">Retired</option>
+              <option value="retired">{t("assets.register.retiredStatus")}</option>
               <option value="disposed">{t("assets.register.disposed")}</option>
             </select>
           </div>
           {categories.length > 0 && (
             <div className="min-w-[130px]">
-              <label className="block text-xs font-semibold text-neutral-600 mb-1">Category</label>
-              <select className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-                <option value="all">All Categories</option>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.category")}</label>
+              <select
+                className="form-input text-sm"
+                value={filterCategory}
+                onChange={(e) => {
+                  setFilterCategory(e.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="all">{t("assets.register.allCategories")}</option>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -1016,11 +1136,11 @@ export default function AssetsPage() {
           {(search || filterStatus !== "live" || filterCategory !== "all") && (
             <button
               type="button"
-              onClick={() => { setSearch(""); setFilterStatus("live"); setFilterCategory("all"); }}
+              onClick={() => { setSearchInput(""); setSearch(""); setFilterStatus("live"); setFilterCategory("all"); setPage(1); }}
               className="text-xs text-neutral-500 hover:text-neutral-700 flex items-center gap-1 mt-5"
             >
               <span className="material-symbols-outlined text-[15px]">close</span>
-              Clear
+              {t("assets.register.clearFilters")}
             </button>
           )}
         </div>
@@ -1055,14 +1175,17 @@ export default function AssetsPage() {
                   </div>
                 );
               })}
+              <div data-testid="asset-requests-pagination">
+                <ListPagination page={reqPage} lastPage={reqLastPage} total={reqTotal} onPageChange={setReqPage} />
+              </div>
             </div>
           ) : (
             <div className="card p-16 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
                 <span className="material-symbols-outlined text-4xl text-neutral-300">description</span>
               </div>
-              <p className="mt-4 text-sm font-semibold text-neutral-600">No asset requests yet</p>
-              <p className="text-xs text-neutral-400 mt-1">Submit a request with a justification for managers to review.</p>
+              <p className="mt-4 text-sm font-semibold text-neutral-600">{t("assets.register.emptyRequests")}</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("assets.register.emptyRequestsHint")}</p>
               <Link href="/assets/requests?new=1" className="btn-primary mt-5 inline-flex">
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 Request Asset
@@ -1079,7 +1202,7 @@ export default function AssetsPage() {
                 <span className="text-sm">Loading…</span>
               </div>
             </div>
-          ) : filteredAssets.length > 0 ? (
+          ) : pagedAssets.length > 0 ? (
             <>
             <div className="flex flex-wrap items-center gap-3">
               <label className="inline-flex items-center gap-2 text-sm text-neutral-600">
@@ -1087,7 +1210,7 @@ export default function AssetsPage() {
                   checked={selection.allSelectableSelected}
                   indeterminate={selection.someSelectableSelected && !selection.allSelectableSelected}
                   onChange={selection.toggleAllSelectable}
-                  disabled={filteredAssets.length === 0}
+                  disabled={pagedAssets.length === 0}
                   label={t("assets.register.selectAll")}
                 />
                 <span data-testid="asset-register-select-all">{t("assets.register.selectAll")}</span>
@@ -1107,7 +1230,7 @@ export default function AssetsPage() {
                 {t("assets.register.exportExcel")}
               </button>
               {showPrintLabels && (
-                <button type="button" className="btn-secondary text-xs" onClick={() => setLabelsOpen(true)}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => void openLabels()}>
                   {t("assets.register.printLabels")}
                 </button>
               )}
@@ -1154,11 +1277,11 @@ export default function AssetsPage() {
                           <p className="text-xs text-neutral-500 mt-1 capitalize">{asset.category}</p>
                           {(asset.current_value != null || asset.value != null) && (
                             <p className="text-xs text-neutral-500 mt-0.5">
-                              Book value: {Number(asset.current_value ?? asset.value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {t("assets.register.bookValue")}: {Number(asset.current_value ?? asset.value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                           )}
                           {asset.age_display && (
-                            <p className="text-xs text-neutral-500 mt-0.5">Age: {asset.age_display}</p>
+                            <p className="text-xs text-neutral-500 mt-0.5">{t("assets.register.age")}: {asset.age_display}</p>
                           )}
                           <p className={`text-xs mt-0.5 ${asset.assigned_user?.name ? "text-neutral-500" : "text-neutral-400"}`}>
                             {asset.assigned_user?.name
@@ -1177,15 +1300,14 @@ export default function AssetsPage() {
                                 onClick={() => setCapitaliseAsset(asset)}
                                 className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:opacity-90"
                               >
-                                Capitalise
+                                {t("assets.register.capitalise")}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleRejectCapitalisation(asset)}
-                                disabled={rejectingId === asset.id}
                                 className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
                               >
-                                {rejectingId === asset.id ? "…" : "Reject"}
+                                {t("assets.register.reject")}
                               </button>
                             </>
                             ) : null
@@ -1256,26 +1378,26 @@ export default function AssetsPage() {
             </div>
             <div data-testid="asset-register-pagination">
               <ListPagination
-                page={currentPage}
+                page={page}
                 lastPage={lastPage}
-                total={filteredAssets.length}
+                total={filteredTotal}
                 onPageChange={setPage}
               />
             </div>
             </>
-          ) : assets.length > 0 ? (
+          ) : hasInventory ? (
             <div className="card p-10 text-center">
               <span className="material-symbols-outlined text-3xl text-neutral-300">search_off</span>
-              <p className="mt-2 text-sm font-semibold text-neutral-600">No assets match your filters</p>
-              <button type="button" onClick={() => { setSearch(""); setFilterStatus("live"); setFilterCategory("all"); }} className="mt-3 text-xs text-primary hover:underline">Clear filters</button>
+              <p className="mt-2 text-sm font-semibold text-neutral-600">{t("assets.register.emptyFiltered")}</p>
+              <button type="button" onClick={() => { setSearchInput(""); setSearch(""); setFilterStatus("live"); setFilterCategory("all"); setPage(1); }} className="mt-3 text-xs text-primary hover:underline">{t("assets.register.clearFilters")}</button>
             </div>
           ) : (
             <div className="card p-16 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
                 <span className="material-symbols-outlined text-4xl text-neutral-300">inventory_2</span>
               </div>
-              <p className="mt-4 text-sm font-semibold text-neutral-600">No assets in inventory</p>
-              <p className="text-xs text-neutral-400 mt-1">You can still request an asset; managers will process requests.</p>
+              <p className="mt-4 text-sm font-semibold text-neutral-600">{t("assets.register.empty")}</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("assets.register.emptyHint")}</p>
               {showRequestButton && (
                 <Link href="/assets/requests?new=1" className="btn-primary mt-5 inline-flex">
                   <span className="material-symbols-outlined text-[18px]">add</span>
@@ -1291,8 +1413,8 @@ export default function AssetsPage() {
         <CapitaliseModal
           asset={capitaliseAsset}
           onClose={() => setCapitaliseAsset(null)}
-          onSaved={(updated) => {
-            setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+          onSaved={() => {
+            void loadAssets();
             setCapitaliseAsset(null);
           }}
         />
@@ -1301,15 +1423,25 @@ export default function AssetsPage() {
         <AssignModal
           asset={assignAsset}
           onClose={() => setAssignAsset(null)}
-          onSaved={(updated) => {
-            setAssets((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+          onSaved={() => {
+            void loadAssets();
             setAssignAsset(null);
+          }}
+        />
+      )}
+      {rejectAsset && (
+        <RejectCapitalisationModal
+          asset={rejectAsset}
+          onClose={() => setRejectAsset(null)}
+          onSaved={() => {
+            void loadAssets();
+            setRejectAsset(null);
           }}
         />
       )}
       <AssetLabelsQuickPrintModal
         open={labelsOpen}
-        assetIds={exportIds}
+        assetIds={labelIds}
         onClose={() => setLabelsOpen(false)}
       />
     </div>
