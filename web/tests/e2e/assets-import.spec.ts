@@ -86,6 +86,80 @@ test.describe("Assets import (admin)", () => {
   });
 });
 
+test.describe("Asset register print, export, and view (admin)", () => {
+  test("register opens a view page and Excel export", async ({ page }) => {
+    skipWithoutAuth("admin");
+    await page.goto("/assets");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "assets register");
+
+    await expect(page.getByTestId("asset-register-print")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("asset-register-export-excel")).toBeVisible();
+    await expect(page.getByTestId("asset-register-print")).toHaveAttribute("href", /\/assets\/print/);
+
+    const viewLink = page.getByTestId("asset-register-view").first();
+    if (!(await viewLink.isVisible().catch(() => false))) {
+      test.skip(true, "no register rows in this environment");
+    }
+    await viewLink.click();
+    await expect(page).toHaveURL(/\/assets\/\d+/, { timeout: 15_000 });
+    await expect(page.getByTestId("asset-view-title")).toBeVisible({ timeout: 10_000 });
+
+    await page.goto("/assets");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "assets register reload");
+    await expect(page.getByTestId("asset-register-view").first()).toBeVisible({ timeout: 15_000 });
+    const excel = page.waitForResponse(
+      (r) => r.url().includes("/assets/register-export") && r.request().method() === "GET",
+      { timeout: 30_000 },
+    );
+    await page.getByTestId("asset-register-export-excel").click();
+    const resp = await excel;
+    expect(resp.ok()).toBeTruthy();
+    expect((resp.headers()["content-type"] ?? "")).toMatch(/spreadsheetml|octet-stream|excel/i);
+  });
+
+  test("print page loads QR images with one batch request", async ({ page }) => {
+    skipWithoutAuth("admin");
+    let batchStatus: number | null = null;
+    page.on("response", (r) => {
+      if (r.url().includes("/assets/qr-batch") && r.request().method() === "POST") {
+        batchStatus = r.status();
+      }
+    });
+    await page.goto("/assets/print");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "assets print");
+    await expect(page.getByRole("heading", { name: /Asset Register/i }).first()).toBeVisible({
+      timeout: 20_000,
+    });
+    const rows = page.locator(".register-print-table tbody tr");
+    if ((await rows.count()) === 0) {
+      test.skip(true, "no register rows in this environment");
+    }
+    expect(batchStatus).toBe(200);
+    await expect(rows.first().locator("img")).toBeVisible({ timeout: 10_000 });
+  });
+
+  test("reports page downloads server CSV", async ({ page }) => {
+    skipWithoutAuth("admin");
+    await page.goto("/assets/reports");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "assets reports");
+    const csv = page.waitForResponse(
+      (r) =>
+        r.url().includes("/assets/register-export") &&
+        r.url().includes("format=csv") &&
+        r.request().method() === "GET",
+      { timeout: 30_000 },
+    );
+    await page.getByTestId("asset-reports-download-csv").click();
+    const resp = await csv;
+    expect(resp.ok()).toBeTruthy();
+    expect((resp.headers()["content-type"] ?? "")).toMatch(/csv|octet-stream|text\/plain/i);
+  });
+});
+
 test.describe("Public QR page", () => {
   test("unknown token does not leak serial or value", async ({ page }) => {
     await page.goto("/a/not-a-real-token");

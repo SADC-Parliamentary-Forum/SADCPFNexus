@@ -1853,6 +1853,8 @@ export const assetsApi = {
   }) => api.post<{ data: Asset; message: string }>(`/assets/${id}/capitalise`, data),
   rejectCapitalisation: (id: number, data: { reason: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/reject-capitalisation`, data),
+  retire: (id: number) =>
+    api.delete<{ message: string }>(`/assets/${id}`),
   assign: (id: number, data: { assigned_to: number; department?: string; location_id?: number; notes?: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/assign`, data),
   acknowledge: (id: number) =>
@@ -1865,6 +1867,10 @@ export const assetsApi = {
     api.post<{ data: Asset; message: string }>(`/assets/${id}/transfer`, data),
   returnAsset: (id: number, data?: { location_id?: number; notes?: string; condition?: string }) =>
     api.post<{ data: Asset; message: string }>(`/assets/${id}/return`, data ?? {}),
+  registerExport: (params?: Record<string, string | number>) =>
+    api.get<Blob>("/assets/register-export", { params, responseType: "blob" }),
+  qrBatch: (ids: number[]) =>
+    api.post<{ data: Array<{ id: number; image: string }> }>("/assets/qr-batch", { ids }),
   uploadInvoice: (assetId: number, file: File) => {
     const formData = new FormData();
     formData.append("invoice", file);

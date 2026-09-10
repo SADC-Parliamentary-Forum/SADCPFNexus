@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Api\V1\Assets;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Models\AuditLog;
 use App\Models\User;
+use App\Modules\Assets\Export\AssetRegisterExportWorkbook;
 use App\Modules\Assets\Services\AssetQrService;
 use App\Modules\Assets\Services\AssetService;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -278,13 +281,40 @@ class AssetController extends Controller
     public function registerExport(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse|JsonResponse
     {
         $user = $request->user();
-        $rows = Asset::where('tenant_id', $user->tenant_id)
-            ->where('status', '!=', 'pending')
-            ->orderBy('asset_code')
-            ->get();
+        abort_unless(
+            $user->isSystemAdmin()
+                || $user->can('assets.view')
+                || $user->can('assets.admin')
+                || $user->can('assets.manage'),
+            403
+        );
+
+        $query = Asset::where('tenant_id', $user->tenant_id)
+            ->with(['assignedUser:id,name,email', 'location:id,name,code']);
+
+        $ids = $this->parseExportIds($request);
+        if ($ids !== []) {
+            $query->whereIn('id', $ids);
+            if (! $request->boolean('include_pending')) {
+                $query->where('status', '!=', 'pending');
+            }
+        } else {
+            $this->applyRegisterListFilters($request, $query);
+        }
+
+        $rows = $query->orderBy('asset_code')->get();
 
         if ($request->input('format') === 'json') {
             return response()->json(['data' => $rows]);
+        }
+
+        if ($request->input('format') === 'xlsx') {
+            $filename = AssetRegisterExportWorkbook::FILENAME_PREFIX.now()->format('Ymd-His').'.xlsx';
+            $workbook = new AssetRegisterExportWorkbook($rows);
+
+            return response()->streamDownload(function () use ($workbook) {
+                $workbook->stream('php://output');
+            }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
         }
 
         $filename = 'fixed-asset-register-'.now()->format('Ymd-His').'.csv';
@@ -305,6 +335,56 @@ class AssetController extends Controller
             }
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    /**
+     * Same category / status / search filters as index(), plus include_pending
+     * when the caller is exporting the current register view rather than ids.
+     *
+     * @param  Builder<Asset>  $query
+     */
+    private function applyRegisterListFilters(Request $request, Builder $query): void
+    {
+        if ($category = $request->input('category')) {
+            $query->where('category', $category);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        } elseif (! $request->boolean('include_pending')) {
+            $query->where('status', '!=', 'pending');
+        }
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('asset_code', 'like', "%{$search}%")
+                    ->orWhere('tag_number', 'like', "%{$search}%")
+                    ->orWhere('serial_number', 'like', "%{$search}%");
+            });
+        }
+    }
+
+    /** @return list<int> */
+    private function parseExportIds(Request $request): array
+    {
+        $raw = $request->input('ids');
+        $parts = [];
+        if (is_array($raw)) {
+            $parts = $raw;
+        } elseif (is_string($raw) && trim($raw) !== '') {
+            $parts = explode(',', $raw);
+        }
+
+        $ids = [];
+        foreach ($parts as $part) {
+            $id = (int) $part;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+
+        return array_values($ids);
     }
 
     public function dashboard(Request $request): JsonResponse
@@ -451,6 +531,62 @@ class AssetController extends Controller
     }
 
     /**
+     * Return QR images for many assets in one round trip (print view).
+     */
+    public function qrBatch(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless(
+            $user->isSystemAdmin()
+                || $user->can('assets.view')
+                || $user->can('assets.verify')
+                || $user->can('assets.admin')
+                || $user->can('assets.manage'),
+            403
+        );
+
+        $validated = $request->validate([
+            'ids' => ['present', 'array', 'max:500'],
+            'ids.*' => ['integer', 'min:1'],
+        ]);
+
+        $ids = array_values(array_unique(array_map('intval', $validated['ids'])));
+        if ($ids === []) {
+            return response()->json(['data' => []]);
+        }
+
+        $assets = Asset::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy('id');
+
+        $data = [];
+        foreach ($ids as $id) {
+            $asset = $assets->get($id);
+            if (! $asset) {
+                continue;
+            }
+            if (! $asset->qr_path || ! Storage::disk('local')->exists($asset->qr_path) || empty($asset->qr_token)) {
+                $this->qr->ensure($asset, $user);
+                $asset->refresh();
+            }
+            if (! $asset->qr_path || ! Storage::disk('local')->exists($asset->qr_path)) {
+                continue;
+            }
+            $contents = Storage::disk('local')->get($asset->qr_path);
+            $isPng = str_ends_with($asset->qr_path, '.png');
+            $mime = $isPng ? 'image/png' : 'image/svg+xml';
+            $data[] = [
+                'id' => $asset->id,
+                'image' => 'data:'.$mime.';base64,'.base64_encode($contents),
+            ];
+        }
+
+        return response()->json(['data' => $data]);
+    }
+
+    /**
      * Generate an opaque QR URL token and persist the SVG image.
      */
     private function generateAndSaveQr(Asset $asset, $actor = null): void
@@ -486,13 +622,31 @@ class AssetController extends Controller
             abort(404);
         }
 
+        if ($asset->status === 'pending') {
+            return response()->json(['message' => 'Pending GRN drafts cannot be retired. Reject capitalisation instead.'], 422);
+        }
+        if ($asset->status === 'pending_disposal') {
+            return response()->json(['message' => 'Complete or cancel the open disposal request first.'], 422);
+        }
+        if ($asset->status === 'retired') {
+            return response()->json(['message' => 'Asset is already retired.'], 422);
+        }
         if ($asset->isDisposed()) {
             return response()->json(['message' => 'Disposed assets are retained for audit; status unchanged.'], 422);
         }
 
-        // Mark as retired rather than hard-delete to preserve audit history
+        $previous = $asset->status;
         $asset->status = 'retired';
+        $asset->assigned_to = null;
         $asset->save();
+
+        AuditLog::record('assets.retired', [
+            'auditable_type' => Asset::class,
+            'auditable_id' => $asset->id,
+            'old_values' => ['status' => $previous],
+            'new_values' => ['status' => 'retired'],
+            'tags' => 'assets',
+        ]);
 
         return response()->json(['message' => 'Asset retired.']);
     }

@@ -674,6 +674,10 @@ return [
             'READ' => ['assets.verify', 'assets.admin', 'assets.manage', 'assets.view'],
             'WRITE' => ['assets.verify', 'assets.admin', 'assets.manage'],
         ]],
+        ['pattern' => 'api/v1/assets/qr-batch', 'permissions' => [
+            'READ' => ['assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
+        ]],
         ['pattern' => 'api/v1/assets/qr*', 'permissions' => [
             'READ' => ['assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
         ]],
@@ -727,7 +731,7 @@ return [
             'POST' => ['assets.create', 'assets.manage', 'assets.admin'],
             'PUT' => ['assets.edit', 'assets.manage', 'assets.admin'],
             'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin'],
-            'DELETE' => ['assets.admin'],
+            'DELETE' => ['assets.admin', 'assets.manage'],
         ]],
         ['pattern' => 'api/v1/workplan/event-types*', 'permissions' => [
             'READ' => ['workplan.view', 'workplan.admin'],
