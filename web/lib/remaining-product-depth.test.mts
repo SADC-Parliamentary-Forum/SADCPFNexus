@@ -444,6 +444,8 @@ test("people acting and delegations tables use labelledObjectCell instead of a l
 test("admin operations renders labelled objects instead of JSON dumps", () => {
   const source = readFileSync(join(webRoot, "app/(app)/admin/operations/page.tsx"), "utf8");
   assert.match(source, /LabelledRecord/);
+  assert.match(source, /data-testid=["']ops-queues["']/);
+  assert.match(source, /data-testid=["']ops-job-runs["']/);
   assert.doesNotMatch(source, /return JSON\.stringify\(value\)/);
 });
 
