@@ -21,6 +21,8 @@ import {
   registerPdfColumnWidths,
   resolveExportAssets,
 } from "@/lib/asset-register-print";
+import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { ListPagination } from "@/components/ui/ListPagination";
 import { BulkSelectionBar, RowCheckbox, SelectAllCheckbox } from "@/components/ui/BulkSelectionBar";
 import { AssetLabelsQuickPrintModal } from "@/components/assets/AssetLabelsQuickPrintModal";
 
@@ -598,6 +600,7 @@ export default function AssetsPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("live");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [page, setPage] = useState(1);
   const [capitaliseAsset, setCapitaliseAsset] = useState<Asset | null>(null);
   const [assignAsset, setAssignAsset] = useState<Asset | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
@@ -632,6 +635,10 @@ export default function AssetsPage() {
   }, []);
 
   useEffect(() => {
+    setPage(1);
+  }, [search, filterStatus, filterCategory]);
+
+  useEffect(() => {
     setReqLoading(true);
     assetRequestsApi
       .list({ per_page: 20 })
@@ -650,6 +657,14 @@ export default function AssetsPage() {
     return matchSearch && matchStatus && matchCat;
   });
 
+  const lastPage = clientPageCount(filteredAssets.length, DEFAULT_PAGE_SIZE);
+  const currentPage = Math.min(page, lastPage);
+  const pagedAssets = slicePage(filteredAssets, currentPage, DEFAULT_PAGE_SIZE);
+  const listFilters = useMemo(
+    () => ({ status: filterStatus, category: filterCategory, search }),
+    [filterStatus, filterCategory, search],
+  );
+
   const getAssetId = useCallback((asset: Asset) => asset.id, []);
   const selection = useRowSelection({ rows: filteredAssets, getId: getAssetId });
   const exportTargets = useMemo(
@@ -657,6 +672,7 @@ export default function AssetsPage() {
     [filteredAssets, selection.selectedIds],
   );
   const exportIds = useMemo(() => exportTargets.map((asset) => asset.id), [exportTargets]);
+  const printHref = printPageHref(selection.selectedCount > 0 ? exportIds : [], listFilters);
 
   const handleExportPdf = async () => {
     if (exportTargets.length === 0) {
@@ -812,7 +828,7 @@ export default function AssetsPage() {
           {(showAddAssetButton || showRequestButton) && (
             <>
               <Link
-                href={printPageHref(exportIds)}
+                href={printHref}
                 className="btn-secondary"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1080,7 +1096,7 @@ export default function AssetsPage() {
             </div>
             <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear}>
               <Link
-                href={printPageHref(exportIds)}
+                href={printHref}
                 className="btn-secondary text-xs"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1097,7 +1113,7 @@ export default function AssetsPage() {
               )}
             </BulkSelectionBar>
             <div className="grid gap-4 sm:grid-cols-2">
-              {filteredAssets.map((asset) => {
+              {pagedAssets.map((asset) => {
                 const s = statusConfig[asset.status] ?? { label: asset.status, cls: "badge-muted" };
                 return (
                   <div key={asset.id} className="card p-5 hover:shadow-elevated transition-shadow">
@@ -1237,6 +1253,14 @@ export default function AssetsPage() {
                   </div>
                 );
               })}
+            </div>
+            <div data-testid="asset-register-pagination">
+              <ListPagination
+                page={currentPage}
+                lastPage={lastPage}
+                total={filteredAssets.length}
+                onPageChange={setPage}
+              />
             </div>
             </>
           ) : assets.length > 0 ? (

@@ -13,6 +13,12 @@ class Asset extends Model
 {
     use SoftDeletes;
 
+    /** @var list<string> */
+    public const LIVE_STATUSES = ['pending', 'active', 'service_due', 'loan_out', 'pending_disposal'];
+
+    /** @var list<string> */
+    public const DISPOSED_STATUSES = ['disposed', 'sold', 'written_off', 'scrapped', 'donated_out'];
+
     protected $fillable = [
         'tenant_id', 'asset_code', 'serial_number', 'tag_number', 'name',
         'manufacturer', 'model', 'category', 'asset_class', 'status', 'condition',
@@ -175,7 +181,7 @@ class Asset extends Model
 
     public function isDisposed(): bool
     {
-        return in_array($this->status, ['disposed', 'sold', 'written_off', 'scrapped', 'donated_out'], true);
+        return in_array($this->status, self::DISPOSED_STATUSES, true);
     }
 
     public function tenant(): BelongsTo
