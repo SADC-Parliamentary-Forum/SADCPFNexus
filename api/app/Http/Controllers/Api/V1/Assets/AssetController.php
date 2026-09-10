@@ -62,10 +62,12 @@ class AssetController extends Controller
             });
         }
 
-        $perPage = min((int) $request->input('per_page', 50), 100);
+        $perPage = min(max((int) $request->input('per_page', 50), 1), 100);
         $assets = $query->orderBy('name')->paginate($perPage);
+        $payload = $assets->toArray();
+        $payload['summary'] = $this->registerListSummary((int) $user->tenant_id);
 
-        return response()->json($assets);
+        return response()->json($payload);
     }
 
     /**
@@ -386,6 +388,79 @@ class AssetController extends Controller
         }
     }
 
+    /**
+     * Tenant-wide status totals for register cards. Independent of the current list filters.
+     *
+     * @return array{
+     *     total: int,
+     *     pending: int,
+     *     active: int,
+     *     retired: int,
+     *     missing: int,
+     *     pending_disposal: int,
+     *     live: int,
+     *     disposed: int
+     * }
+     */
+    private function registerStatusSummary(int $tenantId): array
+    {
+        $byStatus = Asset::query()
+            ->where('tenant_id', $tenantId)
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $sum = static function (array $statuses) use ($byStatus): int {
+            $n = 0;
+            foreach ($statuses as $status) {
+                $n += (int) ($byStatus[$status] ?? 0);
+            }
+
+            return $n;
+        };
+
+        return [
+            'total' => (int) $byStatus->sum(),
+            'pending' => (int) ($byStatus['pending'] ?? 0),
+            'active' => (int) ($byStatus['active'] ?? 0),
+            'retired' => (int) ($byStatus['retired'] ?? 0),
+            'missing' => (int) ($byStatus['missing'] ?? 0),
+            'pending_disposal' => (int) ($byStatus['pending_disposal'] ?? 0),
+            'live' => $sum(Asset::LIVE_STATUSES),
+            'disposed' => $sum(Asset::DISPOSED_STATUSES),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     total: int,
+     *     pending: int,
+     *     active: int,
+     *     retired: int,
+     *     missing: int,
+     *     pending_disposal: int,
+     *     live: int,
+     *     disposed: int,
+     *     categories: list<string>
+     * }
+     */
+    private function registerListSummary(int $tenantId): array
+    {
+        $summary = $this->registerStatusSummary($tenantId);
+        $summary['categories'] = Asset::query()
+            ->where('tenant_id', $tenantId)
+            ->whereNotNull('category')
+            ->where('category', '!=', '')
+            ->select('category')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category')
+            ->values()
+            ->all();
+
+        return $summary;
+    }
+
     /** @return list<int> */
     private function parseExportIds(Request $request): array
     {
@@ -410,21 +485,18 @@ class AssetController extends Controller
 
     public function dashboard(Request $request): JsonResponse
     {
-        $tenantId = $request->user()->tenant_id;
+        $tenantId = (int) $request->user()->tenant_id;
         $base = Asset::where('tenant_id', $tenantId);
+        $summary = $this->registerStatusSummary($tenantId);
 
         return response()->json([
-            'data' => [
-                'total' => (clone $base)->count(),
-                'pending' => (clone $base)->where('status', 'pending')->count(),
+            'data' => array_merge($summary, [
                 'capital' => (clone $base)->where('asset_class', 'capital')->count(),
                 'controlled' => (clone $base)->where('asset_class', 'controlled')->count(),
                 'assigned' => (clone $base)->whereNotNull('assigned_to')->whereNotIn('status', ['disposed', 'retired', 'pending'])->count(),
-                'missing' => (clone $base)->where('status', 'missing')->count(),
-                'pending_disposal' => (clone $base)->where('status', 'pending_disposal')->count(),
                 'warranty_expiring_30d' => (clone $base)->whereNotNull('warranty_expiry')
                     ->whereBetween('warranty_expiry', [now()->toDateString(), now()->addDays(30)->toDateString()])->count(),
-            ],
+            ]),
         ]);
     }
 

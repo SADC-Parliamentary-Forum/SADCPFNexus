@@ -13,9 +13,11 @@ import {
   chunkIds,
   collectPaginatedRows,
   parsePrintAssetIds,
+  parseRegisterExportJson,
   printPageHref,
   qrImagesFromBatch,
   registerExportQuery,
+  registerListParams,
   registerPdfColumnWidths,
   registerPdfTableFitsPage,
   resolveExportAssets,
@@ -98,10 +100,39 @@ test("collectPaginatedRows walks every Laravel page", async () => {
   assert.deepEqual(rows.map((row) => row.id), [1, 2, 3]);
 });
 
-test("asset register loads every page and links through to a view page", () => {
+test("register list params send one server page and omit all-filters", () => {
+  assert.deepEqual(registerListParams({ page: 2, perPage: 25, status: "live" }), {
+    page: 2,
+    per_page: 25,
+    status: "live",
+  });
+  assert.deepEqual(
+    registerListParams({ page: 0, perPage: 500, status: "all", category: "all", search: "  " }),
+    { page: 1, per_page: 100 },
+  );
+  assert.deepEqual(
+    registerListParams({ status: "active", category: "it", search: " laptop " }),
+    { page: 1, per_page: 25, status: "active", category: "it", search: "laptop" },
+  );
+});
+
+test("register export JSON payload yields the data rows", () => {
+  assert.deepEqual(
+    parseRegisterExportJson({ data: [{ id: 1, asset_code: "A-1" }] }).map((row) => row.id),
+    [1],
+  );
+  assert.deepEqual(parseRegisterExportJson({ data: "nope" }), []);
+  assert.deepEqual(parseRegisterExportJson(null), []);
+});
+
+test("asset register loads one server page and links through to a view page", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
   const detail = readFileSync(join(webRoot, "app/(app)/assets/[id]/page.tsx"), "utf8");
-  assert.match(page, /collectPaginatedRows/);
+  assert.match(page, /registerListParams/);
+  assert.match(page, /perPage:\s*DEFAULT_PAGE_SIZE/);
+  assert.doesNotMatch(page, /collectPaginatedRows/);
+  assert.doesNotMatch(page, /slicePage/);
+  assert.match(page, /summary\.(live|pending|active)/);
   assert.match(page, /data-testid=["']asset-register-view["']/);
   assert.match(page, /href=\{`\/assets\/\$\{asset\.id\}`\}/);
   assert.match(detail, /assetsApi\s*\n\s*\.get\(/);
@@ -120,14 +151,15 @@ test("print page walks every register page so Print all is not capped at 100", (
   assert.match(page, /h-12 w-12|12mm/);
 });
 
-test("asset register paginates the visible cards without dropping select-all", () => {
+test("asset register paginates from the API without dropping select-all", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
   assert.match(page, /ListPagination/);
-  assert.match(page, /slicePage/);
+  assert.match(page, /getLastPage/);
   assert.match(page, /DEFAULT_PAGE_SIZE/);
   assert.match(page, /data-testid=["']asset-register-pagination["']/);
   assert.match(page, /printPageHref\(selection\.selectedCount > 0 \? exportIds : \[\],/);
   assert.match(page, /pagedAssets\.map/);
+  assert.match(page, /assetRequestsApi[\s\S]*page:\s*reqPage/);
 });
 
 test("QR ids are chunked so one print does not overflow the batch limit", () => {

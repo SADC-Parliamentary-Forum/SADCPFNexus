@@ -541,6 +541,22 @@ export interface PaginatedResponse<T> {
   total: number;
 }
 
+export interface AssetRegisterSummary {
+  total: number;
+  live: number;
+  pending: number;
+  active: number;
+  retired: number;
+  disposed: number;
+  missing?: number;
+  pending_disposal?: number;
+  categories: string[];
+}
+
+export interface AssetListResponse extends PaginatedResponse<Asset> {
+  summary?: AssetRegisterSummary;
+}
+
 export const adminApi = {
   // Users
   listUsers: (params?: Record<string, string | number>) =>
@@ -1798,7 +1814,7 @@ export interface AssetRequest {
 
 export const assetsApi = {
   list: (params?: { assigned_to?: string; category?: string; status?: string; search?: string; per_page?: number; page?: number }) =>
-    api.get<PaginatedResponse<Asset>>("/assets", { params }),
+    api.get<AssetListResponse>("/assets", { params }),
   get: (id: number) => api.get<Asset>(`/assets/${id}`),
   update: (id: number, data: {
     asset_code: string;

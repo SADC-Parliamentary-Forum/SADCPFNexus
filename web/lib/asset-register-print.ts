@@ -100,6 +100,33 @@ export type RegisterExportFilters = {
   search?: string;
 };
 
+export function registerListParams(input: {
+  page?: number;
+  perPage?: number;
+  status?: string;
+  category?: string;
+  search?: string;
+}): { page: number; per_page: number; status?: string; category?: string; search?: string } {
+  const page = Math.max(1, Math.floor(Number(input.page) || 1));
+  const perPage = Math.min(100, Math.max(1, Math.floor(Number(input.perPage) || 25)));
+  const params: { page: number; per_page: number; status?: string; category?: string; search?: string } = {
+    page,
+    per_page: perPage,
+  };
+  if (input.status && input.status !== "all") params.status = input.status;
+  if (input.category && input.category !== "all") params.category = input.category;
+  const search = input.search?.trim();
+  if (search) params.search = search;
+  return params;
+}
+
+export function parseRegisterExportJson(payload: unknown): Array<{ id?: number; [key: string]: unknown }> {
+  if (!payload || typeof payload !== "object" || !("data" in payload)) return [];
+  const rows = (payload as { data?: unknown }).data;
+  if (!Array.isArray(rows)) return [];
+  return rows.filter((row) => row && typeof row === "object") as Array<{ id?: number; [key: string]: unknown }>;
+}
+
 export function registerExportQuery(
   ids: number[],
   filters?: RegisterExportFilters,
