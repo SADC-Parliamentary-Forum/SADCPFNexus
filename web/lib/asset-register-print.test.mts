@@ -138,6 +138,8 @@ test("asset register loads one server page and links through to a view page", ()
   assert.match(detail, /assetsApi\s*\n\s*\.get\(/);
   assert.match(detail, /formatDateShort/);
   assert.match(detail, /data-testid=["']asset-view-title["']/);
+  assert.doesNotMatch(page, /window\.prompt/);
+  assert.match(page, /RejectCapitalisationModal/);
   assert.match(detail, /href=["']\/assets["']/);
 });
 
@@ -196,10 +198,15 @@ test("print page loads QR codes in batches instead of one request per row", () =
   assert.doesNotMatch(page, /\/assets\/\$\{asset\.id\}\/qr/);
 });
 
-test("reports page downloads the server CSV instead of assembling JSON in the browser", () => {
+test("reports page downloads server CSV or Excel with a status filter", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assets/reports/page.tsx"), "utf8");
   assert.match(page, /assetsApi\.registerExport/);
-  assert.match(page, /format:\s*["']csv["']/);
+  assert.match(page, /download\(["']csv["']\)/);
+  assert.match(page, /download\(["']xlsx["']\)/);
+  assert.match(page, /data-testid=["']asset-reports-download-csv["']/);
+  assert.match(page, /data-testid=["']asset-reports-download-excel["']/);
+  assert.match(page, /data-testid=["']asset-reports-status["']/);
+  assert.match(page, /t\(["']assets\.reports\.title["']\)/);
   assert.doesNotMatch(page, /register-export\?format=json/);
   assert.doesNotMatch(page, /keys\.join\(/);
 });
@@ -255,6 +262,12 @@ test("register print and export copy is translated in EN, FR and PT", () => {
     "assets.register.title",
     "assets.view.fieldCode",
     "assets.view.fieldNotes",
+    "assets.register.inventory",
+    "assets.register.search",
+    "assets.register.bookValue",
+    "assets.register.rejectTitle",
+    "assets.reports.title",
+    "assets.reports.downloadExcel",
   ];
   for (const key of keys) {
     const en = translate("en", key);

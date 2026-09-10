@@ -561,6 +561,72 @@ function AssignModal({
   );
 }
 
+function RejectCapitalisationModal({
+  asset,
+  onClose,
+  onSaved,
+}: {
+  asset: Asset;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { t } = useI18n();
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    if (!reason.trim()) {
+      setError(t("assets.register.rejectReasonRequired"));
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await assetsApi.rejectCapitalisation(asset.id, { reason: reason.trim() });
+      onSaved();
+    } catch {
+      setError(t("assets.register.rejectFailed"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[180] flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white dark:bg-neutral-800 rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4">
+        <h2 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+          {t("assets.register.rejectTitle")}
+        </h2>
+        <p className="text-sm text-neutral-600">{asset.asset_code} — {asset.name}</p>
+        <label className="block text-xs font-semibold text-neutral-600">
+          {t("assets.register.rejectReason")}
+          <textarea
+            className="form-input mt-1 text-sm min-h-[96px]"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            autoFocus
+          />
+        </label>
+        {error && <p className="text-sm text-red-700">{error}</p>}
+        <div className="flex justify-end gap-2">
+          <button type="button" className="btn-secondary px-4 py-2 text-sm" onClick={onClose} disabled={saving}>
+            {t("common.cancel")}
+          </button>
+          <button
+            type="button"
+            className="btn-primary px-4 py-2 text-sm disabled:opacity-50"
+            onClick={() => void handleSave()}
+            disabled={saving}
+          >
+            {saving ? "…" : t("assets.register.reject")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const requestStatusConfig: Record<string, { label: string; cls: string }> = {
   pending:  { label: "Pending",  cls: "badge-warning" },
   approved: { label: "Approved", cls: "badge-success" },
@@ -614,7 +680,7 @@ export default function AssetsPage() {
   const [reqTotal, setReqTotal] = useState(0);
   const [capitaliseAsset, setCapitaliseAsset] = useState<Asset | null>(null);
   const [assignAsset, setAssignAsset] = useState<Asset | null>(null);
-  const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [rejectAsset, setRejectAsset] = useState<Asset | null>(null);
   const [retiringId, setRetiringId] = useState<number | null>(null);
   const [confirmingReturnId, setConfirmingReturnId] = useState<number | null>(null);
 
@@ -656,9 +722,9 @@ export default function AssetsPage() {
         if (payload.summary) setSummary(payload.summary);
         if (page > nextLast) setPage(nextLast);
       })
-      .catch(() => setError("Failed to load assets."))
+      .catch(() => setError(t("assets.register.loadFailed")))
       .finally(() => setLoading(false));
-  }, [page, filterStatus, filterCategory, search]);
+  }, [page, filterStatus, filterCategory, search, t]);
 
   useEffect(() => {
     void loadAssets();
@@ -812,19 +878,8 @@ export default function AssetsPage() {
     disposed: summary.disposed,
   };
 
-  const handleRejectCapitalisation = async (asset: Asset) => {
-    const reason = window.prompt("Reason for rejecting capitalisation:");
-    if (!reason || !reason.trim()) return;
-    setRejectingId(asset.id);
-    setError(null);
-    try {
-      await assetsApi.rejectCapitalisation(asset.id, { reason: reason.trim() });
-      await loadAssets();
-    } catch {
-      setError("Failed to reject capitalisation.");
-    } finally {
-      setRejectingId(null);
-    }
+  const handleRejectCapitalisation = (asset: Asset) => {
+    setRejectAsset(asset);
   };
 
   const handleRetire = async (asset: Asset) => {
@@ -844,7 +899,7 @@ export default function AssetsPage() {
     } catch (e: unknown) {
       const msg =
         (e as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? "Failed to retire asset.";
+        ?? t("assets.register.retireFailed");
       setError(msg);
     } finally {
       setRetiringId(null);
@@ -868,9 +923,9 @@ export default function AssetsPage() {
     <div className="w-full min-w-0 space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-4">
         <ModulePageHeader
-        title="Fixed Asset Register"
+        title="assets.register.title"
         subtitle="Capital assets, movements, and GRN capitalisation queue."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Fixed Asset Register" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("assets.register.title") }]} />}
       />
         <div className="flex gap-2 flex-wrap">
           {(showAddAssetButton || showRequestButton) && (
@@ -982,14 +1037,14 @@ export default function AssetsPage() {
           onClick={() => setView("inventory")}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${view === "inventory" ? "bg-primary text-white" : "text-neutral-600 hover:bg-neutral-100"}`}
         >
-          Inventory
+          {t("assets.register.inventory")}
         </button>
         <button
           type="button"
           onClick={() => setView("my-requests")}
           className={`px-4 py-2 rounded-lg text-sm font-medium ${view === "my-requests" ? "bg-primary text-white" : "text-neutral-600 hover:bg-neutral-100"}`}
         >
-          My Requests ({reqTotal})
+          {t("assets.register.myRequests")} ({reqTotal})
         </button>
       </div>
 
@@ -998,9 +1053,9 @@ export default function AssetsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
             { label: t("assets.register.live"), count: statusCounts.live, icon: "inventory_2", color: "text-primary", bg: "bg-primary/10", status: "live" },
-            { label: "Pending",     count: statusCounts.pending,     icon: "pending_actions", color: "text-amber-600",  bg: "bg-amber-50",   status: "pending" },
-            { label: "Active",      count: statusCounts.active,      icon: "check_circle",    color: "text-green-600",  bg: "bg-green-50",   status: "active" },
-            { label: "Retired",     count: statusCounts.retired,     icon: "archive",         color: "text-neutral-500", bg: "bg-neutral-100", status: "retired" },
+            { label: t("assets.register.pending"), count: statusCounts.pending,     icon: "pending_actions", color: "text-amber-600",  bg: "bg-amber-50",   status: "pending" },
+            { label: t("assets.register.active"),  count: statusCounts.active,      icon: "check_circle",    color: "text-green-600",  bg: "bg-green-50",   status: "active" },
+            { label: t("assets.register.retiredStatus"), count: statusCounts.retired, icon: "archive",         color: "text-neutral-500", bg: "bg-neutral-100", status: "retired" },
             { label: t("assets.register.disposed"), count: statusCounts.disposed, icon: "delete_forever", color: "text-red-700", bg: "bg-red-50", status: "disposed" },
           ].map((s) => (
             <button
@@ -1030,19 +1085,19 @@ export default function AssetsPage() {
       {view === "inventory" && !loading && hasInventory && (
         <div className="card p-3 flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[160px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">Search</label>
+            <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.search")}</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-neutral-400 text-[18px]">search</span>
               <input
                 className="form-input pl-8 text-sm"
-                placeholder="Name or asset code…"
+                placeholder={t("assets.register.searchPlaceholder")}
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
               />
             </div>
           </div>
           <div className="min-w-[130px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
+            <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.status")}</label>
             <select
               className="form-input text-sm"
               value={filterStatus}
@@ -1052,19 +1107,19 @@ export default function AssetsPage() {
               }}
             >
               <option value="live">{t("assets.register.live")}</option>
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending capitalisation</option>
-              <option value="active">Active</option>
-              <option value="service_due">Service Due</option>
-              <option value="loan_out">Loan Out</option>
+              <option value="all">{t("assets.register.allStatuses")}</option>
+              <option value="pending">{t("assets.register.pendingCapitalisation")}</option>
+              <option value="active">{t("assets.register.active")}</option>
+              <option value="service_due">{t("assets.register.serviceDue")}</option>
+              <option value="loan_out">{t("assets.register.loanOut")}</option>
               <option value="pending_disposal">{t("assets.register.pendingDisposal")}</option>
-              <option value="retired">Retired</option>
+              <option value="retired">{t("assets.register.retiredStatus")}</option>
               <option value="disposed">{t("assets.register.disposed")}</option>
             </select>
           </div>
           {categories.length > 0 && (
             <div className="min-w-[130px]">
-              <label className="block text-xs font-semibold text-neutral-600 mb-1">Category</label>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.category")}</label>
               <select
                 className="form-input text-sm"
                 value={filterCategory}
@@ -1073,7 +1128,7 @@ export default function AssetsPage() {
                   setPage(1);
                 }}
               >
-                <option value="all">All Categories</option>
+                <option value="all">{t("assets.register.allCategories")}</option>
                 {categories.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -1085,7 +1140,7 @@ export default function AssetsPage() {
               className="text-xs text-neutral-500 hover:text-neutral-700 flex items-center gap-1 mt-5"
             >
               <span className="material-symbols-outlined text-[15px]">close</span>
-              Clear
+              {t("assets.register.clearFilters")}
             </button>
           )}
         </div>
@@ -1129,8 +1184,8 @@ export default function AssetsPage() {
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
                 <span className="material-symbols-outlined text-4xl text-neutral-300">description</span>
               </div>
-              <p className="mt-4 text-sm font-semibold text-neutral-600">No asset requests yet</p>
-              <p className="text-xs text-neutral-400 mt-1">Submit a request with a justification for managers to review.</p>
+              <p className="mt-4 text-sm font-semibold text-neutral-600">{t("assets.register.emptyRequests")}</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("assets.register.emptyRequestsHint")}</p>
               <Link href="/assets/requests?new=1" className="btn-primary mt-5 inline-flex">
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 Request Asset
@@ -1222,11 +1277,11 @@ export default function AssetsPage() {
                           <p className="text-xs text-neutral-500 mt-1 capitalize">{asset.category}</p>
                           {(asset.current_value != null || asset.value != null) && (
                             <p className="text-xs text-neutral-500 mt-0.5">
-                              Book value: {Number(asset.current_value ?? asset.value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {t("assets.register.bookValue")}: {Number(asset.current_value ?? asset.value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                           )}
                           {asset.age_display && (
-                            <p className="text-xs text-neutral-500 mt-0.5">Age: {asset.age_display}</p>
+                            <p className="text-xs text-neutral-500 mt-0.5">{t("assets.register.age")}: {asset.age_display}</p>
                           )}
                           <p className={`text-xs mt-0.5 ${asset.assigned_user?.name ? "text-neutral-500" : "text-neutral-400"}`}>
                             {asset.assigned_user?.name
@@ -1245,15 +1300,14 @@ export default function AssetsPage() {
                                 onClick={() => setCapitaliseAsset(asset)}
                                 className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-primary text-white hover:opacity-90"
                               >
-                                Capitalise
+                                {t("assets.register.capitalise")}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleRejectCapitalisation(asset)}
-                                disabled={rejectingId === asset.id}
                                 className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
                               >
-                                {rejectingId === asset.id ? "…" : "Reject"}
+                                {t("assets.register.reject")}
                               </button>
                             </>
                             ) : null
@@ -1334,16 +1388,16 @@ export default function AssetsPage() {
           ) : hasInventory ? (
             <div className="card p-10 text-center">
               <span className="material-symbols-outlined text-3xl text-neutral-300">search_off</span>
-              <p className="mt-2 text-sm font-semibold text-neutral-600">No assets match your filters</p>
-              <button type="button" onClick={() => { setSearchInput(""); setSearch(""); setFilterStatus("live"); setFilterCategory("all"); setPage(1); }} className="mt-3 text-xs text-primary hover:underline">Clear filters</button>
+              <p className="mt-2 text-sm font-semibold text-neutral-600">{t("assets.register.emptyFiltered")}</p>
+              <button type="button" onClick={() => { setSearchInput(""); setSearch(""); setFilterStatus("live"); setFilterCategory("all"); setPage(1); }} className="mt-3 text-xs text-primary hover:underline">{t("assets.register.clearFilters")}</button>
             </div>
           ) : (
             <div className="card p-16 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
                 <span className="material-symbols-outlined text-4xl text-neutral-300">inventory_2</span>
               </div>
-              <p className="mt-4 text-sm font-semibold text-neutral-600">No assets in inventory</p>
-              <p className="text-xs text-neutral-400 mt-1">You can still request an asset; managers will process requests.</p>
+              <p className="mt-4 text-sm font-semibold text-neutral-600">{t("assets.register.empty")}</p>
+              <p className="text-xs text-neutral-400 mt-1">{t("assets.register.emptyHint")}</p>
               {showRequestButton && (
                 <Link href="/assets/requests?new=1" className="btn-primary mt-5 inline-flex">
                   <span className="material-symbols-outlined text-[18px]">add</span>
@@ -1372,6 +1426,16 @@ export default function AssetsPage() {
           onSaved={() => {
             void loadAssets();
             setAssignAsset(null);
+          }}
+        />
+      )}
+      {rejectAsset && (
+        <RejectCapitalisationModal
+          asset={rejectAsset}
+          onClose={() => setRejectAsset(null)}
+          onSaved={() => {
+            void loadAssets();
+            setRejectAsset(null);
           }}
         />
       )}
