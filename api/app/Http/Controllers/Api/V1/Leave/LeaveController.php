@@ -464,6 +464,7 @@ class LeaveController extends Controller
             'prepared_on_behalf_of'              => ['nullable', 'integer', 'exists:users,id'],
             'acknowledge_conflicts'              => ['nullable', 'boolean'],
             'conflict_resolution_note'           => ['nullable', 'string', 'max:2000'],
+            'submit'                           => ['nullable', 'boolean'],
         ]);
 
         $actor       = $request->user();
@@ -482,7 +483,11 @@ class LeaveController extends Controller
             $leave->save();
         }
 
-        return response()->json(['message' => 'Leave request created.', 'data' => $leave->fresh(['requester', 'preparedBy', 'preparedOnBehalfOf', 'policyVersion', 'segments.type'])], 201);
+        if ($request->boolean('submit')) {
+            $leave = $this->leaveService->submit($leave, $actor);
+        }
+
+        return response()->json(['message' => 'Leave request created.', 'data' => $leave->fresh(['requester', 'preparedBy', 'policyVersion', 'segments.type'])], 201);
     }
 
     public function update(Request $request, LeaveRequest $leaveRequest): JsonResponse

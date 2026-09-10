@@ -80,11 +80,27 @@ class DelegationService
             ]);
         }
 
+        if ($module === 'leave' && $this->canPrepareLeaveForOthers($actor)) {
+            return null;
+        }
+
         throw ValidationException::withMessages([
             'prepared_on_behalf_of' => [
                 "You do not hold an active delegated authority to {$action} {$module} requests on behalf of {$principal->name}.",
             ],
         ]);
+    }
+
+    public function canPrepareLeaveForOthers(User $actor): bool
+    {
+        return $actor->can('leave.request.create.assigned')
+            || $actor->can('hr.admin')
+            || $actor->hasAnyRole([
+                'HR Manager',
+                'HR Administrator',
+                'HR and Administration Officer',
+                'System Admin',
+            ]);
     }
 
     /**

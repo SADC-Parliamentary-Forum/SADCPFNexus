@@ -2929,6 +2929,8 @@ export type LeaveCreatePayload = Omit<Partial<LeaveRequest>, "segments"> & {
   segments?: LeaveSegmentInput[] | LeaveSegment[];
   lil_linkings?: object[];
   user_id?: number;
+  prepared_on_behalf_of?: number;
+  submit?: boolean;
 };
 
 export const leaveApi = {
@@ -3033,6 +3035,27 @@ export const leaveApi = {
       };
     }>("/leave/import", fd);
   },
+  bulkImport: (data: FormData | {
+    submit?: boolean;
+    rows: Array<{
+      employee_email?: string;
+      employee_name?: string;
+      leave_type?: string;
+      start_date?: string;
+      end_date?: string;
+      reason?: string;
+    }>;
+  }) =>
+    api.post<{
+      message: string;
+      data: {
+        created_count: number;
+        error_count: number;
+        created: LeaveRequest[];
+        errors: Array<{ row: number; message: string }>;
+      };
+    }>("/leave/requests/bulk-import", data),
+  bulkImportTemplateUrl: "/leave/requests/bulk-import/template",
 };
 
 export interface LilAccrual {

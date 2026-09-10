@@ -65,11 +65,12 @@ function UserAutocomplete({
 
   return (
     <div ref={ref} className="relative">
-      <label className="block text-xs font-semibold text-neutral-700 mb-1">{label}</label>
+      <label htmlFor="hr-leave-employee" className="block text-xs font-semibold text-neutral-700 mb-1">{label}</label>
       <input
+        id="hr-leave-employee"
         type="text"
         className="form-input w-full"
-        placeholder="Type name to search…"
+        placeholder="Search by full name or email"
         value={query}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); onSelect(null); }}
         onFocus={() => setOpen(true)}
@@ -137,6 +138,7 @@ export default function HRLeavePage() {
   const [newReason, setNewReason] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
@@ -229,8 +231,9 @@ export default function HRLeavePage() {
         start_date: newStartDate,
         end_date: newEndDate,
         reason: newReason || undefined,
-        // Pass employee info via a workaround — the API might support user_id for HR-created
-      } as Partial<LeaveRequest> & { user_id?: number });
+        prepared_on_behalf_of: newEmployee.id,
+        submit: true,
+      });
       setShowNew(false);
       setNewEmployee(null); setNewLeaveType("annual"); setNewStartDate(""); setNewEndDate(""); setNewReason("");
       success("Leave request created.");
@@ -238,6 +241,28 @@ export default function HRLeavePage() {
     } catch (err: unknown) {
       setCreateError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Failed to create leave request.");
     } finally { setCreating(false); }
+  };
+
+  const handleBulkImport = async (file: File) => {
+    setBulkBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("submit", "1");
+      const res = await leaveApi.bulkImport(fd);
+      const created = res.data.data.created_count;
+      const errors = res.data.data.error_count;
+      if (errors > 0) {
+        info("Bulk upload finished", `${created} created, ${errors} row error(s).`);
+      } else {
+        success("Leave CSV uploaded.", `${created} leave request(s) created.`);
+      }
+      load();
+    } catch {
+      showErrorToast("Failed to upload leave CSV.");
+    } finally {
+      setBulkBusy(false);
+    }
   };
 
   const statuses = ["All", "Submitted", "Approved", "Rejected", "Draft"];
@@ -279,6 +304,32 @@ export default function HRLeavePage() {
               <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload_file</span>
               {t("leave.import.cta")}
             </Link>
+          )}
+          {canImport && (
+            <div className="flex flex-wrap items-center gap-2">
+              <label htmlFor="hr-leave-bulk-file" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1 cursor-pointer">
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload</span>
+                Upload CSV
+              </label>
+              <input
+                id="hr-leave-bulk-file"
+                type="file"
+                accept=".csv,text/csv"
+                className="sr-only"
+                disabled={bulkBusy}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void handleBulkImport(file);
+                }}
+              />
+              <a
+                href="/api/v1/leave/requests/bulk-import/template"
+                className="text-sm text-neutral-600 hover:text-neutral-900"
+              >
+                CSV template (employee_email)
+              </a>
+            </div>
           )}
           <button
             type="button"
@@ -445,24 +496,24 @@ export default function HRLeavePage() {
               )}
               <UserAutocomplete label="Employee *" value={newEmployee} onSelect={setNewEmployee} />
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Leave type *</label>
-                <select className="form-input w-full" value={newLeaveType} onChange={(e) => setNewLeaveType(e.target.value)} required>
+                <label htmlFor="hr-leave-type" className="block text-xs font-semibold text-neutral-700 mb-1">Leave type *</label>
+                <select id="hr-leave-type" className="form-input w-full" value={newLeaveType} onChange={(e) => setNewLeaveType(e.target.value)} required>
                   {Object.entries(LEAVE_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">From *</label>
-                  <input type="date" className="form-input w-full" value={newStartDate} onChange={(e) => setNewStartDate(e.target.value)} required />
+                  <label htmlFor="hr-leave-from" className="block text-xs font-semibold text-neutral-700 mb-1">From *</label>
+                  <input id="hr-leave-from" type="date" className="form-input w-full" value={newStartDate} onChange={(e) => setNewStartDate(e.target.value)} required />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">To *</label>
-                  <input type="date" className="form-input w-full" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} required />
+                  <label htmlFor="hr-leave-to" className="block text-xs font-semibold text-neutral-700 mb-1">To *</label>
+                  <input id="hr-leave-to" type="date" className="form-input w-full" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} required />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Reason</label>
-                <textarea rows={2} className="form-input resize-none" placeholder="Optional reason…" value={newReason} onChange={(e) => setNewReason(e.target.value)} />
+                <label htmlFor="hr-leave-reason" className="block text-xs font-semibold text-neutral-700 mb-1">Reason</label>
+                <textarea id="hr-leave-reason" rows={2} className="form-input resize-none" placeholder="Optional reason…" value={newReason} onChange={(e) => setNewReason(e.target.value)} />
               </div>
               <div className="flex justify-end gap-3 pt-1">
                 <button type="button" onClick={() => setShowNew(false)} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
@@ -491,8 +542,9 @@ export default function HRLeavePage() {
             <div className="p-6 space-y-4">
               <p className="text-sm text-neutral-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">{overrideBalanceMsg}</p>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Override justification <span className="text-red-500">*</span></label>
+                <label htmlFor="hr-leave-override-reason" className="block text-xs font-semibold text-neutral-700 mb-1.5">Override justification <span className="text-red-500">*</span></label>
                 <textarea
+                  id="hr-leave-override-reason"
                   rows={3}
                   className="form-input resize-none"
                   placeholder="Provide a written justification for approving despite insufficient balance…"
@@ -528,8 +580,9 @@ export default function HRLeavePage() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for rejection <span className="text-red-500">*</span></label>
+                <label htmlFor="hr-leave-reject-reason" className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for rejection <span className="text-red-500">*</span></label>
                 <textarea
+                  id="hr-leave-reject-reason"
                   rows={3}
                   className="form-input resize-none"
                   placeholder="Provide a clear reason for the staff member…"
