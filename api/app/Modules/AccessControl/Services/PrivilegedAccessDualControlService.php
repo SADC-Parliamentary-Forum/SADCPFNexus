@@ -298,11 +298,7 @@ class PrivilegedAccessDualControlService
         ]);
 
         if (! $privileged) {
-            $roleName = $version->catalogue?->name;
-            if ($roleName) {
-                $target->assignRole($roleName);
-            }
-            app(AccessCacheInvalidator::class)->invalidate($target);
+            $this->applyCatalogueRoleToUser($target, $version);
         }
 
         AuditLog::record($privileged ? 'access.role_assignment_pending' : 'access.role_assigned', [
@@ -344,11 +340,10 @@ class PrivilegedAccessDualControlService
         ]);
 
         $target = User::find($assignment->user_id);
-        $roleName = $assignment->roleVersion?->catalogue?->name
-            ?? AccessRoleVersion::with('catalogue')->find($assignment->role_version_id)?->catalogue?->name;
-        if ($target && $roleName) {
-            $target->assignRole($roleName);
-            app(AccessCacheInvalidator::class)->invalidate($target);
+        $version = $assignment->roleVersion
+            ?? AccessRoleVersion::with('catalogue')->find($assignment->role_version_id);
+        if ($target && $version) {
+            $this->applyCatalogueRoleToUser($target, $version);
         }
 
         AuditLog::record('access.role_assigned', [
@@ -365,5 +360,19 @@ class PrivilegedAccessDualControlService
         ]);
 
         return $assignment->fresh();
+    }
+
+    private function applyCatalogueRoleToUser(User $target, AccessRoleVersion $version): void
+    {
+        $version->loadMissing('catalogue');
+        $roleName = $version->catalogue?->name;
+        if (! $roleName) {
+            return;
+        }
+
+        $permissions = is_array($version->permissions) ? $version->permissions : [];
+        app(CanonicalRoleManager::class)->ensureNamedRole($roleName, $permissions);
+        $target->assignRole($roleName);
+        app(AccessCacheInvalidator::class)->invalidate($target);
     }
 }

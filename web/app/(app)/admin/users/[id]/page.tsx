@@ -16,7 +16,11 @@ import {
   type Position,
   type UserDocument,
   type AccessPermissionDefinition,
+  type AccessCatalogueRole,
+  type AccessCatalogueAssignment,
+  type AccessRoleSyncRequest,
 } from "@/lib/api";
+import { getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { cn } from "@/lib/utils";
@@ -219,6 +223,12 @@ export default function UserEditPage() {
   const [initialRoles, setInitialRoles] = useState<string[]>([]);
   const [effectivePermissions, setEffectivePermissions] = useState<string[]>([]);
   const [permissionRegistry, setPermissionRegistry] = useState<Record<string, AccessPermissionDefinition>>({});
+  const [catalogueRoles, setCatalogueRoles] = useState<AccessCatalogueRole[]>([]);
+  const [roleAssignments, setRoleAssignments] = useState<AccessCatalogueAssignment[]>([]);
+  const [pendingRoleSyncs, setPendingRoleSyncs] = useState<AccessRoleSyncRequest[]>([]);
+  const [catalogueReason, setCatalogueReason] = useState("Assigned from user security tab");
+  const [catalogueBusy, setCatalogueBusy] = useState(false);
+  const viewerId = getStoredUser()?.id ?? null;
   const [positions, setPositions] = useState<Position[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -233,7 +243,7 @@ export default function UserEditPage() {
       try {
         // Use allSettled so a 403 on secondary data (portfolios/positions)
         // doesn't prevent the user record from loading.
-        const [userResult, deptsResult, portsResult, rolesResult, posResult, profileResult, registryResult] = await Promise.allSettled([
+        const [userResult, deptsResult, portsResult, rolesResult, posResult, profileResult, registryResult, catalogueResult] = await Promise.allSettled([
           adminApi.getUser(Number(id)),
           adminApi.listDepartments(),
           adminApi.listPortfolios(),
@@ -241,6 +251,7 @@ export default function UserEditPage() {
           positionsApi.list({ all: true }),
           accessApi.userProfile(Number(id)),
           accessApi.registry(),
+          accessApi.listCatalogueRoles(),
         ]);
 
         // User is the critical resource — if it fails with 403, show Access Denied
@@ -267,7 +278,13 @@ export default function UserEditPage() {
           setAvailableRoles(rolesResult.value.data?.roles ?? []);
         }
         if (profileResult.status === "fulfilled") {
-          setEffectivePermissions(profileResult.value.data.data.effective_permissions ?? []);
+          const profile = profileResult.value.data.data;
+          setEffectivePermissions(profile.effective_permissions ?? []);
+          setRoleAssignments(profile.role_assignments ?? []);
+          setPendingRoleSyncs(profile.pending_role_sync_requests ?? []);
+        }
+        if (catalogueResult.status === "fulfilled") {
+          setCatalogueRoles(catalogueResult.value.data.data ?? []);
         }
         if (registryResult.status === "fulfilled") {
           setPermissionRegistry(registryResult.value.data.data.permissions ?? {});
@@ -391,8 +408,15 @@ export default function UserEditPage() {
         mfa_enabled: form.mfa_enabled,
       } as any);
       if (JSON.stringify([...assignedRoles].sort()) !== JSON.stringify([...initialRoles].sort())) {
-        await adminApi.updateUserRoles(Number(id), assignedRoles);
+        const roleRes = await adminApi.updateUserRoles(Number(id), assignedRoles);
         setInitialRoles([...assignedRoles]);
+        if (roleRes.status === 202) {
+          success("Pending approval", "Built-in role change is waiting for a second administrator.");
+          const profile = await accessApi.userProfile(Number(id));
+          setPendingRoleSyncs(profile.data.data.pending_role_sync_requests ?? []);
+          setSaving(false);
+          return;
+        }
       }
       success("Success", "User updated successfully.");
       router.refresh();
@@ -400,6 +424,67 @@ export default function UserEditPage() {
       toastError("Update Failed", "Could not update user details.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const reloadAccessProfile = async () => {
+    const profile = await accessApi.userProfile(Number(id));
+    const data = profile.data.data;
+    setEffectivePermissions(data.effective_permissions ?? []);
+    setRoleAssignments(data.role_assignments ?? []);
+    setPendingRoleSyncs(data.pending_role_sync_requests ?? []);
+  };
+
+  const catalogueError = (err: unknown, fallback: string) => {
+    const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+    return ax.response?.data?.message
+      ?? (ax.response?.data?.errors && Object.values(ax.response.data.errors).flat()[0])
+      ?? fallback;
+  };
+
+  const handleAssignCatalogue = async (role: AccessCatalogueRole) => {
+    const versionId = role.current_version?.id;
+    if (!versionId) {
+      toastError("Unavailable", `${role.name} has no published version to assign.`);
+      return;
+    }
+    setCatalogueBusy(true);
+    try {
+      await accessApi.assignRoleVersion(Number(id), versionId, {
+        reason: catalogueReason.trim() || "Assigned from user security tab",
+      });
+      success("Assigned", `${role.name} was submitted. High-risk roles stay pending until a second administrator approves.`);
+      await reloadAccessProfile();
+    } catch (err) {
+      toastError("Assignment failed", catalogueError(err, "Could not assign this catalogue role."));
+    } finally {
+      setCatalogueBusy(false);
+    }
+  };
+
+  const handleApproveCatalogue = async (assignmentId: number) => {
+    setCatalogueBusy(true);
+    try {
+      await accessApi.approveRoleAssignment(assignmentId);
+      success("Approved", "Catalogue role assignment is now active.");
+      await reloadAccessProfile();
+    } catch (err) {
+      toastError("Approval failed", catalogueError(err, "A different administrator must approve this assignment."));
+    } finally {
+      setCatalogueBusy(false);
+    }
+  };
+
+  const handleApproveRoleSync = async (syncId: number) => {
+    setCatalogueBusy(true);
+    try {
+      await adminApi.approveRoleSync(syncId);
+      success("Approved", "Built-in role change is now active.");
+      await reloadAccessProfile();
+    } catch (err) {
+      toastError("Approval failed", catalogueError(err, "A different administrator must approve this role change."));
+    } finally {
+      setCatalogueBusy(false);
     }
   };
 
@@ -754,6 +839,141 @@ export default function UserEditPage() {
                       ))}
                     </div>
                     <p className="text-xs text-neutral-500">Selected roles: {assignedRoles.length}. Save Changes applies the role set and revokes stale sessions so access changes take effect on the next login.</p>
+                  </div>
+                </section>
+
+                {/* Published catalogue roles (e.g. Unaro) */}
+                <section className="pt-8 border-t border-neutral-100">
+                  <h3 className="text-lg font-bold text-neutral-900 mb-6 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">workspace_premium</span>
+                    Published catalogue roles
+                  </h3>
+                  <div className="p-6 rounded-2xl bg-neutral-50 border border-neutral-200 space-y-4">
+                    <p className="text-sm text-neutral-600 leading-relaxed">
+                      Tenant catalogue roles such as Unaro live here, not in the system role list above. Medium-risk versions apply immediately; high-risk versions wait for a second administrator.
+                    </p>
+                    <div className="space-y-2">
+                      <label htmlFor="user-catalogue-role-reason" className="text-sm font-bold text-neutral-700 ml-1">
+                        Assignment reason
+                      </label>
+                      <input
+                        id="user-catalogue-role-reason"
+                        type="text"
+                        value={catalogueReason}
+                        onChange={(e) => setCatalogueReason(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      {catalogueRoles
+                        .filter(
+                          (role) =>
+                            role.status === "active" &&
+                            role.current_version &&
+                            !availableRoles.some((sys) => sys.name === role.name),
+                        )
+                        .map((role) => {
+                          const version = role.current_version!;
+                          const assignment = roleAssignments.find(
+                            (item) =>
+                              item.role_version?.catalogue?.id === role.id &&
+                              (item.status === "active" || item.status === "pending_approval"),
+                          );
+                          return (
+                            <div
+                              key={role.id}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-white p-4"
+                            >
+                              <div>
+                                <p className="text-sm font-bold text-neutral-900">{role.name}</p>
+                                <p className="text-xs text-neutral-500">
+                                  {assignment
+                                    ? `Status: ${assignment.status.replaceAll("_", " ")}`
+                                    : `Version ${version.version} · ${role.risk_level ?? "medium"} risk`}
+                                </p>
+                              </div>
+                              {!assignment ? (
+                                <button
+                                  type="button"
+                                  disabled={catalogueBusy}
+                                  onClick={() => handleAssignCatalogue(role)}
+                                  className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50"
+                                >
+                                  {catalogueBusy ? "Assigning…" : "Assign"}
+                                </button>
+                              ) : (
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                                  {assignment.status === "active" ? "Assigned" : "Pending approval"}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                    {(roleAssignments.some((item) => item.status === "pending_approval") ||
+                      pendingRoleSyncs.length > 0) && (
+                      <div className="space-y-3 pt-2">
+                        <h4 className="text-sm font-bold text-neutral-900">Pending second-administrator approval</h4>
+                        {roleAssignments
+                          .filter((item) => item.status === "pending_approval")
+                          .map((item) => {
+                            const canApprove = viewerId != null && viewerId !== item.requested_by;
+                            return (
+                              <div
+                                key={`cat-${item.id}`}
+                                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4"
+                              >
+                                <div>
+                                  <p className="text-sm font-bold text-neutral-900">
+                                    {item.role_version?.catalogue?.name ?? "Catalogue role"}
+                                  </p>
+                                  <p className="text-xs text-neutral-500">Requested by user #{item.requested_by}</p>
+                                </div>
+                                {canApprove ? (
+                                  <button
+                                    type="button"
+                                    disabled={catalogueBusy}
+                                    onClick={() => handleApproveCatalogue(item.id)}
+                                    className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50"
+                                  >
+                                    {catalogueBusy ? "Approving…" : "Approve"}
+                                  </button>
+                                ) : (
+                                  <p className="text-sm text-neutral-500">Waiting for second administrator</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        {pendingRoleSyncs.map((item) => {
+                          const canApprove = viewerId != null && viewerId !== item.requested_by;
+                          return (
+                            <div
+                              key={`sync-${item.id}`}
+                              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4"
+                            >
+                              <div>
+                                <p className="text-sm font-bold text-neutral-900">
+                                  System role change{item.roles?.length ? `: ${item.roles.join(", ")}` : ""}
+                                </p>
+                                <p className="text-xs text-neutral-500">Requested by user #{item.requested_by}</p>
+                              </div>
+                              {canApprove ? (
+                                <button
+                                  type="button"
+                                  disabled={catalogueBusy}
+                                  onClick={() => handleApproveRoleSync(item.id)}
+                                  className="rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50"
+                                >
+                                  {catalogueBusy ? "Approving…" : "Approve"}
+                                </button>
+                              ) : (
+                                <p className="text-sm text-neutral-500">Waiting for second administrator</p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </section>
 
