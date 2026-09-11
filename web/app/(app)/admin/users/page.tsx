@@ -399,7 +399,7 @@ export default function AdminUsersPage() {
                             <div className="flex items-center justify-end gap-3">
                               <Link
                                 href={`/admin/users/${user.id}`}
-                                className="text-xs font-semibold text-primary hover:underline"
+                                className="btn-secondary text-xs py-1 px-2"
                               >
                                 Edit
                               </Link>
@@ -409,7 +409,7 @@ export default function AdminUsersPage() {
                                   onClick={() => void handleDeactivate(user)}
                                   disabled={actionLoading === user.id || !gate.ok}
                                   title={!gate.ok ? gate.reason : undefined}
-                                  className="text-xs font-medium text-red-500 hover:underline disabled:opacity-50 disabled:no-underline"
+                                  className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50"
                                 >
                                   {actionLoading === user.id ? "…" : "Deactivate"}
                                 </button>
@@ -418,7 +418,7 @@ export default function AdminUsersPage() {
                                   type="button"
                                   onClick={() => void handleReactivate(user)}
                                   disabled={actionLoading === user.id}
-                                  className="text-xs font-medium text-green-600 hover:underline disabled:opacity-50"
+                                  className="btn-secondary text-xs py-1 px-2 text-green-700 disabled:opacity-50"
                                 >
                                   {actionLoading === user.id ? "…" : "Reactivate"}
                                 </button>

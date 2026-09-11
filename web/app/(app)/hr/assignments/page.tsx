@@ -291,7 +291,7 @@ export default function AssignmentsPage() {
                       </td>
                       <td>
                         <button
-                          className="text-primary hover:underline text-sm font-medium"
+                          className="btn-secondary text-sm py-1 px-2"
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(`/hr/assignments/${a.id}`);

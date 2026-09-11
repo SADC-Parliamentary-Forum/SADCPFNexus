@@ -444,7 +444,7 @@ function LeaveCreatePageInner() {
             );
           })}
 
-          <button type="button" onClick={addSegment} className="text-sm font-semibold text-primary hover:underline">
+          <button type="button" onClick={addSegment} className="btn-secondary text-sm py-1 px-2">
             Add another period
           </button>
 
@@ -511,7 +511,7 @@ function LeaveCreatePageInner() {
         ) : (
           <button
             type="button"
-            className="mt-3 text-sm font-semibold text-primary hover:underline"
+            className="btn-secondary text-sm py-1 px-2 mt-3"
             onClick={() => setShowAwayDetails(true)}
           >
             Add contact and handover

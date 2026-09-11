@@ -68,7 +68,7 @@ function ModuleBarChart({ modules }: { modules: { module: string; label: string;
               <span className={`material-symbols-outlined text-[16px] ${colors.iconColor}`}>{colors.icon}</span>
             </div>
             {/* Module label */}
-            <div className={`w-24 text-sm font-medium shrink-0 capitalize truncate ${url ? "text-primary group-hover:underline" : "text-neutral-700 dark:text-neutral-300"}`}>
+            <div className={`w-24 text-sm font-medium shrink-0 capitalize truncate ${url ? "text-primary " : "text-neutral-700 dark:text-neutral-300"}`}>
               {mod.label || mod.module}
             </div>
             {/* Bar track */}
@@ -224,7 +224,7 @@ export default function AnalyticsPage() {
               <h3 className="font-semibold text-neutral-900 dark:text-neutral-100">Submissions by Month</h3>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">Requests across travel, leave & imprest modules.</p>
             </div>
-            <Link href="/reports" className="text-primary hover:underline text-sm font-medium flex items-center gap-1">
+            <Link href="/reports" className="btn-secondary text-sm py-1 px-2 inline-flex items-center gap-1">
               Full Report <span className="material-symbols-outlined text-base">arrow_forward</span>
             </Link>
           </div>
@@ -360,7 +360,7 @@ export default function AnalyticsPage() {
               </h3>
               <p className="text-sm text-neutral-500 dark:text-neutral-400">Latest system events from the audit log.</p>
             </div>
-            <Link href="/admin/audit-trail" className="text-sm text-primary hover:underline">View All</Link>
+            <Link href="/admin/audit-trail" className="btn-secondary text-sm py-1 px-2">View All</Link>
           </div>
           {loading ? (
             <div className="space-y-3 animate-pulse">

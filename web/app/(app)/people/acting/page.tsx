@@ -193,7 +193,7 @@ export default function Page() {
                     <td>{labelledObjectCell(r.end_at)}</td>
                     <td>
                       {r.status !== "approved" && r.status !== "active" && (
-                        <button type="button" className="text-xs text-emerald-700 hover:underline" onClick={() => approve.mutate(Number(r.id))} disabled={approve.isPending}>
+                        <button type="button" className="btn-secondary text-xs py-1 px-2 text-emerald-700" onClick={() => approve.mutate(Number(r.id))} disabled={approve.isPending}>
                           Approve
                         </button>
                       )}

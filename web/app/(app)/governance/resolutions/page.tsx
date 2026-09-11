@@ -343,7 +343,7 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
                         </button>
                       </div>
                     ) : (
-                      <label className="flex-1 flex items-center gap-1.5 cursor-pointer text-xs text-primary hover:underline">
+                      <label className="flex-1 flex items-center gap-1.5 cursor-pointer text-xs text-primary">
                         <span className="material-symbols-outlined text-[15px]">upload_file</span>
                         Choose file…
                         <input type="file" accept=".pdf,.doc,.docx,.odt" className="sr-only"
@@ -1838,7 +1838,7 @@ function ActionItemCard({ item, meetingId, onToggleDone, onDelete, onAssign }: {
           </span>
           {item.assignment_id && (
             <a href={`/assignments/${item.assignment_id}`}
-              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+              className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
               <span className="material-symbols-outlined text-[12px]">link</span>
               {item.assignment?.reference_number ?? "Assignment"}
             </a>

@@ -157,7 +157,7 @@ export default function PlatformAuditTrailAdminPage() {
                     {e.occurred_at ? formatDateShort(e.occurred_at) : "—"}
                   </td>
                   <td>
-                    <Link href={`/admin/audit-trail/events?id=${e.uuid}`} className="font-medium text-primary hover:underline">
+                    <Link href={`/admin/audit-trail/events?id=${e.uuid}`} className="font-medium text-primary">
                       {e.event_key}
                     </Link>
                     <div className="text-[11px] text-neutral-400">{e.category}</div>

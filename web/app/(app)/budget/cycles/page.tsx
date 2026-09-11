@@ -123,7 +123,7 @@ export default function BudgetCyclesPage() {
                       : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link href={`/budget/cycles/${c.id}`} className="text-[var(--primary)] hover:underline">
+                    <Link href={`/budget/cycles/${c.id}`} className="font-medium text-[var(--primary)]">
                       Open
                     </Link>
                   </td>

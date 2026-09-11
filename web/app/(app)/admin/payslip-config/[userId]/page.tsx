@@ -227,7 +227,7 @@ export default function PayslipConfigPage() {
               <tr>
                 <td colSpan={7} className="text-center py-12">
                   <p className="text-sm text-neutral-400">No lines configured yet.</p>
-                  <button onClick={handleGenerateDefaults} className="text-sm text-primary hover:underline mt-2">Generate defaults from grade band</button>
+                  <button onClick={handleGenerateDefaults} className="btn-secondary text-sm py-1 px-2 mt-2">Generate defaults from grade band</button>
                 </td>
               </tr>
             ) : configs.map((cfg) => {
@@ -286,17 +286,17 @@ export default function PayslipConfigPage() {
                     <div className="flex items-center gap-2">
                       {isEditing ? (
                         <>
-                          <button onClick={() => saveInline(cfg.id)} disabled={saving[cfg.id]} className="text-xs text-green-600 font-semibold hover:underline disabled:opacity-50">
+                          <button onClick={() => saveInline(cfg.id)} disabled={saving[cfg.id]} className="btn-secondary text-xs py-1 px-2 text-green-700 disabled:opacity-50">
                             {saving[cfg.id] ? "…" : "Save"}
                           </button>
-                          <button onClick={() => setEditInline((p) => { const n = { ...p }; delete n[cfg.id]; return n; })} className="text-xs text-neutral-400 hover:underline">
+                          <button onClick={() => setEditInline((p) => { const n = { ...p }; delete n[cfg.id]; return n; })} className="btn-secondary text-xs py-1 px-2">
                             Cancel
                           </button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => setEditInline((p) => ({ ...p, [cfg.id]: {} }))} className="text-xs text-primary hover:underline">Edit</button>
-                          <button onClick={() => handleRemove(cfg.id)} className="text-xs text-red-500 hover:underline">Remove</button>
+                          <button onClick={() => setEditInline((p) => ({ ...p, [cfg.id]: {} }))} className="btn-secondary text-xs py-1 px-2">Edit</button>
+                          <button onClick={() => handleRemove(cfg.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Remove</button>
                         </>
                       )}
                     </div>

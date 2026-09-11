@@ -98,8 +98,8 @@ export default function TimesheetPayrollExportPage() {
       />
 
       <div className="flex flex-wrap gap-3 text-sm">
-        <Link href="/hr/timesheets/team" className="text-[var(--brand)] hover:underline">Team approval</Link>
-        <Link href="/hr/timesheets/overtime" className="text-[var(--brand)] hover:underline">Overtime queue</Link>
+        <Link href="/hr/timesheets/team" className="btn-secondary text-xs py-1 px-2">Team approval</Link>
+        <Link href="/hr/timesheets/overtime" className="btn-secondary text-xs py-1 px-2">Overtime queue</Link>
       </div>
 
       <div className="space-y-3 rounded-lg border border-[var(--border)] p-4" data-testid="payroll-operator-stage">
@@ -151,8 +151,8 @@ export default function TimesheetPayrollExportPage() {
                   <td className="px-3 py-2">{b.status ?? "—"}</td>
                   <td className="px-3 py-2">{b.created_at ? new Date(b.created_at).toLocaleString() : "—"}</td>
                   <td className="space-x-2 px-3 py-2">
-                    <button type="button" className="text-[var(--brand)] hover:underline" onClick={() => void download(b, "csv")}>CSV</button>
-                    <button type="button" className="text-[var(--brand)] hover:underline" onClick={() => void download(b, "xlsx")}>XLSX</button>
+                    <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => void download(b, "csv")}>CSV</button>
+                    <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => void download(b, "xlsx")}>XLSX</button>
                   </td>
                 </tr>
               ))}

@@ -198,7 +198,7 @@ export default function TendersPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={`/procurement/tenders/${t.id}`} className="font-semibold text-primary hover:underline">
+                    <Link href={`/procurement/tenders/${t.id}`} className="font-semibold text-primary">
                       {t.reference_number}
                     </Link>
                   </td>

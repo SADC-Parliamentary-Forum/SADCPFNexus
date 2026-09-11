@@ -194,7 +194,7 @@ export default function FinancePage() {
           <div className="px-5 py-10 text-center">
             <span className="material-symbols-outlined text-4xl text-neutral-200 dark:text-neutral-600">pie_chart</span>
             <p className="mt-3 text-sm text-neutral-400 dark:text-neutral-500">No budgets configured yet.</p>
-            <Link href="/finance/budget/upload" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+            <Link href="/finance/budget/upload" className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1 mt-3">
               <span className="material-symbols-outlined text-[14px]">upload_file</span>
               Upload a budget
             </Link>
@@ -256,7 +256,7 @@ export default function FinancePage() {
                         toastError("Payslip document is not available yet.");
                       }
                     }}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[14px]">download</span>
                     Download

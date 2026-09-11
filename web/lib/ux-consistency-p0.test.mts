@@ -282,6 +282,20 @@ test("weekly-summaries, SRHR lists, SAAM, profile, M&E, and risk hubs drop under
   assert.doesNotMatch(header, /hover:underline/);
 });
 
+test("operational app pages keep hover:underline only on mailto and website links", () => {
+  const offenders: string[] = [];
+  for (const fullPath of walkTsx(join(webRoot, "app", "(app)"))) {
+    const source = readFileSync(fullPath, "utf8");
+    const lines = source.split("\n");
+    for (const [i, line] of lines.entries()) {
+      if (!line.includes("hover:underline")) continue;
+      if (line.includes("mailto:") || line.includes("website") || line.includes("target=\"_blank\"")) continue;
+      offenders.push(`${fullPath.replace(webRoot, "")}:${i + 1}`);
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+
 test("operational mobile detail screens use StitchScreen chrome", () => {
   const mobileRoot = join(webRoot, "..", "mobile", "lib", "features");
   const screens = [
@@ -322,6 +336,8 @@ test("operational mobile detail screens use StitchScreen chrome", () => {
     "procurement/presentation/screens/procurement_rfq_screen.dart",
     "support/presentation/screens/user_support_health_screen.dart",
     "timesheets/presentation/screens/timesheet_weekly_screen.dart",
+    "pif/presentation/screens/pif_budget_screen.dart",
+    "profile/presentation/screens/user_profile_security_screen.dart",
   ];
   for (const rel of screens) {
     const source = readFileSync(join(mobileRoot, rel), "utf8");

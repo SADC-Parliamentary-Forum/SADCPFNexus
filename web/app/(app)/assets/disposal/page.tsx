@@ -242,7 +242,7 @@ function AssetDisposalPageInner() {
               {rows.map((d) => (
                 <tr key={d.id} className={selected?.id === d.id ? "bg-neutral-50" : undefined}>
                   <td>
-                    <button type="button" className="text-primary hover:underline" onClick={() => setSelected(d)}>
+                    <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => setSelected(d)}>
                       {d.reference}
                     </button>
                   </td>

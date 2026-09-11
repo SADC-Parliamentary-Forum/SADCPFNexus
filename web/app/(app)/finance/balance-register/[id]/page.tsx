@@ -430,7 +430,7 @@ export default function RegisterDetailPage() {
                     <td>
                       {t.verification_status === "pending" && (
                         <Link href={`/finance/balance-register/${register.id}/verify?txn=${t.id}`}
-                          className="text-xs text-primary hover:underline font-medium">
+                          className="btn-secondary text-xs py-1 px-2">
                           Verify
                         </Link>
                       )}
@@ -546,7 +546,7 @@ export default function RegisterDetailPage() {
           <p className="text-sm text-neutral-500 text-center py-8">
             Full audit trail available in{" "}
             <Link href={`/analytics/ledger?auditable_type=App\\Models\\BalanceRegister&auditable_id=${register.id}`}
-              className="text-primary hover:underline">Analytics → Audit Integrity Ledger</Link>.
+              className="btn-secondary text-xs py-1 px-2">Analytics → Audit Integrity Ledger</Link>.
           </p>
         </div>
       )}

@@ -461,7 +461,7 @@ export default function ImprestPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <Link
                           href={"/imprest/" + req.id}
-                          className="text-xs font-medium text-primary hover:underline"
+                          className="btn-secondary text-xs py-1 px-2"
                         >
                           View
                         </Link>
@@ -469,7 +469,7 @@ export default function ImprestPage() {
                           <>
                             <Link
                               href={"/imprest/create?edit=" + req.id}
-                              className="text-xs font-medium text-neutral-600 hover:underline"
+                              className="btn-secondary text-xs py-1 px-2"
                             >
                               Edit
                             </Link>
@@ -477,7 +477,7 @@ export default function ImprestPage() {
                               type="button"
                               disabled={busy}
                               onClick={() => void handleDelete(req)}
-                              className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                              className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50"
                             >
                               Delete
                             </button>
@@ -488,7 +488,7 @@ export default function ImprestPage() {
                             type="button"
                             disabled={busy}
                             onClick={() => void handleWithdraw(req)}
-                            className="text-xs font-medium text-amber-700 hover:underline disabled:opacity-50"
+                            className="btn-secondary text-xs py-1 px-2 text-amber-700 disabled:opacity-50"
                           >
                             Withdraw
                           </button>
@@ -496,7 +496,7 @@ export default function ImprestPage() {
                         {needsRetire && (
                           <Link
                             href={"/imprest/" + req.id + "/liquidate"}
-                            className="text-xs font-medium text-amber-600 hover:underline"
+                            className="btn-secondary text-xs py-1 px-2"
                           >
                             Retire
                           </Link>

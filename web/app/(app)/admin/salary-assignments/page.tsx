@@ -207,8 +207,8 @@ export default function SalaryAssignmentsPage() {
                 <td className="text-sm text-neutral-500">{a.effective_to ? formatDate(a.effective_to) : "Open"}</td>
                 <td>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => openEdit(a)} className="text-xs text-primary hover:underline">Edit</button>
-                    <button onClick={() => handleRemove(a.id)} className="text-xs text-red-500 hover:underline">Remove</button>
+                    <button onClick={() => openEdit(a)} className="btn-secondary text-xs py-1 px-2">Edit</button>
+                    <button onClick={() => handleRemove(a.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Remove</button>
                   </div>
                 </td>
               </tr>

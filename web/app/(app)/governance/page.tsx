@@ -141,7 +141,7 @@ export default function MeetingsMinutesPage() {
                       )}
                     </td>
                     <td className="text-right">
-                      <button className="text-primary text-sm hover:underline">View</button>
+                      <button className="btn-secondary text-sm py-1 px-2">View</button>
                     </td>
                   </tr>
                 );

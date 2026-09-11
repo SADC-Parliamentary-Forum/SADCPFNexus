@@ -220,12 +220,12 @@ export default function Page() {
                     <td>{labelledObjectCell(r.end_at)}</td>
                     <td className="space-x-2">
                       {r.status !== "active" && r.status !== "revoked" && (
-                        <button type="button" className="text-xs text-emerald-700 hover:underline" onClick={() => approve.mutate(Number(r.id))} disabled={approve.isPending}>
+                        <button type="button" className="btn-secondary text-xs py-1 px-2 text-emerald-700" onClick={() => approve.mutate(Number(r.id))} disabled={approve.isPending}>
                           Approve
                         </button>
                       )}
                       {r.status !== "revoked" && (
-                        <button type="button" className="text-xs text-red-700 hover:underline" onClick={() => revoke.mutate(Number(r.id))} disabled={revoke.isPending}>
+                        <button type="button" className="btn-secondary text-xs py-1 px-2 text-red-600" onClick={() => revoke.mutate(Number(r.id))} disabled={revoke.isPending}>
                           Revoke
                         </button>
                       )}

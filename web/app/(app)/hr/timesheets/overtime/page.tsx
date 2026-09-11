@@ -85,7 +85,7 @@ export default function OvertimeRequestsPage() {
         title="My Overtime Requests"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "My Overtime Requests" }]} />}
       />
-        <Link href="/hr/timesheets" className="text-sm text-[var(--brand)] hover:underline">
+        <Link href="/hr/timesheets" className="btn-secondary text-sm py-1 px-2">
           Back to timesheets
         </Link>
       </div>
@@ -188,7 +188,7 @@ export default function OvertimeRequestsPage() {
                   {row.status === "draft" && (
                     <button
                       type="button"
-                      className="text-[var(--brand)] hover:underline"
+                      className="btn-secondary text-xs py-1 px-2"
                       onClick={() => void submitReq(row.id)}
                     >
                       Submit

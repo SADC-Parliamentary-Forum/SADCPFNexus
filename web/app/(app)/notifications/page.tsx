@@ -253,7 +253,7 @@ function AlertsTab() {
             </div>
             <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Events This Week</h2>
           </div>
-          <a href="/workplan" className="text-xs text-primary hover:underline font-medium">View full workplan →</a>
+          <a href="/workplan" className="btn-secondary text-xs py-1 px-2">View full workplan →</a>
         </div>
         {loading ? <Spinner /> : weekEvents.length === 0 ? (
           <p className="px-5 py-6 text-sm text-neutral-400 dark:text-neutral-500">No events scheduled this week.</p>

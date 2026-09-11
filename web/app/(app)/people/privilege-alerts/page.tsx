@@ -163,7 +163,7 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
                       {r.status !== "acknowledged" && (
                         <button
                           type="button"
-                          className="text-xs text-emerald-700 hover:underline"
+                          className="btn-secondary text-xs py-1 px-2 text-emerald-700"
                           onClick={() => ack.mutate(Number(r.id))}
                           disabled={ack.isPending}
                         >

@@ -144,7 +144,7 @@ export default function BcreDashboardPage() {
                 <span className="material-symbols-outlined text-primary text-lg">folder_special</span>
                 <h2 className="font-semibold text-neutral-800">Programme snapshot</h2>
               </div>
-              <Link href="/pif" className="text-xs text-primary hover:underline">Open programmes</Link>
+              <Link href="/pif" className="btn-secondary text-xs py-1 px-2">Open programmes</Link>
             </div>
             <div className="divide-y divide-neutral-50">
               {programmes.length === 0 ? (
@@ -174,7 +174,7 @@ export default function BcreDashboardPage() {
                   <span className="material-symbols-outlined text-primary text-lg">payments</span>
                   <h2 className="font-semibold text-neutral-800">Salary Advance Registers</h2>
                 </div>
-                <Link href="/finance/balance-register/registers?module_type=salary_advance" className="text-xs text-primary hover:underline">View all</Link>
+                <Link href="/finance/balance-register/registers?module_type=salary_advance" className="btn-secondary text-xs py-1 px-2">View all</Link>
               </div>
               <div className="divide-y divide-neutral-50">
                 {recentSA.length === 0 ? (
@@ -204,7 +204,7 @@ export default function BcreDashboardPage() {
                   <span className="material-symbols-outlined text-primary text-lg">account_balance_wallet</span>
                   <h2 className="font-semibold text-neutral-800">Imprest Registers</h2>
                 </div>
-                <Link href="/finance/balance-register/registers?module_type=imprest" className="text-xs text-primary hover:underline">View all</Link>
+                <Link href="/finance/balance-register/registers?module_type=imprest" className="btn-secondary text-xs py-1 px-2">View all</Link>
               </div>
               <div className="divide-y divide-neutral-50">
                 {recentIMP.length === 0 ? (

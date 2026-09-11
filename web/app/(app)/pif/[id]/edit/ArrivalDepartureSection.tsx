@@ -226,7 +226,7 @@ export default function ArrivalDepartureSection({
           </div>
         </div>
       ) : (
-        <button type="button" onClick={() => setPending(emptyDraft)} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+        <button type="button" onClick={() => setPending(emptyDraft)} className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
           <span className="material-symbols-outlined text-[14px]">add</span>
           Add arrival/departure row
         </button>

@@ -209,10 +209,10 @@ export default function AdminTimesheetProjectsPage() {
                         />
                       </td>
                       <td className="text-right">
-                        <button type="button" onClick={handleUpdate} disabled={saving} className="text-primary hover:underline text-sm font-medium mr-2">
+                        <button type="button" onClick={handleUpdate} disabled={saving} className="btn-secondary text-sm py-1 px-2 mr-2">
                           Save
                         </button>
-                        <button type="button" onClick={() => setEditId(null)} className="text-neutral-500 hover:underline text-sm">
+                        <button type="button" onClick={() => setEditId(null)} className="btn-secondary text-sm py-1 px-2">
                           Cancel
                         </button>
                       </td>
@@ -223,10 +223,10 @@ export default function AdminTimesheetProjectsPage() {
                       <td className="text-right text-neutral-600">{p.sort_order}</td>
                       {isAdmin && (
                         <td className="text-right">
-                          <button type="button" onClick={() => startEdit(p)} className="text-primary hover:underline text-sm font-medium mr-2">
+                          <button type="button" onClick={() => startEdit(p)} className="btn-secondary text-sm py-1 px-2 mr-2">
                             Edit
                           </button>
-                          <button type="button" onClick={() => handleDelete(p)} className="text-red-600 hover:underline text-sm font-medium">
+                          <button type="button" onClick={() => handleDelete(p)} className="btn-secondary text-sm py-1 px-2 text-red-600">
                             Delete
                           </button>
                         </td>

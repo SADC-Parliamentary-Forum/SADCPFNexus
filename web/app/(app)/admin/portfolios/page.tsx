@@ -123,8 +123,8 @@ export default function AdminPortfoliosPage() {
                                 <td className="text-sm text-neutral-500 max-w-xs truncate">{p.description}</td>
                                 <td>{p.users_count ?? 0} staff</td>
                                 <td className="text-right space-x-2">
-                                    <button onClick={() => startEdit(p)} className="text-primary hover:underline text-xs">Edit</button>
-                                    <button onClick={() => handleDelete(p.id, p.name)} className="text-red-600 hover:underline text-xs">Delete</button>
+                                    <button onClick={() => startEdit(p)} className="btn-secondary text-xs py-1 px-2">Edit</button>
+                                    <button onClick={() => handleDelete(p.id, p.name)} className="btn-secondary text-xs py-1 px-2 text-red-600">Delete</button>
                                 </td>
                             </tr>
                         ))}

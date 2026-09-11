@@ -1389,7 +1389,7 @@ export default function AssetsPage() {
             <div className="card p-10 text-center">
               <span className="material-symbols-outlined text-3xl text-neutral-300">search_off</span>
               <p className="mt-2 text-sm font-semibold text-neutral-600">{t("assets.register.emptyFiltered")}</p>
-              <button type="button" onClick={() => { setSearchInput(""); setSearch(""); setFilterStatus("live"); setFilterCategory("all"); setPage(1); }} className="mt-3 text-xs text-primary hover:underline">{t("assets.register.clearFilters")}</button>
+              <button type="button" onClick={() => { setSearchInput(""); setSearch(""); setFilterStatus("live"); setFilterCategory("all"); setPage(1); }} className="btn-secondary text-xs py-1 px-2 mt-3">{t("assets.register.clearFilters")}</button>
             </div>
           ) : (
             <div className="card p-16 text-center">

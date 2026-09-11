@@ -965,7 +965,7 @@ export default function PifDetailPage() {
                           <td><span className={`badge ${PROC_BADGE[p.status] ?? "badge-muted"} capitalize`}>{p.status}</span></td>
                           <td className="text-xs">
                             {linked ? (
-                              <Link href={`/procurement/${p.procurement_request_id}`} className="text-primary hover:underline">
+                              <Link href={`/procurement/${p.procurement_request_id}`} className="btn-secondary text-xs py-1 px-2">
                                 PRQ linked
                               </Link>
                             ) : (
@@ -1301,7 +1301,7 @@ export default function PifDetailPage() {
                                       setChosenQuoteModal({ open: true, attachment: a });
                                       setChosenReason(a.selection_reason ?? "");
                                     }}
-                                    className="text-xs text-primary hover:underline"
+                                    className="btn-secondary text-xs py-1 px-2"
                                     title="Mark as chosen quote"
                                   >
                                     Mark as chosen

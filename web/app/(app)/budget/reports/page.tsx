@@ -380,7 +380,7 @@ function ChangesPanel({
             {row.approver_path.map((step) => step.label).join(" → ")}
           </td>
           <td className="px-4 py-3 text-right">
-            <Link href={`/budget/changes/${row.id}`} className="text-[var(--primary)] hover:underline">
+            <Link href={`/budget/changes/${row.id}`} className="font-medium text-[var(--primary)]">
               Open
             </Link>
           </td>
@@ -426,7 +426,7 @@ function CyclesPanel({
             )}
           </td>
           <td className="px-4 py-3 text-right">
-            <Link href={`/budget/cycles/${row.id}`} className="text-[var(--primary)] hover:underline">
+            <Link href={`/budget/cycles/${row.id}`} className="font-medium text-[var(--primary)]">
               Open
             </Link>
           </td>

@@ -382,14 +382,14 @@ export default function ProcurementRegisterPage() {
                       <div className="flex flex-wrap gap-2">
                         <Link
                           href={`/procurement/${row.id}`}
-                          className="text-xs font-medium text-primary hover:underline"
+                          className="btn-secondary text-xs py-1 px-2"
                         >
                           View
                         </Link>
                         {row.status === "draft" && (
                           <Link
                             href={`/procurement/${row.id}`}
-                            className="text-xs font-medium text-neutral-600 hover:underline"
+                            className="btn-secondary text-xs py-1 px-2"
                           >
                             Edit
                           </Link>

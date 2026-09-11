@@ -168,7 +168,7 @@ export function SalaryScaleSlideOver({
             <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-medium text-neutral-700">Notch Structure ({notches.length}/12)</label>
               {isDraft && notches.length < 12 && (
-                <button onClick={addNotch} className="text-xs text-primary hover:underline flex items-center gap-1">
+                <button onClick={addNotch} className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">add</span>
                   Add notch
                 </button>

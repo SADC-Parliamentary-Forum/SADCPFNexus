@@ -58,13 +58,13 @@ export default function SupplierDashboardPage() {
 
         <div className="card p-5 space-y-3">
           <h2 className="text-sm font-bold text-neutral-800">Next Steps</h2>
-          <Link href="/supplier/rfqs" className="block text-sm text-primary hover:underline">
+          <Link href="/supplier/rfqs" className="btn-secondary text-sm py-1 px-2">
             Review and respond to RFQs
           </Link>
-          <Link href="/supplier/purchase-orders" className="block text-sm text-primary hover:underline">
+          <Link href="/supplier/purchase-orders" className="btn-secondary text-sm py-1 px-2">
             Track issued purchase orders
           </Link>
-          <Link href="/supplier/profile" className="block text-sm text-primary hover:underline">
+          <Link href="/supplier/profile" className="btn-secondary text-sm py-1 px-2">
             Update supplier profile and documents
           </Link>
         </div>

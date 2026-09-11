@@ -184,7 +184,7 @@ export default function AssetRequestsPage() {
                       <td>
                         <Link
                           href={`/assets/requests/${req.id}`}
-                          className="text-xs font-medium text-primary hover:underline whitespace-nowrap"
+                          className="btn-secondary text-xs py-1 px-2 whitespace-nowrap"
                         >
                           View
                         </Link>

@@ -44,7 +44,7 @@ export default function ProcurementInboxPage() {
       />
       <p className="text-sm text-neutral-600">
         System Admins configure the designated invoice mailbox under{" "}
-        <Link href="/admin/email" className="text-primary hover:underline">Admin → Email</Link>.
+        <Link href="/admin/email" className="btn-secondary text-xs py-1 px-2">Admin → Email</Link>.
         Attachments become intakes for review and are never auto-confirmed.
       </p>
       {note && (

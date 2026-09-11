@@ -362,7 +362,7 @@ export default function EditAssetPage() {
                 </select>
                 {categories.length === 0 && (
                   <p className="text-xs text-neutral-500">
-                    <Link href="/assets/categories" className="text-primary hover:underline">
+                    <Link href="/assets/categories" className="btn-secondary text-xs py-1 px-2">
                       Add a category
                     </Link>
                   </p>

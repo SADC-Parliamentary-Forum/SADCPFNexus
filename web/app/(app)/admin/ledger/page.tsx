@@ -416,7 +416,7 @@ export default function AdminLedgerPage() {
                           <button
                             type="button"
                             onClick={() => { setModuleFilter(""); setActionFilter(""); setUserFilter(""); setDateFrom(""); setDateTo(""); }}
-                            className="text-primary text-sm hover:underline mt-1"
+                            className="btn-secondary text-sm py-1 px-2 mt-1"
                           >
                             Clear all filters
                           </button>

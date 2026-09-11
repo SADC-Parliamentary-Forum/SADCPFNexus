@@ -704,7 +704,7 @@ export default function ApprovalsPage() {
                             type="button"
                             disabled={actionLoading === task.id}
                             onClick={() => decideTask(task, "approve")}
-                            className="text-primary hover:underline disabled:opacity-50"
+                            className="btn-secondary text-xs py-1 px-2 disabled:opacity-50"
                           >
                             Approve
                           </button>
@@ -723,7 +723,7 @@ export default function ApprovalsPage() {
                               });
                               setRejectReason("");
                             }}
-                            className="text-rose-600 hover:underline disabled:opacity-50"
+                            className="btn-secondary text-xs py-1 px-2 text-rose-600 disabled:opacity-50"
                           >
                             Reject
                           </button>

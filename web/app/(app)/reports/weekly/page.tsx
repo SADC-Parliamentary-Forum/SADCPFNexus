@@ -106,7 +106,7 @@ export default function WeeklyReportsPage() {
                   <td>
                     <button
                       onClick={() => openReport(r)}
-                      className="text-primary text-sm hover:underline flex items-center gap-0.5"
+                      className="btn-secondary text-sm py-1 px-2 inline-flex items-center gap-0.5"
                     >
                       <span className="material-symbols-outlined text-base">open_in_new</span>
                       View

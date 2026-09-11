@@ -702,7 +702,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                             <td className="text-sm text-neutral-500">{c.end_date ? formatDateShort(c.end_date) : "—"}</td>
                             <td><span className={`badge ${st.cls}`}>{st.label}</span></td>
                             <td>
-                              <Link href={`/procurement/contracts/${c.id}`} className="text-xs text-primary hover:underline font-medium">
+                              <Link href={`/procurement/contracts/${c.id}`} className="btn-secondary text-xs py-1 px-2">
                                 View
                               </Link>
                             </td>
@@ -845,7 +845,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                       </span>
                     )}
                   </div>
-                  <button type="button" onClick={() => setActiveTab("documents")} className="text-xs text-primary hover:underline">
+                  <button type="button" onClick={() => setActiveTab("documents")} className="btn-secondary text-xs py-1 px-2">
                     Manage all documents
                   </button>
                 </div>
@@ -854,7 +854,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                     <span className="material-symbols-outlined text-[32px]">folder_open</span>
                     <p className="text-sm text-neutral-400">No compliance documents uploaded.</p>
                     <button type="button" onClick={() => setActiveTab("documents")}
-                      className="text-xs text-primary hover:underline">
+                      className="btn-secondary text-xs py-1 px-2">
                       Upload documents in the Documents tab
                     </button>
                   </div>
@@ -1488,7 +1488,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                           {req ? (
                             <Link
                               href={`/procurement/${req.id}`}
-                              className="font-mono text-xs text-primary hover:underline"
+                              className="font-mono text-xs text-primary"
                             >
                               {req.reference_number}
                             </Link>

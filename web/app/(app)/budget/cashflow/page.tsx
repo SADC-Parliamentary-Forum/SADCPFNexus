@@ -397,7 +397,7 @@ export default function BudgetCashflowPage() {
                       </span>
                       <button
                         type="button"
-                        className="text-red-700 hover:underline"
+                        className="btn-secondary text-xs py-1 px-2 text-red-700"
                         onClick={() => deleteAdjustment.mutate(a.id)}
                       >
                         Remove

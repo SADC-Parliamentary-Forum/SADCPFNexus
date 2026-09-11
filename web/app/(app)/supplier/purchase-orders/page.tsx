@@ -45,7 +45,7 @@ export default function SupplierPurchaseOrdersPage() {
                   <td className="font-mono text-xs text-neutral-600">{po.reference_number}</td>
                   <td>
                     {po.procurement_request ? (
-                      <Link href={`/procurement/${po.procurement_request.id}`} className="text-primary hover:underline">
+                      <Link href={`/procurement/${po.procurement_request.id}`} className="btn-secondary text-xs py-1 px-2">
                         {po.procurement_request.reference_number}
                       </Link>
                     ) : "-"}

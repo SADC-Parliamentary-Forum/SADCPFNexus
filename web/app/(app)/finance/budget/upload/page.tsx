@@ -179,7 +179,7 @@ export default function BudgetUploadPage() {
             <div className="card">
                 <div className="card-header border-b border-neutral-100 flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-neutral-800">Import CSV Lines</h2>
-                    <a href="#" className="text-sm font-medium text-primary hover:underline">Download Template</a>
+                    <a href="#" className="btn-secondary text-sm py-1 px-2">Download Template</a>
                 </div>
                 <div className="p-5">
                     <div className="flex items-center justify-center w-full">

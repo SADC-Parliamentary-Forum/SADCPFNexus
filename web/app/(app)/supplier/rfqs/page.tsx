@@ -64,7 +64,7 @@ export default function SupplierRfqsPage() {
                   <td><span className="badge badge-muted">{invitation.status}</span></td>
                   <td className="text-sm text-neutral-600">{invitation.quote ? "Submitted" : "Pending"}</td>
                   <td className="text-right">
-                    <Link href={`/supplier/rfqs/${invitation.procurement_request_id}`} className="text-sm text-primary hover:underline">
+                    <Link href={`/supplier/rfqs/${invitation.procurement_request_id}`} className="btn-secondary text-sm py-1 px-2">
                       View
                     </Link>
                   </td>

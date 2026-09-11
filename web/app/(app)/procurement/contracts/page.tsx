@@ -213,7 +213,7 @@ function ContractsPageInner() {
                 return (
                   <tr key={c.id}>
                     <td>
-                      <Link href={`/procurement/contracts/${c.id}`} className="font-mono text-xs text-primary hover:underline">
+                      <Link href={`/procurement/contracts/${c.id}`} className="font-mono text-xs text-primary">
                         {c.reference_number}
                       </Link>
                     </td>

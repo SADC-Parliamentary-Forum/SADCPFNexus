@@ -174,7 +174,7 @@ export default function AdminSettingsPage() {
             </div>
             <p className="text-xs text-neutral-500">
               Outgoing SMTP and designated IMAP mailboxes are configured on{" "}
-              <Link href="/admin/email" className="text-primary hover:underline">Admin → Email</Link>.
+              <Link href="/admin/email" className="btn-secondary text-xs py-1 px-2">Admin → Email</Link>.
               Other integration keys stay in server env and are never shown here.
             </p>
             <ul className="divide-y divide-neutral-100">

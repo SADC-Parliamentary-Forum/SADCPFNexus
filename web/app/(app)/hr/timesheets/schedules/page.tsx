@@ -50,7 +50,7 @@ export default function WorkSchedulesPage() {
         title="Work Schedules"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Work Schedules" }]} />}
       />
-        <Link href="/hr/timesheets" className="text-sm text-[var(--brand)] hover:underline">
+        <Link href="/hr/timesheets" className="btn-secondary text-sm py-1 px-2">
           Timesheets
         </Link>
       </div>

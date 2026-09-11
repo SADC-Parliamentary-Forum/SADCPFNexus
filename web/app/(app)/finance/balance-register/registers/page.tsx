@@ -245,7 +245,7 @@ function RegistersPageContent() {
                   <td>
                     <Link
                       href={`/finance/balance-register/${reg.id}`}
-                      className="text-xs text-primary hover:underline font-medium"
+                      className="btn-secondary text-xs py-1 px-2"
                     >
                       View
                     </Link>

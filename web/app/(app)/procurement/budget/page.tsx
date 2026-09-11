@@ -216,7 +216,7 @@ export default function ProcurementBudgetPage() {
                           : "—"}
                       </td>
                       <td className="whitespace-nowrap flex gap-2">
-                        <Link href={`/procurement/${req.id}`} className="text-xs text-primary hover:underline">
+                        <Link href={`/procurement/${req.id}`} className="btn-secondary text-xs py-1 px-2">
                           View
                         </Link>
                         <button

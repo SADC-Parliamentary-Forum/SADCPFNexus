@@ -308,7 +308,7 @@ export default function LedgerVerifyPage() {
                     <td>
                       <Link
                         href={`/admin/ledger/${v.id}`}
-                        className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                        className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-0.5"
                       >
                         View
                         <span className="material-symbols-outlined text-[13px]">chevron_right</span>
