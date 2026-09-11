@@ -158,7 +158,7 @@ export default function MeetingsMinutesPage() {
         </div>
       }
       empty={
-        !isLoading && rows.length === 0 ? (
+        !isLoading && rows.length === 0 && unmatchedScheduled.length === 0 ? (
           <div className="card overflow-hidden">
             {isError ? (
               <EmptyState
@@ -188,6 +188,33 @@ export default function MeetingsMinutesPage() {
       }
     >
       <div className="space-y-5">
+        {rows.length === 0 ? (
+          <div className="card overflow-hidden">
+            {isError ? (
+              <EmptyState
+                icon="error"
+                title="Could not load meetings"
+                description="Refresh the page or try again in a moment."
+              />
+            ) : (
+              <EmptyState
+                icon="meeting_room"
+                title="No minutes found"
+                description={
+                  search || statusFilter || typeFilter
+                    ? "No rows match the current filters."
+                    : "Scheduled meetings below can still be recorded as minutes."
+                }
+                action={
+                  <Link href="/governance/minutes/new" className="btn-primary text-sm">
+                    <span className="material-symbols-outlined text-[18px]">add</span>
+                    Record minutes
+                  </Link>
+                }
+              />
+            )}
+          </div>
+        ) : (
         <div className="card overflow-hidden">
           <RegisterMobileCards
             items={rows}
@@ -255,6 +282,7 @@ export default function MeetingsMinutesPage() {
             </table>
           </div>
         </div>
+        )}
 
         {unmatchedScheduled.length > 0 ? (
           <div className="card overflow-hidden">
