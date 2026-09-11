@@ -544,20 +544,20 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
           <div className="card w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-base font-bold">{editingQuote ? "Assess Quote" : "Record Quote"}</h2>
             {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-            <label className="block text-xs font-semibold text-neutral-700" htmlFor="quote-supplier-name">
+            <label htmlFor="quote-supplier-name" className="block text-xs font-semibold text-neutral-700">
               Supplier name
               <input id="quote-supplier-name" className="form-input mt-1.5" value={quoteForm.vendor_name} onChange={(e) => setQuoteForm((current) => ({ ...current, vendor_name: e.target.value }))} />
             </label>
             <div className="grid gap-3 md:grid-cols-3">
-              <label className="block text-xs font-semibold text-neutral-700" htmlFor="quote-amount">
+              <label htmlFor="quote-amount" className="block text-xs font-semibold text-neutral-700">
                 Amount
                 <input id="quote-amount" type="number" min="0.01" step="0.01" className="form-input mt-1.5" value={quoteForm.quoted_amount} onChange={(e) => setQuoteForm((current) => ({ ...current, quoted_amount: e.target.value }))} />
               </label>
-              <label className="block text-xs font-semibold text-neutral-700" htmlFor="quote-currency">
+              <label htmlFor="quote-currency" className="block text-xs font-semibold text-neutral-700">
                 Currency
                 <input id="quote-currency" className="form-input mt-1.5" value={quoteForm.currency} onChange={(e) => setQuoteForm((current) => ({ ...current, currency: e.target.value.toUpperCase() }))} />
               </label>
-              <label className="block text-xs font-semibold text-neutral-700" htmlFor="quote-date">
+              <label htmlFor="quote-date" className="block text-xs font-semibold text-neutral-700">
                 Quote date
                 <input id="quote-date" type="date" className="form-input mt-1.5" value={quoteForm.quote_date} onChange={(e) => setQuoteForm((current) => ({ ...current, quote_date: e.target.value }))} />
               </label>

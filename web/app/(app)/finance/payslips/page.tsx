@@ -135,7 +135,7 @@ export default function PayslipsPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-neutral-500" htmlFor="payslip-year">
+            <label htmlFor="payslip-year" className="mb-1 block text-xs font-medium uppercase tracking-wider text-neutral-500">
               Year
             </label>
             <select

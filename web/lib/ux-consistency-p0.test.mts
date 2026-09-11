@@ -347,3 +347,48 @@ test("operational mobile detail screens use StitchScreen chrome", () => {
   }
 });
 
+test("operational detail and correspondence send forms bind labels with htmlFor before className", () => {
+  const pages = [
+    "travel/[id]/page.tsx",
+    "imprest/[id]/page.tsx",
+    "imprest/[id]/liquidate/page.tsx",
+    "assignments/[id]/page.tsx",
+    "hr/assignments/[id]/page.tsx",
+    "risk/[id]/page.tsx",
+    "correspondence/create/page.tsx",
+    "correspondence/incoming/page.tsx",
+    "correspondence/[id]/page.tsx",
+  ];
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
+    const labels = source.match(/<label\b/g)?.length ?? 0;
+    const bound = source.match(/<label\b[^>]*htmlFor=/g)?.length ?? 0;
+    assert.equal(bound, labels, `${rel} unbound labels`);
+    assert.doesNotMatch(source, /<label className=/, rel);
+    for (const [, id] of source.matchAll(/<label\b[^>]*htmlFor="([^"]+)"/g)) {
+      assert.match(source, new RegExp(`\\bid="${id}"`), `${rel} missing id ${id}`);
+    }
+  }
+
+  const wrappers = [
+    "components/ui/Input.tsx",
+    "components/ui/Select.tsx",
+    "components/ui/DocumentsPanel.tsx",
+    "components/ui/GenericDocumentsPanel.tsx",
+    "components/travel/DestinationPickers.tsx",
+    "components/risk/ApplyMitigationFields.tsx",
+    "components/stock/StockItemFormModal.tsx",
+    "components/stock/StockMovementModal.tsx",
+    "components/assignments/CreateAssignmentFromSourceModal.tsx",
+    "components/budget/BudgetLinePicker.tsx",
+    "components/budget/PifFinanceBudgetCertify.tsx",
+  ];
+  for (const rel of wrappers) {
+    const source = readFileSync(join(webRoot, rel), "utf8");
+    assert.doesNotMatch(source, /<label className=/, rel);
+    const labels = source.match(/<label\b/g)?.length ?? 0;
+    const bound = source.match(/<label\b[^>]*htmlFor=/g)?.length ?? 0;
+    assert.equal(bound, labels, `${rel} unbound labels`);
+  }
+});
+

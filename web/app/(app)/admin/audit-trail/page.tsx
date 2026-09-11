@@ -111,15 +111,15 @@ export default function PlatformAuditTrailAdminPage() {
       filters={
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-neutral-600" htmlFor="audit-q">Search</label>
+            <label htmlFor="audit-q" className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
             <input id="audit-q" className="form-input text-xs" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} placeholder="Event key / action…" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-neutral-600" htmlFor="audit-cat">Category</label>
+            <label htmlFor="audit-cat" className="mb-1 block text-xs font-semibold text-neutral-600">Category</label>
             <input id="audit-cat" className="form-input text-xs" value={category} onChange={(e) => { setCategory(e.target.value); setPage(1); }} placeholder="e.g. PIF" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-neutral-600" htmlFor="audit-outcome">Outcome</label>
+            <label htmlFor="audit-outcome" className="mb-1 block text-xs font-semibold text-neutral-600">Outcome</label>
             <select id="audit-outcome" className="form-input text-xs" value={outcome} onChange={(e) => { setOutcome(e.target.value); setPage(1); }}>
               <option value="">All</option>
               <option value="success">Success</option>
@@ -128,11 +128,11 @@ export default function PlatformAuditTrailAdminPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-neutral-600" htmlFor="audit-from">From</label>
+            <label htmlFor="audit-from" className="mb-1 block text-xs font-semibold text-neutral-600">From</label>
             <input id="audit-from" type="date" className="form-input text-xs" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1); }} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold text-neutral-600" htmlFor="audit-to">To</label>
+            <label htmlFor="audit-to" className="mb-1 block text-xs font-semibold text-neutral-600">To</label>
             <input id="audit-to" type="date" className="form-input text-xs" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1); }} />
           </div>
         </div>

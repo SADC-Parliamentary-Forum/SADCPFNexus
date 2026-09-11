@@ -206,12 +206,12 @@ export function StockItemFormModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Item Code *</label>
-              <input className="form-input font-mono" placeholder="e.g. STK-A4-001" value={form.item_code} onChange={(e) => set("item_code", e.target.value)} />
+              <label htmlFor="stock-item-code" className="block text-xs font-semibold text-neutral-700 mb-1">Item Code *</label>
+              <input id="stock-item-code" className="form-input font-mono" placeholder="e.g. STK-A4-001" value={form.item_code} onChange={(e) => set("item_code", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
-              <input className="form-input" placeholder="e.g. A4 Paper Ream" value={form.name} onChange={(e) => set("name", e.target.value)} />
+              <label htmlFor="stock-item-name" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+              <input id="stock-item-name" className="form-input" placeholder="e.g. A4 Paper Ream" value={form.name} onChange={(e) => set("name", e.target.value)} />
             </div>
             <div>
               <div className="flex items-center justify-between gap-2 mb-1">
@@ -330,23 +330,23 @@ export function StockItemFormModal({
               )}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Unit Cost</label>
-              <input type="number" min={0} step="0.01" className="form-input" placeholder="0.00" value={form.unit_cost} onChange={(e) => set("unit_cost", e.target.value)} />
+              <label htmlFor="stock-item-unit-cost" className="block text-xs font-semibold text-neutral-700 mb-1">Unit Cost</label>
+              <input id="stock-item-unit-cost" type="number" min={0} step="0.01" className="form-input" placeholder="0.00" value={form.unit_cost} onChange={(e) => set("unit_cost", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Reorder Level</label>
-              <input type="number" min={0} className="form-input" placeholder="0" value={form.reorder_level} onChange={(e) => set("reorder_level", e.target.value)} />
+              <label htmlFor="stock-item-reorder" className="block text-xs font-semibold text-neutral-700 mb-1">Reorder Level</label>
+              <input id="stock-item-reorder" type="number" min={0} className="form-input" placeholder="0" value={form.reorder_level} onChange={(e) => set("reorder_level", e.target.value)} />
             </div>
             {!editing && (
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Opening Balance</label>
-                <input type="number" min={0} className="form-input" placeholder="0" value={form.opening_balance} onChange={(e) => set("opening_balance", e.target.value)} />
+                <label htmlFor="stock-item-opening" className="block text-xs font-semibold text-neutral-700 mb-1">Opening Balance</label>
+                <input id="stock-item-opening" type="number" min={0} className="form-input" placeholder="0" value={form.opening_balance} onChange={(e) => set("opening_balance", e.target.value)} />
                 <p className="text-xs text-neutral-400 mt-1">Recorded as an initial stock-in.</p>
               </div>
             )}
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Storage Location</label>
-              <select className="form-input" value={form.stock_location_id} onChange={(e) => set("stock_location_id", e.target.value)}>
+              <label htmlFor="stock-item-location" className="block text-xs font-semibold text-neutral-700 mb-1">Storage Location</label>
+              <select id="stock-item-location" className="form-input" value={form.stock_location_id} onChange={(e) => set("stock_location_id", e.target.value)}>
                 <option value="">Select location…</option>
                 {(locationsQuery.data ?? []).map((l) => (
                   <option key={l.id} value={l.id}>{l.code} — {l.name}</option>
@@ -354,8 +354,8 @@ export function StockItemFormModal({
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
-              <textarea className="form-input" rows={2} placeholder="Optional notes" value={form.description} onChange={(e) => set("description", e.target.value)} />
+              <label htmlFor="stock-item-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+              <textarea id="stock-item-description" className="form-input" rows={2} placeholder="Optional notes" value={form.description} onChange={(e) => set("description", e.target.value)} />
             </div>
           </div>
         </div>

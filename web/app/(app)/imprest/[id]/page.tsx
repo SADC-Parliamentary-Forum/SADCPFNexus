@@ -595,10 +595,11 @@ export default function ImprestDetailPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      <label htmlFor="imprest-retire-amount" className="block text-xs font-semibold text-neutral-700 mb-1">
                         Amount Spent ({request.currency}) <span className="text-red-500">*</span>
                       </label>
                       <input
+                        id="imprest-retire-amount"
                         type="number"
                         step="0.01"
                         min="0"
@@ -617,8 +618,9 @@ export default function ImprestDetailPage() {
                       )}
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-neutral-700 mb-1">Notes / Explanation</label>
+                      <label htmlFor="imprest-retire-notes" className="block text-xs font-semibold text-neutral-700 mb-1">Notes / Explanation</label>
                       <input
+                        id="imprest-retire-notes"
                         type="text"
                         className="form-input w-full"
                         placeholder="Optional: notes on expenditure"
@@ -630,8 +632,9 @@ export default function ImprestDetailPage() {
 
                   <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4">
                     <p className="text-xs font-semibold text-neutral-600 mb-2">Receipt Upload</p>
-                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <label htmlFor="imprest-retire-receipts" className="flex items-center gap-3 cursor-pointer select-none">
                       <input
+                        id="imprest-retire-receipts"
                         type="checkbox"
                         checked={retireReceipts}
                         onChange={(e) => setRetireReceipts(e.target.checked)}

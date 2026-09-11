@@ -812,8 +812,8 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
             {modal === "escalate" && (
               <>
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Escalation Level <span className="text-red-500 dark:text-red-400">*</span></label>
-                  <select className="form-input w-full" value={modalData.level ?? ""} onChange={(e) => setModalData((p) => ({ ...p, level: e.target.value }))}>
+                  <label htmlFor="risk-escalate-level" className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Escalation Level <span className="text-red-500 dark:text-red-400">*</span></label>
+                  <select id="risk-escalate-level" className="form-input w-full" value={modalData.level ?? ""} onChange={(e) => setModalData((p) => ({ ...p, level: e.target.value }))}>
                     <option value="">Select…</option>
                     <option value="departmental">Departmental</option>
                     <option value="directorate">Directorate</option>
@@ -822,23 +822,23 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Notes</label>
-                  <textarea className="form-input w-full h-20 resize-none" value={modalData.notes ?? ""} onChange={(e) => setModalData((p) => ({ ...p, notes: e.target.value }))} placeholder="Reason for escalation…" />
+                  <label htmlFor="risk-escalate-notes" className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Notes</label>
+                  <textarea id="risk-escalate-notes" className="form-input w-full h-20 resize-none" value={modalData.notes ?? ""} onChange={(e) => setModalData((p) => ({ ...p, notes: e.target.value }))} placeholder="Reason for escalation…" />
                 </div>
               </>
             )}
 
             {modal === "approve" && (
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Review Notes</label>
-                <textarea className="form-input w-full h-20 resize-none" value={modalData.notes ?? ""} onChange={(e) => setModalData((p) => ({ ...p, notes: e.target.value }))} placeholder="Optional notes for the risk owner…" />
+                <label htmlFor="risk-approve-notes" className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Review Notes</label>
+                <textarea id="risk-approve-notes" className="form-input w-full h-20 resize-none" value={modalData.notes ?? ""} onChange={(e) => setModalData((p) => ({ ...p, notes: e.target.value }))} placeholder="Optional notes for the risk owner…" />
               </div>
             )}
 
             {modal === "close" && (
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Closure Evidence <span className="text-red-500 dark:text-red-400">*</span></label>
-                <textarea className="form-input w-full h-24 resize-none" value={modalData.evidence ?? ""} onChange={(e) => setModalData((p) => ({ ...p, evidence: e.target.value }))} placeholder="Document what evidence confirms this risk is closed…" />
+                <label htmlFor="risk-close-evidence" className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Closure Evidence <span className="text-red-500 dark:text-red-400">*</span></label>
+                <textarea id="risk-close-evidence" className="form-input w-full h-24 resize-none" value={modalData.evidence ?? ""} onChange={(e) => setModalData((p) => ({ ...p, evidence: e.target.value }))} placeholder="Document what evidence confirms this risk is closed…" />
               </div>
             )}
 

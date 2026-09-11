@@ -39,15 +39,15 @@ export default function ContributionSchedulesPage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Donor / contribution calendar" }]} />}
       />
       <div className="card grid gap-3 p-4 md:grid-cols-3">
-        <label className="block space-y-1" htmlFor="contrib-donor-name">
+        <label htmlFor="contrib-donor-name" className="block space-y-1">
           <span className="text-xs font-medium text-neutral-700">Donor name</span>
           <input id="contrib-donor-name" className="form-input w-full" placeholder="Donor name" value={form.donor_name} onChange={(e) => setForm({ ...form, donor_name: e.target.value })} />
         </label>
-        <label className="block space-y-1" htmlFor="contrib-amount">
+        <label htmlFor="contrib-amount" className="block space-y-1">
           <span className="text-xs font-medium text-neutral-700">Amount</span>
           <input id="contrib-amount" className="form-input w-full" type="number" min="0" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
         </label>
-        <label className="block space-y-1" htmlFor="contrib-frequency">
+        <label htmlFor="contrib-frequency" className="block space-y-1">
           <span className="text-xs font-medium text-neutral-700">Frequency</span>
           <select id="contrib-frequency" className="form-input w-full" value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value })}>
             <option value="monthly">Monthly</option>
@@ -56,11 +56,11 @@ export default function ContributionSchedulesPage() {
             <option value="one_off">One-off</option>
           </select>
         </label>
-        <label className="block space-y-1" htmlFor="contrib-start-date">
+        <label htmlFor="contrib-start-date" className="block space-y-1">
           <span className="text-xs font-medium text-neutral-700">Start date</span>
           <input id="contrib-start-date" className="form-input w-full" type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
         </label>
-        <label className="block space-y-1" htmlFor="contrib-currency">
+        <label htmlFor="contrib-currency" className="block space-y-1">
           <span className="text-xs font-medium text-neutral-700">Currency</span>
           <input id="contrib-currency" className="form-input w-full" placeholder="Currency" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value.toUpperCase() })} />
         </label>

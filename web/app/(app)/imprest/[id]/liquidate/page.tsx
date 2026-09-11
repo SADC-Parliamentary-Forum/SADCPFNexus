@@ -277,10 +277,11 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">
+            <label htmlFor="imprest-liquidate-amount" className="text-xs font-semibold text-neutral-600">
               Amount Spent ({request.currency}) <span className="text-red-500">*</span>
             </label>
             <input
+              id="imprest-liquidate-amount"
               type="number"
               min="0"
               step="0.01"
@@ -302,8 +303,9 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-neutral-600">Notes / Explanation</label>
+          <label htmlFor="imprest-liquidate-notes" className="text-xs font-semibold text-neutral-600">Notes / Explanation</label>
           <textarea
+            id="imprest-liquidate-notes"
             rows={4}
             className="form-input resize-none"
             placeholder="Summarise how the imprest was used and note any surplus or overrun."
@@ -312,8 +314,9 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
           />
         </div>
 
-        <label className="flex items-start gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3 cursor-pointer">
+        <label htmlFor="imprest-liquidate-receipts" className="flex items-start gap-3 rounded-xl border border-neutral-100 bg-neutral-50 px-4 py-3 cursor-pointer">
           <input
+            id="imprest-liquidate-receipts"
             type="checkbox"
             className="mt-1 h-4 w-4 rounded border-neutral-300 accent-primary"
             checked={receiptsAttached}

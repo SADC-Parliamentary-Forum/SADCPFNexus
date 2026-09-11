@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import {
   budgetApi,
   type BudgetAvailability,
@@ -46,6 +46,7 @@ export default function BudgetLinePicker({
   className = "",
   showAvailability = true,
 }: BudgetLinePickerProps) {
+  const selectId = useId();
   const [lines, setLines] = useState<OrgBudgetLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,11 +96,12 @@ export default function BudgetLinePicker({
 
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <label className="block text-xs font-semibold text-neutral-700">
+      <label htmlFor={selectId} className="block text-xs font-semibold text-neutral-700">
         {label}
         {required ? <span className="text-red-500"> *</span> : null}
       </label>
       <select
+        id={selectId}
         className="form-input w-full"
         disabled={disabled || loading}
         value={value ?? ""}

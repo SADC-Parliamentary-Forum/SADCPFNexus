@@ -468,7 +468,7 @@ export function PayslipDistributionDesk({
         filters={
           <div className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-500" htmlFor="payslip-period">
+              <label htmlFor="payslip-period" className="mb-1 block text-xs font-medium text-neutral-500">
                 Pay period
               </label>
               <input

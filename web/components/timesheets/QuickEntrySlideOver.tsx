@@ -497,7 +497,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
 
               {projects.length > 0 && (
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-neutral-700" htmlFor="quick-entry-project">
+                  <label htmlFor="quick-entry-project" className="mb-1.5 block text-xs font-medium text-neutral-700">
                     Project
                   </label>
                   <select

@@ -139,8 +139,9 @@ export default function GenericDocumentsPanel({
         {selectedFile && (
           <div className="flex flex-wrap gap-3 items-end">
             <div className="space-y-1 min-w-[200px]">
-              <label className="text-xs font-semibold text-neutral-600">Document Type</label>
+              <label htmlFor="generic-doc-type" className="text-xs font-semibold text-neutral-600">Document Type</label>
               <select
+                id="generic-doc-type"
                 value={docType}
                 onChange={(e) => setDocType(e.target.value)}
                 className="form-input"
