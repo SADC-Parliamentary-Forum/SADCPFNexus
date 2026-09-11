@@ -396,7 +396,7 @@ function RecentEventsCard() {
         </div>
         <Link
           href="/saam/verify"
-          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+          className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
         >
           Verify document
           <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -461,7 +461,7 @@ function RecentEventsCard() {
                 </div>
                 <Link
                   href={`/saam/verify/${shortType}/${evt.signable_id}`}
-                  className="flex-shrink-0 text-[11px] text-primary font-semibold hover:underline"
+                  className="btn-secondary text-[11px] py-1 px-2 flex-shrink-0"
                 >
                   Verify
                 </Link>
@@ -502,7 +502,7 @@ function DelegationSummaryCard({
         </div>
         <Link
           href="/saam/delegations"
-          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+          className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
         >
           Manage all
           <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -612,7 +612,7 @@ function DelegationSummaryCard({
                   <div className="px-5 py-2">
                     <Link
                       href="/saam/delegations"
-                      className="text-xs text-primary font-semibold hover:underline"
+                      className="btn-secondary text-xs py-1 px-2"
                     >
                       +{activeOut.length - 3} more
                     </Link>
@@ -652,7 +652,7 @@ function DelegationSummaryCard({
           {activeOut.length === 0 && activeIn.length === 0 && (
             <p className="px-5 pb-5 text-xs text-neutral-400 text-center">
               No active delegations.{" "}
-              <Link href="/saam/delegations" className="text-primary font-semibold hover:underline">
+              <Link href="/saam/delegations" className="btn-secondary text-xs py-1 px-2">
                 Create one
               </Link>{" "}
               if you will be unavailable.

@@ -179,7 +179,7 @@ export default function MandeDataQualityPage() {
                       </td>
                       <td>
                         {issue.url ? (
-                          <Link href={issue.url} className="text-xs text-primary hover:underline">
+                          <Link href={issue.url} className="btn-secondary text-xs py-1 px-2">
                             Open
                           </Link>
                         ) : null}

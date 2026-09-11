@@ -358,7 +358,7 @@ export default function WeeklyInstitutionalPage() {
                         <td className="py-2 pr-3">{row.items}</td>
                         <td className="py-2 pr-3">{row.missing}</td>
                         <td className="py-2">
-                          <Link href="/weekly-summaries/department" className="font-medium text-primary hover:underline">
+                          <Link href="/weekly-summaries/department" className="font-medium text-primary">
                             Department view
                           </Link>
                         </td>
@@ -405,11 +405,11 @@ export default function WeeklyInstitutionalPage() {
                           </td>
                           <td className="py-2">
                             {sourceId ? (
-                              <Link href={`/weekly-summaries/${sourceId}`} className="font-medium text-primary hover:underline">
+                              <Link href={`/weekly-summaries/${sourceId}`} className="font-medium text-primary">
                                 Open source
                               </Link>
                             ) : report ? (
-                              <Link href={`/weekly-summaries/${report.id}`} className="font-medium text-primary hover:underline">
+                              <Link href={`/weekly-summaries/${report.id}`} className="font-medium text-primary">
                                 Open rollup
                               </Link>
                             ) : (

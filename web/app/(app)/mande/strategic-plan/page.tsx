@@ -121,28 +121,28 @@ export default function StrategicPlanPage() {
                   <td className="whitespace-nowrap">
                     <Link
                       href={`/mande/strategic-plan/${p.id}`}
-                      className="text-primary text-xs hover:underline mr-3"
+                      className="btn-secondary text-xs py-1 px-2 mr-3"
                     >
                       {canAdmin ? "Manage hierarchy" : "Open"}
                     </Link>
                     {canAdmin && (
                       <>
-                        <button type="button" className="text-primary text-xs hover:underline mr-3" onClick={() => setModal({ ...p })}>
+                        <button type="button" className="btn-secondary text-xs py-1 px-2 mr-3" onClick={() => setModal({ ...p })}>
                           Edit
                         </button>
                         {p.status !== "active" && (
-                          <button type="button" className="text-green-700 text-xs hover:underline mr-3" onClick={() => activateMut.mutate(p.id)}>
+                          <button type="button" className="btn-secondary text-xs py-1 px-2 mr-3" onClick={() => activateMut.mutate(p.id)}>
                             Activate
                           </button>
                         )}
                         {p.status !== "archived" && (
-                          <button type="button" className="text-neutral-500 text-xs hover:underline mr-3" onClick={() => archiveMut.mutate(p.id)}>
+                          <button type="button" className="btn-secondary text-xs py-1 px-2 mr-3" onClick={() => archiveMut.mutate(p.id)}>
                             Archive
                           </button>
                         )}
                         <button
                           type="button"
-                          className="text-red-500 text-xs hover:underline"
+                          className="btn-secondary text-xs py-1 px-2 text-red-600"
                           onClick={async () => {
                             if (await confirm({ title: "Delete plan", message: "Delete this plan? This cannot be undone.", variant: "danger" })) {
                               delMut.mutate(p.id);

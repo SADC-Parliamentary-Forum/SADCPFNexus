@@ -113,7 +113,7 @@ export default function MandeIntakePage() {
                       <>
                         <Link
                           href={`/mande/activity-reports/create?programme_id=${p.id}`}
-                          className="text-primary text-xs hover:underline mr-3"
+                          className="btn-secondary text-xs py-1 px-2 mr-3"
                         >
                           Create report
                         </Link>
@@ -124,7 +124,7 @@ export default function MandeIntakePage() {
                               setNotReportableId(p.id);
                               setReason("");
                             }}
-                            className="text-neutral-500 text-xs hover:underline"
+                            className="btn-secondary text-xs py-1 px-2"
                           >
                             Not reportable
                           </button>
@@ -132,7 +132,7 @@ export default function MandeIntakePage() {
                       </>
                     )}
                     {p.has_report && (
-                      <Link href="/mande/activity-reports" className="text-primary text-xs hover:underline">
+                      <Link href="/mande/activity-reports" className="btn-secondary text-xs py-1 px-2">
                         View reports
                       </Link>
                     )}

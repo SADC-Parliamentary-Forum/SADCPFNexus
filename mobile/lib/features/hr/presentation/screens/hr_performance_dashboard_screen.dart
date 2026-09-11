@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class HrPerformanceDashboardScreen extends ConsumerStatefulWidget {
   const HrPerformanceDashboardScreen({super.key});
@@ -99,39 +100,33 @@ class _HrPerformanceDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        title: const Text('HR Performance Monitoring'),
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-            tooltip: 'Refresh',
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          indicatorColor: AppColors.primary,
-          labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Watchlist'),
-            Tab(text: 'At Risk'),
-            Tab(text: 'Dev. Actions'),
-          ],
+    return StitchScreen(
+      title: 'HR Performance Monitoring',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loadData,
         ),
+      ],
+      bottom: TabBar(
+        controller: _tabController,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textMuted,
+        indicatorColor: AppColors.primary,
+        labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        tabs: const [
+          Tab(text: 'Overview'),
+          Tab(text: 'Watchlist'),
+          Tab(text: 'At Risk'),
+          Tab(text: 'Dev. Actions'),
+        ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading performance dashboard')
           : _error != null
-              ? _buildError()
+              ? StitchErrorState(message: _error!, onRetry: _loadData)
               : TabBarView(
                   controller: _tabController,
                   children: [
@@ -141,36 +136,6 @@ class _HrPerformanceDashboardScreenState
                     _buildListTab(_devActionItems, 'Open Dev. Actions', AppColors.info),
                   ],
                 ),
-    );
-  }
-
-  Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
-            const SizedBox(height: 12),
-            const Text(
-              'Failed to load dashboard',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loadData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.bgDark,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

@@ -339,7 +339,7 @@ export default function RiskRegisterPage() {
             {matrixFilter && (
               <button
                 onClick={() => setMatrixFilter(null)}
-                className="text-xs text-primary hover:underline flex items-center gap-1"
+                className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
               >
                 <span className="material-symbols-outlined text-[14px]">close</span>
                 Clear filter
@@ -527,7 +527,7 @@ export default function RiskRegisterPage() {
                       />
                     </td>
                     <td>
-                      <Link href={`/risk/${risk.id}`} className="font-mono text-xs text-primary hover:underline">
+                      <Link href={`/risk/${risk.id}`} className="font-mono text-xs text-primary">
                         {risk.risk_code}
                       </Link>
                     </td>

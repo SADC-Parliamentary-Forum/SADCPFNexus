@@ -303,7 +303,7 @@ function StaffTable({
                 <td className="py-2 pr-3">{humanStatus(row.status)}</td>
                 <td className="py-2">
                   {reportId ? (
-                    <Link href={`/weekly-summaries/${reportId}`} className="font-medium text-primary hover:underline">
+                    <Link href={`/weekly-summaries/${reportId}`} className="font-medium text-primary">
                       {row.reference?.trim() || "Open"}
                     </Link>
                   ) : (

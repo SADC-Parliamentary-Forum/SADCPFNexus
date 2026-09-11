@@ -64,7 +64,7 @@ export default function ProgrammeReviewQueuePage() {
               {data.map((r) => (
                 <tr key={r.id}>
                   <td className="font-mono text-xs">
-                    <Link href={`/mande/activity-reports/${r.id}`} className="text-primary hover:underline">
+                    <Link href={`/mande/activity-reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">
                       {r.reference_number}
                     </Link>
                   </td>

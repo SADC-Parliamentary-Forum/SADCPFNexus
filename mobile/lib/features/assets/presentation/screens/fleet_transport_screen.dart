@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class FleetTransportScreen extends ConsumerStatefulWidget {
   const FleetTransportScreen({super.key});
@@ -81,51 +82,27 @@ class _FleetTransportScreenState extends ConsumerState<FleetTransportScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+    return StitchScreen(
+      title: 'Fleet & Transport',
+      fallbackRoute: '/assets',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh_rounded,
+          onPressed: _load,
         ),
-        title: const Text('Fleet & Transport',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded,
-                color: AppColors.textSecondary),
-            onPressed: _load,
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabs,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          indicatorColor: AppColors.primary,
-          tabs: const [Tab(text: 'Fleet'), Tab(text: 'Bookings')],
-        ),
+      ],
+      bottom: TabBar(
+        controller: _tabs,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textMuted,
+        indicatorColor: AppColors.primary,
+        tabs: const [Tab(text: 'Fleet'), Tab(text: 'Bookings')],
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading fleet')
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(_error!,
-                          style:
-                              const TextStyle(color: AppColors.textSecondary)),
-                      TextButton(onPressed: _load, child: const Text('Retry')),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : TabBarView(
                   controller: _tabs,
                   children: [_fleetTab(), _bookingsTab()],
@@ -135,9 +112,7 @@ class _FleetTransportScreenState extends ConsumerState<FleetTransportScreen>
 
   Widget _fleetTab() {
     if (_vehicles.isEmpty) {
-      return const Center(
-          child: Text('No vehicles registered.',
-              style: TextStyle(color: AppColors.textMuted)));
+      return const StitchEmptyState(title: 'No vehicles registered.');
     }
     return RefreshIndicator(
       color: AppColors.primary,
@@ -184,9 +159,7 @@ class _FleetTransportScreenState extends ConsumerState<FleetTransportScreen>
 
   Widget _bookingsTab() {
     if (_bookings.isEmpty) {
-      return const Center(
-          child: Text('No bookings.',
-              style: TextStyle(color: AppColors.textMuted)));
+      return const StitchEmptyState(title: 'No bookings.');
     }
     return ListView.separated(
       padding: const EdgeInsets.all(16),

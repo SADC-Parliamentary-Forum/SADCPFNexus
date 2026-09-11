@@ -114,7 +114,7 @@ export default function SrhrOverviewPage() {
               <span className="material-symbols-outlined text-neutral-400 text-[18px]">transfer_within_a_station</span>
               <h3 className="text-sm font-semibold text-neutral-900">Active Deployments</h3>
             </div>
-            <Link href="/srhr/deployments" className="text-xs text-primary hover:underline">View all</Link>
+            <Link href="/srhr/deployments" className="btn-secondary text-xs py-1 px-2">View all</Link>
           </div>
           <div className="divide-y divide-neutral-100">
             {loading
@@ -163,7 +163,7 @@ export default function SrhrOverviewPage() {
               <span className="material-symbols-outlined text-neutral-400 text-[18px]">summarize</span>
               <h3 className="text-sm font-semibold text-neutral-900">Recent Reports</h3>
             </div>
-            <Link href="/srhr/reports" className="text-xs text-primary hover:underline">View all</Link>
+            <Link href="/srhr/reports" className="btn-secondary text-xs py-1 px-2">View all</Link>
           </div>
           <div className="divide-y divide-neutral-100">
             {loading

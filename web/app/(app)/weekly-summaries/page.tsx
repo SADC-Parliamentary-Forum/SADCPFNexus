@@ -541,7 +541,7 @@ export default function WeeklySummariesPage() {
                     {feedRows.map((row) => (
                       <tr key={row.id} className="border-b border-neutral-50">
                         <td className="py-2 pr-3">
-                          <Link href={`/assignments/${row.id}`} className="font-medium text-primary hover:underline">
+                          <Link href={`/assignments/${row.id}`} className="font-medium text-primary">
                             {row.reference_number ?? row.id}
                           </Link>
                         </td>

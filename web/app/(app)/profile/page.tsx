@@ -355,7 +355,7 @@ export default function MyProfilePage() {
                     </div>
                   </div>
                   <button type="button" onClick={handleCancelRequest} disabled={cancelling}
-                    className="text-xs font-semibold text-red-500 dark:text-red-400 hover:underline flex-shrink-0">
+                    className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600">
                     {cancelling ? "Withdrawing…" : "Withdraw"}
                   </button>
                 </div>

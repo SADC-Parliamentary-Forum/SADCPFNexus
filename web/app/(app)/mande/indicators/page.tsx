@@ -142,7 +142,7 @@ export default function IndicatorsPage() {
                     <td className="text-xs text-neutral-500 capitalize">{ind.frequency?.replace("_", "-") ?? "—"}</td>
                     <td>{ind.is_active ? <span className="badge badge-success">Active</span> : <span className="badge badge-muted">Inactive</span>}</td>
                     <td className="whitespace-nowrap">
-                      <button onClick={() => setModal({ ...ind })} className="text-primary text-xs hover:underline mr-3">Edit</button>
+                      <button onClick={() => setModal({ ...ind })} className="btn-secondary text-xs py-1 px-2 mr-3">Edit</button>
                       <button
                         onClick={async () => {
                           if (await confirm({ title: "Create snapshot", message: "Create a version snapshot of this indicator?", variant: "primary" })) {
@@ -151,7 +151,7 @@ export default function IndicatorsPage() {
                               .catch(() => error("Snapshot failed", "Could not create the indicator snapshot."));
                           }
                         }}
-                        className="text-neutral-600 text-xs hover:underline mr-3"
+                        className="btn-secondary text-xs py-1 px-2 mr-3"
                       >
                         Snapshot
                       </button>
@@ -163,7 +163,7 @@ export default function IndicatorsPage() {
                           }
                         }}
                         disabled={delMut.isPending}
-                        className="text-red-500 text-xs hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
                         {delMut.isPending ? "Deleting…" : "Delete"}
                       </button>

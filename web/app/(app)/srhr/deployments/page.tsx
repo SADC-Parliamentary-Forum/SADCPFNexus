@@ -140,7 +140,7 @@ export default function DeploymentsPage() {
                       </span>
                     </td>
                     <td>
-                      <Link href={`/srhr/deployments/${d.id}`} className="text-xs text-primary hover:underline">
+                      <Link href={`/srhr/deployments/${d.id}`} className="btn-secondary text-xs py-1 px-2">
                         View
                       </Link>
                     </td>

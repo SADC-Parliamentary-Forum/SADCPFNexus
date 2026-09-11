@@ -436,7 +436,7 @@ export default function CreateRiskPage() {
                 {ownersError && (
                   <p className="text-xs text-amber-700 mt-1 flex flex-wrap items-center gap-2">
                     {ownersError}
-                    <button type="button" className="text-primary font-semibold hover:underline" onClick={loadOwners}>
+                    <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={loadOwners}>
                       {t("risk.create.ownerRetry")}
                     </button>
                   </p>

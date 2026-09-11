@@ -121,7 +121,7 @@ export default function ActivityReportsPage() {
                   </td>
                   <td className="text-xs text-neutral-400">{formatDateShort(r.updated_at)}</td>
                   <td>
-                    <Link href={`/mande/activity-reports/${r.id}`} className="text-primary text-xs hover:underline">
+                    <Link href={`/mande/activity-reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">
                       Open
                     </Link>
                   </td>

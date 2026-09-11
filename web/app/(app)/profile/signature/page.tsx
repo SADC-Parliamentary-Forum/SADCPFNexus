@@ -185,7 +185,7 @@ export default function SignatureSetupPage() {
                 </div>
                 <button
                   onClick={() => revokeSignature(tab)}
-                  className="text-xs font-semibold text-red-500 hover:underline flex-shrink-0"
+                  className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600"
                 >
                   Revoke
                 </button>
@@ -265,7 +265,7 @@ export default function SignatureSetupPage() {
                   <img src={uploadPreview} alt="preview" className="max-h-16 max-w-[160px] object-contain" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-neutral-700">{uploadFile?.name}</p>
-                    <button onClick={() => { setUploadFile(null); setUploadPreview(null); }} className="text-xs text-red-500 hover:underline mt-0.5">Remove</button>
+                    <button onClick={() => { setUploadFile(null); setUploadPreview(null); }} className="btn-secondary text-xs py-1 px-2 mt-0.5 text-red-600">Remove</button>
                   </div>
                 </div>
               ) : (

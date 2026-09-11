@@ -95,7 +95,7 @@ export default function MandeCalendarPage() {
                   <tr key={item.id} className={overdue ? "bg-red-50/60" : undefined}>
                     <td className="text-xs whitespace-nowrap">{formatDateShort(item.report_due_at)}</td>
                     <td className="font-mono text-xs">
-                      <Link href={`/mande/activity-reports/${item.id}`} className="text-primary hover:underline">
+                      <Link href={`/mande/activity-reports/${item.id}`} className="btn-secondary text-xs py-1 px-2">
                         {item.reference_number}
                       </Link>
                     </td>

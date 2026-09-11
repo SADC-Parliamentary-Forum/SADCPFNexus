@@ -139,7 +139,7 @@ export default function ResearcherReportsPage() {
                       </span>
                     </td>
                     <td>
-                      <Link href={`/srhr/reports/${r.id}`} className="text-xs text-primary hover:underline">View</Link>
+                      <Link href={`/srhr/reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">View</Link>
                     </td>
                   </tr>
                 ))}

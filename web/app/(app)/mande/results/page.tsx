@@ -130,12 +130,12 @@ export default function ResultsFrameworksPage() {
                   <td className="whitespace-nowrap">
                     {canAdmin && (
                       <>
-                        <button type="button" className="text-primary text-xs hover:underline mr-3" onClick={() => setModal({ ...fw })}>
+                        <button type="button" className="btn-secondary text-xs py-1 px-2 mr-3" onClick={() => setModal({ ...fw })}>
                           Edit
                         </button>
                         <button
                           type="button"
-                          className="text-red-500 text-xs hover:underline"
+                          className="btn-secondary text-xs py-1 px-2 text-red-600"
                           onClick={async () => {
                             if (await confirm({ title: "Delete framework", message: "Delete this framework? This cannot be undone.", variant: "danger" })) {
                               delMut.mutate(fw.id);

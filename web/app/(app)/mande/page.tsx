@@ -129,7 +129,7 @@ export default function MandeDashboardPage() {
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100">
           <h2 className="text-sm font-semibold text-neutral-800">M&amp;E Review Queue</h2>
-          <Link href="/mande/review-queue" className="text-xs text-primary hover:underline">View all</Link>
+          <Link href="/mande/review-queue" className="btn-secondary text-xs py-1 px-2">View all</Link>
         </div>
         {(data?.review_queue?.length ?? 0) === 0 ? (
           <p className="px-5 py-8 text-center text-sm text-neutral-400">No reports awaiting review.</p>
@@ -146,7 +146,7 @@ export default function MandeDashboardPage() {
                   <td className="text-xs text-neutral-500">{r.pif_number ?? "—"}</td>
                   <td><span className={`badge ${STATUS_BADGE[r.review_status] ?? "badge-muted"}`}>{r.review_status.replace("_", " ")}</span></td>
                   <td className="text-xs text-neutral-400">{r.submitted_at ? formatDateShort(r.submitted_at) : "—"}</td>
-                  <td><Link href={`/mande/activity-reports/${r.id}`} className="text-primary text-xs hover:underline">Open</Link></td>
+                  <td><Link href={`/mande/activity-reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">Open</Link></td>
                 </tr>
               ))}
             </tbody>

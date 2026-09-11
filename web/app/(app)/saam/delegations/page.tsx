@@ -142,7 +142,7 @@ export default function DelegationsPage() {
                       {d.reason && <p className="text-xs text-neutral-500 mt-0.5 italic">{d.reason}</p>}
                     </div>
                     {isActive(d) && (
-                      <button onClick={() => revoke(d.id)} className="text-xs font-semibold text-red-500 hover:underline flex-shrink-0">Revoke</button>
+                      <button onClick={() => revoke(d.id)} className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600">Revoke</button>
                     )}
                   </div>
                 ))}

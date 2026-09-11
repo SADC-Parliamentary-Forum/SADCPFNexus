@@ -8,6 +8,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class HrFileSummaryScreen extends ConsumerStatefulWidget {
   final int fileId;
@@ -35,6 +36,7 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() => setState(() {}));
     WidgetsBinding.instance.addPostFrameCallback((_) => _loadData());
   }
 
@@ -90,94 +92,41 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(
-        backgroundColor: AppColors.bgDark,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-      );
-    }
-
-    if (_error != null) {
-      return Scaffold(
-        backgroundColor: AppColors.bgDark,
-        appBar: AppBar(
-          title: const Text('HR Personal File'),
-          backgroundColor: AppColors.bgDark,
-          foregroundColor: AppColors.textPrimary,
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline,
-                    size: 48, color: AppColors.danger),
-                const SizedBox(height: 12),
-                Text(
-                  _error!,
-                  textAlign: TextAlign.center,
-                  style:
-                      const TextStyle(fontSize: 13, color: AppColors.textMuted),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _loadData,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textPrimary,
-                    minimumSize: const Size(140, 44),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    final f = _file!;
-    final name = (f['employee_name'] ?? f['name'] ?? 'Unknown').toString();
-
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        title: const Text('HR Personal File'),
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.folder_outlined),
+    final name = (_file?['employee_name'] ?? _file?['name'] ?? 'Unknown').toString();
+    final ready = !_loading && _error == null && _file != null;
+    return StitchScreen(
+      title: 'HR Personal File',
+      fallbackRoute: '/dashboard',
+      actions: [
+        if (ready)
+          StitchIconAction(
             tooltip: 'Documents',
+            icon: Icons.folder_outlined,
             onPressed: () => context.push(
               '/hr/files/documents',
               extra: {'fileId': widget.fileId, 'employeeName': name},
             ),
           ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          indicatorColor: AppColors.primary,
-          labelStyle:
-              const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: 'Summary'),
-            Tab(text: 'Employment'),
-            Tab(text: 'Documents'),
-            Tab(text: 'Timeline'),
-          ],
-        ),
-      ),
-      floatingActionButton: _tabController.index == 3 && _isHrOrSupervisor
+      ],
+      bottom: ready
+          ? TabBar(
+              controller: _tabController,
+              labelColor: AppColors.primary,
+              unselectedLabelColor: AppColors.textMuted,
+              indicatorColor: AppColors.primary,
+              labelStyle:
+                  const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              tabs: const [
+                Tab(text: 'Summary'),
+                Tab(text: 'Employment'),
+                Tab(text: 'Documents'),
+                Tab(text: 'Timeline'),
+              ],
+            )
+          : null,
+      floatingActionButton: ready &&
+              _tabController.index == 3 &&
+              _isHrOrSupervisor
           ? FloatingActionButton(
               backgroundColor: AppColors.primary,
               foregroundColor: AppColors.textPrimary,
@@ -185,22 +134,26 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
               child: const Icon(Icons.add),
             )
           : null,
-      body: Column(
-        children: [
-          _buildHeaderCard(f, name),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildSummaryTab(f),
-                _buildEmploymentTab(f),
-                _buildDocumentsTab(),
-                _buildTimelineTab(),
-              ],
-            ),
-          ),
-        ],
-      ),
+      body: _loading
+          ? const StitchLoadingState(label: 'Loading HR file')
+          : _error != null
+              ? StitchErrorState(message: _error!, onRetry: _loadData)
+              : Column(
+                  children: [
+                    _buildHeaderCard(_file!, name),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildSummaryTab(_file!),
+                          _buildEmploymentTab(_file!),
+                          _buildDocumentsTab(),
+                          _buildTimelineTab(),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
     );
   }
 
@@ -531,22 +484,9 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
 
   Widget _buildDocumentsTab() {
     if (_documents.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.folder_open_outlined,
-                size: 56, color: AppColors.textMuted.withValues(alpha: 0.5)),
-            const SizedBox(height: 12),
-            const Text(
-              'No documents uploaded',
-              style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textMuted),
-            ),
-          ],
-        ),
+      return const StitchEmptyState(
+        title: 'No documents uploaded',
+        icon: Icons.folder_open_outlined,
       );
     }
 
@@ -560,22 +500,9 @@ class _HrFileSummaryScreenState extends ConsumerState<HrFileSummaryScreen>
 
   Widget _buildTimelineTab() {
     if (_timeline.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.timeline,
-                size: 56, color: AppColors.textMuted.withValues(alpha: 0.5)),
-            const SizedBox(height: 12),
-            const Text(
-              'No timeline events',
-              style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textMuted),
-            ),
-          ],
-        ),
+      return const StitchEmptyState(
+        title: 'No timeline events',
+        icon: Icons.timeline,
       );
     }
 

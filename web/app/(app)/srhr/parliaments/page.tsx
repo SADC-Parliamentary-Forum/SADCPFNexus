@@ -110,7 +110,7 @@ export default function ParliamentsPage() {
                     <td>
                       <Link
                         href={`/srhr/parliaments/${p.id}`}
-                        className="text-xs text-primary hover:underline"
+                        className="btn-secondary text-xs py-1 px-2"
                       >
                         View
                       </Link>

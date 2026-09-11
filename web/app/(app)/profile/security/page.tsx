@@ -393,7 +393,7 @@ export default function ProfileSecurityPage() {
               <button
                 type="button"
                 onClick={() => { setDisablePassword(""); setShowDisableModal(true); }}
-                className="flex-shrink-0 text-xs font-semibold text-red-500 hover:underline"
+                className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600"
               >
                 Disable
               </button>
@@ -575,7 +575,7 @@ export default function ProfileSecurityPage() {
           </div>
           {sessions.filter((s) => !s.is_current).length > 0 && (
             <button type="button" onClick={handleRevokeOthers} disabled={revokingOthers}
-              className="text-xs font-semibold text-red-500 hover:underline disabled:opacity-40">
+              className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-40">
               {revokingOthers ? "Signing out…" : "Sign out all others"}
             </button>
           )}
@@ -610,7 +610,7 @@ export default function ProfileSecurityPage() {
                 </div>
                 {!s.is_current && (
                   <button type="button" onClick={() => handleRevoke(s.id)} disabled={revokingId === s.id}
-                    className="text-xs font-medium text-red-500 hover:underline flex-shrink-0 disabled:opacity-40">
+                    className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600 disabled:opacity-40">
                     {revokingId === s.id ? "Revoking…" : "Revoke"}
                   </button>
                 )}

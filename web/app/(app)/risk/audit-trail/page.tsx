@@ -211,7 +211,7 @@ export default function RiskAuditTrailPage() {
                       {event.risk ? (
                         <Link
                           href={`/risk/${event.risk_id}`}
-                          className="text-xs font-mono text-primary hover:underline"
+                          className="font-mono text-xs text-primary"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {event.risk.risk_code}

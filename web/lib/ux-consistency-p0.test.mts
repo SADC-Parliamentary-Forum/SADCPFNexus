@@ -249,6 +249,39 @@ test("workplan, correspondence, assignment, risk, and salary-advance actions are
   }
 });
 
+test("weekly-summaries, SRHR lists, SAAM, profile, M&E, and risk hubs drop underline actions", () => {
+  const pages = [
+    "weekly-summaries/page.tsx",
+    "weekly-summaries/review/page.tsx",
+    "weekly-summaries/institutional/page.tsx",
+    "weekly-summaries/department/page.tsx",
+    "weekly-summaries/compliance/page.tsx",
+    "srhr/page.tsx",
+    "srhr/parliaments/page.tsx",
+    "srhr/reports/page.tsx",
+    "srhr/deployments/page.tsx",
+    "saam/page.tsx",
+    "saam/delegations/page.tsx",
+    "profile/page.tsx",
+    "profile/signature/page.tsx",
+    "profile/security/page.tsx",
+    "mande/page.tsx",
+    "mande/review-queue/page.tsx",
+    "mande/activity-reports/page.tsx",
+    "mande/indicators/page.tsx",
+    "risk/page.tsx",
+    "risk/create/page.tsx",
+    "risk/audit-trail/page.tsx",
+    "leave/queues/certify/page.tsx",
+  ];
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
+    assert.doesNotMatch(source, /hover:underline/, rel);
+  }
+  const header = readFileSync(join(webRoot, "components/layout/Header.tsx"), "utf8");
+  assert.doesNotMatch(header, /hover:underline/);
+});
+
 test("operational mobile detail screens use StitchScreen chrome", () => {
   const mobileRoot = join(webRoot, "..", "mobile", "lib", "features");
   const screens = [
@@ -269,6 +302,26 @@ test("operational mobile detail screens use StitchScreen chrome", () => {
     "finance/presentation/screens/budget_cashflow_screen.dart",
     "finance/presentation/screens/budget_variance_screen.dart",
     "finance/presentation/screens/audit_compliance_screen.dart",
+    "hr/presentation/screens/hr_file_summary_screen.dart",
+    "hr/presentation/screens/hr_file_documents_screen.dart",
+    "hr/presentation/screens/hr_performance_dashboard_screen.dart",
+    "hr/presentation/screens/hr_governance_dashboard_screen.dart",
+    "hr/presentation/screens/supervisor_team_detail_screen.dart",
+    "hr/presentation/screens/performance_tracker_screen.dart",
+    "governance/presentation/screens/resolutions_oversight_screen.dart",
+    "governance/presentation/screens/plenary_resolution_dashboard_screen.dart",
+    "governance/presentation/screens/regional_compliance_tracker_screen.dart",
+    "governance/presentation/screens/delegation_meetings_screen.dart",
+    "dashboard/presentation/screens/executive_cockpit_screen.dart",
+    "analytics/presentation/screens/global_executive_summary_screen.dart",
+    "pif/presentation/screens/pif_lifecycle_review_screen.dart",
+    "pif/presentation/screens/pif_lifecycle_flow_screen.dart",
+    "imprest/presentation/screens/expense_retirement_audit_screen.dart",
+    "assets/presentation/screens/fleet_transport_screen.dart",
+    "assets/presentation/screens/fleet_vehicle_detail_screen.dart",
+    "procurement/presentation/screens/procurement_rfq_screen.dart",
+    "support/presentation/screens/user_support_health_screen.dart",
+    "timesheets/presentation/screens/timesheet_weekly_screen.dart",
   ];
   for (const rel of screens) {
     const source = readFileSync(join(mobileRoot, rel), "utf8");

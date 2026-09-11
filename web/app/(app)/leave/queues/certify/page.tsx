@@ -137,7 +137,7 @@ export default function LeaveCertificationQueuePage() {
                 {rows.map((r) => (
                   <tr key={r.id}>
                     <td>
-                      <Link href={`/leave/${r.id}`} className="font-mono text-xs font-medium text-primary hover:underline">
+                      <Link href={`/leave/${r.id}`} className="font-mono text-xs font-medium text-primary">
                         {r.reference_number}
                       </Link>
                     </td>
@@ -150,7 +150,7 @@ export default function LeaveCertificationQueuePage() {
                     <td className="text-sm text-neutral-600">{r.current_holder ?? "HR / Admin"}</td>
                     <td>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Link href={`/leave/${r.id}`} className="text-xs font-medium text-neutral-600 hover:underline">
+                        <Link href={`/leave/${r.id}`} className="btn-secondary text-xs py-1 px-2">
                           View
                         </Link>
                         <button

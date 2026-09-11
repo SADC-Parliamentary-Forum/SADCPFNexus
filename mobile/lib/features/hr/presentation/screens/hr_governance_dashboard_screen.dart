@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class HrGovernanceDashboardScreen extends ConsumerStatefulWidget {
   const HrGovernanceDashboardScreen({super.key});
@@ -248,32 +249,20 @@ class _HrGovernanceDashboardScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        title: const Text(
-          'HR Governance',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-          ),
+    return StitchScreen(
+      title: 'HR Governance',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-            onPressed: _loading ? null : _load,
-          ),
-        ],
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
+          ? const StitchLoadingState(label: 'Loading HR governance')
           : _error != null
-              ? _DashboardError(message: _error!, onRetry: _load)
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : _buildBody(),
     );
   }
@@ -885,42 +874,6 @@ class _InfoLine extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _DashboardError extends StatelessWidget {
-  const _DashboardError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 44, color: AppColors.danger),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
       ),
     );
   }

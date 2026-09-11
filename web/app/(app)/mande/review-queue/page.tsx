@@ -117,7 +117,7 @@ export default function ReviewQueuePage() {
                     {r.submitted_at ? formatDateShort(r.submitted_at) : "—"}
                   </td>
                   <td>
-                    <Link href={`/mande/activity-reports/${r.id}`} className="text-primary text-xs hover:underline">
+                    <Link href={`/mande/activity-reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">
                       Review
                     </Link>
                   </td>
