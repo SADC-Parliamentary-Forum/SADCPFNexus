@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { hrApi, type Timesheet } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -320,20 +321,27 @@ export default function TeamTimesheetsPage() {
     <div className="w-full min-w-0 space-y-6">
       <AppToast toast={toast} onClose={() => setToast(null)} />
 
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="page-title">Team Timesheets</h1>
-            {pendingCount > 0 && (
-              <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white">
-                {pendingCount}
-              </span>
-            )}
-          </div>
-          <p className="page-subtitle mt-1">Review and approve your team's weekly submissions</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
+      <ModulePageHeader
+        title="Team Timesheets"
+        subtitle="Review and approve your team's weekly submissions"
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Timesheets", href: "/hr/timesheets" },
+              { label: "Team" },
+            ]}
+          />
+        }
+        meta={
+          pendingCount > 0 ? (
+            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-[10px] font-bold text-white">
+              {pendingCount}
+            </span>
+          ) : undefined
+        }
+        actions={
+          <>
           {/* View mode toggle */}
           <div className="flex items-center rounded-lg border border-neutral-200 bg-white overflow-hidden dark:border-neutral-700 dark:bg-neutral-900">
             <button
@@ -432,8 +440,9 @@ export default function TeamTimesheetsPage() {
               </>
             )}
           </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Week nav */}
       <div className="flex items-center gap-3">
@@ -459,7 +468,7 @@ export default function TeamTimesheetsPage() {
         <button
           type="button"
           onClick={() => setWeekStartDate(getWeekStart(new Date()))}
-          className="ml-2 text-xs text-primary hover:underline"
+          className="ml-2 btn-secondary text-xs"
         >
           Current week
         </button>
@@ -469,7 +478,7 @@ export default function TeamTimesheetsPage() {
         <div className="rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900" data-testid="team-payroll-export-history">
           <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-neutral-800">Payroll export history</h2>
-            <button type="button" className="text-xs text-primary hover:underline" onClick={() => void loadExportHistory()}>
+            <button type="button" className="btn-secondary text-xs" onClick={() => void loadExportHistory()}>
               Refresh
             </button>
           </div>

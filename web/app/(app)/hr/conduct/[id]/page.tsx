@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { conductApi, type ConductRecord } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Lookup Tables ─────────────────────────────────────────────────────────────
 
@@ -429,7 +430,7 @@ export default function ConductDetailPage() {
         </div>
         <Link
           href="/hr/conduct"
-          className="text-sm font-semibold text-primary hover:underline inline-flex items-center gap-1"
+          className="btn-secondary text-sm inline-flex items-center gap-1"
         >
           <span className="material-symbols-outlined text-[15px]">arrow_back</span>
           Back to Conduct & Recognition
@@ -566,23 +567,19 @@ export default function ConductDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* ── Breadcrumb ── */}
-      <div>
-        <div className="flex items-center gap-1.5 text-xs text-neutral-500 mb-3">
-          <Link href="/hr" className="hover:text-neutral-700 transition-colors">
-            HR
-          </Link>
-          <span className="material-symbols-outlined text-[13px]">chevron_right</span>
-          <Link href="/hr/conduct" className="hover:text-neutral-700 transition-colors">
-            Conduct & Recognition
-          </Link>
-          <span className="material-symbols-outlined text-[13px]">chevron_right</span>
-          <span className="text-neutral-700 font-medium truncate max-w-[200px]">{record.title}</span>
-        </div>
-
-        <h1 className="page-title">{record.title}</h1>
-        <p className="page-subtitle">Progressive discipline record for {employeeName}</p>
-      </div>
+      <ModulePageHeader
+        title={record.title}
+        subtitle={`Progressive discipline record for ${employeeName}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Conduct & Recognition", href: "/hr/conduct" },
+              { label: record.title },
+            ]}
+          />
+        }
+      />
 
       {/* ── Hero Header Card ── */}
       <div className="card p-5">

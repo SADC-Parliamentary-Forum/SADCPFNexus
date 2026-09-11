@@ -220,7 +220,7 @@ export function StockItemFormModal({
                   <button
                     type="button"
                     data-testid="stock-add-category"
-                    className="text-xs font-semibold text-primary hover:underline"
+                    className="btn-secondary text-xs"
                     onClick={() => setAddingCategory((v) => !v)}
                   >
                     {t("stock.addCategory")}
@@ -261,7 +261,7 @@ export function StockItemFormModal({
                 <p className="text-xs text-neutral-400 mt-1">
                   {t("stock.noCategoriesHint")}{" "}
                   {canConfigure && (
-                    <Link href="/stock/categories" className="text-primary hover:underline">{t("stock.manageCategories")}</Link>
+                    <Link href="/stock/categories" className="btn-secondary text-xs">{t("stock.manageCategories")}</Link>
                   )}
                 </p>
               )}
@@ -273,7 +273,7 @@ export function StockItemFormModal({
                   <button
                     type="button"
                     data-testid="stock-add-unit"
-                    className="text-xs font-semibold text-primary hover:underline"
+                    className="btn-secondary text-xs"
                     onClick={() => setAddingUnit((v) => !v)}
                   >
                     {t("stock.addUnit")}
@@ -324,7 +324,7 @@ export function StockItemFormModal({
                 <p className="text-xs text-neutral-400 mt-1">
                   {t("stock.noUnitsHint")}{" "}
                   {canConfigure && (
-                    <Link href="/stock/units" className="text-primary hover:underline">{t("stock.manageUnits")}</Link>
+                    <Link href="/stock/units" className="btn-secondary text-xs">{t("stock.manageUnits")}</Link>
                   )}
                 </p>
               )}

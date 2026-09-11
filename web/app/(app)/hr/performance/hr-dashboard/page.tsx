@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { performanceTrackerApi, type PerformanceTracker } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const STATUS_LABELS: Record<string, string> = {
   excellent: "Excellent",
@@ -63,7 +63,6 @@ const SECTIONS: { id: DashboardSection; label: string; icon: string }[] = [
 ];
 
 export default function HrPerformanceDashboardPage() {
-  const router = useRouter();
   const [section, setSection] = useState<DashboardSection>("overview");
   const [overview, setOverview] = useState<{
     status_counts: Record<string, number>;
@@ -117,20 +116,20 @@ export default function HrPerformanceDashboardPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <nav className="flex items-center gap-1.5 text-xs text-neutral-400 mb-1">
-            <button onClick={() => router.push("/hr")} className="hover:text-neutral-600">HR</button>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <button onClick={() => router.push("/hr/performance")} className="hover:text-neutral-600">Performance Tracker</button>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">HR Monitoring Dashboard</span>
-          </nav>
-          <h1 className="page-title">HR Performance Monitoring</h1>
-          <p className="page-subtitle">Institution-wide performance intelligence, watchlist monitoring, and pre-appraisal evidence overview.</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <ModulePageHeader
+        title="HR Performance Monitoring"
+        subtitle="Institution-wide performance intelligence, watchlist monitoring, and pre-appraisal evidence overview."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Performance Tracker", href: "/hr/performance" },
+              { label: "HR Monitoring Dashboard" },
+            ]}
+          />
+        }
+        actions={
+          <>
           <Link href="/hr/performance/team" className="btn-secondary flex items-center gap-2 py-2 px-3 text-sm">
             <span className="material-symbols-outlined text-[18px]">group</span>
             Team View
@@ -139,14 +138,15 @@ export default function HrPerformanceDashboardPage() {
             <span className="material-symbols-outlined text-[18px]">trending_up</span>
             All Trackers
           </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           {error}
-          <button onClick={load} className="ml-auto text-red-700 font-semibold hover:underline">Retry</button>
+          <button type="button" onClick={load} className="ml-auto btn-secondary text-xs">Retry</button>
         </div>
       )}
 
@@ -391,7 +391,7 @@ export default function HrPerformanceDashboardPage() {
                                 {t.assignment_completion_rate != null ? `${t.assignment_completion_rate}%` : "—"}
                               </td>
                               <td className="text-right">
-                                <Link href={`/hr/performance/${t.id}`} className="text-sm font-semibold text-primary hover:underline">
+                                <Link href={`/hr/performance/${t.id}`} className="btn-secondary text-xs">
                                   View profile
                                 </Link>
                               </td>
@@ -575,7 +575,7 @@ function TrackerTable({
                       )}
                     </td>
                     <td className="text-right">
-                      <Link href={`/hr/performance/${t.id}`} className="text-sm font-semibold text-primary hover:underline">
+                      <Link href={`/hr/performance/${t.id}`} className="btn-secondary text-xs">
                         View
                       </Link>
                     </td>

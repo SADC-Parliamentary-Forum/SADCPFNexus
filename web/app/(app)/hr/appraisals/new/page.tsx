@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { appraisalApi, hrFilesApi, tenantUsersApi, type AppraisalCycle, type HrPersonalFile, type TenantUserOption, type AuthUser } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 interface DepartmentInfo {
   id: number;
@@ -66,7 +67,7 @@ function UserAutocomplete({
             <span className="material-symbols-outlined text-[14px]">check_circle</span>
             Selected
           </span>
-          <button type="button" className="text-xs text-primary hover:underline" onClick={() => { onSelect(null); setQuery(""); }}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => { onSelect(null); setQuery(""); }}>
             Clear
           </button>
         </div>
@@ -240,14 +241,19 @@ export default function NewAppraisalPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">HR</Link>
-        <Link href="/hr/appraisals" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 block">Appraisals</Link>
-        <h1 className="page-title">Start my appraisal</h1>
-        <p className="page-subtitle">
-          Initiate your own performance appraisal for the selected cycle. Your supervisor and HOD will be automatically identified from your HR file.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Start my appraisal"
+        subtitle="Initiate your own performance appraisal for the selected cycle. Your supervisor and HOD will be automatically identified from your HR file."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Appraisals", href: "/hr/appraisals" },
+              { label: "Start my appraisal" },
+            ]}
+          />
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
@@ -345,7 +351,7 @@ export default function NewAppraisalPage() {
               <label className="block text-sm font-semibold text-neutral-700">Key result areas</label>
               <p className="text-xs text-neutral-400">Optional — you can add or edit KRAs on the next screen.</p>
             </div>
-            <button type="button" onClick={addKra} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+            <button type="button" onClick={addKra} className="btn-secondary text-xs flex items-center gap-1">
               <span className="material-symbols-outlined text-[15px]">add</span>
               Add KRA
             </button>

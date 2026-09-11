@@ -11,6 +11,7 @@ import {
   type AppraisalAttachment,
 } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -669,7 +670,7 @@ export default function AppraisalDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
-        <Link href="/hr/appraisals" className="text-sm font-semibold text-primary hover:underline">Back to Appraisals</Link>
+        <Link href="/hr/appraisals" className="btn-secondary text-sm">Back to Appraisals</Link>
       </div>
     );
   }
@@ -678,7 +679,7 @@ export default function AppraisalDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-neutral-50 border border-neutral-200 px-4 py-3 text-sm text-neutral-600">Appraisal not found.</div>
-        <Link href="/hr/appraisals" className="text-sm font-semibold text-primary hover:underline">Back to Appraisals</Link>
+        <Link href="/hr/appraisals" className="btn-secondary text-sm">Back to Appraisals</Link>
       </div>
     );
   }
@@ -714,20 +715,19 @@ export default function AppraisalDetailPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
 
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-1 text-xs text-neutral-500 mb-1">
-          <Link href="/hr" className="hover:text-neutral-700 font-medium">HR</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href="/hr/appraisals" className="hover:text-neutral-700 font-medium">Appraisals</Link>
-        </div>
-        <h1 className="page-title">{employeeName}</h1>
-        <p className="page-subtitle">
-          {appraisal.cycle?.title ?? `Cycle #${appraisal.cycle_id}`}
-          {appraisal.cycle?.period_start && appraisal.cycle?.period_end &&
-            ` · ${formatDate(appraisal.cycle.period_start)} – ${formatDate(appraisal.cycle.period_end)}`}
-        </p>
-      </div>
+      <ModulePageHeader
+        title={employeeName}
+        subtitle={`${appraisal.cycle?.title ?? `Cycle #${appraisal.cycle_id}`}${appraisal.cycle?.period_start && appraisal.cycle?.period_end ? ` · ${formatDate(appraisal.cycle.period_start)} – ${formatDate(appraisal.cycle.period_end)}` : ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Appraisals", href: "/hr/appraisals" },
+              { label: employeeName },
+            ]}
+          />
+        }
+      />
 
       {/* Status bar */}
       <div className="card p-4 flex flex-wrap items-center gap-4">
@@ -825,7 +825,7 @@ export default function AppraisalDetailPage() {
                 <button
                   type="button"
                   onClick={() => setAchievements((p) => [...p, { category: "", description: "" }])}
-                  className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+                  className="btn-secondary text-xs flex items-center gap-1"
                 >
                   <span className="material-symbols-outlined text-[14px]">add</span>Add row
                 </button>
@@ -978,8 +978,8 @@ export default function AppraisalDetailPage() {
                     <li key={a.id} className="flex items-center justify-between rounded-lg border border-neutral-100 px-3 py-2 text-xs">
                       <span className="font-medium text-neutral-800 truncate">{a.original_filename}</span>
                       <div className="flex gap-2 flex-shrink-0">
-                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="text-primary hover:underline">Download</button>
-                        <button type="button" onClick={() => handleDeleteAttachment(a.id)} className="text-red-600 hover:underline">Delete</button>
+                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="btn-secondary text-xs">Download</button>
+                        <button type="button" onClick={() => handleDeleteAttachment(a.id)} className="btn-secondary text-xs text-red-600">Delete</button>
                       </div>
                     </li>
                   ))}
@@ -1004,8 +1004,8 @@ export default function AppraisalDetailPage() {
                 <ul className="mt-2 space-y-1">
                   {evidenceLinks.map((link, i) => (
                     <li key={i} className="flex items-center gap-2 text-xs">
-                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">{link.title || link.url}</a>
-                      <button type="button" onClick={() => setEvidenceLinks((p) => p.filter((_, idx) => idx !== i))} className="text-red-600 hover:underline flex-shrink-0">Remove</button>
+                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs truncate">{link.title || link.url}</a>
+                      <button type="button" onClick={() => setEvidenceLinks((p) => p.filter((_, idx) => idx !== i))} className="btn-secondary text-xs text-red-600 flex-shrink-0">Remove</button>
                     </li>
                   ))}
                 </ul>
@@ -1111,7 +1111,7 @@ export default function AppraisalDetailPage() {
                     {attachments.map((a) => (
                       <li key={a.id} className="flex items-center justify-between rounded-lg border border-neutral-100 px-3 py-2 text-xs">
                         <span className="font-medium text-neutral-800">{a.original_filename}</span>
-                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="text-primary hover:underline">Download</button>
+                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="btn-secondary text-xs">Download</button>
                       </li>
                     ))}
                   </ul>
@@ -1120,7 +1120,7 @@ export default function AppraisalDetailPage() {
                   <ul className="space-y-1">
                     {evidenceLinks.map((link, i) => (
                       <li key={i}>
-                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs">{link.title || link.url}</a>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs">{link.title || link.url}</a>
                       </li>
                     ))}
                   </ul>
@@ -1601,7 +1601,7 @@ export default function AppraisalDetailPage() {
 
       {/* Back link */}
       <div className="flex justify-end gap-3 pt-2">
-        <Link href="/hr/appraisals" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+        <Link href="/hr/appraisals" className="btn-secondary text-sm flex items-center gap-1">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
           Back to Appraisals
         </Link>

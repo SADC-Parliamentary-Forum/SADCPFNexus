@@ -549,7 +549,7 @@ export function PayslipDistributionDesk({
                         ) : canManage ? (
                           <button
                             type="button"
-                            className="text-xs font-semibold text-primary hover:underline"
+                            className="btn-secondary text-xs"
                             onClick={() => {
                               setConfirmTarget(p);
                               setConfirmStatus("confirmed");
@@ -566,7 +566,7 @@ export function PayslipDistributionDesk({
                         <td>
                           <div className="flex gap-2">
                             {p.user?.id ? (
-                              <Link href={`/admin/payslip-config/${p.user.id}`} className="text-xs text-primary hover:underline">
+                              <Link href={`/admin/payslip-config/${p.user.id}`} className="btn-secondary text-xs">
                                 Lines
                               </Link>
                             ) : null}
@@ -590,7 +590,7 @@ export function PayslipDistributionDesk({
                             >
                               <span className={`material-symbols-outlined text-[16px] ${refreshingId === p.id ? "animate-spin" : ""}`}>refresh</span>
                             </button>
-                            <button type="button" className="text-xs text-primary hover:underline" onClick={() => adminApi.downloadPayslip(p.id).catch(() => error("Download failed."))}>
+                            <button type="button" className="btn-secondary text-xs" onClick={() => adminApi.downloadPayslip(p.id).catch(() => error("Download failed."))}>
                               Download
                             </button>
                           </div>
@@ -772,7 +772,7 @@ export function PayslipDistributionDesk({
                 {unassignedCount > 0 ? (
                   <button
                     type="button"
-                    className="shrink-0 text-xs font-semibold text-primary hover:underline"
+                    className="shrink-0 btn-secondary text-xs"
                     onClick={() => assignPersonToNextFile(person)}
                   >
                     Assign

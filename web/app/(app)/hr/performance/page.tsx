@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { performanceTrackerApi, type PerformanceTracker } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_LABELS: Record<string, string> = {
   excellent: "Excellent",
@@ -82,17 +84,12 @@ export default function PerformanceTrackerPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
-            HR
-          </Link>
-          <h1 className="page-title">Performance Tracker</h1>
-          <p className="page-subtitle">
-            Live view of employee performance trends, task completion, and attention flags.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <ModulePageHeader
+        title="Performance Tracker"
+        subtitle="Live view of employee performance trends, task completion, and attention flags."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Performance" }]} />}
+        actions={
+          <>
           <Link href="/hr/performance/team" className="btn-secondary flex items-center gap-2 py-2 px-3 text-sm">
             <span className="material-symbols-outlined text-[18px]">group</span>
             My Team
@@ -101,8 +98,9 @@ export default function PerformanceTrackerPage() {
             <span className="material-symbols-outlined text-[18px]">insights</span>
             HR Dashboard
           </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
@@ -213,9 +211,6 @@ export default function PerformanceTrackerPage() {
       <div className="card overflow-hidden">
         <div className="card-header flex items-center justify-between">
           <h3 className="text-sm font-semibold text-neutral-900">Performance trackers</h3>
-          <Link href="/hr" className="text-xs font-semibold text-primary hover:underline">
-            Back to HR
-          </Link>
         </div>
 
         {loading ? (
@@ -224,13 +219,11 @@ export default function PerformanceTrackerPage() {
             <span className="ml-2">Loading…</span>
           </div>
         ) : list.length === 0 ? (
-          <div className="py-16 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200">trending_up</span>
-            <p className="mt-3 text-sm text-neutral-500">No performance trackers found.</p>
-            <p className="text-xs text-neutral-400 mt-1">
-              {statusFilter ? "Try a different status filter." : "Trackers will appear here when created."}
-            </p>
-          </div>
+          <EmptyState
+            icon="trending_up"
+            title="No performance trackers found."
+            description={statusFilter ? "Try a different status filter." : "Trackers will appear here when created."}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
@@ -269,7 +262,7 @@ export default function PerformanceTrackerPage() {
                     <td className="text-right">
                       <Link
                         href={`/hr/performance/${t.id}`}
-                        className="text-sm font-semibold text-primary hover:underline"
+                        className="btn-secondary text-xs"
                       >
                         View profile
                       </Link>

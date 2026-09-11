@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { hrApi, type Timesheet } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -76,22 +78,25 @@ export default function TimesheetHistoryPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <nav className="flex items-center gap-1 text-sm text-neutral-500 mb-1">
-            <Link href="/hr/timesheets" className="hover:text-primary transition-colors">Timesheets</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">History</span>
-          </nav>
-          <h1 className="page-title">Timesheet History</h1>
-          <p className="page-subtitle mt-1">All your submitted and approved timesheets</p>
-        </div>
-        <Link href="/hr/timesheets" className="btn-primary flex items-center gap-1.5">
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          Current Week
-        </Link>
-      </div>
+      <ModulePageHeader
+        title="Timesheet History"
+        subtitle="All your submitted and approved timesheets"
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Timesheets", href: "/hr/timesheets" },
+              { label: "History" },
+            ]}
+          />
+        }
+        actions={
+          <Link href="/hr/timesheets" className="btn-primary flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Current Week
+          </Link>
+        }
+      />
 
       {/* Filters */}
       <div className="card p-4 flex flex-wrap items-center gap-3">
@@ -154,16 +159,12 @@ export default function TimesheetHistoryPage() {
           ))}
         </div>
       ) : timesheets.length === 0 ? (
-        <div className="card flex flex-col items-center justify-center gap-4 py-20 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-neutral-100">
-            <span className="material-symbols-outlined text-[28px] text-neutral-400">schedule</span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-neutral-700">No timesheets found</p>
-            <p className="text-xs text-neutral-400 mt-1">Try adjusting the filters or submit your first timesheet</p>
-          </div>
-          <Link href="/hr/timesheets" className="btn-primary">Go to Current Week</Link>
-        </div>
+        <EmptyState
+          icon="schedule"
+          title="No timesheets found"
+          description="Try adjusting the filters or submit your first timesheet"
+          action={<Link href="/hr/timesheets" className="btn-primary">Go to Current Week</Link>}
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {timesheets.map((ts) => {

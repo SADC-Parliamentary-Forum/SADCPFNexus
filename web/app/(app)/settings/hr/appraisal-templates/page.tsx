@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrSettingsApi, type HrAppraisalTemplate } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const CYCLE_LABELS: Record<HrAppraisalTemplate["cycle_frequency"], string> = {
   annual: "Annual",
@@ -210,23 +210,17 @@ export default function AppraisalTemplatesPage() {
           onSave={(form) => saveMutation.mutate(form)}
         />
       )}
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Appraisal Templates</span>
-          </div>
-          <h1 className="page-title">Appraisal Templates</h1>
-          <p className="page-subtitle">Define appraisal cycles, rating scales, KRA counts, and template configurations.</p>
-        </div>
-        <button onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
+      <HrSettingsHeader
+        title="Appraisal Templates"
+        subtitle="Define appraisal cycles, rating scales, KRA counts, and template configurations."
+        actions={
+          <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Template
         </button>
-      </div>
+        }
+      />
+
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -241,10 +235,7 @@ export default function AppraisalTemplatesPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : items.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300">rate_review</span>
-            <p className="mt-2 text-sm text-neutral-500">No appraisal templates yet. Create one to get started.</p>
-          </div>
+          <EmptyState icon="rate_review" title="No appraisal templates yet." description="Create one to get started." />
         ) : (
           <table className="data-table w-full">
             <thead>

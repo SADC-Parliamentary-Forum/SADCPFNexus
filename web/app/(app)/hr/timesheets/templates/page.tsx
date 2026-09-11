@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   hrApi,
@@ -10,6 +9,8 @@ import {
 import { getStoredUser } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const WORK_BUCKETS = [
   "delivery",
@@ -209,35 +210,33 @@ export default function TimesheetTemplatesAdminPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-<div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/hr/timesheets" className="transition-colors hover:text-primary">
-          Timesheets
-        </Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="font-medium text-neutral-900">Templates</span>
-      </div>
-
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title" data-testid="timesheet-templates-title">
-            Timesheet templates
-          </h1>
-          <p className="page-subtitle">
-            Donor / project defaults for draft weeks. Does not invent overtime rates — only ordinary hours.
-          </p>
-        </div>
-        {allowed && (
-          <button
-            type="button"
-            onClick={openCreate}
-            className="btn-primary flex items-center gap-2"
-            data-testid="timesheet-templates-new"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            New template
-          </button>
-        )}
-      </div>
+      <ModulePageHeader
+        title="Timesheet templates"
+        titleTestId="timesheet-templates-title"
+        subtitle="Donor / project defaults for draft weeks. Does not invent overtime rates — only ordinary hours."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Timesheets", href: "/hr/timesheets" },
+              { label: "Templates" },
+            ]}
+          />
+        }
+        actions={
+          allowed ? (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="btn-primary flex items-center gap-2"
+              data-testid="timesheet-templates-new"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              New template
+            </button>
+          ) : undefined
+        }
+      />
 
       {!allowed && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -407,14 +406,12 @@ export default function TimesheetTemplatesAdminPage() {
             Loading…
           </div>
         ) : list.length === 0 ? (
-          <div className="px-5 py-16 text-center" data-testid="timesheet-templates-empty">
-            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">
-              description
-            </span>
-            <p className="text-sm font-semibold text-neutral-600">No templates yet</p>
-            <p className="mt-1 text-xs text-neutral-400">
-              Create a donor or project template so staff can prefill draft weeks.
-            </p>
+          <div data-testid="timesheet-templates-empty">
+            <EmptyState
+              icon="description"
+              title="No templates yet"
+              description="Create a donor or project template so staff can prefill draft weeks."
+            />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -453,7 +450,7 @@ export default function TimesheetTemplatesAdminPage() {
                       <td className="whitespace-nowrap text-right">
                         <button
                           type="button"
-                          className="mr-2 text-xs font-medium text-primary hover:underline"
+                          className="mr-2 btn-secondary text-xs"
                           data-testid="timesheet-template-edit"
                           onClick={() => openEdit(t)}
                         >
@@ -462,7 +459,7 @@ export default function TimesheetTemplatesAdminPage() {
                         {t.is_active ? (
                           <button
                             type="button"
-                            className="text-xs font-medium text-red-600 hover:underline"
+                            className="btn-secondary text-xs text-red-600"
                             onClick={() => void handleDeactivate(t)}
                           >
                             Deactivate
@@ -470,7 +467,7 @@ export default function TimesheetTemplatesAdminPage() {
                         ) : (
                           <button
                             type="button"
-                            className="text-xs font-medium text-green-700 hover:underline"
+                            className="btn-secondary text-xs text-green-700"
                             onClick={() => void handleReactivate(t)}
                           >
                             Reactivate

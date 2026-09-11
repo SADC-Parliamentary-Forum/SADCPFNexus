@@ -7,6 +7,7 @@ import { hrApi, type Timesheet, type TimesheetEntry, type AuthUser } from "@/lib
 import { readStoredUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useFormatDate } from "@/lib/useFormatDate";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Shared UI helpers ─────────────────────────────────────────────────────
 
@@ -198,23 +199,25 @@ export default function TimesheetDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm text-neutral-500">
-        <Link href="/hr/timesheets" className="hover:text-primary transition-colors">Timesheets</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-700 font-medium">Week of {weekLabel}</span>
-      </nav>
-
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="page-title">Week of {weekLabel}</h1>
-          <div className={cn("mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold", sc.cls)}>
+      <ModulePageHeader
+        title={`Week of ${weekLabel}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Timesheets", href: "/hr/timesheets" },
+              { label: `Week of ${weekLabel}` },
+            ]}
+          />
+        }
+        meta={
+          <div className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold", sc.cls)}>
             <span className="material-symbols-outlined text-[14px]">{sc.icon}</span>
             {sc.label}
           </div>
-        </div>
-        <div className="flex items-center gap-2">
+        }
+        actions={
+          <>
           <a
             href={hrApi.exportTimesheetUrl(timesheet.id, "pdf")}
             className="btn-secondary text-sm"
@@ -257,8 +260,9 @@ export default function TimesheetDetailPage() {
               </button>
             </>
           )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>

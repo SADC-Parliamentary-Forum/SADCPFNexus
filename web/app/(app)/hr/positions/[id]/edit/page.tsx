@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { positionsApi, adminApi, type Department, type Position } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const GRADES = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"];
 
@@ -110,20 +111,19 @@ export default function EditPositionPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumb + header */}
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/hr" className="hover:text-primary">HR</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href="/hr/positions" className="hover:text-primary">Positions</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700 font-medium">Edit Position</span>
-        </div>
-        <h1 className="page-title">Edit Position</h1>
-        <p className="page-subtitle text-neutral-500 text-sm">
-          {posRes?.title ?? "Loading…"} · {posRes?.department?.name ?? ""}
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Edit Position"
+        subtitle={`${posRes?.title ?? "Loading…"} · ${posRes?.department?.name ?? ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Positions", href: "/hr/positions" },
+              { label: "Edit Position" },
+            ]}
+          />
+        }
+      />
 
       {errors._global && (
         <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3">

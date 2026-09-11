@@ -5,6 +5,8 @@ import Link from "next/link";
 import { conductApi, tenantUsersApi, type ConductRecord, type TenantUserOption } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const RECORD_TYPE_LABELS: Record<string, string> = {
   commendation: "Commendation",
@@ -77,10 +79,12 @@ function UserAutocomplete({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const inputId = `user-ac-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   return (
     <div ref={ref} className="relative">
-      <label className="block text-xs font-semibold text-neutral-700 mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
+      <label htmlFor={inputId} className="block text-xs font-semibold text-neutral-700 mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
       <input
+        id={inputId}
         type="text"
         className="form-input w-full"
         placeholder="Type name to search…"
@@ -215,19 +219,12 @@ export default function ConductPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/hr" className="hover:text-neutral-700 transition-colors">HR</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Conduct</span>
-          </div>
-          <h1 className="page-title">Conduct, Discipline & Recognition</h1>
-          <p className="page-subtitle">
-            Commendations, warnings, and corrective actions. These records support performance review and HR decisions.
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
+      <ModulePageHeader
+        title="Conduct, Discipline & Recognition"
+        subtitle="Commendations, warnings, and corrective actions. These records support performance review and HR decisions."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Conduct" }]} />}
+        actions={
+          <>
           <button
             type="button"
             className="btn-secondary py-2 px-3 text-sm disabled:opacity-50"
@@ -249,8 +246,9 @@ export default function ConductPage() {
             <span className="material-symbols-outlined text-[18px]">add</span>
             Quick Add
           </button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
@@ -309,9 +307,6 @@ export default function ConductPage() {
       <div className="card overflow-hidden">
         <div className="card-header flex items-center justify-between">
           <h3 className="text-sm font-semibold text-neutral-900">Records</h3>
-          <Link href="/hr" className="text-xs font-semibold text-primary hover:underline">
-            Back to HR
-          </Link>
         </div>
 
         {loading ? (
@@ -320,13 +315,11 @@ export default function ConductPage() {
             <span className="ml-2">Loading…</span>
           </div>
         ) : visible.length === 0 ? (
-          <div className="py-16 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200">gavel</span>
-            <p className="mt-3 text-sm text-neutral-500">No conduct records found.</p>
-            <p className="text-xs text-neutral-400 mt-1">
-              {recordTypeFilter || statusFilter || search ? "Try changing the filters." : "Commendations and disciplinary records will appear here."}
-            </p>
-          </div>
+          <EmptyState
+            icon="gavel"
+            title="No conduct records found."
+            description={recordTypeFilter || statusFilter || search ? "Try changing the filters." : "Commendations and disciplinary records will appear here."}
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -366,7 +359,7 @@ export default function ConductPage() {
                       <td className="text-right">
                         <Link
                           href={`/hr/conduct/${r.id}`}
-                          className="text-sm font-semibold text-primary hover:underline"
+                          className="btn-secondary text-xs"
                         >
                           View
                         </Link>
@@ -403,27 +396,27 @@ export default function ConductPage() {
               )}
               <UserAutocomplete label="Employee" value={newEmployee} onSelect={setNewEmployee} required />
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Record type <span className="text-red-500">*</span></label>
-                <select className="form-input w-full" value={newRecordType} onChange={(e) => setNewRecordType(e.target.value)} required>
+                <label htmlFor="conduct-record-type" className="block text-xs font-semibold text-neutral-700 mb-1">Record type <span className="text-red-500">*</span></label>
+                <select id="conduct-record-type" className="form-input w-full" value={newRecordType} onChange={(e) => setNewRecordType(e.target.value)} required>
                   {Object.entries(RECORD_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
-                <input type="text" className="form-input w-full" placeholder="Brief title for this record" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
+                <label htmlFor="conduct-title" className="block text-xs font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
+                <input id="conduct-title" type="text" className="form-input w-full" placeholder="Brief title for this record" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Description <span className="text-red-500">*</span></label>
-                <textarea rows={3} className="form-input resize-none" placeholder="Full description of the incident or commendation…" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} required />
+                <label htmlFor="conduct-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description <span className="text-red-500">*</span></label>
+                <textarea id="conduct-description" rows={3} className="form-input resize-none" placeholder="Full description of the incident or commendation…" value={newDescription} onChange={(e) => setNewDescription(e.target.value)} required />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Issue date <span className="text-red-500">*</span></label>
-                  <input type="date" className="form-input w-full" value={newIssueDate} onChange={(e) => setNewIssueDate(e.target.value)} required />
+                  <label htmlFor="conduct-issue-date" className="block text-xs font-semibold text-neutral-700 mb-1">Issue date <span className="text-red-500">*</span></label>
+                  <input id="conduct-issue-date" type="date" className="form-input w-full" value={newIssueDate} onChange={(e) => setNewIssueDate(e.target.value)} required />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Incident date</label>
-                  <input type="date" className="form-input w-full" value={newIncidentDate} onChange={(e) => setNewIncidentDate(e.target.value)} />
+                  <label htmlFor="conduct-incident-date" className="block text-xs font-semibold text-neutral-700 mb-1">Incident date</label>
+                  <input id="conduct-incident-date" type="date" className="form-input w-full" value={newIncidentDate} onChange={(e) => setNewIncidentDate(e.target.value)} />
                 </div>
               </div>
               <label className="flex items-center gap-2 cursor-pointer text-sm text-neutral-700">

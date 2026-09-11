@@ -6,6 +6,7 @@ import { appraisalApi, type Appraisal, type AppraisalCycle } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
@@ -191,9 +192,6 @@ export default function AppraisalsPage() {
       <div className="card overflow-hidden">
         <div className="card-header flex items-center justify-between">
           <h3 className="text-sm font-semibold text-neutral-900">Appraisals</h3>
-          <Link href="/hr" className="text-xs font-semibold text-primary hover:underline">
-            Back to HR
-          </Link>
         </div>
 
         {loading ? (
@@ -202,13 +200,11 @@ export default function AppraisalsPage() {
             <span className="ml-2">Loading…</span>
           </div>
         ) : visible.length === 0 ? (
-          <div className="py-16 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200">rate_review</span>
-            <p className="mt-3 text-sm text-neutral-500">No appraisals found.</p>
-            <p className="text-xs text-neutral-400 mt-1">
-              {cycleFilter || statusFilter || search ? "Try changing the filters." : "Appraisals will appear here when created for a cycle."}
-            </p>
-          </div>
+          <EmptyState
+            icon="rate_review"
+            title="No appraisals found."
+            description={cycleFilter || statusFilter || search ? "Try changing the filters." : "Appraisals will appear here when created for a cycle."}
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -242,7 +238,7 @@ export default function AppraisalsPage() {
                       <td className="text-right">
                         <Link
                           href={`/hr/appraisals/${a.id}`}
-                          className="text-sm font-semibold text-primary hover:underline"
+                          className="btn-secondary text-xs"
                         >
                           View
                         </Link>

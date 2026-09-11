@@ -10,6 +10,7 @@ import {
   type HrFileTimelineEvent,
 } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const FILE_STATUS_LABELS: Record<string, string> = {
   active: "Active",
@@ -233,7 +234,7 @@ export default function HrFileDetailPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error ?? "Not found"}
         </div>
-        <Link href="/hr/files" className="text-sm font-semibold text-primary hover:underline">
+        <Link href="/hr/files" className="btn-secondary text-sm">
           Back to HR Files
         </Link>
       </div>
@@ -248,18 +249,19 @@ export default function HrFileDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
-          HR
-        </Link>
-        <Link href="/hr/files" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 block">
-          Personal Files
-        </Link>
-        <h1 className="page-title">{employeeName}</h1>
-        <p className="page-subtitle">
-          {file.current_position ?? "—"} · {file.department?.name ?? "—"}
-        </p>
-      </div>
+      <ModulePageHeader
+        title={employeeName}
+        subtitle={`${file.current_position ?? "—"} · ${file.department?.name ?? "—"}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Personal Files", href: "/hr/files" },
+              { label: employeeName },
+            ]}
+          />
+        }
+      />
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-neutral-200 overflow-x-auto">
@@ -402,8 +404,8 @@ export default function HrFileDetailPage() {
           <p className="text-sm text-neutral-600">
             Open development actions: <strong>{file.open_development_action_count}</strong> · Training hours this cycle: <strong>{file.training_hours_current_cycle}</strong>
           </p>
-          <Link href="/hr/performance" className="text-sm font-semibold text-primary hover:underline">
-            View Performance Tracker →
+          <Link href="/hr/performance" className="btn-secondary text-sm">
+            View Performance Tracker
           </Link>
         </div>
       )}
@@ -477,7 +479,7 @@ export default function HrFileDetailPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteDocument(doc.id)}
-                            className="text-sm text-red-600 hover:underline"
+                            className="btn-secondary text-xs text-red-600"
                           >
                             Delete
                           </button>
@@ -660,9 +662,9 @@ export default function HrFileDetailPage() {
               {file.active_warning_flag && (
                 <span className="badge badge-danger">Active warning on file</span>
               )}
-              <Link href="/hr/performance" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+              <Link href="/hr/performance" className="btn-secondary text-xs flex items-center gap-1">
                 <span className="material-symbols-outlined text-[14px]">trending_up</span>
-                View performance tracker →
+                View performance tracker
               </Link>
             </div>
           </div>
@@ -739,7 +741,7 @@ export default function HrFileDetailPage() {
       )}
 
       <div className="flex justify-end">
-        <Link href="/hr/files" className="text-sm font-semibold text-primary hover:underline">
+        <Link href="/hr/files" className="btn-secondary text-sm">
           Back to HR Files
         </Link>
       </div>
