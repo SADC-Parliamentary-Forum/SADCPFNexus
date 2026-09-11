@@ -201,11 +201,11 @@ export default function GenerateLedgerReportPage() {
         <h3 className="text-sm font-bold text-neutral-900">1. Report Scope</h3>
         <div className="space-y-2">
           {SCOPES.map((s) => (
-            <label htmlFor="admin-ledger-generate-setscope-s-value-classname-mt-0-5-text-primary" key={s.value} className={cn(
+            <label htmlFor={`admin-ledger-generate-scope-${s.value}`} key={s.value} className={cn(
               "flex items-start gap-4 rounded-xl border p-4 cursor-pointer transition-all",
               scope === s.value ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-neutral-200 bg-white hover:border-neutral-300",
             )}>
-              <input id="admin-ledger-generate-setscope-s-value-classname-mt-0-5-text-primary" type="radio" name="scope" value={s.value} checked={scope === s.value}
+              <input id={`admin-ledger-generate-scope-${s.value}`} type="radio" name="scope" value={s.value} checked={scope === s.value}
                 onChange={() => setScope(s.value)} className="mt-0.5 text-primary" />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-neutral-900">{s.label}</p>
@@ -260,8 +260,8 @@ export default function GenerateLedgerReportPage() {
           <h3 className="text-sm font-bold text-neutral-900">3. Event Types</h3>
           <div className="space-y-2">
             {EVENT_TYPES.map((et) => (
-              <label htmlFor="admin-ledger-generate-toggleeventtype-et-value" key={et.value} className="flex items-center gap-3 cursor-pointer">
-                <input id="admin-ledger-generate-toggleeventtype-et-value" type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+              <label htmlFor={`admin-ledger-generate-event-type-${et.value}`} key={et.value} className="flex items-center gap-3 cursor-pointer">
+                <input id={`admin-ledger-generate-event-type-${et.value}`} type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                   checked={eventTypes.includes(et.value)}
                   onChange={() => toggleEventType(et.value)} />
                 <span className="text-sm font-medium text-neutral-700">{et.label}</span>
@@ -279,11 +279,11 @@ export default function GenerateLedgerReportPage() {
         <h3 className="text-sm font-bold text-neutral-900">4. Output Format</h3>
         <div className="grid sm:grid-cols-2 gap-3">
           {FORMATS.map((f) => (
-            <label htmlFor="admin-ledger-generate-setformat-f-value-classname-text-primary" key={f.value} className={cn(
+            <label htmlFor={`admin-ledger-generate-format-${f.value}`} key={f.value} className={cn(
               "flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-all",
               format === f.value ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-neutral-200 bg-white hover:border-neutral-300",
             )}>
-              <input id="admin-ledger-generate-setformat-f-value-classname-text-primary" type="radio" name="format" value={f.value} checked={format === f.value}
+              <input id={`admin-ledger-generate-format-${f.value}`} type="radio" name="format" value={f.value} checked={format === f.value}
                 onChange={() => setFormat(f.value)} className="text-primary" />
               <div className="flex-1">
                 <p className="text-sm font-bold text-neutral-900">{f.label}</p>

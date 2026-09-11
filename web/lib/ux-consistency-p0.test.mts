@@ -296,6 +296,24 @@ test("operational app pages keep hover:underline only on mailto and website link
   assert.deepEqual(offenders, []);
 });
 
+test("PIF NeedToggle binds a unique id per instance so nested interpreter counts stay labelled", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/pif/[id]/edit/NeedToggle.tsx"), "utf8");
+  assert.match(source, /useId\(/);
+  assert.match(source, /htmlFor=\{id\}/);
+  assert.match(source, /\bid=\{id\}/);
+  assert.doesNotMatch(source, /id="pif-detail-edit-NeedToggle/);
+});
+
+test("ledger generate mapped radios and checkboxes use unique ids per option", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/admin/ledger/generate/page.tsx"), "utf8");
+  assert.match(source, /admin-ledger-generate-scope-\$\{s\.value\}/);
+  assert.match(source, /admin-ledger-generate-event-type-\$\{et\.value\}/);
+  assert.match(source, /admin-ledger-generate-format-\$\{f\.value\}/);
+  assert.doesNotMatch(source, /setscope-s-value-classname/);
+  assert.doesNotMatch(source, /toggleeventtype-et-value"/);
+  assert.doesNotMatch(source, /setformat-f-value-classname/);
+});
+
 test("operational mobile detail screens use StitchScreen chrome", () => {
   const mobileRoot = join(webRoot, "..", "mobile", "lib", "features");
   const screens = [
