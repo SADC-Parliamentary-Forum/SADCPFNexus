@@ -1,10 +1,10 @@
 "use client";
 
 import { use } from "react";
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { tendersApi } from "@/lib/api";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 
 export default function TenderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -121,9 +121,15 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      <Link href="/procurement/tenders" className="text-sm text-neutral-500 hover:text-neutral-800">
-        ← Tenders
-      </Link>
+      <ProcurementPageHeader
+        title={tender.reference_number}
+        subtitle={tender.title}
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "Tenders", href: "/procurement/tenders" },
+          { label: tender.reference_number },
+        ]}
+      />
       {message && (
         <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
           {message}
@@ -135,7 +141,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
       <div className="card p-5 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="text-lg font-semibold text-neutral-900">{tender.reference_number}</h1>
+            <p className="text-lg font-semibold text-neutral-900">{tender.reference_number}</p>
             <p className="text-sm text-neutral-600">{tender.title}</p>
           </div>
           <span className="text-xs uppercase text-neutral-600">{tender.status}</span>

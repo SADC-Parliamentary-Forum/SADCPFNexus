@@ -7,6 +7,7 @@ import { purchaseOrdersApi, goodsReceiptsApi, purchaseOrderAttachmentsApi, PURCH
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:              { label: "Draft",          cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"   },
@@ -135,21 +136,21 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
       )}
 
       {activeTab === "details" && <>
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-        <Link href="/procurement" className="hover:text-primary transition-colors">Procurement</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href="/procurement/purchase-orders" className="hover:text-primary transition-colors">Purchase Orders</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="font-mono text-neutral-600">{po.reference_number}</span>
-      </nav>
+      <ProcurementPageHeader
+        title={po.title}
+        subtitle={po.lpo_number ?? po.reference_number}
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "Purchase Orders", href: "/procurement/purchase-orders" },
+          { label: po.reference_number },
+        ]}
+      />
 
       {/* Hero */}
       <div className="card p-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">{po.title}</h1>
-            <p className="font-mono text-xs text-neutral-400 mt-0.5">{po.lpo_number ?? po.reference_number}</p>
+            <p className="font-mono text-xs text-neutral-400">{po.lpo_number ?? po.reference_number}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
@@ -299,7 +300,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
             <tbody>
               {(grns as { id: number; reference_number: string; received_date: string; status: string }[]).map((grn) => (
                 <tr key={grn.id}>
-                  <td><Link href={`/procurement/receipts/${grn.id}?po=${poId}`} className="font-mono text-xs text-primary hover:underline">{grn.reference_number}</Link></td>
+                  <td><Link href={`/procurement/receipts/${grn.id}?po=${poId}`} className="btn-secondary font-mono text-xs">{grn.reference_number}</Link></td>
                   <td className="text-sm text-neutral-600">{grn.received_date ? formatDateShort(grn.received_date) : "—"}</td>
                   <td><span className={`badge ${grn.status === "accepted" ? "badge-success" : grn.status === "rejected" ? "badge-danger" : "badge-warning"}`}>{grn.status}</span></td>
                 </tr>
@@ -309,7 +310,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
         )}
       </div>
 
-      <Link href="/procurement/purchase-orders" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary transition-colors">
+      <Link href="/procurement/purchase-orders" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Purchase Orders
       </Link>

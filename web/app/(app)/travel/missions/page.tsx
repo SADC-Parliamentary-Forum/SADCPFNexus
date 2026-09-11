@@ -6,6 +6,8 @@ import { travelApi, type TravelMission } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { getListData } from "@/lib/listPagination";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function TravelMissionsPage() {
   const [rows, setRows] = useState<TravelMission[]>([]);
@@ -77,21 +79,19 @@ export default function TravelMissionsPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/travel" className="transition-colors hover:text-neutral-700">
-              Travel
-            </Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Missions</span>
-          </div>
-          <h1 className="page-title">Travel Mission Readiness</h1>
-          <p className="page-subtitle">
-            Group readiness for travellers, tickets, visa, hotel, and Finance DSA.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <ModulePageHeader
+        title="Travel Mission Readiness"
+        subtitle="Group readiness for travellers, tickets, visa, hotel, and Finance DSA."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.travel", href: "/travel" },
+              { label: "Missions" },
+            ]}
+          />
+        }
+        actions={
+          <>
           <button
             type="button"
             className="btn-secondary text-sm disabled:opacity-50"
@@ -104,14 +104,15 @@ export default function TravelMissionsPage() {
           <Link href="/pif" className="btn-secondary text-sm">
             Browse PIF
           </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error}</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => void load()}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => void load()}>
             Retry
           </button>
         </div>
@@ -163,17 +164,15 @@ export default function TravelMissionsPage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">flight</span>
-            <p className="text-sm font-semibold text-neutral-600">
-              {rows.length === 0 ? "No missions yet" : "No matches for your search"}
-            </p>
-            <p className="mt-1 text-xs text-neutral-400">
-              {rows.length === 0
+          <EmptyState
+            icon="flight"
+            title={rows.length === 0 ? "No missions yet" : "No matches for your search"}
+            description={
+              rows.length === 0
                 ? "Create via PIF send-to-travel, or wait for grouped travel packages."
-                : "Try a different search term."}
-            </p>
-          </div>
+                : "Try a different search term."
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table w-full">
@@ -217,7 +216,7 @@ export default function TravelMissionsPage() {
                       <td>
                         <Link
                           href={`/travel/missions/${m.id}`}
-                          className="text-xs font-medium text-primary hover:underline"
+                          className="btn-secondary text-xs"
                         >
                           View
                         </Link>

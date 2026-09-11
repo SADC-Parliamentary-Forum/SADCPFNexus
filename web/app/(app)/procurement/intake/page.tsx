@@ -8,6 +8,8 @@ import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   draft: { label: "Draft", badge: "badge-muted" },
@@ -104,36 +106,31 @@ export default function ProcurementIntakePage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/procurement" className="transition-colors hover:text-neutral-700">
-              Procurement
-            </Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Intake</span>
-          </div>
-          <h1 className="page-title">Procurement Intake</h1>
-          <p className="page-subtitle">
-            PIF-linked procurement packages transferred from approved programmes.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="btn-secondary text-sm disabled:opacity-50"
-          disabled={filtered.length === 0}
-          onClick={handleExport}
-        >
-          <span className="material-symbols-outlined text-[18px]">download</span>
-          Export CSV
-        </button>
-      </div>
+      <ProcurementPageHeader
+        title="Procurement Intake"
+        subtitle="PIF-linked procurement packages transferred from approved programmes."
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "Intake" },
+        ]}
+        actions={
+          <button
+            type="button"
+            className="btn-secondary text-sm disabled:opacity-50"
+            disabled={filtered.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </button>
+        }
+      />
 
       {isError && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">Failed to load intake queue.</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => void refetch()}>
             Retry
           </button>
         </div>
@@ -216,22 +213,20 @@ export default function ProcurementIntakePage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">inbox</span>
-            <p className="text-sm font-semibold text-neutral-600">
-              {rows.length === 0 ? "No PIF-linked requests yet" : "No matches for your filters"}
-            </p>
-            <p className="mx-auto mt-2 max-w-md text-xs text-neutral-400">
-              {rows.length === 0
+          <EmptyState
+            icon="inbox"
+            title={rows.length === 0 ? "No PIF-linked requests yet" : "No matches for your filters"}
+            description={
+              rows.length === 0
                 ? "Use the Procurement tab on an approved programme to batch selected items into one request. One transfer creates one package; send a subset again if you need separate lots."
-                : "Try a different search or status filter."}
-            </p>
-            {rows.length === 0 && (
-              <Link href="/pif" className="btn-secondary mt-4 inline-flex text-sm">
-                Browse Programmes
-              </Link>
-            )}
-          </div>
+                : "Try a different search or status filter."
+            }
+            action={
+              rows.length === 0 ? (
+                <Link href="/pif" className="btn-secondary text-sm">Browse Programmes</Link>
+              ) : undefined
+            }
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table w-full">
@@ -262,7 +257,7 @@ export default function ProcurementIntakePage() {
                         {row.programme ? (
                           <Link
                             href={`/pif/${row.programme.id}`}
-                            className="font-mono text-primary hover:underline"
+                            className="btn-secondary font-mono text-xs"
                           >
                             {row.programme.reference_number}
                           </Link>
@@ -282,7 +277,7 @@ export default function ProcurementIntakePage() {
                       <td>
                         <Link
                           href={`/procurement/${row.id}`}
-                          className="text-xs font-medium text-primary hover:underline"
+                          className="btn-secondary text-xs"
                         >
                           View
                         </Link>

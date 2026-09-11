@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
-import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 /// Mobile Finance DSA queue — read list; DSA calc remains on web detail / API.
 class TravelFinanceQueueScreen extends ConsumerStatefulWidget {
@@ -57,35 +57,22 @@ class _TravelFinanceQueueScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Travel Finance Queue'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.safePopOrGoHome(),
-        ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? ListView(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Text(_error!, style: const TextStyle(color: Colors.red)),
-                      ),
-                    ],
-                  )
-                : _rows.isEmpty
-                    ? ListView(
-                        children: const [
-                          SizedBox(height: 80),
-                          Center(child: Text('No pending finance DSA items.')),
-                        ],
-                      )
-                    : ListView.separated(
+    return StitchScreen(
+      title: 'Travel Finance Queue',
+      body: _loading
+          ? const StitchLoadingState(label: 'Loading finance queue')
+          : _error != null
+              ? StitchErrorState(message: _error!, onRetry: _load)
+              : _rows.isEmpty
+                  ? const StitchEmptyState(
+                      icon: Icons.account_balance_outlined,
+                      title: 'No pending finance DSA items',
+                      message:
+                          'DSA Rate Types 1/2/3 are calculated on the travel detail. This queue is read-only on mobile.',
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView.separated(
                         padding: const EdgeInsets.all(16),
                         itemCount: _rows.length,
                         separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -112,16 +99,7 @@ class _TravelFinanceQueueScreenState
                           );
                         },
                       ),
-      ),
-      bottomNavigationBar: const Padding(
-        padding: EdgeInsets.all(12),
-        child: Text(
-          'DSA Rate Types 1/2/3 are calculated on the travel detail (web or API). '
-          'This queue is read-only on mobile.',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-        ),
-      ),
+                    ),
     );
   }
 }

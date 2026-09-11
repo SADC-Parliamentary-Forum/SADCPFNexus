@@ -9,6 +9,8 @@ import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:              { label: "Draft",             cls: "badge-muted",    icon: "edit_note"      },
@@ -206,18 +208,14 @@ function PurchaseOrdersPageInner() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Purchase Orders</span>
-          </div>
-          <h1 className="page-title">Purchase Orders</h1>
-          <p className="page-subtitle">Track awarded RFQs, issued POs, deliveries, and supplier invoice handoff.</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <ProcurementPageHeader
+        title="Purchase Orders"
+        subtitle="Track awarded RFQs, issued POs, deliveries, and supplier invoice handoff."
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "Purchase Orders" },
+        ]}
+        actions={
           <button
             type="button"
             className="btn-secondary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
@@ -227,8 +225,8 @@ function PurchaseOrdersPageInner() {
             <span className="material-symbols-outlined text-[16px]">download</span>
             Export CSV
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -303,15 +301,11 @@ function PurchaseOrdersPageInner() {
       ) : isError ? (
         <div className="card p-6 text-center text-sm text-red-600">Failed to load purchase orders.</div>
       ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <span className="material-symbols-outlined text-4xl text-neutral-300">receipt_long</span>
-          <p className="text-sm text-neutral-500">No purchase orders found.</p>
-          <p className="text-xs text-neutral-400">
-            {search.trim()
-              ? "No purchase orders match your search."
-              : "Purchase orders are created automatically after an RFQ is awarded to a registered supplier."}
-          </p>
-        </div>
+        <EmptyState
+          icon="receipt_long"
+          title="No purchase orders found."
+          description={search.trim() ? "No purchase orders match your search." : "Purchase orders are created automatically after an RFQ is awarded to a registered supplier."}
+        />
       ) : (
         <div className="card overflow-hidden">
           <table className="data-table">
@@ -331,7 +325,7 @@ function PurchaseOrdersPageInner() {
                 return (
                   <tr key={po.id}>
                     <td>
-                      <Link href={`/procurement/purchase-orders/${po.id}`} className="font-mono text-xs text-primary hover:underline">
+                      <Link href={`/procurement/purchase-orders/${po.id}`} className="btn-secondary font-mono text-xs">
                         {po.reference_number}
                       </Link>
                     </td>
@@ -488,11 +482,11 @@ function PurchaseOrdersPageInner() {
               {/* Line Items */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-500">Line Items</label>
+                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Line Items</p>
                   <button
                     type="button"
                     onClick={addItem}
-                    className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                    className="btn-secondary text-xs inline-flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[14px]">add</span>
                     Add Item

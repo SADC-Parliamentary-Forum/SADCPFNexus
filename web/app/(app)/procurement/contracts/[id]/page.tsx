@@ -7,6 +7,7 @@ import { contractsApi, contractAttachmentsApi, CONTRACT_DOC_TYPES, type Contract
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:      { label: "Draft",      cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"    },
@@ -177,20 +178,21 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
       {activeTab === "details" && <>
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-        <Link href="/procurement" className="hover:text-primary transition-colors">Procurement</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href="/procurement/contracts" className="hover:text-primary transition-colors">Contracts</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="font-mono text-neutral-600">{contract.reference_number}</span>
-      </nav>
+      <ProcurementPageHeader
+        title={contract.title}
+        subtitle={contract.reference_number}
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "Contracts", href: "/procurement/contracts" },
+          { label: contract.reference_number },
+        ]}
+      />
 
       {/* Hero */}
       <div className="card p-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">{contract.title}</h1>
-            <p className="font-mono text-xs text-neutral-400 mt-0.5">{contract.reference_number}</p>
+            <p className="font-mono text-xs text-neutral-400">{contract.reference_number}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
@@ -278,14 +280,14 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             <span className="material-symbols-outlined text-[16px] text-neutral-400">assignment</span>
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Linked Procurement Request</h3>
           </div>
-          <Link href={`/procurement/${contract.procurement_request_id}`} className="font-mono text-xs text-primary hover:underline">
+          <Link href={`/procurement/${contract.procurement_request_id}`} className="btn-secondary font-mono text-xs">
             {contract.procurement_request.reference_number}
           </Link>
           <p className="text-sm text-neutral-600 mt-0.5">{contract.procurement_request.title}</p>
         </div>
       )}
 
-      <Link href="/procurement/contracts" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary transition-colors">
+      <Link href="/procurement/contracts" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Contracts
       </Link>

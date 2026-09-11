@@ -28,8 +28,11 @@ export default function MandeImportPage() {
   if (!canAdmin) {
     return (
       <div className="w-full min-w-0 space-y-6">
-        <h1 className="page-title">Historical Import</h1>
-        <p className="page-subtitle mt-2">You need M&amp;E admin permission to import historical activity reports.</p>
+        <ModulePageHeader
+          title="Historical Import"
+          subtitle="You need M&E admin permission to import historical activity reports."
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: "Historical Import" }]} />}
+        />
       </div>
     );
   }
@@ -39,7 +42,7 @@ export default function MandeImportPage() {
       <ModulePageHeader
         title="Historical Import"
         subtitle="Upload a CSV or Excel (.xlsx) file with columns: activity_title, start_date, end_date, pif_number, non_pif_reason.\r\n          Preview first, then commit to crea"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Historical Import" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: "Historical Import" }]} />}
       />
 
       <div className="card p-5 space-y-4">

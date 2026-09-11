@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class WeeklySummariesScreen extends ConsumerStatefulWidget {
   const WeeklySummariesScreen({super.key});
@@ -86,20 +87,15 @@ class _WeeklySummariesScreenState extends ConsumerState<WeeklySummariesScreen> {
         _dashboard?['recent'] ??
         _dashboard?['items'] ??
         _dashboard);
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        title: const Text('Weekly summaries',
-            style: TextStyle(
-                color: AppColors.textPrimary, fontWeight: FontWeight.w800)),
-        actions: [
-          IconButton(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
+    return StitchScreen(
+      title: 'Weekly summaries',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _load,
+        ),
+      ],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _creating ? null : _createCurrent,
         backgroundColor: AppColors.primary,
@@ -108,12 +104,9 @@ class _WeeklySummariesScreenState extends ConsumerState<WeeklySummariesScreen> {
             style: const TextStyle(color: Colors.white)),
       ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading weekly summaries')
           : _error != null
-              ? Center(
-                  child: Text(_error!,
-                      style: const TextStyle(color: AppColors.textSecondary)))
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : RefreshIndicator(
                   color: AppColors.primary,
                   onRefresh: _load,
@@ -153,8 +146,11 @@ class _WeeklySummariesScreenState extends ConsumerState<WeeklySummariesScreen> {
                               fontWeight: FontWeight.w700)),
                       const SizedBox(height: 8),
                       if (reports.isEmpty)
-                        const Text('No reports listed.',
-                            style: TextStyle(color: AppColors.textMuted))
+                        const StitchEmptyState(
+                          icon: Icons.summarize_outlined,
+                          title: 'No reports listed',
+                          message: 'Create a weekly summary to get started.',
+                        )
                       else
                         ...reports.map((r) {
                           final id = r['id'];

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/auth_providers.dart';
-import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 /// Mobile TOIL queue — supervisor confirm / HR validate / reject.
 /// Never auto-creates leave; credit only after HR validate on API.
@@ -104,19 +104,13 @@ class _TravelToilQueueScreenState extends ConsumerState<TravelToilQueueScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Travel TOIL Candidates'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.safePopOrGoHome(),
-        ),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : ListView(
+    return StitchScreen(
+      title: 'Travel TOIL Candidates',
+      body: _loading
+          ? const StitchLoadingState(label: 'Loading TOIL candidates')
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   const Text(
@@ -133,9 +127,10 @@ class _TravelToilQueueScreenState extends ConsumerState<TravelToilQueueScreen> {
                   ],
                   const SizedBox(height: 12),
                   if (_rows.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 48),
-                      child: Center(child: Text('No TOIL candidates.')),
+                    const StitchEmptyState(
+                      icon: Icons.schedule_outlined,
+                      title: 'No TOIL candidates',
+                      message: 'Duty confirmation and HR validation never auto-create leave.',
                     )
                   else
                     ..._rows.map((row) {

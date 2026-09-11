@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { use } from "react";
 import Link from "next/link";
 import { parliamentsApi, type Parliament } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 export default function ParliamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -42,25 +43,24 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm text-neutral-500">
-        <Link href="/srhr" className="hover:text-primary">SRHR</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href="/srhr/parliaments" className="hover:text-primary">Parliaments</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-800 font-medium">{parliament.name}</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="page-title">{parliament.name}</h1>
-          <p className="page-subtitle">{parliament.country_name}{parliament.city ? ` · ${parliament.city}` : ""}</p>
-        </div>
-        <span className={`badge ${parliament.is_active ? "badge-success" : "badge-muted"}`}>
-          {parliament.is_active ? "Active" : "Inactive"}
-        </span>
-      </div>
+      <ModulePageHeader
+        title={parliament.name}
+        subtitle={`${parliament.country_name}${parliament.city ? ` · ${parliament.city}` : ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "SRHR", href: "/srhr" },
+              { label: "Parliaments", href: "/srhr/parliaments" },
+              { label: parliament.name },
+            ]}
+          />
+        }
+        meta={
+          <span className={`badge ${parliament.is_active ? "badge-success" : "badge-muted"}`}>
+            {parliament.is_active ? "Active" : "Inactive"}
+          </span>
+        }
+      />
 
       {/* Details card */}
       <div className="card p-6">
@@ -76,7 +76,7 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
             { label: "Email",        value: parliament.contact_email ?? "—" },
             { label: "Phone",        value: parliament.contact_phone ?? "—" },
             { label: "Website",      value: parliament.website_url
-              ? <a href={parliament.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{parliament.website_url}</a>
+              ? <a href={parliament.website_url} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs">{parliament.website_url}</a>
               : "—" },
           ].map((field) => (
             <div key={field.label}>
@@ -126,7 +126,7 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
                   <p className="text-sm font-medium text-neutral-900">{dep.employee?.name}</p>
                   <p className="text-xs text-neutral-500">{dep.employee?.job_title ?? "SRHR Researcher"}</p>
                 </div>
-                <Link href={`/srhr/deployments/${dep.id}`} className="text-xs text-primary hover:underline flex-shrink-0">
+                <Link href={`/srhr/deployments/${dep.id}`} className="btn-secondary text-xs flex-shrink-0">
                   View
                 </Link>
               </div>

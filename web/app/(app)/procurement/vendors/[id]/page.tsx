@@ -8,6 +8,7 @@ import { vendorsApi, vendorAttachmentsApi, supplierCategoriesApi, VENDOR_DOC_TYP
 import { canManageProcurementVendors, getStoredUser } from "@/lib/auth";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { formatDateShort, formatCurrency } from "@/lib/utils";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 
 function canManageVendors(): boolean {
   return canManageProcurementVendors(getStoredUser());
@@ -1154,14 +1155,15 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
         )}
 
         {activeTab === "details" && <>
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-          <Link href="/procurement" className="hover:text-neutral-600 transition-colors">Procurement</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href="/procurement/vendors" className="hover:text-neutral-600 transition-colors">Vendors</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700 font-medium">{vendor.name}</span>
-        </nav>
+        <ProcurementPageHeader
+          title={vendor.name}
+          subtitle={vendor.registration_number ?? undefined}
+          crumbs={[
+            { label: "nav.procurement", href: "/procurement" },
+            { label: "Vendors", href: "/procurement/vendors" },
+            { label: vendor.name },
+          ]}
+        />
 
         {/* Blacklisted banner */}
         {vendor.is_blacklisted && (
@@ -1188,7 +1190,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <span className="material-symbols-outlined text-[28px]">storefront</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-neutral-900">{vendor.name}</h1>
+                <p className="text-lg font-semibold text-neutral-900">{vendor.name}</p>
                 {vendor.registration_number && (
                   <p className="font-mono text-xs text-neutral-500 mt-0.5">{vendor.registration_number}</p>
                 )}

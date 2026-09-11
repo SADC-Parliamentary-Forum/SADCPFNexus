@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import {
   financeApi,
   hrFilesApi,
@@ -9,6 +8,7 @@ import {
   type SalaryAdvancePolicyVersion,
 } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
 
 export default function SalaryAdvanceSettingsPage() {
   const [policies, setPolicies] = useState<SalaryAdvancePolicyVersion[]>([]);
@@ -152,15 +152,14 @@ export default function SalaryAdvanceSettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
-          <Link href="/salary-advances" className="hover:text-neutral-700">Salary Advances</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700">Settings</span>
-        </div>
-        <h1 className="page-title">Salary Advance Settings</h1>
-        <p className="page-subtitle">Policy versions are immutable once activated. Create a new version to change rules — no silent overrides.</p>
-      </div>
+      <SalaryAdvancePageHeader
+        title="Salary Advance Settings"
+        subtitle="Policy versions are immutable once activated. Create a new version to change rules — no silent overrides."
+        crumbs={[
+          { label: "nav.salary_advances", href: "/salary-advances" },
+          { label: "Settings" },
+        ]}
+      />
 
       {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>}
 

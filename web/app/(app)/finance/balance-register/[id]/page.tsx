@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const MODULE_LABELS: Record<string, string> = {
   salary_advance: "Salary Advance",
@@ -187,30 +188,27 @@ export default function RegisterDetailPage() {
 
   return (
     <div className="space-y-5">
-      {/* Breadcrumb */}
-      <nav className="text-sm text-neutral-500 flex items-center gap-1 flex-wrap">
-        <Link href="/finance" className="hover:text-primary">Finance</Link>
-        <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <Link href="/finance/balance-register" className="hover:text-primary">Balance Register</Link>
-        <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <Link href="/finance/balance-register/registers" className="hover:text-primary">All Registers</Link>
-        <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span className="text-neutral-800 font-medium">{register.reference_number}</span>
-      </nav>
-
-      {/* Title row */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="page-title">{register.reference_number}</h1>
-            <span className={`${statusCfg.badge} flex items-center gap-1 text-xs px-2 py-1 rounded-full`}>
-              <span className="material-symbols-outlined text-xs">{statusCfg.icon}</span>
-              {statusCfg.label}
-            </span>
-          </div>
-          <p className="page-subtitle">{MODULE_LABELS[register.module_type] ?? register.module_type} — Balance Register</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
+      <ModulePageHeader
+        title={register.reference_number}
+        subtitle={`${MODULE_LABELS[register.module_type] ?? register.module_type} — Balance Register`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.finance", href: "/finance" },
+              { label: "Balance Register", href: "/finance/balance-register" },
+              { label: "All Registers", href: "/finance/balance-register/registers" },
+              { label: register.reference_number },
+            ]}
+          />
+        }
+        meta={
+          <span className={`${statusCfg.badge} flex items-center gap-1 text-xs px-2 py-1 rounded-full`}>
+            <span className="material-symbols-outlined text-xs">{statusCfg.icon}</span>
+            {statusCfg.label}
+          </span>
+        }
+        actions={
+          <div className="flex gap-2 flex-wrap">
           {register.status === "active" && (
             <button onClick={handleLock} disabled={lockLoading}
               className="btn-secondary text-sm flex items-center gap-1">
@@ -233,7 +231,8 @@ export default function RegisterDetailPage() {
             </Link>
           )}
         </div>
-      </div>
+        }
+      />
 
       {/* Acknowledgement Banner */}
       {latestAck && latestAck.status !== "pending" && (

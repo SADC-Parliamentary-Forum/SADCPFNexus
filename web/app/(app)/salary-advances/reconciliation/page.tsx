@@ -5,6 +5,8 @@ import Link from "next/link";
 import { financeApi, type SalaryAdvanceReconciliation } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { formatSaCurrency } from "@/components/salary-advance/AdvanceQueueTable";
+import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -59,15 +61,14 @@ export default function ReconciliationQueuePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
-          <Link href="/salary-advances" className="hover:text-neutral-700">Salary Advances</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700">Reconciliation</span>
-        </div>
-        <h1 className="page-title">Reconciliation Queue</h1>
-        <p className="page-subtitle">Open records created when recovery is partial or requires follow-up.</p>
-      </div>
+      <SalaryAdvancePageHeader
+        title="Reconciliation Queue"
+        subtitle="Open records created when recovery is partial or requires follow-up."
+        crumbs={[
+          { label: "nav.salary_advances", href: "/salary-advances" },
+          { label: "Reconciliation" },
+        ]}
+      />
 
       {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>}
 
@@ -76,10 +77,11 @@ export default function ReconciliationQueuePage() {
           {[...Array(4)].map((_, i) => <div key={i} className="h-12 rounded-lg bg-neutral-100 animate-pulse" />)}
         </div>
       ) : rows.length === 0 ? (
-        <div className="card px-5 py-16 text-center">
-          <p className="text-sm font-semibold text-neutral-700">No open reconciliations</p>
-          <p className="text-xs text-neutral-500 mt-1">Partial recoveries will appear here automatically.</p>
-        </div>
+        <EmptyState
+          icon="compare_arrows"
+          title="No open reconciliations"
+          description="Partial recoveries will appear here automatically."
+        />
       ) : (
         <div className="space-y-3">
           {rows.map((row) => (

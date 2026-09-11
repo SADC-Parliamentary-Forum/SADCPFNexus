@@ -8,6 +8,8 @@ import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   received: { label: "Received", cls: "badge-warning",  icon: "inbox"         },
@@ -184,18 +186,15 @@ export default function InvoicesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Invoices</span>
-          </div>
-          <h1 className="page-title">Invoices</h1>
-          <p className="page-subtitle">3-way matching and invoice approval workflow</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <ProcurementPageHeader
+        title="Invoices"
+        subtitle="3-way matching and invoice approval workflow"
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "Invoices" },
+        ]}
+        actions={
+          <>
           <button
             type="button"
             className="btn-secondary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
@@ -206,14 +205,16 @@ export default function InvoicesPage() {
             Export CSV
           </button>
           <button
+            type="button"
             onClick={openModal}
             className="btn-primary inline-flex items-center gap-1.5 text-sm"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
             Record Invoice
           </button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -288,15 +289,11 @@ export default function InvoicesPage() {
       ) : isError ? (
         <div className="card p-6 text-center text-sm text-red-600">Failed to load invoices.</div>
       ) : filteredItems.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <span className="material-symbols-outlined text-4xl text-neutral-300">request_quote</span>
-          <p className="text-sm text-neutral-500">No invoices found.</p>
-          <p className="text-xs text-neutral-400">
-            {search.trim()
-              ? "No invoices match your search."
-              : 'Click "Record Invoice" above to log an invoice against a purchase order.'}
-          </p>
-        </div>
+        <EmptyState
+          icon="request_quote"
+          title="No invoices found."
+          description={search.trim() ? "No invoices match your search." : 'Click "Record Invoice" above to log an invoice against a purchase order.'}
+        />
       ) : (
         <div className="card overflow-hidden">
           <table className="data-table">
@@ -318,7 +315,7 @@ export default function InvoicesPage() {
                 return (
                   <tr key={inv.id}>
                     <td>
-                      <Link href={`/procurement/invoices/${inv.id}`} className="font-mono text-xs text-primary hover:underline">
+                      <Link href={`/procurement/invoices/${inv.id}`} className="btn-secondary font-mono text-xs">
                         {inv.reference_number}
                       </Link>
                       <p className="text-[11px] text-neutral-400 font-mono">{inv.vendor_invoice_number}</p>

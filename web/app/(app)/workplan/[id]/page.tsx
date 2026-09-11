@@ -17,6 +17,7 @@ import {
 } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 function asValidDate(value: string): Date | null {
   const d = new Date(value);
@@ -379,17 +380,19 @@ export default function WorkplanEventDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1 text-sm text-neutral-500">
-        <Link href="/workplan" className="hover:text-primary transition-colors">Workplan</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium truncate max-w-[300px]">{event.title}</span>
-      </div>
-
-      {/* Page header */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center flex-wrap gap-2 mb-2">
+      <ModulePageHeader
+        title={event.title}
+        subtitle={`${formatDate(event.date)}${event.end_date ? ` – ${formatDate(event.end_date)}` : ""}${durationDays > 0 ? ` · ${durationDays} day${durationDays !== 1 ? "s" : ""}` : ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.workplan", href: "/workplan" },
+              { label: event.title },
+            ]}
+          />
+        }
+        meta={
+          <div className="flex items-center flex-wrap gap-2">
             <span className={cn("inline-flex items-center gap-1 text-xs font-semibold rounded border px-2.5 py-0.5 uppercase tracking-wide", typeColor)}>
               <span className="material-symbols-outlined text-[14px]">{typeIcon}</span>
               {event.type}
@@ -403,13 +406,8 @@ export default function WorkplanEventDetailPage() {
               {statusLabel}
             </span>
           </div>
-          <h1 className="page-title">{event.title}</h1>
-          <p className="page-subtitle">
-            {formatDate(event.date)}
-            {event.end_date ? ` – ${formatDate(event.end_date)}` : ""}
-            {durationDays > 0 && ` · ${durationDays} day${durationDays !== 1 ? "s" : ""}`}
-          </p>
-        </div>
+        }
+        actions={
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
           {/* iCal / Google Calendar export */}
           <button
@@ -437,10 +435,10 @@ export default function WorkplanEventDetailPage() {
                 <span className="material-symbols-outlined text-[18px]">edit</span>
                 Edit
               </button>
-              <label className="btn-primary flex items-center gap-1.5 text-sm cursor-pointer">
+              <label htmlFor="workplan-attach" className="btn-primary flex items-center gap-1.5 text-sm cursor-pointer">
                 <span className="material-symbols-outlined text-[18px]">upload_file</span>
                 {uploading ? "Uploading…" : "Attach File"}
-                <input type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                <input id="workplan-attach" type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
               </label>
             </>
           ) : (
@@ -449,7 +447,8 @@ export default function WorkplanEventDetailPage() {
             </button>
           )}
         </div>
-      </div>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

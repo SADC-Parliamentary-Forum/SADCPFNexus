@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { assetCategoriesApi, type AssetCategory } from "@/lib/api";
 import { canManageAssets, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function AssetCategoriesPage() {
   const [categories, setCategories] = useState<AssetCategory[]>([]);
@@ -128,32 +129,34 @@ export default function AssetCategoriesPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/assets" className="hover:text-primary transition-colors">
-              Assets
-            </Link>
-            <span>/</span>
-            <span className="text-neutral-700 font-medium">Categories</span>
-          </div>
-          <h1 className="page-title">Asset Categories</h1>
-          <p className="page-subtitle">Manage asset categories used when adding assets.</p>
-        </div>
-        <button
-          onClick={() => {
-            setShowForm(!showForm);
-            setEditId(null);
-            setForm({ name: "", code: "", sort_order: 0, useful_life_years: "" });
-          }}
-          className="btn-primary"
-        >
-          <span className="material-symbols-outlined text-[18px]">
-            {showForm && !editId ? "close" : "add"}
-          </span>
-          {showForm && !editId ? "Cancel" : "New Category"}
-        </button>
-      </div>
+      <ModulePageHeader
+        title="Asset Categories"
+        subtitle="Manage asset categories used when adding assets."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.assets", href: "/assets" },
+              { label: "Categories" },
+            ]}
+          />
+        }
+        actions={
+          <button
+            type="button"
+            onClick={() => {
+              setShowForm(!showForm);
+              setEditId(null);
+              setForm({ name: "", code: "", sort_order: 0, useful_life_years: "" });
+            }}
+            className="btn-primary"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              {showForm && !editId ? "close" : "add"}
+            </span>
+            {showForm && !editId ? "Cancel" : "New Category"}
+          </button>
+        }
+      />
 
       {showForm && (
         <div className="card border-primary/20 p-5 space-y-4">
@@ -169,10 +172,11 @@ export default function AssetCategoriesPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="asset-cat-name" className="block text-xs font-semibold text-neutral-700">
                 Name <span className="text-red-500">*</span>
               </label>
               <input
+                id="asset-cat-name"
                 className="form-input"
                 placeholder="e.g. IT Equipment"
                 value={form.name}
@@ -180,10 +184,11 @@ export default function AssetCategoriesPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="asset-cat-code" className="block text-xs font-semibold text-neutral-700">
                 Code <span className="text-red-500">*</span>
               </label>
               <input
+                id="asset-cat-code"
                 className="form-input font-mono"
                 placeholder="e.g. it"
                 value={form.code}
@@ -196,8 +201,9 @@ export default function AssetCategoriesPage() {
               )}
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">Sort order</label>
+              <label htmlFor="asset-cat-sort" className="block text-xs font-semibold text-neutral-700">Sort order</label>
               <input
+                id="asset-cat-sort"
                 type="number"
                 min={0}
                 className="form-input"
@@ -206,8 +212,9 @@ export default function AssetCategoriesPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">Useful life (years)</label>
+              <label htmlFor="asset-cat-life" className="block text-xs font-semibold text-neutral-700">Useful life (years)</label>
               <input
+                id="asset-cat-life"
                 type="number"
                 min={1}
                 max={80}
@@ -272,19 +279,17 @@ export default function AssetCategoriesPage() {
             ))}
           </div>
         ) : categories.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 mx-auto mb-4">
-              <span className="material-symbols-outlined text-3xl text-neutral-300">category</span>
-            </div>
-            <p className="text-sm font-semibold text-neutral-500">No categories yet</p>
-            <p className="text-xs text-neutral-400 mt-1">
-              Create at least one category before adding assets.
-            </p>
-            <button onClick={() => setShowForm(true)} className="btn-primary mt-4">
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              New Category
-            </button>
-          </div>
+          <EmptyState
+            icon="category"
+            title="No categories yet"
+            description="Create at least one category before adding assets."
+            action={
+              <button type="button" onClick={() => setShowForm(true)} className="btn-primary">
+                <span className="material-symbols-outlined text-[16px]">add</span>
+                New Category
+              </button>
+            }
+          />
         ) : (
           <ul className="divide-y divide-neutral-100">
             {categories.map((cat) => (

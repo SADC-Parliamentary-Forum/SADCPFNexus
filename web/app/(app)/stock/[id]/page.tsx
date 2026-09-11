@@ -9,6 +9,7 @@ import { StockMovementModal } from "@/components/stock/StockMovementModal";
 import { StockItemFormModal } from "@/components/stock/StockItemFormModal";
 import { stockCategoriesApi, type StockCategory } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 export default function StockItemDetailPage() {
   const params = useParams();
@@ -40,25 +41,29 @@ export default function StockItemDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <p className="text-xs font-mono text-neutral-400">{item.item_code}</p>
-          <h1 className="page-title">{item.name}</h1>
-          <p className="page-subtitle">
-            Balance {item.current_balance} {item.unit ?? ""} · Reorder {item.reorder_level}
-            {item.is_low_stock ? " · Low stock" : ""}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/stock" className="btn-secondary">Register</Link>
-          {canManage && (
-            <button type="button" className="btn-secondary" onClick={() => setShowEdit(true)}>Edit</button>
-          )}
-          {canIssue && (
-            <button type="button" className="btn-primary" onClick={() => setShowMovement(true)}>Record movement</button>
-          )}
-        </div>
-      </div>
+      <ModulePageHeader
+        title={item.name}
+        subtitle={`Balance ${item.current_balance} ${item.unit ?? ""} · Reorder ${item.reorder_level}${item.is_low_stock ? " · Low stock" : ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.stock", href: "/stock" },
+              { label: item.item_code || item.name },
+            ]}
+          />
+        }
+        actions={
+          <>
+            <Link href="/stock" className="btn-secondary">Register</Link>
+            {canManage && (
+              <button type="button" className="btn-secondary" onClick={() => setShowEdit(true)}>Edit</button>
+            )}
+            {canIssue && (
+              <button type="button" className="btn-primary" onClick={() => setShowMovement(true)}>Record movement</button>
+            )}
+          </>
+        }
+      />
 
       <div className="grid md:grid-cols-3 gap-4">
         <div className="rounded-xl border border-neutral-200 bg-white p-4">

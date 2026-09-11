@@ -13,6 +13,7 @@ import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { useToast } from "@/components/ui/Toast";
+import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string; icon: string }> = {
   draft:                   { label: "Draft",                  badge: "badge-muted",    icon: "edit_note" },
@@ -403,7 +404,7 @@ export default function AdvanceDetailPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error ?? "Not found"}
         </div>
-        <Link href="/salary-advances" className="text-sm font-semibold text-primary hover:underline">
+        <Link href="/salary-advances" className="btn-secondary text-sm">
           Back to Advances
         </Link>
       </div>
@@ -456,33 +457,34 @@ export default function AdvanceDetailPage() {
         currentHolder={null}
       />
 
-      {/* Breadcrumb + header */}
-      <div>
-        <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
-          <Link href="/salary-advances" className="hover:text-neutral-700 transition-colors">Salary Advances</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href="/salary-advances/applications" className="hover:text-neutral-700 transition-colors">Applications</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700">{advance.reference_number}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="page-title">{TYPE_LABELS[advance.advance_type] ?? advance.advance_type}</h1>
+      <SalaryAdvancePageHeader
+        title={TYPE_LABELS[advance.advance_type] ?? advance.advance_type}
+        subtitle={advance.reference_number}
+        crumbs={[
+          { label: "nav.salary_advances", href: "/salary-advances" },
+          { label: "Applications", href: "/salary-advances/applications" },
+          { label: advance.reference_number },
+        ]}
+        meta={
           <span className={`badge ${sc.badge}`}>
             <span className="material-symbols-outlined text-[13px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>{sc.icon}</span>
             {sc.label}
           </span>
+        }
+        actions={
+          <>
           {(advance.status === "approved" || advance.status === "approved_for_payment" || advance.status === "paid" || advance.status === "closed" || advance.status === "recovery_scheduled" || advance.status === "recovered") && (
             <>
               <Link
                 href={`/salary-advances/${advance.id}/certificate`}
-                className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+                className="btn-secondary text-xs"
               >
                 <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
                 Certificate
               </Link>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                className="btn-secondary text-xs"
                 onClick={async () => {
                   try {
                     const res = await financeApi.downloadAdvancePdf(advance.id);
@@ -504,9 +506,10 @@ export default function AdvanceDetailPage() {
           )}
           {advance.status === "submitted" && approvalRequest?.status === "pending" && (
             <button
+              type="button"
               onClick={handleWithdraw}
               disabled={actionLoading}
-              className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+              className="btn-secondary text-xs disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[14px]">block</span>
               Withdraw
@@ -514,17 +517,18 @@ export default function AdvanceDetailPage() {
           )}
           {isReturnedForCorrection && (
             <button
+              type="button"
               onClick={handleResubmit}
               disabled={actionLoading}
-              className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors disabled:opacity-50"
+              className="btn-primary text-xs disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[14px]">refresh</span>
               Resubmit
             </button>
           )}
-        </div>
-        <p className="page-subtitle">{advance.reference_number}</p>
-      </div>
+          </>
+        }
+      />
 
       {/* Error banner */}
       {error && (

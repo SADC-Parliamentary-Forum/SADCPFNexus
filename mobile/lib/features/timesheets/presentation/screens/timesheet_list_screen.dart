@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 class TimesheetListScreen extends ConsumerStatefulWidget {
   const TimesheetListScreen({super.key});
@@ -75,20 +76,15 @@ class _TimesheetListScreenState extends ConsumerState<TimesheetListScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.bgDarkDark : AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: isDark ? AppColors.bgSurfaceDark : AppColors.bgSurface,
-        elevation: 0,
-        title: const Text('Timesheets', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _load,
-            tooltip: 'Refresh',
-          ),
-        ],
-      ),
+    return StitchScreen(
+      title: 'Timesheets',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh_rounded,
+          onPressed: _load,
+        ),
+      ],
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/timesheets/weekly'),
         backgroundColor: AppColors.primary,
@@ -97,34 +93,14 @@ class _TimesheetListScreenState extends ConsumerState<TimesheetListScreen> {
         label: const Text('Log This Week', style: TextStyle(fontWeight: FontWeight.w600)),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const StitchLoadingState(label: 'Loading timesheets')
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline_rounded, size: 40, color: AppColors.danger),
-                      const SizedBox(height: 12),
-                      Text(_error!, style: const TextStyle(color: AppColors.danger)),
-                      const SizedBox(height: 12),
-                      OutlinedButton(onPressed: _load, child: const Text('Retry')),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : _timesheets.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.schedule_outlined, size: 48, color: AppColors.textMuted),
-                          SizedBox(height: 12),
-                          Text('No timesheets yet',
-                              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                          SizedBox(height: 6),
-                          Text('Tap + to log your first week',
-                              style: TextStyle(color: AppColors.textMuted)),
-                        ],
-                      ),
+                  ? const StitchEmptyState(
+                      icon: Icons.schedule_outlined,
+                      title: 'No timesheets yet',
+                      message: 'Tap + to log your first week',
                     )
                   : RefreshIndicator(
                       onRefresh: _load,

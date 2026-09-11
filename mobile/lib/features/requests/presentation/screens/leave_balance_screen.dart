@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../../core/auth/auth_providers.dart';
-import '../../../../../core/theme/app_theme.dart';
-import '../../../../../core/utils/date_format.dart';
+
+import '../../../../core/auth/auth_providers.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/utils/date_format.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 class LeaveBalanceScreen extends ConsumerStatefulWidget {
   const LeaveBalanceScreen({super.key});
@@ -53,33 +55,12 @@ class _LeaveBalanceScreenState extends ConsumerState<LeaveBalanceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text('Leave Balances', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-      ),
+    return StitchScreen(
+      title: 'Leave Balances',
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading leave balances')
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.danger)),
-                        const SizedBox(height: 12),
-                        TextButton(onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : RefreshIndicator(
                   onRefresh: _load,
                   color: AppColors.primary,
@@ -93,10 +74,10 @@ class _LeaveBalanceScreenState extends ConsumerState<LeaveBalanceScreen> {
                       const Text('Hours earned for work outside normal office hours.', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
                       const SizedBox(height: 10),
                       if (_lil.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
-                          child: const Center(child: Text('No LIL accruals', style: TextStyle(color: AppColors.textMuted, fontSize: 13))),
+                        const StitchEmptyState(
+                          icon: Icons.more_time,
+                          title: 'No LIL accruals',
+                          message: 'Hours earned outside office hours will appear here.',
                         )
                       else
                         ..._lil.map((l) => _lilTile(l as Map<String, dynamic>)),
@@ -104,10 +85,10 @@ class _LeaveBalanceScreenState extends ConsumerState<LeaveBalanceScreen> {
                       const Text('LEAVE HISTORY', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                       const SizedBox(height: 10),
                       if (_history.isEmpty)
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
-                          child: const Center(child: Text('No leave requests yet', style: TextStyle(color: AppColors.textMuted, fontSize: 13))),
+                        const StitchEmptyState(
+                          icon: Icons.event_busy_outlined,
+                          title: 'No leave requests yet',
+                          message: 'Tap New Request to submit leave.',
                         )
                       else
                         ..._history.map((h) => _historyTile(h as Map<String, dynamic>)),

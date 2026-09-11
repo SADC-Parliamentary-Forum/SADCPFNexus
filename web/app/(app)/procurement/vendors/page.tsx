@@ -9,6 +9,8 @@ import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, getLastPage, getListData, getTotal } from "@/lib/listPagination";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { EmptyState as SharedEmptyState } from "@/components/ui/EmptyState";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAYMENT_TERMS = ["Immediate", "Net 15", "Net 30", "Net 45", "Net 60", "Net 90"] as const;
@@ -60,23 +62,19 @@ function StarDisplay({ avg, count }: { avg?: number | string | null; count?: num
 function EmptyState({ canManage, onAdd }: { canManage: boolean; onAdd: () => void }) {
   return (
     <tr>
-      <td colSpan={7} className="py-16 text-center">
-        <div className="flex flex-col items-center gap-3 text-neutral-400">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100">
-            <span className="material-symbols-outlined text-3xl">storefront</span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-neutral-600">No vendors found</p>
-            <p className="text-xs text-neutral-400 mt-0.5">
-              {canManage ? "Add your first vendor to the register." : "No vendors match your current filters."}
-            </p>
-          </div>
-          {canManage && (
-            <button type="button" onClick={onAdd} className="btn-primary mt-1 py-1.5 px-4 text-xs">
-              Add Vendor
-            </button>
-          )}
-        </div>
+      <td colSpan={7}>
+        <SharedEmptyState
+          icon="storefront"
+          title="No vendors found"
+          description={canManage ? "Add your first vendor to the register." : "No vendors match your current filters."}
+          action={
+            canManage ? (
+              <button type="button" onClick={onAdd} className="btn-primary mt-1 py-1.5 px-4 text-xs">
+                Add Vendor
+              </button>
+            ) : undefined
+          }
+        />
       </td>
     </tr>
   );
@@ -649,17 +647,15 @@ export default function VendorsPage() {
     <>
       <div className="w-full min-w-0 space-y-6">
         {/* Page header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-              <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-              <span className="text-neutral-700">Vendors</span>
-            </div>
-            <h1 className="page-title">Vendor Register</h1>
-            <p className="page-subtitle">Approved suppliers and service providers for procurement.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
+        <ProcurementPageHeader
+          title="Vendor Register"
+          subtitle="Approved suppliers and service providers for procurement."
+          crumbs={[
+            { label: "nav.procurement", href: "/procurement" },
+            { label: "Vendors" },
+          ]}
+          actions={
+            <>
             <button
               type="button"
               className="btn-secondary flex items-center gap-2 disabled:opacity-50"
@@ -679,8 +675,9 @@ export default function VendorsPage() {
                 New Vendor
               </button>
             )}
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {/* KPI strip */}
         {!isLoading && !isError && (
@@ -974,7 +971,7 @@ export default function VendorsPage() {
                     <p className="text-[11px] text-neutral-500">{pwSelectedUser.email}</p>
                   </div>
                   {pwPortalUsers.length > 1 && (
-                    <button type="button" className="ml-auto text-[11px] text-primary hover:underline" onClick={() => setPwSelectedUser(null)}>Change</button>
+                    <button type="button" className="ml-auto btn-secondary text-[11px]" onClick={() => setPwSelectedUser(null)}>Change</button>
                   )}
                 </div>
                 {pwError && (

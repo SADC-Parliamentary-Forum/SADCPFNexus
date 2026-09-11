@@ -125,3 +125,79 @@ test("payslip desk and stock item modal do not use underline row actions", () =>
   assert.doesNotMatch(stock, /hover:underline/);
 });
 
+test("procurement operational lists share ProcurementPageHeader chrome and EmptyState", () => {
+  const pages = ["rfq", "vendors", "intake", "invoices", "purchase-orders", "receipts"];
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, `app/(app)/procurement/${rel}/page.tsx`), "utf8");
+    assert.match(source, /ProcurementPageHeader/, rel);
+    assert.match(source, /EmptyState/, rel);
+    assert.doesNotMatch(source, /<h1 className="page-title">/, rel);
+    assert.doesNotMatch(source, /hover:underline/, rel);
+  }
+});
+
+test("salary-advance operational pages share SalaryAdvancePageHeader chrome", () => {
+  const pages = [
+    "salary-advances/finance/page.tsx",
+    "salary-advances/reports/page.tsx",
+    "salary-advances/reconciliation/page.tsx",
+    "salary-advances/settings/page.tsx",
+    "salary-advances/[id]/page.tsx",
+  ];
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
+    assert.match(source, /SalaryAdvancePageHeader/, rel);
+    assert.doesNotMatch(source, /<h1 className="page-title">/, rel);
+  }
+  const recon = readFileSync(join(webRoot, "app/(app)/salary-advances/reconciliation/page.tsx"), "utf8");
+  assert.match(recon, /EmptyState/);
+});
+
+test("travel missions list uses ModulePageHeader, breadcrumbs, and EmptyState", () => {
+  const source = readFileSync(join(webRoot, "app/(app)/travel/missions/page.tsx"), "utf8");
+  assert.match(source, /ModulePageHeader/);
+  assert.match(source, /PageBreadcrumbs/);
+  assert.match(source, /EmptyState/);
+  assert.doesNotMatch(source, /<h1 className="page-title">/);
+  assert.doesNotMatch(source, /hover:underline/);
+});
+
+test("remaining operational details use shared page chrome instead of adhoc h1", () => {
+  const pages = [
+    "assets/categories/page.tsx",
+    "assets/depreciation/page.tsx",
+    "assignments/capacity/page.tsx",
+    "correspondence/mail-merge/page.tsx",
+    "profile/support/page.tsx",
+    "mande/import/page.tsx",
+    "stock/[id]/page.tsx",
+    "stock/stocktakes/[id]/page.tsx",
+    "finance/budget/[id]/page.tsx",
+    "finance/balance-register/[id]/page.tsx",
+    "workplan/[id]/page.tsx",
+    "srhr/reports/[id]/page.tsx",
+    "srhr/parliaments/[id]/page.tsx",
+    "srhr/deployments/[id]/page.tsx",
+    "saam/verify/[type]/[id]/page.tsx",
+    "procurement/invoices/[id]/page.tsx",
+    "procurement/receipts/[id]/page.tsx",
+    "procurement/purchase-orders/[id]/page.tsx",
+    "procurement/contracts/[id]/page.tsx",
+    "procurement/rfq/[id]/page.tsx",
+    "procurement/[id]/page.tsx",
+    "procurement/tenders/[id]/page.tsx",
+    "procurement/vendors/[id]/page.tsx",
+  ];
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
+    const hasChrome =
+      /ModulePageHeader|ProcurementPageHeader|SalaryAdvancePageHeader|RegisterShell|AuditPageShell|ContentCanvas|ModuleHubCards/.test(
+        source,
+      );
+    assert.equal(hasChrome, true, rel);
+    assert.doesNotMatch(source, /<h1 className="page-title">/, rel);
+    assert.doesNotMatch(source, /<h1 className="text-xl font-bold/, rel);
+    assert.doesNotMatch(source, /<h1 className="text-lg font-semibold/, rel);
+  }
+});
+

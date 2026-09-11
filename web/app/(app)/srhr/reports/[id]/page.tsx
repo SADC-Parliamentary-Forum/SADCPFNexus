@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { researcherReportsApi, type ResearcherReport } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:              { label: "Draft",              cls: "badge-muted",    icon: "draft"            },
@@ -108,25 +109,20 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm text-neutral-500">
-        <Link href="/srhr" className="hover:text-primary">SRHR</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href="/srhr/reports" className="hover:text-primary">Reports</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-800 font-medium">{report.reference_number}</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">{report.title}</h1>
-          <p className="page-subtitle">
-            {typeLabel[report.report_type]} · {report.employee?.name} · {report.parliament?.name}
-          </p>
-        </div>
-        <span className={`badge ${status?.cls ?? "badge-muted"} flex-shrink-0`}>{status?.label}</span>
-      </div>
+      <ModulePageHeader
+        title={report.title}
+        subtitle={`${typeLabel[report.report_type]} · ${report.employee?.name} · ${report.parliament?.name}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "SRHR", href: "/srhr" },
+              { label: "Reports", href: "/srhr/reports" },
+              { label: report.reference_number },
+            ]}
+          />
+        }
+        meta={<span className={`badge ${status?.cls ?? "badge-muted"}`}>{status?.label}</span>}
+      />
 
       {/* Revision feedback banner */}
       {report.status === "revision_requested" && report.revision_notes && (

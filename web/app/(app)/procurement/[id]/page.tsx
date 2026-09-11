@@ -14,6 +14,7 @@ import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner
 import { PrintButton } from "@/components/ui/PrintButton";
 import axios from "axios";
 import { useToast } from "@/components/ui/Toast";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 
 function canReserveBudget(): boolean {
   const u = getStoredUser();
@@ -426,14 +427,14 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
 
       {activeTab === "details" && <>
 
-      {/* Breadcrumb + title */}
-      <div>
-        <nav className="flex items-center gap-1.5 text-xs text-neutral-400 mb-3">
-          <Link href="/procurement" className="hover:text-primary transition-colors font-medium">Procurement</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="font-mono text-neutral-500">{request.reference_number}</span>
-        </nav>
-        <div className="flex items-start justify-between gap-4">
+      <ProcurementPageHeader
+        title={request.title}
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: request.reference_number },
+        ]}
+      />
+      <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
               <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${catInfo.color} bg-${catInfo.bg} border-neutral-200`}>
@@ -445,7 +446,6 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
                 {request.procurement_method ?? "—"}
               </span>
             </div>
-            <h1 className="text-xl font-bold text-neutral-900">{request.title}</h1>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
