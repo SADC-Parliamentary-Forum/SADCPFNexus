@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { assetsApi, assetCategoriesApi, tenantUsersApi, type AssetCategory } from "@/lib/api";
 import { canManageAssets, getStoredUser } from "@/lib/auth";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const STATUSES = ["active", "service_due", "loan_out", "retired"] as const;
 const DEPRECIATION_METHODS = [
@@ -198,18 +199,11 @@ export default function AddAssetPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Header - same style as leave/create, imprest/create */}
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/assets" className="hover:text-primary transition-colors">Assets</Link>
-          <span>/</span>
-          <span className="text-neutral-700 font-medium">Add Asset</span>
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900">Add Asset</h2>
-        <p className="text-sm text-neutral-500 mt-0.5">
-          Complete each step. You can attach an invoice (PDF or image) and see a preview before submitting.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Add Asset"
+        subtitle="Complete each step. You can attach an invoice (PDF or image) and see a preview before submitting."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "Add Asset" }]} />}
+      />
 
       {/* Stepper - "Step X of 4" + horizontal circles + labels like other modules */}
       <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-5">
@@ -583,7 +577,7 @@ export default function AddAssetPage() {
               <button
                 type="button"
                 onClick={() => setCurrentStep((s) => s - 1)}
-                className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+                className="btn-secondary inline-flex items-center gap-2 disabled:opacity-50"
                 disabled={submitting}
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_back</span>
@@ -594,7 +588,7 @@ export default function AddAssetPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/assets"
-              className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors"
+              className="btn-secondary"
             >
               Cancel
             </Link>
@@ -603,7 +597,7 @@ export default function AddAssetPage() {
                 type="button"
                 onClick={() => setCurrentStep((s) => s + 1)}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn-primary inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next Step
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -612,7 +606,7 @@ export default function AddAssetPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+                className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
               >
                 {submitting ? "Creating…" : "Add Asset"}
                 <span className={`material-symbols-outlined text-[18px] ${submitting ? "animate-spin" : ""}`}>{submitting ? "progress_activity" : "add"}</span>

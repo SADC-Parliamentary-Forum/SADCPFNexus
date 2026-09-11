@@ -405,3 +405,32 @@ test("operational app pages and shared components do not use className-first lab
   assert.deepEqual(offenders, []);
 });
 
+test("operational non-redirect pages use gold chrome", () => {
+  const chrome = [
+    "ModulePageHeader",
+    "RegisterShell",
+    "AuditPageShell",
+    "ContentCanvas",
+    "ModuleHubCards",
+    "HrSettingsHeader",
+    "ProcurementPageHeader",
+    "SalaryAdvancePageHeader",
+    "TravelQueueTable",
+    "AdvanceQueueTable",
+    "AssignmentFilteredList",
+    "PayslipDistributionDesk",
+  ];
+  const offenders: string[] = [];
+  const skip = /\/(print|certificate)\//;
+  for (const fullPath of walkTsx(join(webRoot, "app/(app)"))) {
+    if (!fullPath.endsWith("page.tsx")) continue;
+    if (skip.test(fullPath) || fullPath.includes(".print.")) continue;
+    const source = readFileSync(fullPath, "utf8");
+    if (source.includes("redirect(")) continue;
+    if (!chrome.some((token) => source.includes(token))) {
+      offenders.push(fullPath.replace(webRoot, ""));
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+
