@@ -12,6 +12,7 @@ import {
   type RiskBcpLink,
   type RiskDependency,
 } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function RiskBcpPage() {
   const qc = useQueryClient();
@@ -201,11 +202,7 @@ export default function RiskBcpPage() {
               </tr>
             ))}
             {links.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-3 py-6 text-center text-neutral-500">
-                  No BCP/insurance links yet.
-                </td>
-              </tr>
+              <TableEmpty colSpan={4} title="No BCP/insurance links yet." />
             )}
           </tbody>
         </table>
@@ -270,11 +267,7 @@ export default function RiskBcpPage() {
                 </tr>
               ))}
               {exercises.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-3 py-6 text-center text-neutral-500">
-                    No exercises scheduled.
-                  </td>
-                </tr>
+                <TableEmpty colSpan={5} title="No exercises scheduled." />
               )}
             </tbody>
           </table>
@@ -311,11 +304,7 @@ export default function RiskBcpPage() {
                 </tr>
               ))}
               {renewals.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-3 py-6 text-center text-neutral-500">
-                    No policies due within 120 days.
-                  </td>
-                </tr>
+                <TableEmpty colSpan={5} title="No policies due within 120 days." />
               )}
             </tbody>
           </table>
@@ -363,11 +352,7 @@ export default function RiskBcpPage() {
               </tr>
             ))}
             {deps.length === 0 && (
-              <tr>
-                <td colSpan={3} className="px-3 py-6 text-center text-neutral-500">
-                  No interdependencies mapped.
-                </td>
-              </tr>
+              <TableEmpty colSpan={3} title="No interdependencies mapped." />
             )}
           </tbody>
         </table>

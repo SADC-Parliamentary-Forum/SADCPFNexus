@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { exportToCsv } from "@/lib/csvExport";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type HoldRow = {
   id: number;
@@ -241,11 +242,7 @@ export default function CorrespondenceRetentionPage() {
               </tr>
             ))}
             {holds.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-sm text-neutral-500">
-                  No active legal holds.
-                </td>
-              </tr>
+              <TableEmpty colSpan={6} title="No active legal holds." />
             )}
           </tbody>
         </table>

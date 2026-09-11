@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
 import { FormSection } from "@/components/ui/FormSection";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const TYPE_LABELS: Record<string, string> = {
   annual: "Annual",
@@ -419,20 +420,22 @@ function LeavePageInner() {
       }
       empty={
         !loading && filtered.length === 0 ? (
-          <div className="card overflow-hidden">
-            <div className="px-5 py-16 text-center">
-              <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">event_available</span>
-              <p className="text-sm font-semibold text-neutral-600">No leave requests found</p>
-              <p className="mt-1 text-xs text-neutral-400">
-                {filter === "all" && !search
+          <div className="card">
+            <EmptyState
+              icon="event_available"
+              title="No leave requests found"
+              description={
+                filter === "all" && !search
                   ? "Submit your first leave application."
-                  : "No rows match the current filters."}
-              </p>
-              <Link href="/leave/create" className="btn-primary mt-5 inline-flex text-sm">
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                Apply for Leave
-              </Link>
-            </div>
+                  : "No rows match the current filters."
+              }
+              action={
+                <Link href="/leave/create" className="btn-primary inline-flex text-sm">
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  Apply for Leave
+                </Link>
+              }
+            />
           </div>
         ) : undefined
       }

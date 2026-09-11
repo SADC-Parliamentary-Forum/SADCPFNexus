@@ -23,6 +23,7 @@ import {
   selectedProcurementRows,
 } from "@/lib/procurementRegisterBulk";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   draft: { label: "Draft", badge: "badge-muted" },
@@ -313,14 +314,16 @@ export default function ProcurementRegisterPage() {
       }
       empty={
         !isLoading && filtered.length === 0 ? (
-          <div className="card px-5 py-16 text-center">
-            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">shopping_cart</span>
-            <p className="text-sm font-semibold text-neutral-600">No procurement requests found</p>
-            <p className="mt-1 text-xs text-neutral-400">
-              {rows.length === 0
-                ? "No procurement requests recorded yet."
-                : "No rows match the current filters."}
-            </p>
+          <div className="card">
+            <EmptyState
+              icon="shopping_cart"
+              title="No procurement requests found"
+              description={
+                rows.length === 0
+                  ? "No procurement requests recorded yet."
+                  : "No rows match the current filters."
+              }
+            />
           </div>
         ) : null
       }

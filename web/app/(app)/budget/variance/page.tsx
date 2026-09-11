@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetVarianceRow } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const CATEGORIES = [
   { value: "timing", label: "Timing" },
@@ -160,11 +161,7 @@ export default function BudgetVariancePage() {
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center italic text-neutral-500">
-                    No variance snapshots yet. Finance can run a scan.
-                  </td>
-                </tr>
+                <TableEmpty colSpan={7} title="No variance snapshots yet. Finance can run a scan." />
               ) : (
                 rows.map((row) => {
                   const latest = row.explanations?.[0];

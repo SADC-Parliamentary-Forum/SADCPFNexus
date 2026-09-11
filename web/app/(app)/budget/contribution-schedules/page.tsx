@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function ContributionSchedulesPage() {
   const qc = useQueryClient();
@@ -84,9 +85,7 @@ export default function ContributionSchedulesPage() {
                 </tr>
               ))}
               {list.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-4 text-center text-sm text-neutral-500">No schedules yet.</td>
-                </tr>
+                <TableEmpty colSpan={4} title="No schedules yet." />
               )}
             </tbody>
           </table>

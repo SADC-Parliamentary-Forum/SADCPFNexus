@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { assetsApi, type AssetInsuranceClaim, type AssetInsurancePolicy } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function AssetInsurancePage() {
   const qc = useQueryClient();
@@ -167,7 +168,7 @@ export default function AssetInsurancePage() {
                   </tr>
                 ))}
                 {policies.length === 0 && (
-                  <tr><td colSpan={5} className="py-6 text-neutral-400">No policies yet.</td></tr>
+                  <TableEmpty colSpan={5} title="No policies yet." />
                 )}
               </tbody>
             </table>
@@ -234,7 +235,7 @@ export default function AssetInsurancePage() {
                   </tr>
                 ))}
                 {claims.length === 0 && (
-                  <tr><td colSpan={5} className="py-6 text-neutral-400">No claims yet.</td></tr>
+                  <TableEmpty colSpan={5} title="No claims yet." />
                 )}
               </tbody>
             </table>

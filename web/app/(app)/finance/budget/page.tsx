@@ -8,6 +8,7 @@ import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, getListData, slicePage } from "@/lib/listPagination";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function BudgetDashboardPage() {
   const { confirm } = useConfirm();
@@ -228,11 +229,7 @@ export default function BudgetDashboardPage() {
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-8 text-neutral-500 italic">
-                    No budgets found.
-                  </td>
-                </tr>
+                <TableEmpty colSpan={7} title="No budgets found." />
               ) : (
                 paged.map((budget) => (
                   <tr key={budget.id} className="hover:bg-neutral-50/50">

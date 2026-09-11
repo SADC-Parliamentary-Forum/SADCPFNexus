@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { parliamentsApi, type Parliament } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function ParliamentsPage() {
   const [parliaments, setParliaments] = useState<Parliament[]>([]);
@@ -75,11 +76,7 @@ export default function ParliamentsPage() {
                 ))
               : parliaments.length === 0
               ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-10 text-neutral-400 text-sm">
-                      No parliaments found.
-                    </td>
-                  </tr>
+                  <TableEmpty colSpan={6} title="No parliaments found." />
                 )
               : parliaments.map((p) => (
                   <tr key={p.id}>

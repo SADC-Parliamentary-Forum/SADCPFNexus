@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
   approved: { label: "Approved", cls: "badge-success" },
@@ -382,22 +383,22 @@ export default function ImprestPage() {
       }
       empty={
         !loading && filtered.length === 0 ? (
-          <div className="card overflow-hidden">
-            <div className="px-5 py-16 text-center">
-              <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">
-                account_balance_wallet
-              </span>
-              <p className="text-sm font-semibold text-neutral-600">No imprest requests found</p>
-              <p className="mt-1 text-xs text-neutral-400">
-                {filter === "all" && !search
+          <div className="card">
+            <EmptyState
+              icon="account_balance_wallet"
+              title="No imprest requests found"
+              description={
+                filter === "all" && !search
                   ? "Create a petty cash request to get started."
-                  : "No rows match the current filters."}
-              </p>
-              <Link href="/imprest/create" className="btn-primary mt-5 inline-flex text-sm">
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                New Imprest Request
-              </Link>
-            </div>
+                  : "No rows match the current filters."
+              }
+              action={
+                <Link href="/imprest/create" className="btn-primary inline-flex text-sm">
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  New Imprest Request
+                </Link>
+              }
+            />
           </div>
         ) : undefined
       }

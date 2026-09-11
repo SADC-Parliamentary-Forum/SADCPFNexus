@@ -9,6 +9,7 @@ import { governanceApi, minutesApi, committeeApi, governanceMeetingTypeApi, type
 import api from "@/lib/api";
 import type { TenantUserOption } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -1044,12 +1045,7 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={isCommittee ? 8 : 7} className="text-center py-12">
-                      <span className="material-symbols-outlined text-3xl text-neutral-200 block mb-2">description</span>
-                      <span className="text-neutral-400 text-sm">No resolutions found</span>
-                    </td>
-                  </tr>
+                  <TableEmpty colSpan={isCommittee ? 8 : 7} icon="description" title="No resolutions found" />
                 )}
               </tbody>
             </table>

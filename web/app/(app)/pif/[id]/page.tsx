@@ -28,6 +28,7 @@ import { unwrapEntity } from "@/lib/unwrapEntity";
 import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { useToast } from "@/components/ui/Toast";
 import { personLabel } from "@/lib/pifForm";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -719,7 +720,7 @@ export default function PifDetailPage() {
                 </thead>
                 <tbody>
                   {activities.length === 0 ? (
-                    <tr><td colSpan={6} className="py-10 text-center text-sm text-neutral-400">No activities yet.</td></tr>
+                    <TableEmpty colSpan={6} title="No activities yet." />
                   ) : activities.map((a) => (
                     <tr key={a.id}>
                       <td>
@@ -858,7 +859,7 @@ export default function PifDetailPage() {
                 </thead>
                 <tbody>
                   {budgetLines.length === 0 ? (
-                    <tr><td colSpan={6} className="py-10 text-center text-sm text-neutral-400">No budget lines.</td></tr>
+                    <TableEmpty colSpan={6} title="No budget lines." />
                   ) : budgetLines.map((b) => {
                     const variance = Number(b.amount) - Number(b.actual_spent);
                     return (
@@ -937,7 +938,7 @@ export default function PifDetailPage() {
                   </thead>
                   <tbody>
                     {procItems.length === 0 ? (
-                      <tr><td colSpan={8} className="py-10 text-center text-sm text-neutral-400">No procurement items.</td></tr>
+                      <TableEmpty colSpan={8} title="No procurement items." />
                     ) : procItems.map((p) => {
                       const linked = !!p.procurement_request_id;
                       const selectable = ["approved", "amended"].includes(programme.status) && !linked;

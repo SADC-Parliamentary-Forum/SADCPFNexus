@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type OtReq = {
   id: number;
@@ -170,11 +171,7 @@ export default function OvertimeRequestsPage() {
               </tr>
             )}
             {!loading && items.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-[var(--text-secondary)]">
-                  No overtime requisitions yet.
-                </td>
-              </tr>
+              <TableEmpty colSpan={5} title="No overtime requisitions yet." />
             )}
             {items.map((row) => (
               <tr key={row.id} className="border-t border-[var(--border)]">

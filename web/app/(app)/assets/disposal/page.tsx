@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { assetsApi, type Asset } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type AssetOption = { id: number; asset_code: string; name: string; status: string; book_value?: number };
 type Disposal = {
@@ -286,9 +287,7 @@ function AssetDisposalPageInner() {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr>
-                  <td colSpan={5}>No disposal requests.</td>
-                </tr>
+                <TableEmpty colSpan={5} title="No disposal requests." />
               )}
             </tbody>
           </table>

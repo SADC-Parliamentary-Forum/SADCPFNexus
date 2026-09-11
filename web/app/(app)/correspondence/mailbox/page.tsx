@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { correspondenceApi, type CorrespondenceMailboxSuggestion } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function CorrespondenceMailboxPage() {
   const qc = useQueryClient();
@@ -183,7 +184,7 @@ export default function CorrespondenceMailboxPage() {
               </tr>
             ))}
             {suggestions.length === 0 && (
-              <tr><td colSpan={4} className="py-6 text-neutral-400">No open suggestions.</td></tr>
+              <TableEmpty colSpan={4} title="No open suggestions." />
             )}
           </tbody>
         </table>

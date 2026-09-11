@@ -8,6 +8,7 @@ import {
   type BudgetAvailability,
   type OrgBudgetLine,
 } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 function unwrapLines(payload: unknown): OrgBudgetLine[] {
   if (!payload || typeof payload !== "object") return [];
@@ -191,11 +192,7 @@ export default function BudgetControlPage() {
                   </td>
                 </tr>
               ) : lines.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center italic text-neutral-500">
-                    No active budget lines. Seed DefaultBudgetSeeder or create lines under Finance portfolios.
-                  </td>
-                </tr>
+                <TableEmpty colSpan={7} title="No active budget lines. Seed DefaultBudgetSeeder or create lines under Finance portfolios." />
               ) : (
                 lines.map((line, idx) => {
                   const avail = availabilityById[line.id];

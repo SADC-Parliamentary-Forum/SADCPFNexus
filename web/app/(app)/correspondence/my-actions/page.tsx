@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function MyCorrespondenceActionsPage() {
   const [items, setItems] = useState<CorrespondenceLetter[]>([]);
@@ -40,7 +41,7 @@ export default function MyCorrespondenceActionsPage() {
               <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-400">Loading…</td></tr>
             )}
             {!loading && items.length === 0 && (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-400">No open action items.</td></tr>
+              <TableEmpty colSpan={4} title="No open action items." />
             )}
             {items.map((item) => (
               <tr key={item.id} className="border-t border-neutral-100 hover:bg-neutral-50">

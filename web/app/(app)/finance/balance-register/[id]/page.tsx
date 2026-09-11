@@ -13,6 +13,7 @@ import {
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const MODULE_LABELS: Record<string, string> = {
   salary_advance: "Salary Advance",
@@ -404,7 +405,7 @@ export default function RegisterDetailPage() {
             </thead>
             <tbody>
               {txns.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-10 text-sm text-neutral-400">No transactions yet.</td></tr>
+                <TableEmpty colSpan={9} title="No transactions yet." />
               ) : txns.map(t => {
                 const tc = TXN_TYPE_CONFIG[t.type] ?? { label: t.type, color: "", icon: "circle" };
                 const vc = VERIFY_STATUS_CONFIG[t.verification_status] ?? { badge: "badge-muted", label: t.verification_status };
@@ -461,7 +462,7 @@ export default function RegisterDetailPage() {
             </thead>
             <tbody>
               {adjustmentTxns.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-10 text-sm text-neutral-400">No adjustments or write-offs.</td></tr>
+                <TableEmpty colSpan={6} title="No adjustments or write-offs." />
               ) : adjustmentTxns.map(t => {
                 const tc = TXN_TYPE_CONFIG[t.type];
                 const vc = VERIFY_STATUS_CONFIG[t.verification_status];
@@ -522,7 +523,7 @@ export default function RegisterDetailPage() {
             </thead>
             <tbody>
               {verifications.length === 0 ? (
-                <tr><td colSpan={5} className="text-center py-10 text-sm text-neutral-400">No verification records.</td></tr>
+                <TableEmpty colSpan={5} title="No verification records." />
               ) : verifications.map(v => (
                 <tr key={v.id}>
                   <td className="text-sm text-neutral-500">#{v.transaction_id}</td>

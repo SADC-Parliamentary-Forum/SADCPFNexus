@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { hrApi } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type Period = { id: number; label?: string; period_start: string; period_end: string; status?: string };
 type Batch = {
@@ -157,7 +158,7 @@ export default function TimesheetPayrollExportPage() {
                 </tr>
               ))}
               {batches.length === 0 && (
-                <tr><td colSpan={4} className="px-3 py-4 text-neutral-500">No payroll export batches yet.</td></tr>
+                <TableEmpty colSpan={4} title="No payroll export batches yet." />
               )}
             </tbody>
           </table>

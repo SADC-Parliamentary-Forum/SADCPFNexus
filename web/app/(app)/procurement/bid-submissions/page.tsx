@@ -3,6 +3,7 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useQuery } from "@tanstack/react-query";
 import { tendersApi } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function BidSubmissionsPage() {
   const { data, isLoading } = useQuery({
@@ -44,7 +45,7 @@ export default function BidSubmissionsPage() {
                 </tr>
               ))}
               {(data ?? []).length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-400">No bid submissions yet.</td></tr>
+                <TableEmpty colSpan={5} title="No bid submissions yet." />
               )}
             </tbody>
           </table>

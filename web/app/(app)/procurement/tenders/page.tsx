@@ -14,6 +14,7 @@ import {
 import { useRowSelection } from "@/lib/useRowSelection";
 import { clientPageCount, DEFAULT_PAGE_SIZE, slicePage } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_FILTERS = [
   "all",
@@ -157,8 +158,12 @@ export default function TendersPage() {
       }
       empty={
         !isLoading && !isError && rows.length === 0 ? (
-          <div className="card p-8 text-center text-sm text-neutral-400">
-            No tenders yet. Create from an approved tender-method request.
+          <div className="card">
+            <EmptyState
+              icon="gavel"
+              title="No tenders yet"
+              description="Create from an approved tender-method request."
+            />
           </div>
         ) : undefined
       }

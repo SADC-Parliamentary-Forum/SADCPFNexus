@@ -15,6 +15,7 @@ import { PrintButton } from "@/components/ui/PrintButton";
 import axios from "axios";
 import { useToast } from "@/components/ui/Toast";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 function canReserveBudget(): boolean {
   const u = getStoredUser();
@@ -720,9 +721,7 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
           </thead>
           <tbody>
             {items.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="text-center text-neutral-400 py-8">No line items.</td>
-              </tr>
+              <TableEmpty colSpan={4} title="No line items." />
             ) : items.map((item) => (
               <tr key={item.id}>
                 <td>

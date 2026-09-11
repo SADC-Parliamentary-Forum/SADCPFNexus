@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { adminApi, fleetApi, type FleetBooking, type FleetDriver, type FleetVehicle, type User } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type Tab = "vehicles" | "drivers" | "calendar";
 
@@ -134,18 +135,22 @@ export default function FleetListPage() {
                   <td className="px-3 py-3">{v.name}</td>
                   <td className="px-3 py-3">{v.status}</td>
                   <td className="px-3 py-3 text-right">
-                    <Link href={`/fleet/${v.id}`} className="text-blue-700 underline dark:text-blue-400">
+                    <Link href={`/fleet/${v.id}`} className="btn-secondary text-xs">
                       Open
                     </Link>
                   </td>
                 </tr>
               ))}
               {vehicles.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-3 py-8 text-center text-neutral-500 dark:text-neutral-400">
-                    {vehiclesQuery.isLoading ? "Loading fleet vehicles…" : "No fleet vehicles found."}
-                  </td>
-                </tr>
+                vehiclesQuery.isLoading ? (
+                  <tr>
+                    <td colSpan={4} className="px-3 py-8 text-center text-neutral-500 dark:text-neutral-400">
+                      Loading fleet vehicles…
+                    </td>
+                  </tr>
+                ) : (
+                  <TableEmpty colSpan={4} title="No fleet vehicles found." />
+                )
               )}
             </tbody>
           </table>
@@ -201,9 +206,7 @@ export default function FleetListPage() {
                   </tr>
                 ))}
                 {drivers.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-3 py-8 text-center text-neutral-500 dark:text-neutral-400">No drivers on roster yet.</td>
-                  </tr>
+                  <TableEmpty colSpan={4} title="No drivers on roster yet." />
                 )}
               </tbody>
             </table>
@@ -265,9 +268,7 @@ export default function FleetListPage() {
                   </tr>
                 ))}
                 {calendarRows.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-8 text-center text-neutral-500 dark:text-neutral-400">No bookings yet.</td>
-                  </tr>
+                  <TableEmpty colSpan={5} title="No bookings yet." />
                 )}
               </tbody>
             </table>

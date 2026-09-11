@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { assetsApi, type Asset } from "@/lib/api";
 import { canManageAssets, getStoredUser } from "@/lib/auth";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function AssetsIntakePage() {
   const [items, setItems] = useState<Asset[]>([]);
@@ -41,7 +42,7 @@ export default function AssetsIntakePage() {
             </thead>
             <tbody>
               {items.length === 0 && (
-                <tr><td colSpan={5}>No pending assets.</td></tr>
+                <TableEmpty colSpan={5} title="No pending assets." />
               )}
               {items.map((a) => (
                 <tr key={a.id}>

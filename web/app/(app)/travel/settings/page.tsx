@@ -6,7 +6,7 @@ import { travelApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type DsaRate = {
   id: number;
@@ -111,11 +111,7 @@ function SettingsTable({
           children
         ) : (
           <tbody>
-            <tr>
-              <td colSpan={columns} className="p-0">
-                <EmptyState icon={empty.icon} title={empty.title} description={empty.description} className="min-h-0 py-8" />
-              </td>
-            </tr>
+            <TableEmpty colSpan={columns} icon={empty.icon} title={empty.title} description={empty.description} />
           </tbody>
         )}
       </table>

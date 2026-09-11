@@ -10,6 +10,7 @@ import { StockItemFormModal } from "@/components/stock/StockItemFormModal";
 import { stockCategoriesApi, type StockCategory } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function StockItemDetailPage() {
   const params = useParams();
@@ -109,7 +110,7 @@ export default function StockItemDetailPage() {
               </tr>
             ))}
             {(item.transactions ?? []).length === 0 && (
-              <tr><td colSpan={6} className="px-4 py-6 text-neutral-500 text-center">No movements yet.</td></tr>
+              <TableEmpty colSpan={6} title="No movements yet." />
             )}
           </tbody>
         </table>

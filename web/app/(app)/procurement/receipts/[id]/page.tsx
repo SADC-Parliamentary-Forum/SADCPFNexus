@@ -9,6 +9,7 @@ import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   pending:   { label: "Pending",   cls: "text-amber-700 bg-amber-50 border-amber-200",   icon: "hourglass_empty" },
@@ -268,7 +269,7 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
           </thead>
           <tbody>
             {items.length === 0 ? (
-              <tr><td colSpan={5} className="text-center text-neutral-400 py-8 text-sm">No items recorded.</td></tr>
+              <TableEmpty colSpan={5} title="No items recorded." />
             ) : items.map((item) => {
               const received  = item.quantity_received ?? 0;
               const accepted  = item.quantity_accepted ?? received;

@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { assetMovementsApi, type AssetMovement } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function AssetTransfersPage() {
   const [rows, setRows] = useState<AssetMovement[]>([]);
@@ -45,7 +46,7 @@ export default function AssetTransfersPage() {
                 <td>{m.reason ?? "—"}</td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={5}>No transfer movements yet. Use Register → assign/transfer actions.</td></tr>}
+            {rows.length === 0 && <TableEmpty colSpan={5} title="No transfer movements yet. Use Register → assign/transfer actions." />}
           </tbody>
         </table>
       </div>

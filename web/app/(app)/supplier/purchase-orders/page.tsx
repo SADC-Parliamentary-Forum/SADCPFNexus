@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { supplierPortalApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function SupplierPurchaseOrdersPage() {
   const { data, isLoading, isError } = useQuery({
@@ -36,9 +37,7 @@ export default function SupplierPurchaseOrdersPage() {
           </thead>
           <tbody>
             {data.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="py-12 text-center text-sm text-neutral-500">No purchase orders yet.</td>
-              </tr>
+              <TableEmpty colSpan={5} title="No purchase orders yet." />
             ) : (
               data.map((po) => (
                 <tr key={po.id}>

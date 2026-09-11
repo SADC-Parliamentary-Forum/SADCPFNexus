@@ -10,6 +10,7 @@ import {
   type PurchaseOrder,
 } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type ModalState =
   | { mode: "proforma"; purchaseOrder: PurchaseOrder }
@@ -196,9 +197,7 @@ export default function SupplierInvoicesPage() {
           </thead>
           <tbody>
             {invoices.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-12 text-center text-sm text-neutral-500">No invoices submitted yet.</td>
-              </tr>
+              <TableEmpty colSpan={6} title="No invoices submitted yet." />
             ) : (
               invoices.map((invoice) => (
                 <tr key={invoice.id}>

@@ -3,6 +3,7 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type RecordRow = {
   id: number;
@@ -46,7 +47,7 @@ export default function AssetMaintenancePage() {
                 <td>{r.status}</td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={5}>No maintenance records.</td></tr>}
+            {rows.length === 0 && <TableEmpty colSpan={5} title="No maintenance records." />}
           </tbody>
         </table>
       </div>

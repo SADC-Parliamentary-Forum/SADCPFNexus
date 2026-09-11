@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { platformAuditApi } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type IngestionHealth = Record<string, number | null>;
 type DeadLetter = {
@@ -139,11 +140,7 @@ export default function AuditTrailIngestionPage() {
                 </tr>
               ))}
               {deadLetters.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="py-6 text-center text-neutral-500">
-                    No dead letters.
-                  </td>
-                </tr>
+                <TableEmpty colSpan={4} title="No dead letters." />
               ) : null}
             </tbody>
           </table>

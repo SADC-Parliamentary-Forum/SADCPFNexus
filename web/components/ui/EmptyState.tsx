@@ -30,3 +30,26 @@ export function EmptyState({
     </div>
   );
 }
+
+/** Empty row for data tables — keeps table structure while using shared EmptyState chrome. */
+export function TableEmpty({
+  colSpan,
+  icon = "inbox",
+  title,
+  description,
+  action,
+}: {
+  colSpan: number;
+  icon?: string;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className="p-0">
+        <EmptyState icon={icon} title={title} description={description} action={action} className="min-h-[160px] py-8" />
+      </td>
+    </tr>
+  );
+}

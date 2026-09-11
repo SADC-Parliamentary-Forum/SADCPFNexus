@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -408,23 +409,22 @@ export default function AdminLedgerPage() {
               </thead>
               <tbody>
                 {logs.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="text-center py-14">
-                      <div className="flex flex-col items-center gap-2 text-neutral-300">
-                        <span className="material-symbols-outlined text-[40px]">receipt_long</span>
-                        <p className="text-sm text-neutral-400">No audit entries found</p>
-                        {hasFilters && (
-                          <button
-                            type="button"
-                            onClick={() => { setModuleFilter(""); setActionFilter(""); setUserFilter(""); setDateFrom(""); setDateTo(""); }}
-                            className="btn-secondary text-sm py-1 px-2 mt-1"
-                          >
-                            Clear all filters
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                  <TableEmpty
+                    colSpan={9}
+                    icon="receipt_long"
+                    title="No audit entries found"
+                    action={
+                      hasFilters ? (
+                        <button
+                          type="button"
+                          onClick={() => { setModuleFilter(""); setActionFilter(""); setUserFilter(""); setDateFrom(""); setDateTo(""); }}
+                          className="btn-secondary text-sm py-1 px-2"
+                        >
+                          Clear all filters
+                        </button>
+                      ) : undefined
+                    }
+                  />
                 ) : (
                   logs.map((l, idx) => {
                     const isHighRisk = HIGH_RISK_ACTIONS.has(l.action?.toLowerCase());

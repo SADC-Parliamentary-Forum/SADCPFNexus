@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function AuditTrailHoldsPage() {
   const { success, error, info } = useToast();
@@ -99,7 +100,7 @@ export default function AuditTrailHoldsPage() {
               </tr>
             ))}
             {holds.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-neutral-500">No holds.</td></tr>
+              <TableEmpty colSpan={5} title="No holds." />
             )}
           </tbody>
         </table>

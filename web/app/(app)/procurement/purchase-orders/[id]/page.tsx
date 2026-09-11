@@ -8,6 +8,7 @@ import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:              { label: "Draft",          cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"   },
@@ -265,7 +266,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
           </thead>
           <tbody>
             {items.length === 0 ? (
-              <tr><td colSpan={4} className="text-center text-neutral-400 py-8 text-sm">No line items.</td></tr>
+              <TableEmpty colSpan={4} title="No line items." />
             ) : items.map((item) => (
               <tr key={item.id}>
                 <td><p className="font-medium text-neutral-900">{item.description}</p><p className="text-xs text-neutral-400">{item.unit}</p></td>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { governanceConfigApi, auditLogsApi, type GovernanceConfig, type AuditLogEntry } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -172,7 +173,7 @@ export default function AdminGovernanceConfigPage() {
                 <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Module</th><th>Record</th></tr></thead>
                 <tbody>
                   {recentLogs.length === 0 ? (
-                    <tr><td colSpan={5} className="text-center py-8 text-neutral-400 text-xs">No audit entries available</td></tr>
+                    <TableEmpty colSpan={5} title="No audit entries available" />
                   ) : recentLogs.map((l) => (
                     <tr key={l.id}>
                       <td className="text-xs text-neutral-400 whitespace-nowrap">{formatDateShort(l.timestamp)}</td>

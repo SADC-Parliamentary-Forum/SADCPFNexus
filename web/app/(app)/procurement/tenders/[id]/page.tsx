@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { tendersApi } from "@/lib/api";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function TenderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -330,11 +331,7 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
                   </tr>
                 ))}
                 {scoring.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-4 text-center text-neutral-400 text-xs">
-                      No scored bids yet.
-                    </td>
-                  </tr>
+                  <TableEmpty colSpan={5} title="No scored bids yet." />
                 )}
               </tbody>
             </table>

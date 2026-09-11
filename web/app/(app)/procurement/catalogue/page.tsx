@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { catalogueApi, vendorsApi } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function CataloguePage() {
   const qc = useQueryClient();
@@ -168,7 +169,7 @@ export default function CataloguePage() {
                 );
               })}
               {(data ?? []).length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-400">No catalogue items.</td></tr>
+                <TableEmpty colSpan={5} title="No catalogue items." />
               )}
             </tbody>
           </table>

@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { deploymentsApi, type StaffDeployment } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   active:    { label: "Active",    cls: "badge-success" },
@@ -115,11 +116,7 @@ export default function DeploymentsPage() {
                 ))
               : deployments.length === 0
               ? (
-                  <tr>
-                    <td colSpan={8} className="text-center py-10 text-neutral-400 text-sm">
-                      No deployments found.
-                    </td>
-                  </tr>
+                  <TableEmpty colSpan={8} title="No deployments found." />
                 )
               : deployments.map((d) => (
                   <tr key={d.id}>

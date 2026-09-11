@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { riskApi, type RiskControlTestingCampaign, type RiskControlTestingItem } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function RiskControlTestingPage() {
   const qc = useQueryClient();
@@ -136,11 +137,7 @@ export default function RiskControlTestingPage() {
               </tr>
             ))}
             {campaigns.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-neutral-500">
-                  No campaigns yet.
-                </td>
-              </tr>
+              <TableEmpty colSpan={5} title="No campaigns yet." />
             )}
           </tbody>
         </table>

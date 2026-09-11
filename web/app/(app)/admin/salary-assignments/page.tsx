@@ -13,6 +13,7 @@ import {
 import { formatDate } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type GradeBand = { id: number; code: string; label: string; salary_scales?: SalaryScale[] };
 type SalaryScale = { id: number; grade_band_id: number; status: string; notches?: { notch: number; monthly: number }[] };
@@ -196,7 +197,7 @@ export default function SalaryAssignmentsPage() {
                 </tr>
               ))
             ) : assignments.length === 0 ? (
-              <tr><td colSpan={7} className="text-center py-12 text-neutral-400 text-sm">No salary assignments found.</td></tr>
+              <TableEmpty colSpan={7} title="No salary assignments found." />
             ) : assignments.map((a) => (
               <tr key={a.id} className="hover:bg-neutral-50">
                 <td className="text-sm font-medium">{a.employee?.name ?? `#${a.user_id}`}</td>

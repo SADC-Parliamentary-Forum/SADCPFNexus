@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type AssetOption = { id: number; asset_code: string; name: string; book_value?: number };
 type Revaluation = {
@@ -127,7 +128,7 @@ export default function AssetRevaluationPage() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={6}>No revaluations.</td></tr>}
+            {rows.length === 0 && <TableEmpty colSpan={6} title="No revaluations." />}
           </tbody>
         </table>
       </div>

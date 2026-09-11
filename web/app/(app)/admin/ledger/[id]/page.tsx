@@ -5,6 +5,7 @@ import { ledgerVerificationsApi, auditLogsApi, type LedgerVerification, type Aud
 import { cn, formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -248,9 +249,7 @@ export default function LedgerVerificationDetailPage({ params }: { params: Promi
             </thead>
             <tbody>
               {logs.length === 0 && !logsLoading ? (
-                <tr>
-                  <td colSpan={7} className="text-center text-neutral-400 py-8">No entries found.</td>
-                </tr>
+                <TableEmpty colSpan={7} title="No entries found." />
               ) : logs.map((entry) => (
                 <tr key={entry.id}>
                   <td className="whitespace-nowrap text-xs text-neutral-500">{formatTs(entry.created_at)}</td>

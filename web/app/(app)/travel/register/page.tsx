@@ -18,6 +18,7 @@ import { useRowSelection } from "@/lib/useRowSelection";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 import { clientPageCount, DEFAULT_PAGE_SIZE, slicePage } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   approved: { label: "Approved", badge: "badge-success" },
@@ -542,18 +543,16 @@ export default function TravelRegisterPage() {
       }
       empty={
         !loading && filtered.length === 0 ? (
-          <div className="card px-5 py-16 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <span className="material-symbols-outlined text-[28px] text-primary">flight</span>
-            </div>
-            <p className="text-sm font-semibold text-neutral-700">
-              {rows.length === 0 ? "No travel register rows yet" : "No trips match your filters"}
-            </p>
-            <p className="mt-1 text-xs text-neutral-500">
-              {rows.length === 0
-                ? "Approved and in-flight missions will appear here as requests are created."
-                : "Try another status filter or clear the search."}
-            </p>
+          <div className="card">
+            <EmptyState
+              icon="flight"
+              title={rows.length === 0 ? "No travel register rows yet" : "No trips match your filters"}
+              description={
+                rows.length === 0
+                  ? "Approved and in-flight missions will appear here as requests are created."
+                  : "Try another status filter or clear the search."
+              }
+            />
           </div>
         ) : undefined
       }

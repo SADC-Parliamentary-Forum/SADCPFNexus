@@ -434,3 +434,17 @@ test("operational non-redirect pages use gold chrome", () => {
   assert.deepEqual(offenders, []);
 });
 
+test("RegisterShell empty slots use EmptyState", () => {
+  const offenders: string[] = [];
+  for (const fullPath of walkTsx(join(webRoot, "app/(app)"))) {
+    if (!fullPath.endsWith("page.tsx")) continue;
+    const source = readFileSync(fullPath, "utf8");
+    if (!source.includes("RegisterShell")) continue;
+    if (!/\bempty=\{/.test(source)) continue;
+    if (!source.includes("EmptyState")) {
+      offenders.push(fullPath.replace(webRoot, ""));
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+
