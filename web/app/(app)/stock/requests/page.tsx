@@ -104,7 +104,7 @@ export default function StockRequestsPage() {
           {rows.map((r) => (
             <tr key={r.id} className="border-t border-neutral-100">
               <td className="px-4 py-2">
-                <Link className="text-primary-700 hover:underline" href={`/stock/requests`}>{r.reference_number}</Link>
+                <Link className="btn-secondary text-xs py-1 px-2" href={`/stock/requests`}>{r.reference_number}</Link>
               </td>
               <td className="px-4 py-2">{r.purpose ?? "—"}</td>
               <td className="px-4 py-2">{r.status}</td>

@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -224,7 +225,7 @@ export default function StockItemsPage() {
                       <div className="flex items-center gap-2">
                         <div>
                           <p className="font-medium text-neutral-900">
-                            <Link href={`/stock/${i.id}`} className="hover:text-primary hover:underline">{i.name}</Link>
+                            <Link href={`/stock/${i.id}`} className="font-medium text-primary">{i.name}</Link>
                           </p>
                           <p className="text-xs font-mono text-neutral-400">{i.item_code}{i.unit ? ` · ${i.unit}` : ""}</p>
                         </div>
@@ -257,10 +258,16 @@ export default function StockItemsPage() {
           </div>
         </div>
       ) : items.length > 0 ? (
-        <div className="card p-10 text-center">
-          <span className="material-symbols-outlined text-3xl text-neutral-300">search_off</span>
-          <p className="mt-2 text-sm font-semibold text-neutral-600">No items match your filters</p>
-          <button type="button" onClick={() => { setSearch(""); setFilterCategory("all"); setFilterStatus("active"); }} className="mt-3 text-xs text-primary hover:underline">Clear filters</button>
+        <div className="card">
+          <EmptyState
+            icon="search_off"
+            title="No items match your filters"
+            action={
+              <button type="button" onClick={() => { setSearch(""); setFilterCategory("all"); setFilterStatus("active"); }} className="btn-secondary text-xs">
+                Clear filters
+              </button>
+            }
+          />
         </div>
       ) : (
         <div className="card p-16 text-center">

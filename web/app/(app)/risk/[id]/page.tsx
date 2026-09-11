@@ -488,7 +488,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
                 )}
               </div>
               {!showActionForm && (
-                <button onClick={() => setShowActionForm(true)} className="text-xs text-primary hover:underline flex items-center gap-1">
+                <button type="button" onClick={() => setShowActionForm(true)} className="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">add</span> Add action
                 </button>
               )}
@@ -767,7 +767,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             )}
             {policySearch && !searchLoading && searchResults.length === 0 && (
-              <p className="text-xs text-neutral-400 italic">No policies found. <Link href="/risk/policies" className="text-primary hover:underline">Manage Policy Library →</Link></p>
+              <p className="text-xs text-neutral-400 italic">No policies found. <Link href="/risk/policies" className="btn-secondary text-xs py-0.5 px-2 inline-flex ml-1">Manage Policy Library</Link></p>
             )}
           </div>
         </div>

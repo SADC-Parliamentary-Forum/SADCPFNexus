@@ -543,13 +543,13 @@ export default function AssignmentDetailPage() {
               const linked = row.assignment;
               return (
                 <li key={String(row.id)} className="flex items-center justify-between gap-2">
-                  <Link href={`/assignments/${row.depends_on_assignment_id}`} className="hover:underline">
+                  <Link href={`/assignments/${row.depends_on_assignment_id}`} className="btn-secondary text-xs py-1 px-2">
                     {linked?.title ?? `Assignment #${row.depends_on_assignment_id}`}
                     {linked?.reference_number ? ` · ${linked.reference_number}` : ""}
                   </Link>
                   <button
                     type="button"
-                    className="text-xs text-red-700 hover:underline"
+                    className="btn-secondary text-xs py-1 px-2 text-red-700"
                     onClick={() => removeDep.mutate(Number(row.id))}
                     disabled={removeDep.isPending}
                   >
@@ -568,9 +568,10 @@ export default function AssignmentDetailPage() {
             </p>
           )}
           <div className="flex flex-wrap items-end gap-2">
-            <label className="block min-w-[220px] flex-1 text-sm">
+            <label htmlFor="assignment-depends-on" className="block min-w-[220px] flex-1 text-sm">
               <span className="mb-1 block text-neutral-600">Depends on</span>
               <select
+                id="assignment-depends-on"
                 className="form-input w-full"
                 value={depId}
                 onChange={(e) => setDepId(e.target.value)}

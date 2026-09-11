@@ -243,10 +243,10 @@ export default function WorkplanEventTypesPage() {
                     <td className="text-sm text-neutral-600 capitalize">{et.color}</td>
                     <td className="text-sm text-neutral-600">{et.sort_order ?? "—"}</td>
                     <td className="text-right">
-                      <button type="button" onClick={() => handleEdit(et)} className="text-sm font-semibold text-primary hover:underline mr-3">
+                      <button type="button" onClick={() => handleEdit(et)} className="btn-secondary text-xs py-1 px-2 mr-2">
                         Edit
                       </button>
-                      <button type="button" onClick={() => handleDelete(et)} className="text-sm font-semibold text-red-600 hover:underline">
+                      <button type="button" onClick={() => handleDelete(et)} className="btn-secondary text-xs py-1 px-2 text-red-600">
                         Delete
                       </button>
                     </td>

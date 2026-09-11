@@ -88,7 +88,7 @@ export default function StocktakesPage() {
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-neutral-100">
                 <td className="px-4 py-2 font-mono text-xs">
-                  <Link href={`/stock/stocktakes/${r.id}`} className="text-primary hover:underline">{r.reference_number}</Link>
+                  <Link href={`/stock/stocktakes/${r.id}`} className="btn-secondary text-xs py-1 px-2">{r.reference_number}</Link>
                 </td>
                 <td className="px-4 py-2">{r.name}</td>
                 <td className="px-4 py-2">{formatDateShort(r.count_date)}</td>

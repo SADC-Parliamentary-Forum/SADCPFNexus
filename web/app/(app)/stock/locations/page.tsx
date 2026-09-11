@@ -95,7 +95,7 @@ export default function StockLocationsPage() {
         </table>
       )}
 
-      <Link href="/stock" className="text-sm text-primary hover:underline">← Back to stock register</Link>
+      <Link href="/stock" className="btn-secondary text-sm">Back to stock register</Link>
     </div>
   );
 }

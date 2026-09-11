@@ -115,8 +115,8 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
               <p className="font-mono text-xs text-neutral-500">{current.reference_number}</p>
               <p className="text-lg font-semibold text-neutral-900">{formatSaCurrency(current.amount, current.currency)}</p>
               <span className={`badge text-xs ${currentStatus.badge}`}>{currentStatus.label}</span>
-              <Link href={`/salary-advances/${current.id}`} className="text-xs font-medium text-primary hover:underline inline-block">
-                Open request →
+              <Link href={`/salary-advances/${current.id}`} className="btn-secondary text-xs py-1 px-2 inline-block">
+                Open request
               </Link>
             </>
           ) : (
@@ -136,8 +136,8 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
               <span className={`badge text-xs ${(SA_STATUS_CONFIG[summary.active_advance.status] ?? { badge: "badge-muted" }).badge}`}>
                 {(SA_STATUS_CONFIG[summary.active_advance.status] ?? { label: summary.active_advance.status }).label}
               </span>
-              <Link href={`/salary-advances/${summary.active_advance.id}`} className="text-xs font-medium text-primary hover:underline inline-block">
-                View advance →
+              <Link href={`/salary-advances/${summary.active_advance.id}`} className="btn-secondary text-xs py-1 px-2 inline-block">
+                View advance
               </Link>
             </>
           ) : (
@@ -149,7 +149,7 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
       <div className="card p-5 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-neutral-900">Recent history</h2>
-          <Link href="/salary-advances/history" className="text-xs font-medium text-primary hover:underline">View all</Link>
+          <Link href="/salary-advances/history" className="btn-secondary text-xs py-1 px-2">View all</Link>
         </div>
         {(summary?.history?.length ?? 0) === 0 ? (
           <p className="text-sm text-neutral-500">No closed or recovered advances yet.</p>
@@ -165,7 +165,7 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`badge text-xs ${sc.badge}`}>{sc.label}</span>
-                    <Link href={`/salary-advances/${h.id}`} className="text-xs font-medium text-primary hover:underline">View</Link>
+                    <Link href={`/salary-advances/${h.id}`} className="btn-secondary text-xs py-1 px-2">View</Link>
                   </div>
                 </li>
               );

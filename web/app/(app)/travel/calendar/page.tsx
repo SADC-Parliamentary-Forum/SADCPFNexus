@@ -265,7 +265,7 @@ export default function TravelCalendarPage() {
                         >
                           {TYPE_LABEL[ev.type] ?? ev.type}
                         </span>
-                        <Link href={`/travel/${ev.id}`} className="font-medium text-primary hover:underline">
+                        <Link href={`/travel/${ev.id}`} className="font-medium text-primary">
                           {ev.reference}
                         </Link>
                         <span className="text-neutral-500"> — {ev.title}</span>

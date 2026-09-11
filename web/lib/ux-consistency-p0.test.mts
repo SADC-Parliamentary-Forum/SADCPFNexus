@@ -228,3 +228,53 @@ test("remaining operational details use shared page chrome instead of adhoc h1",
   }
 });
 
+test("workplan, correspondence, assignment, risk, and salary-advance actions are buttons not underlines", () => {
+  const pages = [
+    "workplan/[id]/page.tsx",
+    "workplan/event-types/page.tsx",
+    "workplan/meeting-types/page.tsx",
+    "workplan/page.tsx",
+    "correspondence/[id]/page.tsx",
+    "assignments/[id]/page.tsx",
+    "risk/[id]/page.tsx",
+    "salary-advances/page.tsx",
+    "stock/units/page.tsx",
+    "stock/locations/page.tsx",
+    "travel/page.tsx",
+    "travel/register/page.tsx",
+  ];
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
+    assert.doesNotMatch(source, /hover:underline/, rel);
+  }
+});
+
+test("operational mobile detail screens use StitchScreen chrome", () => {
+  const mobileRoot = join(webRoot, "..", "mobile", "lib", "features");
+  const screens = [
+    "requests/presentation/screens/leave_request_detail_screen.dart",
+    "requests/presentation/screens/travel_request_detail_screen.dart",
+    "imprest/presentation/screens/imprest_detail_screen.dart",
+    "risk/presentation/screens/risk_detail_screen.dart",
+    "correspondence/presentation/screens/correspondence_detail_screen.dart",
+    "assignments/presentation/screens/assignment_detail_screen.dart",
+    "assignments/presentation/screens/assignments_calendar_screen.dart",
+    "procurement/presentation/screens/procurement_detail_screen.dart",
+    "procurement/presentation/screens/vendor_detail_screen.dart",
+    "procurement/presentation/screens/procurement_tender_detail_screen.dart",
+    "weekly_summaries/presentation/screens/weekly_summary_detail_screen.dart",
+    "reports/presentation/screens/report_detail_screen.dart",
+    "calendar/presentation/screens/calendar_holidays_screen.dart",
+    "finance/presentation/screens/finance_command_center_screen.dart",
+    "finance/presentation/screens/budget_cashflow_screen.dart",
+    "finance/presentation/screens/budget_variance_screen.dart",
+    "finance/presentation/screens/audit_compliance_screen.dart",
+  ];
+  for (const rel of screens) {
+    const source = readFileSync(join(mobileRoot, rel), "utf8");
+    assert.match(source, /StitchScreen/, rel);
+    assert.match(source, /StitchLoadingState/, rel);
+    assert.match(source, /StitchErrorState/, rel);
+  }
+});
+

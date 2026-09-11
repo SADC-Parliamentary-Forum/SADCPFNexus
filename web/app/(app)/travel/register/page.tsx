@@ -613,7 +613,7 @@ export default function TravelRegisterPage() {
                         />
                       </td>
                       <td className="whitespace-nowrap font-mono text-xs text-neutral-600">
-                        <Link href={`/travel/${row.id}`} className="font-semibold text-primary hover:underline">
+                        <Link href={`/travel/${row.id}`} className="font-semibold text-primary">
                           {row.reference_number}
                         </Link>
                       </td>
@@ -722,7 +722,7 @@ export default function TravelRegisterPage() {
             <span>
               Showing {pageRows.length} of {filtered.length} row(s) on this page
             </span>
-            <button type="button" className="font-medium text-primary hover:underline" onClick={() => void load()}>
+            <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => void load()}>
               Refresh
             </button>
           </div>

@@ -326,7 +326,7 @@ function cellFor(
     const label = referenceLabel(row);
     if (href) {
       return (
-        <Link href={href} className="font-medium text-primary hover:underline">
+        <Link href={href} className="font-medium text-primary">
           {label}
         </Link>
       );

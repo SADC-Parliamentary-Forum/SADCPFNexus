@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/router/safe_back.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class ImprestDetailScreen extends ConsumerStatefulWidget {
   const ImprestDetailScreen({super.key, this.requestId});
@@ -179,50 +179,19 @@ class _ImprestDetailScreenState extends ConsumerState<ImprestDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppColors.textPrimary),
-          onPressed: () => context.safePopOrGoHome(),
+    return StitchScreen(
+      title: 'Imprest Request',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        title: const Text('Imprest Request',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700)),
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading imprest request')
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.error_outline,
-                            color: AppColors.danger, size: 40),
-                        const SizedBox(height: 12),
-                        Text(_error!,
-                            style: const TextStyle(
-                                color: AppColors.textMuted, fontSize: 14),
-                            textAlign: TextAlign.center),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _load,
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : _buildBody(),
     );
   }

@@ -6,6 +6,7 @@ import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
 import '../../data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 /// Browse-only tender detail. Does not publish/open/evaluate (web retains those).
 /// Never shows sealed financial amounts.
@@ -115,44 +116,21 @@ class _ProcurementTenderDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+    return StitchScreen(
+      title: 'Tender',
+      fallbackRoute: '/procurement/tenders',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        title: const Text('Tender',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w800)),
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading tender')
           : _error != null || _tender == null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error ?? 'Tender not found.',
-                          style: const TextStyle(
-                              color: AppColors.textSecondary)),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _load,
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary),
-                        child: const Text('Retry',
-                            style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(
+                  message: _error ?? 'Tender not found.', onRetry: _load)
               : RefreshIndicator(
                   color: AppColors.primary,
                   onRefresh: _load,

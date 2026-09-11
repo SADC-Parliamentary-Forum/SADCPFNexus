@@ -225,8 +225,8 @@ export default function CorrespondenceContactsPage() {
                     <td>
                       {canAdmin && (
                         <div className="flex items-center gap-2">
-                          <button onClick={() => openContactSlideOver(c)} className="text-xs font-semibold text-primary hover:underline">Edit</button>
-                          <button onClick={() => deleteContact(c.id)} className="text-xs font-semibold text-red-500 hover:underline">Delete</button>
+                          <button type="button" onClick={() => openContactSlideOver(c)} className="btn-secondary text-xs py-1 px-2">Edit</button>
+                          <button type="button" onClick={() => deleteContact(c.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Delete</button>
                         </div>
                       )}
                     </td>
@@ -253,8 +253,8 @@ export default function CorrespondenceContactsPage() {
                 </div>
                 {canAdmin && (
                   <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openGroupSlideOver(g)} className="text-xs font-semibold text-primary hover:underline">Edit</button>
-                    <button onClick={() => deleteGroup(g.id)} className="text-xs font-semibold text-red-500 hover:underline">Delete</button>
+                    <button type="button" onClick={() => openGroupSlideOver(g)} className="btn-secondary text-xs py-1 px-2">Edit</button>
+                    <button type="button" onClick={() => deleteGroup(g.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Delete</button>
                   </div>
                 )}
               </div>

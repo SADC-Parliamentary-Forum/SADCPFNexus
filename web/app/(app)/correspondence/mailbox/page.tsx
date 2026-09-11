@@ -116,7 +116,7 @@ export default function CorrespondenceMailboxPage() {
           {settings?.last_polled_at ? ` · last poll ${new Date(settings.last_polled_at).toLocaleString()}` : ""}
           {" · "}
           System Admins can also set this mailbox under{" "}
-          <Link href="/admin/email" className="text-primary hover:underline">Admin → Email</Link>.
+          <Link href="/admin/email" className="font-medium text-primary">Admin → Email</Link>.
         </p>
         <div className="grid gap-3 md:grid-cols-2">
           <input className="form-input" placeholder="registry@sadcpf.org" value={settingsForm.mailbox_address} onChange={(e) => setSettingsForm((f) => ({ ...f, mailbox_address: e.target.value }))} />
@@ -159,7 +159,7 @@ export default function CorrespondenceMailboxPage() {
       <div className="card overflow-x-auto p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-base font-semibold">Suggested messages</h2>
-          <Link href="/correspondence/incoming" className="text-sm text-primary hover:underline">Manual incoming register →</Link>
+          <Link href="/correspondence/incoming" className="btn-secondary text-sm py-1 px-2">Manual incoming register</Link>
         </div>
         <table className="min-w-full text-sm">
           <thead className="text-left text-neutral-500">
@@ -177,8 +177,8 @@ export default function CorrespondenceMailboxPage() {
                 <td className="py-2">{s.subject || "—"}</td>
                 <td className="py-2">{s.from_name || s.from_address || "—"}</td>
                 <td className="py-2 space-x-2">
-                  <button type="button" className="text-primary hover:underline" onClick={() => registerSuggestion.mutate(s.id)}>Register</button>
-                  <button type="button" className="text-neutral-500 hover:underline" onClick={() => dismissSuggestion.mutate(s.id)}>Dismiss</button>
+                  <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => registerSuggestion.mutate(s.id)}>Register</button>
+                  <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => dismissSuggestion.mutate(s.id)}>Dismiss</button>
                 </td>
               </tr>
             ))}

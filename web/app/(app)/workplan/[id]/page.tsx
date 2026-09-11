@@ -176,15 +176,15 @@ function ManageTypesModal({
                     <input autoFocus className="form-input flex-1 py-1 text-sm" value={editName}
                       onChange={(e) => setEditName(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") doUpdate(); if (e.key === "Escape") setEditId(null); }} />
-                    <button type="button" disabled={busy} onClick={doUpdate} className="text-xs font-semibold text-primary hover:underline disabled:opacity-50">Save</button>
-                    <button type="button" onClick={() => setEditId(null)} className="text-xs text-neutral-400">Cancel</button>
+                    <button type="button" disabled={busy} onClick={doUpdate} className="btn-secondary text-xs py-1 px-2 disabled:opacity-50">Save</button>
+                    <button type="button" onClick={() => setEditId(null)} className="btn-secondary text-xs py-1 px-2">Cancel</button>
                   </>
                 ) : (
                   <>
                     <span className="flex-1 text-sm font-medium text-neutral-800">{item.name}</span>
                     {item.locked && <span className="text-[10px] text-neutral-400 bg-neutral-100 px-1.5 py-0.5 rounded">system</span>}
-                    <button type="button" onClick={() => { setEditId(item.id); setEditName(item.name); }} className="text-xs text-primary hover:underline">Edit</button>
-                    <button type="button" disabled={busy} onClick={() => doDelete(item.id)} className="text-xs text-red-500 hover:underline disabled:opacity-50">Delete</button>
+                    <button type="button" onClick={() => { setEditId(item.id); setEditName(item.name); }} className="btn-secondary text-xs py-1 px-2">Edit</button>
+                    <button type="button" disabled={busy} onClick={() => doDelete(item.id)} className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50">Delete</button>
                   </>
                 )}
               </div>
@@ -356,7 +356,7 @@ export default function WorkplanEventDetailPage() {
     return (
       <div className="space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
-        <Link href="/workplan" className="text-sm font-semibold text-primary hover:underline">Back to Workplan</Link>
+        <Link href="/workplan" className="btn-secondary text-sm">Back to Workplan</Link>
       </div>
     );
   }
@@ -522,7 +522,7 @@ export default function WorkplanEventDetailPage() {
           <div>
             <div className="flex items-center justify-between mb-1">
               <label className="block text-sm font-semibold text-neutral-700">Event type <span className="text-red-500">*</span></label>
-              <button type="button" onClick={() => setManageEventTypes(true)} className="text-xs text-primary hover:underline flex items-center gap-0.5">
+              <button type="button" onClick={() => setManageEventTypes(true)} className="btn-secondary text-xs py-1 px-2 flex items-center gap-0.5">
                 <span className="material-symbols-outlined text-[13px]">settings</span>Manage
               </button>
             </div>
@@ -534,7 +534,7 @@ export default function WorkplanEventDetailPage() {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-sm font-semibold text-neutral-700">Meeting Category</label>
-                <button type="button" onClick={() => setManageMeetingTypes(true)} className="text-xs text-primary hover:underline flex items-center gap-0.5">
+                <button type="button" onClick={() => setManageMeetingTypes(true)} className="btn-secondary text-xs py-1 px-2 flex items-center gap-0.5">
                   <span className="material-symbols-outlined text-[13px]">settings</span>Manage
                 </button>
               </div>
@@ -696,12 +696,12 @@ export default function WorkplanEventDetailPage() {
                   <span className="text-sm font-medium text-neutral-800 flex-1 truncate">{a.original_filename}</span>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button type="button" onClick={() => handleDownloadAttachment(a)}
-                      className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+                      className="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
                       <span className="material-symbols-outlined text-[14px]">download</span>
                       Download
                     </button>
                     <button type="button" onClick={() => handleDeleteAttachment(a.id)}
-                      className="text-xs text-red-500 hover:underline">
+                      className="btn-secondary text-xs py-1 px-2 text-red-600">
                       Remove
                     </button>
                   </div>

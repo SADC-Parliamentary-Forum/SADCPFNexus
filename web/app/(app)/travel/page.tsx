@@ -377,11 +377,11 @@ function TravelPageInner() {
                       <td><span className={`badge text-xs ${cfg.cls}`}>{cfg.label}</span></td>
                       <td>
                         <div className="flex flex-wrap gap-2">
-                          <Link href={`/travel/${r.id}`} className="text-xs font-medium text-primary hover:underline">
+                          <Link href={`/travel/${r.id}`} className="btn-secondary text-xs py-1 px-2">
                             View
                           </Link>
                           {canEdit && (
-                            <Link href={`/travel/create?edit=${r.id}`} className="text-xs font-medium text-neutral-600 hover:underline">
+                            <Link href={`/travel/create?edit=${r.id}`} className="btn-secondary text-xs py-1 px-2">
                               Edit
                             </Link>
                           )}

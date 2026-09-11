@@ -657,10 +657,7 @@ export default function TravelDetailPage() {
           />
         }
       />
-      <div>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+      <div className="flex items-center justify-end gap-2 flex-wrap">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
               {s.label}
@@ -796,8 +793,6 @@ export default function TravelDetailPage() {
               </button>
             )}
           </div>
-        </div>
-      </div>
 
       {/* Returned for correction banner */}
       {isReturnedForCorrection && (

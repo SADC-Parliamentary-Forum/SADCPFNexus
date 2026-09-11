@@ -194,10 +194,10 @@ export default function MeetingTypesPage() {
                     <td className="text-sm text-neutral-600 max-w-[200px] truncate">{mt.description || "—"}</td>
                     <td className="text-sm text-neutral-600">{mt.sort_order ?? "—"}</td>
                     <td className="text-right">
-                      <button type="button" onClick={() => handleEdit(mt)} className="text-sm font-semibold text-primary hover:underline mr-3">
+                      <button type="button" onClick={() => handleEdit(mt)} className="btn-secondary text-xs py-1 px-2 mr-2">
                         Edit
                       </button>
-                      <button type="button" onClick={() => handleDelete(mt)} className="text-sm font-semibold text-red-600 hover:underline">
+                      <button type="button" onClick={() => handleDelete(mt)} className="btn-secondary text-xs py-1 px-2 text-red-600">
                         Delete
                       </button>
                     </td>

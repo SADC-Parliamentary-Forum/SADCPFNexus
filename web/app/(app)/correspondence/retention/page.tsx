@@ -220,7 +220,7 @@ export default function CorrespondenceRetentionPage() {
             {holds.map((h) => (
               <tr key={h.id}>
                 <td>
-                  <Link href={`/correspondence/${h.id}`} className="text-primary hover:underline">
+                  <Link href={`/correspondence/${h.id}`} className="btn-secondary text-xs py-1 px-2">
                     {h.registry_reference || h.reference_number || h.id}
                   </Link>
                 </td>

@@ -168,7 +168,7 @@ function CorrespondenceRegistryPageInner() {
               return (
                 <tr key={l.id} className="border-t border-neutral-100 hover:bg-neutral-50">
                   <td className="px-4 py-3 font-mono text-xs">
-                    <Link href={`/correspondence/${l.id}`} className="text-primary hover:underline">
+                    <Link href={`/correspondence/${l.id}`} className="font-medium text-primary">
                       {l.registry_reference || l.reference_number || `#${l.id}`}
                     </Link>
                   </td>

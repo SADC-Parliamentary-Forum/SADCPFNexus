@@ -3,13 +3,13 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
 import '../../data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class VendorDetailScreen extends ConsumerStatefulWidget {
   final int vendorId;
@@ -233,50 +233,21 @@ class _VendorDetailScreenState extends ConsumerState<VendorDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          _vendor?['name'] as String? ?? 'Vendor Details',
-          style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: AppColors.textSecondary),
-            onPressed: _load,
-          ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : _error != null
-              ? _buildError()
-              : _buildBody(),
-    );
-  }
-
-  Widget _buildError() {
-    return Center(
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.error_outline_rounded, size: 40, color: AppColors.danger),
-        const SizedBox(height: 12),
-        Text(_error!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-        const SizedBox(height: 16),
-        ElevatedButton.icon(
-          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: AppColors.bgDark),
-          icon: const Icon(Icons.refresh_rounded, size: 16),
-          label: const Text('Retry', style: TextStyle(fontWeight: FontWeight.w700)),
+    return StitchScreen(
+      title: _vendor?['name'] as String? ?? 'Vendor Details',
+      fallbackRoute: '/procurement/vendors',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh_rounded,
           onPressed: _load,
         ),
-      ]),
+      ],
+      body: _loading
+          ? const StitchLoadingState(label: 'Loading vendor')
+          : _error != null
+              ? StitchErrorState(message: _error!, onRetry: _load)
+              : _buildBody(),
     );
   }
 

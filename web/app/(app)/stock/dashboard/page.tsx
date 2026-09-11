@@ -60,7 +60,7 @@ export default function StockDashboardPage() {
       <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
         <div className="px-4 py-3 border-b border-neutral-100 flex items-center justify-between">
           <h2 className="font-semibold text-sm">Low-stock queue</h2>
-          <Link href="/stock/low-stock" className="text-xs text-primary hover:underline">View all</Link>
+          <Link href="/stock/low-stock" className="btn-secondary text-xs py-1 px-2">View all</Link>
         </div>
         {data.low_stock_items.length === 0 ? (
           <p className="p-4 text-sm text-neutral-500">No items below reorder level.</p>
@@ -79,7 +79,7 @@ export default function StockDashboardPage() {
               {data.low_stock_items.map((i) => (
                 <tr key={i.id} className="border-t border-neutral-100">
                   <td className="px-4 py-2 font-mono text-xs">
-                    <Link href={`/stock/${i.id}`} className="text-primary hover:underline">{i.item_code}</Link>
+                    <Link href={`/stock/${i.id}`} className="font-medium text-primary">{i.item_code}</Link>
                   </td>
                   <td className="px-4 py-2">{i.name}</td>
                   <td className="px-4 py-2 text-red-600 font-medium">{i.current_balance}</td>

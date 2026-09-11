@@ -45,7 +45,7 @@ export default function MyCorrespondenceActionsPage() {
             {items.map((item) => (
               <tr key={item.id} className="border-t border-neutral-100 hover:bg-neutral-50">
                 <td className="px-4 py-3 font-mono text-xs">
-                  <Link href={`/correspondence/${item.id}`} className="text-primary hover:underline">
+                  <Link href={`/correspondence/${item.id}`} className="font-medium text-primary">
                     {item.registry_reference || item.reference_number || `#${item.id}`}
                   </Link>
                 </td>

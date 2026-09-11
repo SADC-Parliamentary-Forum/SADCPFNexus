@@ -129,7 +129,7 @@ export default function MasterRegisterPage() {
                   {(item.received_at || item.approved_at || item.created_at || "").slice(0, 10)}
                 </td>
                 <td className="px-4 py-3 font-mono text-xs">
-                  <Link href={`/correspondence/${item.id}`} className="text-primary hover:underline">
+                  <Link href={`/correspondence/${item.id}`} className="font-medium text-primary">
                     {item.registry_reference || item.reference_number || `#${item.id}`}
                   </Link>
                 </td>

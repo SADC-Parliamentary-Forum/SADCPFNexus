@@ -82,7 +82,7 @@ export default function AssignmentHandoverPage() {
             {open.map((row) => (
               <tr key={String(row.id)} className="border-t border-neutral-200">
                 <td className="p-2">
-                  <Link className="text-primary hover:underline" href={`/assignments/${row.id}`}>
+                  <Link className="font-medium text-primary" href={`/assignments/${row.id}`}>
                     {String(row.title)}
                   </Link>
                 </td>
