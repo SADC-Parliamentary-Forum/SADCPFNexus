@@ -5893,6 +5893,21 @@ export const workplanApi = {
   update: (id: number, data: Partial<WorkplanEvent> & { meeting_type_id?: number | null; responsible_user_ids?: number[] }) =>
     api.put<{ data: WorkplanEvent; message: string }>(`/workplan/events/${id}`, data),
   delete: (id: number) => api.delete(`/workplan/events/${id}`),
+  importTemplate: () =>
+    api.get<Blob>("/workplan/events/import/template", { responseType: "blob" }),
+  importEvents: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return api.post<{
+      message: string;
+      data: {
+        created_count: number;
+        error_count: number;
+        created: WorkplanEvent[];
+        errors: Array<{ row: number; message: string }>;
+      };
+    }>("/workplan/events/import", fd);
+  },
 };
 
 export const workplanAttachmentsApi = {

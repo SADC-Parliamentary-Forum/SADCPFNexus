@@ -6,8 +6,12 @@ import { useFormatDate } from "@/lib/useFormatDate";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { workplanApi, type WorkplanEvent } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
+import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { loadPdfLibs } from "@/lib/pdf-libs";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -841,8 +845,11 @@ function GanttView({
 export default function WorkplanListPage() {
   const { fmt: formatDate } = useFormatDate();
   const { confirm } = useConfirm();
+  const { success, error: showErrorToast, info } = useToast();
+  const { t } = useI18n();
   const router = useRouter();
   const now = new Date();
+  const canCreateEvents = isSystemAdmin(getStoredUser()) || hasPermission(getStoredUser(), "workplan.create");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [calYear, setCalYear] = useState(now.getFullYear());
   const [calMonth, setCalMonth] = useState(now.getMonth()); // 0-indexed
@@ -854,6 +861,7 @@ export default function WorkplanListPage() {
   const [yearFilter, setYearFilter] = useState<string>(String(now.getFullYear()));
   const [monthFilter, setMonthFilter] = useState<string>("");
   const [exportPdfOpen, setExportPdfOpen] = useState(false);
+  const [importBusy, setImportBusy] = useState<"template" | "upload" | null>(null);
 
   const handleOpenEvent = useCallback((id: number) => {
     router.push(`/workplan/${id}`);
@@ -1007,6 +1015,43 @@ export default function WorkplanListPage() {
     setExportPdfOpen(false);
   }, [list, calYear]);
 
+  const downloadImportTemplate = async () => {
+    setImportBusy("template");
+    try {
+      const res = await workplanApi.importTemplate();
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "workplan-events-template.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      showErrorToast(apiErrorMessage(err, t("workplan.import.templateFailed")));
+    } finally {
+      setImportBusy(null);
+    }
+  };
+
+  const handleImportEvents = async (file: File) => {
+    setImportBusy("upload");
+    try {
+      const res = await workplanApi.importEvents(file);
+      const created = res.data.data.created_count;
+      const errors = res.data.data.error_count;
+      const summary = t("workplan.import.success", { created, errors });
+      if (errors > 0) {
+        info(summary, res.data.data.errors.map((row) => `Line ${row.row}: ${row.message}`).slice(0, 5).join(" "));
+      } else {
+        success(summary);
+      }
+      loadList();
+    } catch (err: unknown) {
+      showErrorToast(apiErrorMessage(err, t("workplan.import.failed")));
+    } finally {
+      setImportBusy(null);
+    }
+  };
+
   return (
     <div className="w-full min-w-0 space-y-6">
       {/* Header */}
@@ -1016,7 +1061,38 @@ export default function WorkplanListPage() {
         subtitle="Meetings, travel, milestones and deadlines across the year."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Master Workplan" }]} />}
       />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => void downloadImportTemplate()}
+            disabled={importBusy !== null}
+            className="btn-secondary py-2 px-3 text-sm flex items-center gap-1 disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">download</span>
+            {t("workplan.import.template")}
+          </button>
+          {canCreateEvents && (
+            <>
+              <label htmlFor="workplan-events-import" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1 cursor-pointer">
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload</span>
+                {t("workplan.import.upload")}
+              </label>
+              <input
+                id="workplan-events-import"
+                type="file"
+                accept=".csv,text/csv"
+                className="sr-only"
+                disabled={importBusy !== null}
+                aria-label={t("workplan.import.file")}
+                title={t("workplan.import.hint")}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) void handleImportEvents(file);
+                }}
+              />
+            </>
+          )}
           <div className="relative" ref={exportPdfRef}>
             <button
               type="button"
