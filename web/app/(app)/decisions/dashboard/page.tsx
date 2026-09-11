@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { decisionsApi } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { FormField, FormSection } from "@/components/ui/FormSection";
 
 export default function DecisionsDashboardPage() {
   const qc = useQueryClient();
@@ -95,79 +97,104 @@ export default function DecisionsDashboardPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <Link href="/decisions" className="text-sm text-neutral-500 hover:text-primary">← Decision Register</Link>
-          <h1 className="mt-2 text-2xl font-semibold">Decisions dashboard</h1>
+    <div className="w-full min-w-0 space-y-5">
+      <ModulePageHeader
+        title="Decisions dashboard"
+        subtitle="Promote adopted decisions into assignments and risk drafts. Completion stays human-owned."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Governance", href: "/governance" },
+              { label: "Decision Register", href: "/decisions" },
+              { label: "Dashboard" },
+            ]}
+          />
+        }
+        actions={
+          <>
+            <button
+              type="button"
+              className="btn-secondary text-sm"
+              disabled={promote.isPending}
+              onClick={() => promote.mutate()}
+            >
+              {promote.isPending ? "Promoting…" : "Promote weekly assignments"}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary text-sm"
+              disabled={promoteRisks.isPending}
+              onClick={() => promoteRisks.mutate()}
+            >
+              {promoteRisks.isPending ? "Promoting…" : "Promote risk drafts"}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary text-sm"
+              data-testid="promote-meeting-pack"
+              disabled={promotePack.isPending}
+              onClick={() => promotePack.mutate()}
+            >
+              {promotePack.isPending ? "Promoting…" : "Promote meeting pack"}
+            </button>
+            <Link href="/decisions/create" className="btn-primary text-sm">
+              New decision
+            </Link>
+          </>
+        }
+      />
+
+      <FormSection title="Promote from minutes" icon="meeting_room">
+        <form
+          className="flex flex-wrap items-end gap-3"
+          data-testid="promote-from-minutes"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (minutesId) promoteMinutes.mutate();
+          }}
+        >
+          <FormField label="Minutes" htmlFor="dashboard-minutes" className="min-w-[16rem]">
+            <select
+              id="dashboard-minutes"
+              className="form-input"
+              value={minutesId}
+              onChange={(e) => setMinutesId(e.target.value)}
+            >
+              <option value="">Select minutes</option>
+              {(minutes.data ?? []).map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.title}
+                  {row.meeting_date ? ` · ${row.meeting_date}` : ""}
+                </option>
+              ))}
+            </select>
+          </FormField>
+          <button type="submit" className="btn-secondary" disabled={!minutesId || promoteMinutes.isPending}>
+            {promoteMinutes.isPending ? "Promoting…" : "Promote this meeting"}
+          </button>
+        </form>
+        <p className="mt-3 text-sm text-neutral-600">
+          Weekly promote creates assignment drafts from adopted decisions that already have an owner and due date.
+          Risk promote creates draft/proposed risks from adopted decisions whose title or body mentions risk.
+          Neither action auto-completes work.
+        </p>
+        {promoteMsg && <p className="mt-2 text-sm text-green-700">{promoteMsg}</p>}
+        {promoteErr && <p className="mt-2 text-sm text-red-600">{promoteErr}</p>}
+        {riskMsg && <p className="mt-2 text-sm text-green-700">{riskMsg}</p>}
+        {riskErr && <p className="mt-2 text-sm text-red-600">{riskErr}</p>}
+        {packMsg && <p className="mt-2 text-sm text-green-700">{packMsg}</p>}
+        {packErr && <p className="mt-2 text-sm text-red-600">{packErr}</p>}
+        {minutesMsg && <p className="mt-2 text-sm text-green-700">{minutesMsg}</p>}
+        {minutesErr && <p className="mt-2 text-sm text-red-600">{minutesErr}</p>}
+      </FormSection>
+
+      {isLoading && (
+        <div className="card space-y-3 p-6">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-12 animate-pulse rounded-lg bg-neutral-100" />
+          ))}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={promote.isPending}
-            onClick={() => promote.mutate()}
-          >
-            {promote.isPending ? "Promoting…" : "Promote weekly assignments"}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={promoteRisks.isPending}
-            onClick={() => promoteRisks.mutate()}
-          >
-            {promoteRisks.isPending ? "Promoting…" : "Promote risk drafts"}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            data-testid="promote-meeting-pack"
-            disabled={promotePack.isPending}
-            onClick={() => promotePack.mutate()}
-          >
-            {promotePack.isPending ? "Promoting…" : "Promote meeting pack"}
-          </button>
-          <Link href="/decisions/create" className="btn-primary">New decision</Link>
-        </div>
-      </div>
-
-      <form
-        className="flex flex-wrap items-end gap-2"
-        data-testid="promote-from-minutes"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (minutesId) promoteMinutes.mutate();
-        }}
-      >
-        <label className="text-sm">
-          Minutes
-          <select className="form-input mt-1 min-w-[16rem]" value={minutesId} onChange={(e) => setMinutesId(e.target.value)}>
-            <option value="">Select minutes</option>
-            {(minutes.data ?? []).map((row) => (
-              <option key={row.id} value={row.id}>{row.title}{row.meeting_date ? ` · ${row.meeting_date}` : ""}</option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className="btn-secondary" disabled={!minutesId || promoteMinutes.isPending}>
-          {promoteMinutes.isPending ? "Promoting…" : "Promote this meeting"}
-        </button>
-      </form>
-
-      <p className="text-sm text-neutral-600">
-        Weekly promote creates assignment drafts from adopted decisions that already have an owner and due date.
-        Risk promote creates draft/proposed risks from adopted decisions whose title or body mentions risk.
-        Neither action auto-completes work.
-      </p>
-      {promoteMsg && <p className="text-sm text-green-700">{promoteMsg}</p>}
-      {promoteErr && <p className="text-sm text-red-600">{promoteErr}</p>}
-      {riskMsg && <p className="text-sm text-green-700">{riskMsg}</p>}
-      {riskErr && <p className="text-sm text-red-600">{riskErr}</p>}
-      {packMsg && <p className="text-sm text-green-700">{packMsg}</p>}
-      {packErr && <p className="text-sm text-red-600">{packErr}</p>}
-      {minutesMsg && <p className="text-sm text-green-700">{minutesMsg}</p>}
-      {minutesErr && <p className="text-sm text-red-600">{minutesErr}</p>}
-
-      {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
+      )}
       {isError && <p className="text-sm text-red-600">Failed to load dashboard.</p>}
 
       {data && (
@@ -188,7 +215,7 @@ export default function DecisionsDashboardPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-4">
+    <div className="card p-4">
       <div className="text-xs uppercase tracking-wide text-neutral-500">{label}</div>
       <div className="mt-1 text-2xl font-semibold">{value}</div>
     </div>

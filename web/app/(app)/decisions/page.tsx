@@ -1,19 +1,24 @@
 "use client";
 
-import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { decisionsApi, type MeetingDecision } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { DEFAULT_PAGE_SIZE, getLastPage, getListData, getTotal } from "@/lib/listPagination";
+import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
+import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { RegisterMobileCards } from "@/components/ui/RegisterMobileCards";
+import { Badge } from "@/components/ui/Badge";
 
-const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-  draft: { label: "Draft", cls: "badge-muted" },
-  adopted: { label: "Adopted", cls: "badge-success" },
-  in_progress: { label: "In Progress", cls: "badge-primary" },
-  implemented: { label: "Implemented", cls: "badge-success" },
-  closed: { label: "Closed", cls: "badge-muted" },
-  superseded: { label: "Superseded", cls: "badge-warning" },
+const STATUS_CONFIG: Record<string, { label: string; cls: string; variant: "muted" | "success" | "primary" | "warning" }> = {
+  draft: { label: "Draft", cls: "badge-muted", variant: "muted" },
+  adopted: { label: "Adopted", cls: "badge-success", variant: "success" },
+  in_progress: { label: "In Progress", cls: "badge-primary", variant: "primary" },
+  implemented: { label: "Implemented", cls: "badge-success", variant: "success" },
+  closed: { label: "Closed", cls: "badge-muted", variant: "muted" },
+  superseded: { label: "Superseded", cls: "badge-warning", variant: "warning" },
 };
 
 const TYPE_LABEL: Record<string, string> = {
@@ -21,121 +26,238 @@ const TYPE_LABEL: Record<string, string> = {
   management_decision: "Management decision",
 };
 
-const FILTERS = ["All", "Draft", "Adopted", "In Progress", "Implemented", "Closed"] as const;
-const filterMap: Record<string, string | undefined> = {
-  All: undefined,
-  Draft: "draft",
-  Adopted: "adopted",
-  "In Progress": "in_progress",
-  Implemented: "implemented",
-  Closed: "closed",
-};
+const STATUS_FILTERS = [
+  { key: "All", value: undefined },
+  { key: "Draft", value: "draft" },
+  { key: "Adopted", value: "adopted" },
+  { key: "In Progress", value: "in_progress" },
+  { key: "Implemented", value: "implemented" },
+  { key: "Closed", value: "closed" },
+] as const;
 
 export default function DecisionsRegisterPage() {
   const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [typeFilter, setTypeFilter] = useState<string>("All");
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(1);
+  const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["decisions", "list", statusFilter, q],
+    queryKey: ["decisions", "list", statusFilter, typeFilter, q, page],
     queryFn: async () => {
-      const params: Record<string, string | number> = { per_page: 100 };
-      const s = filterMap[statusFilter];
-      if (s) params.status = s;
+      const params: Record<string, string | number> = { per_page: DEFAULT_PAGE_SIZE, page };
+      const status = STATUS_FILTERS.find((f) => f.key === statusFilter)?.value;
+      if (status) params.status = status;
+      if (typeFilter === "resolution" || typeFilter === "management_decision") {
+        params.decision_type = typeFilter;
+      }
       if (q.trim()) params.q = q.trim();
-      const res = await decisionsApi.list(params);
-      return (res.data as { data: MeetingDecision[] }).data ?? [];
+      return (await decisionsApi.list(params)).data;
     },
     staleTime: 20_000,
   });
 
-  const rows = useMemo(() => data ?? [], [data]);
+  const { data: dash } = useQuery({
+    queryKey: ["decisions", "dashboard"],
+    queryFn: async () => (await decisionsApi.dashboard()).data.data,
+    staleTime: 30_000,
+  });
+
+  const rows = useMemo(() => getListData<MeetingDecision>(data), [data]);
+  const lastPage = getLastPage(data);
+  const total = getTotal(data, rows.length);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <ModulePageHeader
-        title="Decision Register"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Decision Register" }]} />}
-      />
-        <div className="flex gap-2">
-          <Link href="/decisions/dashboard" className="btn-secondary">Dashboard</Link>
-          <Link href="/decisions/create" className="btn-primary">New decision</Link>
+    <RegisterShell
+      title="Decision Register"
+      subtitle="Resolutions and management decisions captured from meetings, with owners and follow-up."
+      breadcrumbs={<PageBreadcrumbs items={[{ label: "Governance", href: "/governance" }, { label: "Decision Register" }]} />}
+      density={density}
+      onDensityChange={setDensity}
+      page={Math.min(page, lastPage)}
+      pageCount={lastPage}
+      total={total}
+      onPageChange={setPage}
+      loading={isLoading}
+      actions={
+        <>
+          <Link href="/decisions/dashboard" className="btn-secondary text-sm">
+            <span className="material-symbols-outlined text-[18px]">dashboard</span>
+            Dashboard
+          </Link>
+          <Link href="/decisions/create" className="btn-primary text-sm">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            New decision
+          </Link>
+        </>
+      }
+      stats={
+        dash ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Stat label="Total" value={dash.total} />
+            <Stat label="Overdue" value={dash.overdue} />
+            <Stat label="Open critical actions" value={dash.open_critical_actions} />
+            <Stat label="In progress" value={dash.by_status.in_progress ?? 0} />
+          </div>
+        ) : undefined
+      }
+      filters={
+        <div className="flex flex-col gap-3">
+          <div className="relative max-w-md">
+            <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-neutral-400">
+              search
+            </span>
+            <input
+              className="form-input pl-9"
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Search reference or title…"
+              aria-label="Search decisions"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {STATUS_FILTERS.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => {
+                  setStatusFilter(f.key);
+                  setPage(1);
+                }}
+                className={`filter-tab${statusFilter === f.key ? " active" : ""}`}
+              >
+                {f.key}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: "All", value: "All" },
+              { key: "Resolutions", value: "resolution" },
+              { key: "Management", value: "management_decision" },
+            ].map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => {
+                  setTypeFilter(f.value);
+                  setPage(1);
+                }}
+                className={`filter-tab${typeFilter === f.value ? " active" : ""}`}
+              >
+                {f.key}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            onClick={() => setStatusFilter(f)}
-            className={`rounded-full px-3 py-1 text-xs font-medium border ${
-              statusFilter === f
-                ? "bg-primary text-white border-primary"
-                : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-600"
-            }`}
-          >
-            {f}
-          </button>
-        ))}
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search reference or title…"
-          className="ml-auto input max-w-xs"
+      }
+      empty={
+        !isLoading && rows.length === 0 ? (
+          <div className="card overflow-hidden">
+            {isError ? (
+              <EmptyState
+                icon="error"
+                title="Failed to load the decision register"
+                description="Refresh the page or try again in a moment."
+              />
+            ) : (
+              <EmptyState
+                icon="gavel"
+                title="No decisions yet"
+                description={
+                  q || statusFilter !== "All" || typeFilter !== "All"
+                    ? "No rows match the current filters."
+                    : "Create the first resolution or management decision."
+                }
+                action={
+                  <Link href="/decisions/create" className="btn-primary text-sm">
+                    <span className="material-symbols-outlined text-[18px]">add</span>
+                    New decision
+                  </Link>
+                }
+              />
+            )}
+          </div>
+        ) : undefined
+      }
+    >
+      <div className="card overflow-hidden">
+        <RegisterMobileCards
+          items={rows}
+          getKey={(d) => d.id}
+          title={(d) => d.reference_number}
+          subtitle={(d) => d.title}
+          badge={(d) => {
+            const st = STATUS_CONFIG[d.status] ?? STATUS_CONFIG.draft;
+            return <Badge variant={st.variant}>{st.label}</Badge>;
+          }}
+          fields={(d) => [
+            { label: "Type", value: TYPE_LABEL[d.decision_type] ?? d.decision_type },
+            { label: "Owner", value: d.owner?.name ?? "—" },
+            { label: "Due", value: d.due_date ? formatDateShort(d.due_date) : "—" },
+          ]}
+          actions={(d) => (
+            <Link href={`/decisions/${d.id}`} className="text-xs font-medium text-primary hover:underline">
+              View
+            </Link>
+          )}
         />
-      </div>
-
-      {isLoading && <p className="text-sm text-neutral-500">Loading decisions…</p>}
-      {isError && <p className="text-sm text-red-600">Failed to load the decision register.</p>}
-
-      {!isLoading && !isError && (
-        <div className="overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-          <table className="min-w-full text-sm">
-            <thead className="bg-neutral-50 dark:bg-neutral-900/60 text-left text-neutral-500">
+        <div className="hidden overflow-x-auto md:block">
+          <table className="data-table w-full">
+            <caption className="sr-only">Decision register</caption>
+            <thead>
               <tr>
-                <th className="px-4 py-3 font-medium">Reference</th>
-                <th className="px-4 py-3 font-medium">Title</th>
-                <th className="px-4 py-3 font-medium">Type</th>
-                <th className="px-4 py-3 font-medium">Owner</th>
-                <th className="px-4 py-3 font-medium">Due</th>
-                <th className="px-4 py-3 font-medium">Status</th>
+                <th>Reference</th>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Owner</th>
+                <th>Due</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-neutral-500">
-                    No decisions yet. Create the first resolution or management decision.
-                  </td>
-                </tr>
-              )}
               {rows.map((d) => {
                 const st = STATUS_CONFIG[d.status] ?? STATUS_CONFIG.draft;
                 return (
-                  <tr key={d.id} className="border-t border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50/80 dark:hover:bg-neutral-900/40">
-                    <td className="px-4 py-3 font-mono text-xs">
-                      <Link href={`/decisions/${d.id}`} className="text-primary hover:underline">
+                  <tr key={d.id}>
+                    <td className="font-mono text-xs">
+                      <Link href={`/decisions/${d.id}`} className="font-medium text-primary hover:underline">
                         {d.reference_number}
                       </Link>
-                      {d.is_confidential && <span className="ml-2 text-[10px] uppercase text-amber-600">Confidential</span>}
+                      {d.is_confidential ? (
+                        <span className="ml-2 text-[10px] font-semibold uppercase text-amber-600">Confidential</span>
+                      ) : null}
                     </td>
-                    <td className="px-4 py-3">
-                      <Link href={`/decisions/${d.id}`} className="font-medium text-neutral-900 dark:text-neutral-100 hover:underline">
+                    <td>
+                      <Link href={`/decisions/${d.id}`} className="font-medium text-neutral-900 hover:underline dark:text-neutral-100">
                         {d.title}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-neutral-600">{TYPE_LABEL[d.decision_type] ?? d.decision_type}</td>
-                    <td className="px-4 py-3 text-neutral-600">{d.owner?.name ?? "—"}</td>
-                    <td className="px-4 py-3 text-neutral-600">{d.due_date ? formatDateShort(d.due_date) : "—"}</td>
-                    <td className="px-4 py-3"><span className={st.cls}>{st.label}</span></td>
+                    <td className="text-neutral-600">{TYPE_LABEL[d.decision_type] ?? d.decision_type}</td>
+                    <td className="text-neutral-600">{d.owner?.name ?? "—"}</td>
+                    <td className="text-neutral-600">{d.due_date ? formatDateShort(d.due_date) : "—"}</td>
+                    <td>
+                      <span className={st.cls}>{st.label}</span>
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
         </div>
-      )}
+      </div>
+    </RegisterShell>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="card p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">{label}</p>
+      <p className="mt-1 text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{value}</p>
     </div>
   );
 }
