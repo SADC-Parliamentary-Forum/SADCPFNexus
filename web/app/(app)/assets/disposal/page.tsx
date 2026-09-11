@@ -227,7 +227,7 @@ function AssetDisposalPageInner() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-5">
-        <div className="table-wrap lg:col-span-3">
+        <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900 lg:col-span-3">
           <table className="data-table">
             <thead>
               <tr>

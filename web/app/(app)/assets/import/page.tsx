@@ -8,6 +8,7 @@ import { ListPagination } from "@/components/ui/ListPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Counts = Record<string, number>;
 type StagingRow = {
@@ -83,6 +84,7 @@ function filterKey(filter: string): string {
 
 export default function AssetImportPage() {
   const { t } = useI18n();
+  const { prompt } = useConfirm();
   const [mode, setMode] = useState<"legacy" | "template">("template");
   const [counts, setCounts] = useState<Counts | null>(null);
   const [equation, setEquation] = useState<Equation | null>(null);
@@ -255,7 +257,14 @@ export default function AssetImportPage() {
 
   async function exclude(row: StagingRow) {
     if (!batchId) return;
-    const reason = window.prompt(t("assets.import.excludePrompt")) || t("assets.import.excludeReason");
+    const reason = (await prompt({
+      title: "assets.import.excludeTitle",
+      message: "assets.import.excludePrompt",
+      label: "common.reason",
+      required: true,
+      defaultValue: "assets.import.excludeReason",
+    }))?.trim();
+    if (!reason) return;
     await assetImportApi.exclude(batchId, row.id, reason);
     await loadPreview(batchId);
     await loadStaging(batchId);
@@ -486,7 +495,7 @@ export default function AssetImportPage() {
         </div>
       </div>
 
-      <div className="table-wrap">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
         <table className="data-table">
           <thead>
             <tr>

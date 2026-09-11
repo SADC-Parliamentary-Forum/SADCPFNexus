@@ -85,7 +85,7 @@ export default function TravelDetailPage() {
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
   const [workflowMeta, setWorkflowMeta] = useState<any>(null);
-  const { confirm } = useConfirm();
+  const { confirm, prompt } = useConfirm();
 
   // Attachments
   const [attachments, setAttachments] = useState<ModuleAttachment[]>([]);
@@ -345,8 +345,13 @@ export default function TravelDetailPage() {
 
   const handleCancel = async () => {
     if (!request) return;
-    const reason = window.prompt("Cancellation reason (required):");
-    if (!reason?.trim()) return;
+    const reason = (await prompt({
+      title: "travel.cancel.reasonTitle",
+      label: "travel.cancel.reasonLabel",
+      required: true,
+      variant: "danger",
+    }))?.trim();
+    if (!reason) return;
     if (!(await confirm({ title: "Cancel Request", message: "Cancel this travel request? Budget reservations will be released where applicable.", variant: "danger" }))) return;
     setActionLoading(true);
     try {
@@ -708,10 +713,13 @@ export default function TravelDetailPage() {
                       const axiosErr = err as { response?: { data?: { errors?: { conflicts?: string[] }; message?: string } } };
                       const conflicts = axiosErr?.response?.data?.errors?.conflicts;
                       if (Array.isArray(conflicts) && conflicts.length) {
-                        const note = window.prompt(
-                          `Conflicts detected:\n${conflicts.join("\n")}\n\nEnter resolution note to acknowledge and submit, or Cancel.`,
-                          "Reviewed with supervisor"
-                        );
+                        const note = await prompt({
+                          title: "travel.conflicts.noteTitle",
+                          message: conflicts.join("\n"),
+                          label: "travel.conflicts.noteLabel",
+                          defaultValue: "travel.conflicts.noteDefault",
+                          required: true,
+                        });
                         if (note) {
                           try {
                             await travelApi.submit(request.id, {

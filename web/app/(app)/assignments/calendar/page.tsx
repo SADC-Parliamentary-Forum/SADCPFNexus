@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 function localIso(d: Date) {
   const y = d.getFullYear();
@@ -30,6 +31,7 @@ function monthBounds(d = new Date()) {
 
 export default function AssignmentsCalendarPage() {
   const queryClient = useQueryClient();
+  const { confirm } = useConfirm();
   const [cursor, setCursor] = useState(() => new Date());
   const [scope, setScope] = useState<"mine" | "team" | "register">("mine");
   const [icsText, setIcsText] = useState("");
@@ -105,11 +107,13 @@ export default function AssignmentsCalendarPage() {
     window.setTimeout(() => setCopied(false), 2000);
   };
 
-  const regenerateSubscribeUrl = () => {
+  const regenerateSubscribeUrl = async () => {
     if (
-      !window.confirm(
-        "Regenerate this subscribe URL? Existing calendar subscriptions will stop working until they are updated with the new URL.",
-      )
+      !(await confirm({
+        title: "assignments.calendar.regenerateTitle",
+        message: "assignments.calendar.regenerateMessage",
+        variant: "danger",
+      }))
     ) {
       return;
     }

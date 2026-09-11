@@ -28,7 +28,7 @@ export default function AssetsIntakePage() {
         <Link href="/assets" className="btn-secondary">Full register</Link>
       </div>
       {loading ? <p>Loading…</p> : (
-        <div className="table-wrap">
+        <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
           <table className="data-table">
             <thead>
               <tr>

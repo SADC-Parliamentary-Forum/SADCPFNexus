@@ -69,7 +69,7 @@ export function FormField({ label, htmlFor, required, hint, error, children, cla
   const { t } = useI18n();
   return (
     <div className={cn("block space-y-1.5", className)}>
-      <label className="block space-y-1.5" htmlFor={htmlFor}>
+      <label htmlFor={htmlFor} className="block space-y-1.5">
         <span className="block text-xs font-semibold text-neutral-700">
           {t(label)}
           {required ? <span className="ml-0.5 text-red-500">*</span> : null}

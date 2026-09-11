@@ -12,6 +12,7 @@ import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 import { getListData } from "@/lib/listPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Stepper } from "@/components/ui/Stepper";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 // ─── Funding items with icons ─────────────────────────────────────────────────
 const FUNDING_ITEMS: { item: string; icon: string }[] = [
@@ -235,6 +236,7 @@ function hydrateFormFromRequest(data: TravelRequest): FormData {
 function TravelCreatePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { prompt } = useConfirm();
   const editParam = searchParams.get("edit");
   const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
 
@@ -575,10 +577,13 @@ function TravelCreatePageInner() {
           const errors = axiosErr?.response?.data?.errors;
           const conflicts = errors?.conflicts;
           if (Array.isArray(conflicts) && conflicts.length) {
-            const note = window.prompt(
-              `Conflicts detected:\n${conflicts.join("\n")}\n\nEnter resolution note to acknowledge, or Cancel to leave as draft.`,
-              "Reviewed with supervisor",
-            );
+            const note = await prompt({
+              title: "travel.conflicts.noteTitle",
+              message: conflicts.join("\n"),
+              label: "travel.conflicts.noteLabel",
+              defaultValue: "travel.conflicts.noteDefault",
+              required: true,
+            });
             if (note) {
               await travelApi.submit(createdId, {
                 acknowledge_conflicts: true,

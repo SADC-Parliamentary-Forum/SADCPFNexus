@@ -107,7 +107,7 @@ export default function AssetRevaluationPage() {
         <button type="submit" className="btn-primary btn-sm">Submit</button>
       </form>
 
-      <div className="table-wrap">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
         <table className="data-table">
           <thead>
             <tr><th>Reference</th><th>Asset</th><th>Previous</th><th>Proposed</th><th>Status</th><th></th></tr>
