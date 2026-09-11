@@ -100,31 +100,6 @@ export default function AdminGovernanceConfigPage() {
         }
       />
 
-      <div className="hidden">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
-            <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-            <span className="text-neutral-900 font-medium">Governance Configuration</span>
-          </div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Governance Configuration</h1>
-          <p className="page-subtitle text-neutral-500 max-w-2xl">Manage institutional data policies, aggregation thresholds, and access controls for the platform.</p>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={() => setConfig(DEFAULTS)} className="btn-secondary px-4 py-2 text-sm flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">restart_alt</span>Reset
-          </button>
-          <button onClick={handleSave} disabled={saving} className={`btn-primary px-5 py-2 text-sm flex items-center gap-2 transition-colors disabled:opacity-60 ${saved ? "!bg-green-600" : ""}`}>
-            {saving ? (
-              <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-            ) : (
-              <span className="material-symbols-outlined text-[18px]">{saved ? "check" : "save"}</span>
-            )}
-            {saved ? "Saved!" : "Save Changes"}
-          </button>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 space-y-6">
           {/* Datasets */}
@@ -188,7 +163,7 @@ export default function AdminGovernanceConfigPage() {
                 <div className="p-2 bg-primary/10 rounded-lg text-primary"><span className="material-symbols-outlined">history</span></div>
                 <div><h2 className="font-bold text-neutral-900">Recent System Activity</h2><p className="text-xs text-neutral-500">Latest audit log entries from the platform.</p></div>
               </div>
-              <Link href="/admin/audit-trail" className="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+              <Link href="/admin/audit-trail" className="btn-secondary text-xs flex items-center gap-1">
                 View Full Audit<span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </Link>
             </div>

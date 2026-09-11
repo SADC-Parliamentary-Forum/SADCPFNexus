@@ -5,6 +5,8 @@ import Link from "next/link";
 import api, { governanceApi, type GovernanceResolution, type GovernanceDocument } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useFormatDate } from "@/lib/useFormatDate";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -213,7 +215,7 @@ function ResolutionRow({
         <td className="px-5 py-3 text-right">
           <Link
             href={`/governance?resolution=${resolution.id}`}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            className="btn-secondary text-xs"
           >
             View full
             <span className="material-symbols-outlined text-[13px]">open_in_new</span>
@@ -354,58 +356,37 @@ export default function PlenaryResolutionsPage() {
 
   return (
     <div className="space-y-6">
-      {/* ── Breadcrumb ── */}
-      <div className="flex items-center gap-1.5 text-xs text-neutral-500">
-        <Link href="/governance" className="hover:text-neutral-700 transition-colors">
-          Governance
-        </Link>
-        <span className="material-symbols-outlined text-[13px]">chevron_right</span>
-        <span className="text-neutral-700 font-medium">Plenary Resolutions</span>
-      </div>
-
-      {/* ── Hero Header ── */}
-      <div className="rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-900 px-8 py-7 text-white relative overflow-hidden">
-        {/* Decorative watermark */}
-        <span className="material-symbols-outlined absolute right-6 top-1/2 -translate-y-1/2 text-[100px] text-white/10 select-none pointer-events-none">
-          gavel
-        </span>
-
-        <div className="flex flex-wrap items-start justify-between gap-4 relative z-10">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px]">account_balance</span>
-              </div>
-              <span className="text-sm font-semibold text-emerald-200 uppercase tracking-wider">
-                Plenary Session
-              </span>
-            </div>
-            <h1 className="text-3xl font-bold mb-1">Plenary Resolutions</h1>
-            <p className="text-emerald-200 text-sm max-w-xl">
-              Official resolutions adopted during plenary sessions of the SADCPF. These are binding
-              decisions from the full assembly.
-            </p>
-          </div>
-
-          {/* Session year selector */}
+      <ModulePageHeader
+        title="Plenary Resolutions"
+        subtitle="Official resolutions adopted during plenary sessions of SADCPF. These are binding decisions from the full assembly."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Governance", href: "/governance" },
+              { label: "Plenary Resolutions" },
+            ]}
+          />
+        }
+        actions={
           <div className="flex flex-col items-end gap-1.5">
-            <label className="text-xs font-semibold text-emerald-200 uppercase tracking-wider">
+            <label htmlFor="plenary-session-year" className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
               Session Year
             </label>
             <select
-              className="rounded-lg border border-white/30 bg-white/10 backdrop-blur-sm px-4 py-2 text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-white/40 cursor-pointer min-w-[110px]"
+              id="plenary-session-year"
+              className="form-input min-w-[110px]"
               value={sessionYear}
               onChange={(e) => setSessionYear(Number(e.target.value))}
             >
               {SESSION_YEARS.map((y) => (
-                <option key={y} value={y} className="text-neutral-900 bg-white">
+                <option key={y} value={y}>
                   {y}
                 </option>
               ))}
             </select>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Stats Row ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -447,7 +428,7 @@ export default function PlenaryResolutionsPage() {
           <button
             type="button"
             onClick={loadData}
-            className="ml-auto text-xs font-semibold text-red-700 hover:underline"
+            className="ml-auto btn-secondary text-xs"
           >
             Retry
           </button>
@@ -504,28 +485,22 @@ export default function PlenaryResolutionsPage() {
             </table>
           </div>
         ) : displayed.length === 0 ? (
-          <div className="py-20 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4">
-              <span className="material-symbols-outlined text-[32px] text-neutral-300">gavel</span>
-            </div>
-            <p className="text-sm font-semibold text-neutral-700">
-              No plenary resolutions for this session
-            </p>
-            <p className="text-xs text-neutral-400 mt-1 max-w-xs mx-auto">
-              {filter
+          <EmptyState
+            icon="gavel"
+            title="No plenary resolutions for this session"
+            description={
+              filter
                 ? `No resolutions with status "${filter}" found for ${sessionYear}.`
-                : `There are no plenary resolutions recorded for the ${sessionYear} session.`}
-            </p>
-            {filter && (
-              <button
-                type="button"
-                onClick={() => setFilter("")}
-                className="mt-4 text-xs font-semibold text-primary hover:underline"
-              >
-                Clear filter
-              </button>
-            )}
-          </div>
+                : `There are no plenary resolutions recorded for the ${sessionYear} session.`
+            }
+            action={
+              filter ? (
+                <button type="button" onClick={() => setFilter("")} className="btn-secondary text-xs">
+                  Clear filter
+                </button>
+              ) : undefined
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -589,7 +564,7 @@ export default function PlenaryResolutionsPage() {
 
       {/* ── Footer link ── */}
       <div className="flex items-center justify-between text-xs text-neutral-400">
-        <Link href="/governance" className="hover:text-primary transition-colors font-medium flex items-center gap-1">
+        <Link href="/governance" className="btn-secondary text-xs">
           <span className="material-symbols-outlined text-[14px]">arrow_back</span>
           Back to Governance
         </Link>

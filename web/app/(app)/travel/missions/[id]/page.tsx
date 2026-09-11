@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { travelApi, type TravelMission } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function Flag({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -33,32 +35,43 @@ export default function TravelMissionDetailPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="p-6 text-sm text-neutral-400">Loading mission…</div>;
+  const missionCrumbs = [
+    { label: "nav.travel", href: "/travel" },
+    { label: "Missions", href: "/travel/missions" },
+    { label: mission?.title ?? "Mission" },
+  ];
+
+  if (loading) {
+    return (
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Mission readiness"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.travel", href: "/travel" }, { label: "Missions", href: "/travel/missions" }, { label: "Mission" }]} />}
+        />
+        <p className="text-sm text-neutral-400">Loading mission…</p>
+      </div>
+    );
+  }
   if (error || !mission) {
     return (
-    <div className="space-y-3">
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Mission readiness"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.travel", href: "/travel" }, { label: "Missions", href: "/travel/missions" }, { label: "Mission" }]} />}
+        />
         <p className="text-sm text-red-600">{error ?? "Not found"}</p>
-        <Link href="/travel/missions" className="text-sm text-primary">Back to Missions</Link>
+        <Link href="/travel/missions" className="btn-secondary text-sm">Back to Missions</Link>
       </div>
     );
   }
 
   return (
-    <div className="p-6 w-full min-w-0 space-y-5" data-testid="travel-mission-readiness">
-      <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-        <Link href="/travel/missions" className="hover:text-primary">Missions</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-700">{mission.title}</span>
-      </nav>
-
-      <div>
-        <h1 className="text-2xl font-semibold text-neutral-900">{mission.title}</h1>
-        <p className="text-sm text-neutral-500 mt-1">
-          {[mission.destination_city, mission.destination_country].filter(Boolean).join(", ") || "—"}
-          {" · "}
-          {(mission.start_date ?? "—").toString().slice(0, 10)} → {(mission.end_date ?? "—").toString().slice(0, 10)}
-        </p>
-      </div>
+    <div className="w-full min-w-0 space-y-6" data-testid="travel-mission-readiness">
+      <ModulePageHeader
+        title={mission.title}
+        subtitle={`${[mission.destination_city, mission.destination_country].filter(Boolean).join(", ") || "—"} · ${(mission.start_date ?? "—").toString().slice(0, 10)} → ${(mission.end_date ?? "—").toString().slice(0, 10)}`}
+        breadcrumbs={<PageBreadcrumbs items={missionCrumbs} />}
+      />
 
       <div className="grid grid-cols-3 gap-3">
         <div className="card p-4">
@@ -75,6 +88,9 @@ export default function TravelMissionDetailPage() {
         </div>
       </div>
 
+      {(mission.travellers ?? []).length === 0 ? (
+        <EmptyState icon="groups" title="No travellers linked." description="Travellers appear here once travel requests are linked to this mission." />
+      ) : (
       <table className="data-table w-full">
         <thead>
           <tr>
@@ -85,9 +101,7 @@ export default function TravelMissionDetailPage() {
           </tr>
         </thead>
         <tbody>
-          {(mission.travellers ?? []).length === 0 ? (
-            <tr><td colSpan={4} className="py-8 text-center text-neutral-400">No travellers linked.</td></tr>
-          ) : (mission.travellers ?? []).map((t) => (
+          {(mission.travellers ?? []).map((t) => (
             <tr key={t.travel_request_id}>
               <td>{t.traveller ?? "—"}</td>
               <td>
@@ -109,6 +123,7 @@ export default function TravelMissionDetailPage() {
           ))}
         </tbody>
       </table>
+      )}
     </div>
   );
 }

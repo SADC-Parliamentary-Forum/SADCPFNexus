@@ -194,6 +194,24 @@ test("remaining operational details use shared page chrome instead of adhoc h1",
     "hr/assignments/[id]/page.tsx",
     "risk/[id]/page.tsx",
     "risk/policies/[id]/page.tsx",
+    "travel/missions/[id]/page.tsx",
+    "mande/strategic-plan/[id]/page.tsx",
+    "mande/activity-reports/create/page.tsx",
+    "mande/activity-reports/[id]/page.tsx",
+    "decisions/create/page.tsx",
+    "decisions/dashboard/page.tsx",
+    "correspondence/[id]/page.tsx",
+    "people/settings/page.tsx",
+    "budget/cycles/[id]/page.tsx",
+    "budget/submissions/[id]/page.tsx",
+    "budget/changes/create/page.tsx",
+    "budget/changes/[id]/page.tsx",
+    "governance/plenary/page.tsx",
+    "admin/data-scope/page.tsx",
+    "admin/calendar/page.tsx",
+    "admin/governance/page.tsx",
+    "admin/ledger/[id]/page.tsx",
+    "admin/workflows/designer/page.tsx",
   ];
   for (const rel of pages) {
     const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
@@ -202,9 +220,11 @@ test("remaining operational details use shared page chrome instead of adhoc h1",
         source,
       );
     assert.equal(hasChrome, true, rel);
-    assert.doesNotMatch(source, /<h1 className="page-title">/, rel);
+    assert.doesNotMatch(source, /<h1 className="page-title/, rel);
     assert.doesNotMatch(source, /<h1 className="text-xl font-bold/, rel);
     assert.doesNotMatch(source, /<h1 className="text-lg font-semibold/, rel);
+    assert.doesNotMatch(source, /<h1 className="text-2xl/, rel);
+    assert.doesNotMatch(source, /<h1 className="text-3xl/, rel);
   }
 });
 

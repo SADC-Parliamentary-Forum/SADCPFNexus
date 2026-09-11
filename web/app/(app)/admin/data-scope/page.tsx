@@ -119,42 +119,6 @@ export default function DataScopePage() {
         }
       />
 
-      {/* Breadcrumb */}
-      <div className="hidden">
-        <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 dark:text-neutral-100 font-medium">Data Scope & RLS Status</span>
-      </div>
-
-      {/* Page header */}
-      <div className="hidden">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs text-green-600 font-medium uppercase tracking-wider">System Live</span>
-          </div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Data Scope & RLS Status</h1>
-          <p className="page-subtitle">
-            Active tenant scope monitoring · Row-Level Security integrity · Enforcement level: SEV-0
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Link href="/admin/ledger" className="btn-secondary flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">receipt_long</span>
-            Audit Log
-          </Link>
-          <button
-            type="button"
-            onClick={handleRunDiagnostics}
-            disabled={runningDiag}
-            className="btn-primary flex items-center gap-2 disabled:opacity-60"
-          >
-            <span className={cn("material-symbols-outlined text-[18px]", runningDiag ? "animate-spin" : "")}>refresh</span>
-            {runningDiag ? "Running…" : "Run Diagnostics"}
-          </button>
-        </div>
-      </div>
-
       {lastRun && (
         <div className="rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3 flex items-center gap-2">
           <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[18px]">check_circle</span>

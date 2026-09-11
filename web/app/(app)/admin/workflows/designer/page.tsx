@@ -170,13 +170,6 @@ export default function WorkflowDesignerPage() {
         }
       />
 
-      <div className="hidden">
-        <p className="text-sm text-[var(--muted)]">Workflow Engine · Phase 2</p>
-        <h1 className="text-2xl font-semibold">Visual workflow designer</h1>
-        <p className="text-sm mt-1">Edit stages, transitions, conditions, and actor selectors. Validate before publish.</p>
-        <Link href="/admin/workflows" className="text-sm underline mt-2 inline-block">Back to Workflows</Link>
-      </div>
-
       <div className="flex gap-3 flex-wrap">
         <select
           className="border rounded px-3 py-2 bg-transparent"
@@ -188,14 +181,15 @@ export default function WorkflowDesignerPage() {
             <option key={d.id} value={d.id}>{d.name} ({d.module_type})</option>
           ))}
         </select>
-        <button disabled={!versionId || busy} onClick={saveAndLint} className="px-3 py-2 border rounded">Save & lint</button>
-        <button disabled={!versionId || busy || Boolean(lint && !lint.valid)} onClick={publish} className="px-3 py-2 border rounded">Approve & publish</button>
+        <button disabled={!versionId || busy} onClick={saveAndLint} className="btn-secondary text-sm">Save & lint</button>
+        <button disabled={!versionId || busy || Boolean(lint && !lint.valid)} onClick={publish} className="btn-primary text-sm">Approve & publish</button>
       </div>
 
       {selectedId && (
         <div className="border rounded p-3 flex flex-wrap items-center gap-3">
-          <label className="text-sm font-medium">Self-approval policy</label>
+          <label htmlFor="wf-self-approval" className="text-sm font-medium">Self-approval policy</label>
           <select
+            id="wf-self-approval"
             className="border rounded px-2 py-1 bg-transparent"
             value={selfApprovalPolicy}
             onChange={(e) => saveSelfApprovalPolicy(e.target.value)}

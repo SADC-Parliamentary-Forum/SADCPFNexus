@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import '../../../../../shared/widgets/stitch_screen.dart';
 import '../../data/procurement_api_helpers.dart';
 
 class ProcurementNoticesScreen extends ConsumerStatefulWidget {
@@ -101,54 +102,20 @@ class _ProcurementNoticesScreenState
   @override
   Widget build(BuildContext context) {
     final filtered = _filtered;
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+    return StitchScreen(
+      title: 'Tender Notices',
+      fallbackRoute: '/procurement',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        title: const Text('Tender Notices',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w800)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-            onPressed: _loading ? null : _load,
-          ),
-        ],
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading notices')
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(_error!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                color: AppColors.textSecondary)),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _load,
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary),
-                        child: const Text('Retry',
-                            style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : Column(
                   children: [
                     Padding(
@@ -187,16 +154,11 @@ class _ProcurementNoticesScreenState
                                 physics:
                                     const AlwaysScrollableScrollPhysics(),
                                 children: [
-                                  const SizedBox(height: 80),
-                                  Center(
-                                    child: Text(
-                                      _notices.isEmpty
-                                          ? 'No published notices.'
-                                          : 'No notices match your search.',
-                                      style: const TextStyle(
-                                          color: AppColors.textMuted,
-                                          fontSize: 14),
-                                    ),
+                                  StitchEmptyState(
+                                    icon: Icons.campaign_outlined,
+                                    title: _notices.isEmpty
+                                        ? 'No published notices.'
+                                        : 'No notices match your search.',
                                   ),
                                 ],
                               )
