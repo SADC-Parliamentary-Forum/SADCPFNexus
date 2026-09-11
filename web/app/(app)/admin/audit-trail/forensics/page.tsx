@@ -72,7 +72,7 @@ export default function AuditTrailForensicsPage() {
         subtitle="MVP case workspace — link events, apply holds, seal hashed evidence packages."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Forensic cases" }]} />}
       />
-        <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
+        <Link href="/admin/audit-trail" className="btn-secondary text-sm">Back</Link>
       </div>
 
       <div className="card p-4 grid gap-3 sm:grid-cols-2">

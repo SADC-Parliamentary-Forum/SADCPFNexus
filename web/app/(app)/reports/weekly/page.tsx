@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import { weeklySummaryApi, WeeklySummaryReport } from "@/lib/api";
 import { formatDate, formatDateRelative } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_BADGE: Record<string, string> = {
   generated: "badge-muted",
@@ -70,9 +71,7 @@ export default function WeeklyReportsPage() {
         {loading ? (
           <div className="p-8 text-center text-neutral-400">Loading…</div>
         ) : reports.length === 0 ? (
-          <div className="p-8 text-center text-neutral-400">
-            No reports yet. Reports are generated every Friday at 16:00.
-          </div>
+          <EmptyState icon="summarize" title="No reports yet." description="Reports are generated every Friday at 16:00." />
         ) : (
           <table className="data-table">
             <thead>

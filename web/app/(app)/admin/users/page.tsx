@@ -208,7 +208,7 @@ export default function AdminUsersPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error}</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => setError(null)}>
             Dismiss
           </button>
         </div>

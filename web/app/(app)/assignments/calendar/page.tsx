@@ -183,7 +183,7 @@ export default function AssignmentsCalendarPage() {
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
           <span className="flex-1">Failed to load assignment calendar.</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => void refetch()}>
             Retry
           </button>
         </div>

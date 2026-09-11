@@ -14,6 +14,7 @@ import {
   type NotificationPreference,
 } from "@/lib/api";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const NAV = [
   { label: "Profile",       href: "/profile",           icon: "person" },
@@ -221,7 +222,12 @@ export default function ProfileSettingsPage() {
             Digest applies to optional categories only. Workflow, security, and compliance notices cannot be switched off.
           </p>
           {inboxPrefs.length === 0 ? (
-            <p className="text-sm text-neutral-500">No server preference rows yet. Request a suggestion or save after the first notice arrives.</p>
+            <EmptyState
+              icon="inbox"
+              title="No server preference rows yet."
+              description="Request a suggestion or save after the first notice arrives."
+              className="py-6 min-h-0"
+            />
           ) : (
             <div className="space-y-3">
               {inboxPrefs.map((row, idx) => {

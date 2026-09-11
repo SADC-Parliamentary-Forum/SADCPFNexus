@@ -8,6 +8,7 @@ import { readStoredUser } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useFormatDate } from "@/lib/useFormatDate";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Shared UI helpers ─────────────────────────────────────────────────────
 
@@ -282,7 +283,7 @@ export default function TimesheetDetailPage() {
             </div>
 
             {entries.length === 0 ? (
-              <div className="py-12 text-center text-sm text-neutral-400">No entries recorded for this week.</div>
+              <EmptyState icon="schedule" title="No entries recorded for this week." className="py-12 min-h-0" />
             ) : (
               <table className="data-table">
                 <thead>

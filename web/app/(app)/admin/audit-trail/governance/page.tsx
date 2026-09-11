@@ -65,7 +65,7 @@ export default function AuditTrailGovernancePage() {
         title="Audit Trail governance checklist"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Audit Trail governance checklist" }]} />}
       />
-        <Link href="/admin/audit-trail" className="text-sm text-primary underline">
+        <Link href="/admin/audit-trail" className="btn-secondary text-sm">
           Back to Audit Trail
         </Link>
       </div>

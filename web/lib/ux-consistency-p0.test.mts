@@ -338,6 +338,8 @@ test("operational mobile detail screens use StitchScreen chrome", () => {
     "timesheets/presentation/screens/timesheet_weekly_screen.dart",
     "pif/presentation/screens/pif_budget_screen.dart",
     "profile/presentation/screens/user_profile_security_screen.dart",
+    "dashboard/presentation/screens/dashboard_screen.dart",
+    "requests/presentation/screens/travel_toil_queue_screen.dart",
   ];
   for (const rel of screens) {
     const source = readFileSync(join(mobileRoot, rel), "utf8");
@@ -492,6 +494,51 @@ test("remaining operational lists use shared EmptyState chrome", () => {
     "finance/balance-register/exceptions/page.tsx",
     "pif/[id]/page.tsx",
     "governance/resolutions/page.tsx",
+    "notifications/page.tsx",
+    "budget/changes/page.tsx",
+    "budget/cycles/page.tsx",
+    "admin/weekly-summary/page.tsx",
+    "admin/data-scope/page.tsx",
+    "finance/balance-register/page.tsx",
+    "finance/page.tsx",
+    "procurement/page.tsx",
+    "procurement/inbox/page.tsx",
+    "procurement/analytics/page.tsx",
+    "governance/page.tsx",
+    "reports/page.tsx",
+    "reports/weekly/page.tsx",
+    "organogram/page.tsx",
+    "assignments/reports/page.tsx",
+    "salary-advances/page.tsx",
+    "hr/files/[id]/documents/page.tsx",
+    "hr/timesheets/team/page.tsx",
+    "hr/timesheets/schedules/page.tsx",
+    "hr/timesheets/page.tsx",
+    "hr/timesheets/[id]/page.tsx",
+    "mande/page.tsx",
+    "mande/reports/page.tsx",
+    "mande/pm-review/page.tsx",
+    "srhr/page.tsx",
+    "srhr/deployments/[id]/page.tsx",
+    "srhr/parliaments/[id]/page.tsx",
+    "saam/page.tsx",
+    "saam/verify/[type]/[id]/page.tsx",
+    "analytics/page.tsx",
+    "admin/ledger/verify/page.tsx",
+    "admin/ledger/generate/page.tsx",
+    "hr/performance/team/page.tsx",
+    "hr/performance/hr-dashboard/page.tsx",
+    "risk/dashboard/page.tsx",
+    "risk/analytics/page.tsx",
+    "procurement/budget/page.tsx",
+    "budget/reports/page.tsx",
+    "lifecycle/reports/page.tsx",
+    "finance/budget/[id]/page.tsx",
+    "profile/security/page.tsx",
+    "stock/dashboard/page.tsx",
+    "salary-advances/settings/page.tsx",
+    "travel/dashboards/finance/page.tsx",
+    "profile/settings/page.tsx",
   ];
   for (const rel of pages) {
     const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
@@ -505,6 +552,62 @@ test("remaining operational lists use shared EmptyState chrome", () => {
     const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
     assert.match(source, /AssignmentFilteredList/, rel);
   }
+});
+
+test("register error banners use shared ErrorBanner gold buttons", () => {
+  const banner = readFileSync(join(webRoot, "components/ui/EmptyState.tsx"), "utf8");
+  assert.match(banner, /export function ErrorBanner/);
+  assert.match(banner, /btn-secondary text-xs/);
+  assert.doesNotMatch(banner, /underline/);
+  for (const rel of [
+    "imprest/page.tsx",
+    "leave/page.tsx",
+    "travel/page.tsx",
+    "travel/register/page.tsx",
+    "procurement/register/page.tsx",
+    "finance/page.tsx",
+    "procurement/page.tsx",
+    "notifications/page.tsx",
+    "salary-advances/page.tsx",
+    "budget/cycles/page.tsx",
+    "hr/timesheets/page.tsx",
+    "hr/timesheets/team/page.tsx",
+    "hr/timesheets/schedules/page.tsx",
+    "mande/page.tsx",
+    "mande/pm-review/page.tsx",
+    "srhr/page.tsx",
+    "admin/ledger/verify/page.tsx",
+    "finance/balance-register/page.tsx",
+    "risk/bcp/page.tsx",
+    "budget/reports/page.tsx",
+  ]) {
+    const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
+    assert.match(source, /ErrorBanner/, rel);
+  }
+  const travelQueue = readFileSync(join(webRoot, "components/travel/TravelQueueTable.tsx"), "utf8");
+  assert.match(travelQueue, /ErrorBanner/);
+  const advanceQueue = readFileSync(join(webRoot, "components/salary-advance/AdvanceQueueTable.tsx"), "utf8");
+  assert.match(advanceQueue, /ErrorBanner/);
+});
+
+test("operational pages keep underline actions off except mailto, website, blank, and browse", () => {
+  const skip = /\/(print|certificate)\/|\.print\./;
+  const offenders: string[] = [];
+  for (const fullPath of [...walkTsx(join(webRoot, "app", "(app)")), ...walkTsx(join(webRoot, "components"))]) {
+    if (skip.test(fullPath) || fullPath.endsWith("PrintButton.tsx")) continue;
+    const source = readFileSync(fullPath, "utf8");
+    const lines = source.split("\n");
+    for (const [i, line] of lines.entries()) {
+      if (!line.includes("underline")) continue;
+      if (line.includes("mailto:") || line.includes("website") || line.includes('target="_blank"') || /browse/i.test(line)) continue;
+      if (line.includes("underline-offset")) continue;
+      if (line.includes("hover:underline")) continue;
+      if (/className=\{?["'`][^"'`]*underline/.test(line) || /className="[^"]*underline/.test(line)) {
+        offenders.push(`${fullPath.replace(webRoot, "")}:${i + 1}`);
+      }
+    }
+  }
+  assert.deepEqual(offenders, []);
 });
 
 

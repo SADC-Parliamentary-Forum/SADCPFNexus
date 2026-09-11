@@ -5,6 +5,7 @@ import Link from "next/link";
 import { adminApi, type Department } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type SecurityGateStatus = "pass" | "fail";
 
@@ -272,12 +273,10 @@ export default function DataScopePage() {
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-12 text-neutral-300">
-              <span className="material-symbols-outlined text-[36px]">domain</span>
-              <p className="text-sm text-neutral-400">
-                {search ? "No departments match your search." : "No departments found."}
-              </p>
-            </div>
+            <EmptyState
+              icon="domain"
+              title={search ? "No departments match your search." : "No departments found."}
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table w-full">

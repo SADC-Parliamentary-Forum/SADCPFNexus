@@ -15,6 +15,7 @@ import { apiErrorMessage } from "@/lib/apiError";
 import { isBudgetConfirmed } from "@/lib/procurementBudget";
 import { formatDateShort } from "@/lib/utils";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -146,7 +147,7 @@ export default function ProcurementBudgetPage() {
         <h2 className="text-sm font-semibold text-neutral-800">Awaiting budget confirmation</h2>
         <div className="card overflow-x-auto">
           {needsReservation.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-neutral-400 text-center">No requests awaiting budget reservation.</p>
+            <EmptyState icon="account_balance" title="No requests awaiting budget reservation." className="py-8 min-h-0" />
           ) : (
             <table className="data-table">
               <thead>
@@ -190,7 +191,7 @@ export default function ProcurementBudgetPage() {
         <h2 className="text-sm font-semibold text-neutral-800">Budget reserved — approve request</h2>
         <div className="card overflow-x-auto">
           {awaitingApproval.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-neutral-400 text-center">No budget-reserved requests awaiting approval.</p>
+            <EmptyState icon="gavel" title="No budget-reserved requests awaiting approval." className="py-8 min-h-0" />
           ) : (
             <table className="data-table">
               <thead>

@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
 import { FormSection } from "@/components/ui/FormSection";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const TYPE_LABELS: Record<string, string> = {
   annual: "Annual",
@@ -324,19 +324,11 @@ function LeavePageInner() {
       stats={
         <>
 {(isError || actionError) && (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <span className="material-symbols-outlined text-[16px]">error_outline</span>
-              <span className="flex-1">{actionError ?? "Failed to load leave requests."}</span>
-              {isError ? (
-                <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
-                  Retry
-                </button>
-              ) : (
-                <button type="button" className="text-xs font-semibold underline" onClick={() => setActionError(null)}>
-                  Dismiss
-                </button>
-              )}
-            </div>
+            <ErrorBanner
+              message={actionError ?? "Failed to load leave requests."}
+              onRetry={isError ? () => void refetch() : undefined}
+              onDismiss={isError ? undefined : () => setActionError(null)}
+            />
           )}
           <LeaveBalanceStrip cards={balanceCards} loading={balancesLoading} year={balances?.period_year} />
           {queue !== "recommend" && visibleCards.length > 0 && (

@@ -13,6 +13,7 @@ import {
 import { formatDate } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -417,18 +418,12 @@ function RecentEventsCard() {
           ))}
         </div>
       ) : events.length === 0 ? (
-        <div className="px-5 py-10 text-center">
-          <span
-            className="material-symbols-outlined text-neutral-300 text-[36px] mb-2 block"
-            style={{ fontVariationSettings: "'FILL' 0" }}
-          >
-            history_toggle_off
-          </span>
-          <p className="text-sm text-neutral-400">No signature activity yet.</p>
-          <p className="text-xs text-neutral-400 mt-1">
-            Your signing history will appear here after you sign your first document.
-          </p>
-        </div>
+        <EmptyState
+          icon="history_toggle_off"
+          title="No signature activity yet."
+          description="Your signing history will appear here after you sign your first document."
+          className="py-10 min-h-0"
+        />
       ) : (
         <div className="divide-y divide-neutral-50">
           {events.map((evt) => {

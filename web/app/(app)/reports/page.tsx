@@ -15,6 +15,7 @@ import {
 } from "@/lib/api";
 import { getStoredUser, hasPermission } from "@/lib/auth";
 import { formatDateTable } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -767,9 +768,8 @@ export default function ReportsPage() {
 
           {/* Preview table */}
           {rows !== null && rows.length === 0 && (
-            <div className="card px-5 py-10 text-center text-sm text-neutral-400">
-              <span className="material-symbols-outlined text-4xl block mb-2 text-neutral-300">search_off</span>
-              No records found for the selected filters.
+            <div className="card">
+              <EmptyState icon="search_off" title="No records found for the selected filters." />
             </div>
           )}
 

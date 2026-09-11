@@ -5,6 +5,7 @@ import Link from "next/link";
 import { performanceTrackerApi, type PerformanceTracker } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_LABELS: Record<string, string> = {
   excellent: "Excellent",
@@ -288,7 +289,7 @@ export default function HrPerformanceDashboardPage() {
                   </div>
                   <div className="divide-y divide-neutral-50 max-h-64 overflow-y-auto">
                     {allTrackers.filter((t) => t.trend === "improving").length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-neutral-400 text-center">No improving trend data.</p>
+                      <EmptyState icon="trending_up" title="No improving trend data." className="py-6 min-h-0" />
                     ) : (
                       allTrackers.filter((t) => t.trend === "improving").slice(0, 10).map((t) => (
                         <Link key={t.id} href={`/hr/performance/${t.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
@@ -354,10 +355,7 @@ export default function HrPerformanceDashboardPage() {
                   <span className="badge badge-warning">{devActionTrackers.length}</span>
                 </div>
                 {devActionTrackers.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <span className="material-symbols-outlined text-4xl text-neutral-200">emoji_events</span>
-                    <p className="mt-3 text-sm text-neutral-400">No open development actions.</p>
-                  </div>
+                  <EmptyState icon="emoji_events" title="No open development actions." />
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="data-table">
@@ -433,7 +431,7 @@ export default function HrPerformanceDashboardPage() {
                         </Link>
                       ))}
                     {allTrackers.filter((t) => (t.commendation_count ?? 0) > 0).length === 0 && (
-                      <p className="px-4 py-6 text-sm text-neutral-400 text-center">No commendations recorded.</p>
+                      <EmptyState icon="star" title="No commendations recorded." className="py-6 min-h-0" />
                     )}
                   </div>
                 </div>
@@ -448,7 +446,7 @@ export default function HrPerformanceDashboardPage() {
                   </div>
                   <div className="divide-y divide-neutral-50 max-h-64 overflow-y-auto">
                     {warningTrackers.length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-neutral-400 text-center">No active warnings.</p>
+                      <EmptyState icon="gavel" title="No active warnings." className="py-6 min-h-0" />
                     ) : (
                       warningTrackers.slice(0, 10).map((t) => (
                         <Link key={t.id} href={`/hr/performance/${t.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">

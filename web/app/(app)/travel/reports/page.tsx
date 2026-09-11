@@ -432,7 +432,7 @@ export default function TravelReportsPage() {
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error}</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={load}>
+          <button type="button" className="btn-secondary text-xs" onClick={load}>
             Retry
           </button>
         </div>

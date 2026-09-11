@@ -8,6 +8,7 @@ import { deploymentsApi, researcherReportsApi, type StaffDeployment, type Resear
 import { formatDate } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   active:    { label: "Active",    cls: "badge-success" },
@@ -200,7 +201,7 @@ export default function DeploymentDetailPage({ params }: { params: Promise<{ id:
           )}
         </div>
         {reports.length === 0 ? (
-          <div className="px-5 py-8 text-center text-sm text-neutral-400">No reports submitted yet.</div>
+          <EmptyState icon="summarize" title="No reports submitted yet." className="py-8 min-h-0" />
         ) : (
           <div className="divide-y divide-neutral-100">
             {reports.map((r) => (

@@ -208,7 +208,7 @@ export default function FleetVehicleDetailPage() {
                   <>
                     {" "}
                     ·{" "}
-                    <a href={mapsHref} target="_blank" rel="noreferrer" className="text-primary underline">
+                    <a href={mapsHref} target="_blank" rel="noreferrer" className="btn-secondary text-xs">
                       Open map
                     </a>
                   </>

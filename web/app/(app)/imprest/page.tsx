@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
 import { useToast } from "@/components/ui/Toast";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
   approved: { label: "Approved", cls: "badge-success" },
@@ -270,19 +270,11 @@ export default function ImprestPage() {
       stats={
         <>
           {(isError || error) && (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <span className="material-symbols-outlined text-[16px]">error_outline</span>
-              <span className="flex-1">{error ?? "Failed to load imprest requests."}</span>
-              {isError ? (
-                <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
-                  Retry
-                </button>
-              ) : (
-                <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
-                  Dismiss
-                </button>
-              )}
-            </div>
+            <ErrorBanner
+              message={error ?? "Failed to load imprest requests."}
+              onRetry={isError ? () => void refetch() : undefined}
+              onDismiss={isError ? undefined : () => setError(null)}
+            />
           )}
           <div className="grid grid-cols-3 gap-4">
             {[

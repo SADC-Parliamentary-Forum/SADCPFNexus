@@ -11,6 +11,7 @@ import {
   type BudgetCycleStatusRow,
   type BudgetUtilisationRow,
 } from "@/lib/api";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 type TabId = "utilisation" | "ageing" | "changes" | "cycles";
 type GroupBy = "line" | "department" | "funding_source";
@@ -455,14 +456,14 @@ function ReportTable({
     return <p className="text-sm text-[var(--muted)]">Loading…</p>;
   }
   if (error) {
-    return (
-      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-        Failed to load report.
-      </div>
-    );
+    return <ErrorBanner message="Failed to load report." />;
   }
   if (rowCount === 0) {
-    return <p className="text-sm text-[var(--muted)]">{empty}</p>;
+    return (
+      <div className="card">
+        <EmptyState icon="table_chart" title={empty} className="py-8 min-h-0" />
+      </div>
+    );
   }
 
   return (

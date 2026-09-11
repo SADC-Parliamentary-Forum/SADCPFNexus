@@ -12,7 +12,7 @@ import {
   type RiskBcpLink,
   type RiskDependency,
 } from "@/lib/api";
-import { TableEmpty } from "@/components/ui/EmptyState";
+import { TableEmpty, ErrorBanner } from "@/components/ui/EmptyState";
 
 export default function RiskBcpPage() {
   const qc = useQueryClient();
@@ -141,7 +141,7 @@ export default function RiskBcpPage() {
         </div>
       </div>
 
-      {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+      {error && <ErrorBanner message={error} />}
 
       <form
         onSubmit={(e: FormEvent) => {
@@ -259,7 +259,7 @@ export default function RiskBcpPage() {
                   <td className="px-3 py-2">{ex.result ?? "—"}</td>
                   <td className="px-3 py-2 text-right">
                     {ex.status !== "completed" && (
-                      <button type="button" className="text-primary underline" onClick={() => completeExercise.mutate(ex.id)}>
+                      <button type="button" className="btn-secondary text-xs" onClick={() => completeExercise.mutate(ex.id)}>
                         Complete
                       </button>
                     )}
@@ -296,7 +296,7 @@ export default function RiskBcpPage() {
                   <td className="px-3 py-2">{p.status}</td>
                   <td className="px-3 py-2 text-right">
                     {p.status === "active" && (
-                      <button type="button" className="text-primary underline" onClick={() => renewPolicy.mutate(p)}>
+                      <button type="button" className="btn-secondary text-xs" onClick={() => renewPolicy.mutate(p)}>
                         Renew +1y
                       </button>
                     )}

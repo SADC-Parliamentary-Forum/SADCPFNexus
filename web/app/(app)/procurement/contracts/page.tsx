@@ -298,7 +298,7 @@ function ContractsPageInner() {
                   ))}
                 </select>
                 {availableVendors.length === 0 && (
-                  <p className="text-xs text-amber-600">No approved vendors found. <Link href="/procurement/vendors" className="underline">Add a vendor</Link> first.</p>
+                  <p className="text-xs text-amber-600">No approved vendors found. <Link href="/procurement/vendors" className="btn-secondary text-xs py-0.5 px-2 inline-flex">Add a vendor</Link> first.</p>
                 )}
               </div>
 

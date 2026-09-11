@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { analyticsApi, type AnalyticsSummary } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const MONTHS_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -38,12 +39,7 @@ const MODULE_URLS: Record<string, string> = {
 function ModuleBarChart({ modules }: { modules: { module: string; label: string; count: number }[] }) {
   const router = useRouter();
   if (modules.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-10 text-neutral-300 gap-2">
-        <span className="material-symbols-outlined text-[36px]">bar_chart</span>
-        <p className="text-sm text-neutral-400">No module data available</p>
-      </div>
-    );
+    return <EmptyState icon="bar_chart" title="No module data available" className="py-10 min-h-0" />;
   }
 
   const totalCount = modules.reduce((s, m) => s + m.count, 0) || 1;
@@ -390,7 +386,7 @@ export default function AnalyticsPage() {
                 </div>
               ))}
               {(data?.recent_activity ?? []).length === 0 && (
-                <div className="text-center py-8 text-neutral-400 text-sm">No recent activity</div>
+                <EmptyState icon="history" title="No recent activity" className="py-8 min-h-0" />
               )}
             </div>
           )}

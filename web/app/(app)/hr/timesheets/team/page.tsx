@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { hrApi, type Timesheet } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -505,7 +506,7 @@ export default function TeamTimesheetsPage() {
                     <td className="px-2 py-1.5 text-right">
                       <button
                         type="button"
-                        className="text-primary underline"
+                        className="btn-secondary text-xs"
                         onClick={() => {
                           setLastBatch({ id: b.id, batch_reference: b.batch_reference });
                           void handleDownloadPayroll("csv");
@@ -539,9 +540,7 @@ export default function TeamTimesheetsPage() {
         )}
       </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {/* Cards / Grid */}
       {loading ? (
@@ -561,18 +560,16 @@ export default function TeamTimesheetsPage() {
           ))}
         </div>
       ) : timesheets.length === 0 ? (
-        <div className="card flex flex-col items-center justify-center gap-4 py-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-neutral-100">
-            <span className="material-symbols-outlined text-[28px] text-neutral-400">group</span>
-          </div>
-          <div>
-            <p className="text-sm font-medium text-neutral-700">No timesheets found</p>
-            <p className="text-xs text-neutral-400 mt-1">
-              {statusFilter
+        <div className="card">
+          <EmptyState
+            icon="group"
+            title="No timesheets found"
+            description={
+              statusFilter
                 ? `No ${STATUS_CONFIG[statusFilter]?.label.toLowerCase() ?? statusFilter} timesheets for this week`
-                : "No team timesheets for the selected week"}
-            </p>
-          </div>
+                : "No team timesheets for the selected week"
+            }
+          />
         </div>
       ) : (
         <>

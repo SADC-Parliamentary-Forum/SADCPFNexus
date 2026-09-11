@@ -18,7 +18,7 @@ import { useRowSelection } from "@/lib/useRowSelection";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 import { clientPageCount, DEFAULT_PAGE_SIZE, slicePage } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   approved: { label: "Approved", badge: "badge-success" },
@@ -458,13 +458,7 @@ export default function TravelRegisterPage() {
       stats={
         <>
 {error && (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <span className="material-symbols-outlined text-[16px]">error_outline</span>
-              <span className="flex-1">{error}</span>
-              <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
-                Dismiss
-              </button>
-            </div>
+            <ErrorBanner message={error} onDismiss={() => setError(null)} />
           )}
           {!loading && rows.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

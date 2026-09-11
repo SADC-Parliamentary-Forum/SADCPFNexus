@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { bcreApi, programmeApi, type BcreDashboard, type BalanceRegister, type Programme } from "@/lib/api";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -86,9 +87,7 @@ export default function BcreDashboardPage() {
         <span className="text-neutral-800 font-medium">Balance Register</span>
       </nav>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">{error}</div>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -148,7 +147,7 @@ export default function BcreDashboardPage() {
             </div>
             <div className="divide-y divide-neutral-50">
               {programmes.length === 0 ? (
-                <p className="px-5 py-6 text-sm text-neutral-400 text-center">No recent programmes to surface beside BCRE.</p>
+                <EmptyState icon="folder_special" title="No recent programmes to surface beside BCRE." className="py-8 min-h-0" />
               ) : programmes.map((p) => (
                 <Link
                   key={p.id}
@@ -178,7 +177,7 @@ export default function BcreDashboardPage() {
               </div>
               <div className="divide-y divide-neutral-50">
                 {recentSA.length === 0 ? (
-                  <p className="px-5 py-8 text-sm text-neutral-400 text-center">No salary advance registers yet.</p>
+                  <EmptyState icon="payments" title="No salary advance registers yet." className="py-8 min-h-0" />
                 ) : recentSA.map(reg => (
                   <Link key={reg.id} href={`/finance/balance-register/${reg.id}`}
                     className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50 transition-colors">
@@ -208,7 +207,7 @@ export default function BcreDashboardPage() {
               </div>
               <div className="divide-y divide-neutral-50">
                 {recentIMP.length === 0 ? (
-                  <p className="px-5 py-8 text-sm text-neutral-400 text-center">No imprest registers yet.</p>
+                  <EmptyState icon="account_balance_wallet" title="No imprest registers yet." className="py-8 min-h-0" />
                 ) : recentIMP.map(reg => (
                   <Link key={reg.id} href={`/finance/balance-register/${reg.id}`}
                     className="flex items-center justify-between px-5 py-3 hover:bg-neutral-50 transition-colors">

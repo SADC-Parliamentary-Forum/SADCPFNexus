@@ -9,6 +9,7 @@ import { formatSaCurrency, SA_STATUS_CONFIG } from "@/components/salary-advance/
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { SALARY_ADVANCE_HUB_CARDS } from "@/lib/hubs/salaryAdvances";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 export default function SalaryAdvanceEmployeeDashboardPage() {
   const [loading, setLoading] = useState(true);
@@ -72,7 +73,7 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
         </div>
       ) : (
         <>
-      {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && <ErrorBanner message={error} />}
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <div className="card p-5 space-y-3">
@@ -152,7 +153,7 @@ export default function SalaryAdvanceEmployeeDashboardPage() {
           <Link href="/salary-advances/history" className="btn-secondary text-xs py-1 px-2">View all</Link>
         </div>
         {(summary?.history?.length ?? 0) === 0 ? (
-          <p className="text-sm text-neutral-500">No closed or recovered advances yet.</p>
+          <EmptyState icon="history" title="No closed or recovered advances yet." className="py-6 min-h-0" />
         ) : (
           <ul className="divide-y divide-neutral-100">
             {summary!.history.map((h) => {

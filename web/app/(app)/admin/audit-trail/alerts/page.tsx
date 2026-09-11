@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
-import { TableEmpty } from "@/components/ui/EmptyState";
+import { EmptyState, TableEmpty } from "@/components/ui/EmptyState";
 
 export default function AuditTrailAlertsPage() {
   const { success, error, info } = useToast();
@@ -44,17 +44,20 @@ export default function AuditTrailAlertsPage() {
         subtitle="Monitoring-rule indicators — New → review → classify → close. Not proof of wrongdoing."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Security alerts" }]} />}
       />
-        <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
+        <Link href="/admin/audit-trail" className="btn-secondary text-sm">Back</Link>
       </div>
 
       <div className="card p-4">
         <h2 className="text-sm font-semibold mb-2">Active monitoring rules</h2>
-        <ul className="text-sm space-y-1 text-neutral-700">
-          {rules.map((r) => (
-            <li key={r.id}><span className="font-mono text-xs">{r.rule_key}</span> — {r.name} ({r.severity})</li>
-          ))}
-          {rules.length === 0 && <li className="text-neutral-500">No rules seeded yet.</li>}
-        </ul>
+        {rules.length === 0 ? (
+          <EmptyState icon="rule" title="No rules seeded yet." className="py-6 min-h-0" />
+        ) : (
+          <ul className="text-sm space-y-1 text-neutral-700">
+            {rules.map((r) => (
+              <li key={r.id}><span className="font-mono text-xs">{r.rule_key}</span> — {r.name} ({r.severity})</li>
+            ))}
+          </ul>
+        )}
       </div>
 
       <div className="card overflow-hidden">

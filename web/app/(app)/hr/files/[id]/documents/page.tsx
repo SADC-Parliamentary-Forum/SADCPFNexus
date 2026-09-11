@@ -8,6 +8,7 @@ import { getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const CONFIDENTIALITY_BADGE: Record<HrFileDocument["confidentiality_level"], string> = {
   standard: "badge-muted",
@@ -177,13 +178,15 @@ export default function HrFileDocumentsPage() {
           ))}
         </div>
       ) : documents.length === 0 ? (
-        <div className="card p-12 text-center text-neutral-400">
-          <span className="material-symbols-outlined text-5xl block mb-2">folder_open</span>
-          <p className="font-medium">No documents found</p>
-          <p className="text-sm mt-1">{docTypeFilter ? "Try clearing the filter" : "Start by adding a document to this file"}</p>
-          {isHR && (
-            <button className="btn-primary mt-4" onClick={() => setShowUpload(true)}>Add First Document</button>
-          )}
+        <div className="card">
+          <EmptyState
+            icon="folder_open"
+            title="No documents found"
+            description={docTypeFilter ? "Try clearing the filter" : "Start by adding a document to this file"}
+            action={isHR ? (
+              <button type="button" className="btn-primary" onClick={() => setShowUpload(true)}>Add First Document</button>
+            ) : undefined}
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

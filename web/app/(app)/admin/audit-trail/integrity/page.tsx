@@ -55,7 +55,7 @@ export default function AuditTrailIntegrityPage() {
         subtitle="Hash-chain verification and periodic checkpoints."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Integrity report" }]} />}
       />
-        <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
+        <Link href="/admin/audit-trail" className="btn-secondary text-sm">Back</Link>
       </div>
 
       <div className="flex gap-2">

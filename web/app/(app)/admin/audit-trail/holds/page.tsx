@@ -54,7 +54,7 @@ export default function AuditTrailHoldsPage() {
         subtitle="Legal / audit / investigation holds block disposal."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Event holds" }]} />}
       />
-        <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
+        <Link href="/admin/audit-trail" className="btn-secondary text-sm">Back</Link>
       </div>
 
       <div className="card p-4 grid gap-3 sm:grid-cols-2">

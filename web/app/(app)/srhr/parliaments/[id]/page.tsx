@@ -5,6 +5,7 @@ import { use } from "react";
 import Link from "next/link";
 import { parliamentsApi, type Parliament } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function ParliamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -110,9 +111,7 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
           </Link>
         </div>
         {!parliament.active_deployments || parliament.active_deployments.length === 0 ? (
-          <div className="px-5 py-8 text-center text-sm text-neutral-400">
-            No active deployments at this parliament.
-          </div>
+          <EmptyState icon="transfer_within_a_station" title="No active deployments at this parliament." className="py-8 min-h-0" />
         ) : (
           <div className="divide-y divide-neutral-100">
             {parliament.active_deployments.map((dep) => (

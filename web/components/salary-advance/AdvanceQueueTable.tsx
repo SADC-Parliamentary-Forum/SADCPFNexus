@@ -8,7 +8,7 @@ import { exportToCsv } from "@/lib/csvExport";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 
 export const SA_STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
@@ -281,12 +281,7 @@ export function AdvanceQueueTable({
       stats={
         <>
 {error ? (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <span className="flex-1">{error}</span>
-              <button type="button" className="btn-secondary text-xs" onClick={() => void load(page)}>
-                Retry
-              </button>
-            </div>
+            <ErrorBanner message={error} onRetry={() => void load(page)} />
           ) : null}
           {isRecovery ? (
             <div className="card space-y-2 p-4">

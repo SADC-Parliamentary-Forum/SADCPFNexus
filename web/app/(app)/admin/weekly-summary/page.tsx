@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { weeklySummaryApi, WeeklySummaryRun } from "@/lib/api";
 import { formatDate, formatDateRelative } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_BADGE: Record<string, string> = {
   running:   "badge-warning",
@@ -123,7 +124,7 @@ export default function AdminWeeklySummaryPage() {
         {loading ? (
           <div className="p-8 text-center text-neutral-400">Loading…</div>
         ) : runs.length === 0 ? (
-          <div className="p-8 text-center text-neutral-400">No runs yet. Trigger the first one above.</div>
+          <EmptyState icon="history" title="No runs yet." description="Trigger the first one above." />
         ) : (
           <table className="data-table">
             <thead>

@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetCycle } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 function statusLabel(status: string): string {
   return status.replaceAll("_", " ");
@@ -63,7 +64,7 @@ export default function BudgetCyclesPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        <ErrorBanner message={error} />
       )}
 
       {canFinance && (
@@ -100,7 +101,9 @@ export default function BudgetCyclesPage() {
       {cyclesQuery.isLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading cycles…</p>
       ) : cycles.length === 0 ? (
-        <p className="text-sm text-[var(--muted)]">No budget cycles yet.</p>
+        <div className="card">
+          <EmptyState icon="event_repeat" title="No budget cycles yet." />
+        </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-white">
           <table className="w-full text-left text-sm">

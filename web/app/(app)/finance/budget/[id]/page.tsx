@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { financeApi, type Budget, type BudgetLine } from "@/lib/api";
 import { formatCurrency as formatMoney } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function toNumber(value: unknown): number {
   const n = Number(value);
@@ -271,7 +272,7 @@ export default function BudgetDetailPage() {
           <span className="text-xs text-neutral-500">{lines.length} lines</span>
         </div>
         {lines.length === 0 ? (
-          <div className="px-5 py-10 text-center text-sm text-neutral-500">No budget lines available for this budget.</div>
+          <EmptyState icon="table_chart" title="No budget lines available for this budget." className="py-10 min-h-0" />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table w-full">

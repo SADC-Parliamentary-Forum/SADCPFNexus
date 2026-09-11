@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { saamApi, type SignatureEvent, type SignedDocument } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const actionConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approve:     { label: "Approved",     cls: "badge-success", icon: "check_circle" },
@@ -127,7 +128,7 @@ export default function VerifyPage() {
         {loading ? (
           <div className="p-8 text-center text-sm text-neutral-400">Loading…</div>
         ) : events.length === 0 ? (
-          <div className="p-8 text-center text-sm text-neutral-400">No signing events recorded yet.</div>
+          <EmptyState icon="verified" title="No signing events recorded yet." className="py-8 min-h-0" />
         ) : (
           <div className="divide-y divide-neutral-100">
             {events.map((event, idx) => {

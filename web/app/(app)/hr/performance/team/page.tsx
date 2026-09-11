@@ -6,6 +6,7 @@ import { performanceTrackerApi, type PerformanceTracker } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<
   PerformanceTracker["status"],
@@ -247,12 +248,7 @@ export default function TeamPerformancePage() {
       )}
 
       {/* Error state */}
-      {error && (
-        <div className="card p-8 text-center text-red-500">
-          <span className="material-symbols-outlined text-5xl">error</span>
-          <p className="mt-2">{error}</p>
-        </div>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {/* Table view */}
       {!loading && !error && viewMode === "table" && (
@@ -261,10 +257,7 @@ export default function TeamPerformancePage() {
             <h3 className="text-sm font-semibold text-neutral-900">Team performance — table view</h3>
           </div>
           {trackers.length === 0 ? (
-            <div className="py-12 text-center text-neutral-400">
-              <span className="material-symbols-outlined text-5xl block mb-2">group</span>
-              <p>No direct reports found</p>
-            </div>
+            <EmptyState icon="group" title="No direct reports found" className="py-12 min-h-0" />
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -356,10 +349,12 @@ export default function TeamPerformancePage() {
           ))}
         </div>
       ) : trackers.length === 0 ? (
-        <div className="card p-12 text-center text-neutral-400">
-          <span className="material-symbols-outlined text-5xl block mb-2">group</span>
-          <p className="font-medium">No direct reports found</p>
-          <p className="text-sm mt-1">Team performance data will appear here once trackers are assigned</p>
+        <div className="card">
+          <EmptyState
+            icon="group"
+            title="No direct reports found"
+            description="Team performance data will appear here once trackers are assigned"
+          />
         </div>
       ) : (
         <>

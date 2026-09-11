@@ -6,6 +6,7 @@ import Link from "next/link";
 import { stockDashboardApi, type StockDashboard } from "@/lib/api";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { STOCK_HUB_CARDS } from "@/lib/hubs/stock";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 function fmtMoney(n: number | string | null | undefined): string {
   if (n === null || n === undefined || n === "") return "—";
@@ -26,7 +27,7 @@ export default function StockDashboardPage() {
   }, []);
 
   if (loading) return <p className="text-sm text-neutral-500">Loading dashboard…</p>;
-  if (error) return <p className="text-sm text-red-600">{error}</p>;
+  if (error) return <ErrorBanner message={error} />;
   if (!data) return null;
 
   const cards = [
@@ -63,7 +64,7 @@ export default function StockDashboardPage() {
           <Link href="/stock/low-stock" className="btn-secondary text-xs py-1 px-2">View all</Link>
         </div>
         {data.low_stock_items.length === 0 ? (
-          <p className="p-4 text-sm text-neutral-500">No items below reorder level.</p>
+          <EmptyState icon="inventory_2" title="No items below reorder level." className="py-8 min-h-0" />
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-neutral-50 text-left text-xs text-neutral-500">

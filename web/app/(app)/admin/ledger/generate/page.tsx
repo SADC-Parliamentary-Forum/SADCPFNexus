@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MODULES = [
@@ -316,10 +317,7 @@ export default function GenerateLedgerReportPage() {
       </div>
 
       {previewLogs.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-14 text-neutral-300">
-          <span className="material-symbols-outlined text-[40px]">receipt_long</span>
-          <p className="text-sm text-neutral-400">No entries match the selected criteria.</p>
-        </div>
+        <EmptyState icon="receipt_long" title="No entries match the selected criteria." />
       ) : (
         <div className="card overflow-hidden">
           <div className="px-5 py-3 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">

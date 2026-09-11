@@ -7,7 +7,7 @@ import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import {
   DEFAULT_PAGE_SIZE,
   clientPageCount,
@@ -328,13 +328,7 @@ export function TravelQueueTable({
       />
 
       {error && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          <span className="flex-1">{error}</span>
-          <button type="button" className="btn-secondary text-xs" onClick={() => void load()}>
-            Retry
-          </button>
-        </div>
+        <ErrorBanner message={error} onRetry={() => void load()} />
       )}
 
       {!loading && (

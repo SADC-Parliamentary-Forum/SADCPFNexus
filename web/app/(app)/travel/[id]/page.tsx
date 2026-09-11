@@ -1602,7 +1602,7 @@ export default function TravelDetailPage() {
               <div className="w-full text-xs text-neutral-600 mt-1">
                 Linked imprests:{" "}
                 {(request.imprest_requests ?? []).map((imp) => (
-                  <a key={imp.id} href={`/imprest/${imp.id}`} className="text-primary mr-2 underline">
+                  <a key={imp.id} href={`/imprest/${imp.id}`} className="btn-secondary text-xs py-0.5 px-2 inline-flex mr-2">
                     {imp.reference_number ?? `#${imp.id}`}
                   </a>
                 ))}

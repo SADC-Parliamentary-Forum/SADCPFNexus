@@ -108,7 +108,9 @@ class _TravelToilQueueScreenState extends ConsumerState<TravelToilQueueScreen> {
       title: 'Travel TOIL Candidates',
       body: _loading
           ? const StitchLoadingState(label: 'Loading TOIL candidates')
-          : RefreshIndicator(
+          : _error != null && _rows.isEmpty
+              ? StitchErrorState(message: _error!, onRetry: _load)
+              : RefreshIndicator(
               onRefresh: _load,
               child: ListView(
                 padding: const EdgeInsets.all(16),
@@ -120,10 +122,6 @@ class _TravelToilQueueScreenState extends ConsumerState<TravelToilQueueScreen> {
                   if (_toast != null) ...[
                     const SizedBox(height: 8),
                     Text(_toast!, style: const TextStyle(color: Colors.green, fontSize: 12)),
-                  ],
-                  if (_error != null) ...[
-                    const SizedBox(height: 8),
-                    Text(_error!, style: const TextStyle(color: Colors.red, fontSize: 12)),
                   ],
                   const SizedBox(height: 12),
                   if (_rows.isEmpty)

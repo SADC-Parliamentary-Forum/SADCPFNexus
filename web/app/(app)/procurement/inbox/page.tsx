@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { procurementWorkbenchApi } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type InboxRow = {
   id: number;
@@ -53,7 +54,9 @@ export default function ProcurementInboxPage() {
       {isLoading && <p className="text-sm text-neutral-500">Loading inbox…</p>}
       {isError && <p className="text-sm text-rose-700">Could not load the procurement inbox.</p>}
       {!isLoading && rows.length === 0 && (
-        <p className="text-sm text-neutral-500">{emptyCopy}</p>
+        <div className="card">
+          <EmptyState icon="inbox" title={emptyCopy} />
+        </div>
       )}
       <ul className="space-y-2">
         {rows.map((row) => (

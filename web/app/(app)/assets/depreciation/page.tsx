@@ -315,7 +315,7 @@ export default function AssetDepreciationPage() {
           <button type="button" className="btn-secondary text-xs" onClick={() => void load()}>
             Retry
           </button>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => setError(null)}>
             Dismiss
           </button>
         </div>

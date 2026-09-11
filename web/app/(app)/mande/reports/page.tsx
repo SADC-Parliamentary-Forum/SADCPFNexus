@@ -10,6 +10,7 @@ import {
   type ResultsFramework,
 } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Tab = "strategic" | "donor";
 
@@ -217,7 +218,7 @@ export default function MandeReportsPage() {
                   <h2 className="text-sm font-semibold text-neutral-800">Activities per strategic goal</h2>
                 </div>
                 {strategic.data.activities_per_goal.length === 0 ? (
-                  <p className="px-5 py-8 text-center text-sm text-neutral-400">No data.</p>
+                  <EmptyState icon="flag" title="No data." className="py-8 min-h-0" />
                 ) : (
                   <table className="data-table">
                     <thead>
@@ -325,7 +326,7 @@ export default function MandeReportsPage() {
                     </h2>
                   </div>
                   {donor.data.activities.length === 0 ? (
-                    <p className="px-5 py-8 text-center text-sm text-neutral-400">No activities.</p>
+                    <EmptyState icon="assignment" title="No activities." className="py-8 min-h-0" />
                   ) : (
                     <table className="data-table">
                       <thead>
@@ -351,9 +352,11 @@ export default function MandeReportsPage() {
                     </h2>
                   </div>
                   {donor.data.indicators.length === 0 ? (
-                    <p className="px-5 py-8 text-center text-sm text-neutral-400">
-                      Select a results framework to see indicator aggregation.
-                    </p>
+                    <EmptyState
+                      icon="speed"
+                      title="Select a results framework to see indicator aggregation."
+                      className="py-8 min-h-0"
+                    />
                   ) : (
                     <table className="data-table">
                       <thead>

@@ -71,7 +71,7 @@ export default function NotificationsGovernancePage() {
         title="Notifications governance checklist"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Notifications governance checklist" }]} />}
       />
-        <Link href="/admin/notifications" className="text-sm text-primary underline">
+        <Link href="/admin/notifications" className="btn-secondary text-sm">
           Back to notifications admin
         </Link>
       </div>
@@ -178,7 +178,7 @@ export default function NotificationsGovernancePage() {
                 <button
                   type="button"
                   onClick={() => startEdit(row)}
-                  className="text-sm text-primary underline"
+                  className="btn-secondary text-sm"
                 >
                   Update status
                 </button>

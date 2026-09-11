@@ -9,6 +9,7 @@ import {
 } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 export default function SalaryAdvanceSettingsPage() {
   const [policies, setPolicies] = useState<SalaryAdvancePolicyVersion[]>([]);
@@ -161,7 +162,7 @@ export default function SalaryAdvanceSettingsPage() {
         ]}
       />
 
-      {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>}
+      {error && <ErrorBanner message={error} />}
 
       {loading ? (
         <div className="h-40 rounded-xl bg-neutral-100 animate-pulse" />
@@ -179,7 +180,7 @@ export default function SalaryAdvanceSettingsPage() {
                 <div><dt className="text-xs text-neutral-500">Concurrent advances</dt><dd className="font-medium">{active.max_concurrent_advances} (locked)</dd></div>
               </dl>
             ) : (
-              <p className="text-sm text-neutral-500">No active policy found.</p>
+              <EmptyState icon="policy" title="No active policy found." className="py-6 min-h-0" />
             )}
           </div>
 
@@ -270,10 +271,11 @@ export default function SalaryAdvanceSettingsPage() {
                 </button>
               </div>
             </form>
+            {exceptions.length === 0 ? (
+              <EmptyState icon="rule" title="No policy exceptions recorded." className="py-6 min-h-0" />
+            ) : (
             <ul className="divide-y divide-neutral-100">
-              {exceptions.length === 0 ? (
-                <li className="py-3 text-sm text-neutral-500">No policy exceptions recorded.</li>
-              ) : exceptions.map((ex) => (
+              {exceptions.map((ex) => (
                 <li key={ex.id} className="py-3 flex flex-wrap items-center justify-between gap-2 text-sm">
                   <div>
                     <p className="font-medium">{ex.employee?.name ?? `User #${ex.employee_id}`} · {ex.exception_type}</p>
@@ -292,6 +294,7 @@ export default function SalaryAdvanceSettingsPage() {
                 </li>
               ))}
             </ul>
+            )}
           </div>
 
           <div className="card p-5">

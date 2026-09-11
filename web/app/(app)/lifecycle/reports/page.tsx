@@ -6,6 +6,7 @@ import { lifecycleApi, type LifecycleAnalytics, type LifecycleCaseSummary } from
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const TYPES: Array<{ key: string; label: string }> = [
   { key: "onboarding", label: "Onboarding" },
@@ -107,7 +108,7 @@ export default function LifecycleReportsPage() {
 
       <FormSection title="Open-task bottlenecks">
         {(analytics?.bottlenecks ?? []).length === 0 && !analyticsQuery.isLoading ? (
-          <p className="text-sm text-neutral-500">No open tasks to rank.</p>
+          <EmptyState icon="pending_actions" title="No open tasks to rank." className="py-6 min-h-0" />
         ) : (
           <ul className="space-y-2 text-sm">
             {(analytics?.bottlenecks ?? []).map((item) => (

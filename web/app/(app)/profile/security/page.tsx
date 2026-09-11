@@ -11,6 +11,7 @@ import { requiresPrivilegedMfaSetup } from "@/lib/privilegedMfa";
 import { formatDateRelative } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const NAV = [
   { label: "Profile",     href: "/profile",           icon: "person" },
@@ -588,7 +589,7 @@ export default function ProfileSecurityPage() {
             ))}
           </div>
         ) : sessions.length === 0 ? (
-          <p className="text-sm text-neutral-400 text-center py-4">No active sessions found.</p>
+          <EmptyState icon="devices" title="No active sessions found." className="py-8 min-h-0" />
         ) : (
           <div className="space-y-3">
             {sessions.map((s) => (

@@ -109,7 +109,7 @@ export default function Page() {
       />
 
       <p className="text-sm text-neutral-600">
-        Staff capture their specimen in <Link href="/saam" className="text-primary underline">SAAM</Link>. This register enrols and activates records for administration.
+        Staff capture their specimen in <Link href="/saam" className="btn-secondary text-xs">SAAM</Link>. This register enrols and activates records for administration.
       </p>
 
       <form

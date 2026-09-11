@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { deploymentsApi, researcherReportsApi, type StaffDeployment, type ResearcherReport } from "@/lib/api";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const deploymentStatusConfig: Record<string, { label: string; cls: string }> = {
   active:    { label: "Active",    cls: "badge-success" },
@@ -62,12 +63,7 @@ export default function SrhrOverviewPage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Field Researchers" }]} />}
       />
 
-      {loadError && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          {loadError}
-        </div>
-      )}
+      {loadError && <ErrorBanner message={loadError} />}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -129,9 +125,11 @@ export default function SrhrOverviewPage() {
                 ))
               : deployments.length === 0
               ? (
-                  <div className="px-5 py-8 text-center text-sm text-neutral-400">
-                    {loadError ? "Unable to load deployments" : "No active deployments"}
-                  </div>
+                  <EmptyState
+                    icon="transfer_within_a_station"
+                    title={loadError ? "Unable to load deployments" : "No active deployments"}
+                    className="py-8 min-h-0"
+                  />
                 )
               : deployments.map((d) => (
                   <Link
@@ -175,9 +173,11 @@ export default function SrhrOverviewPage() {
                 ))
               : reports.length === 0
               ? (
-                  <div className="px-5 py-8 text-center text-sm text-neutral-400">
-                    {loadError ? "Unable to load reports" : "No reports yet"}
-                  </div>
+                  <EmptyState
+                    icon="summarize"
+                    title={loadError ? "Unable to load reports" : "No reports yet"}
+                    className="py-8 min-h-0"
+                  />
                 )
               : reports.map((r) => (
                   <Link

@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { auditLogsApi, ledgerVerificationsApi, type LedgerVerification } from "@/lib/api";
 import { cn, formatDateRelative } from "@/lib/utils";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const STATIC_MANIFEST = "e3b0c44298fc1c149afbf4c8996fb924";
 
@@ -157,12 +158,7 @@ export default function LedgerVerifyPage() {
           <p className="text-sm text-green-800">{successMsg}</p>
         </div>
       )}
-      {error && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 flex items-center gap-2">
-          <span className="material-symbols-outlined text-red-600 text-[18px]">error</span>
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {/* Info cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -237,13 +233,11 @@ export default function LedgerVerifyPage() {
             ))}
           </div>
         ) : verifications.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-14 text-neutral-300">
-            <span className="material-symbols-outlined text-[40px]">verified_user</span>
-            <div className="text-center">
-              <p className="text-sm text-neutral-400 font-medium">No verifications yet</p>
-              <p className="text-xs text-neutral-400 mt-1">Click "Verify Ledger Integrity" to run the first check.</p>
-            </div>
-          </div>
+          <EmptyState
+            icon="verified_user"
+            title="No verifications yet"
+            description={'Click "Verify Ledger Integrity" to run the first check.'}
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table w-full">

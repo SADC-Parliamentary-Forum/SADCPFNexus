@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { budgetApi, type BudgetChangeRequest } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function unwrap(payload: unknown): BudgetChangeRequest[] {
   if (!payload || typeof payload !== "object") return [];
@@ -46,7 +47,9 @@ export default function BudgetChangesPage() {
       {query.isLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading…</p>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-[var(--muted)]">No change requests yet.</p>
+        <div className="card">
+          <EmptyState icon="swap_horiz" title="No change requests yet." />
+        </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-white">
           <table className="w-full text-left text-sm">

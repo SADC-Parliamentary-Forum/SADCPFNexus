@@ -8,6 +8,7 @@ import { userNotificationsApi, alertsApi, notificationsPhase23Api, type UserNoti
 import { useFormatDate } from "@/lib/useFormatDate";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 // ─── Alerts helpers ──────────────────────────────────────────────────────────
 
@@ -123,12 +124,7 @@ function AlertsTab() {
         </div>
       </div>
 
-      {error && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[18px]">error_outline</span>
-          {error}
-        </div>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Who's Away Today */}
@@ -505,15 +501,11 @@ function InboxTab() {
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <div className="py-20 text-center">
-            <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-700/40 mb-4">
-              <span className="material-symbols-outlined text-3xl text-neutral-300 dark:text-neutral-600">notifications_off</span>
-            </div>
-            <p className="text-sm font-semibold text-neutral-500 dark:text-neutral-400">
-              {filter === "unread" ? "No unread notifications" : filter === "read" ? "No read notifications" : "No notifications yet"}
-            </p>
-            <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">Notifications will appear here when you have approvals, rejections, or assignments.</p>
-          </div>
+          <EmptyState
+            icon="notifications_off"
+            title={filter === "unread" ? "No unread notifications" : filter === "read" ? "No read notifications" : "No notifications yet"}
+            description="Notifications will appear here when you have approvals, rejections, or assignments."
+          />
         ) : notifications.map(n => {
           const isUnread = !n.read_at;
           const mod = n.meta?.module ?? "";
