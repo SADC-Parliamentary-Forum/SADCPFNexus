@@ -6,6 +6,7 @@ import { canConfigureStockCatalogue, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface ApiError {
   response?: { data?: { message?: string } };
@@ -188,16 +189,16 @@ export default function StockCategoriesPage() {
             ))}
           </div>
         ) : categories.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 mx-auto mb-4">
-              <span className="material-symbols-outlined text-3xl text-neutral-300">category</span>
-            </div>
-            <p className="text-sm font-semibold text-neutral-500">No categories yet</p>
-            <p className="text-xs text-neutral-400 mt-1">Create categories to organise your consumable stock.</p>
-            <button onClick={() => setShowForm(true)} className="btn-primary mt-4">
-              <span className="material-symbols-outlined text-[16px]">add</span>New Category
-            </button>
-          </div>
+          <EmptyState
+            icon="category"
+            title="No categories yet"
+            description="Create categories to organise your consumable stock."
+            action={
+              <button type="button" onClick={() => setShowForm(true)} className="btn-primary">
+                <span className="material-symbols-outlined text-[16px]">add</span>New Category
+              </button>
+            }
+          />
         ) : (
           <ul className="divide-y divide-neutral-100">
             {categories.map((cat) => (

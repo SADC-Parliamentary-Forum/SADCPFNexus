@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { mandeApi, type MeDataQualityReport } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const SEVERITY: Record<string, string> = {
   error: "badge-danger",
@@ -148,7 +149,7 @@ export default function MandeDataQualityPage() {
               <h2 className="text-sm font-semibold text-neutral-800">Issues</h2>
             </div>
             {data.issues.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm text-neutral-400">No issues found.</p>
+              <EmptyState icon="verified" title="No issues found." />
             ) : (
               <table className="data-table">
                 <thead>

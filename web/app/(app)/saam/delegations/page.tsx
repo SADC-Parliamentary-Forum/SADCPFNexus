@@ -6,6 +6,7 @@ import { saamApi, tenantUsersApi, type DelegatedAuthority, type TenantUserOption
 import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function DelegationsPage() {
   const { success, error: showErrorToast, info } = useToast();
@@ -121,7 +122,7 @@ export default function DelegationsPage() {
               <h2 className="text-sm font-semibold text-neutral-900">My Delegations Out ({outgoing.length})</h2>
             </div>
             {outgoing.length === 0 ? (
-              <p className="px-5 py-8 text-sm text-neutral-400 text-center">No outgoing delegations.</p>
+              <EmptyState icon="arrow_outward" title="No outgoing delegations." />
             ) : (
               <div className="divide-y divide-neutral-100">
                 {outgoing.map((d) => (
@@ -157,7 +158,7 @@ export default function DelegationsPage() {
               <h2 className="text-sm font-semibold text-neutral-900">Delegated to Me ({incoming.length})</h2>
             </div>
             {incoming.length === 0 ? (
-              <p className="px-5 py-8 text-sm text-neutral-400 text-center">No active delegations from others.</p>
+              <EmptyState icon="south_west" title="No active delegations from others." />
             ) : (
               <div className="divide-y divide-neutral-100">
                 {incoming.map((d) => (

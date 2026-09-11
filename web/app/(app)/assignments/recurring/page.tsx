@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function defaultDueDate(): string {
   const d = new Date();
@@ -146,8 +147,12 @@ export default function RecurringAssignmentsPage() {
       {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
 
       {(data ?? []).length === 0 && !isLoading && (
-        <div className="card p-8 text-sm text-neutral-500 text-center">
-          No recurring templates yet. Use the form above to create one.
+        <div className="card">
+          <EmptyState
+            icon="repeat"
+            title="No recurring templates yet."
+            description="Use the form above to create one."
+          />
         </div>
       )}
 

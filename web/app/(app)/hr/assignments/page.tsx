@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import api, { workAssignmentsApi, WorkAssignment, User } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type StatsData = { total: number; by_status: Record<string, number>; overdue: number; my_assignments: number };
 
@@ -237,11 +238,11 @@ export default function AssignmentsPage() {
             {error}
           </div>
         ) : assignments.length === 0 ? (
-          <div className="text-center py-12 text-neutral-400">
-            <span className="material-symbols-outlined text-[48px] block mb-2">task_alt</span>
-            <p className="font-medium">No assignments found</p>
-            <p className="text-sm mt-1">Try changing your filters or create a new assignment.</p>
-          </div>
+          <EmptyState
+            icon="task_alt"
+            title="No assignments found"
+            description="Try changing your filters or create a new assignment."
+          />
         ) : (
           <>
             <div className="overflow-x-auto">

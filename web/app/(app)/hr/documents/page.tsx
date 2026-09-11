@@ -6,6 +6,7 @@ import Link from "next/link";
 import api from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -353,18 +354,16 @@ export default function HrDocumentsPage() {
           {/* Table */}
           <div className="card overflow-hidden">
             {filtered.length === 0 ? (
-              <div className="p-12 text-center text-neutral-400">
-                <span className="material-symbols-outlined text-5xl block mb-2">search_off</span>
-                <p className="font-medium">No documents found</p>
-                <p className="text-sm mt-1">
-                  {search ? "Try a different search term or clear the filter." : "No documents in this category."}
-                </p>
-                {search && (
-                  <button className="btn-secondary mt-4" onClick={() => setSearch("")}>
+              <EmptyState
+                icon="search_off"
+                title="No documents found"
+                description={search ? "Try a different search term or clear the filter." : "No documents in this category."}
+                action={search ? (
+                  <button type="button" className="btn-secondary" onClick={() => setSearch("")}>
                     Clear search
                   </button>
-                )}
-              </div>
+                ) : undefined}
+              />
             ) : (
               <div className="overflow-x-auto">
                 <table className="data-table">

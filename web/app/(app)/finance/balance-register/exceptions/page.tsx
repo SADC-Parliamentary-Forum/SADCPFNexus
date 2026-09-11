@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { getListData, getLastPage, getTotal } from "@/lib/listPagination";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const MODULE_LABELS: Record<string, string> = {
   salary_advance: "Salary Advance",
@@ -192,16 +193,15 @@ export default function ExceptionsPage() {
                 </tr>
               ))
             ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-16">
-                  <span className="material-symbols-outlined text-4xl text-green-300 block mb-2">check_circle</span>
-                  <p className="text-sm text-neutral-400">
-                    {search.trim()
-                      ? "No exceptions match your search."
-                      : "No exceptions — all registers are in good standing."}
-                  </p>
-                </td>
-              </tr>
+              <TableEmpty
+                colSpan={7}
+                icon="check_circle"
+                title={
+                  search.trim()
+                    ? "No exceptions match your search."
+                    : "No exceptions — all registers are in good standing."
+                }
+              />
             ) : (
               filtered.map((reg) => {
                 const exc = exceptionType(reg);

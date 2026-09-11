@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { noticeBoardApi } from "@/lib/api";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Notice = {
   id?: number;
@@ -102,7 +103,9 @@ export default function StaffNoticeBoardPage() {
           </article>
         ))}
         {!isLoading && (data?.length ?? 0) === 0 && (
-          <div className="card p-8 text-center text-sm text-neutral-400">No published notices.</div>
+          <div className="card">
+            <EmptyState icon="campaign" title="No published notices." />
+          </div>
         )}
       </div>
 

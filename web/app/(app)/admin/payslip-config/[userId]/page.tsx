@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { payslipConfigApi, tenantUsersApi, type PayslipLineConfig, type TenantUserOption } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { TableEmpty } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 
 const COMPONENT_TYPES = [
@@ -224,12 +225,15 @@ export default function PayslipConfigPage() {
                 </tr>
               ))
             ) : configs.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12">
-                  <p className="text-sm text-neutral-400">No lines configured yet.</p>
-                  <button onClick={handleGenerateDefaults} className="btn-secondary text-sm py-1 px-2 mt-2">Generate defaults from grade band</button>
-                </td>
-              </tr>
+              <TableEmpty
+                colSpan={7}
+                title="No lines configured yet."
+                action={
+                  <button type="button" onClick={handleGenerateDefaults} className="btn-secondary text-sm py-1 px-2">
+                    Generate defaults from grade band
+                  </button>
+                }
+              />
             ) : configs.map((cfg) => {
               const inline = editInline[cfg.id] ?? {};
               const isEditing = cfg.id in editInline;

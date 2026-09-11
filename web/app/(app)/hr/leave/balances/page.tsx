@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 // ─── Initialize Year Modal ────────────────────────────────────────────────────
 
@@ -551,11 +552,10 @@ export default function LeaveBalancesPage() {
                 ? Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
                 : filtered.length === 0
                   ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-sm text-neutral-400">
-                        {search || filterOnLeave ? "No staff members match the current filters." : "No staff data found."}
-                      </td>
-                    </tr>
+                    <TableEmpty
+                      colSpan={6}
+                      title={search || filterOnLeave ? "No staff members match the current filters." : "No staff data found."}
+                    />
                   )
                   : filtered.map((row) => {
                     const remaining = row.annualTotal - row.annualUsed;

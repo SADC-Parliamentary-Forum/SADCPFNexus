@@ -28,7 +28,7 @@ import { unwrapEntity } from "@/lib/unwrapEntity";
 import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { useToast } from "@/components/ui/Toast";
 import { personLabel } from "@/lib/pifForm";
-import { TableEmpty } from "@/components/ui/EmptyState";
+import { TableEmpty, EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -765,7 +765,9 @@ export default function PifDetailPage() {
               </button>
             </div>
             {milestones.length === 0 ? (
-              <div className="card p-8 text-center text-sm text-neutral-400">No milestones yet.</div>
+              <div className="card">
+                <EmptyState icon="flag" title="No milestones yet." />
+              </div>
             ) : milestones.map((m) => (
               <div key={m.id} className="card p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -801,7 +803,9 @@ export default function PifDetailPage() {
               </button>
             </div>
             {deliverables.length === 0 ? (
-              <div className="card p-8 text-center text-sm text-neutral-400">No deliverables yet.</div>
+              <div className="card">
+                <EmptyState icon="inventory_2" title="No deliverables yet." />
+              </div>
             ) : deliverables.map((d) => (
               <div key={d.id} className="card p-4">
                 <div className="flex items-start justify-between gap-2">

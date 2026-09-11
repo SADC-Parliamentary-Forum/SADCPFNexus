@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { correspondenceApi, type CorrespondenceContact, type ContactGroup } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState, TableEmpty } from "@/components/ui/EmptyState";
 
 type Tab = "contacts" | "groups";
 
@@ -232,11 +233,13 @@ export default function CorrespondenceContactsPage() {
                     </td>
                   </tr>
                 )) : (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-sm text-neutral-400">
-                      No contacts yet.{canAdmin && <> <button onClick={() => openContactSlideOver()} className="text-primary font-semibold">Add one</button></>}
-                    </td>
-                  </tr>
+                  <TableEmpty
+                    colSpan={6}
+                    title="No contacts yet."
+                    action={canAdmin ? (
+                      <button type="button" onClick={() => openContactSlideOver()} className="btn-primary text-sm">Add one</button>
+                    ) : undefined}
+                  />
                 )}
               </tbody>
             </table>
@@ -263,8 +266,14 @@ export default function CorrespondenceContactsPage() {
               </p>
             </div>
           )) : (
-            <div className="col-span-3 py-12 text-center text-sm text-neutral-400">
-              No groups yet.{canAdmin && <> <button onClick={() => openGroupSlideOver()} className="text-primary font-semibold">Create one</button></>}
+            <div className="col-span-3 card">
+              <EmptyState
+                icon="group"
+                title="No groups yet."
+                action={canAdmin ? (
+                  <button type="button" onClick={() => openGroupSlideOver()} className="btn-primary text-sm">Create one</button>
+                ) : undefined}
+              />
             </div>
           )}
         </div>

@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const EMPTY: Partial<ResultsFramework> = {
   name: "",
@@ -95,10 +96,7 @@ export default function ResultsFrameworksPage() {
         {isLoading ? (
           <div className="px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
         ) : frameworks.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300 block mb-2">account_tree</span>
-            <p className="text-sm text-neutral-500">No results frameworks defined yet.</p>
-          </div>
+          <EmptyState icon="account_tree" title="No results frameworks defined yet." />
         ) : (
           <table className="data-table">
             <thead>

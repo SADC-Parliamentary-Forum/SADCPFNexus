@@ -9,7 +9,7 @@ import { governanceApi, minutesApi, committeeApi, governanceMeetingTypeApi, type
 import api from "@/lib/api";
 import type { TenantUserOption } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
-import { TableEmpty } from "@/components/ui/EmptyState";
+import { TableEmpty, EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -634,7 +634,7 @@ function ManageCommitteesModal({
             </div>
           ))}
           {items.length === 0 && (
-            <p className="text-sm text-neutral-400 py-4 text-center">No committees yet. Add one below.</p>
+            <EmptyState icon="groups" title="No committees yet. Add one below." className="py-8 min-h-0" />
           )}
         </div>
 
@@ -771,7 +771,7 @@ function ManageMeetingTypesModal({
             </div>
           ))}
           {items.length === 0 && (
-            <p className="text-sm text-neutral-400 py-4 text-center">No meeting types yet.</p>
+            <EmptyState icon="event_note" title="No meeting types yet." className="py-8 min-h-0" />
           )}
         </div>
 
@@ -1956,12 +1956,15 @@ function MeetingMinutes() {
             <span className="material-symbols-outlined animate-spin text-neutral-300 text-[28px]">progress_activity</span>
           </div>
         ) : records.length === 0 ? (
-          <div className="py-16 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200 block mb-2">event_note</span>
-            <p className="text-neutral-400 text-sm">No meeting minutes found</p>
-            <button onClick={() => setShowCreate(true)}
-              className="mt-3 btn-primary px-4 py-2 text-xs">Record first meeting</button>
-          </div>
+          <EmptyState
+            icon="event_note"
+            title="No meeting minutes found"
+            action={
+              <button type="button" onClick={() => setShowCreate(true)} className="btn-primary px-4 py-2 text-xs">
+                Record first meeting
+              </button>
+            }
+          />
         ) : (
           <div className="divide-y divide-neutral-100">
             {records.map((m) => {
@@ -2151,10 +2154,7 @@ function ImplementationTracker() {
             <span className="material-symbols-outlined animate-spin text-neutral-300 text-[28px]">progress_activity</span>
           </div>
         ) : resolutions.length === 0 ? (
-          <div className="py-12 text-center">
-            <span className="material-symbols-outlined text-3xl text-neutral-200 block mb-2">playlist_add_check</span>
-            <p className="text-neutral-400 text-sm">No resolutions match this filter</p>
-          </div>
+          <EmptyState icon="playlist_add_check" title="No resolutions match this filter" />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">

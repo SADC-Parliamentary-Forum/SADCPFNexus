@@ -8,6 +8,7 @@ import { exportToXls } from "@/lib/csvExport";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { useSearchParams } from "next/navigation";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const RESULT_LEVELS: { value: ResultLevel; label: string; cls: string }[] = [
   { value: "impact",   label: "Impact",   cls: "badge-danger"  },
@@ -119,10 +120,7 @@ export default function IndicatorsPage() {
         {isLoading ? (
           <div className="px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
         ) : indicators.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300 block mb-2">speed</span>
-            <p className="text-sm text-neutral-500">No indicators defined yet.</p>
-          </div>
+          <EmptyState icon="speed" title="No indicators defined yet." />
         ) : (
           <table className="data-table">
             <thead>

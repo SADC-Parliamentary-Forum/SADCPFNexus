@@ -270,18 +270,18 @@ export default function StockItemsPage() {
           />
         </div>
       ) : (
-        <div className="card p-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
-            <span className="material-symbols-outlined text-4xl text-neutral-300">inventory</span>
-          </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600">No stock items yet</p>
-          <p className="text-xs text-neutral-400 mt-1">Add consumable items to start tracking balances and reorder levels.</p>
-          {canManage && (
-            <button type="button" onClick={openNew} className="btn-primary mt-5 inline-flex">
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              New Item
-            </button>
-          )}
+        <div className="card">
+          <EmptyState
+            icon="inventory"
+            title="No stock items yet"
+            description="Add consumable items to start tracking balances and reorder levels."
+            action={canManage ? (
+              <button type="button" onClick={openNew} className="btn-primary inline-flex">
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                New Item
+              </button>
+            ) : undefined}
+          />
         </div>
       )}
 

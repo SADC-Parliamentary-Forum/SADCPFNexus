@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { mandeApi, type MeActivityReport, type MeReviewStatus } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_BADGE: Record<string, string> = {
   not_submitted: "badge-muted",
@@ -88,10 +89,7 @@ export default function ActivityReportsPage() {
         {isLoading ? (
           <div className="px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
         ) : rows.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300 block mb-2">description</span>
-            <p className="text-sm text-neutral-500">No activity reports found.</p>
-          </div>
+          <EmptyState icon="description" title="No activity reports found." />
         ) : (
           <table className="data-table">
             <thead>

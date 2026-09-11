@@ -6,6 +6,7 @@ import Link from "next/link";
 import { stockUnitsApi, type StockUnit } from "@/lib/api";
 import { canConfigureStockCatalogue, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function StockUnitsPage() {
   const { toast } = useToast();
@@ -68,9 +69,12 @@ export default function StockUnitsPage() {
       {loading ? (
         <p className="text-sm text-neutral-500">Loading…</p>
       ) : items.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-sm font-semibold text-neutral-600">No units of measure yet</p>
-          <p className="text-xs text-neutral-400 mt-1">Add units such as ream, box, pack, or each so items can be measured consistently.</p>
+        <div className="card">
+          <EmptyState
+            icon="straighten"
+            title="No units of measure yet"
+            description="Add units such as ream, box, pack, or each so items can be measured consistently."
+          />
         </div>
       ) : (
         <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">

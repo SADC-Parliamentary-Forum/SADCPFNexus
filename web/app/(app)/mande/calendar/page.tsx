@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { mandeApi, type MeReportingCalendar } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function MandeCalendarPage() {
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
@@ -74,7 +75,9 @@ export default function MandeCalendarPage() {
       {isLoading || !data ? (
         <div className="card px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
       ) : data.items.length === 0 ? (
-        <div className="card px-5 py-10 text-center text-sm text-neutral-400">No due dates in this month.</div>
+        <div className="card">
+          <EmptyState icon="calendar_month" title="No due dates in this month." />
+        </div>
       ) : (
         <div className="card overflow-hidden">
           <table className="data-table">

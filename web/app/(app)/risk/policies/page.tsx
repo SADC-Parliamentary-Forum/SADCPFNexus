@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { policyApi, RISK_DOCUMENT_TYPES, type Policy, type RiskDocumentType } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_OPTS = ["all", "active", "archived"] as const;
 
@@ -217,15 +218,15 @@ export default function PolicyLibraryPage() {
             <span className="text-sm text-neutral-400">Loading policies…</span>
           </div>
         ) : policies.length === 0 ? (
-          <div className="py-16 text-center">
-            <span className="material-symbols-outlined text-neutral-200 text-5xl block mb-3">
-              policy
-            </span>
-            <p className="text-sm text-neutral-400">No policies found.</p>
-            <button onClick={openCreate} className="btn-primary mt-4 mx-auto">
-              Add First Policy
-            </button>
-          </div>
+          <EmptyState
+            icon="policy"
+            title="No policies found."
+            action={
+              <button type="button" onClick={openCreate} className="btn-primary">
+                Add First Policy
+              </button>
+            }
+          />
         ) : (
           <table className="data-table">
             <thead>

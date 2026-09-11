@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi, vendorsApi, procurementApi, type Contract, type Vendor } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:      { label: "Draft",      cls: "badge-muted",   icon: "edit_note"    },
@@ -189,10 +190,12 @@ function ContractsPageInner() {
       ) : isError ? (
         <div className="card p-6 text-center text-sm text-red-600">Failed to load contracts.</div>
       ) : items.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <span className="material-symbols-outlined text-4xl text-neutral-300">description</span>
-          <p className="text-sm text-neutral-500">No contracts found.</p>
-          <p className="text-xs text-neutral-400">Click "New Contract" above to create a vendor contract.</p>
+        <div className="card">
+          <EmptyState
+            icon="description"
+            title="No contracts found."
+            description='Click "New Contract" above to create a vendor contract.'
+          />
         </div>
       ) : (
         <div className="card overflow-hidden">

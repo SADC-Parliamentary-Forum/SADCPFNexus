@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { riskApi, type RiskHistory } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
 import { LabelledChangeRows } from "@/components/ui/LabelledRecord";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -183,7 +184,7 @@ export default function RiskAuditTrailPage() {
             Loading events…
           </div>
         ) : events.length === 0 ? (
-          <div className="px-5 py-10 text-center text-neutral-400 text-sm">No events found.</div>
+          <EmptyState icon="history" title="No events found." />
         ) : (
           <table className="data-table">
             <thead>

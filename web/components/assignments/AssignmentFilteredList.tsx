@@ -48,12 +48,16 @@ export function AssignmentFilteredList({
   queryKey,
   fetcher,
   fixedParams = {},
+  emptyTitle = "No assignments in this view.",
+  emptyIcon = "assignment",
 }: {
   title: string;
   subtitle: string;
   queryKey: string;
   fetcher: Fetcher;
   fixedParams?: Record<string, string>;
+  emptyTitle?: string;
+  emptyIcon?: string;
 }) {
   const [density, setDensity] = useState<RegisterDensity>("comfortable");
 
@@ -132,7 +136,7 @@ export function AssignmentFilteredList({
       }
       empty={
         !isLoading && !isError && assignments.length === 0 ? (
-          <EmptyState icon="assignment" title="No assignments in this view." />
+          <EmptyState icon={emptyIcon} title={emptyTitle} />
         ) : null
       }
     >

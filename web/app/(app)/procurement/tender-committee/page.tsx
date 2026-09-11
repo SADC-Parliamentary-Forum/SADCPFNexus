@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tenderCommitteesApi } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function TenderCommitteePage() {
   const qc = useQueryClient();
@@ -49,7 +50,11 @@ export default function TenderCommitteePage() {
               <p className="text-xs text-neutral-500">Quorum min: {String(c.quorum_minimum ?? 3)} · Members: {Array.isArray(c.members) ? c.members.length : 0}</p>
             </div>
           ))}
-          {(data ?? []).length === 0 && <div className="card p-8 text-center text-sm text-neutral-400">No committees yet.</div>}
+          {(data ?? []).length === 0 && (
+            <div className="card">
+              <EmptyState icon="groups" title="No committees yet." />
+            </div>
+          )}
         </div>
       )}
     </div>

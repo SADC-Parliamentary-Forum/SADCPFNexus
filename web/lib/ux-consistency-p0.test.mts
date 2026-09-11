@@ -448,3 +448,63 @@ test("RegisterShell empty slots use EmptyState", () => {
   assert.deepEqual(offenders, []);
 });
 
+test("remaining operational lists use shared EmptyState chrome", () => {
+  const pages = [
+    "correspondence/contacts/page.tsx",
+    "correspondence/subject-files/page.tsx",
+    "risk/kri/page.tsx",
+    "risk/policies/page.tsx",
+    "risk/audit-trail/page.tsx",
+    "risk/page.tsx",
+    "hr/leave/balances/page.tsx",
+    "hr/departments/page.tsx",
+    "hr/assignments/page.tsx",
+    "hr/documents/page.tsx",
+    "admin/payslip-config/[userId]/page.tsx",
+    "admin/users/page.tsx",
+    "admin/timesheet-projects/page.tsx",
+    "procurement/notices/page.tsx",
+    "procurement/planning/page.tsx",
+    "procurement/tender-committee/page.tsx",
+    "procurement/contracts/page.tsx",
+    "procurement/exceptions/page.tsx",
+    "stock/categories/page.tsx",
+    "stock/low-stock/page.tsx",
+    "stock/units/page.tsx",
+    "stock/reports/page.tsx",
+    "stock/movements/page.tsx",
+    "stock/page.tsx",
+    "assets/page.tsx",
+    "assets/requests/page.tsx",
+    "workplan/event-types/page.tsx",
+    "mande/indicators/page.tsx",
+    "mande/strategic-plan/page.tsx",
+    "mande/results/page.tsx",
+    "mande/review-queue/page.tsx",
+    "mande/activity-reports/page.tsx",
+    "mande/activity-reports/mine/page.tsx",
+    "mande/data-quality/page.tsx",
+    "mande/calendar/page.tsx",
+    "mande/intake/page.tsx",
+    "assignments/all/page.tsx",
+    "assignments/recurring/page.tsx",
+    "saam/delegations/page.tsx",
+    "finance/balance-register/exceptions/page.tsx",
+    "pif/[id]/page.tsx",
+    "governance/resolutions/page.tsx",
+  ];
+  for (const rel of pages) {
+    const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
+    assert.match(source, /EmptyState/, rel);
+    assert.doesNotMatch(source, /card p-8 text-center text-sm text-neutral-400">No /, rel);
+  }
+  const filteredList = readFileSync(join(webRoot, "components/assignments/AssignmentFilteredList.tsx"), "utf8");
+  assert.match(filteredList, /EmptyState/);
+  assert.match(filteredList, /emptyTitle/);
+  for (const rel of ["assignments/pending/page.tsx", "assignments/overdue/page.tsx", "assignments/blocked/page.tsx"]) {
+    const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");
+    assert.match(source, /AssignmentFilteredList/, rel);
+  }
+});
+
+

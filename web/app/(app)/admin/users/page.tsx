@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const classColors: Record<string, string> = {
   UNCLASSIFIED: "badge-muted",
@@ -434,11 +435,11 @@ export default function AdminUsersPage() {
             </div>
 
             {users.length === 0 && (
-              <div className="py-16 text-center">
-                <span className="material-symbols-outlined text-5xl text-neutral-200">person_search</span>
-                <p className="mt-3 text-sm font-medium text-neutral-500">No users found</p>
-                <p className="text-xs text-neutral-400">Try adjusting your search or filters.</p>
-              </div>
+              <EmptyState
+                icon="person_search"
+                title="No users found"
+                description="Try adjusting your search or filters."
+              />
             )}
 
             <div className="border-t border-neutral-100 px-5 py-3 flex items-center justify-between">

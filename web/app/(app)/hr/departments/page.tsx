@@ -6,6 +6,7 @@ import { adminApi, type Department, type User } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function AdminDepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -287,19 +288,17 @@ export default function AdminDepartmentsPage() {
             ))}
           </div>
         ) : departments.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 mx-auto mb-4">
-              <span className="material-symbols-outlined text-3xl text-neutral-300">corporate_fare</span>
-            </div>
-            <p className="text-sm font-semibold text-neutral-500">No departments yet</p>
-            <p className="text-xs text-neutral-400 mt-1">{isAdmin ? "Create your first department to get started." : "You can view departments only."}</p>
-            {isAdmin && (
-              <button onClick={() => setShowForm(true)} className="btn-primary mt-4">
+          <EmptyState
+            icon="corporate_fare"
+            title="No departments yet"
+            description={isAdmin ? "Create your first department to get started." : "You can view departments only."}
+            action={isAdmin ? (
+              <button type="button" onClick={() => setShowForm(true)} className="btn-primary">
                 <span className="material-symbols-outlined text-[16px]">add</span>
                 New Department
               </button>
-            )}
-          </div>
+            ) : undefined}
+          />
         ) : (
           <table className="data-table">
             <thead>

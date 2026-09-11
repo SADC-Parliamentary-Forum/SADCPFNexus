@@ -5,6 +5,7 @@ import { stockItemsApi, stockCategoriesApi, type StockItem, type StockCategory }
 import { exportToCsv } from "@/lib/csvExport";
 import { loadPdfLibs } from "@/lib/pdf-libs";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function fmtMoney(n: number | string | null | undefined): string {
   if (n === null || n === undefined || n === "") return "";
@@ -180,9 +181,8 @@ export default function StockReportsPage() {
           </div>
         </div>
       ) : (
-        <div className="card p-16 text-center">
-          <span className="material-symbols-outlined text-4xl text-neutral-300">summarize</span>
-          <p className="mt-4 text-sm font-semibold text-neutral-600">No data for the selected filters</p>
+        <div className="card">
+          <EmptyState icon="summarize" title="No data for the selected filters" />
         </div>
       )}
     </div>

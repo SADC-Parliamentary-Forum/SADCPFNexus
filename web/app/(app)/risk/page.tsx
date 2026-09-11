@@ -21,6 +21,7 @@ import { ApplyMitigationFields, EMPTY_MITIGATION, type MitigationDraft } from "@
 import { buildMitigationFormData, assertMitigationRiskIds } from "@/lib/riskLookups";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -480,14 +481,16 @@ export default function RiskRegisterPage() {
             ))}
           </div>
         ) : displayRisks.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300 block mb-2">shield</span>
-            <p className="text-sm text-neutral-500">No risks found{matrixFilter ? " in selected heatmap cell" : ""}.</p>
-            <Link href="/risk/create" className="btn-primary mt-4 inline-flex items-center gap-1.5 text-sm">
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              Log first risk
-            </Link>
-          </div>
+          <EmptyState
+            icon="shield"
+            title={matrixFilter ? "No risks found in selected heatmap cell." : "No risks found."}
+            action={
+              <Link href="/risk/create" className="btn-primary inline-flex items-center gap-1.5 text-sm">
+                <span className="material-symbols-outlined text-[16px]">add</span>
+                Log first risk
+              </Link>
+            }
+          />
         ) : (
           <table className="data-table">
               <caption className="sr-only">Risk register</caption>

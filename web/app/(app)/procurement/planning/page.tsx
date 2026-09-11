@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { procurementPlansApi } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function PlanningPage() {
   const qc = useQueryClient();
@@ -58,7 +59,11 @@ export default function PlanningPage() {
               <span className="text-xs uppercase">{String(p.status)}</span>
             </div>
           ))}
-          {(data ?? []).length === 0 && <div className="card p-8 text-center text-sm text-neutral-400">No plans yet.</div>}
+          {(data ?? []).length === 0 && (
+            <div className="card">
+              <EmptyState icon="calendar_month" title="No plans yet." />
+            </div>
+          )}
         </div>
       )}
     </div>

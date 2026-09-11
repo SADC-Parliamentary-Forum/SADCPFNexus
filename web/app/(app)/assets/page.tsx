@@ -25,6 +25,7 @@ import { DEFAULT_PAGE_SIZE, getLastPage, getListData, getTotal } from "@/lib/lis
 import { ListPagination } from "@/components/ui/ListPagination";
 import { BulkSelectionBar, RowCheckbox, SelectAllCheckbox } from "@/components/ui/BulkSelectionBar";
 import { AssetLabelsQuickPrintModal } from "@/components/assets/AssetLabelsQuickPrintModal";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const RETIREABLE_STATUSES = new Set(["active", "service_due", "loan_out"]);
 const EMPTY_SUMMARY: AssetRegisterSummary = {
@@ -1181,16 +1182,18 @@ export default function AssetsPage() {
               </div>
             </div>
           ) : (
-            <div className="card p-16 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
-                <span className="material-symbols-outlined text-4xl text-neutral-300">description</span>
-              </div>
-              <p className="mt-4 text-sm font-semibold text-neutral-600">{t("assets.register.emptyRequests")}</p>
-              <p className="text-xs text-neutral-400 mt-1">{t("assets.register.emptyRequestsHint")}</p>
-              <Link href="/assets/requests?new=1" className="btn-primary mt-5 inline-flex">
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                Request Asset
-              </Link>
+            <div className="card">
+              <EmptyState
+                icon="description"
+                title="assets.register.emptyRequests"
+                description="assets.register.emptyRequestsHint"
+                action={
+                  <Link href="/assets/requests?new=1" className="btn-primary inline-flex">
+                    <span className="material-symbols-outlined text-[18px]">add</span>
+                    Request Asset
+                  </Link>
+                }
+              />
             </div>
           )}
         </>
@@ -1387,24 +1390,30 @@ export default function AssetsPage() {
             </div>
             </>
           ) : hasInventory ? (
-            <div className="card p-10 text-center">
-              <span className="material-symbols-outlined text-3xl text-neutral-300">search_off</span>
-              <p className="mt-2 text-sm font-semibold text-neutral-600">{t("assets.register.emptyFiltered")}</p>
-              <button type="button" onClick={() => { setSearchInput(""); setSearch(""); setFilterStatus("live"); setFilterCategory("all"); setPage(1); }} className="btn-secondary text-xs py-1 px-2 mt-3">{t("assets.register.clearFilters")}</button>
+            <div className="card">
+              <EmptyState
+                icon="search_off"
+                title="assets.register.emptyFiltered"
+                action={
+                  <button type="button" onClick={() => { setSearchInput(""); setSearch(""); setFilterStatus("live"); setFilterCategory("all"); setPage(1); }} className="btn-secondary text-xs py-1 px-2">
+                    {t("assets.register.clearFilters")}
+                  </button>
+                }
+              />
             </div>
           ) : (
-            <div className="card p-16 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
-                <span className="material-symbols-outlined text-4xl text-neutral-300">inventory_2</span>
-              </div>
-              <p className="mt-4 text-sm font-semibold text-neutral-600">{t("assets.register.empty")}</p>
-              <p className="text-xs text-neutral-400 mt-1">{t("assets.register.emptyHint")}</p>
-              {showRequestButton && (
-                <Link href="/assets/requests?new=1" className="btn-primary mt-5 inline-flex">
-                  <span className="material-symbols-outlined text-[18px]">add</span>
-                  Request Asset
-                </Link>
-              )}
+            <div className="card">
+              <EmptyState
+                icon="inventory_2"
+                title="assets.register.empty"
+                description="assets.register.emptyHint"
+                action={showRequestButton ? (
+                  <Link href="/assets/requests?new=1" className="btn-primary inline-flex">
+                    <span className="material-symbols-outlined text-[18px]">add</span>
+                    Request Asset
+                  </Link>
+                ) : undefined}
+              />
             </div>
           )}
         </>

@@ -7,6 +7,7 @@ import { adminApi, type TimesheetProject } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function AdminTimesheetProjectsPage() {
   const { confirm } = useConfirm();
@@ -176,7 +177,11 @@ export default function AdminTimesheetProjectsPage() {
             Loading…
           </div>
         ) : list.length === 0 ? (
-          <div className="p-8 text-center text-sm text-neutral-500">No projects yet. Add one above or they will fall back to config defaults on the timesheets page.</div>
+          <EmptyState
+            icon="folder"
+            title="No projects yet."
+            description="Add one above or they will fall back to config defaults on the timesheets page."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">

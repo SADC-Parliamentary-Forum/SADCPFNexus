@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { workplanEventTypesApi, type WorkplanEventType } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const COLOR_OPTIONS = [
   { value: "neutral", label: "Grey" },
@@ -208,7 +209,7 @@ export default function WorkplanEventTypesPage() {
             <span className="ml-2">Loading…</span>
           </div>
         ) : list.length === 0 ? (
-          <div className="py-12 text-center text-sm text-neutral-500">No event types found.</div>
+          <EmptyState icon="event" title="No event types found." />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">

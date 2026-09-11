@@ -8,6 +8,7 @@ import { mandeApi, type StrategicPlan } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const EMPTY: Partial<StrategicPlan> = {
   name: "",
@@ -86,10 +87,7 @@ export default function StrategicPlanPage() {
         {isLoading ? (
           <div className="px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
         ) : plans.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300 block mb-2">flag</span>
-            <p className="text-sm text-neutral-500">No strategic plans yet.</p>
-          </div>
+          <EmptyState icon="flag" title="No strategic plans yet." />
         ) : (
           <table className="data-table">
             <thead>
