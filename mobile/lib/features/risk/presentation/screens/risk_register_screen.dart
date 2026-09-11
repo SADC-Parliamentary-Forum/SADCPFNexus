@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class RiskRegisterScreen extends ConsumerStatefulWidget {
   const RiskRegisterScreen({super.key});
@@ -62,34 +63,26 @@ class _RiskRegisterScreenState extends ConsumerState<RiskRegisterScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        title: const Text('Risk register',
-            style: TextStyle(
-                color: AppColors.textPrimary, fontWeight: FontWeight.w800)),
-        bottom: TabBar(
-          controller: _tabs,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          indicatorColor: AppColors.primary,
-          tabs: const [Tab(text: 'Risks'), Tab(text: 'KRIs')],
-        ),
-        actions: [
-          IconButton(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-          ),
-        ],
+    return StitchScreen(
+      title: 'Risk register',
+      bottom: TabBar(
+        controller: _tabs,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textMuted,
+        indicatorColor: AppColors.primary,
+        tabs: const [Tab(text: 'Risks'), Tab(text: 'KRIs')],
       ),
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _load,
+        ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading risks')
           : _error != null
-              ? Center(
-                  child: Text(_error!,
-                      style: const TextStyle(color: AppColors.textSecondary)))
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : TabBarView(
                   controller: _tabs,
                   children: [_risksTab(), _krisTab()],
@@ -99,9 +92,10 @@ class _RiskRegisterScreenState extends ConsumerState<RiskRegisterScreen>
 
   Widget _risksTab() {
     if (_risks.isEmpty) {
-      return const Center(
-          child: Text('No risks found.',
-              style: TextStyle(color: AppColors.textMuted)));
+      return const StitchEmptyState(
+        icon: Icons.warning_amber_outlined,
+        title: 'No risks found.',
+      );
     }
     return RefreshIndicator(
       color: AppColors.primary,
@@ -137,9 +131,10 @@ class _RiskRegisterScreenState extends ConsumerState<RiskRegisterScreen>
 
   Widget _krisTab() {
     if (_kris.isEmpty) {
-      return const Center(
-          child: Text('No KRIs available (read-only).',
-              style: TextStyle(color: AppColors.textMuted)));
+      return const StitchEmptyState(
+        icon: Icons.insights_outlined,
+        title: 'No KRIs available (read-only).',
+      );
     }
     return ListView.separated(
       padding: const EdgeInsets.all(16),

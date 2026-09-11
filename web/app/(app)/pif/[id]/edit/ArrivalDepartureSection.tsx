@@ -146,33 +146,33 @@ export default function ArrivalDepartureSection({
   ) => (
     <div className="space-y-3">
       <div>
-        <label className="block text-xs font-semibold text-neutral-700 mb-1">Category <span className="text-red-500">*</span></label>
-        <input className="form-input w-full" placeholder="e.g. Delegate, Speaker, Staff" value={draft.category} onChange={(e) => onChange({ category: e.target.value })} onBlur={onFieldBlur} />
+        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-category" className="block text-xs font-semibold text-neutral-700 mb-1">Category <span className="text-red-500">*</span></label>
+        <input id="pif-detail-edit-ArrivalDepartureSection-category" className="form-input w-full" placeholder="e.g. Delegate, Speaker, Staff" value={draft.category} onChange={(e) => onChange({ category: e.target.value })} onBlur={onFieldBlur} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Arrival date</label>
-          <input type="date" className="form-input w-full" value={draft.arrival_date} onChange={(e) => onChange({ arrival_date: e.target.value })} onBlur={onFieldBlur} />
+          <label htmlFor="pif-detail-edit-ArrivalDepartureSection-arrival-date" className="block text-xs font-semibold text-neutral-700 mb-1">Arrival date</label>
+          <input id="pif-detail-edit-ArrivalDepartureSection-arrival-date" type="date" className="form-input w-full" value={draft.arrival_date} onChange={(e) => onChange({ arrival_date: e.target.value })} onBlur={onFieldBlur} />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Departure date</label>
-          <input type="date" className="form-input w-full" value={draft.departure_date} onChange={(e) => onChange({ departure_date: e.target.value })} onBlur={onFieldBlur} />
+          <label htmlFor="pif-detail-edit-ArrivalDepartureSection-departure-date" className="block text-xs font-semibold text-neutral-700 mb-1">Departure date</label>
+          <input id="pif-detail-edit-ArrivalDepartureSection-departure-date" type="date" className="form-input w-full" value={draft.departure_date} onChange={(e) => onChange({ departure_date: e.target.value })} onBlur={onFieldBlur} />
         </div>
       </div>
       {draft.arrival_date && draft.departure_date && new Date(draft.departure_date) < new Date(draft.arrival_date) && (
         <p className="text-xs text-red-500">Departure date must not be before arrival date.</p>
       )}
       <div>
-        <label className="block text-xs font-semibold text-neutral-700 mb-1">Airport</label>
-        <input className="form-input w-full" value={draft.airport} onChange={(e) => onChange({ airport: e.target.value })} onBlur={onFieldBlur} />
+        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-airport" className="block text-xs font-semibold text-neutral-700 mb-1">Airport</label>
+        <input id="pif-detail-edit-ArrivalDepartureSection-airport" className="form-input w-full" value={draft.airport} onChange={(e) => onChange({ airport: e.target.value })} onBlur={onFieldBlur} />
       </div>
       <div>
-        <label className="block text-xs font-semibold text-neutral-700 mb-1">Flight details</label>
-        <textarea rows={2} className="form-input w-full resize-none" value={draft.flight_details} onChange={(e) => onChange({ flight_details: e.target.value })} onBlur={onFieldBlur} />
+        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-flight-details" className="block text-xs font-semibold text-neutral-700 mb-1">Flight details</label>
+        <textarea id="pif-detail-edit-ArrivalDepartureSection-flight-details" rows={2} className="form-input w-full resize-none" value={draft.flight_details} onChange={(e) => onChange({ flight_details: e.target.value })} onBlur={onFieldBlur} />
       </div>
       <div className="flex flex-wrap gap-6">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
+        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-onfieldblur-classname-rounded-border-neutral-300" className="flex items-center gap-2 cursor-pointer">
+          <input id="pif-detail-edit-ArrivalDepartureSection-onfieldblur-classname-rounded-border-neutral-300"
             type="checkbox"
             checked={draft.transport_required}
             onChange={(e) => { onChange({ transport_required: e.target.checked }); onFieldBlur?.(); }}
@@ -180,8 +180,8 @@ export default function ArrivalDepartureSection({
           />
           <span className="text-sm text-neutral-700">Transport required</span>
         </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
+        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-onfieldblur-classname-rounded-border-neutral-300-2" className="flex items-center gap-2 cursor-pointer">
+          <input id="pif-detail-edit-ArrivalDepartureSection-onfieldblur-classname-rounded-border-neutral-300-2"
             type="checkbox"
             checked={draft.accommodation_required}
             onChange={(e) => { onChange({ accommodation_required: e.target.checked }); onFieldBlur?.(); }}
@@ -191,8 +191,8 @@ export default function ArrivalDepartureSection({
         </label>
       </div>
       <div>
-        <label className="block text-xs font-semibold text-neutral-700 mb-1">Comments</label>
-        <textarea rows={2} className="form-input w-full resize-none" value={draft.comments} onChange={(e) => onChange({ comments: e.target.value })} onBlur={onFieldBlur} />
+        <label htmlFor="pif-detail-edit-ArrivalDepartureSection-comments" className="block text-xs font-semibold text-neutral-700 mb-1">Comments</label>
+        <textarea id="pif-detail-edit-ArrivalDepartureSection-comments" rows={2} className="form-input w-full resize-none" value={draft.comments} onChange={(e) => onChange({ comments: e.target.value })} onBlur={onFieldBlur} />
       </div>
     </div>
   );
@@ -226,7 +226,7 @@ export default function ArrivalDepartureSection({
           </div>
         </div>
       ) : (
-        <button type="button" onClick={() => setPending(emptyDraft)} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+        <button type="button" onClick={() => setPending(emptyDraft)} className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
           <span className="material-symbols-outlined text-[14px]">add</span>
           Add arrival/departure row
         </button>

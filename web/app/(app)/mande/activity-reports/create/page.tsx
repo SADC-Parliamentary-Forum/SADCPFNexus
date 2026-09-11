@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { mandeApi, programmeApi, type PifLinkage } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 function CreateActivityReportForm() {
   const router = useRouter();
@@ -80,20 +81,29 @@ function CreateActivityReportForm() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <Link href="/mande/intake" className="text-xs text-primary hover:underline">← Intake Queue</Link>
-        <h1 className="page-title mt-2">Create Activity Report</h1>
-        <p className="page-subtitle">
-          {nonPif
+      <ModulePageHeader
+        title="Create Activity Report"
+        subtitle={
+          nonPif
             ? "Create a non-PIF activity report with a documented reason."
-            : "Link a new M&E report to an approved PIF. Planned PIF fields stay read-only after create."}
-        </p>
-      </div>
+            : "Link a new M&E report to an approved PIF. Planned PIF fields stay read-only after create."
+        }
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.mande", href: "/mande" },
+              { label: "Intake Queue", href: "/mande/intake" },
+              { label: "Create Activity Report" },
+            ]}
+          />
+        }
+      />
 
       <div className="card p-5 space-y-4">
         {!forcedPif && (
-          <label className="flex items-start gap-3 cursor-pointer">
+          <label htmlFor="non-pif" className="flex items-start gap-3 cursor-pointer">
             <input
+              id="non-pif"
               type="checkbox"
               className="mt-1"
               checked={nonPif}
@@ -117,11 +127,12 @@ function CreateActivityReportForm() {
 
         {!nonPif && (
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Approved PIF *</label>
+            <label htmlFor="mande-pif" className="block text-xs font-semibold text-neutral-700 mb-1">Approved PIF *</label>
             {loadingLinkages ? (
               <p className="text-sm text-neutral-400">Loading PIFs…</p>
             ) : (
               <select
+                id="mande-pif"
                 className="form-input"
                 value={selectedProgrammeId === "" ? "" : String(selectedProgrammeId)}
                 onChange={(e) => {
@@ -157,8 +168,9 @@ function CreateActivityReportForm() {
         )}
 
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Activity title *</label>
+          <label htmlFor="mande-activity-title" className="block text-xs font-semibold text-neutral-700 mb-1">Activity title *</label>
           <input
+            id="mande-activity-title"
             className="form-input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -168,10 +180,11 @@ function CreateActivityReportForm() {
 
         {nonPif && (
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">
+            <label htmlFor="mande-non-pif-reason" className="block text-xs font-semibold text-neutral-700 mb-1">
               Reason for non-PIF report *
             </label>
             <textarea
+              id="mande-non-pif-reason"
               className="form-input min-h-[100px]"
               value={nonPifReason}
               onChange={(e) => setNonPifReason(e.target.value)}

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/notifications/notification_poller.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 /// Maps a notification's trigger module + related record to an in-app route.
 /// Falls back to the module hub when no per-record detail screen exists, and
@@ -121,53 +122,37 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final all = ref.watch(_notificationsProvider);
+    final c = theme.colorScheme;
 
-    final bg = isDark ? const Color(0xFF102219) : const Color(0xFFF6F7F8);
-    final surface = isDark ? const Color(0xFF1A2C24) : Colors.white;
-    const primary = Color(0xFF13ec80);
-
-    return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: surface,
-        elevation: 0,
-        title: Text(
-          'Notifications',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: isDark ? const Color(0xFFE8F5F0) : const Color(0xFF0E2318),
+    return StitchScreen(
+      title: 'Notifications',
+      actions: [
+        TextButton(
+          onPressed: _markAllRead,
+          child: Text(
+            'Mark all read',
+            style: TextStyle(color: c.primary, fontSize: 13),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: _markAllRead,
-            child: const Text(
-              'Mark all read',
-              style: TextStyle(color: primary, fontSize: 13),
-            ),
-          ),
+      ],
+      bottom: TabBar(
+        controller: _tabs,
+        labelColor: c.primary,
+        unselectedLabelColor: c.onSurface.withValues(alpha: 0.55),
+        indicatorColor: c.primary,
+        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        tabs: const [
+          Tab(text: 'All'),
+          Tab(text: 'Unread'),
+          Tab(text: 'Read'),
         ],
-        bottom: TabBar(
-          controller: _tabs,
-          labelColor: primary,
-          unselectedLabelColor:
-              isDark ? const Color(0xFF7BB89A) : const Color(0xFF64748B),
-          indicatorColor: primary,
-          labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: 'All'),
-            Tab(text: 'Unread'),
-            Tab(text: 'Read'),
-          ],
-        ),
       ),
       body: all.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(
-          child: Text('Failed to load notifications',
-              style: TextStyle(color: theme.colorScheme.error)),
+        loading: () => const StitchLoadingState(label: 'Loading notifications'),
+        error: (e, _) => StitchErrorState(
+          message: 'Failed to load notifications',
+          onRetry: () => ref.invalidate(_notificationsProvider),
         ),
         data: (notifications) {
           // Partition once per build instead of filtering twice independently.
@@ -239,18 +224,9 @@ class _NotificationList extends StatelessWidget {
           children: [
             SizedBox(
               height: MediaQuery.of(context).size.height * 0.6,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.notifications_none_rounded,
-                        size: 48, color: Color(0xFF7BB89A)),
-                    const SizedBox(height: 12),
-                    Text(emptyMessage,
-                        style: const TextStyle(
-                            color: Color(0xFF7BB89A), fontSize: 14)),
-                  ],
-                ),
+              child: StitchEmptyState(
+                icon: Icons.notifications_none_rounded,
+                title: emptyMessage,
               ),
             ),
           ],

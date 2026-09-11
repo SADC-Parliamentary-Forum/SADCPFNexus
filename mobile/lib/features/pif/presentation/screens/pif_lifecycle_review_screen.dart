@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class PifLifecycleReviewScreen extends ConsumerStatefulWidget {
   const PifLifecycleReviewScreen({super.key, this.programmeId});
@@ -243,34 +244,22 @@ class _PifLifecycleReviewScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        title: const Text(
-          'Lifecycle Review',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-          ),
+    return StitchScreen(
+      title: 'Lifecycle Review',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-            onPressed: _loading ? null : _load,
-          ),
-        ],
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
+          ? const StitchLoadingState(label: 'Loading review')
           : _error != null
-              ? _ReviewError(message: _error!, onRetry: _load)
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : _programme == null
-                  ? const _ReviewEmpty()
+                  ? const StitchEmptyState(title: 'No programme to review')
                   : _buildBody(_programme!),
     );
   }
@@ -781,75 +770,6 @@ class _MetaPill extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ReviewError extends StatelessWidget {
-  const _ReviewError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 44, color: AppColors.danger),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ReviewEmpty extends StatelessWidget {
-  const _ReviewEmpty();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.fact_check_outlined,
-              size: 48,
-              color: AppColors.textMuted,
-            ),
-            SizedBox(height: 12),
-            Text(
-              'No programme available for lifecycle review.',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }

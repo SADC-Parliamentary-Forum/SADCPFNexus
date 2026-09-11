@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import '../../../../../shared/widgets/stitch_screen.dart';
 import '../../data/procurement_api_helpers.dart';
 
 class ProcurementTendersScreen extends ConsumerStatefulWidget {
@@ -52,44 +53,20 @@ class _ProcurementTendersScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+    return StitchScreen(
+      title: 'Tenders',
+      fallbackRoute: '/procurement',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _load,
         ),
-        title: const Text('Tenders',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w800)),
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading tenders')
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!,
-                          style: const TextStyle(
-                              color: AppColors.textSecondary)),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _load,
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary),
-                        child: const Text('Retry',
-                            style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : RefreshIndicator(
                   color: AppColors.primary,
                   onRefresh: _load,
@@ -97,18 +74,11 @@ class _ProcurementTendersScreenState
                       ? ListView(
                           physics: const AlwaysScrollableScrollPhysics(),
                           children: const [
-                            SizedBox(height: 80),
-                            Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(24),
-                                child: Text(
-                                  'No tenders yet. Browse is read-only — lifecycle actions stay on web.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                      color: AppColors.textMuted,
-                                      fontSize: 13),
-                                ),
-                              ),
+                            StitchEmptyState(
+                              icon: Icons.gavel_outlined,
+                              title: 'No tenders yet',
+                              message:
+                                  'Browse is read-only — lifecycle actions stay on web.',
                             ),
                           ],
                         )

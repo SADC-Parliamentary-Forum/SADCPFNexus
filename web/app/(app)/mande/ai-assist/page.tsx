@@ -31,9 +31,9 @@ export default function MandeAiAssistPage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "M&E", href: "/mande" }, { label: "Narrative assist" }]} />}
       />
       <div className="card space-y-3 p-4 text-sm" data-testid="mande-ai-assist">
-        <label className="block">
+        <label htmlFor="mande-ai-assist-scope-setscope-e-target-value-narrative-draft-nl" className="block">
           Scope
-          <select className="form-input mt-1" value={scope} onChange={(e) => setScope(e.target.value)}>
+          <select id="mande-ai-assist-scope-setscope-e-target-value-narrative-draft-nl" className="form-input mt-1" value={scope} onChange={(e) => setScope(e.target.value)}>
             <option value="narrative_draft">Narrative draft</option>
             <option value="nl_filter_suggest">NL filter suggest</option>
             <option value="indicator_summary">Indicator summary</option>

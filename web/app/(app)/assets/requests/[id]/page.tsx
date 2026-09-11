@@ -190,7 +190,7 @@ export default function AssetRequestDetailPage() {
             <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-800">{request.justification}</p>
           </div>
           <div>
-            <Link href="/assets/requests" className="text-sm font-medium text-primary hover:underline">
+            <Link href="/assets/requests" className="btn-secondary text-sm py-1 px-2">
               Back to requests
             </Link>
           </div>

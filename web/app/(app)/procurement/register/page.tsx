@@ -23,6 +23,7 @@ import {
   selectedProcurementRows,
 } from "@/lib/procurementRegisterBulk";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   draft: { label: "Draft", badge: "badge-muted" },
@@ -221,15 +222,10 @@ export default function ProcurementRegisterPage() {
       stats={
         <>
 {bulkError || isError ? (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <span className="material-symbols-outlined text-[16px]">error_outline</span>
-              <span className="flex-1">{bulkError ?? "Failed to load register."}</span>
-              {isError ? (
-                <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
-                  Retry
-                </button>
-              ) : null}
-            </div>
+            <ErrorBanner
+              message={bulkError ?? "Failed to load register."}
+              onRetry={isError ? () => void refetch() : undefined}
+            />
           ) : null}
           {!isLoading && rows.length > 0 ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -313,14 +309,16 @@ export default function ProcurementRegisterPage() {
       }
       empty={
         !isLoading && filtered.length === 0 ? (
-          <div className="card px-5 py-16 text-center">
-            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">shopping_cart</span>
-            <p className="text-sm font-semibold text-neutral-600">No procurement requests found</p>
-            <p className="mt-1 text-xs text-neutral-400">
-              {rows.length === 0
-                ? "No procurement requests recorded yet."
-                : "No rows match the current filters."}
-            </p>
+          <div className="card">
+            <EmptyState
+              icon="shopping_cart"
+              title="No procurement requests found"
+              description={
+                rows.length === 0
+                  ? "No procurement requests recorded yet."
+                  : "No rows match the current filters."
+              }
+            />
           </div>
         ) : null
       }
@@ -382,14 +380,14 @@ export default function ProcurementRegisterPage() {
                       <div className="flex flex-wrap gap-2">
                         <Link
                           href={`/procurement/${row.id}`}
-                          className="text-xs font-medium text-primary hover:underline"
+                          className="btn-secondary text-xs py-1 px-2"
                         >
                           View
                         </Link>
                         {row.status === "draft" && (
                           <Link
                             href={`/procurement/${row.id}`}
-                            className="text-xs font-medium text-neutral-600 hover:underline"
+                            className="btn-secondary text-xs py-1 px-2"
                           >
                             Edit
                           </Link>

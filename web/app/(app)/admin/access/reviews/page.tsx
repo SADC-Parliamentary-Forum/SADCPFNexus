@@ -131,10 +131,10 @@ export default function AccessReviewsPage() {
                       </span>
                       {i.status === "pending" ? (
                         <div className="flex gap-2">
-                          <button type="button" className="text-xs font-medium text-emerald-700 hover:underline" onClick={() => decide(i.id, "confirm")}>
+                          <button type="button" className="btn-secondary text-xs py-1 px-2 text-emerald-700" onClick={() => decide(i.id, "confirm")}>
                             Confirm
                           </button>
-                          <button type="button" className="text-xs font-medium text-red-600 hover:underline" onClick={() => decide(i.id, "revoke")}>
+                          <button type="button" className="btn-secondary text-xs py-1 px-2 text-red-600" onClick={() => decide(i.id, "revoke")}>
                             Revoke
                           </button>
                         </div>

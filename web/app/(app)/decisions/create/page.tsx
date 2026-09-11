@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { decisionsApi } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 export default function CreateDecisionPage() {
   const router = useRouter();
@@ -57,34 +58,41 @@ export default function CreateDecisionPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <Link href="/decisions" className="text-sm text-neutral-500 hover:text-primary">← Decision Register</Link>
-        <h1 className="mt-2 text-2xl font-semibold">New decision</h1>
-        <p className="text-sm text-neutral-500">Capture a meeting resolution or management decision as a draft.</p>
-      </div>
+      <ModulePageHeader
+        title="New decision"
+        subtitle="Capture a meeting resolution or management decision as a draft."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Decision Register", href: "/decisions" },
+              { label: "New decision" },
+            ]}
+          />
+        }
+      />
 
       <form onSubmit={onSubmit} className="space-y-4">
-        <label className="block space-y-1">
+        <label htmlFor="decision-type" className="block space-y-1">
           <span className="text-sm font-medium">Type</span>
-          <select className="input w-full" value={decisionType} onChange={(e) => setDecisionType(e.target.value as typeof decisionType)}>
+          <select id="decision-type" className="input w-full" value={decisionType} onChange={(e) => setDecisionType(e.target.value as typeof decisionType)}>
             <option value="resolution">Resolution</option>
             <option value="management_decision">Management decision</option>
           </select>
         </label>
 
-        <label className="block space-y-1">
+        <label htmlFor="decision-title" className="block space-y-1">
           <span className="text-sm font-medium">Title</span>
-          <input className="input w-full" required value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input id="decision-title" className="input w-full" required value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
 
-        <label className="block space-y-1">
+        <label htmlFor="decision-body" className="block space-y-1">
           <span className="text-sm font-medium">Decision text</span>
-          <textarea className="input w-full min-h-32" value={body} onChange={(e) => setBody(e.target.value)} />
+          <textarea id="decision-body" className="input w-full min-h-32" value={body} onChange={(e) => setBody(e.target.value)} />
         </label>
 
-        <label className="block space-y-1">
+        <label htmlFor="decision-owner" className="block space-y-1">
           <span className="text-sm font-medium">Owner</span>
-          <select className="input w-full" value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
+          <select id="decision-owner" className="input w-full" value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
             <option value="">Select owner…</option>
             {owners.map((o) => (
               <option key={o.id} value={o.id}>{o.name}</option>
@@ -92,9 +100,9 @@ export default function CreateDecisionPage() {
           </select>
         </label>
 
-        <label className="block space-y-1">
+        <label htmlFor="decision-minutes" className="block space-y-1">
           <span className="text-sm font-medium">Meeting minutes</span>
-          <select className="input w-full" value={minutesId} onChange={(e) => setMinutesId(e.target.value)}>
+          <select id="decision-minutes" className="input w-full" value={minutesId} onChange={(e) => setMinutesId(e.target.value)}>
             <option value="">Optional minutes link…</option>
             {minutes.map((m) => (
               <option key={m.id} value={m.id}>
@@ -104,18 +112,18 @@ export default function CreateDecisionPage() {
           </select>
         </label>
 
-        <label className="block space-y-1">
+        <label htmlFor="decision-agenda" className="block space-y-1">
           <span className="text-sm font-medium">Agenda item (optional)</span>
-          <input className="input w-full" placeholder="Create and link an agenda item title" value={agendaTitle} onChange={(e) => setAgendaTitle(e.target.value)} />
+          <input id="decision-agenda" className="input w-full" placeholder="Create and link an agenda item title" value={agendaTitle} onChange={(e) => setAgendaTitle(e.target.value)} />
         </label>
 
-        <label className="block space-y-1">
+        <label htmlFor="decision-due" className="block space-y-1">
           <span className="text-sm font-medium">Due date</span>
-          <input type="date" className="input w-full" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <input id="decision-due" type="date" className="input w-full" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </label>
 
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={confidential} onChange={(e) => setConfidential(e.target.checked)} />
+        <label htmlFor="decision-confidential" className="flex items-center gap-2 text-sm">
+          <input id="decision-confidential" type="checkbox" checked={confidential} onChange={(e) => setConfidential(e.target.checked)} />
           Mark confidential
         </label>
 

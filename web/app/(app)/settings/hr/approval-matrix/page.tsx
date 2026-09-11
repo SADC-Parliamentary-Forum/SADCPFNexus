@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrSettingsApi, type HrApprovalMatrix } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const MODULES = [
   { value: "", label: "All Modules" },
@@ -71,8 +71,8 @@ function ApprovalMatrixModal({
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Module *</label>
-            <select
+            <label htmlFor="settings-hr-approval-matrix-module" className="block text-xs font-medium text-neutral-700 mb-1">Module *</label>
+            <select id="settings-hr-approval-matrix-module"
               className="form-input text-sm"
               value={form.module ?? "hr"}
               onChange={(e) => set("module", e.target.value)}
@@ -84,8 +84,8 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Action Name *</label>
-            <input
+            <label htmlFor="settings-hr-approval-matrix-action-name" className="block text-xs font-medium text-neutral-700 mb-1">Action Name *</label>
+            <input id="settings-hr-approval-matrix-action-name"
               className="form-input text-sm"
               value={form.action_name ?? ""}
               onChange={(e) => set("action_name", e.target.value)}
@@ -94,8 +94,8 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Step Number</label>
-            <input
+            <label htmlFor="settings-hr-approval-matrix-step-number" className="block text-xs font-medium text-neutral-700 mb-1">Step Number</label>
+            <input id="settings-hr-approval-matrix-step-number"
               type="number"
               className="form-input text-sm"
               min={1}
@@ -107,8 +107,8 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Approver Role (name)</label>
-            <input
+            <label htmlFor="settings-hr-approval-matrix-approver-role-name" className="block text-xs font-medium text-neutral-700 mb-1">Approver Role (name)</label>
+            <input id="settings-hr-approval-matrix-approver-role-name"
               className="form-input text-sm"
               value={roleNameInput}
               onChange={(e) => {
@@ -120,8 +120,8 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Notes</label>
-            <textarea
+            <label htmlFor="settings-hr-approval-matrix-notes" className="block text-xs font-medium text-neutral-700 mb-1">Notes</label>
+            <textarea id="settings-hr-approval-matrix-notes"
               className="form-input text-sm resize-none"
               rows={2}
               value={form.notes ?? ""}
@@ -153,8 +153,8 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select
+            <label htmlFor="settings-hr-approval-matrix-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="settings-hr-approval-matrix-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}
@@ -228,23 +228,17 @@ export default function ApprovalMatrixPage() {
           onSave={(form) => saveMutation.mutate(form)}
         />
       )}
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Approval Matrix</span>
-          </div>
-          <h1 className="page-title">Approval Matrix</h1>
-          <p className="page-subtitle">Define who approves HR actions — recruitment, promotion, salary adjustment, and more.</p>
-        </div>
-        <button onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
+      <HrSettingsHeader
+        title="Approval Matrix"
+        subtitle="Define who approves HR actions — recruitment, promotion, salary adjustment, and more."
+        actions={
+          <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Step
         </button>
-      </div>
+        }
+      />
+
 
       {/* Module filter */}
       <div className="flex gap-2 flex-wrap">
@@ -276,10 +270,7 @@ export default function ApprovalMatrixPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : items.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300">account_tree</span>
-            <p className="mt-2 text-sm text-neutral-500">No approval steps found. Create one to get started.</p>
-          </div>
+          <EmptyState icon="account_tree" title="No approval steps found." description="Create one to get started." />
         ) : (
           <table className="data-table w-full">
             <thead>

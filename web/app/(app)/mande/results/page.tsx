@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const EMPTY: Partial<ResultsFramework> = {
   name: "",
@@ -95,10 +96,7 @@ export default function ResultsFrameworksPage() {
         {isLoading ? (
           <div className="px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
         ) : frameworks.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300 block mb-2">account_tree</span>
-            <p className="text-sm text-neutral-500">No results frameworks defined yet.</p>
-          </div>
+          <EmptyState icon="account_tree" title="No results frameworks defined yet." />
         ) : (
           <table className="data-table">
             <thead>
@@ -130,12 +128,12 @@ export default function ResultsFrameworksPage() {
                   <td className="whitespace-nowrap">
                     {canAdmin && (
                       <>
-                        <button type="button" className="text-primary text-xs hover:underline mr-3" onClick={() => setModal({ ...fw })}>
+                        <button type="button" className="btn-secondary text-xs py-1 px-2 mr-3" onClick={() => setModal({ ...fw })}>
                           Edit
                         </button>
                         <button
                           type="button"
-                          className="text-red-500 text-xs hover:underline"
+                          className="btn-secondary text-xs py-1 px-2 text-red-600"
                           onClick={async () => {
                             if (await confirm({ title: "Delete framework", message: "Delete this framework? This cannot be undone.", variant: "danger" })) {
                               delMut.mutate(fw.id);
@@ -165,13 +163,13 @@ export default function ResultsFrameworksPage() {
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
-                <input className="form-input" value={modal.name ?? ""} onChange={(e) => setModal({ ...modal, name: e.target.value })} />
+                <label htmlFor="mande-results-name" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+                <input id="mande-results-name" className="form-input" value={modal.name ?? ""} onChange={(e) => setModal({ ...modal, name: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Type *</label>
-                  <select
+                  <label htmlFor="mande-results-type" className="block text-xs font-semibold text-neutral-700 mb-1">Type *</label>
+                  <select id="mande-results-type"
                     className="form-input"
                     value={modal.type ?? "sadc_pf"}
                     onChange={(e) => setModal({ ...modal, type: e.target.value as ResultsFrameworkType })}
@@ -182,18 +180,18 @@ export default function ResultsFrameworksPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Donor name</label>
-                  <input className="form-input" value={modal.donor_name ?? ""} onChange={(e) => setModal({ ...modal, donor_name: e.target.value })} />
+                  <label htmlFor="mande-results-donor-name" className="block text-xs font-semibold text-neutral-700 mb-1">Donor name</label>
+                  <input id="mande-results-donor-name" className="form-input" value={modal.donor_name ?? ""} onChange={(e) => setModal({ ...modal, donor_name: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Start</label>
-                  <input type="date" className="form-input" value={modal.start_date?.slice(0, 10) ?? ""} onChange={(e) => setModal({ ...modal, start_date: e.target.value })} />
+                  <label htmlFor="mande-results-start" className="block text-xs font-semibold text-neutral-700 mb-1">Start</label>
+                  <input id="mande-results-start" type="date" className="form-input" value={modal.start_date?.slice(0, 10) ?? ""} onChange={(e) => setModal({ ...modal, start_date: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">End</label>
-                  <input
+                  <label htmlFor="mande-results-end" className="block text-xs font-semibold text-neutral-700 mb-1">End</label>
+                  <input id="mande-results-end"
                     type="date"
                     className="form-input"
                     min={modal.start_date?.slice(0, 10) ?? undefined}
@@ -206,8 +204,8 @@ export default function ResultsFrameworksPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
-                <textarea className="form-input min-h-[80px]" value={modal.description ?? ""} onChange={(e) => setModal({ ...modal, description: e.target.value })} />
+                <label htmlFor="mande-results-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+                <textarea id="mande-results-description" className="form-input min-h-[80px]" value={modal.description ?? ""} onChange={(e) => setModal({ ...modal, description: e.target.value })} />
               </div>
             </div>
             <div className="px-5 py-4 border-t border-neutral-100 flex justify-end gap-2">

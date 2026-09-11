@@ -230,25 +230,25 @@ export default function MyProfilePage() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Full Name</label>
-                      <input className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.name} disabled />
+                      <label htmlFor="profile-full-name" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Full Name</label>
+                      <input id="profile-full-name" className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.name} disabled />
                       <p className="text-[10px] text-neutral-400 dark:text-neutral-500 ml-1 italic">Contact admin to update your name.</p>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Email Address</label>
-                      <input className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.email} disabled />
+                      <label htmlFor="profile-email-address" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Email Address</label>
+                      <input id="profile-email-address" className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.email} disabled />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Phone Number</label>
-                      <input type="tel" className={inputCls} value={user.phone || ""} onChange={e => setUser({ ...user, phone: e.target.value })} />
+                      <label htmlFor="profile-phone-number" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Phone Number</label>
+                      <input id="profile-phone-number" type="tel" className={inputCls} value={user.phone || ""} onChange={e => setUser({ ...user, phone: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Nationality</label>
-                      <input type="text" className={inputCls} value={user.nationality || ""} onChange={e => setUser({ ...user, nationality: e.target.value })} />
+                      <label htmlFor="profile-nationality" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Nationality</label>
+                      <input id="profile-nationality" type="text" className={inputCls} value={user.nationality || ""} onChange={e => setUser({ ...user, nationality: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Gender</label>
-                      <select className={inputCls} value={user.gender || ""} onChange={e => setUser({ ...user, gender: e.target.value })}>
+                      <label htmlFor="profile-gender" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Gender</label>
+                      <select id="profile-gender" className={inputCls} value={user.gender || ""} onChange={e => setUser({ ...user, gender: e.target.value })}>
                         <option value="">Select Gender</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -256,8 +256,8 @@ export default function MyProfilePage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Marital Status</label>
-                      <select className={inputCls} value={user.marital_status || ""} onChange={e => setUser({ ...user, marital_status: e.target.value })}>
+                      <label htmlFor="profile-marital-status" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Marital Status</label>
+                      <select id="profile-marital-status" className={inputCls} value={user.marital_status || ""} onChange={e => setUser({ ...user, marital_status: e.target.value })}>
                         <option value="">Select Status</option>
                         <option value="Single">Single</option>
                         <option value="Married">Married</option>
@@ -266,13 +266,13 @@ export default function MyProfilePage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Date of Birth</label>
-                      <input type="date" className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.date_of_birth || ""} disabled />
+                      <label htmlFor="profile-date-of-birth" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Date of Birth</label>
+                      <input id="profile-date-of-birth" type="date" className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.date_of_birth || ""} disabled />
                       <p className="text-[10px] text-neutral-400 dark:text-neutral-500 ml-1 italic">Contact HR to update your date of birth.</p>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Join Date</label>
-                      <input type="date" className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.join_date || ""} disabled />
+                      <label htmlFor="profile-join-date" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Join Date</label>
+                      <input id="profile-join-date" type="date" className={cn(inputCls, "bg-neutral-100 dark:bg-white/10 cursor-not-allowed")} value={user.join_date || ""} disabled />
                       <p className="text-[10px] text-neutral-400 dark:text-neutral-500 ml-1 italic">Contact HR to update your join date.</p>
                     </div>
                   </div>
@@ -286,20 +286,20 @@ export default function MyProfilePage() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2 space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Address Line 1</label>
-                      <input type="text" placeholder="Street name and number" className={inputCls} value={user.address_line1 || ""} onChange={e => setUser({ ...user, address_line1: e.target.value })} />
+                      <label htmlFor="profile-address-line-1" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Address Line 1</label>
+                      <input id="profile-address-line-1" type="text" placeholder="Street name and number" className={inputCls} value={user.address_line1 || ""} onChange={e => setUser({ ...user, address_line1: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Address Line 2</label>
-                      <input type="text" placeholder="Unit / Apartment" className={inputCls} value={user.address_line2 || ""} onChange={e => setUser({ ...user, address_line2: e.target.value })} />
+                      <label htmlFor="profile-address-line-2" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Address Line 2</label>
+                      <input id="profile-address-line-2" type="text" placeholder="Unit / Apartment" className={inputCls} value={user.address_line2 || ""} onChange={e => setUser({ ...user, address_line2: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">City</label>
-                      <input type="text" placeholder="Windhoek" className={inputCls} value={user.city || ""} onChange={e => setUser({ ...user, city: e.target.value })} />
+                      <label htmlFor="profile-city" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">City</label>
+                      <input id="profile-city" type="text" placeholder="Windhoek" className={inputCls} value={user.city || ""} onChange={e => setUser({ ...user, city: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Country</label>
-                      <input type="text" placeholder="Namibia" className={inputCls} value={user.country || ""} onChange={e => setUser({ ...user, country: e.target.value })} />
+                      <label htmlFor="profile-country" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Country</label>
+                      <input id="profile-country" type="text" placeholder="Namibia" className={inputCls} value={user.country || ""} onChange={e => setUser({ ...user, country: e.target.value })} />
                     </div>
                   </div>
                 </section>
@@ -312,16 +312,16 @@ export default function MyProfilePage() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Contact Name</label>
-                      <input type="text" placeholder="Full Name" className={inputCls} value={user.emergency_contact_name || ""} onChange={e => setUser({ ...user, emergency_contact_name: e.target.value })} />
+                      <label htmlFor="profile-contact-name" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Contact Name</label>
+                      <input id="profile-contact-name" type="text" placeholder="Full Name" className={inputCls} value={user.emergency_contact_name || ""} onChange={e => setUser({ ...user, emergency_contact_name: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Relationship</label>
-                      <input type="text" placeholder="e.g. Spouse" className={inputCls} value={user.emergency_contact_relationship || ""} onChange={e => setUser({ ...user, emergency_contact_relationship: e.target.value })} />
+                      <label htmlFor="profile-relationship" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Relationship</label>
+                      <input id="profile-relationship" type="text" placeholder="e.g. Spouse" className={inputCls} value={user.emergency_contact_relationship || ""} onChange={e => setUser({ ...user, emergency_contact_relationship: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Contact Phone</label>
-                      <input type="tel" placeholder="+264..." className={inputCls} value={user.emergency_contact_phone || ""} onChange={e => setUser({ ...user, emergency_contact_phone: e.target.value })} />
+                      <label htmlFor="profile-contact-phone" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Contact Phone</label>
+                      <input id="profile-contact-phone" type="tel" placeholder="+264..." className={inputCls} value={user.emergency_contact_phone || ""} onChange={e => setUser({ ...user, emergency_contact_phone: e.target.value })} />
                     </div>
                   </div>
                 </section>
@@ -355,7 +355,7 @@ export default function MyProfilePage() {
                     </div>
                   </div>
                   <button type="button" onClick={handleCancelRequest} disabled={cancelling}
-                    className="text-xs font-semibold text-red-500 dark:text-red-400 hover:underline flex-shrink-0">
+                    className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600">
                     {cancelling ? "Withdrawing…" : "Withdraw"}
                   </button>
                 </div>
@@ -363,11 +363,11 @@ export default function MyProfilePage() {
 
               {/* Optional note to HR */}
               <section className="pt-6 border-t border-neutral-100 dark:border-neutral-700/50">
-                <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-2 mb-2">
+                <label htmlFor="profile-note-add-note-to-hr-optional" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 flex items-center gap-2 mb-2">
                   <span className="material-symbols-outlined text-[18px] text-neutral-400 dark:text-neutral-500">note_add</span>
                   Note to HR <span className="font-normal text-neutral-400 dark:text-neutral-500">(optional)</span>
                 </label>
-                <textarea
+                <textarea id="profile-note-add-note-to-hr-optional"
                   rows={2}
                   className={cn(inputCls, "resize-none")}
                   value={requestNotes}
@@ -436,8 +436,8 @@ export default function MyProfilePage() {
 
                   <div className="max-w-md space-y-5">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Current Password</label>
-                      <input
+                      <label htmlFor="profile-current-password" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Current Password</label>
+                      <input id="profile-current-password"
                         type="password"
                         className={inputCls}
                         value={pwForm.current}
@@ -447,8 +447,8 @@ export default function MyProfilePage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">New Password</label>
-                      <input
+                      <label htmlFor="profile-new-password" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">New Password</label>
+                      <input id="profile-new-password"
                         type="password"
                         className={inputCls}
                         value={pwForm.next}
@@ -459,8 +459,8 @@ export default function MyProfilePage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Confirm New Password</label>
-                      <input
+                      <label htmlFor="profile-confirm-new-password" className="text-sm font-bold text-neutral-700 dark:text-neutral-300 ml-1">Confirm New Password</label>
+                      <input id="profile-confirm-new-password"
                         type="password"
                         className={inputCls}
                         value={pwForm.confirm}

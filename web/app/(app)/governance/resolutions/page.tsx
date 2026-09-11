@@ -9,6 +9,7 @@ import { governanceApi, minutesApi, committeeApi, governanceMeetingTypeApi, type
 import api from "@/lib/api";
 import type { TenantUserOption } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
+import { TableEmpty, EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -283,42 +284,42 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto scrollbar-hide">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Reference No. *</label>
-              <input className="form-input" required value={form.reference_number} onChange={(e) => set("reference_number", e.target.value)} placeholder="e.g. RES-2026-001" />
+              <label htmlFor="governance-resolutions-reference-no" className="block text-xs font-semibold text-neutral-700 mb-1">Reference No. *</label>
+              <input id="governance-resolutions-reference-no" className="form-input" required value={form.reference_number} onChange={(e) => set("reference_number", e.target.value)} placeholder="e.g. RES-2026-001" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
-              <select className="form-input" value={form.status} onChange={(e) => set("status", e.target.value)}>
+              <label htmlFor="governance-resolutions-status" className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
+              <select id="governance-resolutions-status" className="form-input" value={form.status} onChange={(e) => set("status", e.target.value)}>
                 {STATUSES.map((s) => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Resolution Title *</label>
-              <input className="form-input" required value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Official resolution title…" />
+              <label htmlFor="governance-resolutions-resolution-title" className="block text-xs font-semibold text-neutral-700 mb-1">Resolution Title *</label>
+              <input id="governance-resolutions-resolution-title" className="form-input" required value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Official resolution title…" />
             </div>
             {type === "committee" && (
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Committee</label>
-                <select className="form-input" value={form.committee} onChange={(e) => set("committee", e.target.value)}>
+                <label htmlFor="governance-resolutions-committee" className="block text-xs font-semibold text-neutral-700 mb-1">Committee</label>
+                <select id="governance-resolutions-committee" className="form-input" value={form.committee} onChange={(e) => set("committee", e.target.value)}>
                   {committees.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
             )}
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Date of Adoption</label>
-              <input type="date" className="form-input" value={form.adopted_at} onChange={(e) => set("adopted_at", e.target.value)} />
+              <label htmlFor="governance-resolutions-date-of-adoption" className="block text-xs font-semibold text-neutral-700 mb-1">Date of Adoption</label>
+              <input id="governance-resolutions-date-of-adoption" type="date" className="form-input" value={form.adopted_at} onChange={(e) => set("adopted_at", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Lead Member</label>
-              <input className="form-input" value={form.lead_member} onChange={(e) => set("lead_member", e.target.value)} placeholder="Name…" />
+              <label htmlFor="governance-resolutions-lead-member" className="block text-xs font-semibold text-neutral-700 mb-1">Lead Member</label>
+              <input id="governance-resolutions-lead-member" className="form-input" value={form.lead_member} onChange={(e) => set("lead_member", e.target.value)} placeholder="Name…" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Role / Title</label>
-              <input className="form-input" value={form.lead_role} onChange={(e) => set("lead_role", e.target.value)} placeholder="Chairperson, Member…" />
+              <label htmlFor="governance-resolutions-role-title" className="block text-xs font-semibold text-neutral-700 mb-1">Role / Title</label>
+              <input id="governance-resolutions-role-title" className="form-input" value={form.lead_role} onChange={(e) => set("lead_role", e.target.value)} placeholder="Chairperson, Member…" />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
-              <textarea rows={3} className="form-input resize-none" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Resolution details…" />
+              <label htmlFor="governance-resolutions-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+              <textarea id="governance-resolutions-description" rows={3} className="form-input resize-none" value={form.description} onChange={(e) => set("description", e.target.value)} placeholder="Resolution details…" />
             </div>
           </div>
 
@@ -343,10 +344,10 @@ function ResolutionFormModal({ type, initial, committees, onClose, onSaved }: Re
                         </button>
                       </div>
                     ) : (
-                      <label className="flex-1 flex items-center gap-1.5 cursor-pointer text-xs text-primary hover:underline">
+                      <label htmlFor={`governance-resolutions-upload-file-choose-file-${label }}`} className="flex-1 flex items-center gap-1.5 cursor-pointer text-xs text-primary">
                         <span className="material-symbols-outlined text-[15px]">upload_file</span>
                         Choose file…
-                        <input type="file" accept=".pdf,.doc,.docx,.odt" className="sr-only"
+                        <input id={`governance-resolutions-upload-file-choose-file-${label }}`} type="file" accept=".pdf,.doc,.docx,.odt" className="sr-only"
                           onChange={(ev) => { if (ev.target.files?.[0]) addFile(code, ev.target.files[0]); ev.target.value = ""; }} />
                       </label>
                     )}
@@ -633,7 +634,7 @@ function ManageCommitteesModal({
             </div>
           ))}
           {items.length === 0 && (
-            <p className="text-sm text-neutral-400 py-4 text-center">No committees yet. Add one below.</p>
+            <EmptyState icon="groups" title="No committees yet. Add one below." className="py-8 min-h-0" />
           )}
         </div>
 
@@ -770,7 +771,7 @@ function ManageMeetingTypesModal({
             </div>
           ))}
           {items.length === 0 && (
-            <p className="text-sm text-neutral-400 py-4 text-center">No meeting types yet.</p>
+            <EmptyState icon="event_note" title="No meeting types yet." className="py-8 min-h-0" />
           )}
         </div>
 
@@ -1044,12 +1045,7 @@ function ResolutionsList({ type }: { type: ResolutionType }) {
                   </tr>
                 ))}
                 {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={isCommittee ? 8 : 7} className="text-center py-12">
-                      <span className="material-symbols-outlined text-3xl text-neutral-200 block mb-2">description</span>
-                      <span className="text-neutral-400 text-sm">No resolutions found</span>
-                    </td>
-                  </tr>
+                  <TableEmpty colSpan={isCommittee ? 8 : 7} icon="description" title="No resolutions found" />
                 )}
               </tbody>
             </table>
@@ -1186,8 +1182,8 @@ function MeetingFormModal({
     }
   };
 
-  const F = ({ label, required }: { label: string; required?: boolean }) => (
-    <label className="block text-xs font-medium text-neutral-700 mb-1">
+  const F = ({ label, required, htmlFor }: { label: string; required?: boolean; htmlFor: string }) => (
+    <label htmlFor={htmlFor} className="block text-xs font-medium text-neutral-700 mb-1">
       {label}{required && <span className="text-red-500 ml-0.5">*</span>}
     </label>
   );
@@ -1212,21 +1208,21 @@ function MeetingFormModal({
 
           {/* Row 1: Title */}
           <div>
-            <F label="Meeting Title" required />
-            <input className="form-input" placeholder="e.g. Monthly Staff Meeting — March 2026"
+            <F label="Meeting Title" required htmlFor="gov-minutes-title" />
+            <input id="gov-minutes-title" className="form-input" placeholder="e.g. Monthly Staff Meeting — March 2026"
               value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} />
           </div>
 
           {/* Row 2: Date + Meeting Type + custom */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <F label="Date" required />
-              <input type="date" className="form-input" value={form.meeting_date}
+              <F label="Date" required htmlFor="gov-minutes-date" />
+              <input id="gov-minutes-date" type="date" className="form-input" value={form.meeting_date}
                 onChange={(e) => setForm((p) => ({ ...p, meeting_date: e.target.value }))} />
             </div>
             <div>
-              <F label="Meeting Type" />
-              <select className="form-input" value={form.meeting_type}
+              <F label="Meeting Type" htmlFor="gov-minutes-type" />
+              <select id="gov-minutes-type" className="form-input" value={form.meeting_type}
                 onChange={(e) => setForm((p) => ({ ...p, meeting_type: e.target.value }))}>
                 {meetingTypes.map((t) => (
                   <option key={t.id} value={t.name}>{t.name}</option>
@@ -1239,13 +1235,13 @@ function MeetingFormModal({
           {/* Row 3: Location + Chairperson */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <F label="Location / Venue" />
-              <input className="form-input" placeholder="e.g. Conference Room A"
+              <F label="Location / Venue" htmlFor="gov-minutes-location" />
+              <input id="gov-minutes-location" className="form-input" placeholder="e.g. Conference Room A"
                 value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} />
             </div>
             <div>
-              <F label="Chairperson" />
-              <input className="form-input" placeholder="Name of chairperson"
+              <F label="Chairperson" htmlFor="gov-minutes-chair" />
+              <input id="gov-minutes-chair" className="form-input" placeholder="Name of chairperson"
                 value={form.chairperson} onChange={(e) => setForm((p) => ({ ...p, chairperson: e.target.value }))} />
             </div>
           </div>
@@ -1253,15 +1249,15 @@ function MeetingFormModal({
           {/* Row 4: Attendees + Apologies side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <F label="Attendees (one per line)" />
-              <textarea rows={4} className="form-input resize-none font-mono text-xs"
+              <F label="Attendees (one per line)" htmlFor="gov-minutes-attendees" />
+              <textarea id="gov-minutes-attendees" rows={4} className="form-input resize-none font-mono text-xs"
                 placeholder={"Ronald Windwaai\nJane Smith\n..."}
                 value={form.attendeesText}
                 onChange={(e) => setForm((p) => ({ ...p, attendeesText: e.target.value }))} />
             </div>
             <div>
-              <F label="Apologies (one per line)" />
-              <textarea rows={4} className="form-input resize-none font-mono text-xs"
+              <F label="Apologies (one per line)" htmlFor="gov-minutes-apologies" />
+              <textarea id="gov-minutes-apologies" rows={4} className="form-input resize-none font-mono text-xs"
                 placeholder={"Alice Brown (on leave)\n..."}
                 value={form.apologiesText}
                 onChange={(e) => setForm((p) => ({ ...p, apologiesText: e.target.value }))} />
@@ -1270,8 +1266,8 @@ function MeetingFormModal({
 
           {/* Row 5: Notes */}
           <div>
-            <F label="Meeting Notes / Summary" />
-            <textarea rows={4} className="form-input resize-none"
+            <F label="Meeting Notes / Summary" htmlFor="gov-minutes-notes" />
+            <textarea id="gov-minutes-notes" rows={4} className="form-input resize-none"
               placeholder="Key discussion points, decisions taken, and any other relevant matters..."
               value={form.notes}
               onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))} />
@@ -1283,10 +1279,10 @@ function MeetingFormModal({
               <span className="material-symbols-outlined text-neutral-400 text-[16px]">attach_file</span>
               <p className="text-xs font-semibold text-neutral-700">Attachments <span className="font-normal text-neutral-400">(minutes, verbatim reports, supporting docs)</span></p>
             </div>
-            <label className="flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-neutral-300 px-4 py-3 hover:border-primary/50 hover:bg-primary/5 transition-colors">
+            <label htmlFor="governance-resolutions-upload-file-click-to-add-files-pdf-doc-docx-odt" className="flex items-center gap-2 cursor-pointer rounded-lg border border-dashed border-neutral-300 px-4 py-3 hover:border-primary/50 hover:bg-primary/5 transition-colors">
               <span className="material-symbols-outlined text-primary text-[20px]">upload_file</span>
               <span className="text-xs text-neutral-600">Click to add files <span className="text-neutral-400">(PDF, DOC, DOCX, ODT)</span></span>
-              <input type="file" accept=".pdf,.doc,.docx,.odt" multiple className="sr-only"
+              <input id="governance-resolutions-upload-file-click-to-add-files-pdf-doc-docx-odt" type="file" accept=".pdf,.doc,.docx,.odt" multiple className="sr-only"
                 onChange={(ev) => { addFiles(ev.target.files); ev.target.value = ""; }} />
             </label>
             {queuedFiles.length > 0 && (
@@ -1601,36 +1597,36 @@ function MeetingDrawer({
                       Record a task from this meeting
                     </p>
                     <div>
-                      <label className="block text-[10px] font-medium text-neutral-600 mb-1">Task Description <span className="text-red-500">*</span></label>
-                      <textarea rows={2} className="form-input resize-none text-sm"
+                      <label htmlFor="governance-resolutions-task-description" className="block text-[10px] font-medium text-neutral-600 mb-1">Task Description <span className="text-red-500">*</span></label>
+                      <textarea id="governance-resolutions-task-description" rows={2} className="form-input resize-none text-sm"
                         placeholder='e.g. "Ronald to provide feedback on the PIF system" or "Finance team to prepare Q1 budget report"'
                         value={newItem.description}
                         onChange={(e) => setNewItem((p) => ({ ...p, description: e.target.value }))} />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-medium text-neutral-600 mb-1">Assigned To (staff)</label>
-                        <select className="form-input text-xs" value={newItem.responsible_id}
+                        <label htmlFor="governance-resolutions-assigned-to-staff" className="block text-[10px] font-medium text-neutral-600 mb-1">Assigned To (staff)</label>
+                        <select id="governance-resolutions-assigned-to-staff" className="form-input text-xs" value={newItem.responsible_id}
                           onChange={(e) => setNewItem((p) => ({ ...p, responsible_id: e.target.value, responsible_name: "" }))}>
                           <option value="">— Select staff member —</option>
                           {tenantUsers.map((u) => <option key={u.id} value={String(u.id)}>{u.name}{u.job_title ? ` — ${u.job_title}` : ""}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-neutral-600 mb-1">Or type name (non-staff)</label>
-                        <input className="form-input text-xs" placeholder="External / non-staff name"
+                        <label htmlFor="governance-resolutions-or-type-name-non-staff" className="block text-[10px] font-medium text-neutral-600 mb-1">Or type name (non-staff)</label>
+                        <input id="governance-resolutions-or-type-name-non-staff" className="form-input text-xs" placeholder="External / non-staff name"
                           value={newItem.responsible_name}
                           disabled={!!newItem.responsible_id}
                           onChange={(e) => setNewItem((p) => ({ ...p, responsible_name: e.target.value }))} />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-neutral-600 mb-1">Target Deadline</label>
-                        <input type="date" className="form-input text-xs" value={newItem.deadline}
+                        <label htmlFor="governance-resolutions-target-deadline" className="block text-[10px] font-medium text-neutral-600 mb-1">Target Deadline</label>
+                        <input id="governance-resolutions-target-deadline" type="date" className="form-input text-xs" value={newItem.deadline}
                           onChange={(e) => setNewItem((p) => ({ ...p, deadline: e.target.value }))} />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-neutral-600 mb-1">Additional Notes</label>
-                        <input className="form-input text-xs" placeholder="Context, deliverable, references..."
+                        <label htmlFor="governance-resolutions-additional-notes" className="block text-[10px] font-medium text-neutral-600 mb-1">Additional Notes</label>
+                        <input id="governance-resolutions-additional-notes" className="form-input text-xs" placeholder="Context, deliverable, references..."
                           value={newItem.notes}
                           onChange={(e) => setNewItem((p) => ({ ...p, notes: e.target.value }))} />
                       </div>
@@ -1758,8 +1754,8 @@ function MeetingDrawer({
               </p>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">Assign To</label>
-                  <select className="form-input" value={assignForm.assigned_to}
+                  <label htmlFor="governance-resolutions-assign-to" className="block text-xs font-medium text-neutral-700 mb-1">Assign To</label>
+                  <select id="governance-resolutions-assign-to" className="form-input" value={assignForm.assigned_to}
                     onChange={(e) => setAssignForm((p) => ({ ...p, assigned_to: e.target.value }))}>
                     <option value="">— Select staff member —</option>
                     {tenantUsers.map((u) => <option key={u.id} value={String(u.id)}>{u.name} — {u.job_title ?? ""}</option>)}
@@ -1767,13 +1763,13 @@ function MeetingDrawer({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-neutral-700 mb-1">Due Date <span className="text-red-500">*</span></label>
-                    <input type="date" className="form-input" value={assignForm.due_date}
+                    <label htmlFor="governance-resolutions-due-date" className="block text-xs font-medium text-neutral-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+                    <input id="governance-resolutions-due-date" type="date" className="form-input" value={assignForm.due_date}
                       onChange={(e) => setAssignForm((p) => ({ ...p, due_date: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-700 mb-1">Priority</label>
-                    <select className="form-input" value={assignForm.priority}
+                    <label htmlFor="governance-resolutions-priority" className="block text-xs font-medium text-neutral-700 mb-1">Priority</label>
+                    <select id="governance-resolutions-priority" className="form-input" value={assignForm.priority}
                       onChange={(e) => setAssignForm((p) => ({ ...p, priority: e.target.value }))}>
                       <option value="low">Low</option>
                       <option value="medium">Medium</option>
@@ -1838,7 +1834,7 @@ function ActionItemCard({ item, meetingId, onToggleDone, onDelete, onAssign }: {
           </span>
           {item.assignment_id && (
             <a href={`/assignments/${item.assignment_id}`}
-              className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+              className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
               <span className="material-symbols-outlined text-[12px]">link</span>
               {item.assignment?.reference_number ?? "Assignment"}
             </a>
@@ -1960,12 +1956,15 @@ function MeetingMinutes() {
             <span className="material-symbols-outlined animate-spin text-neutral-300 text-[28px]">progress_activity</span>
           </div>
         ) : records.length === 0 ? (
-          <div className="py-16 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200 block mb-2">event_note</span>
-            <p className="text-neutral-400 text-sm">No meeting minutes found</p>
-            <button onClick={() => setShowCreate(true)}
-              className="mt-3 btn-primary px-4 py-2 text-xs">Record first meeting</button>
-          </div>
+          <EmptyState
+            icon="event_note"
+            title="No meeting minutes found"
+            action={
+              <button type="button" onClick={() => setShowCreate(true)} className="btn-primary px-4 py-2 text-xs">
+                Record first meeting
+              </button>
+            }
+          />
         ) : (
           <div className="divide-y divide-neutral-100">
             {records.map((m) => {
@@ -2155,10 +2154,7 @@ function ImplementationTracker() {
             <span className="material-symbols-outlined animate-spin text-neutral-300 text-[28px]">progress_activity</span>
           </div>
         ) : resolutions.length === 0 ? (
-          <div className="py-12 text-center">
-            <span className="material-symbols-outlined text-3xl text-neutral-200 block mb-2">playlist_add_check</span>
-            <p className="text-neutral-400 text-sm">No resolutions match this filter</p>
-          </div>
+          <EmptyState icon="playlist_add_check" title="No resolutions match this filter" />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">

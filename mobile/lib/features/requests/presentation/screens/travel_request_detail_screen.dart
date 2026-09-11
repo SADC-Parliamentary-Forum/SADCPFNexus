@@ -5,6 +5,7 @@ import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 class TravelRequestDetailScreen extends ConsumerStatefulWidget {
   const TravelRequestDetailScreen({super.key, this.requestId});
@@ -165,52 +166,19 @@ class _TravelRequestDetailScreenState
     final c = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, size: 18, color: c.onSurface),
-          onPressed: () => context.safePopOrGoHome(),
+    return StitchScreen(
+      title: 'Travel Request',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        title: Text(
-          'Travel Request',
-          style: textTheme.titleMedium?.copyWith(
-            color: c.onSurface,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: c.onSurface.withValues(alpha: 0.7)),
-            onPressed: _loading ? null : _load,
-          ),
-        ],
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
+          ? const StitchLoadingState(label: 'Loading travel request')
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: c.error),
-                        ),
-                        const SizedBox(height: 12),
-                        TextButton(onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : _buildContent(context, c, textTheme, _request ?? const {}),
     );
   }

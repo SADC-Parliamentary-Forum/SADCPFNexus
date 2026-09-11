@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -283,8 +284,8 @@ export default function AdminLedgerPage() {
       {/* Filters */}
       <div className="card p-4 flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-36">
-          <label className="mb-1 block text-xs font-medium text-neutral-600">Module</label>
-          <select
+          <label htmlFor="admin-ledger-module" className="mb-1 block text-xs font-medium text-neutral-600">Module</label>
+          <select id="admin-ledger-module"
             className="form-input py-1.5 text-sm"
             value={moduleFilter}
             onChange={(e) => setModuleFilter(e.target.value)}
@@ -296,8 +297,8 @@ export default function AdminLedgerPage() {
         </div>
 
         <div className="flex-1 min-w-36">
-          <label className="mb-1 block text-xs font-medium text-neutral-600">Action</label>
-          <select
+          <label htmlFor="admin-ledger-action" className="mb-1 block text-xs font-medium text-neutral-600">Action</label>
+          <select id="admin-ledger-action"
             className="form-input py-1.5 text-sm"
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
@@ -309,10 +310,11 @@ export default function AdminLedgerPage() {
         </div>
 
         <div className="flex-1 min-w-44">
-          <label className="mb-1 block text-xs font-medium text-neutral-600">User (name / email)</label>
+          <label htmlFor="admin-ledger-user" className="mb-1 block text-xs font-medium text-neutral-600">User (name / email)</label>
           <div className="relative">
             <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 text-[16px]">search</span>
             <input
+              id="admin-ledger-user"
               type="text"
               className="form-input py-1.5 pl-8 text-sm"
               placeholder="Search user…"
@@ -323,12 +325,12 @@ export default function AdminLedgerPage() {
         </div>
 
         <div className="min-w-36">
-          <label className="mb-1 block text-xs font-medium text-neutral-600">From</label>
-          <input type="date" className="form-input py-1.5 text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          <label htmlFor="admin-ledger-from" className="mb-1 block text-xs font-medium text-neutral-600">From</label>
+          <input id="admin-ledger-from" type="date" className="form-input py-1.5 text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
         </div>
         <div className="min-w-36">
-          <label className="mb-1 block text-xs font-medium text-neutral-600">To</label>
-          <input type="date" className="form-input py-1.5 text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <label htmlFor="admin-ledger-to" className="mb-1 block text-xs font-medium text-neutral-600">To</label>
+          <input id="admin-ledger-to" type="date" className="form-input py-1.5 text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
         </div>
 
         {hasFilters && (
@@ -407,23 +409,22 @@ export default function AdminLedgerPage() {
               </thead>
               <tbody>
                 {logs.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="text-center py-14">
-                      <div className="flex flex-col items-center gap-2 text-neutral-300">
-                        <span className="material-symbols-outlined text-[40px]">receipt_long</span>
-                        <p className="text-sm text-neutral-400">No audit entries found</p>
-                        {hasFilters && (
-                          <button
-                            type="button"
-                            onClick={() => { setModuleFilter(""); setActionFilter(""); setUserFilter(""); setDateFrom(""); setDateTo(""); }}
-                            className="text-primary text-sm hover:underline mt-1"
-                          >
-                            Clear all filters
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                  <TableEmpty
+                    colSpan={9}
+                    icon="receipt_long"
+                    title="No audit entries found"
+                    action={
+                      hasFilters ? (
+                        <button
+                          type="button"
+                          onClick={() => { setModuleFilter(""); setActionFilter(""); setUserFilter(""); setDateFrom(""); setDateTo(""); }}
+                          className="btn-secondary text-sm py-1 px-2"
+                        >
+                          Clear all filters
+                        </button>
+                      ) : undefined
+                    }
+                  />
                 ) : (
                   logs.map((l, idx) => {
                     const isHighRisk = HIGH_RISK_ACTIONS.has(l.action?.toLowerCase());

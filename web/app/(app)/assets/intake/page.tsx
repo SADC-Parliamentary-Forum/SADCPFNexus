@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { assetsApi, type Asset } from "@/lib/api";
 import { canManageAssets, getStoredUser } from "@/lib/auth";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function AssetsIntakePage() {
   const [items, setItems] = useState<Asset[]>([]);
@@ -28,7 +29,7 @@ export default function AssetsIntakePage() {
         <Link href="/assets" className="btn-secondary">Full register</Link>
       </div>
       {loading ? <p>Loading…</p> : (
-        <div className="table-wrap">
+        <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
           <table className="data-table">
             <thead>
               <tr>
@@ -41,7 +42,7 @@ export default function AssetsIntakePage() {
             </thead>
             <tbody>
               {items.length === 0 && (
-                <tr><td colSpan={5}>No pending assets.</td></tr>
+                <TableEmpty colSpan={5} title="No pending assets." />
               )}
               {items.map((a) => (
                 <tr key={a.id}>

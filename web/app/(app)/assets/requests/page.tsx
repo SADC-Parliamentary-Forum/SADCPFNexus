@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { NewAssetRequestModal } from "@/components/assets/NewAssetRequestModal";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   pending: { label: "Pending", badge: "badge-warning" },
@@ -128,24 +129,22 @@ export default function AssetRequestsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card px-5 py-16 text-center">
-          <div className="mx-auto h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            <span className="material-symbols-outlined text-[28px] text-primary">inventory_2</span>
-          </div>
-          <p className="text-sm font-semibold text-neutral-700">No asset requests found</p>
-          <p className="text-xs text-neutral-500 mt-1">
-            {filter !== "all"
-              ? "No requests match the selected filter."
-              : "You have not submitted any asset requests yet."}
-          </p>
-          <button
-            type="button"
-            onClick={openNew}
-            className="btn-primary inline-flex items-center gap-2 mt-5 py-2 px-4 text-sm"
-          >
-            <span className="material-symbols-outlined text-[16px]">add</span>
-            New request
-          </button>
+        <div className="card">
+          <EmptyState
+            icon="inventory_2"
+            title="No asset requests found"
+            description={
+              filter !== "all"
+                ? "No requests match the selected filter."
+                : "You have not submitted any asset requests yet."
+            }
+            action={
+              <button type="button" onClick={openNew} className="btn-primary inline-flex items-center gap-2 py-2 px-4 text-sm">
+                <span className="material-symbols-outlined text-[16px]">add</span>
+                New request
+              </button>
+            }
+          />
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -184,7 +183,7 @@ export default function AssetRequestsPage() {
                       <td>
                         <Link
                           href={`/assets/requests/${req.id}`}
-                          className="text-xs font-medium text-primary hover:underline whitespace-nowrap"
+                          className="btn-secondary text-xs py-1 px-2 whitespace-nowrap"
                         >
                           View
                         </Link>

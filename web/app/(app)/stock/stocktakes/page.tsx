@@ -60,12 +60,12 @@ export default function StocktakesPage() {
       {canIssue && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
           <div>
-            <label className="block text-xs font-semibold mb-1">Name</label>
-            <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Q3 store count" />
+            <label htmlFor="stock-stocktakes-name" className="block text-xs font-semibold mb-1">Name</label>
+            <input id="stock-stocktakes-name" className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Q3 store count" />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Count date</label>
-            <input type="date" className="form-input" value={countDate} onChange={(e) => setCountDate(e.target.value)} />
+            <label htmlFor="stock-stocktakes-count-date" className="block text-xs font-semibold mb-1">Count date</label>
+            <input id="stock-stocktakes-count-date" type="date" className="form-input" value={countDate} onChange={(e) => setCountDate(e.target.value)} />
           </div>
           <button type="button" className="btn-primary" onClick={create}>Start stocktake (all active)</button>
         </div>
@@ -88,7 +88,7 @@ export default function StocktakesPage() {
             {rows.map((r) => (
               <tr key={r.id} className="border-t border-neutral-100">
                 <td className="px-4 py-2 font-mono text-xs">
-                  <Link href={`/stock/stocktakes/${r.id}`} className="text-primary hover:underline">{r.reference_number}</Link>
+                  <Link href={`/stock/stocktakes/${r.id}`} className="btn-secondary text-xs py-1 px-2">{r.reference_number}</Link>
                 </td>
                 <td className="px-4 py-2">{r.name}</td>
                 <td className="px-4 py-2">{formatDateShort(r.count_date)}</td>

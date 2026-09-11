@@ -13,6 +13,7 @@ import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { useToast } from "@/components/ui/Toast";
+import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string; icon: string }> = {
   draft:                   { label: "Draft",                  badge: "badge-muted",    icon: "edit_note" },
@@ -403,7 +404,7 @@ export default function AdvanceDetailPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error ?? "Not found"}
         </div>
-        <Link href="/salary-advances" className="text-sm font-semibold text-primary hover:underline">
+        <Link href="/salary-advances" className="btn-secondary text-sm">
           Back to Advances
         </Link>
       </div>
@@ -456,33 +457,34 @@ export default function AdvanceDetailPage() {
         currentHolder={null}
       />
 
-      {/* Breadcrumb + header */}
-      <div>
-        <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
-          <Link href="/salary-advances" className="hover:text-neutral-700 transition-colors">Salary Advances</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href="/salary-advances/applications" className="hover:text-neutral-700 transition-colors">Applications</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700">{advance.reference_number}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <h1 className="page-title">{TYPE_LABELS[advance.advance_type] ?? advance.advance_type}</h1>
+      <SalaryAdvancePageHeader
+        title={TYPE_LABELS[advance.advance_type] ?? advance.advance_type}
+        subtitle={advance.reference_number}
+        crumbs={[
+          { label: "nav.salary_advances", href: "/salary-advances" },
+          { label: "Applications", href: "/salary-advances/applications" },
+          { label: advance.reference_number },
+        ]}
+        meta={
           <span className={`badge ${sc.badge}`}>
             <span className="material-symbols-outlined text-[13px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>{sc.icon}</span>
             {sc.label}
           </span>
+        }
+        actions={
+          <>
           {(advance.status === "approved" || advance.status === "approved_for_payment" || advance.status === "paid" || advance.status === "closed" || advance.status === "recovery_scheduled" || advance.status === "recovered") && (
             <>
               <Link
                 href={`/salary-advances/${advance.id}/certificate`}
-                className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
+                className="btn-secondary text-xs"
               >
                 <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
                 Certificate
               </Link>
               <button
                 type="button"
-                className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
+                className="btn-secondary text-xs"
                 onClick={async () => {
                   try {
                     const res = await financeApi.downloadAdvancePdf(advance.id);
@@ -504,9 +506,10 @@ export default function AdvanceDetailPage() {
           )}
           {advance.status === "submitted" && approvalRequest?.status === "pending" && (
             <button
+              type="button"
               onClick={handleWithdraw}
               disabled={actionLoading}
-              className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+              className="btn-secondary text-xs disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[14px]">block</span>
               Withdraw
@@ -514,17 +517,18 @@ export default function AdvanceDetailPage() {
           )}
           {isReturnedForCorrection && (
             <button
+              type="button"
               onClick={handleResubmit}
               disabled={actionLoading}
-              className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors disabled:opacity-50"
+              className="btn-primary text-xs disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[14px]">refresh</span>
               Resubmit
             </button>
           )}
-        </div>
-        <p className="page-subtitle">{advance.reference_number}</p>
-      </div>
+          </>
+        }
+      />
 
       {/* Error banner */}
       {error && (
@@ -938,9 +942,9 @@ export default function AdvanceDetailPage() {
               {certifyMode === "certify" ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label className="block text-xs font-semibold text-neutral-700">
+                    <label htmlFor="salary-advances-detail-confirmed-net-salary-setcertifyform-f-data-testi" className="block text-xs font-semibold text-neutral-700">
                       Confirmed net salary <span className="text-red-500">*</span>
-                      <input
+                      <input id="salary-advances-detail-confirmed-net-salary-setcertifyform-f-data-testi"
                         type="number"
                         min={0}
                         step="0.01"
@@ -950,9 +954,9 @@ export default function AdvanceDetailPage() {
                         data-testid="certify-net-salary"
                       />
                     </label>
-                    <label className="block text-xs font-semibold text-neutral-700">
+                    <label htmlFor="salary-advances-detail-confirmed-gross-optional-setcertifyform-f" className="block text-xs font-semibold text-neutral-700">
                       Confirmed gross (optional)
-                      <input
+                      <input id="salary-advances-detail-confirmed-gross-optional-setcertifyform-f"
                         type="number"
                         min={0}
                         step="0.01"
@@ -961,9 +965,9 @@ export default function AdvanceDetailPage() {
                         onChange={(e) => setCertifyForm((f) => ({ ...f, confirmed_gross_salary: e.target.value }))}
                       />
                     </label>
-                    <label className="block text-xs font-semibold text-neutral-700">
+                    <label htmlFor="salary-advances-detail-recommended-amount-setcertifyform-f-data-testid-" className="block text-xs font-semibold text-neutral-700">
                       Recommended amount <span className="text-red-500">*</span>
-                      <input
+                      <input id="salary-advances-detail-recommended-amount-setcertifyform-f-data-testid-"
                         type="number"
                         min={1}
                         step="0.01"
@@ -973,9 +977,9 @@ export default function AdvanceDetailPage() {
                         data-testid="certify-recommended-amount"
                       />
                     </label>
-                    <label className="block text-xs font-semibold text-neutral-700">
+                    <label htmlFor="salary-advances-detail-recovery-payroll-date-setcertifyform-f-data-test" className="block text-xs font-semibold text-neutral-700">
                       Recovery payroll date <span className="text-red-500">*</span>
-                      <input
+                      <input id="salary-advances-detail-recovery-payroll-date-setcertifyform-f-data-test"
                         type="date"
                         className="form-input mt-1 w-full"
                         value={certifyForm.intended_recovery_payroll_date}
@@ -987,9 +991,9 @@ export default function AdvanceDetailPage() {
                   <p className="text-[11px] text-neutral-500">
                     Salary basis for v1: <span className="font-semibold">confirmed net</span>. Max eligible is recalculated as 50% of confirmed net on certify.
                   </p>
-                  <label className="block text-xs font-semibold text-neutral-700">
+                  <label htmlFor="salary-advances-detail-comments-setcertifyform-f-placeholder-certificat" className="block text-xs font-semibold text-neutral-700">
                     Comments
-                    <textarea
+                    <textarea id="salary-advances-detail-comments-setcertifyform-f-placeholder-certificat"
                       className="form-input mt-1 w-full h-20 resize-none"
                       value={certifyForm.comments}
                       onChange={(e) => setCertifyForm((f) => ({ ...f, comments: e.target.value }))}
@@ -998,9 +1002,9 @@ export default function AdvanceDetailPage() {
                   </label>
                 </div>
               ) : (
-                <label className="block text-xs font-semibold text-neutral-700">
+                <label htmlFor="salary-advances-detail-setactionreason-e-target-value-placeholder" className="block text-xs font-semibold text-neutral-700">
                   {certifyMode === "return" ? "Return reason" : "Not-eligible reason"} <span className="text-red-500">*</span>
-                  <textarea
+                  <textarea id="salary-advances-detail-setactionreason-e-target-value-placeholder"
                     className="form-input mt-1 w-full h-28 resize-none"
                     value={actionReason}
                     onChange={(e) => setActionReason(e.target.value)}
@@ -1034,9 +1038,9 @@ export default function AdvanceDetailPage() {
             <div className="p-6 space-y-3">
               <h3 className="text-base font-semibold text-neutral-900">Record payment</h3>
               <p className="text-sm text-neutral-500">Creates the BCRE liability register on disbursement.</p>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-payment-reference-setpaymentform-f-data-testid-p" className="block text-xs font-semibold text-neutral-700">
                 Payment reference <span className="text-red-500">*</span>
-                <input
+                <input id="salary-advances-detail-payment-reference-setpaymentform-f-data-testid-p"
                   type="text"
                   className="form-input mt-1 w-full"
                   value={paymentForm.payment_reference}
@@ -1044,9 +1048,9 @@ export default function AdvanceDetailPage() {
                   data-testid="payment-reference"
                 />
               </label>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-method-setpaymentform-f-bank-transfer-cash-chequ" className="block text-xs font-semibold text-neutral-700">
                 Method
-                <select
+                <select id="salary-advances-detail-method-setpaymentform-f-bank-transfer-cash-chequ"
                   className="form-input mt-1 w-full"
                   value={paymentForm.payment_method}
                   onChange={(e) => setPaymentForm((f) => ({ ...f, payment_method: e.target.value }))}
@@ -1057,9 +1061,9 @@ export default function AdvanceDetailPage() {
                   <option value="other">Other</option>
                 </select>
               </label>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-payment-date-setpaymentform-f" className="block text-xs font-semibold text-neutral-700">
                 Payment date
-                <input
+                <input id="salary-advances-detail-payment-date-setpaymentform-f"
                   type="date"
                   className="form-input mt-1 w-full"
                   value={paymentForm.payment_date}
@@ -1089,9 +1093,9 @@ export default function AdvanceDetailPage() {
             <div className="p-6 space-y-3">
               <h3 className="text-base font-semibold text-neutral-900">Record payroll recovery</h3>
               <p className="text-sm text-neutral-500">Posts a BCRE recovery transaction. Full EOM is the v1 policy default.</p>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-amount-setrecoveryform-f-data-testid-recovery-am" className="block text-xs font-semibold text-neutral-700">
                 Amount <span className="text-red-500">*</span>
-                <input
+                <input id="salary-advances-detail-amount-setrecoveryform-f-data-testid-recovery-am"
                   type="number"
                   min={0.01}
                   step="0.01"
@@ -1101,9 +1105,9 @@ export default function AdvanceDetailPage() {
                   data-testid="recovery-amount"
                 />
               </label>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-payroll-transaction-reference-setrecoveryform-f-" className="block text-xs font-semibold text-neutral-700">
                 Payroll transaction reference <span className="text-red-500">*</span>
-                <input
+                <input id="salary-advances-detail-payroll-transaction-reference-setrecoveryform-f-"
                   type="text"
                   required
                   className="form-input mt-1 w-full"
@@ -1113,9 +1117,9 @@ export default function AdvanceDetailPage() {
                   data-testid="recovery-reference"
                 />
               </label>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-notes-setrecoveryform-f" className="block text-xs font-semibold text-neutral-700">
                 Notes
-                <textarea
+                <textarea id="salary-advances-detail-notes-setrecoveryform-f"
                   className="form-input mt-1 w-full h-20 resize-none"
                   value={recoveryForm.notes}
                   onChange={(e) => setRecoveryForm((f) => ({ ...f, notes: e.target.value }))}

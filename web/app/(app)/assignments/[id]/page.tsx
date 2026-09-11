@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -318,42 +319,43 @@ export default function AssignmentDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1 text-sm text-neutral-500">
-        <Link href="/assignments" className="hover:text-primary">Assignments</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-700 font-medium truncate max-w-xs">{assignment.title}</span>
-      </nav>
-
       <WorkflowStatusBanner
         status={assignment.status}
         currentStage={null}
         currentHolder={assignment.assignee?.name ?? null}
       />
 
+      <ModulePageHeader
+        title={assignment.title}
+        subtitle={assignment.description}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.assignments", href: "/assignments" },
+              { label: assignment.reference_number },
+            ]}
+          />
+        }
+        meta={
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`badge ${s.cls}`}>
+              <span className="material-symbols-outlined text-[12px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>{s.icon}</span>
+              {s.label}
+            </span>
+            <span className={`badge ${p.cls}`}>{p.label} Priority</span>
+            {isOverdue && <span className="badge badge-danger">Overdue</span>}
+            {assignment.is_confidential && (
+              <span className="badge badge-muted">
+                <span className="material-symbols-outlined text-[12px] mr-1">lock</span>
+                Confidential
+              </span>
+            )}
+          </div>
+        }
+      />
+
       {/* Header card */}
       <div className="card p-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-xs font-mono text-neutral-400">{assignment.reference_number}</span>
-              <span className={`badge ${s.cls}`}>
-                <span className="material-symbols-outlined text-[12px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>{s.icon}</span>
-                {s.label}
-              </span>
-              <span className={`badge ${p.cls}`}>{p.label} Priority</span>
-              {isOverdue && <span className="badge badge-danger">Overdue</span>}
-              {assignment.is_confidential && (
-                <span className="badge badge-muted">
-                  <span className="material-symbols-outlined text-[12px] mr-1">lock</span>
-                  Confidential
-                </span>
-              )}
-            </div>
-            <h1 className="text-xl font-bold text-neutral-900">{assignment.title}</h1>
-            <p className="text-sm text-neutral-500 mt-1">{assignment.description}</p>
-          </div>
-        </div>
 
         {/* Progress bar */}
         <div className="mt-4">
@@ -541,13 +543,13 @@ export default function AssignmentDetailPage() {
               const linked = row.assignment;
               return (
                 <li key={String(row.id)} className="flex items-center justify-between gap-2">
-                  <Link href={`/assignments/${row.depends_on_assignment_id}`} className="hover:underline">
+                  <Link href={`/assignments/${row.depends_on_assignment_id}`} className="btn-secondary text-xs py-1 px-2">
                     {linked?.title ?? `Assignment #${row.depends_on_assignment_id}`}
                     {linked?.reference_number ? ` · ${linked.reference_number}` : ""}
                   </Link>
                   <button
                     type="button"
-                    className="text-xs text-red-700 hover:underline"
+                    className="btn-secondary text-xs py-1 px-2 text-red-700"
                     onClick={() => removeDep.mutate(Number(row.id))}
                     disabled={removeDep.isPending}
                   >
@@ -566,9 +568,10 @@ export default function AssignmentDetailPage() {
             </p>
           )}
           <div className="flex flex-wrap items-end gap-2">
-            <label className="block min-w-[220px] flex-1 text-sm">
+            <label htmlFor="assignment-depends-on" className="block min-w-[220px] flex-1 text-sm">
               <span className="mb-1 block text-neutral-600">Depends on</span>
               <select
+                id="assignment-depends-on"
                 className="form-input w-full"
                 value={depId}
                 onChange={(e) => setDepId(e.target.value)}
@@ -713,8 +716,9 @@ export default function AssignmentDetailPage() {
         <Modal title="Post Update" onClose={() => setShowUpdateModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Update Type</label>
+              <label htmlFor="assignment-update-type" className="block text-sm font-medium text-neutral-700 mb-1">Update Type</label>
               <select
+                id="assignment-update-type"
                 value={updateForm.type}
                 onChange={(e) => setUpdateForm((f) => ({ ...f, type: e.target.value }))}
                 className="form-input"
@@ -727,8 +731,9 @@ export default function AssignmentDetailPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Progress %</label>
+              <label htmlFor="assignment-update-progress" className="block text-sm font-medium text-neutral-700 mb-1">Progress %</label>
               <input
+                id="assignment-update-progress"
                 type="number"
                 min={0}
                 max={100}
@@ -739,8 +744,9 @@ export default function AssignmentDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Notes <span className="text-red-500">*</span></label>
+              <label htmlFor="assignment-update-notes" className="block text-sm font-medium text-neutral-700 mb-1">Notes <span className="text-red-500">*</span></label>
               <textarea
+                id="assignment-update-notes"
                 rows={4}
                 value={updateForm.notes}
                 onChange={(e) => setUpdateForm((f) => ({ ...f, notes: e.target.value }))}
@@ -749,8 +755,9 @@ export default function AssignmentDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Blocker (if any)</label>
+              <label htmlFor="assignment-update-blocker" className="block text-sm font-medium text-neutral-700 mb-1">Blocker (if any)</label>
               <select
+                id="assignment-update-blocker"
                 value={updateForm.blocker_type}
                 onChange={(e) => setUpdateForm((f) => ({ ...f, blocker_type: e.target.value }))}
                 className="form-input"
@@ -764,8 +771,9 @@ export default function AssignmentDetailPage() {
             </div>
             {updateForm.blocker_type && (
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Blocker Details</label>
+                <label htmlFor="assignment-update-blocker-details" className="block text-sm font-medium text-neutral-700 mb-1">Blocker Details</label>
                 <textarea
+                  id="assignment-update-blocker-details"
                   rows={2}
                   value={updateForm.blocker_details}
                   onChange={(e) => setUpdateForm((f) => ({ ...f, blocker_details: e.target.value }))}
@@ -792,8 +800,9 @@ export default function AssignmentDetailPage() {
         <Modal title="Respond to Assignment" onClose={() => setShowAcceptModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Decision</label>
+              <label htmlFor="assignment-accept-decision" className="block text-sm font-medium text-neutral-700 mb-1">Decision</label>
               <select
+                id="assignment-accept-decision"
                 value={acceptForm.decision}
                 onChange={(e) => setAcceptForm((f) => ({ ...f, decision: e.target.value }))}
                 className="form-input"
@@ -805,8 +814,9 @@ export default function AssignmentDetailPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Notes</label>
+              <label htmlFor="assignment-accept-notes" className="block text-sm font-medium text-neutral-700 mb-1">Notes</label>
               <textarea
+                id="assignment-accept-notes"
                 rows={3}
                 value={acceptForm.notes}
                 onChange={(e) => setAcceptForm((f) => ({ ...f, notes: e.target.value }))}
@@ -815,8 +825,9 @@ export default function AssignmentDetailPage() {
             </div>
             {acceptForm.decision === "deadline_proposed" && (
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Proposed Deadline</label>
+                <label htmlFor="assignment-accept-deadline" className="block text-sm font-medium text-neutral-700 mb-1">Proposed Deadline</label>
                 <input
+                  id="assignment-accept-deadline"
                   type="date"
                   value={acceptForm.proposed_deadline}
                   onChange={(e) => setAcceptForm((f) => ({ ...f, proposed_deadline: e.target.value }))}
@@ -843,8 +854,9 @@ export default function AssignmentDetailPage() {
         <Modal title="Close Assignment" onClose={() => setShowCloseModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Closure Notes</label>
+              <label htmlFor="assignment-close-notes" className="block text-sm font-medium text-neutral-700 mb-1">Closure Notes</label>
               <textarea
+                id="assignment-close-notes"
                 rows={3}
                 value={closeForm.notes}
                 onChange={(e) => setCloseForm((f) => ({ ...f, notes: e.target.value }))}
@@ -853,12 +865,14 @@ export default function AssignmentDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Performance Rating (1–5)</label>
-              <div className="flex gap-2">
+              <p id="assignment-close-rating" className="block text-sm font-medium text-neutral-700 mb-1">Performance Rating (1–5)</p>
+              <div className="flex gap-2" role="radiogroup" aria-labelledby="assignment-close-rating">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={n}
                     type="button"
+                    role="radio"
+                    aria-checked={closeForm.rating === String(n)}
                     onClick={() => setCloseForm((f) => ({ ...f, rating: String(n) }))}
                     className={cn(
                       "flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-semibold transition-all",
@@ -892,8 +906,9 @@ export default function AssignmentDetailPage() {
           <div className="space-y-4">
             <p className="text-sm text-neutral-600">Are you sure you want to cancel this assignment? This action cannot be undone.</p>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Reason (optional)</label>
+              <label htmlFor="assignment-cancel-reason" className="block text-sm font-medium text-neutral-700 mb-1">Reason (optional)</label>
               <textarea
+                id="assignment-cancel-reason"
                 rows={3}
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
@@ -918,8 +933,8 @@ export default function AssignmentDetailPage() {
         <Modal title="Mark Blocked" onClose={() => setShowBlockModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Blocker type</label>
-              <select className="form-input" value={blockForm.blocker_type} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_type: e.target.value }))}>
+              <label htmlFor="assignment-block-type" className="block text-sm font-medium text-neutral-700 mb-1">Blocker type</label>
+              <select id="assignment-block-type" className="form-input" value={blockForm.blocker_type} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_type: e.target.value }))}>
                 <option value="awaiting_approval">Awaiting approval</option>
                 <option value="awaiting_funds">Awaiting funds</option>
                 <option value="awaiting_information">Awaiting information</option>
@@ -927,15 +942,15 @@ export default function AssignmentDetailPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Blocker owner</label>
-              <select className="form-input" value={blockForm.blocker_owner_id} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_owner_id: e.target.value }))}>
+              <label htmlFor="assignment-block-owner" className="block text-sm font-medium text-neutral-700 mb-1">Blocker owner</label>
+              <select id="assignment-block-owner" className="form-input" value={blockForm.blocker_owner_id} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_owner_id: e.target.value }))}>
                 <option value="">Select…</option>
                 {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Details</label>
-              <textarea className="form-input" rows={3} value={blockForm.blocker_details} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_details: e.target.value }))} />
+              <label htmlFor="assignment-block-details" className="block text-sm font-medium text-neutral-700 mb-1">Details</label>
+              <textarea id="assignment-block-details" className="form-input" rows={3} value={blockForm.blocker_details} onChange={(e) => setBlockForm((f) => ({ ...f, blocker_details: e.target.value }))} />
             </div>
             <button
               className="btn-primary disabled:opacity-60"
@@ -952,8 +967,8 @@ export default function AssignmentDetailPage() {
         <Modal title="Verify Completion" onClose={() => setShowVerifyModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Decision</label>
-              <select className="form-input" value={verifyForm.decision} onChange={(e) => setVerifyForm((f) => ({ ...f, decision: e.target.value }))}>
+              <label htmlFor="assignment-verify-decision" className="block text-sm font-medium text-neutral-700 mb-1">Decision</label>
+              <select id="assignment-verify-decision" className="form-input" value={verifyForm.decision} onChange={(e) => setVerifyForm((f) => ({ ...f, decision: e.target.value }))}>
                 <option value="accepted">Accepted</option>
                 <option value="accepted_with_follow_up">Accepted with follow-up</option>
                 <option value="returned">Returned</option>
@@ -961,8 +976,8 @@ export default function AssignmentDetailPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Comments</label>
-              <textarea className="form-input" rows={3} value={verifyForm.comments} onChange={(e) => setVerifyForm((f) => ({ ...f, comments: e.target.value }))} />
+              <label htmlFor="assignment-verify-comments" className="block text-sm font-medium text-neutral-700 mb-1">Comments</label>
+              <textarea id="assignment-verify-comments" className="form-input" rows={3} value={verifyForm.comments} onChange={(e) => setVerifyForm((f) => ({ ...f, comments: e.target.value }))} />
             </div>
             <button className="btn-primary disabled:opacity-60" disabled={verifyMutation.isPending} onClick={() => verifyMutation.mutate()}>
               {verifyMutation.isPending ? "Saving…" : "Submit Verification"}
@@ -975,15 +990,15 @@ export default function AssignmentDetailPage() {
         <Modal title="Reassign" onClose={() => setShowReassignModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">New assignee</label>
-              <select className="form-input" value={reassignForm.assigned_to} onChange={(e) => setReassignForm((f) => ({ ...f, assigned_to: e.target.value }))}>
+              <label htmlFor="assignment-reassign-user" className="block text-sm font-medium text-neutral-700 mb-1">New assignee</label>
+              <select id="assignment-reassign-user" className="form-input" value={reassignForm.assigned_to} onChange={(e) => setReassignForm((f) => ({ ...f, assigned_to: e.target.value }))}>
                 <option value="">Select…</option>
                 {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Reason</label>
-              <textarea className="form-input" rows={3} value={reassignForm.reason} onChange={(e) => setReassignForm((f) => ({ ...f, reason: e.target.value }))} />
+              <label htmlFor="assignment-reassign-reason" className="block text-sm font-medium text-neutral-700 mb-1">Reason</label>
+              <textarea id="assignment-reassign-reason" className="form-input" rows={3} value={reassignForm.reason} onChange={(e) => setReassignForm((f) => ({ ...f, reason: e.target.value }))} />
             </div>
             <button
               className="btn-primary disabled:opacity-60"
@@ -1000,7 +1015,7 @@ export default function AssignmentDetailPage() {
         <Modal title="Change due date" onClose={() => setShowDueDateModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1" htmlFor="assignment-due-date">New due date</label>
+              <label htmlFor="assignment-due-date" className="block text-sm font-medium text-neutral-700 mb-1">New due date</label>
               <input
                 id="assignment-due-date"
                 type="date"
@@ -1010,7 +1025,7 @@ export default function AssignmentDetailPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1" htmlFor="assignment-due-reason">Reason</label>
+              <label htmlFor="assignment-due-reason" className="block text-sm font-medium text-neutral-700 mb-1">Reason</label>
               <textarea
                 id="assignment-due-reason"
                 className="form-input"
@@ -1034,8 +1049,8 @@ export default function AssignmentDetailPage() {
         <Modal title="Add Checklist Item" onClose={() => setShowChecklistModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Title</label>
-              <input className="form-input" value={checklistTitle} onChange={(e) => setChecklistTitle(e.target.value)} />
+              <label htmlFor="assignment-checklist-title" className="block text-sm font-medium text-neutral-700 mb-1">Title</label>
+              <input id="assignment-checklist-title" className="form-input" value={checklistTitle} onChange={(e) => setChecklistTitle(e.target.value)} />
             </div>
             <button
               className="btn-primary disabled:opacity-60"

@@ -6,6 +6,7 @@ import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { StockMovementModal } from "@/components/stock/StockMovementModal";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const typeConfig: Record<string, { label: string; cls: string; icon: string }> = {
   in: { label: "Stock In", cls: "badge-success", icon: "south_west" },
@@ -127,12 +128,12 @@ export default function StockMovementsPage() {
           </div>
         </div>
       ) : (
-        <div className="card p-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
-            <span className="material-symbols-outlined text-4xl text-neutral-300">swap_vert</span>
-          </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600">No movements recorded</p>
-          <p className="text-xs text-neutral-400 mt-1">Stock-in and stock-out movements will appear here.</p>
+        <div className="card">
+          <EmptyState
+            icon="swap_vert"
+            title="No movements recorded"
+            description="Stock-in and stock-out movements will appear here."
+          />
         </div>
       )}
 

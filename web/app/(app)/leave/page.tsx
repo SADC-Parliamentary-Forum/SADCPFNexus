@@ -28,6 +28,7 @@ import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
 import { FormSection } from "@/components/ui/FormSection";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const TYPE_LABELS: Record<string, string> = {
   annual: "Annual",
@@ -323,19 +324,11 @@ function LeavePageInner() {
       stats={
         <>
 {(isError || actionError) && (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <span className="material-symbols-outlined text-[16px]">error_outline</span>
-              <span className="flex-1">{actionError ?? "Failed to load leave requests."}</span>
-              {isError ? (
-                <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
-                  Retry
-                </button>
-              ) : (
-                <button type="button" className="text-xs font-semibold underline" onClick={() => setActionError(null)}>
-                  Dismiss
-                </button>
-              )}
-            </div>
+            <ErrorBanner
+              message={actionError ?? "Failed to load leave requests."}
+              onRetry={isError ? () => void refetch() : undefined}
+              onDismiss={isError ? undefined : () => setActionError(null)}
+            />
           )}
           <LeaveBalanceStrip cards={balanceCards} loading={balancesLoading} year={balances?.period_year} />
           {queue !== "recommend" && visibleCards.length > 0 && (
@@ -419,20 +412,22 @@ function LeavePageInner() {
       }
       empty={
         !loading && filtered.length === 0 ? (
-          <div className="card overflow-hidden">
-            <div className="px-5 py-16 text-center">
-              <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">event_available</span>
-              <p className="text-sm font-semibold text-neutral-600">No leave requests found</p>
-              <p className="mt-1 text-xs text-neutral-400">
-                {filter === "all" && !search
+          <div className="card">
+            <EmptyState
+              icon="event_available"
+              title="No leave requests found"
+              description={
+                filter === "all" && !search
                   ? "Submit your first leave application."
-                  : "No rows match the current filters."}
-              </p>
-              <Link href="/leave/create" className="btn-primary mt-5 inline-flex text-sm">
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                Apply for Leave
-              </Link>
-            </div>
+                  : "No rows match the current filters."
+              }
+              action={
+                <Link href="/leave/create" className="btn-primary inline-flex text-sm">
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  Apply for Leave
+                </Link>
+              }
+            />
           </div>
         ) : undefined
       }
@@ -457,7 +452,7 @@ function LeavePageInner() {
               { label: "Reason", value: req.reason || "—" },
             ]}
             actions={(req) => (
-              <Link href={`/leave/${req.id}`} className="text-xs font-medium text-primary hover:underline">
+              <Link href={`/leave/${req.id}`} className="btn-secondary text-xs py-1 px-2">
                 View
               </Link>
             )}
@@ -523,14 +518,14 @@ function LeavePageInner() {
                       </td>
                       <td>
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/leave/${req.id}`} className="text-xs font-medium text-primary hover:underline">
+                          <Link href={`/leave/${req.id}`} className="btn-secondary text-xs py-1 px-2">
                             View
                           </Link>
                           {canDelete && (
                             <>
                               <Link
                                 href={`/leave/create?edit=${req.id}`}
-                                className="text-xs font-medium text-neutral-600 hover:underline"
+                                className="btn-secondary text-xs py-1 px-2"
                               >
                                 Edit
                               </Link>
@@ -538,7 +533,7 @@ function LeavePageInner() {
                                 type="button"
                                 disabled={busy}
                                 onClick={() => void handleDelete(req)}
-                                className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                                className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50"
                               >
                                 Delete
                               </button>
@@ -549,7 +544,7 @@ function LeavePageInner() {
                               type="button"
                               disabled={busy}
                               onClick={() => void handleWithdraw(req)}
-                              className="text-xs font-medium text-amber-700 hover:underline disabled:opacity-50"
+                              className="btn-secondary text-xs py-1 px-2 text-amber-700 disabled:opacity-50"
                             >
                               Withdraw
                             </button>

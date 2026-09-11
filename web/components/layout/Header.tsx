@@ -212,7 +212,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                 </div>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
-                    <button onClick={handleMarkAllRead} className="text-[11px] font-semibold text-primary hover:underline">
+                    <button type="button" onClick={handleMarkAllRead} className="btn-secondary text-[11px] py-0.5 px-2">
                       {t("header.markAllRead")}
                     </button>
                   )}
@@ -270,7 +270,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                 })}
               </div>
               <div className="border-t border-neutral-100 dark:border-neutral-700 px-4 py-2.5">
-                <Link href="/notifications" onClick={() => setShowNotifications(false)} className="text-xs font-semibold text-primary hover:underline">
+                <Link href="/notifications" onClick={() => setShowNotifications(false)} className="btn-secondary text-xs py-1 px-2">
                   {t("header.viewAll")}
                 </Link>
               </div>

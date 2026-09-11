@@ -92,9 +92,9 @@ export default function GovernanceChecklistPage() {
               <div key={r.id} className="space-y-3 px-4 py-4">
                 <p className="text-sm font-medium text-neutral-900">{r.topic}</p>
                 <div className="flex flex-wrap items-end gap-3">
-                  <label className="text-xs text-neutral-600">
+                  <label htmlFor={`admin-access-governance-status-${r.id}`} className="text-xs text-neutral-600">
                     Status
-                    <select
+                    <select id={`admin-access-governance-status-${r.id}`}
                       className="form-input mt-1 block min-w-[10rem]"
                       value={draft.status}
                       onChange={(e) =>
@@ -109,9 +109,9 @@ export default function GovernanceChecklistPage() {
                       <option value="not_applicable">not_applicable</option>
                     </select>
                   </label>
-                  <label className="min-w-[16rem] flex-1 text-xs text-neutral-600">
+                  <label htmlFor={`admin-access-governance-notes-${r.id}`} className="min-w-[16rem] flex-1 text-xs text-neutral-600">
                     Decision notes
-                    <textarea
+                    <textarea id={`admin-access-governance-notes-${r.id}`}
                       className="form-input mt-1 block w-full"
                       rows={2}
                       value={draft.decision_notes}

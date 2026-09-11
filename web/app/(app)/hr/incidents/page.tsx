@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { hrIncidentsApi, type HrIncident } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type FilterTab = "all" | "mine" | "open" | "resolved";
 
@@ -65,23 +67,17 @@ export default function HrIncidentsPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Page header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-flex items-center gap-1">
-            <span className="material-symbols-outlined text-[14px]">arrow_back</span>
-            HR
-          </Link>
-          <h1 className="page-title">HR Incidents</h1>
-          <p className="page-subtitle">Report workplace incidents and track their status.</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <ModulePageHeader
+        title="HR Incidents"
+        subtitle="Report workplace incidents and track their status."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Incidents" }]} />}
+        actions={
           <Link href="/hr/incidents/new" className="btn-primary py-2 px-3 text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-[18px]">add</span>
             Report Incident
           </Link>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filter tabs */}
       <div className="flex items-center gap-1 flex-wrap">
@@ -113,15 +109,11 @@ export default function HrIncidentsPage() {
             <span className="ml-2">Loading…</span>
           </div>
         ) : incidents.length === 0 ? (
-          <div className="card p-5 py-16 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200">report_off</span>
-            <p className="mt-3 text-sm text-neutral-500">No incident reports found.</p>
-            <p className="text-xs text-neutral-400 mt-1">
-              {activeTab !== "all"
-                ? "Try switching to the All tab."
-                : "Reported incidents will appear here."}
-            </p>
-          </div>
+          <EmptyState
+            icon="report_off"
+            title="No incident reports found."
+            description={activeTab !== "all" ? "Try switching to the All tab." : "Reported incidents will appear here."}
+          />
         ) : (
           incidents.map((incident) => (
             <div key={incident.id} className="card p-5 cursor-pointer hover:border-primary/30 transition-colors" onClick={() => router.push(`/hr/incidents/${incident.id}`)}>
@@ -156,7 +148,7 @@ export default function HrIncidentsPage() {
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
-                  <Link href={`/hr/incidents/${incident.id}`} onClick={(e) => e.stopPropagation()} className="text-xs font-semibold text-primary hover:underline">View</Link>
+                  <Link href={`/hr/incidents/${incident.id}`} onClick={(e) => e.stopPropagation()} className="btn-secondary text-xs">View</Link>
                   <span
                     className={`inline-flex items-center justify-center w-9 h-9 rounded-full ${
                       incident.severity === "high"

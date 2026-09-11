@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { decisionsApi } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 export default function DecisionsDashboardPage() {
   const qc = useQueryClient();
@@ -96,40 +97,47 @@ export default function DecisionsDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <Link href="/decisions" className="text-sm text-neutral-500 hover:text-primary">← Decision Register</Link>
-          <h1 className="mt-2 text-2xl font-semibold">Decisions dashboard</h1>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={promote.isPending}
-            onClick={() => promote.mutate()}
-          >
-            {promote.isPending ? "Promoting…" : "Promote weekly assignments"}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={promoteRisks.isPending}
-            onClick={() => promoteRisks.mutate()}
-          >
-            {promoteRisks.isPending ? "Promoting…" : "Promote risk drafts"}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary"
-            data-testid="promote-meeting-pack"
-            disabled={promotePack.isPending}
-            onClick={() => promotePack.mutate()}
-          >
-            {promotePack.isPending ? "Promoting…" : "Promote meeting pack"}
-          </button>
-          <Link href="/decisions/create" className="btn-primary">New decision</Link>
-        </div>
-      </div>
+      <ModulePageHeader
+        title="Decisions dashboard"
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Decision Register", href: "/decisions" },
+              { label: "Decisions dashboard" },
+            ]}
+          />
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={promote.isPending}
+              onClick={() => promote.mutate()}
+            >
+              {promote.isPending ? "Promoting…" : "Promote weekly assignments"}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={promoteRisks.isPending}
+              onClick={() => promoteRisks.mutate()}
+            >
+              {promoteRisks.isPending ? "Promoting…" : "Promote risk drafts"}
+            </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              data-testid="promote-meeting-pack"
+              disabled={promotePack.isPending}
+              onClick={() => promotePack.mutate()}
+            >
+              {promotePack.isPending ? "Promoting…" : "Promote meeting pack"}
+            </button>
+            <Link href="/decisions/create" className="btn-primary">New decision</Link>
+          </div>
+        }
+      />
 
       <form
         className="flex flex-wrap items-end gap-2"
@@ -139,9 +147,9 @@ export default function DecisionsDashboardPage() {
           if (minutesId) promoteMinutes.mutate();
         }}
       >
-        <label className="text-sm">
+        <label htmlFor="decision-minutes-promote" className="text-sm">
           Minutes
-          <select className="form-input mt-1 min-w-[16rem]" value={minutesId} onChange={(e) => setMinutesId(e.target.value)}>
+          <select id="decision-minutes-promote" className="form-input mt-1 min-w-[16rem]" value={minutesId} onChange={(e) => setMinutesId(e.target.value)}>
             <option value="">Select minutes</option>
             {(minutes.data ?? []).map((row) => (
               <option key={row.id} value={row.id}>{row.title}{row.meeting_date ? ` · ${row.meeting_date}` : ""}</option>

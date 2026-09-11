@@ -99,9 +99,9 @@ export function AssetLabelsQuickPrintModal({
         </p>
       )}
       <p className="mb-3 text-sm text-neutral-600">{assetIds.length} selected</p>
-      <label className="block text-sm">
+      <label htmlFor="assets-AssetLabelsQuickPrintModal-settemplateid-e-target-value-number-e-target-val" className="block text-sm">
         {t("assets.labels.template")}
-        <select
+        <select id="assets-AssetLabelsQuickPrintModal-settemplateid-e-target-value-number-e-target-val"
           className="input mt-1 w-full"
           value={templateId}
           onChange={(e) => setTemplateId(e.target.value ? Number(e.target.value) : "")}

@@ -9,6 +9,8 @@ import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   pending:   { label: "Pending",   cls: "badge-warning", icon: "hourglass_empty" },
@@ -161,20 +163,15 @@ function ReceiptsPageInner() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Receipts</span>
-          </div>
-          <h1 className="page-title">Goods Receipts</h1>
-          <p className="page-subtitle">
-            {poIdParam ? `Receipts for PO #${poIdParam}` : "Track deliveries against purchase orders"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
+      <ProcurementPageHeader
+        title="Goods Receipts"
+        subtitle={poIdParam ? `Receipts for PO #${poIdParam}` : "Track deliveries against purchase orders"}
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "Receipts" },
+        ]}
+        actions={
+          <>
           <button
             type="button"
             className="btn-secondary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
@@ -187,6 +184,7 @@ function ReceiptsPageInner() {
           {poId && (
             <>
               <button
+                type="button"
                 onClick={handleModalOpen}
                 className="btn-primary inline-flex items-center gap-1.5 text-sm"
               >
@@ -203,8 +201,9 @@ function ReceiptsPageInner() {
             <span className="material-symbols-outlined text-[16px]">receipt_long</span>
             Purchase Orders
           </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -279,13 +278,11 @@ function ReceiptsPageInner() {
       ) : isError ? (
         <div className="card p-6 text-center text-sm text-red-600">Failed to load goods receipts.</div>
       ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <span className="material-symbols-outlined text-4xl text-neutral-300">inventory_2</span>
-          <p className="text-sm text-neutral-500">No goods receipts found.</p>
-          <p className="text-xs text-neutral-400">
-            {poId ? 'Click \u201cRecord Receipt\u201d above to log a new delivery.' : "Record a receipt against an issued purchase order."}
-          </p>
-        </div>
+        <EmptyState
+          icon="inventory_2"
+          title="No goods receipts found."
+          description={poId ? "Click “Record Receipt” above to log a new delivery." : "Record a receipt against an issued purchase order."}
+        />
       ) : (
         <div className="card overflow-hidden">
           <table className="data-table">
@@ -307,7 +304,7 @@ function ReceiptsPageInner() {
                     <td>
                       <Link
                         href={`/procurement/receipts/${grn.id}?po=${grn.purchase_order_id}`}
-                        className="font-mono text-xs text-primary hover:underline"
+                        className="btn-secondary font-mono text-xs"
                       >
                         {grn.reference_number}
                       </Link>
@@ -379,8 +376,8 @@ function ReceiptsPageInner() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Received Date <span className="text-red-500">*</span></label>
-                <input
+                <label htmlFor="procurement-receipts-received-date" className="text-xs font-semibold text-neutral-600">Received Date <span className="text-red-500">*</span></label>
+                <input id="procurement-receipts-received-date"
                   type="date"
                   className="form-input"
                   value={receivedDate}
@@ -388,8 +385,8 @@ function ReceiptsPageInner() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Notes</label>
-                <input
+                <label htmlFor="procurement-receipts-notes" className="text-xs font-semibold text-neutral-600">Notes</label>
+                <input id="procurement-receipts-notes"
                   type="text"
                   className="form-input"
                   placeholder="Optional notes…"
@@ -418,8 +415,8 @@ function ReceiptsPageInner() {
                       </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-semibold uppercase text-neutral-400">Qty Received</label>
-                          <input
+                          <label htmlFor="procurement-receipts-qty-received" className="text-[10px] font-semibold uppercase text-neutral-400">Qty Received</label>
+                          <input id="procurement-receipts-qty-received"
                             type="number"
                             min="0"
                             max={row.quantity_ordered}
@@ -433,8 +430,8 @@ function ReceiptsPageInner() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[10px] font-semibold uppercase text-neutral-400">Qty Accepted</label>
-                          <input
+                          <label htmlFor="procurement-receipts-qty-accepted" className="text-[10px] font-semibold uppercase text-neutral-400">Qty Accepted</label>
+                          <input id="procurement-receipts-qty-accepted"
                             type="number"
                             min="0"
                             max={row.quantity_received}
@@ -448,8 +445,8 @@ function ReceiptsPageInner() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[10px] font-semibold uppercase text-neutral-400">Condition Notes</label>
-                          <input
+                          <label htmlFor="procurement-receipts-condition-notes" className="text-[10px] font-semibold uppercase text-neutral-400">Condition Notes</label>
+                          <input id="procurement-receipts-condition-notes"
                             type="text"
                             className="form-input text-sm"
                             placeholder="Optional…"

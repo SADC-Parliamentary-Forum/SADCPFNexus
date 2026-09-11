@@ -11,7 +11,7 @@ import { exportToCsv } from "@/lib/csvExport";
 import { getListData } from "@/lib/listPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import { TRAVEL_HUB_CARDS, type TravelHubCard, type TravelHubSection } from "@/lib/travelHub";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
@@ -282,13 +282,7 @@ function TravelPageInner() {
       })}
 
       {isError && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          <span className="flex-1">Failed to load travel requests.</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
-            Retry
-          </button>
-        </div>
+        <ErrorBanner message="Failed to load travel requests." onRetry={() => void refetch()} />
       )}
 
       <FormSection
@@ -377,11 +371,11 @@ function TravelPageInner() {
                       <td><span className={`badge text-xs ${cfg.cls}`}>{cfg.label}</span></td>
                       <td>
                         <div className="flex flex-wrap gap-2">
-                          <Link href={`/travel/${r.id}`} className="text-xs font-medium text-primary hover:underline">
+                          <Link href={`/travel/${r.id}`} className="btn-secondary text-xs py-1 px-2">
                             View
                           </Link>
                           {canEdit && (
-                            <Link href={`/travel/create?edit=${r.id}`} className="text-xs font-medium text-neutral-600 hover:underline">
+                            <Link href={`/travel/create?edit=${r.id}`} className="btn-secondary text-xs py-1 px-2">
                               Edit
                             </Link>
                           )}

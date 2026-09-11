@@ -14,6 +14,8 @@ import {
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type NodeDraft = { title: string; code: string; description: string };
 
@@ -174,13 +176,25 @@ export default function StrategicPlanDetailPage() {
   };
 
   if (isLoading) {
-    return <div className="px-5 py-10 text-sm text-neutral-400">Loading plan…</div>;
+    return (
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Strategic plan"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: "Strategic Plans", href: "/mande/strategic-plan" }, { label: "Plan" }]} />}
+        />
+        <p className="text-sm text-neutral-400">Loading plan…</p>
+      </div>
+    );
   }
   if (isError || !plan) {
     return (
-      <div className="space-y-3">
-        <Link href="/mande/strategic-plan" className="text-xs text-primary hover:underline">← Strategic plans</Link>
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Strategic plan"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: "Strategic Plans", href: "/mande/strategic-plan" }, { label: "Plan" }]} />}
+        />
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">Plan not found.</div>
+        <Link href="/mande/strategic-plan" className="btn-secondary text-sm">Back to strategic plans</Link>
       </div>
     );
   }
@@ -189,19 +203,19 @@ export default function StrategicPlanDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <Link href="/mande/strategic-plan" className="text-xs text-primary hover:underline">← Strategic plans</Link>
-        <h1 className="page-title mt-1">{plan.name}</h1>
-        <p className="page-subtitle">
-          {plan.period ?? "No period"}
-          {" · "}
-          {plan.start_date ? formatDateShort(plan.start_date) : "—"}
-          {" → "}
-          {plan.end_date ? formatDateShort(plan.end_date) : "—"}
-          {" · "}
-          <span className="capitalize">{plan.status}</span>
-        </p>
-      </div>
+      <ModulePageHeader
+        title={plan.name}
+        subtitle={`${plan.period ?? "No period"} · ${plan.start_date ? formatDateShort(plan.start_date) : "—"} → ${plan.end_date ? formatDateShort(plan.end_date) : "—"} · ${plan.status}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.mande", href: "/mande" },
+              { label: "Strategic Plans", href: "/mande/strategic-plan" },
+              { label: plan.name },
+            ]}
+          />
+        }
+      />
 
       {actionMsg && (
         <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">{actionMsg}</div>
@@ -218,9 +232,11 @@ export default function StrategicPlanDetailPage() {
         </div>
 
         {goals.length === 0 && (
-          <div className="card px-5 py-8 text-center text-sm text-neutral-500">
-            No goals yet. {canAdmin ? "Add a goal below to start the hierarchy." : "An administrator can add goals."}
-          </div>
+          <EmptyState
+            icon="account_tree"
+            title="No goals yet"
+            description={canAdmin ? "Add a goal below to start the hierarchy." : "An administrator can add goals."}
+          />
         )}
 
         {goals.map((goal: StrategicGoal) => (
@@ -237,14 +253,14 @@ export default function StrategicPlanDetailPage() {
                 <div className="flex gap-2 shrink-0">
                   <button
                     type="button"
-                    className="text-primary text-xs hover:underline"
+                    className="btn-secondary text-xs"
                     onClick={() => startChild("objective", goal.id)}
                   >
                     + Objective
                   </button>
                   <button
                     type="button"
-                    className="text-red-500 text-xs hover:underline"
+                    className="btn-secondary text-xs text-red-600"
                     onClick={() => confirmDeleteNode("goal", goal.id, "Delete this goal and its children?")}
                   >
                     Delete
@@ -278,14 +294,14 @@ export default function StrategicPlanDetailPage() {
                     <div className="flex gap-2 shrink-0">
                       <button
                         type="button"
-                        className="text-primary text-xs hover:underline"
+                        className="btn-secondary text-xs"
                         onClick={() => startChild("outcome", obj.id)}
                       >
                         + Outcome
                       </button>
                       <button
                         type="button"
-                        className="text-red-500 text-xs hover:underline"
+                        className="btn-secondary text-xs text-red-600"
                         onClick={() => confirmDeleteNode("objective", obj.id, "Delete this objective?")}
                       >
                         Delete
@@ -319,14 +335,14 @@ export default function StrategicPlanDetailPage() {
                         <div className="flex gap-2 shrink-0">
                           <button
                             type="button"
-                            className="text-primary text-xs hover:underline"
+                            className="btn-secondary text-xs"
                             onClick={() => startChild("output", outcome.id)}
                           >
                             + Output
                           </button>
                           <button
                             type="button"
-                            className="text-red-500 text-xs hover:underline"
+                            className="btn-secondary text-xs text-red-600"
                             onClick={() => confirmDeleteNode("outcome", outcome.id, "Delete this outcome?")}
                           >
                             Delete
@@ -360,7 +376,7 @@ export default function StrategicPlanDetailPage() {
                             {canAdmin && (
                               <button
                                 type="button"
-                                className="text-red-500 text-xs hover:underline shrink-0"
+                                className="btn-secondary text-xs text-red-600 shrink-0"
                                 onClick={() => confirmDeleteNode("output", output.id, "Delete this output?")}
                               >
                                 Delete

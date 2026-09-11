@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { correspondenceApi, saamApi, type CorrespondenceLetter, type CorrespondenceContact, type SignatureEvent } from "@/lib/api";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { SigningModal } from "@/components/saam/SigningModal";
 import { CreateAssignmentFromSourceModal } from "@/components/assignments/CreateAssignmentFromSourceModal";
@@ -160,12 +160,30 @@ export default function CorrespondenceDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/correspondence" className="hover:text-neutral-700">Correspondence</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium truncate">{letter.reference_number ?? letter.title}</span>
-      </div>
+      <ModulePageHeader
+        title={letter.title}
+        subtitle={letter.subject}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Correspondence", href: "/correspondence" },
+              { label: letter.reference_number ?? letter.title },
+            ]}
+          />
+        }
+        meta={
+          <>
+            {letter.reference_number && (
+              <span className="text-xs font-mono font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                {letter.reference_number}
+              </span>
+            )}
+            <span className={`badge ${statusCls[letter.status] ?? "badge-muted"}`}>
+              {statusLabel[letter.status] ?? letter.status}
+            </span>
+          </>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
@@ -188,7 +206,7 @@ export default function CorrespondenceDetailPage() {
                 {statusLabel[letter.status] ?? letter.status}
               </span>
             </div>
-            <h1 className="text-lg font-bold text-neutral-900">{letter.title}</h1>
+            <p className="text-lg font-semibold text-neutral-900">{letter.title}</p>
             <p className="text-sm text-neutral-500 mt-0.5">{letter.subject}</p>
           </div>
           {/* Workflow Actions */}
@@ -283,7 +301,7 @@ export default function CorrespondenceDetailPage() {
             )}
             {["pending_sg_routing", "routed", "in_progress", "sent"].includes(letter.status) && (
               <>
-                <label className="sr-only" htmlFor="correspondence-ack-status">Acknowledgement</label>
+                <label htmlFor="correspondence-ack-status" className="sr-only">Acknowledgement</label>
                 <select
                   id="correspondence-ack-status"
                   className="form-input text-sm"
@@ -389,8 +407,9 @@ export default function CorrespondenceDetailPage() {
                   )}
                 </div>
                 <button
+                  type="button"
                   onClick={handleDownload}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                  className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
                 >
                   <span className="material-symbols-outlined text-[14px]">download</span>
                   Download
@@ -524,7 +543,7 @@ export default function CorrespondenceDetailPage() {
             ))}
           </ul>
         )}
-        <label className="block text-xs font-medium text-neutral-600" htmlFor="correspondence-note">
+        <label htmlFor="correspondence-note" className="block text-xs font-medium text-neutral-600">
           Add note
           <textarea
             id="correspondence-note"
@@ -558,7 +577,7 @@ export default function CorrespondenceDetailPage() {
             <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Signing Chain</h3>
             <a
               href={`/saam/verify/correspondence/${id}`}
-              className="text-xs font-semibold text-primary hover:underline flex items-center gap-0.5"
+              className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-0.5"
               target="_blank"
             >
               Full audit trail
@@ -657,10 +676,11 @@ export default function CorrespondenceDetailPage() {
               {showReviewModal === "approve" ? "Approve Review" : "Request Changes"}
             </h2>
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">
+              <label htmlFor="correspondence-review-comment" className="block text-xs font-medium text-neutral-600 mb-1">
                 {showReviewModal === "reject" ? "Reason *" : "Comment (optional)"}
               </label>
               <textarea
+                id="correspondence-review-comment"
                 value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
                 rows={3}
@@ -692,8 +712,9 @@ export default function CorrespondenceDetailPage() {
             <h2 className="text-base font-semibold text-neutral-900">Send Correspondence</h2>
 
             <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">Search contacts</label>
+              <label htmlFor="correspondence-contact-search" className="block text-xs font-medium text-neutral-600 mb-1">Search contacts</label>
               <input
+                id="correspondence-contact-search"
                 value={contactSearch}
                 onChange={(e) => setContactSearch(e.target.value)}
                 className="form-input w-full"

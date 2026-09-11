@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { decisionsApi, type MeetingDecision } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
   draft: { label: "Draft", cls: "badge-muted" },
@@ -104,24 +105,20 @@ export default function DecisionsRegisterPage() {
             </thead>
             <tbody>
               {rows.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-neutral-500">
-                    No decisions yet. Create the first resolution or management decision.
-                  </td>
-                </tr>
+                <TableEmpty colSpan={6} title="No decisions yet. Create the first resolution or management decision." />
               )}
               {rows.map((d) => {
                 const st = STATUS_CONFIG[d.status] ?? STATUS_CONFIG.draft;
                 return (
                   <tr key={d.id} className="border-t border-neutral-100 dark:border-neutral-800 hover:bg-neutral-50/80 dark:hover:bg-neutral-900/40">
                     <td className="px-4 py-3 font-mono text-xs">
-                      <Link href={`/decisions/${d.id}`} className="text-primary hover:underline">
+                      <Link href={`/decisions/${d.id}`} className="btn-secondary text-xs py-1 px-2">
                         {d.reference_number}
                       </Link>
                       {d.is_confidential && <span className="ml-2 text-[10px] uppercase text-amber-600">Confidential</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <Link href={`/decisions/${d.id}`} className="font-medium text-neutral-900 dark:text-neutral-100 hover:underline">
+                      <Link href={`/decisions/${d.id}`} className="font-medium text-neutral-900 dark:text-neutral-100">
                         {d.title}
                       </Link>
                     </td>

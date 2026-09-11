@@ -8,6 +8,8 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { GradeBandSlideOver } from "../GradeBandSlideOver";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_BADGE: Record<HrSettingsStatus, string> = {
   draft:     "badge-muted",
@@ -101,7 +103,15 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="h-8 bg-neutral-100 rounded w-48 animate-pulse" />
+        <HrSettingsHeader
+          title="Position Grade"
+          crumbs={[
+            { label: "nav.admin", href: "/admin" },
+            { label: "HR Administration", href: "/settings/hr" },
+            { label: "Position Grades", href: "/settings/hr/grade-bands" },
+            { label: "Position Grade" },
+          ]}
+        />
         <SkeletonCard />
         <SkeletonCard />
       </div>
@@ -110,9 +120,17 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
 
   if (error || !data) {
     return (
-      <div className="card p-8 text-center">
-        <span className="material-symbols-outlined text-[32px] text-red-400">error</span>
-        <p className="mt-2 text-sm text-red-600">Failed to load grade band.</p>
+      <div className="space-y-4">
+        <HrSettingsHeader
+          title="Position Grade"
+          crumbs={[
+            { label: "nav.admin", href: "/admin" },
+            { label: "HR Administration", href: "/settings/hr" },
+            { label: "Position Grades", href: "/settings/hr/grade-bands" },
+            { label: "Position Grade" },
+          ]}
+        />
+        <EmptyState icon="error" title="Failed to load grade band." />
       </div>
     );
   }
@@ -139,66 +157,61 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
         />
       )}
 
-      {/* Breadcrumb + header */}
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href="/settings/hr/grade-bands" className="hover:text-primary">Position Grades</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700 font-medium">{g.code}</span>
-        </div>
-
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="page-title">{g.label}</h1>
-              <span className={cn("badge", STATUS_BADGE[status])}>{status}</span>
-              <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">v{g.version_number}</span>
-            </div>
-            <p className="page-subtitle">Grade code {g.code} · {g.band_group} band · {g.employment_category}</p>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-2 shrink-0">
+      <HrSettingsHeader
+        title={g.label}
+        subtitle={`Grade code ${g.code} · ${g.band_group} band · ${g.employment_category}`}
+        crumbs={[
+          { label: "nav.admin", href: "/admin" },
+          { label: "HR Administration", href: "/settings/hr" },
+          { label: "Position Grades", href: "/settings/hr/grade-bands" },
+          { label: g.code },
+        ]}
+        meta={
+          <>
+            <span className={cn("badge", STATUS_BADGE[status])}>{status}</span>
+            <span className="text-xs text-neutral-400 bg-neutral-100 px-2 py-0.5 rounded-full">v{g.version_number}</span>
+          </>
+        }
+        actions={
+          <>
             {status === "draft" && (
-              <button onClick={() => setEditOpen(true)} className="btn-secondary text-sm flex items-center gap-1.5">
+              <button type="button" onClick={() => setEditOpen(true)} className="btn-secondary text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">edit</span>
                 Edit
               </button>
             )}
             {status === "draft" && (
-              <button onClick={() => lifecycleMutation.mutate("submit")} className="btn-secondary text-sm flex items-center gap-1.5">
+              <button type="button" onClick={() => lifecycleMutation.mutate("submit")} className="btn-secondary text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">send</span>
                 Submit
               </button>
             )}
             {status === "review" && canApprove && (
-              <button onClick={() => lifecycleMutation.mutate("approve")} className="btn-secondary text-sm flex items-center gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
+              <button type="button" onClick={() => lifecycleMutation.mutate("approve")} className="btn-secondary text-sm flex items-center gap-1.5 text-green-700 border-green-300 hover:bg-green-50">
                 <span className="material-symbols-outlined text-[16px]">check_circle</span>
                 Approve
               </button>
             )}
             {status === "approved" && canPublish && (
-              <button onClick={() => lifecycleMutation.mutate("publish")} className="btn-primary text-sm flex items-center gap-1.5">
+              <button type="button" onClick={() => lifecycleMutation.mutate("publish")} className="btn-primary text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">publish</span>
                 Publish
               </button>
             )}
             {status === "published" && (
-              <button onClick={() => lifecycleMutation.mutate("new-version")} className="btn-secondary text-sm flex items-center gap-1.5">
+              <button type="button" onClick={() => lifecycleMutation.mutate("new-version")} className="btn-secondary text-sm flex items-center gap-1.5">
                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
                 New Version
               </button>
             )}
             {(status === "draft" || status === "review") && (
-              <button onClick={() => lifecycleMutation.mutate("archive")} className="btn-secondary text-sm text-neutral-500">
+              <button type="button" onClick={() => lifecycleMutation.mutate("archive")} className="btn-secondary text-sm text-neutral-500">
                 Archive
               </button>
             )}
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Core Details */}
@@ -248,18 +261,21 @@ export default function GradeBandDetailPage({ params }: { params: Promise<{ id: 
             </div>
             <Link
               href={`/settings/hr/salary-scales?grade_band_id=${g.id}`}
-              className="text-xs text-primary hover:underline"
+              className="btn-secondary text-xs"
             >
               View all
             </Link>
           </div>
           {!g.salary_scales?.length ? (
-            <div className="py-6 text-center">
-              <p className="text-sm text-neutral-400">No salary scales linked to this grade yet.</p>
-              <Link href="/settings/hr/salary-scales" className="text-xs text-primary hover:underline mt-1 block">
-                Create salary scale
-              </Link>
-            </div>
+            <EmptyState
+              icon="payments"
+              title="No salary scales linked to this grade yet."
+              action={
+                <Link href="/settings/hr/salary-scales" className="btn-secondary text-xs">
+                  Create salary scale
+                </Link>
+              }
+            />
           ) : (
             <div className="space-y-2">
               {g.salary_scales.map((s) => (

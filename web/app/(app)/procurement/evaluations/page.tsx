@@ -35,7 +35,7 @@ export default function EvaluationsPage() {
       {isError ? (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="flex-1">Failed to load evaluations.</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => void refetch()}>
             Retry
           </button>
         </div>

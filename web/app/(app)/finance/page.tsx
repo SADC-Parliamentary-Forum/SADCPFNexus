@@ -7,6 +7,7 @@ import { financeApi, type SalaryAdvanceRequest, type Payslip, type FinanceSummar
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { FINANCE_HUB_CARDS } from "@/lib/hubs/finance";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -130,12 +131,7 @@ export default function FinancePage() {
 
       <ModuleHubCards cards={FINANCE_HUB_CARDS} />
 
-      {error && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          {error}
-        </div>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
@@ -191,14 +187,16 @@ export default function FinancePage() {
             ))}
           </div>
         ) : (
-          <div className="px-5 py-10 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200 dark:text-neutral-600">pie_chart</span>
-            <p className="mt-3 text-sm text-neutral-400 dark:text-neutral-500">No budgets configured yet.</p>
-            <Link href="/finance/budget/upload" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
-              <span className="material-symbols-outlined text-[14px]">upload_file</span>
-              Upload a budget
-            </Link>
-          </div>
+          <EmptyState
+            icon="pie_chart"
+            title="No budgets configured yet."
+            action={
+              <Link href="/finance/budget/upload" className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">upload_file</span>
+                Upload a budget
+              </Link>
+            }
+          />
         )}
         {budgets.length > 0 && (
           <div className="px-5 py-3 border-t border-neutral-100 dark:border-neutral-700/50 flex items-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
@@ -256,7 +254,7 @@ export default function FinancePage() {
                         toastError("Payslip document is not available yet.");
                       }
                     }}
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                    className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[14px]">download</span>
                     Download
@@ -266,10 +264,7 @@ export default function FinancePage() {
             ))}
           </div>
         ) : (
-          <div className="px-5 py-12 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200 dark:text-neutral-600">description</span>
-            <p className="mt-3 text-sm text-neutral-400 dark:text-neutral-500">No payslips available yet.</p>
-          </div>
+          <EmptyState icon="description" title="No payslips available yet." />
         )}
       </div>
 
@@ -314,10 +309,7 @@ export default function FinancePage() {
               );
             })}
             {advances.length === 0 && (
-              <div className="py-12 text-center">
-                <span className="material-symbols-outlined text-4xl text-neutral-200 dark:text-neutral-600">account_balance</span>
-                <p className="mt-3 text-sm text-neutral-400 dark:text-neutral-500">No salary advance requests.</p>
-              </div>
+              <EmptyState icon="account_balance" title="No salary advance requests." />
             )}
           </div>
         )}

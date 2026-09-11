@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mandeApi, type MeActivityReport } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 export default function ProgrammeReviewQueuePage() {
   const qc = useQueryClient();
@@ -37,16 +38,14 @@ export default function ProgrammeReviewQueuePage() {
       />
 
       {isError && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          Failed to load programme review queue. You may need M&amp;E review permission.
-        </div>
+        <ErrorBanner message="Failed to load programme review queue. You may need M&E review permission." />
       )}
 
       {isLoading ? (
         <div className="card px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
       ) : data.length === 0 ? (
-        <div className="card px-5 py-10 text-center text-sm text-neutral-400">
-          No reports pending programme manager review.
+        <div className="card">
+          <EmptyState icon="rate_review" title="No reports pending programme manager review." />
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -64,7 +63,7 @@ export default function ProgrammeReviewQueuePage() {
               {data.map((r) => (
                 <tr key={r.id}>
                   <td className="font-mono text-xs">
-                    <Link href={`/mande/activity-reports/${r.id}`} className="text-primary hover:underline">
+                    <Link href={`/mande/activity-reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">
                       {r.reference_number}
                     </Link>
                   </td>

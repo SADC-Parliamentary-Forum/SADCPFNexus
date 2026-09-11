@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { calendarApi, type CalendarEntry, type CalendarEntryInput } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { Modal } from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const SADC_COUNTRY_CODES: Record<string, string> = {
   NA: "Namibia (LIL uses NA only)",
@@ -204,19 +204,6 @@ export default function AdminCalendarPage() {
         }
       />
 
-      <div className="hidden">
-        <div>
-          <Link href="/admin" className="text-sm text-neutral-500 hover:text-neutral-700 mb-1 block">
-            ← Admin
-          </Link>
-          <h1 className="text-2xl font-semibold text-neutral-900">Calendar Upload</h1>
-          <p className="page-subtitle">
-            Upload SADC public holidays, UN days, and calendar entries. Public holidays can be for the whole SADC region.
-            Leave in lieu uses Namibia (NA) holidays only.
-          </p>
-        </div>
-      </div>
-
       {/* Tabs */}
       <div className="card p-1 flex gap-1">
         <button
@@ -309,7 +296,7 @@ export default function AdminCalendarPage() {
           {loadingList ? (
             <div className="p-12 text-center text-neutral-500">Loading…</div>
           ) : entries.length === 0 ? (
-            <div className="p-12 text-center text-neutral-500">No entries match the filters.</div>
+            <EmptyState icon="calendar_month" title="No entries match the filters." />
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -339,11 +326,11 @@ export default function AdminCalendarPage() {
                       <td>{e.is_alert ? "Yes" : "—"}</td>
                       <td>
                         <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => setViewEntry(e)} className="text-primary hover:underline text-xs font-medium">View</button>
+                          <button type="button" onClick={() => setViewEntry(e)} className="btn-secondary text-xs">View</button>
                           {isAdmin && (
                             <>
-                              <button type="button" onClick={() => setEditEntry(e)} className="text-primary hover:underline text-xs font-medium">Edit</button>
-                              <button type="button" onClick={() => handleDeleteRequest(e)} className="text-red-600 hover:underline text-xs font-medium">Delete</button>
+                              <button type="button" onClick={() => setEditEntry(e)} className="btn-secondary text-xs">Edit</button>
+                              <button type="button" onClick={() => handleDeleteRequest(e)} className="btn-secondary text-xs text-red-600">Delete</button>
                             </>
                           )}
                         </div>
@@ -360,7 +347,7 @@ export default function AdminCalendarPage() {
       {tab === "single" ? (
         <form onSubmit={handleSingleSubmit} className="card p-6 space-y-6 max-w-xl">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Type</label>
+            <p className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-2">Type</p>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -528,7 +515,7 @@ function EditCalendarModal({
     <Modal open title="Edit entry" onClose={onClose} size="md">
       <form onSubmit={(e) => onSubmit(e, { type, country_code: type === "un_day" ? null : countryCode, date, title, description: description || null, is_alert: isAlert })} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Type</label>
+            <p className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Type</p>
             <div className="flex gap-2">
               <button type="button" onClick={() => setType("sadc_holiday")} className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${type === "sadc_holiday" ? "bg-primary/10 border-primary text-primary" : "border-neutral-200"}`}>Public Holiday</button>
               <button type="button" onClick={() => setType("un_day")} className={`px-3 py-1.5 rounded-lg text-sm font-medium border ${type === "un_day" ? "bg-primary/10 border-primary text-primary" : "border-neutral-200"}`}>UN Day</button>
@@ -536,23 +523,23 @@ function EditCalendarModal({
           </div>
           {type === "sadc_holiday" && (
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Country</label>
-              <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className="form-input">
+              <label htmlFor="edit-cal-country" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Country</label>
+              <select id="edit-cal-country" value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className="form-input">
                 {Object.entries(countryCodes).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
               </select>
             </div>
           )}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Date</label>
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="form-input" required />
+            <label htmlFor="edit-cal-date" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Date</label>
+            <input id="edit-cal-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="form-input" required />
           </div>
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Title</label>
-            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="form-input" required />
+            <label htmlFor="edit-cal-title" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Title</label>
+            <input id="edit-cal-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="form-input" required />
           </div>
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Description (optional)</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="form-input resize-none" rows={2} />
+            <label htmlFor="edit-cal-desc" className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">Description (optional)</label>
+            <textarea id="edit-cal-desc" value={description} onChange={(e) => setDescription(e.target.value)} className="form-input resize-none" rows={2} />
           </div>
           {type === "un_day" && (
             <div className="flex items-center gap-2">

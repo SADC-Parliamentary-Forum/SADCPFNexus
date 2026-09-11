@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { performanceTrackerApi, type PerformanceTracker } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<
   PerformanceTracker["status"],
@@ -170,21 +172,22 @@ export default function TeamPerformancePage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <nav className="flex items-center gap-1.5 text-sm text-neutral-400 mb-1">
-            <button onClick={() => router.push("/hr")} className="hover:text-neutral-600">HR</button>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <button onClick={() => router.push("/hr/performance")} className="hover:text-neutral-600">Performance</button>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">My Team</span>
-          </nav>
-          <h1 className="page-title">My Team Performance</h1>
-          <p className="page-subtitle">Overview of your direct reports&apos; performance trackers</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <ModulePageHeader
+        title="My Team Performance"
+        subtitle="Overview of your direct reports' performance trackers"
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Performance", href: "/hr/performance" },
+              { label: "My Team" },
+            ]}
+          />
+        }
+        actions={
+          <>
           <button
+            type="button"
             className={cn("btn-secondary flex items-center gap-2", viewMode === "cards" ? "bg-primary/10 text-primary border-primary/30" : "")}
             onClick={() => setViewMode("cards")}
             title="Card view"
@@ -192,6 +195,7 @@ export default function TeamPerformancePage() {
             <span className="material-symbols-outlined text-[18px]">grid_view</span>
           </button>
           <button
+            type="button"
             className={cn("btn-secondary flex items-center gap-2", viewMode === "table" ? "bg-primary/10 text-primary border-primary/30" : "")}
             onClick={() => setViewMode("table")}
             title="Table view"
@@ -199,6 +203,7 @@ export default function TeamPerformancePage() {
             <span className="material-symbols-outlined text-[18px]">table_rows</span>
           </button>
           <button
+            type="button"
             className="btn-secondary flex items-center gap-2"
             onClick={() => router.push("/hr/performance/hr-dashboard")}
           >
@@ -206,14 +211,16 @@ export default function TeamPerformancePage() {
             HR Dashboard
           </button>
           <button
+            type="button"
             className="btn-secondary flex items-center gap-2"
             onClick={() => router.push("/hr/performance")}
           >
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
             All Trackers
           </button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Summary Stats */}
       {!loading && !error && (
@@ -241,12 +248,7 @@ export default function TeamPerformancePage() {
       )}
 
       {/* Error state */}
-      {error && (
-        <div className="card p-8 text-center text-red-500">
-          <span className="material-symbols-outlined text-5xl">error</span>
-          <p className="mt-2">{error}</p>
-        </div>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {/* Table view */}
       {!loading && !error && viewMode === "table" && (
@@ -255,10 +257,7 @@ export default function TeamPerformancePage() {
             <h3 className="text-sm font-semibold text-neutral-900">Team performance — table view</h3>
           </div>
           {trackers.length === 0 ? (
-            <div className="py-12 text-center text-neutral-400">
-              <span className="material-symbols-outlined text-5xl block mb-2">group</span>
-              <p>No direct reports found</p>
-            </div>
+            <EmptyState icon="group" title="No direct reports found" className="py-12 min-h-0" />
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -319,7 +318,7 @@ export default function TeamPerformancePage() {
                           </div>
                         </td>
                         <td className="text-right">
-                          <button className="text-sm font-semibold text-primary hover:underline" onClick={() => router.push(`/hr/performance/${t.id}`)}>
+                          <button type="button" className="btn-secondary text-xs" onClick={() => router.push(`/hr/performance/${t.id}`)}>
                             View
                           </button>
                         </td>
@@ -350,10 +349,12 @@ export default function TeamPerformancePage() {
           ))}
         </div>
       ) : trackers.length === 0 ? (
-        <div className="card p-12 text-center text-neutral-400">
-          <span className="material-symbols-outlined text-5xl block mb-2">group</span>
-          <p className="font-medium">No direct reports found</p>
-          <p className="text-sm mt-1">Team performance data will appear here once trackers are assigned</p>
+        <div className="card">
+          <EmptyState
+            icon="group"
+            title="No direct reports found"
+            description="Team performance data will appear here once trackers are assigned"
+          />
         </div>
       ) : (
         <>

@@ -110,9 +110,9 @@ return (await peopleAuthorityApi.listSuccession()).data;
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-succession-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Position
-          <select className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
+          <select id="people-succession-position-setform-f-required-select" className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>
@@ -121,9 +121,9 @@ return (await peopleAuthorityApi.listSuccession()).data;
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-succession-plan-title-setform-f" className="block text-xs font-medium text-neutral-600">
           Plan title
-          <input className="form-input mt-1" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
+          <input id="people-succession-plan-title-setform-f" className="form-input mt-1" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
         </label>
         <div className="sm:col-span-2 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
@@ -134,9 +134,9 @@ return (await peopleAuthorityApi.listSuccession()).data;
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-succession-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-succession-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

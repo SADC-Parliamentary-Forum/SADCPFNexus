@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 class ReportDetailScreen extends ConsumerStatefulWidget {
   const ReportDetailScreen({
@@ -222,70 +223,24 @@ class _ReportDetailScreenState extends ConsumerState<ReportDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final title = widget.reportTitle ?? 'Report';
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: AppColors.textPrimary,
-            size: 18,
-          ),
-          onPressed: () => context.pop(),
+    return StitchScreen(
+      title: title,
+      fallbackRoute: '/reports',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        title: Text(
-          title,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
+          ? const StitchLoadingState(label: 'Loading report')
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppColors.danger),
-                        ),
-                        const SizedBox(height: 12),
-                        TextButton(onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : _items.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.inbox_outlined,
-                            size: 48,
-                            color: AppColors.textMuted,
-                          ),
-                          SizedBox(height: 12),
-                          Text(
-                            'No data for this report.',
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
+                  ? const StitchEmptyState(
+                      title: 'No data for this report.',
+                      message: 'There are no rows to show for this report type.',
                     )
                   : RefreshIndicator(
                       onRefresh: _load,

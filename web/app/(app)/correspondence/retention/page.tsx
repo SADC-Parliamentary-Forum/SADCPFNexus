@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { exportToCsv } from "@/lib/csvExport";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type HoldRow = {
   id: number;
@@ -142,9 +143,9 @@ export default function CorrespondenceRetentionPage() {
 
       <form onSubmit={saveRetention} className="card space-y-3 p-4">
         <h2 className="text-sm font-semibold text-neutral-900">Set retention / hold</h2>
-        <label className="block text-sm">
+        <label htmlFor="correspondence-retention-letter-id-setletterid-e-target-value-placeholder" className="block text-sm">
           Letter ID
-          <input
+          <input id="correspondence-retention-letter-id-setletterid-e-target-value-placeholder"
             className="form-input mt-1 w-full disabled:opacity-60"
             required
             value={letterId}
@@ -154,9 +155,9 @@ export default function CorrespondenceRetentionPage() {
           />
         </label>
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="block text-sm">
+          <label htmlFor="correspondence-retention-retention-policy-setform-disabled-general-3-year" className="block text-sm">
             Retention policy
-            <select
+            <select id="correspondence-retention-retention-policy-setform-disabled-general-3-year"
               className="form-input mt-1 w-full disabled:opacity-60"
               value={form.retention_policy}
               onChange={(e) => setForm({ ...form, retention_policy: e.target.value })}
@@ -169,9 +170,9 @@ export default function CorrespondenceRetentionPage() {
               <option value="custom">Custom</option>
             </select>
           </label>
-          <label className="block text-sm">
+          <label htmlFor="correspondence-retention-retain-until-setform-disabled" className="block text-sm">
             Retain until
-            <input
+            <input id="correspondence-retention-retain-until-setform-disabled"
               type="date"
               className="form-input mt-1 w-full disabled:opacity-60"
               value={form.retain_until}
@@ -180,8 +181,8 @@ export default function CorrespondenceRetentionPage() {
             />
           </label>
         </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input
+        <label htmlFor="correspondence-retention-setform-disabled-place-legal-hold" className="flex items-center gap-2 text-sm">
+          <input id="correspondence-retention-setform-disabled-place-legal-hold"
             type="checkbox"
             checked={form.legal_hold}
             onChange={(e) => setForm({ ...form, legal_hold: e.target.checked })}
@@ -189,9 +190,9 @@ export default function CorrespondenceRetentionPage() {
           />
           Place legal hold
         </label>
-        <label className="block text-sm">
+        <label htmlFor="correspondence-retention-hold-reason-setform-disabled" className="block text-sm">
           Hold reason
-          <textarea
+          <textarea id="correspondence-retention-hold-reason-setform-disabled"
             className="form-input mt-1 w-full disabled:opacity-60"
             rows={2}
             value={form.legal_hold_reason}
@@ -204,7 +205,7 @@ export default function CorrespondenceRetentionPage() {
         </button>
       </form>
 
-      <div className="table-wrap">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
         <table className="data-table">
           <thead>
             <tr>
@@ -220,7 +221,7 @@ export default function CorrespondenceRetentionPage() {
             {holds.map((h) => (
               <tr key={h.id}>
                 <td>
-                  <Link href={`/correspondence/${h.id}`} className="text-primary hover:underline">
+                  <Link href={`/correspondence/${h.id}`} className="btn-secondary text-xs py-1 px-2">
                     {h.registry_reference || h.reference_number || h.id}
                   </Link>
                 </td>
@@ -241,11 +242,7 @@ export default function CorrespondenceRetentionPage() {
               </tr>
             ))}
             {holds.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-5 py-10 text-center text-sm text-neutral-500">
-                  No active legal holds.
-                </td>
-              </tr>
+              <TableEmpty colSpan={6} title="No active legal holds." />
             )}
           </tbody>
         </table>

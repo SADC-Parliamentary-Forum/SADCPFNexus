@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { policyApi, RISK_DOCUMENT_TYPES, type Policy, type RiskDocumentType } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_OPTS = ["all", "active", "archived"] as const;
 
@@ -217,15 +218,15 @@ export default function PolicyLibraryPage() {
             <span className="text-sm text-neutral-400">Loading policies…</span>
           </div>
         ) : policies.length === 0 ? (
-          <div className="py-16 text-center">
-            <span className="material-symbols-outlined text-neutral-200 text-5xl block mb-3">
-              policy
-            </span>
-            <p className="text-sm text-neutral-400">No policies found.</p>
-            <button onClick={openCreate} className="btn-primary mt-4 mx-auto">
-              Add First Policy
-            </button>
-          </div>
+          <EmptyState
+            icon="policy"
+            title="No policies found."
+            action={
+              <button type="button" onClick={openCreate} className="btn-primary">
+                Add First Policy
+              </button>
+            }
+          />
         ) : (
           <table className="data-table">
             <thead>
@@ -323,10 +324,10 @@ export default function PolicyLibraryPage() {
               {/* Policy Fields */}
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-700">
+                  <label htmlFor="risk-policies-title" className="text-xs font-semibold text-neutral-700">
                     Title <span className="text-red-500">*</span>
                   </label>
-                  <input
+                  <input id="risk-policies-title"
                     value={form.title}
                     onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                     required
@@ -335,8 +336,8 @@ export default function PolicyLibraryPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-700">Description</label>
-                  <textarea
+                  <label htmlFor="risk-policies-description" className="text-xs font-semibold text-neutral-700">Description</label>
+                  <textarea id="risk-policies-description"
                     value={form.description}
                     onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                     className="form-input w-full h-20 resize-none"
@@ -345,8 +346,8 @@ export default function PolicyLibraryPage() {
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="col-span-2 space-y-1">
-                    <label className="text-xs font-semibold text-neutral-700">Policy Owner</label>
-                    <input
+                    <label htmlFor="risk-policies-policy-owner" className="text-xs font-semibold text-neutral-700">Policy Owner</label>
+                    <input id="risk-policies-policy-owner"
                       value={form.owner_name}
                       onChange={(e) => setForm((f) => ({ ...f, owner_name: e.target.value }))}
                       className="form-input w-full"
@@ -354,8 +355,8 @@ export default function PolicyLibraryPage() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-semibold text-neutral-700">Renewal Date</label>
-                    <input
+                    <label htmlFor="risk-policies-renewal-date" className="text-xs font-semibold text-neutral-700">Renewal Date</label>
+                    <input id="risk-policies-renewal-date"
                       type="date"
                       value={form.renewal_date}
                       onChange={(e) => setForm((f) => ({ ...f, renewal_date: e.target.value }))}
@@ -364,8 +365,8 @@ export default function PolicyLibraryPage() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-700">Status</label>
-                  <select
+                  <label htmlFor="risk-policies-status" className="text-xs font-semibold text-neutral-700">Status</label>
+                  <select id="risk-policies-status"
                     value={form.status}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, status: e.target.value as "active" | "archived" }))

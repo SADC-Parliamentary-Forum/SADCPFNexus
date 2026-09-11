@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { budgetApi, type OrgBudgetLine } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 function unwrapLines(payload: unknown): OrgBudgetLine[] {
   if (!payload || typeof payload !== "object") return [];
@@ -100,28 +100,34 @@ export default function CreateBudgetChangePage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <Link href="/budget/changes" className="text-sm text-[var(--primary)] hover:underline">
-          ← Changes
-        </Link>
-        <h1 className="page-title mt-1">New budget change</h1>
-      </div>
+      <ModulePageHeader
+        title="New budget change"
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.finance", href: "/finance" },
+              { label: "Budget Changes", href: "/budget/changes" },
+              { label: "New budget change" },
+            ]}
+          />
+        }
+      />
 
       {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <div className="space-y-3 rounded-xl border border-[var(--border)] bg-white p-4">
-        <label className="block text-sm">
+        <label htmlFor="bc-type" className="block text-sm">
           Type
-          <select className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={type} onChange={(e) => setType(e.target.value)}>
+          <select id="bc-type" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={type} onChange={(e) => setType(e.target.value)}>
             <option value="transfer">Transfer</option>
             <option value="revision">Revision</option>
             <option value="supplementary">Supplementary</option>
             <option value="contingency">Contingency draw</option>
           </select>
         </label>
-        <label className="block text-sm">
+        <label htmlFor="bc-budget" className="block text-sm">
           Budget
-          <select className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={budgetId} onChange={(e) => setBudgetId(e.target.value)}>
+          <select id="bc-budget" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={budgetId} onChange={(e) => setBudgetId(e.target.value)}>
             <option value="">Select…</option>
             {budgets.map((b) => (
               <option key={b.id} value={b.id}>
@@ -130,20 +136,20 @@ export default function CreateBudgetChangePage() {
             ))}
           </select>
         </label>
-        <label className="block text-sm">
+        <label htmlFor="bc-title" className="block text-sm">
           Title
-          <input className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input id="bc-title" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
-        <label className="block text-sm">
+        <label htmlFor="bc-justification" className="block text-sm">
           Justification
-          <textarea className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" rows={2} value={justification} onChange={(e) => setJustification(e.target.value)} />
+          <textarea id="bc-justification" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" rows={2} value={justification} onChange={(e) => setJustification(e.target.value)} />
         </label>
 
         {(type === "transfer" || type === "contingency") && (
           <>
-            <label className="block text-sm">
+            <label htmlFor="bc-from-line" className="block text-sm">
               From line
-              <select className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
+              <select id="bc-from-line" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
                 <option value="">Select…</option>
                 {filteredLines
                   .filter((l) => (type === "contingency" ? Boolean((l as OrgBudgetLine & { is_contingency?: boolean }).is_contingency) : true))
@@ -154,9 +160,9 @@ export default function CreateBudgetChangePage() {
                   ))}
               </select>
             </label>
-            <label className="block text-sm">
+            <label htmlFor="bc-to-line" className="block text-sm">
               To line
-              <select className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
+              <select id="bc-to-line" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
                 <option value="">Select…</option>
                 {filteredLines.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -170,9 +176,9 @@ export default function CreateBudgetChangePage() {
 
         {type === "revision" && (
           <>
-            <label className="block text-sm">
+            <label htmlFor="bc-rev-line" className="block text-sm">
               Line
-              <select className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
+              <select id="bc-rev-line" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
                 <option value="">Select…</option>
                 {filteredLines.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -181,8 +187,8 @@ export default function CreateBudgetChangePage() {
                 ))}
               </select>
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isDecrease} onChange={(e) => setIsDecrease(e.target.checked)} />
+            <label htmlFor="bc-decrease" className="flex items-center gap-2 text-sm">
+              <input id="bc-decrease" type="checkbox" checked={isDecrease} onChange={(e) => setIsDecrease(e.target.checked)} />
               Decrease (otherwise increase)
             </label>
           </>
@@ -190,9 +196,9 @@ export default function CreateBudgetChangePage() {
 
         {type === "supplementary" && (
           <>
-            <label className="block text-sm">
+            <label htmlFor="bc-existing-line" className="block text-sm">
               Existing line (optional)
-              <select className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
+              <select id="bc-existing-line" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={targetId} onChange={(e) => setTargetId(e.target.value)}>
                 <option value="">Create new line…</option>
                 {filteredLines.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -210,9 +216,9 @@ export default function CreateBudgetChangePage() {
           </>
         )}
 
-        <label className="block text-sm">
+        <label htmlFor="bc-amount" className="block text-sm">
           Amount
-          <input className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <input id="bc-amount" className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2" value={amount} onChange={(e) => setAmount(e.target.value)} />
         </label>
 
         <button

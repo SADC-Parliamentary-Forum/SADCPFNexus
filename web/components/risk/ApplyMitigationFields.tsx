@@ -30,7 +30,7 @@ export function ApplyMitigationFields({
   const { t } = useI18n();
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <label className="block text-xs font-semibold text-neutral-700 sm:col-span-2" htmlFor={`${idPrefix}-description`}>
+      <label htmlFor={`${idPrefix}-description`} className="block text-xs font-semibold text-neutral-700 sm:col-span-2">
         {t("risk.mitigation.description")}
         {required ? <span className="ml-0.5 text-red-500">*</span> : null}
         <textarea
@@ -41,7 +41,7 @@ export function ApplyMitigationFields({
           required={required}
         />
       </label>
-      <label className="block text-xs font-semibold text-neutral-700" htmlFor={`${idPrefix}-type`}>
+      <label htmlFor={`${idPrefix}-type`} className="block text-xs font-semibold text-neutral-700">
         {t("risk.mitigation.treatment")}
         <select
           id={`${idPrefix}-type`}
@@ -55,7 +55,7 @@ export function ApplyMitigationFields({
           <option value="avoid">{t("risk.mitigation.type.avoid")}</option>
         </select>
       </label>
-      <label className="block text-xs font-semibold text-neutral-700" htmlFor={`${idPrefix}-due`}>
+      <label htmlFor={`${idPrefix}-due`} className="block text-xs font-semibold text-neutral-700">
         {t("risk.mitigation.dueDate")}
         <input
           id={`${idPrefix}-due`}
@@ -65,7 +65,7 @@ export function ApplyMitigationFields({
           onChange={(e) => onChange({ ...value, due_date: e.target.value })}
         />
       </label>
-      <label className="block text-xs font-semibold text-neutral-700 sm:col-span-2" htmlFor={`${idPrefix}-file`}>
+      <label htmlFor={`${idPrefix}-file`} className="block text-xs font-semibold text-neutral-700 sm:col-span-2">
         {t("risk.mitigation.file")}
         <input
           id={`${idPrefix}-file`}

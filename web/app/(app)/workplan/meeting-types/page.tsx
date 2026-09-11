@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { workplanMeetingTypesApi, type MeetingType } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function MeetingTypesPage() {
   const { confirm } = useConfirm();
@@ -98,25 +99,21 @@ export default function MeetingTypesPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Link href="/workplan" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
-            Workplan
-          </Link>
-          <h1 className="page-title">Meeting types</h1>
-          <p className="page-subtitle">
-            Add and edit meeting types used when creating workplan events of type &quot;Meeting&quot;.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          Add meeting type
-        </button>
-      </div>
+      <ModulePageHeader
+        title="Meeting types"
+        subtitle='Add and edit meeting types used when creating workplan events of type "Meeting".'
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.workplan", href: "/workplan" }, { label: "Meeting types" }]} />}
+        actions={
+          <button
+            type="button"
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Add meeting type
+          </button>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
@@ -129,8 +126,8 @@ export default function MeetingTypesPage() {
         <form onSubmit={handleSubmit} className="card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-neutral-900">{editingId ? "Edit meeting type" : "New meeting type"}</h2>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Name *</label>
-            <input
+            <label htmlFor="workplan-meeting-types-name" className="block text-sm font-semibold text-neutral-700 mb-1">Name *</label>
+            <input id="workplan-meeting-types-name"
               type="text"
               className="form-input w-full"
               value={name}
@@ -140,8 +137,8 @@ export default function MeetingTypesPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
-            <textarea
+            <label htmlFor="workplan-meeting-types-description" className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
+            <textarea id="workplan-meeting-types-description"
               className="form-input w-full min-h-[80px] resize-y"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -149,8 +146,8 @@ export default function MeetingTypesPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Sort order</label>
-            <input
+            <label htmlFor="workplan-meeting-types-sort-order" className="block text-sm font-semibold text-neutral-700 mb-1">Sort order</label>
+            <input id="workplan-meeting-types-sort-order"
               type="number"
               min={0}
               className="form-input w-full max-w-[120px]"
@@ -178,9 +175,7 @@ export default function MeetingTypesPage() {
             <span className="ml-2">Loading…</span>
           </div>
         ) : list.length === 0 ? (
-          <div className="py-12 text-center text-sm text-neutral-500">
-            No meeting types yet. Add one to use when creating meeting events.
-          </div>
+          <EmptyState icon="groups" title="No meeting types yet. Add one to use when creating meeting events." />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
@@ -199,10 +194,10 @@ export default function MeetingTypesPage() {
                     <td className="text-sm text-neutral-600 max-w-[200px] truncate">{mt.description || "—"}</td>
                     <td className="text-sm text-neutral-600">{mt.sort_order ?? "—"}</td>
                     <td className="text-right">
-                      <button type="button" onClick={() => handleEdit(mt)} className="text-sm font-semibold text-primary hover:underline mr-3">
+                      <button type="button" onClick={() => handleEdit(mt)} className="btn-secondary text-xs py-1 px-2 mr-2">
                         Edit
                       </button>
-                      <button type="button" onClick={() => handleDelete(mt)} className="text-sm font-semibold text-red-600 hover:underline">
+                      <button type="button" onClick={() => handleDelete(mt)} className="btn-secondary text-xs py-1 px-2 text-red-600">
                         Delete
                       </button>
                     </td>

@@ -555,7 +555,7 @@ export default function WeeklyCompliancePage() {
                         {reportId(myReport) ? (
                           <Link
                             href={`/weekly-summaries/${reportId(myReport)}`}
-                            className="font-medium text-primary hover:underline"
+                            className="font-medium text-primary"
                           >
                             {String(myReport.reference ?? "Open report")}
                           </Link>
@@ -706,7 +706,7 @@ function ComplianceTable({
                 {columns.includes("reference") ? (
                   <td className="py-2 pr-3">
                     {linkReports && id ? (
-                      <Link href={`/weekly-summaries/${id}`} className="font-medium text-primary hover:underline">
+                      <Link href={`/weekly-summaries/${id}`} className="font-medium text-primary">
                         {String(row.reference ?? "Open report")}
                       </Link>
                     ) : (
@@ -717,7 +717,7 @@ function ComplianceTable({
                 {columns.includes("person") ? (
                   <td className="py-2 pr-3">
                     {linkReports && id ? (
-                      <Link href={`/weekly-summaries/${id}`} className="font-medium text-primary hover:underline">
+                      <Link href={`/weekly-summaries/${id}`} className="font-medium text-primary">
                         {labelledObjectCell(personRows ? personLabel(row) : ownerLabel(row))}
                       </Link>
                     ) : (

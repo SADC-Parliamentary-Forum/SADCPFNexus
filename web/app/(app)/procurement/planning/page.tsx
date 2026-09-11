@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { procurementPlansApi } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function PlanningPage() {
   const qc = useQueryClient();
@@ -33,12 +34,12 @@ export default function PlanningPage() {
 
       <div className="card p-4 grid gap-3 sm:grid-cols-[120px_1fr_auto] items-end">
         <div>
-          <label className="block text-xs font-semibold mb-1">Year</label>
-          <input type="number" className="form-input" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+          <label htmlFor="procurement-planning-year" className="block text-xs font-semibold mb-1">Year</label>
+          <input id="procurement-planning-year" type="number" className="form-input" value={year} onChange={(e) => setYear(Number(e.target.value))} />
         </div>
         <div>
-          <label className="block text-xs font-semibold mb-1">Title</label>
-          <input className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="APP 2026" />
+          <label htmlFor="procurement-planning-title" className="block text-xs font-semibold mb-1">Title</label>
+          <input id="procurement-planning-title" className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="APP 2026" />
         </div>
         <button type="button" className="btn-primary" disabled={!title || createMut.isPending} onClick={() => createMut.mutate()}>
           Create plan
@@ -58,7 +59,11 @@ export default function PlanningPage() {
               <span className="text-xs uppercase">{String(p.status)}</span>
             </div>
           ))}
-          {(data ?? []).length === 0 && <div className="card p-8 text-center text-sm text-neutral-400">No plans yet.</div>}
+          {(data ?? []).length === 0 && (
+            <div className="card">
+              <EmptyState icon="calendar_month" title="No plans yet." />
+            </div>
+          )}
         </div>
       )}
     </div>

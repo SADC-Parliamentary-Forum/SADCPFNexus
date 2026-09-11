@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetVarianceRow } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const CATEGORIES = [
   { value: "timing", label: "Timing" },
@@ -125,8 +126,8 @@ export default function BudgetVariancePage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-4">
-        <label className="flex items-center gap-2 text-sm text-neutral-700">
-          <input
+        <label htmlFor="budget-variance-setsignificantonly-e-target-checked-significant-" className="flex items-center gap-2 text-sm text-neutral-700">
+          <input id="budget-variance-setsignificantonly-e-target-checked-significant-"
             type="checkbox"
             checked={significantOnly}
             onChange={(e) => setSignificantOnly(e.target.checked)}
@@ -160,11 +161,7 @@ export default function BudgetVariancePage() {
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-8 text-center italic text-neutral-500">
-                    No variance snapshots yet. Finance can run a scan.
-                  </td>
-                </tr>
+                <TableEmpty colSpan={7} title="No variance snapshots yet. Finance can run a scan." />
               ) : (
                 rows.map((row) => {
                   const latest = row.explanations?.[0];
@@ -235,20 +232,20 @@ export default function BudgetVariancePage() {
             </p>
             {formError && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{formError}</div>}
             <div>
-              <label className="block text-xs font-semibold mb-1">Category</label>
-              <select className="form-input w-full" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <label htmlFor="budget-variance-category" className="block text-xs font-semibold mb-1">Category</label>
+              <select id="budget-variance-category" className="form-input w-full" value={category} onChange={(e) => setCategory(e.target.value)}>
                 {CATEGORIES.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1">Explanation</label>
-              <textarea className="form-input w-full h-24" value={explanation} onChange={(e) => setExplanation(e.target.value)} />
+              <label htmlFor="budget-variance-explanation" className="block text-xs font-semibold mb-1">Explanation</label>
+              <textarea id="budget-variance-explanation" className="form-input w-full h-24" value={explanation} onChange={(e) => setExplanation(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold mb-1">Remedial action</label>
-              <textarea className="form-input w-full h-20" value={remedial} onChange={(e) => setRemedial(e.target.value)} />
+              <label htmlFor="budget-variance-remedial-action" className="block text-xs font-semibold mb-1">Remedial action</label>
+              <textarea id="budget-variance-remedial-action" className="form-input w-full h-20" value={remedial} onChange={(e) => setRemedial(e.target.value)} />
             </div>
             <div className="flex gap-2">
               <button type="button" className="btn-secondary flex-1" onClick={() => setExplainFor(null)}>Cancel</button>

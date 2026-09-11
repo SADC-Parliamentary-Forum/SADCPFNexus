@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class WeeklySummaryDetailScreen extends ConsumerStatefulWidget {
   const WeeklySummaryDetailScreen({super.key, required this.reportId});
@@ -169,26 +169,21 @@ class _WeeklySummaryDetailScreenState
     final r = _report;
     final draftText = _aiDraft?['draft']?.toString() ??
         r?['ai_draft_text']?.toString();
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+    return StitchScreen(
+      title: 'Weekly summary',
+      fallbackRoute: '/weekly-summaries',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading || _busy ? null : _load,
         ),
-        title: const Text('Weekly summary',
-            style: TextStyle(
-                color: AppColors.textPrimary, fontWeight: FontWeight.w800)),
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading weekly summary')
           : _error != null || r == null
-              ? Center(
-                  child: Text(_error ?? 'Not found',
-                      style: const TextStyle(color: AppColors.textSecondary)))
+              ? StitchErrorState(
+                  message: _error ?? 'Not found', onRetry: _load)
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [

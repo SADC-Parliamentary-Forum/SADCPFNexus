@@ -14,6 +14,7 @@ import {
 import { useRowSelection } from "@/lib/useRowSelection";
 import { clientPageCount, DEFAULT_PAGE_SIZE, slicePage } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_FILTERS = [
   "all",
@@ -114,8 +115,8 @@ export default function TendersPage() {
       filters={
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[180px] flex-1">
-            <label className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
-            <input
+            <label htmlFor="procurement-tenders-search" className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
+            <input id="procurement-tenders-search"
               className="form-input text-sm"
               placeholder="Reference or title…"
               value={search}
@@ -157,8 +158,12 @@ export default function TendersPage() {
       }
       empty={
         !isLoading && !isError && rows.length === 0 ? (
-          <div className="card p-8 text-center text-sm text-neutral-400">
-            No tenders yet. Create from an approved tender-method request.
+          <div className="card">
+            <EmptyState
+              icon="gavel"
+              title="No tenders yet"
+              description="Create from an approved tender-method request."
+            />
           </div>
         ) : undefined
       }
@@ -198,7 +203,7 @@ export default function TendersPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={`/procurement/tenders/${t.id}`} className="font-semibold text-primary hover:underline">
+                    <Link href={`/procurement/tenders/${t.id}`} className="font-semibold text-primary">
                       {t.reference_number}
                     </Link>
                   </td>

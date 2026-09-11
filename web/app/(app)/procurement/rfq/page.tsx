@@ -17,6 +17,8 @@ import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -201,17 +203,15 @@ export default function RfqListPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">RFQ</span>
-          </div>
-          <h1 className="page-title">Requests for Quotation</h1>
-          <p className="page-subtitle">Issue RFQs from approved requests that Finance has budget-confirmed, then track supplier responses.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <ProcurementPageHeader
+        title="Requests for Quotation"
+        subtitle="Issue RFQs from approved requests that Finance has budget-confirmed, then track supplier responses."
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "RFQ" },
+        ]}
+        actions={
+          <>
           <button
             type="button"
             className="btn-secondary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
@@ -236,8 +236,9 @@ export default function RfqListPage() {
               Create RFQ
             </button>
           )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
@@ -297,7 +298,7 @@ export default function RfqListPage() {
         <div className="card p-4 text-sm text-amber-800 bg-amber-50 border border-amber-200">
           Finance budget confirmation is required before issuing an RFQ for {awaitingBudget.length} approved
           {awaitingBudget.length === 1 ? " request" : " requests"}.{" "}
-          <Link href="/procurement/budget" className="font-medium text-primary hover:underline">
+          <Link href="/procurement/budget" className="btn-secondary text-xs">
             Open budget confirmation
           </Link>
         </div>
@@ -322,13 +323,11 @@ export default function RfqListPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <span className="material-symbols-outlined text-4xl text-neutral-300">request_quote</span>
-          <p className="text-sm text-neutral-500">No RFQs found for this filter.</p>
-          <p className="text-xs text-neutral-400">
-            RFQs are issued from approved procurement requests.
-          </p>
-        </div>
+        <EmptyState
+          icon="request_quote"
+          title="No RFQs found for this filter."
+          description="RFQs are issued from approved procurement requests."
+        />
       ) : (
         <div className="card">
           <div className="overflow-x-auto scrollbar-hide">
@@ -361,7 +360,7 @@ export default function RfqListPage() {
                   return (
                     <tr key={req.id}>
                       <td>
-                        <Link href={`/procurement/rfq/${req.id}`} className="font-mono text-xs text-primary hover:underline">
+                        <Link href={`/procurement/rfq/${req.id}`} className="btn-secondary text-xs font-mono">
                           {req.reference_number}
                         </Link>
                       </td>
@@ -435,8 +434,8 @@ export default function RfqListPage() {
             )}
 
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-neutral-600">Approved Procurement Request</label>
-              <select
+              <label htmlFor="procurement-rfq-approved-procurement-request" className="block text-xs font-semibold text-neutral-600">Approved Procurement Request</label>
+              <select id="procurement-rfq-approved-procurement-request"
                 className="form-input"
                 value={selectedRequestId}
                 onChange={(e) => setSelectedRequestId(e.target.value ? Number(e.target.value) : "")}
@@ -475,7 +474,7 @@ export default function RfqListPage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold text-neutral-600">Supplier Categories</label>
+                  <p className="block text-xs font-semibold text-neutral-600">Supplier Categories</p>
                 <span className="text-[11px] text-neutral-400">Select 1 to 3 categories</span>
               </div>
               <div className="grid gap-2 md:grid-cols-2">
@@ -484,7 +483,7 @@ export default function RfqListPage() {
                     key={category.id}
                     className={`rounded-xl border p-3 text-sm ${categoryIds.includes(category.id) ? "border-primary bg-primary/5" : "border-neutral-200"}`}
                   >
-                    <input
+                    <input id="procurement-rfq-setcategoryids-current-current-includes-category"
                       type="checkbox"
                       className="mr-2"
                       checked={categoryIds.includes(category.id)}
@@ -504,12 +503,12 @@ export default function RfqListPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Deadline</label>
-                <input type="date" className="form-input" value={rfqDeadline} onChange={(e) => setRfqDeadline(e.target.value)} />
+                <label htmlFor="procurement-rfq-deadline" className="block text-xs font-semibold text-neutral-600 mb-1">Deadline</label>
+                <input id="procurement-rfq-deadline" type="date" className="form-input" value={rfqDeadline} onChange={(e) => setRfqDeadline(e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">RFQ Notes</label>
-                <textarea
+                <label htmlFor="procurement-rfq-rfq-notes" className="block text-xs font-semibold text-neutral-600 mb-1">RFQ Notes</label>
+                <textarea id="procurement-rfq-rfq-notes"
                   className="form-input h-[42px] resize-none"
                   placeholder="Special instructions, delivery expectations, or submission notes"
                   value={rfqNotes}
@@ -524,10 +523,10 @@ export default function RfqListPage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold text-neutral-600">Additional Email Invitees</label>
+                <p className="text-xs font-semibold text-neutral-600">Additional Email Invitees</p>
                 <button
                   type="button"
-                  className="text-xs font-medium text-primary hover:underline"
+                  className="btn-secondary text-xs"
                   onClick={() => setExternalInvites((current) => [...current, { name: "", email: "" }])}
                 >
                   Add email address

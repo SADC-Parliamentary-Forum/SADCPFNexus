@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { procurementWorkbenchApi } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type InboxRow = {
   id: number;
@@ -44,7 +45,7 @@ export default function ProcurementInboxPage() {
       />
       <p className="text-sm text-neutral-600">
         System Admins configure the designated invoice mailbox under{" "}
-        <Link href="/admin/email" className="text-primary hover:underline">Admin → Email</Link>.
+        <Link href="/admin/email" className="btn-secondary text-xs py-1 px-2">Admin → Email</Link>.
         Attachments become intakes for review and are never auto-confirmed.
       </p>
       {note && (
@@ -53,7 +54,9 @@ export default function ProcurementInboxPage() {
       {isLoading && <p className="text-sm text-neutral-500">Loading inbox…</p>}
       {isError && <p className="text-sm text-rose-700">Could not load the procurement inbox.</p>}
       {!isLoading && rows.length === 0 && (
-        <p className="text-sm text-neutral-500">{emptyCopy}</p>
+        <div className="card">
+          <EmptyState icon="inbox" title={emptyCopy} />
+        </div>
       )}
       <ul className="space-y-2">
         {rows.map((row) => (

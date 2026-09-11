@@ -79,16 +79,17 @@ export default function PifFinanceBudgetCertify({
       {message && <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{message}</div>}
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Availability status</label>
-          <select className="form-input w-full" value={status} onChange={(e) => setStatus(e.target.value)}>
+          <label htmlFor="pif-finance-status" className="block text-xs font-semibold text-neutral-700 mb-1">Availability status</label>
+          <select id="pif-finance-status" className="form-input w-full" value={status} onChange={(e) => setStatus(e.target.value)}>
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Commitment amount</label>
+          <label htmlFor="pif-finance-amount" className="block text-xs font-semibold text-neutral-700 mb-1">Commitment amount</label>
           <input
+            id="pif-finance-amount"
             type="number"
             min={0}
             step="0.01"
@@ -108,8 +109,9 @@ export default function PifFinanceBudgetCertify({
         />
       )}
       <div>
-        <label className="block text-xs font-semibold text-neutral-700 mb-1">Finance comments</label>
+        <label htmlFor="pif-finance-comments" className="block text-xs font-semibold text-neutral-700 mb-1">Finance comments</label>
         <textarea
+          id="pif-finance-comments"
           className="form-input w-full h-20 resize-none"
           value={comments}
           onChange={(e) => setComments(e.target.value)}

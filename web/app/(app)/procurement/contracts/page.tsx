@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi, vendorsApi, procurementApi, type Contract, type Vendor } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:      { label: "Draft",      cls: "badge-muted",   icon: "edit_note"    },
@@ -189,10 +190,12 @@ function ContractsPageInner() {
       ) : isError ? (
         <div className="card p-6 text-center text-sm text-red-600">Failed to load contracts.</div>
       ) : items.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <span className="material-symbols-outlined text-4xl text-neutral-300">description</span>
-          <p className="text-sm text-neutral-500">No contracts found.</p>
-          <p className="text-xs text-neutral-400">Click "New Contract" above to create a vendor contract.</p>
+        <div className="card">
+          <EmptyState
+            icon="description"
+            title="No contracts found."
+            description='Click "New Contract" above to create a vendor contract.'
+          />
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -213,7 +216,7 @@ function ContractsPageInner() {
                 return (
                   <tr key={c.id}>
                     <td>
-                      <Link href={`/procurement/contracts/${c.id}`} className="font-mono text-xs text-primary hover:underline">
+                      <Link href={`/procurement/contracts/${c.id}`} className="font-mono text-xs text-primary">
                         {c.reference_number}
                       </Link>
                     </td>
@@ -272,8 +275,8 @@ function ContractsPageInner() {
 
             <div className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Contract Title <span className="text-red-500">*</span></label>
-                <input
+                <label htmlFor="procurement-contracts-contract-title" className="text-xs font-semibold text-neutral-600">Contract Title <span className="text-red-500">*</span></label>
+                <input id="procurement-contracts-contract-title"
                   type="text"
                   className="form-input"
                   placeholder="e.g. Software Licence Agreement 2026"
@@ -283,8 +286,8 @@ function ContractsPageInner() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Vendor <span className="text-red-500">*</span></label>
-                <select
+                <label htmlFor="procurement-contracts-vendor" className="text-xs font-semibold text-neutral-600">Vendor <span className="text-red-500">*</span></label>
+                <select id="procurement-contracts-vendor"
                   className="form-input"
                   value={selectedVendorId}
                   onChange={(e) => setSelectedVendorId(e.target.value ? Number(e.target.value) : "")}
@@ -295,14 +298,14 @@ function ContractsPageInner() {
                   ))}
                 </select>
                 {availableVendors.length === 0 && (
-                  <p className="text-xs text-amber-600">No approved vendors found. <Link href="/procurement/vendors" className="underline">Add a vendor</Link> first.</p>
+                  <p className="text-xs text-amber-600">No approved vendors found. <Link href="/procurement/vendors" className="btn-secondary text-xs py-0.5 px-2 inline-flex">Add a vendor</Link> first.</p>
                 )}
               </div>
 
               {awardedRequests.length > 0 && (
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Linked Procurement Request (optional)</label>
-                  <select
+                  <label htmlFor="procurement-contracts-linked-procurement-request-optional" className="text-xs font-semibold text-neutral-600">Linked Procurement Request (optional)</label>
+                  <select id="procurement-contracts-linked-procurement-request-optional"
                     className="form-input"
                     value={selectedRequestId}
                     onChange={(e) => setSelectedRequestId(e.target.value ? Number(e.target.value) : "")}
@@ -317,19 +320,19 @@ function ContractsPageInner() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Start Date <span className="text-red-500">*</span></label>
-                  <input type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <label htmlFor="procurement-contracts-start-date" className="text-xs font-semibold text-neutral-600">Start Date <span className="text-red-500">*</span></label>
+                  <input id="procurement-contracts-start-date" type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">End Date <span className="text-red-500">*</span></label>
-                  <input type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  <label htmlFor="procurement-contracts-end-date" className="text-xs font-semibold text-neutral-600">End Date <span className="text-red-500">*</span></label>
+                  <input id="procurement-contracts-end-date" type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Contract Value <span className="text-red-500">*</span></label>
-                  <input
+                  <label htmlFor="procurement-contracts-contract-value" className="text-xs font-semibold text-neutral-600">Contract Value <span className="text-red-500">*</span></label>
+                  <input id="procurement-contracts-contract-value"
                     type="number"
                     min="0"
                     step="0.01"
@@ -340,8 +343,8 @@ function ContractsPageInner() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Currency</label>
-                  <input
+                  <label htmlFor="procurement-contracts-currency" className="text-xs font-semibold text-neutral-600">Currency</label>
+                  <input id="procurement-contracts-currency"
                     type="text"
                     className="form-input"
                     value={currency}
@@ -352,8 +355,8 @@ function ContractsPageInner() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Description (optional)</label>
-                <textarea
+                <label htmlFor="procurement-contracts-description-optional" className="text-xs font-semibold text-neutral-600">Description (optional)</label>
+                <textarea id="procurement-contracts-description-optional"
                   className="form-input resize-none h-20"
                   placeholder="Brief description of the contract scope…"
                   value={description}

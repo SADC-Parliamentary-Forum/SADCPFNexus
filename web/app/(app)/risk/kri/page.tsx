@@ -7,6 +7,7 @@ import { riskApi, type RiskKri, type RiskKriCatalogEntry } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 function statusBadge(status: RiskKri["last_status"]): string {
   if (status === "breach") return "badge-danger";
@@ -184,13 +185,15 @@ export default function RiskKriPage() {
                 </tr>
               );
             })}
-            {kris.length === 0 && (
+            {krisQuery.isLoading ? (
               <tr>
                 <td colSpan={6} className="px-3 py-8 text-center text-neutral-500">
-                  {krisQuery.isLoading ? "Loading KRIs…" : "No KRIs configured."}
+                  Loading KRIs…
                 </td>
               </tr>
-            )}
+            ) : kris.length === 0 ? (
+              <TableEmpty colSpan={6} title="No KRIs configured." />
+            ) : null}
           </tbody>
         </table>
       </div>

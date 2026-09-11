@@ -170,7 +170,7 @@ export default function TravelCalendarPage() {
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
           <span className="flex-1">Failed to load travel calendar.</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => void refetch()}>
             Retry
           </button>
         </div>
@@ -265,7 +265,7 @@ export default function TravelCalendarPage() {
                         >
                           {TYPE_LABEL[ev.type] ?? ev.type}
                         </span>
-                        <Link href={`/travel/${ev.id}`} className="font-medium text-primary hover:underline">
+                        <Link href={`/travel/${ev.id}`} className="font-medium text-primary">
                           {ev.reference}
                         </Link>
                         <span className="text-neutral-500"> — {ev.title}</span>

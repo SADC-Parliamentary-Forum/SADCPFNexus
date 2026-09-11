@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class PerformanceTrackerScreen extends ConsumerStatefulWidget {
   const PerformanceTrackerScreen({super.key});
@@ -117,31 +118,9 @@ class _PerformanceTrackerScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        title: const Text('Performance Tracker'),
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          indicatorColor: AppColors.primary,
-          labelStyle: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-          ),
-          tabs: const [
-            Tab(text: 'All'),
-            Tab(text: 'Team'),
-            Tab(text: 'Watchlist'),
-            Tab(text: 'At Risk'),
-          ],
-        ),
-      ),
+    return StitchScreen(
+      title: 'Performance Tracker',
+      fallbackRoute: '/dashboard',
       floatingActionButton: _isSupervisorOrHr
           ? Column(
               mainAxisSize: MainAxisSize.min,
@@ -166,11 +145,29 @@ class _PerformanceTrackerScreenState
               ],
             )
           : null,
+      bottom: TabBar(
+        controller: _tabController,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textMuted,
+        indicatorColor: AppColors.primary,
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        tabs: const [
+          Tab(text: 'All'),
+          Tab(text: 'Team'),
+          Tab(text: 'Watchlist'),
+          Tab(text: 'At Risk'),
+        ],
+      ),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading performance tracker')
           : _error != null
-              ? _buildError()
+              ? StitchErrorState(
+                  message: _error ?? 'Failed to load performance data',
+                  onRetry: _loadData,
+                )
               : Column(
                   children: [
                     _buildStatsRow(),
@@ -185,50 +182,6 @@ class _PerformanceTrackerScreenState
                     ),
                   ],
                 ),
-    );
-  }
-
-  Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: AppColors.danger),
-            const SizedBox(height: 12),
-            const Text(
-              'Failed to load performance data',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error ?? '',
-              style: const TextStyle(
-                  fontSize: 12, color: AppColors.textMuted),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loadData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textPrimary,
-                minimumSize: const Size(140, 44),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

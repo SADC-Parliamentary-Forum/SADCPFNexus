@@ -49,8 +49,8 @@ function UserAutocomplete({
 
   return (
     <div ref={ref} className="relative">
-      <label className="block text-xs font-semibold text-neutral-700 mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
-      <input
+      <label htmlFor="hr-conduct-new-field" className="block text-xs font-semibold text-neutral-700 mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
+      <input id="hr-conduct-new-field"
         className="form-input"
         placeholder="Search by name or email…"
         value={query}
@@ -166,35 +166,35 @@ export default function NewConductRecordPage() {
           <UserAutocomplete label="Employee" value={employee} onSelect={setEmployee} required />
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
-            <input className="form-input" placeholder="Brief summary of this record…" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <label htmlFor="hr-conduct-new-title" className="block text-xs font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
+            <input id="hr-conduct-new-title" className="form-input" placeholder="Brief summary of this record…" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Description <span className="text-red-500">*</span></label>
-            <textarea rows={5} className="form-input resize-none"
+            <label htmlFor="hr-conduct-new-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description <span className="text-red-500">*</span></label>
+            <textarea id="hr-conduct-new-description" rows={5} className="form-input resize-none"
               placeholder="Detailed account of the conduct issue or commendation — include context, specific actions, dates, and impact…"
               value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Issue Date <span className="text-red-500">*</span></label>
-              <input type="date" className="form-input" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
+              <label htmlFor="hr-conduct-new-issue-date" className="block text-xs font-semibold text-neutral-700 mb-1">Issue Date <span className="text-red-500">*</span></label>
+              <input id="hr-conduct-new-issue-date" type="date" className="form-input" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Incident Date (if applicable)</label>
-              <input type="date" className="form-input" value={incidentDate} onChange={(e) => setIncidentDate(e.target.value)} />
+              <label htmlFor="hr-conduct-new-incident-date-if-applicable" className="block text-xs font-semibold text-neutral-700 mb-1">Incident Date (if applicable)</label>
+              <input id="hr-conduct-new-incident-date-if-applicable" type="date" className="form-input" value={incidentDate} onChange={(e) => setIncidentDate(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Outcome / Decision (optional)</label>
-            <input className="form-input" placeholder="e.g. First written warning issued; further action on recurrence" value={outcome} onChange={(e) => setOutcome(e.target.value)} />
+            <label htmlFor="hr-conduct-new-outcome-decision-optional" className="block text-xs font-semibold text-neutral-700 mb-1">Outcome / Decision (optional)</label>
+            <input id="hr-conduct-new-outcome-decision-optional" className="form-input" placeholder="e.g. First written warning issued; further action on recurrence" value={outcome} onChange={(e) => setOutcome(e.target.value)} />
           </div>
 
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <input type="checkbox" checked={isConfidential} onChange={(e) => setIsConfidential(e.target.checked)}
+          <label htmlFor="hr-conduct-new-setisconfidential-e-target-checked-classname-h-4" className="flex items-center gap-3 cursor-pointer select-none">
+            <input id="hr-conduct-new-setisconfidential-e-target-checked-classname-h-4" type="checkbox" checked={isConfidential} onChange={(e) => setIsConfidential(e.target.checked)}
               className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary" />
             <div>
               <p className="text-sm font-medium text-neutral-900">Mark as Confidential</p>

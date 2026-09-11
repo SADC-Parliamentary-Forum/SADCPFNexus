@@ -10,6 +10,7 @@ import {
   type PurchaseOrder,
 } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type ModalState =
   | { mode: "proforma"; purchaseOrder: PurchaseOrder }
@@ -196,9 +197,7 @@ export default function SupplierInvoicesPage() {
           </thead>
           <tbody>
             {invoices.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-12 text-center text-sm text-neutral-500">No invoices submitted yet.</td>
-              </tr>
+              <TableEmpty colSpan={6} title="No invoices submitted yet." />
             ) : (
               invoices.map((invoice) => (
                 <tr key={invoice.id}>
@@ -275,16 +274,16 @@ export default function SupplierInvoicesPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="supplier-invoices-field" className="block text-xs font-semibold text-neutral-700">
                 {modal.mode === "proforma" ? "Proforma invoice file(s)" : "Final invoice file(s)"}
               </label>
-              <input type="file" multiple onChange={handleFiles(setInvoiceFiles)} />
+              <input id="supplier-invoices-field" type="file" multiple onChange={handleFiles(setInvoiceFiles)} />
             </div>
 
             {modal.mode === "final" && (
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-neutral-700">Proof of payment supporting file(s)</label>
-                <input type="file" multiple onChange={handleFiles(setProofFiles)} />
+                <label htmlFor="supplier-invoices-proof" className="block text-xs font-semibold text-neutral-700">Proof of payment supporting file(s)</label>
+                <input id="supplier-invoices-proof" type="file" multiple onChange={handleFiles(setProofFiles)} />
               </div>
             )}
 

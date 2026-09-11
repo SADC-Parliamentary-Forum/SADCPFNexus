@@ -16,6 +16,7 @@ import {
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const STATUS_BADGE: Record<string, string> = {
   not_submitted: "badge-muted",
@@ -228,13 +229,25 @@ export default function ActivityReportDetailPage() {
   };
 
   if (isLoading || !draft) {
-    return <div className="px-5 py-10 text-sm text-neutral-400">Loading report…</div>;
+    return (
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Activity report"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: "Activity Reports", href: "/mande/activity-reports" }, { label: "Report" }]} />}
+        />
+        <p className="text-sm text-neutral-400">Loading report…</p>
+      </div>
+    );
   }
   if (isError || !report) {
     return (
-      <div className="space-y-3">
-        <Link href="/mande/activity-reports" className="text-xs text-primary hover:underline">← All reports</Link>
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Activity report"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.mande", href: "/mande" }, { label: "Activity Reports", href: "/mande/activity-reports" }, { label: "Report" }]} />}
+        />
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">Report not found.</div>
+        <Link href="/mande/activity-reports" className="btn-secondary text-sm">Back to reports</Link>
       </div>
     );
   }
@@ -252,23 +265,24 @@ export default function ActivityReportDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <Link href="/mande/activity-reports" className="text-xs text-primary hover:underline">← All reports</Link>
-          <h1 className="page-title mt-1">{report.activity_title}</h1>
-          <p className="page-subtitle font-mono text-xs">
-            {report.reference_number}
-            {report.programme
-              ? ` · PIF ${report.programme.reference_number}`
-              : isNonPif
-                ? " · Non-PIF"
-                : ""}
-          </p>
-        </div>
-        <span className={`badge ${STATUS_BADGE[report.review_status] ?? "badge-muted"}`}>
-          {report.review_status.replace(/_/g, " ")}
-        </span>
-      </div>
+      <ModulePageHeader
+        title={report.activity_title}
+        subtitle={`${report.reference_number}${report.programme ? ` · PIF ${report.programme.reference_number}` : isNonPif ? " · Non-PIF" : ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.mande", href: "/mande" },
+              { label: "Activity Reports", href: "/mande/activity-reports" },
+              { label: report.activity_title },
+            ]}
+          />
+        }
+        meta={
+          <span className={`badge ${STATUS_BADGE[report.review_status] ?? "badge-muted"}`}>
+            {report.review_status.replace(/_/g, " ")}
+          </span>
+        }
+      />
 
       {actionMsg && (
         <div className="rounded-xl bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-800">{actionMsg}</div>
@@ -314,8 +328,9 @@ export default function ActivityReportDetailPage() {
         {section === "identity" && (
           <>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Activity title</label>
+              <label htmlFor="me-activity-title" className="block text-xs font-semibold text-neutral-700 mb-1">Activity title</label>
               <input
+                id="me-activity-title"
                 className="form-input"
                 value={draft.activity_title}
                 disabled={!editable}
@@ -324,13 +339,13 @@ export default function ActivityReportDetailPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Start date</label>
-                <input type="date" className="form-input" value={draft.start_date} disabled={!editable}
+                <label htmlFor="me-start-date" className="block text-xs font-semibold text-neutral-700 mb-1">Start date</label>
+                <input id="me-start-date" type="date" className="form-input" value={draft.start_date} disabled={!editable}
                   onChange={(e) => setField("start_date", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">End date</label>
-                <input type="date" className="form-input" value={draft.end_date} disabled={!editable}
+                <label htmlFor="me-end-date" className="block text-xs font-semibold text-neutral-700 mb-1">End date</label>
+                <input id="me-end-date" type="date" className="form-input" value={draft.end_date} disabled={!editable}
                   onChange={(e) => setField("end_date", e.target.value)} />
               </div>
             </div>
@@ -353,13 +368,13 @@ export default function ActivityReportDetailPage() {
         {section === "outputs" && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Planned output</label>
-              <textarea className="form-input min-h-[120px]" value={draft.planned_output} disabled={!editable}
+              <label htmlFor="me-planned-output" className="block text-xs font-semibold text-neutral-700 mb-1">Planned output</label>
+              <textarea id="me-planned-output" className="form-input min-h-[120px]" value={draft.planned_output} disabled={!editable}
                 onChange={(e) => setField("planned_output", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Actual output</label>
-              <textarea className="form-input min-h-[120px]" value={draft.actual_output} disabled={!editable}
+              <label htmlFor="me-actual-output" className="block text-xs font-semibold text-neutral-700 mb-1">Actual output</label>
+              <textarea id="me-actual-output" className="form-input min-h-[120px]" value={draft.actual_output} disabled={!editable}
                 onChange={(e) => setField("actual_output", e.target.value)} />
             </div>
           </div>
@@ -368,13 +383,13 @@ export default function ActivityReportDetailPage() {
         {section === "participants" && (
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Planned participants</label>
-              <input type="number" min={0} className="form-input" value={draft.planned_participants} disabled={!editable}
+              <label htmlFor="me-planned-participants" className="block text-xs font-semibold text-neutral-700 mb-1">Planned participants</label>
+              <input id="me-planned-participants" type="number" min={0} className="form-input" value={draft.planned_participants} disabled={!editable}
                 onChange={(e) => setField("planned_participants", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Actual participants</label>
-              <input type="number" min={0} className="form-input" value={draft.actual_participants} disabled={!editable}
+              <label htmlFor="me-actual-participants" className="block text-xs font-semibold text-neutral-700 mb-1">Actual participants</label>
+              <input id="me-actual-participants" type="number" min={0} className="form-input" value={draft.actual_participants} disabled={!editable}
                 onChange={(e) => setField("actual_participants", e.target.value)} />
             </div>
           </div>
@@ -382,8 +397,8 @@ export default function ActivityReportDetailPage() {
 
         {section === "narrative" && (
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Narrative</label>
-            <textarea className="form-input min-h-[180px]" value={draft.narrative} disabled={!editable}
+            <label htmlFor="me-narrative" className="block text-xs font-semibold text-neutral-700 mb-1">Narrative</label>
+            <textarea id="me-narrative" className="form-input min-h-[180px]" value={draft.narrative} disabled={!editable}
               onChange={(e) => setField("narrative", e.target.value)} />
           </div>
         )}
@@ -391,23 +406,23 @@ export default function ActivityReportDetailPage() {
         {section === "learning" && (
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Challenges</label>
-              <textarea className="form-input min-h-[100px]" value={draft.challenges} disabled={!editable}
+              <label htmlFor="me-challenges" className="block text-xs font-semibold text-neutral-700 mb-1">Challenges</label>
+              <textarea id="me-challenges" className="form-input min-h-[100px]" value={draft.challenges} disabled={!editable}
                 onChange={(e) => setField("challenges", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Lessons learned</label>
-              <textarea className="form-input min-h-[100px]" value={draft.lessons_learned} disabled={!editable}
+              <label htmlFor="me-lessons" className="block text-xs font-semibold text-neutral-700 mb-1">Lessons learned</label>
+              <textarea id="me-lessons" className="form-input min-h-[100px]" value={draft.lessons_learned} disabled={!editable}
                 onChange={(e) => setField("lessons_learned", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Recommendations</label>
-              <textarea className="form-input min-h-[100px]" value={draft.recommendations} disabled={!editable}
+              <label htmlFor="me-recommendations" className="block text-xs font-semibold text-neutral-700 mb-1">Recommendations</label>
+              <textarea id="me-recommendations" className="form-input min-h-[100px]" value={draft.recommendations} disabled={!editable}
                 onChange={(e) => setField("recommendations", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Follow-up actions</label>
-              <textarea className="form-input min-h-[100px]" value={draft.follow_up_actions} disabled={!editable}
+              <label htmlFor="me-follow-up-actions" className="block text-xs font-semibold text-neutral-700 mb-1">Follow-up actions</label>
+              <textarea id="me-follow-up-actions" className="form-input min-h-[100px]" value={draft.follow_up_actions} disabled={!editable}
                 onChange={(e) => setField("follow_up_actions", e.target.value)} />
             </div>
           </div>
@@ -419,8 +434,9 @@ export default function ActivityReportDetailPage() {
               <div className="rounded-lg border border-neutral-200 p-4 space-y-3">
                 <p className="text-sm font-semibold text-neutral-800">Add follow-up</p>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Action *</label>
+                  <label htmlFor="me-fu-action" className="block text-xs font-semibold text-neutral-700 mb-1">Action *</label>
                   <textarea
+                    id="me-fu-action"
                     className="form-input min-h-[72px]"
                     value={followUpAction}
                     onChange={(e) => setFollowUpAction(e.target.value)}
@@ -429,8 +445,9 @@ export default function ActivityReportDetailPage() {
                 </div>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1">Due date</label>
+                    <label htmlFor="me-fu-due" className="block text-xs font-semibold text-neutral-700 mb-1">Due date</label>
                     <input
+                      id="me-fu-due"
                       type="date"
                       className="form-input"
                       value={followUpDue}
@@ -438,8 +455,9 @@ export default function ActivityReportDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1">Priority</label>
+                    <label htmlFor="me-fu-priority" className="block text-xs font-semibold text-neutral-700 mb-1">Priority</label>
                     <select
+                      id="me-fu-priority"
                       className="form-input"
                       value={followUpPriority}
                       onChange={(e) => setFollowUpPriority(e.target.value as MeFollowUpPriority)}
@@ -489,7 +507,7 @@ export default function ActivityReportDetailPage() {
                       {fu.status !== "completed" && canCreate && (
                         <button
                           type="button"
-                          className="text-green-700 text-xs hover:underline disabled:opacity-40"
+                          className="btn-secondary text-xs disabled:opacity-40"
                           disabled={completeFollowUpMut.isPending}
                           onClick={() => completeFollowUpMut.mutate(fu.id)}
                         >
@@ -499,7 +517,7 @@ export default function ActivityReportDetailPage() {
                       {fu.status !== "completed" && canCreate && (
                         <button
                           type="button"
-                          className="text-red-600 text-xs hover:underline disabled:opacity-40"
+                          className="btn-secondary text-xs text-red-600 disabled:opacity-40"
                           disabled={deleteFollowUpMut.isPending}
                           onClick={async () => {
                             if (await confirm({ title: "Delete follow-up", message: "Delete this follow-up? This cannot be undone.", variant: "danger" })) {
@@ -525,12 +543,12 @@ export default function ActivityReportDetailPage() {
                 <p className="text-sm font-semibold text-neutral-800">Upload evidence</p>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
-                    <input className="form-input" value={evidenceTitle} onChange={(e) => setEvidenceTitle(e.target.value)} />
+                    <label htmlFor="me-evidence-title" className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
+                    <input id="me-evidence-title" className="form-input" value={evidenceTitle} onChange={(e) => setEvidenceTitle(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-700 mb-1">Type</label>
-                    <select className="form-input" value={evidenceType} onChange={(e) => setEvidenceType(e.target.value)}>
+                    <label htmlFor="me-evidence-type" className="block text-xs font-semibold text-neutral-700 mb-1">Type</label>
+                    <select id="me-evidence-type" className="form-input" value={evidenceType} onChange={(e) => setEvidenceType(e.target.value)}>
                       {ME_EVIDENCE_TYPES.map((t) => (
                         <option key={t.value} value={t.value}>{t.label}</option>
                       ))}
@@ -572,14 +590,14 @@ export default function ActivityReportDetailPage() {
                           <>
                             <button
                               type="button"
-                              className="text-green-700 text-xs hover:underline mr-2"
+                              className="btn-secondary text-xs mr-2"
                               onClick={() => reviewEvidenceMut.mutate({ evidenceId: e.id, status: "validated" })}
                             >
                               Validate
                             </button>
                             <button
                               type="button"
-                              className="text-red-600 text-xs hover:underline"
+                              className="btn-secondary text-xs text-red-600"
                               onClick={() => reviewEvidenceMut.mutate({ evidenceId: e.id, status: "rejected" })}
                             >
                               Reject

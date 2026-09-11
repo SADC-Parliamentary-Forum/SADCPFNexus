@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import { correspondenceApi, type CorrespondenceContact, type ContactGroup } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState, TableEmpty } from "@/components/ui/EmptyState";
 
 type Tab = "contacts" | "groups";
 
@@ -225,18 +226,20 @@ export default function CorrespondenceContactsPage() {
                     <td>
                       {canAdmin && (
                         <div className="flex items-center gap-2">
-                          <button onClick={() => openContactSlideOver(c)} className="text-xs font-semibold text-primary hover:underline">Edit</button>
-                          <button onClick={() => deleteContact(c.id)} className="text-xs font-semibold text-red-500 hover:underline">Delete</button>
+                          <button type="button" onClick={() => openContactSlideOver(c)} className="btn-secondary text-xs py-1 px-2">Edit</button>
+                          <button type="button" onClick={() => deleteContact(c.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Delete</button>
                         </div>
                       )}
                     </td>
                   </tr>
                 )) : (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-sm text-neutral-400">
-                      No contacts yet.{canAdmin && <> <button onClick={() => openContactSlideOver()} className="text-primary font-semibold">Add one</button></>}
-                    </td>
-                  </tr>
+                  <TableEmpty
+                    colSpan={6}
+                    title="No contacts yet."
+                    action={canAdmin ? (
+                      <button type="button" onClick={() => openContactSlideOver()} className="btn-primary text-sm">Add one</button>
+                    ) : undefined}
+                  />
                 )}
               </tbody>
             </table>
@@ -253,8 +256,8 @@ export default function CorrespondenceContactsPage() {
                 </div>
                 {canAdmin && (
                   <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openGroupSlideOver(g)} className="text-xs font-semibold text-primary hover:underline">Edit</button>
-                    <button onClick={() => deleteGroup(g.id)} className="text-xs font-semibold text-red-500 hover:underline">Delete</button>
+                    <button type="button" onClick={() => openGroupSlideOver(g)} className="btn-secondary text-xs py-1 px-2">Edit</button>
+                    <button type="button" onClick={() => deleteGroup(g.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Delete</button>
                   </div>
                 )}
               </div>
@@ -263,8 +266,14 @@ export default function CorrespondenceContactsPage() {
               </p>
             </div>
           )) : (
-            <div className="col-span-3 py-12 text-center text-sm text-neutral-400">
-              No groups yet.{canAdmin && <> <button onClick={() => openGroupSlideOver()} className="text-primary font-semibold">Create one</button></>}
+            <div className="col-span-3 card">
+              <EmptyState
+                icon="group"
+                title="No groups yet."
+                action={canAdmin ? (
+                  <button type="button" onClick={() => openGroupSlideOver()} className="btn-primary text-sm">Create one</button>
+                ) : undefined}
+              />
             </div>
           )}
         </div>
@@ -294,30 +303,30 @@ export default function CorrespondenceContactsPage() {
               {slideOver.type === "contact" ? (
                 <>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1">Full Name *</label>
-                    <input value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} className="form-input w-full" />
+                    <label htmlFor="correspondence-contacts-full-name" className="block text-xs font-medium text-neutral-600 mb-1">Full Name *</label>
+                    <input id="correspondence-contacts-full-name" value={form.full_name} onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))} className="form-input w-full" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1">Email *</label>
-                    <input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="form-input w-full" />
+                    <label htmlFor="correspondence-contacts-email" className="block text-xs font-medium text-neutral-600 mb-1">Email *</label>
+                    <input id="correspondence-contacts-email" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className="form-input w-full" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1">Organization</label>
-                    <input value={form.organization} onChange={(e) => setForm((f) => ({ ...f, organization: e.target.value }))} className="form-input w-full" />
+                    <label htmlFor="correspondence-contacts-organization" className="block text-xs font-medium text-neutral-600 mb-1">Organization</label>
+                    <input id="correspondence-contacts-organization" value={form.organization} onChange={(e) => setForm((f) => ({ ...f, organization: e.target.value }))} className="form-input w-full" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-neutral-600 mb-1">Country</label>
-                      <input value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))} className="form-input w-full" placeholder="e.g. ZA" maxLength={4} />
+                      <label htmlFor="correspondence-contacts-country" className="block text-xs font-medium text-neutral-600 mb-1">Country</label>
+                      <input id="correspondence-contacts-country" value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))} className="form-input w-full" placeholder="e.g. ZA" maxLength={4} />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-neutral-600 mb-1">Phone</label>
-                      <input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} className="form-input w-full" />
+                      <label htmlFor="correspondence-contacts-phone" className="block text-xs font-medium text-neutral-600 mb-1">Phone</label>
+                      <input id="correspondence-contacts-phone" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} className="form-input w-full" />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1">Stakeholder Type</label>
-                    <select value={form.stakeholder_type} onChange={(e) => setForm((f) => ({ ...f, stakeholder_type: e.target.value }))} className="form-input w-full">
+                    <label htmlFor="correspondence-contacts-stakeholder-type" className="block text-xs font-medium text-neutral-600 mb-1">Stakeholder Type</label>
+                    <select id="correspondence-contacts-stakeholder-type" value={form.stakeholder_type} onChange={(e) => setForm((f) => ({ ...f, stakeholder_type: e.target.value }))} className="form-input w-full">
                       <option value="member_parliament">Member of Parliament</option>
                       <option value="ministry">Ministry / Government</option>
                       <option value="ngo">NGO / Civil Society</option>
@@ -327,19 +336,19 @@ export default function CorrespondenceContactsPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1">Tags <span className="text-neutral-400 font-normal">(comma-separated)</span></label>
-                    <input value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} className="form-input w-full" placeholder="e.g. sadc, finance, procurement" />
+                    <label htmlFor="correspondence-contacts-tags-comma-separated" className="block text-xs font-medium text-neutral-600 mb-1">Tags <span className="text-neutral-400 font-normal">(comma-separated)</span></label>
+                    <input id="correspondence-contacts-tags-comma-separated" value={form.tags} onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))} className="form-input w-full" placeholder="e.g. sadc, finance, procurement" />
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1">Group Name *</label>
-                    <input value={groupForm.name} onChange={(e) => setGroupForm((f) => ({ ...f, name: e.target.value }))} className="form-input w-full" placeholder="e.g. Finance Committee" />
+                    <label htmlFor="correspondence-contacts-group-name" className="block text-xs font-medium text-neutral-600 mb-1">Group Name *</label>
+                    <input id="correspondence-contacts-group-name" value={groupForm.name} onChange={(e) => setGroupForm((f) => ({ ...f, name: e.target.value }))} className="form-input w-full" placeholder="e.g. Finance Committee" />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-neutral-600 mb-1">Description</label>
-                    <textarea value={groupForm.description} onChange={(e) => setGroupForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="form-input w-full resize-none" />
+                    <label htmlFor="correspondence-contacts-description" className="block text-xs font-medium text-neutral-600 mb-1">Description</label>
+                    <textarea id="correspondence-contacts-description" value={groupForm.description} onChange={(e) => setGroupForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="form-input w-full resize-none" />
                   </div>
                 </>
               )}

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class AssignmentsCalendarScreen extends ConsumerStatefulWidget {
   const AssignmentsCalendarScreen({super.key});
@@ -96,24 +97,19 @@ class _AssignmentsCalendarScreenState
         ? '${DateFormat('d MMM').format(from)} – ${DateFormat('d MMM y').format(to)}'
         : DateFormat('MMMM y').format(_cursor);
 
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        title: const Text('Assignment calendar',
-            style: TextStyle(
-                color: AppColors.textPrimary, fontWeight: FontWeight.w800)),
-        actions: [
-          TextButton(
-            onPressed: () {
-              setState(() => _weekMode = !_weekMode);
-              _load();
-            },
-            child: Text(_weekMode ? 'Month' : 'Week',
-                style: const TextStyle(color: AppColors.primary)),
-          ),
-        ],
-      ),
+    return StitchScreen(
+      title: 'Assignment calendar',
+      fallbackRoute: '/assignments',
+      actions: [
+        TextButton(
+          onPressed: () {
+            setState(() => _weekMode = !_weekMode);
+            _load();
+          },
+          child: Text(_weekMode ? 'Month' : 'Week',
+              style: const TextStyle(color: AppColors.primary)),
+        ),
+      ],
       body: Column(
         children: [
           Padding(
@@ -156,12 +152,10 @@ class _AssignmentsCalendarScreenState
           ),
           if (_loading)
             const Expanded(
-                child: Center(child: CircularProgressIndicator()))
+                child: StitchLoadingState(label: 'Loading calendar'))
           else if (_error != null)
             Expanded(
-                child: Center(
-                    child: Text(_error!,
-                        style: const TextStyle(color: AppColors.danger))))
+                child: StitchErrorState(message: _error!, onRetry: _load))
           else
             Expanded(child: _weekMode ? _buildWeek() : _buildMonth()),
         ],

@@ -6,6 +6,7 @@ import { saamApi, tenantUsersApi, type DelegatedAuthority, type TenantUserOption
 import { formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function DelegationsPage() {
   const { success, error: showErrorToast, info } = useToast();
@@ -121,7 +122,7 @@ export default function DelegationsPage() {
               <h2 className="text-sm font-semibold text-neutral-900">My Delegations Out ({outgoing.length})</h2>
             </div>
             {outgoing.length === 0 ? (
-              <p className="px-5 py-8 text-sm text-neutral-400 text-center">No outgoing delegations.</p>
+              <EmptyState icon="arrow_outward" title="No outgoing delegations." />
             ) : (
               <div className="divide-y divide-neutral-100">
                 {outgoing.map((d) => (
@@ -142,7 +143,7 @@ export default function DelegationsPage() {
                       {d.reason && <p className="text-xs text-neutral-500 mt-0.5 italic">{d.reason}</p>}
                     </div>
                     {isActive(d) && (
-                      <button onClick={() => revoke(d.id)} className="text-xs font-semibold text-red-500 hover:underline flex-shrink-0">Revoke</button>
+                      <button onClick={() => revoke(d.id)} className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600">Revoke</button>
                     )}
                   </div>
                 ))}
@@ -157,7 +158,7 @@ export default function DelegationsPage() {
               <h2 className="text-sm font-semibold text-neutral-900">Delegated to Me ({incoming.length})</h2>
             </div>
             {incoming.length === 0 ? (
-              <p className="px-5 py-8 text-sm text-neutral-400 text-center">No active delegations from others.</p>
+              <EmptyState icon="south_west" title="No active delegations from others." />
             ) : (
               <div className="divide-y divide-neutral-100">
                 {incoming.map((d) => (
@@ -199,8 +200,8 @@ export default function DelegationsPage() {
                 <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-3 py-2">{error}</div>
               )}
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Delegate To *</label>
-                <select className="form-input" value={form.delegate_user_id} onChange={(e) => setForm({ ...form, delegate_user_id: e.target.value })}>
+                <label htmlFor="saam-delegations-delegate-to" className="block text-xs font-semibold text-neutral-700 mb-1">Delegate To *</label>
+                <select id="saam-delegations-delegate-to" className="form-input" value={form.delegate_user_id} onChange={(e) => setForm({ ...form, delegate_user_id: e.target.value })}>
                   <option value="">Select staff member…</option>
                   {users.map((u) => (
                     <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
@@ -209,24 +210,24 @@ export default function DelegationsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Start Date *</label>
-                  <input type="date" className="form-input" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+                  <label htmlFor="saam-delegations-start-date" className="block text-xs font-semibold text-neutral-700 mb-1">Start Date *</label>
+                  <input id="saam-delegations-start-date" type="date" className="form-input" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">End Date *</label>
-                  <input type="date" className="form-input" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+                  <label htmlFor="saam-delegations-end-date" className="block text-xs font-semibold text-neutral-700 mb-1">End Date *</label>
+                  <input id="saam-delegations-end-date" type="date" className="form-input" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Scope (Permission)</label>
-                <select className="form-input" value={form.role_scope} onChange={(e) => setForm({ ...form, role_scope: e.target.value })}>
+                <label htmlFor="saam-delegations-scope-permission" className="block text-xs font-semibold text-neutral-700 mb-1">Scope (Permission)</label>
+                <select id="saam-delegations-scope-permission" className="form-input" value={form.role_scope} onChange={(e) => setForm({ ...form, role_scope: e.target.value })}>
                   <option value="">All permissions (no restriction)</option>
                   {PERMISSION_SCOPES.map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Reason</label>
-                <textarea rows={3} className="form-input resize-none" placeholder="e.g. Annual leave, official mission…" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+                <label htmlFor="saam-delegations-reason" className="block text-xs font-semibold text-neutral-700 mb-1">Reason</label>
+                <textarea id="saam-delegations-reason" rows={3} className="form-input resize-none" placeholder="e.g. Annual leave, official mission…" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-neutral-100 flex justify-end gap-3">

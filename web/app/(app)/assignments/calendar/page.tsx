@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { cn } from "@/lib/utils";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 function localIso(d: Date) {
   const y = d.getFullYear();
@@ -30,6 +31,7 @@ function monthBounds(d = new Date()) {
 
 export default function AssignmentsCalendarPage() {
   const queryClient = useQueryClient();
+  const { confirm } = useConfirm();
   const [cursor, setCursor] = useState(() => new Date());
   const [scope, setScope] = useState<"mine" | "team" | "register">("mine");
   const [icsText, setIcsText] = useState("");
@@ -105,11 +107,13 @@ export default function AssignmentsCalendarPage() {
     window.setTimeout(() => setCopied(false), 2000);
   };
 
-  const regenerateSubscribeUrl = () => {
+  const regenerateSubscribeUrl = async () => {
     if (
-      !window.confirm(
-        "Regenerate this subscribe URL? Existing calendar subscriptions will stop working until they are updated with the new URL.",
-      )
+      !(await confirm({
+        title: "assignments.calendar.regenerateTitle",
+        message: "assignments.calendar.regenerateMessage",
+        variant: "danger",
+      }))
     ) {
       return;
     }
@@ -179,7 +183,7 @@ export default function AssignmentsCalendarPage() {
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
           <span className="flex-1">Failed to load assignment calendar.</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => void refetch()}>
             Retry
           </button>
         </div>
@@ -332,9 +336,9 @@ export default function AssignmentsCalendarPage() {
           <p className="text-xs text-neutral-500">
             Paste a calendar file. Import creates draft assignments assigned to you — it does not issue or complete work.
           </p>
-          <label className="block text-xs font-medium text-neutral-600">
+          <label htmlFor="assignments-calendar-ics-text-seticstext-e-target-value-placeholder-b" className="block text-xs font-medium text-neutral-600">
             ICS text
-            <textarea
+            <textarea id="assignments-calendar-ics-text-seticstext-e-target-value-placeholder-b"
               className="form-input mt-1 min-h-32 font-mono text-xs"
               value={icsText}
               onChange={(e) => setIcsText(e.target.value)}

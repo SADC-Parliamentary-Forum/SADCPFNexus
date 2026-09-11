@@ -105,17 +105,17 @@ return (await peopleAuthorityApi.listEsign()).data;
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-esign-document-type-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Document type
-          <input className="form-input mt-1" value={form.document_type} onChange={(e) => setForm((f) => ({ ...f, document_type: e.target.value }))} required />
+          <input id="people-esign-document-type-setform-f-required" className="form-input mt-1" value={form.document_type} onChange={(e) => setForm((f) => ({ ...f, document_type: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-esign-document-id-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Document id
-          <input className="form-input mt-1" value={form.document_id} onChange={(e) => setForm((f) => ({ ...f, document_id: e.target.value }))} required />
+          <input id="people-esign-document-id-setform-f-required" className="form-input mt-1" value={form.document_id} onChange={(e) => setForm((f) => ({ ...f, document_id: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-esign-document-hash-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Document hash
-          <input className="form-input mt-1" value={form.document_hash} onChange={(e) => setForm((f) => ({ ...f, document_hash: e.target.value }))} required />
+          <input id="people-esign-document-hash-setform-f-required" className="form-input mt-1" value={form.document_hash} onChange={(e) => setForm((f) => ({ ...f, document_hash: e.target.value }))} required />
         </label>
         <div className="sm:col-span-3 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
@@ -126,9 +126,9 @@ return (await peopleAuthorityApi.listEsign()).data;
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-esign-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-esign-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

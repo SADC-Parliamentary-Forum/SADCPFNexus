@@ -277,8 +277,8 @@ export function LabelTemplateVisualEditor({
             const custodyOnly = (id === "location" || id === "custodian") && geometry.kind !== "custody";
             return (
               <li key={id}>
-                <label className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
-                  <input
+                <label htmlFor={`assets-LabelTemplateVisualEditor-onchange-setitemvisible-layout-id-e-target-check-${id}`} className="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm">
+                  <input id={`assets-LabelTemplateVisualEditor-onchange-setitemvisible-layout-id-e-target-check-${id}`}
                     type="checkbox"
                     checked={item.visible}
                     onChange={(e) => onChange(setItemVisible(layout, id, e.target.checked))}
@@ -301,8 +301,8 @@ export function LabelTemplateVisualEditor({
           <div className="rounded-xl border border-neutral-200 bg-white p-3">
             <p className="mb-2 text-xs font-semibold">{t("assets.labels.selectedItem")}: {t(ITEM_KEYS[selected.id])}</p>
             <div className="grid grid-cols-2 gap-2">
-              <label className="text-[11px] font-semibold text-neutral-500">{t("assets.labels.posX")}
-                <input
+              <label htmlFor="assets-LabelTemplateVisualEditor-onchange-moveitem-layout-selected-id-number-e-ta" className="text-[11px] font-semibold text-neutral-500">{t("assets.labels.posX")}
+                <input id="assets-LabelTemplateVisualEditor-onchange-moveitem-layout-selected-id-number-e-ta"
                   type="number"
                   step="0.1"
                   className="form-input mt-1"
@@ -310,8 +310,8 @@ export function LabelTemplateVisualEditor({
                   onChange={(e) => onChange(moveItem(layout, selected.id, Number(e.target.value), selected.y_mm, size))}
                 />
               </label>
-              <label className="text-[11px] font-semibold text-neutral-500">{t("assets.labels.posY")}
-                <input
+              <label htmlFor="assets-LabelTemplateVisualEditor-onchange-moveitem-layout-selected-id-selected-x-" className="text-[11px] font-semibold text-neutral-500">{t("assets.labels.posY")}
+                <input id="assets-LabelTemplateVisualEditor-onchange-moveitem-layout-selected-id-selected-x-"
                   type="number"
                   step="0.1"
                   className="form-input mt-1"
@@ -319,8 +319,8 @@ export function LabelTemplateVisualEditor({
                   onChange={(e) => onChange(moveItem(layout, selected.id, selected.x_mm, Number(e.target.value), size))}
                 />
               </label>
-              <label className="text-[11px] font-semibold text-neutral-500">{t("assets.labels.posW")}
-                <input
+              <label htmlFor="assets-LabelTemplateVisualEditor-onchange-resizeitem-layout-selected-id-number-e-" className="text-[11px] font-semibold text-neutral-500">{t("assets.labels.posW")}
+                <input id="assets-LabelTemplateVisualEditor-onchange-resizeitem-layout-selected-id-number-e-"
                   type="number"
                   step="0.1"
                   className="form-input mt-1"
@@ -328,8 +328,8 @@ export function LabelTemplateVisualEditor({
                   onChange={(e) => onChange(resizeItem(layout, selected.id, Number(e.target.value), selected.h_mm, size))}
                 />
               </label>
-              <label className="text-[11px] font-semibold text-neutral-500">{t("assets.labels.posH")}
-                <input
+              <label htmlFor="assets-LabelTemplateVisualEditor-onchange-resizeitem-layout-selected-id-selected-" className="text-[11px] font-semibold text-neutral-500">{t("assets.labels.posH")}
+                <input id="assets-LabelTemplateVisualEditor-onchange-resizeitem-layout-selected-id-selected-"
                   type="number"
                   step="0.1"
                   className="form-input mt-1"

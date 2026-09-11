@@ -15,6 +15,8 @@ import {
 import { cn } from "@/lib/utils";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 // ─── Initialize Year Modal ────────────────────────────────────────────────────
 
@@ -388,33 +390,33 @@ export default function LeaveBalancesPage() {
         />
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <nav className="flex items-center gap-1.5 text-xs text-neutral-400 mb-2">
-            <Link href="/hr" className="hover:text-primary transition-colors font-medium">HR</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <Link href="/hr/leave" className="hover:text-primary transition-colors font-medium">Leave</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Balances</span>
-          </nav>
-          <h1 className="page-title">Leave Balance Administration</h1>
-          <p className="page-subtitle mt-1">
-            Consolidated view of annual, sick, LIL, maternity &amp; paternity leave across all staff.
-            Opening balances are editable per employee.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="form-input py-2 px-3 text-sm"
-            aria-label="Select year"
-          >
-            {YEAR_OPTIONS.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+      <ModulePageHeader
+        title="Leave Balance Administration"
+        subtitle="Consolidated view of annual, sick, LIL, maternity & paternity leave across all staff. Opening balances are editable per employee."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Leave", href: "/hr/leave" },
+              { label: "Balances" },
+            ]}
+          />
+        }
+        actions={
+          <>
+          <div>
+            <label htmlFor="leave-balance-year" className="sr-only">Year</label>
+            <select
+              id="leave-balance-year"
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="form-input py-2 px-3 text-sm"
+            >
+              {YEAR_OPTIONS.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
           <button
             type="button"
             onClick={() => { setInitResult(null); setShowInitModal(true); }}
@@ -434,8 +436,9 @@ export default function LeaveBalancesPage() {
             <span className="material-symbols-outlined text-[16px]">event_note</span>
             Leave Requests
           </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -549,11 +552,10 @@ export default function LeaveBalancesPage() {
                 ? Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)
                 : filtered.length === 0
                   ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-sm text-neutral-400">
-                        {search || filterOnLeave ? "No staff members match the current filters." : "No staff data found."}
-                      </td>
-                    </tr>
+                    <TableEmpty
+                      colSpan={6}
+                      title={search || filterOnLeave ? "No staff members match the current filters." : "No staff data found."}
+                    />
                   )
                   : filtered.map((row) => {
                     const remaining = row.annualTotal - row.annualUsed;

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   hrApi,
@@ -10,6 +9,8 @@ import {
 import { getStoredUser } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const WORK_BUCKETS = [
   "delivery",
@@ -209,35 +210,33 @@ export default function TimesheetTemplatesAdminPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-<div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/hr/timesheets" className="transition-colors hover:text-primary">
-          Timesheets
-        </Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="font-medium text-neutral-900">Templates</span>
-      </div>
-
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title" data-testid="timesheet-templates-title">
-            Timesheet templates
-          </h1>
-          <p className="page-subtitle">
-            Donor / project defaults for draft weeks. Does not invent overtime rates — only ordinary hours.
-          </p>
-        </div>
-        {allowed && (
-          <button
-            type="button"
-            onClick={openCreate}
-            className="btn-primary flex items-center gap-2"
-            data-testid="timesheet-templates-new"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            New template
-          </button>
-        )}
-      </div>
+      <ModulePageHeader
+        title="Timesheet templates"
+        titleTestId="timesheet-templates-title"
+        subtitle="Donor / project defaults for draft weeks. Does not invent overtime rates — only ordinary hours."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Timesheets", href: "/hr/timesheets" },
+              { label: "Templates" },
+            ]}
+          />
+        }
+        actions={
+          allowed ? (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="btn-primary flex items-center gap-2"
+              data-testid="timesheet-templates-new"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              New template
+            </button>
+          ) : undefined
+        }
+      />
 
       {!allowed && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -259,8 +258,8 @@ export default function TimesheetTemplatesAdminPage() {
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Name</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-name" className="mb-1 block text-xs font-medium text-neutral-600">Name</label>
+              <input id="hr-timesheets-templates-name"
                 className="form-input"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -269,8 +268,8 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Code</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-code" className="mb-1 block text-xs font-medium text-neutral-600">Code</label>
+              <input id="hr-timesheets-templates-code"
                 className="form-input font-mono"
                 value={form.code}
                 onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
@@ -279,8 +278,8 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Donor</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-donor" className="mb-1 block text-xs font-medium text-neutral-600">Donor</label>
+              <input id="hr-timesheets-templates-donor"
                 className="form-input"
                 value={form.donor_name}
                 onChange={(e) => setForm((f) => ({ ...f, donor_name: e.target.value }))}
@@ -288,8 +287,8 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Sort order</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-sort-order" className="mb-1 block text-xs font-medium text-neutral-600">Sort order</label>
+              <input id="hr-timesheets-templates-sort-order"
                 type="number"
                 min={0}
                 className="form-input"
@@ -298,16 +297,16 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Description</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-description" className="mb-1 block text-xs font-medium text-neutral-600">Description</label>
+              <input id="hr-timesheets-templates-description"
                 className="form-input"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Default project</label>
-              <select
+              <label htmlFor="hr-timesheets-templates-default-project" className="mb-1 block text-xs font-medium text-neutral-600">Default project</label>
+              <select id="hr-timesheets-templates-default-project"
                 className="form-input"
                 value={form.project_id}
                 onChange={(e) => setForm((f) => ({ ...f, project_id: e.target.value }))}
@@ -321,8 +320,8 @@ export default function TimesheetTemplatesAdminPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Work bucket</label>
-              <select
+              <label htmlFor="hr-timesheets-templates-work-bucket" className="mb-1 block text-xs font-medium text-neutral-600">Work bucket</label>
+              <select id="hr-timesheets-templates-work-bucket"
                 className="form-input"
                 value={form.work_bucket}
                 onChange={(e) => setForm((f) => ({ ...f, work_bucket: e.target.value }))}
@@ -335,16 +334,16 @@ export default function TimesheetTemplatesAdminPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Activity type</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-activity-type" className="mb-1 block text-xs font-medium text-neutral-600">Activity type</label>
+              <input id="hr-timesheets-templates-activity-type"
                 className="form-input"
                 value={form.activity_type}
                 onChange={(e) => setForm((f) => ({ ...f, activity_type: e.target.value }))}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Entry category</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-entry-category" className="mb-1 block text-xs font-medium text-neutral-600">Entry category</label>
+              <input id="hr-timesheets-templates-entry-category"
                 className="form-input"
                 value={form.entry_category}
                 onChange={(e) => setForm((f) => ({ ...f, entry_category: e.target.value }))}
@@ -352,10 +351,10 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">
+              <label htmlFor="hr-timesheets-templates-default-hours-day-no-ot-rates" className="mb-1 block text-xs font-medium text-neutral-600">
                 Default hours / day (no OT rates)
               </label>
-              <input
+              <input id="hr-timesheets-templates-default-hours-day-no-ot-rates"
                 type="number"
                 min={0}
                 max={24}
@@ -366,8 +365,8 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div className="flex items-end">
-              <label className="flex items-center gap-2 text-sm text-neutral-700">
-                <input
+              <label htmlFor="hr-timesheets-templates-setform-f-active" className="flex items-center gap-2 text-sm text-neutral-700">
+                <input id="hr-timesheets-templates-setform-f-active"
                   type="checkbox"
                   checked={form.is_active}
                   onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
@@ -407,14 +406,12 @@ export default function TimesheetTemplatesAdminPage() {
             Loading…
           </div>
         ) : list.length === 0 ? (
-          <div className="px-5 py-16 text-center" data-testid="timesheet-templates-empty">
-            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">
-              description
-            </span>
-            <p className="text-sm font-semibold text-neutral-600">No templates yet</p>
-            <p className="mt-1 text-xs text-neutral-400">
-              Create a donor or project template so staff can prefill draft weeks.
-            </p>
+          <div data-testid="timesheet-templates-empty">
+            <EmptyState
+              icon="description"
+              title="No templates yet"
+              description="Create a donor or project template so staff can prefill draft weeks."
+            />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -453,7 +450,7 @@ export default function TimesheetTemplatesAdminPage() {
                       <td className="whitespace-nowrap text-right">
                         <button
                           type="button"
-                          className="mr-2 text-xs font-medium text-primary hover:underline"
+                          className="mr-2 btn-secondary text-xs"
                           data-testid="timesheet-template-edit"
                           onClick={() => openEdit(t)}
                         >
@@ -462,7 +459,7 @@ export default function TimesheetTemplatesAdminPage() {
                         {t.is_active ? (
                           <button
                             type="button"
-                            className="text-xs font-medium text-red-600 hover:underline"
+                            className="btn-secondary text-xs text-red-600"
                             onClick={() => void handleDeactivate(t)}
                           >
                             Deactivate
@@ -470,7 +467,7 @@ export default function TimesheetTemplatesAdminPage() {
                         ) : (
                           <button
                             type="button"
-                            className="text-xs font-medium text-green-700 hover:underline"
+                            className="btn-secondary text-xs text-green-700"
                             onClick={() => void handleReactivate(t)}
                           >
                             Reactivate

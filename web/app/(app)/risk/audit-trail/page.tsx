@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { riskApi, type RiskHistory } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
 import { LabelledChangeRows } from "@/components/ui/LabelledRecord";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -127,8 +128,8 @@ export default function RiskAuditTrailPage() {
       {/* Filters */}
       <div className="card px-4 py-3 flex flex-wrap gap-3 items-end">
         <div>
-          <label className="block text-xs text-neutral-500 mb-1">Date From</label>
-          <input
+          <label htmlFor="risk-audit-trail-date-from" className="block text-xs text-neutral-500 mb-1">Date From</label>
+          <input id="risk-audit-trail-date-from"
             type="date"
             value={filters.date_from}
             onChange={(e) => setFilter("date_from", e.target.value)}
@@ -136,8 +137,8 @@ export default function RiskAuditTrailPage() {
           />
         </div>
         <div>
-          <label className="block text-xs text-neutral-500 mb-1">Date To</label>
-          <input
+          <label htmlFor="risk-audit-trail-date-to" className="block text-xs text-neutral-500 mb-1">Date To</label>
+          <input id="risk-audit-trail-date-to"
             type="date"
             value={filters.date_to}
             onChange={(e) => setFilter("date_to", e.target.value)}
@@ -145,8 +146,8 @@ export default function RiskAuditTrailPage() {
           />
         </div>
         <div>
-          <label className="block text-xs text-neutral-500 mb-1">Event Type</label>
-          <select
+          <label htmlFor="risk-audit-trail-event-type" className="block text-xs text-neutral-500 mb-1">Event Type</label>
+          <select id="risk-audit-trail-event-type"
             value={filters.change_type}
             onChange={(e) => setFilter("change_type", e.target.value)}
             className="form-input text-sm h-9 w-44"
@@ -183,7 +184,7 @@ export default function RiskAuditTrailPage() {
             Loading events…
           </div>
         ) : events.length === 0 ? (
-          <div className="px-5 py-10 text-center text-neutral-400 text-sm">No events found.</div>
+          <EmptyState icon="history" title="No events found." />
         ) : (
           <table className="data-table">
             <thead>
@@ -211,7 +212,7 @@ export default function RiskAuditTrailPage() {
                       {event.risk ? (
                         <Link
                           href={`/risk/${event.risk_id}`}
-                          className="text-xs font-mono text-primary hover:underline"
+                          className="font-mono text-xs text-primary"
                           onClick={(e) => e.stopPropagation()}
                         >
                           {event.risk.risk_code}

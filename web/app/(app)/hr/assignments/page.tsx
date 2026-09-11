@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import api, { workAssignmentsApi, WorkAssignment, User } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type StatsData = { total: number; by_status: Record<string, number>; overdue: number; my_assignments: number };
 
@@ -237,11 +238,11 @@ export default function AssignmentsPage() {
             {error}
           </div>
         ) : assignments.length === 0 ? (
-          <div className="text-center py-12 text-neutral-400">
-            <span className="material-symbols-outlined text-[48px] block mb-2">task_alt</span>
-            <p className="font-medium">No assignments found</p>
-            <p className="text-sm mt-1">Try changing your filters or create a new assignment.</p>
-          </div>
+          <EmptyState
+            icon="task_alt"
+            title="No assignments found"
+            description="Try changing your filters or create a new assignment."
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -291,7 +292,7 @@ export default function AssignmentsPage() {
                       </td>
                       <td>
                         <button
-                          className="text-primary hover:underline text-sm font-medium"
+                          className="btn-secondary text-sm py-1 px-2"
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(`/hr/assignments/${a.id}`);
@@ -353,8 +354,8 @@ export default function AssignmentsPage() {
                 <div className="bg-red-50 text-red-700 rounded-lg px-4 py-2 text-sm">{formError}</div>
               )}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Title *</label>
-                <input
+                <label htmlFor="hr-assignments-title" className="block text-sm font-medium text-neutral-700 mb-1">Title *</label>
+                <input id="hr-assignments-title"
                   className="form-input"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -362,8 +363,8 @@ export default function AssignmentsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Assign To *</label>
-                <select
+                <label htmlFor="hr-assignments-assign-to" className="block text-sm font-medium text-neutral-700 mb-1">Assign To *</label>
+                <select id="hr-assignments-assign-to"
                   className="form-input"
                   value={form.assigned_to}
                   onChange={(e) => setForm((f) => ({ ...f, assigned_to: e.target.value }))}
@@ -377,8 +378,8 @@ export default function AssignmentsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
-                <textarea
+                <label htmlFor="hr-assignments-description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
+                <textarea id="hr-assignments-description"
                   className="form-input"
                   rows={3}
                   value={form.description}
@@ -388,8 +389,8 @@ export default function AssignmentsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
-                  <select
+                  <label htmlFor="hr-assignments-priority" className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
+                  <select id="hr-assignments-priority"
                     className="form-input"
                     value={form.priority}
                     onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
@@ -401,8 +402,8 @@ export default function AssignmentsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Est. Hours</label>
-                  <input
+                  <label htmlFor="hr-assignments-est-hours" className="block text-sm font-medium text-neutral-700 mb-1">Est. Hours</label>
+                  <input id="hr-assignments-est-hours"
                     className="form-input"
                     type="number"
                     min="0"
@@ -414,8 +415,8 @@ export default function AssignmentsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Due Date</label>
-                <input
+                <label htmlFor="hr-assignments-due-date" className="block text-sm font-medium text-neutral-700 mb-1">Due Date</label>
+                <input id="hr-assignments-due-date"
                   className="form-input"
                   type="date"
                   value={form.due_date}

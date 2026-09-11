@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { mandeApi, type MeActivityReport } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_BADGE: Record<string, string> = {
   submitted: "badge-warning",
@@ -84,10 +85,7 @@ export default function ReviewQueuePage() {
         {isLoading ? (
           <div className="px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
         ) : rows.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300 block mb-2">rate_review</span>
-            <p className="text-sm text-neutral-500">No reports in this queue.</p>
-          </div>
+          <EmptyState icon="rate_review" title="No reports in this queue." />
         ) : (
           <table className="data-table">
             <thead>
@@ -117,7 +115,7 @@ export default function ReviewQueuePage() {
                     {r.submitted_at ? formatDateShort(r.submitted_at) : "—"}
                   </td>
                   <td>
-                    <Link href={`/mande/activity-reports/${r.id}`} className="text-primary text-xs hover:underline">
+                    <Link href={`/mande/activity-reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">
                       Review
                     </Link>
                   </td>

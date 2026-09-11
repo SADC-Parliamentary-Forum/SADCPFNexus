@@ -6,6 +6,8 @@ import { hrFilesApi, adminApi, type HrPersonalFile } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { getLastPage, getListData, getTotal } from "@/lib/listPagination";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const FILE_STATUS_LABELS: Record<string, string> = {
   active: "Active",
@@ -131,26 +133,22 @@ export default function HrFilesDirectoryPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
-            HR
-          </Link>
-          <h1 className="page-title">HR Personal Files</h1>
-          <p className="page-subtitle">
-            Searchable employee directory and digital HR files.
-          </p>
-        </div>
-        <button
-          type="button"
-          className="btn-secondary text-sm disabled:opacity-50"
-          disabled={files.length === 0}
-          onClick={handleExport}
-        >
-          <span className="material-symbols-outlined text-[18px]">download</span>
-          Export CSV
-        </button>
-      </div>
+      <ModulePageHeader
+        title="HR Personal Files"
+        subtitle="Searchable employee directory and digital HR files."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Personal Files" }]} />}
+        actions={
+          <button
+            type="button"
+            className="btn-secondary text-sm disabled:opacity-50"
+            disabled={files.length === 0}
+            onClick={handleExport}
+          >
+            <span className="material-symbols-outlined text-[18px]">download</span>
+            Export CSV
+          </button>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
@@ -196,8 +194,9 @@ export default function HrFilesDirectoryPage() {
         </div>
         <div className="flex flex-wrap gap-3">
           <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold text-neutral-500">Department</label>
+            <label htmlFor="hr-files-department" className="text-xs font-semibold text-neutral-500">Department</label>
             <select
+              id="hr-files-department"
               className="form-input py-2 text-sm min-w-[140px]"
               value={departmentId}
               onChange={(e) => {
@@ -212,8 +211,9 @@ export default function HrFilesDirectoryPage() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold text-neutral-500">Employment</label>
+            <label htmlFor="hr-files-employment" className="text-xs font-semibold text-neutral-500">Employment</label>
             <select
+              id="hr-files-employment"
               className="form-input py-2 text-sm min-w-[120px]"
               value={employmentStatus}
               onChange={(e) => {
@@ -228,8 +228,9 @@ export default function HrFilesDirectoryPage() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold text-neutral-500">Probation</label>
+            <label htmlFor="hr-files-probation" className="text-xs font-semibold text-neutral-500">Probation</label>
             <select
+              id="hr-files-probation"
               className="form-input py-2 text-sm min-w-[120px]"
               value={probationStatus}
               onChange={(e) => {
@@ -244,8 +245,9 @@ export default function HrFilesDirectoryPage() {
             </select>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold text-neutral-500">File status</label>
+            <label htmlFor="hr-files-status" className="text-xs font-semibold text-neutral-500">File status</label>
             <select
+              id="hr-files-status"
               className="form-input py-2 text-sm min-w-[120px]"
               value={fileStatus}
               onChange={(e) => {
@@ -266,9 +268,6 @@ export default function HrFilesDirectoryPage() {
       <div className="card overflow-hidden">
         <div className="card-header flex items-center justify-between">
           <h3 className="text-sm font-semibold text-neutral-900">Employee directory</h3>
-          <Link href="/hr" className="text-xs font-semibold text-primary hover:underline">
-            Back to HR
-          </Link>
         </div>
 
         {loading ? (
@@ -277,11 +276,7 @@ export default function HrFilesDirectoryPage() {
             <span className="ml-2">Loading…</span>
           </div>
         ) : files.length === 0 ? (
-          <div className="py-16 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200">folder_open</span>
-            <p className="mt-3 text-sm text-neutral-500">No HR files found.</p>
-            <p className="text-xs text-neutral-400 mt-1">Adjust filters or search.</p>
-          </div>
+          <EmptyState icon="folder_open" title="No HR files found." description="Adjust filters or search." />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
@@ -328,7 +323,7 @@ export default function HrFilesDirectoryPage() {
                     <td className="text-right">
                       <Link
                         href={`/hr/files/${f.id}`}
-                        className="text-sm font-semibold text-primary hover:underline"
+                        className="btn-secondary text-xs"
                       >
                         View file
                       </Link>

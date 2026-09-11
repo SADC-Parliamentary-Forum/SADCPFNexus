@@ -18,6 +18,7 @@ import { useRowSelection } from "@/lib/useRowSelection";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
 import { clientPageCount, DEFAULT_PAGE_SIZE, slicePage } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; badge: string }> = {
   approved: { label: "Approved", badge: "badge-success" },
@@ -457,13 +458,7 @@ export default function TravelRegisterPage() {
       stats={
         <>
 {error && (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <span className="material-symbols-outlined text-[16px]">error_outline</span>
-              <span className="flex-1">{error}</span>
-              <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
-                Dismiss
-              </button>
-            </div>
+            <ErrorBanner message={error} onDismiss={() => setError(null)} />
           )}
           {!loading && rows.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -492,12 +487,13 @@ export default function TravelRegisterPage() {
       filters={
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[180px] flex-1">
-            <label className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
+            <label htmlFor="travel-register-search" className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-[18px] text-neutral-400">
                 search
               </span>
               <input
+                id="travel-register-search"
                 className="form-input pl-8 text-sm"
                 placeholder="Reference, purpose, traveller, destination…"
                 value={search}
@@ -541,18 +537,16 @@ export default function TravelRegisterPage() {
       }
       empty={
         !loading && filtered.length === 0 ? (
-          <div className="card px-5 py-16 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <span className="material-symbols-outlined text-[28px] text-primary">flight</span>
-            </div>
-            <p className="text-sm font-semibold text-neutral-700">
-              {rows.length === 0 ? "No travel register rows yet" : "No trips match your filters"}
-            </p>
-            <p className="mt-1 text-xs text-neutral-500">
-              {rows.length === 0
-                ? "Approved and in-flight missions will appear here as requests are created."
-                : "Try another status filter or clear the search."}
-            </p>
+          <div className="card">
+            <EmptyState
+              icon="flight"
+              title={rows.length === 0 ? "No travel register rows yet" : "No trips match your filters"}
+              description={
+                rows.length === 0
+                  ? "Approved and in-flight missions will appear here as requests are created."
+                  : "Try another status filter or clear the search."
+              }
+            />
           </div>
         ) : undefined
       }
@@ -613,7 +607,7 @@ export default function TravelRegisterPage() {
                         />
                       </td>
                       <td className="whitespace-nowrap font-mono text-xs text-neutral-600">
-                        <Link href={`/travel/${row.id}`} className="font-semibold text-primary hover:underline">
+                        <Link href={`/travel/${row.id}`} className="font-semibold text-primary">
                           {row.reference_number}
                         </Link>
                       </td>
@@ -722,7 +716,7 @@ export default function TravelRegisterPage() {
             <span>
               Showing {pageRows.length} of {filtered.length} row(s) on this page
             </span>
-            <button type="button" className="font-medium text-primary hover:underline" onClick={() => void load()}>
+            <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => void load()}>
               Refresh
             </button>
           </div>
@@ -753,8 +747,8 @@ export default function TravelRegisterPage() {
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-xs font-semibold text-neutral-600">Purpose</label>
-                <input
+                <label htmlFor="travel-register-purpose" className="mb-1 block text-xs font-semibold text-neutral-600">Purpose</label>
+                <input id="travel-register-purpose"
                   className="form-input text-sm"
                   value={editForm.purpose}
                   onChange={(e) => setEditForm({ ...editForm, purpose: e.target.value })}
@@ -772,8 +766,8 @@ export default function TravelRegisterPage() {
                 />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-neutral-600">Departure</label>
-                  <input
+                  <label htmlFor="travel-register-departure" className="mb-1 block text-xs font-semibold text-neutral-600">Departure</label>
+                  <input id="travel-register-departure"
                     type="date"
                     className="form-input text-sm"
                     value={editForm.departure_date}
@@ -781,8 +775,8 @@ export default function TravelRegisterPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-neutral-600">Return</label>
-                  <input
+                  <label htmlFor="travel-register-return" className="mb-1 block text-xs font-semibold text-neutral-600">Return</label>
+                  <input id="travel-register-return"
                     type="date"
                     className="form-input text-sm"
                     value={editForm.return_date}
@@ -791,8 +785,8 @@ export default function TravelRegisterPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-neutral-600">Justification</label>
-                <textarea
+                <label htmlFor="travel-register-justification" className="mb-1 block text-xs font-semibold text-neutral-600">Justification</label>
+                <textarea id="travel-register-justification"
                   className="form-input min-h-[80px] text-sm"
                   value={editForm.justification}
                   onChange={(e) => setEditForm({ ...editForm, justification: e.target.value })}
@@ -850,8 +844,8 @@ export default function TravelRegisterPage() {
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-xs font-semibold text-neutral-600">Reason</label>
-                <textarea
+                <label htmlFor="travel-register-reason" className="mb-1 block text-xs font-semibold text-neutral-600">Reason</label>
+                <textarea id="travel-register-reason"
                   className="form-input min-h-[96px] text-sm"
                   placeholder="Why is this trip being cancelled?"
                   value={cancelReason}

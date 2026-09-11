@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function AuditTrailForensicsPage() {
   const { success, error, info } = useToast();
@@ -71,7 +72,7 @@ export default function AuditTrailForensicsPage() {
         subtitle="MVP case workspace — link events, apply holds, seal hashed evidence packages."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Forensic cases" }]} />}
       />
-        <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
+        <Link href="/admin/audit-trail" className="btn-secondary text-sm">Back</Link>
       </div>
 
       <div className="card p-4 grid gap-3 sm:grid-cols-2">
@@ -113,7 +114,7 @@ export default function AuditTrailForensicsPage() {
               </tr>
             ))}
             {cases.length === 0 && (
-              <tr><td colSpan={5} className="px-4 py-6 text-center text-neutral-500">No forensic cases yet.</td></tr>
+              <TableEmpty colSpan={5} title="No forensic cases yet." />
             )}
           </tbody>
         </table>

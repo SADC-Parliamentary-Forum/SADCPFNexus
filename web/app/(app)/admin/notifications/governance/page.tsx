@@ -71,7 +71,7 @@ export default function NotificationsGovernancePage() {
         title="Notifications governance checklist"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Notifications governance checklist" }]} />}
       />
-        <Link href="/admin/notifications" className="text-sm text-primary underline">
+        <Link href="/admin/notifications" className="btn-secondary text-sm">
           Back to notifications admin
         </Link>
       </div>
@@ -135,9 +135,9 @@ export default function NotificationsGovernancePage() {
 
               {editing === row.id ? (
                 <div className="space-y-2 pt-2 border-t border-[var(--border)]">
-                  <label className="block text-sm">
+                  <label htmlFor={`admin-notifications-governance-status-${row.id}`} className="block text-sm">
                     Status
-                    <select
+                    <select id={`admin-notifications-governance-status-${row.id}`}
                       className="mt-1 w-full border border-[var(--border)] rounded-md px-2 py-1.5 bg-[var(--background)]"
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
@@ -147,9 +147,9 @@ export default function NotificationsGovernancePage() {
                       <option value="not_applicable">Not Applicable</option>
                     </select>
                   </label>
-                  <label className="block text-sm">
+                  <label htmlFor={`admin-notifications-governance-decision-notes-${row.id}`} className="block text-sm">
                     Decision notes
-                    <textarea
+                    <textarea id={`admin-notifications-governance-decision-notes-${row.id}`}
                       className="mt-1 w-full border border-[var(--border)] rounded-md px-2 py-1.5 bg-[var(--background)] min-h-[80px]"
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
@@ -178,7 +178,7 @@ export default function NotificationsGovernancePage() {
                 <button
                   type="button"
                   onClick={() => startEdit(row)}
-                  className="text-sm text-primary underline"
+                  className="btn-secondary text-sm"
                 >
                   Update status
                 </button>

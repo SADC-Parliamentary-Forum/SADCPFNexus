@@ -127,11 +127,11 @@ export default function AssetLabelsPage() {
       {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
       <div className="card flex flex-wrap items-end gap-3 p-4">
-        <label className="text-sm">{t("common.search")}
-          <input className="input mt-1" name="asset-search" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <label htmlFor="assets-labels-setsearch-e-target-value" className="text-sm">{t("common.search")}
+          <input id="assets-labels-setsearch-e-target-value" className="input mt-1" name="asset-search" value={search} onChange={(e) => setSearch(e.target.value)} />
         </label>
-        <label className="text-sm">{t("assets.labels.template")}
-          <select
+        <label htmlFor="assets-labels-settemplateid-e-target-value-number-e-target-val" className="text-sm">{t("assets.labels.template")}
+          <select id="assets-labels-settemplateid-e-target-value-number-e-target-val"
             className="input mt-1 min-w-[16rem]"
             value={templateId}
             onChange={(e) => setTemplateId(e.target.value ? Number(e.target.value) : "")}
@@ -156,7 +156,7 @@ export default function AssetLabelsPage() {
         </Button>
       </div>
 
-      <div className="table-wrap">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
         <table className="data-table">
           <thead>
             <tr>

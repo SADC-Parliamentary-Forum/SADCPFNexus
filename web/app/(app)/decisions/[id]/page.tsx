@@ -115,9 +115,9 @@ export default function DecisionDetailPage() {
         )}
       </div>
 
-      <label className="block space-y-1 max-w-xl">
+      <label htmlFor="decisions-detail-workflow-notes-setnotes-e-target-value-placehold" className="block space-y-1 max-w-xl">
         <span className="text-sm font-medium">Workflow notes</span>
-        <textarea className="input w-full min-h-20" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Adoption / implementation / closure notes" />
+        <textarea id="decisions-detail-workflow-notes-setnotes-e-target-value-placehold" className="input w-full min-h-20" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Adoption / implementation / closure notes" />
       </label>
 
       {msg && <p className="text-sm text-green-700">{msg}</p>}

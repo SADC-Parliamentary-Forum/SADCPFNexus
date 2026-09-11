@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import api from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatCurrency, formatDateRangeTable, formatDateTable } from "@/lib/utils";
@@ -10,6 +9,8 @@ import { getLastPage, getListData, getTotal } from "@/lib/listPagination";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Runner = { id: number; name: string };
 
@@ -267,24 +268,21 @@ export default function AssetDepreciationPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/assets" className="transition-colors hover:text-neutral-700">
-              Fixed Assets
-            </Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Depreciation</span>
-          </div>
-          <h1 className="page-title">Depreciation</h1>
-          <p className="page-subtitle">
-            Monthly monitoring runs for capital assets. Nexus calculates book values for reports —
-            official GL remains the accounting system.
-          </p>
-        </div>
+      <ModulePageHeader
+        title="Depreciation"
+        subtitle="Monthly monitoring runs for capital assets. Nexus calculates book values for reports — official GL remains the accounting system."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.assets", href: "/assets" },
+              { label: "Depreciation" },
+            ]}
+          />
+        }
+        actions={
         <div className="flex flex-wrap items-end gap-2">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-neutral-600" htmlFor="as_of">
+            <label htmlFor="as_of" className="mb-1 block text-xs font-semibold text-neutral-600">
               As of
             </label>
             <input
@@ -307,15 +305,17 @@ export default function AssetDepreciationPage() {
             </button>
           )}
         </div>
-      </div>
-{error && (
+        }
+      />
+
+      {error && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error}</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => void load()}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => void load()}>
             Retry
           </button>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => setError(null)}>
             Dismiss
           </button>
         </div>
@@ -346,7 +346,7 @@ export default function AssetDepreciationPage() {
 
       <div className="card flex flex-wrap items-end gap-3 p-3">
         <div className="min-w-[180px] flex-1">
-          <label className="mb-1 block text-xs font-semibold text-neutral-600" htmlFor="depr-search">
+            <label htmlFor="depr-search" className="mb-1 block text-xs font-semibold text-neutral-600">
             Search
           </label>
           <div className="relative">
@@ -386,49 +386,51 @@ export default function AssetDepreciationPage() {
           ))}
         </div>
       ) : filteredRuns.length === 0 ? (
-        <div className="card px-5 py-16 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-            <span className="material-symbols-outlined text-[28px] text-primary">trending_down</span>
-          </div>
-          <p className="text-sm font-semibold text-neutral-700">
-            {error
-              ? "Could not load depreciation runs"
-              : runs.length === 0
-                ? "No depreciation runs yet"
-                : "No runs match your search"}
-          </p>
-          <p className="mt-1 text-xs text-neutral-500">
-            {error
-              ? "Check your connection or permissions, then retry."
-              : runs.length === 0
-                ? canRun
-                  ? "Run the first monthly calculation to populate this register."
-                  : "An assets or finance administrator can run the first calculation."
-                : "Try another status filter or clear the search."}
-          </p>
-          {runs.length > 0 ? (
-            <button
-              type="button"
-              className="mt-4 text-xs font-semibold text-primary hover:underline"
-              onClick={() => {
-                setSearch("");
-                setFilter("all");
-              }}
-            >
-              Clear filters
-            </button>
-          ) : (
-            canRun &&
-            !error && (
-              <button type="button" className="btn-primary mt-4 text-sm" disabled={busy} onClick={() => void runNow()}>
-                Run depreciation
-              </button>
-            )
-          )}
+        <div className="card">
+          <EmptyState
+            icon="trending_down"
+            title={
+              error
+                ? "Could not load depreciation runs"
+                : runs.length === 0
+                  ? "No depreciation runs yet"
+                  : "No runs match your search"
+            }
+            description={
+              error
+                ? "Check your connection or permissions, then retry."
+                : runs.length === 0
+                  ? canRun
+                    ? "Run the first monthly calculation to populate this register."
+                    : "An assets or finance administrator can run the first calculation."
+                  : "Try another status filter or clear the search."
+            }
+            action={
+              runs.length > 0 ? (
+                <button
+                  type="button"
+                  className="btn-secondary text-xs"
+                  onClick={() => {
+                    setSearch("");
+                    setFilter("all");
+                  }}
+                >
+                  Clear filters
+                </button>
+              ) : (
+                canRun &&
+                !error && (
+                  <button type="button" className="btn-primary text-sm" disabled={busy} onClick={() => void runNow()}>
+                    Run depreciation
+                  </button>
+                )
+              )
+            }
+          />
         </div>
       ) : (
         <div className="card overflow-hidden">
-          <div className="table-wrap">
+          <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
             <table className="data-table">
               <thead>
                 <tr>

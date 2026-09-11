@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { performanceTrackerApi, type PerformanceTracker } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const STATUS_LABELS: Record<string, string> = {
   excellent: "Excellent",
@@ -116,7 +117,7 @@ export default function PerformanceProfilePage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error ?? "Not found"}
         </div>
-        <Link href="/hr/performance" className="text-sm font-semibold text-primary hover:underline">
+        <Link href="/hr/performance" className="btn-secondary text-sm">
           Back to Performance Tracker
         </Link>
       </div>
@@ -127,18 +128,19 @@ export default function PerformanceProfilePage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
-          HR
-        </Link>
-        <Link href="/hr/performance" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 block">
-          Performance Tracker
-        </Link>
-        <h1 className="page-title">{employeeName}</h1>
-        <p className="page-subtitle">
-          Cycle: {formatDate(tracker.cycle_start)} – {formatDate(tracker.cycle_end)}
-        </p>
-      </div>
+      <ModulePageHeader
+        title={employeeName}
+        subtitle={`Cycle: ${formatDate(tracker.cycle_start)} – ${formatDate(tracker.cycle_end)}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Performance Tracker", href: "/hr/performance" },
+              { label: employeeName },
+            ]}
+          />
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
@@ -223,8 +225,8 @@ export default function PerformanceProfilePage() {
       <div className="card p-4 space-y-4">
         <h2 className="text-sm font-semibold text-neutral-900">Supervisor & HR notes</h2>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Supervisor summary</label>
-          <textarea
+          <label htmlFor="hr-performance-detail-supervisor-summary" className="block text-xs font-semibold text-neutral-700 mb-1">Supervisor summary</label>
+          <textarea id="hr-performance-detail-supervisor-summary"
             className="form-input min-h-[100px] resize-y"
             value={supervisorSummary}
             onChange={(e) => setSupervisorSummary(e.target.value)}
@@ -232,8 +234,8 @@ export default function PerformanceProfilePage() {
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">HR summary</label>
-          <textarea
+          <label htmlFor="hr-performance-detail-hr-summary" className="block text-xs font-semibold text-neutral-700 mb-1">HR summary</label>
+          <textarea id="hr-performance-detail-hr-summary"
             className="form-input min-h-[100px] resize-y"
             value={hrSummary}
             onChange={(e) => setHrSummary(e.target.value)}
@@ -260,7 +262,7 @@ export default function PerformanceProfilePage() {
       </div>
 
       <div className="flex justify-end">
-        <Link href="/hr/performance" className="text-sm font-semibold text-primary hover:underline">
+        <Link href="/hr/performance" className="btn-secondary text-sm">
           Back to Performance Tracker
         </Link>
       </div>

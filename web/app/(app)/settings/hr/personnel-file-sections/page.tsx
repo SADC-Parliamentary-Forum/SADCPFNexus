@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrSettingsApi, type HrPersonnelFileSection } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const VISIBILITY_LABELS: Record<HrPersonnelFileSection["visibility"], string> = {
   employee: "Employee",
@@ -72,8 +72,8 @@ function PersonnelFileSectionModal({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Section Code *</label>
-              <input
+              <label htmlFor="hr-personnel-file-sections-section-code" className="block text-xs font-medium text-neutral-700 mb-1">Section Code *</label>
+              <input id="hr-personnel-file-sections-section-code"
                 className="form-input text-sm uppercase"
                 value={form.section_code ?? ""}
                 onChange={(e) => set("section_code", e.target.value.toUpperCase())}
@@ -82,8 +82,8 @@ function PersonnelFileSectionModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Section Name *</label>
-              <input
+              <label htmlFor="hr-personnel-file-sections-section-name" className="block text-xs font-medium text-neutral-700 mb-1">Section Name *</label>
+              <input id="hr-personnel-file-sections-section-name"
                 className="form-input text-sm"
                 value={form.section_name ?? ""}
                 onChange={(e) => set("section_name", e.target.value)}
@@ -94,8 +94,8 @@ function PersonnelFileSectionModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Visibility</label>
-            <select
+            <label htmlFor="hr-personnel-file-sections-visibility" className="block text-xs font-medium text-neutral-700 mb-1">Visibility</label>
+            <select id="hr-personnel-file-sections-visibility"
               className="form-input text-sm"
               value={form.visibility ?? "hr_only"}
               onChange={(e) => set("visibility", e.target.value as HrPersonnelFileSection["visibility"])}
@@ -110,8 +110,8 @@ function PersonnelFileSectionModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Confidentiality Level</label>
-            <select
+            <label htmlFor="hr-personnel-file-sections-confidentiality-level" className="block text-xs font-medium text-neutral-700 mb-1">Confidentiality Level</label>
+            <select id="hr-personnel-file-sections-confidentiality-level"
               className="form-input text-sm"
               value={form.confidentiality_level ?? "restricted"}
               onChange={(e) => set("confidentiality_level", e.target.value as HrPersonnelFileSection["confidentiality_level"])}
@@ -168,8 +168,8 @@ function PersonnelFileSectionModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Retention (months)</label>
-              <input
+              <label htmlFor="hr-personnel-file-sections-retention-months" className="block text-xs font-medium text-neutral-700 mb-1">Retention (months)</label>
+              <input id="hr-personnel-file-sections-retention-months"
                 type="number"
                 className="form-input text-sm"
                 min={1}
@@ -179,8 +179,8 @@ function PersonnelFileSectionModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Sort Order</label>
-              <input
+              <label htmlFor="hr-personnel-file-sections-sort-order" className="block text-xs font-medium text-neutral-700 mb-1">Sort Order</label>
+              <input id="hr-personnel-file-sections-sort-order"
                 type="number"
                 className="form-input text-sm"
                 min={1}
@@ -191,8 +191,8 @@ function PersonnelFileSectionModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select
+            <label htmlFor="hr-personnel-file-sections-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="hr-personnel-file-sections-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}
@@ -285,23 +285,17 @@ export default function PersonnelFileSectionsPage() {
           onSave={(form) => saveMutation.mutate(form)}
         />
       )}
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Personnel File Sections</span>
-          </div>
-          <h1 className="page-title">Personnel File Sections</h1>
-          <p className="page-subtitle">Configure document sections, visibility levels, retention rules, and mandatory requirements.</p>
-        </div>
-        <button onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
+      <HrSettingsHeader
+        title="Personnel File Sections"
+        subtitle="Configure document sections, visibility levels, retention rules, and mandatory requirements."
+        actions={
+          <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Section
         </button>
-      </div>
+        }
+      />
+
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -316,10 +310,7 @@ export default function PersonnelFileSectionsPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : items.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300">folder_shared</span>
-            <p className="mt-2 text-sm text-neutral-500">No file sections yet. Create one to get started.</p>
-          </div>
+          <EmptyState icon="folder_shared" title="No file sections yet." description="Create one to get started." />
         ) : (
           <table className="data-table w-full">
             <thead>

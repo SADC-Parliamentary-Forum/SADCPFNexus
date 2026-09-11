@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type AssetOption = { id: number; asset_code: string; name: string; book_value?: number };
 type Revaluation = {
@@ -82,32 +83,32 @@ export default function AssetRevaluationPage() {
       <form onSubmit={create} className="card space-y-3 p-4">
         <h2 className="text-lg font-semibold">New revaluation</h2>
         <div className="grid gap-3 md:grid-cols-2">
-          <label className="block text-sm">
+          <label htmlFor="assets-revaluation-asset-setform-select-bv" className="block text-sm">
             Asset
-            <select className="form-input mt-1 w-full" required value={form.asset_id} onChange={(e) => setForm({ ...form, asset_id: e.target.value })}>
+            <select id="assets-revaluation-asset-setform-select-bv" className="form-input mt-1 w-full" required value={form.asset_id} onChange={(e) => setForm({ ...form, asset_id: e.target.value })}>
               <option value="">Select…</option>
               {assets.map((a) => (
                 <option key={a.id} value={a.id}>{a.asset_code} — {a.name} (BV {a.book_value ?? "—"})</option>
               ))}
             </select>
           </label>
-          <label className="block text-sm">
+          <label htmlFor="assets-revaluation-proposed-value-setform" className="block text-sm">
             Proposed value
-            <input type="number" min="0" step="0.01" required className="form-input mt-1 w-full" value={form.proposed_value} onChange={(e) => setForm({ ...form, proposed_value: e.target.value })} />
+            <input id="assets-revaluation-proposed-value-setform" type="number" min="0" step="0.01" required className="form-input mt-1 w-full" value={form.proposed_value} onChange={(e) => setForm({ ...form, proposed_value: e.target.value })} />
           </label>
-          <label className="block text-sm">
+          <label htmlFor="assets-revaluation-effective-date-setform" className="block text-sm">
             Effective date
-            <input type="date" required className="form-input mt-1 w-full" value={form.effective_date} onChange={(e) => setForm({ ...form, effective_date: e.target.value })} />
+            <input id="assets-revaluation-effective-date-setform" type="date" required className="form-input mt-1 w-full" value={form.effective_date} onChange={(e) => setForm({ ...form, effective_date: e.target.value })} />
           </label>
-          <label className="block text-sm md:col-span-2">
+          <label htmlFor="assets-revaluation-reason-setform" className="block text-sm md:col-span-2">
             Reason
-            <textarea required rows={2} className="form-input mt-1 w-full" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
+            <textarea id="assets-revaluation-reason-setform" required rows={2} className="form-input mt-1 w-full" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} />
           </label>
         </div>
         <button type="submit" className="btn-primary btn-sm">Submit</button>
       </form>
 
-      <div className="table-wrap">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
         <table className="data-table">
           <thead>
             <tr><th>Reference</th><th>Asset</th><th>Previous</th><th>Proposed</th><th>Status</th><th></th></tr>
@@ -127,7 +128,7 @@ export default function AssetRevaluationPage() {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={6}>No revaluations.</td></tr>}
+            {rows.length === 0 && <TableEmpty colSpan={6} title="No revaluations." />}
           </tbody>
         </table>
       </div>

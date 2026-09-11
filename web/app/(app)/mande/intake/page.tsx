@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mandeApi, type PifLinkage } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function MandeIntakePage() {
   const qc = useQueryClient();
@@ -70,12 +71,10 @@ export default function MandeIntakePage() {
         {isLoading ? (
           <div className="px-5 py-10 text-center text-sm text-neutral-400">Loading…</div>
         ) : rows.length === 0 ? (
-          <div className="px-5 py-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300 block mb-2">inbox</span>
-            <p className="text-sm text-neutral-500">
-              {unlinkedOnly ? "No unlinked approved PIFs." : "No approved PIFs found."}
-            </p>
-          </div>
+          <EmptyState
+            icon="inbox"
+            title={unlinkedOnly ? "No unlinked approved PIFs." : "No approved PIFs found."}
+          />
         ) : (
           <table className="data-table">
             <thead>
@@ -113,7 +112,7 @@ export default function MandeIntakePage() {
                       <>
                         <Link
                           href={`/mande/activity-reports/create?programme_id=${p.id}`}
-                          className="text-primary text-xs hover:underline mr-3"
+                          className="btn-secondary text-xs py-1 px-2 mr-3"
                         >
                           Create report
                         </Link>
@@ -124,7 +123,7 @@ export default function MandeIntakePage() {
                               setNotReportableId(p.id);
                               setReason("");
                             }}
-                            className="text-neutral-500 text-xs hover:underline"
+                            className="btn-secondary text-xs py-1 px-2"
                           >
                             Not reportable
                           </button>
@@ -132,7 +131,7 @@ export default function MandeIntakePage() {
                       </>
                     )}
                     {p.has_report && (
-                      <Link href="/mande/activity-reports" className="text-primary text-xs hover:underline">
+                      <Link href="/mande/activity-reports" className="btn-secondary text-xs py-1 px-2">
                         View reports
                       </Link>
                     )}

@@ -389,7 +389,7 @@ function ApprovalPage() {
             {/* Reject reason */}
             {action === "reject" && (
               <div className="ap-reason-section">
-                <label className="ap-label" htmlFor="reason">
+                <label htmlFor="reason" className="ap-label">
                   Reason for returning <span className="ap-required">*</span>
                 </label>
                 <textarea

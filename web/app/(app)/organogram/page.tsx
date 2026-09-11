@@ -5,6 +5,7 @@ import { adminApi, auditLogsApi, type Department, type User, type AuditLogEntry 
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 
 // ─── Layout constants ────────────────────────────────────────────────────────
@@ -538,10 +539,12 @@ export default function OrganogramPage() {
             })}
 
             {flat.length === 0 && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-neutral-400 pointer-events-none">
-                <span className="material-symbols-outlined text-7xl opacity-10">account_tree</span>
-                <p className="font-semibold text-sm">No units yet</p>
-                <p className="text-xs">Click "Add Unit" to get started.</p>
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <EmptyState
+                  icon="account_tree"
+                  title="No units yet"
+                  description={'Click "Add Unit" to get started.'}
+                />
               </div>
             )}
           </div>
@@ -573,8 +576,8 @@ export default function OrganogramPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">New Parent Unit</label>
-              <select
+              <label htmlFor="organogram-new-parent-unit" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">New Parent Unit</label>
+              <select id="organogram-new-parent-unit"
                 className="input-field w-full"
                 value={newParentId === null || newParentId === "root" ? "root" : String(newParentId)}
                 onChange={e => setNewParentId(e.target.value === "root" ? "root" : parseInt(e.target.value))}
@@ -722,10 +725,7 @@ export default function OrganogramPage() {
                   {Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-14 bg-neutral-100 dark:bg-neutral-700/40 rounded-xl" />)}
                 </div>
               ) : history.length === 0 ? (
-                <div className="py-20 text-center">
-                  <span className="material-symbols-outlined text-4xl text-neutral-200">history</span>
-                  <p className="text-sm text-neutral-400 mt-3">No changes recorded yet.</p>
-                </div>
+                <EmptyState icon="history" title="No changes recorded yet." />
               ) : (
                 <div className="divide-y divide-neutral-50 dark:divide-neutral-800">
                   {history.map(entry => {

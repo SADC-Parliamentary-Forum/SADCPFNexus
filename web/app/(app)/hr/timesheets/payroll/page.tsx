@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { hrApi } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type Period = { id: number; label?: string; period_start: string; period_end: string; status?: string };
 type Batch = {
@@ -98,14 +99,14 @@ export default function TimesheetPayrollExportPage() {
       />
 
       <div className="flex flex-wrap gap-3 text-sm">
-        <Link href="/hr/timesheets/team" className="text-[var(--brand)] hover:underline">Team approval</Link>
-        <Link href="/hr/timesheets/overtime" className="text-[var(--brand)] hover:underline">Overtime queue</Link>
+        <Link href="/hr/timesheets/team" className="btn-secondary text-xs py-1 px-2">Team approval</Link>
+        <Link href="/hr/timesheets/overtime" className="btn-secondary text-xs py-1 px-2">Overtime queue</Link>
       </div>
 
       <div className="space-y-3 rounded-lg border border-[var(--border)] p-4" data-testid="payroll-operator-stage">
-        <label className="block text-sm">
+        <label htmlFor="hr-timesheets-payroll-timesheet-period-setselectedperiodid-e-target-va" className="block text-sm">
           Timesheet period
-          <select
+          <select id="hr-timesheets-payroll-timesheet-period-setselectedperiodid-e-target-va"
             className="mt-1 w-full rounded border px-3 py-2"
             value={selectedPeriodId}
             onChange={(e) => setSelectedPeriodId(e.target.value)}
@@ -151,13 +152,13 @@ export default function TimesheetPayrollExportPage() {
                   <td className="px-3 py-2">{b.status ?? "—"}</td>
                   <td className="px-3 py-2">{b.created_at ? new Date(b.created_at).toLocaleString() : "—"}</td>
                   <td className="space-x-2 px-3 py-2">
-                    <button type="button" className="text-[var(--brand)] hover:underline" onClick={() => void download(b, "csv")}>CSV</button>
-                    <button type="button" className="text-[var(--brand)] hover:underline" onClick={() => void download(b, "xlsx")}>XLSX</button>
+                    <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => void download(b, "csv")}>CSV</button>
+                    <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => void download(b, "xlsx")}>XLSX</button>
                   </td>
                 </tr>
               ))}
               {batches.length === 0 && (
-                <tr><td colSpan={4} className="px-3 py-4 text-neutral-500">No payroll export batches yet.</td></tr>
+                <TableEmpty colSpan={4} title="No payroll export batches yet." />
               )}
             </tbody>
           </table>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { hrProfileRequestApi, type ProfileChangeRequest } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { formatDateRelative } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const FIELD_LABELS: Record<string, string> = {
   phone: "Phone", bio: "Bio", nationality: "Nationality",
@@ -97,10 +98,10 @@ function ReviewModal({
 
         <form onSubmit={handleSubmit} className="px-6 pt-2 pb-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">
+            <label htmlFor="hr-profile-requests-field" className="block text-xs font-semibold text-neutral-700 mb-1">
               {action === "approve" ? "Notes (optional)" : "Reason for rejection *"}
             </label>
-            <textarea
+            <textarea id="hr-profile-requests-field"
               rows={3}
               required={action === "reject"}
               value={notes}
@@ -168,15 +169,11 @@ export default function HrProfileRequestsPage() {
         />
       )}
 
-      <div>
-        <div className="flex items-center gap-3 mb-1">
-          <Link href="/hr" className="text-neutral-400 hover:text-neutral-600 transition-colors">
-            <span className="material-symbols-outlined text-[20px]">arrow_back</span>
-          </Link>
-          <h1 className="page-title">Profile Change Requests</h1>
-        </div>
-        <p className="page-subtitle">Review and approve staff profile update requests.</p>
-      </div>
+      <ModulePageHeader
+        title="Profile Change Requests"
+        subtitle="Review and approve staff profile update requests."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Profile requests" }]} />}
+      />
 
       {/* Tabs */}
       <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-700">
@@ -206,13 +203,11 @@ export default function HrProfileRequestsPage() {
           ))}
         </div>
       ) : requests.length === 0 ? (
-        <div className="card p-12 text-center">
-          <span className="material-symbols-outlined text-4xl text-neutral-200 mb-3">task_alt</span>
-          <p className="text-neutral-500 font-medium">No {statusFilter === "all" ? "" : statusFilter} requests</p>
-          <p className="text-xs text-neutral-400 mt-1">
-            {statusFilter === "pending" ? "All profile change requests have been reviewed." : "Nothing to show."}
-          </p>
-        </div>
+        <EmptyState
+          icon="task_alt"
+          title={statusFilter === "all" ? "No requests" : `No ${statusFilter} requests`}
+          description={statusFilter === "pending" ? "All profile change requests have been reviewed." : "Nothing to show."}
+        />
       ) : (
         <div className="space-y-3">
           {requests.map(req => {

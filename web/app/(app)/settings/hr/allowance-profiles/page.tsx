@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrSettingsApi, type HrAllowanceProfile } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function AllowanceProfileModal({
   item,
@@ -52,8 +52,8 @@ function AllowanceProfileModal({
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
-              <input
+              <label htmlFor="settings-hr-allowance-profiles-code" className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
+              <input id="settings-hr-allowance-profiles-code"
                 className="form-input text-sm uppercase"
                 value={form.profile_code ?? ""}
                 onChange={(e) => set("profile_code", e.target.value.toUpperCase())}
@@ -62,8 +62,8 @@ function AllowanceProfileModal({
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Profile Name *</label>
-              <input
+              <label htmlFor="settings-hr-allowance-profiles-profile-name" className="block text-xs font-medium text-neutral-700 mb-1">Profile Name *</label>
+              <input id="settings-hr-allowance-profiles-profile-name"
                 className="form-input text-sm"
                 value={form.profile_name ?? ""}
                 onChange={(e) => set("profile_name", e.target.value)}
@@ -74,8 +74,8 @@ function AllowanceProfileModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Currency</label>
-            <input
+            <label htmlFor="settings-hr-allowance-profiles-currency" className="block text-xs font-medium text-neutral-700 mb-1">Currency</label>
+            <input id="settings-hr-allowance-profiles-currency"
               className="form-input text-sm uppercase"
               value={form.currency ?? "NAD"}
               onChange={(e) => set("currency", e.target.value.toUpperCase().slice(0, 3))}
@@ -88,8 +88,8 @@ function AllowanceProfileModal({
             <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wide">Monthly Allowances</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Transport</label>
-                <input
+                <label htmlFor="settings-hr-allowance-profiles-transport" className="block text-xs font-medium text-neutral-700 mb-1">Transport</label>
+                <input id="settings-hr-allowance-profiles-transport"
                   type="number"
                   className="form-input text-sm"
                   step="0.01"
@@ -99,8 +99,8 @@ function AllowanceProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Housing</label>
-                <input
+                <label htmlFor="settings-hr-allowance-profiles-housing" className="block text-xs font-medium text-neutral-700 mb-1">Housing</label>
+                <input id="settings-hr-allowance-profiles-housing"
                   type="number"
                   className="form-input text-sm"
                   step="0.01"
@@ -110,8 +110,8 @@ function AllowanceProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Communication</label>
-                <input
+                <label htmlFor="settings-hr-allowance-profiles-communication" className="block text-xs font-medium text-neutral-700 mb-1">Communication</label>
+                <input id="settings-hr-allowance-profiles-communication"
                   type="number"
                   className="form-input text-sm"
                   step="0.01"
@@ -121,8 +121,8 @@ function AllowanceProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Medical</label>
-                <input
+                <label htmlFor="settings-hr-allowance-profiles-medical" className="block text-xs font-medium text-neutral-700 mb-1">Medical</label>
+                <input id="settings-hr-allowance-profiles-medical"
                   type="number"
                   className="form-input text-sm"
                   step="0.01"
@@ -132,8 +132,8 @@ function AllowanceProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Subsistence</label>
-                <input
+                <label htmlFor="settings-hr-allowance-profiles-subsistence" className="block text-xs font-medium text-neutral-700 mb-1">Subsistence</label>
+                <input id="settings-hr-allowance-profiles-subsistence"
                   type="number"
                   className="form-input text-sm"
                   step="0.01"
@@ -161,8 +161,8 @@ function AllowanceProfileModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Notes</label>
-            <textarea
+            <label htmlFor="settings-hr-allowance-profiles-notes" className="block text-xs font-medium text-neutral-700 mb-1">Notes</label>
+            <textarea id="settings-hr-allowance-profiles-notes"
               className="form-input text-sm resize-none"
               rows={2}
               value={form.notes ?? ""}
@@ -172,8 +172,8 @@ function AllowanceProfileModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select
+            <label htmlFor="settings-hr-allowance-profiles-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="settings-hr-allowance-profiles-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}
@@ -254,23 +254,17 @@ export default function AllowanceProfilesPage() {
           onSave={(form) => saveMutation.mutate(form)}
         />
       )}
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Allowance Profiles</span>
-          </div>
-          <h1 className="page-title">Allowance Profiles</h1>
-          <p className="page-subtitle">Configure transport, housing, communication, and subsistence allowance rules by grade.</p>
-        </div>
-        <button onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
+      <HrSettingsHeader
+        title="Allowance Profiles"
+        subtitle="Configure transport, housing, communication, and subsistence allowance rules by grade."
+        actions={
+          <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Profile
         </button>
-      </div>
+        }
+      />
+
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -285,10 +279,7 @@ export default function AllowanceProfilesPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : items.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300">attach_money</span>
-            <p className="mt-2 text-sm text-neutral-500">No allowance profiles yet. Create one to get started.</p>
-          </div>
+          <EmptyState icon="attach_money" title="No allowance profiles yet." description="Create one to get started." />
         ) : (
           <table className="data-table w-full">
             <thead>

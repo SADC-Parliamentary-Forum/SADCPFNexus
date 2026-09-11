@@ -9,6 +9,8 @@ import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:              { label: "Draft",             cls: "badge-muted",    icon: "edit_note"      },
@@ -206,18 +208,14 @@ function PurchaseOrdersPageInner() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/procurement" className="transition-colors hover:text-neutral-700">Procurement</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Purchase Orders</span>
-          </div>
-          <h1 className="page-title">Purchase Orders</h1>
-          <p className="page-subtitle">Track awarded RFQs, issued POs, deliveries, and supplier invoice handoff.</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <ProcurementPageHeader
+        title="Purchase Orders"
+        subtitle="Track awarded RFQs, issued POs, deliveries, and supplier invoice handoff."
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "Purchase Orders" },
+        ]}
+        actions={
           <button
             type="button"
             className="btn-secondary inline-flex items-center gap-1.5 text-sm disabled:opacity-50"
@@ -227,8 +225,8 @@ function PurchaseOrdersPageInner() {
             <span className="material-symbols-outlined text-[16px]">download</span>
             Export CSV
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* KPI strip */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -303,15 +301,11 @@ function PurchaseOrdersPageInner() {
       ) : isError ? (
         <div className="card p-6 text-center text-sm text-red-600">Failed to load purchase orders.</div>
       ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center space-y-3">
-          <span className="material-symbols-outlined text-4xl text-neutral-300">receipt_long</span>
-          <p className="text-sm text-neutral-500">No purchase orders found.</p>
-          <p className="text-xs text-neutral-400">
-            {search.trim()
-              ? "No purchase orders match your search."
-              : "Purchase orders are created automatically after an RFQ is awarded to a registered supplier."}
-          </p>
-        </div>
+        <EmptyState
+          icon="receipt_long"
+          title="No purchase orders found."
+          description={search.trim() ? "No purchase orders match your search." : "Purchase orders are created automatically after an RFQ is awarded to a registered supplier."}
+        />
       ) : (
         <div className="card overflow-hidden">
           <table className="data-table">
@@ -331,7 +325,7 @@ function PurchaseOrdersPageInner() {
                 return (
                   <tr key={po.id}>
                     <td>
-                      <Link href={`/procurement/purchase-orders/${po.id}`} className="font-mono text-xs text-primary hover:underline">
+                      <Link href={`/procurement/purchase-orders/${po.id}`} className="btn-secondary font-mono text-xs">
                         {po.reference_number}
                       </Link>
                     </td>
@@ -393,10 +387,10 @@ function PurchaseOrdersPageInner() {
             <div className="space-y-4">
               {/* Procurement Request (required) */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">
+                <label htmlFor="procurement-purchase-orders-procurement-request" className="text-xs font-semibold text-neutral-600">
                   Procurement Request <span className="text-red-500">*</span>
                 </label>
-                <select
+                <select id="procurement-purchase-orders-procurement-request"
                   className="form-input"
                   value={selectedRequestId}
                   onChange={(e) => {
@@ -417,10 +411,10 @@ function PurchaseOrdersPageInner() {
 
               {/* Vendor (required) */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">
+                <label htmlFor="procurement-purchase-orders-vendor" className="text-xs font-semibold text-neutral-600">
                   Vendor <span className="text-red-500">*</span>
                 </label>
-                <select
+                <select id="procurement-purchase-orders-vendor"
                   className="form-input"
                   value={selectedVendorId}
                   onChange={(e) => setSelectedVendorId(e.target.value ? Number(e.target.value) : "")}
@@ -431,14 +425,14 @@ function PurchaseOrdersPageInner() {
                   ))}
                 </select>
                 {availableVendors.length === 0 && (
-                  <p className="text-xs text-amber-600">No approved vendors. <Link href="/procurement/vendors" className="underline">Register a vendor</Link> first.</p>
+                  <p className="text-xs text-amber-600">No approved vendors. <Link href="/procurement/vendors" className="btn-secondary text-xs py-0.5 px-2 inline-flex">Register a vendor</Link> first.</p>
                 )}
               </div>
 
               {/* Title */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">PO Title <span className="text-red-500">*</span></label>
-                <input
+                <label htmlFor="procurement-purchase-orders-po-title" className="text-xs font-semibold text-neutral-600">PO Title <span className="text-red-500">*</span></label>
+                <input id="procurement-purchase-orders-po-title"
                   type="text"
                   className="form-input"
                   placeholder="e.g. Office Supplies Q2 2026"
@@ -449,8 +443,8 @@ function PurchaseOrdersPageInner() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Currency</label>
-                  <input
+                  <label htmlFor="procurement-purchase-orders-currency" className="text-xs font-semibold text-neutral-600">Currency</label>
+                  <input id="procurement-purchase-orders-currency"
                     type="text"
                     className="form-input"
                     value={currency}
@@ -459,8 +453,8 @@ function PurchaseOrdersPageInner() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Payment Terms</label>
-                  <select className="form-input" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)}>
+                  <label htmlFor="procurement-purchase-orders-payment-terms" className="text-xs font-semibold text-neutral-600">Payment Terms</label>
+                  <select id="procurement-purchase-orders-payment-terms" className="form-input" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)}>
                     <option value="net_30">Net 30 days</option>
                     <option value="net_60">Net 60 days</option>
                     <option value="on_delivery">On Delivery</option>
@@ -470,12 +464,12 @@ function PurchaseOrdersPageInner() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Expected Delivery Date</label>
-                  <input type="date" className="form-input" value={expectedDelivery} onChange={(e) => setExpectedDelivery(e.target.value)} />
+                  <label htmlFor="procurement-purchase-orders-expected-delivery-date" className="text-xs font-semibold text-neutral-600">Expected Delivery Date</label>
+                  <input id="procurement-purchase-orders-expected-delivery-date" type="date" className="form-input" value={expectedDelivery} onChange={(e) => setExpectedDelivery(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Delivery Address</label>
-                  <input
+                  <label htmlFor="procurement-purchase-orders-delivery-address" className="text-xs font-semibold text-neutral-600">Delivery Address</label>
+                  <input id="procurement-purchase-orders-delivery-address"
                     type="text"
                     className="form-input"
                     placeholder="Delivery location…"
@@ -488,11 +482,11 @@ function PurchaseOrdersPageInner() {
               {/* Line Items */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-500">Line Items</label>
+                  <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Line Items</p>
                   <button
                     type="button"
                     onClick={addItem}
-                    className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                    className="btn-secondary text-xs inline-flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[14px]">add</span>
                     Add Item
@@ -502,8 +496,8 @@ function PurchaseOrdersPageInner() {
                   {poItems.map((row, idx) => (
                     <div key={idx} className="rounded-xl border border-neutral-100 bg-neutral-50 p-3 grid grid-cols-12 gap-2 items-start">
                       <div className="col-span-4 space-y-1">
-                        <label className="text-[10px] font-semibold uppercase text-neutral-400">Description</label>
-                        <input
+                        <label htmlFor="procurement-purchase-orders-description" className="text-[10px] font-semibold uppercase text-neutral-400">Description</label>
+                        <input id="procurement-purchase-orders-description"
                           type="text"
                           className="form-input text-sm"
                           placeholder="Item description…"
@@ -512,8 +506,8 @@ function PurchaseOrdersPageInner() {
                         />
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label className="text-[10px] font-semibold uppercase text-neutral-400">Qty</label>
-                        <input
+                        <label htmlFor="procurement-purchase-orders-qty" className="text-[10px] font-semibold uppercase text-neutral-400">Qty</label>
+                        <input id="procurement-purchase-orders-qty"
                           type="number"
                           min="1"
                           className="form-input text-sm"
@@ -522,8 +516,8 @@ function PurchaseOrdersPageInner() {
                         />
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label className="text-[10px] font-semibold uppercase text-neutral-400">Unit</label>
-                        <input
+                        <label htmlFor="procurement-purchase-orders-unit" className="text-[10px] font-semibold uppercase text-neutral-400">Unit</label>
+                        <input id="procurement-purchase-orders-unit"
                           type="text"
                           className="form-input text-sm"
                           placeholder="unit"
@@ -532,8 +526,8 @@ function PurchaseOrdersPageInner() {
                         />
                       </div>
                       <div className="col-span-3 space-y-1">
-                        <label className="text-[10px] font-semibold uppercase text-neutral-400">Unit Price</label>
-                        <input
+                        <label htmlFor="procurement-purchase-orders-unit-price" className="text-[10px] font-semibold uppercase text-neutral-400">Unit Price</label>
+                        <input id="procurement-purchase-orders-unit-price"
                           type="number"
                           min="0"
                           step="0.01"

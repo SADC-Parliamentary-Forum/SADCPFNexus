@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class CorrespondenceRegisterScreen extends ConsumerStatefulWidget {
   const CorrespondenceRegisterScreen({super.key});
@@ -51,31 +52,24 @@ class _CorrespondenceRegisterScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        title: const Text('Correspondence',
-            style: TextStyle(
-                color: AppColors.textPrimary, fontWeight: FontWeight.w800)),
-        actions: [
-          IconButton(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
+    return StitchScreen(
+      title: 'Correspondence',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _load,
+        ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading correspondence')
           : _error != null
-              ? Center(
-                  child: Text(_error!,
-                      style: const TextStyle(color: AppColors.textSecondary)))
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : _letters.isEmpty
-                  ? const Center(
-                      child: Text('No letters in register.',
-                          style: TextStyle(color: AppColors.textMuted)))
+                  ? const StitchEmptyState(
+                      icon: Icons.mail_outline,
+                      title: 'No letters in register.',
+                    )
                   : RefreshIndicator(
                       color: AppColors.primary,
                       onRefresh: _load,

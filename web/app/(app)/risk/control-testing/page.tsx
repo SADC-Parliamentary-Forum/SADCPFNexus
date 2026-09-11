@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { riskApi, type RiskControlTestingCampaign, type RiskControlTestingItem } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function RiskControlTestingPage() {
   const qc = useQueryClient();
@@ -88,17 +89,17 @@ export default function RiskControlTestingPage() {
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
 
       <form onSubmit={onCreate} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-4">
-        <label className="space-y-1 md:col-span-2">
+        <label htmlFor="risk-control-testing-campaign-title-settitle-e-target-value" className="space-y-1 md:col-span-2">
           <span className="text-sm font-medium">Campaign title</span>
-          <input className="input w-full" required value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input id="risk-control-testing-campaign-title-settitle-e-target-value" className="input w-full" required value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
-        <label className="space-y-1">
+        <label htmlFor="risk-control-testing-due-end-date-setscheduledend-e-target-value" className="space-y-1">
           <span className="text-sm font-medium">Due / end date</span>
-          <input type="date" className="input w-full" value={scheduledEnd} onChange={(e) => setScheduledEnd(e.target.value)} />
+          <input id="risk-control-testing-due-end-date-setscheduledend-e-target-value" type="date" className="input w-full" value={scheduledEnd} onChange={(e) => setScheduledEnd(e.target.value)} />
         </label>
-        <label className="space-y-1">
+        <label htmlFor="risk-control-testing-control-ids-comma-setcontrolids-e-target-value" className="space-y-1">
           <span className="text-sm font-medium">Control IDs (comma)</span>
-          <input className="input w-full" placeholder="12,15" value={controlIds} onChange={(e) => setControlIds(e.target.value)} />
+          <input id="risk-control-testing-control-ids-comma-setcontrolids-e-target-value" className="input w-full" placeholder="12,15" value={controlIds} onChange={(e) => setControlIds(e.target.value)} />
         </label>
         <div className="md:col-span-4">
           <button type="submit" className="btn-primary" disabled={create.isPending}>
@@ -136,11 +137,7 @@ export default function RiskControlTestingPage() {
               </tr>
             ))}
             {campaigns.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-neutral-500">
-                  No campaigns yet.
-                </td>
-              </tr>
+              <TableEmpty colSpan={5} title="No campaigns yet." />
             )}
           </tbody>
         </table>

@@ -17,6 +17,7 @@ import {
   type ProcurementRequest,
 } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -265,20 +266,22 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-        <Link href="/procurement" className="hover:text-primary">Procurement</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href="/procurement/rfq" className="hover:text-primary">RFQs</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="font-mono text-neutral-600">{req.reference_number}</span>
-      </nav>
+      <ProcurementPageHeader
+        title={req.title}
+        subtitle={req.reference_number}
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "RFQs", href: "/procurement/rfq" },
+          { label: req.reference_number },
+        ]}
+      />
 
       {error && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <div className="card p-5 space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">{req.title}</h1>
+            <p className="text-lg font-semibold text-neutral-900">{req.title}</p>
             <p className="font-mono text-xs text-neutral-400">{req.reference_number}</p>
           </div>
           <div className="flex items-center gap-2">
@@ -300,7 +303,7 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
       {!budgetConfirmed && req.status !== "awarded" && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Finance budget confirmation is required before this RFQ can be issued.{" "}
-          <Link href="/procurement/budget" className="font-medium text-primary hover:underline">
+          <Link href="/procurement/budget" className="btn-secondary text-xs font-medium">
             Open budget confirmation
           </Link>
         </div>
@@ -352,8 +355,8 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
             {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
             <div className="grid gap-2 md:grid-cols-2">
               {categories.map((category) => (
-                <label key={category.id} className={`rounded-xl border p-3 text-sm ${categoryIds.includes(category.id) ? "border-primary bg-primary/5" : "border-neutral-200"}`}>
-                  <input
+                <label htmlFor="procurement-rfq-detail-setcategoryids-current-current-includes-category" key={category.id} className={`rounded-xl border p-3 text-sm ${categoryIds.includes(category.id) ? "border-primary bg-primary/5" : "border-neutral-200"}`}>
+                  <input id="procurement-rfq-detail-setcategoryids-current-current-includes-category"
                     type="checkbox"
                     className="mr-2"
                     checked={categoryIds.includes(category.id)}
@@ -541,20 +544,20 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
           <div className="card w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-base font-bold">{editingQuote ? "Assess Quote" : "Record Quote"}</h2>
             {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-            <label className="block text-xs font-semibold text-neutral-700" htmlFor="quote-supplier-name">
+            <label htmlFor="quote-supplier-name" className="block text-xs font-semibold text-neutral-700">
               Supplier name
               <input id="quote-supplier-name" className="form-input mt-1.5" value={quoteForm.vendor_name} onChange={(e) => setQuoteForm((current) => ({ ...current, vendor_name: e.target.value }))} />
             </label>
             <div className="grid gap-3 md:grid-cols-3">
-              <label className="block text-xs font-semibold text-neutral-700" htmlFor="quote-amount">
+              <label htmlFor="quote-amount" className="block text-xs font-semibold text-neutral-700">
                 Amount
                 <input id="quote-amount" type="number" min="0.01" step="0.01" className="form-input mt-1.5" value={quoteForm.quoted_amount} onChange={(e) => setQuoteForm((current) => ({ ...current, quoted_amount: e.target.value }))} />
               </label>
-              <label className="block text-xs font-semibold text-neutral-700" htmlFor="quote-currency">
+              <label htmlFor="quote-currency" className="block text-xs font-semibold text-neutral-700">
                 Currency
                 <input id="quote-currency" className="form-input mt-1.5" value={quoteForm.currency} onChange={(e) => setQuoteForm((current) => ({ ...current, currency: e.target.value.toUpperCase() }))} />
               </label>
-              <label className="block text-xs font-semibold text-neutral-700" htmlFor="quote-date">
+              <label htmlFor="quote-date" className="block text-xs font-semibold text-neutral-700">
                 Quote date
                 <input id="quote-date" type="date" className="form-input mt-1.5" value={quoteForm.quote_date} onChange={(e) => setQuoteForm((current) => ({ ...current, quote_date: e.target.value }))} />
               </label>
@@ -568,8 +571,8 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
             <textarea className="form-input h-24 resize-none" placeholder="Assessment notes" value={quoteForm.compliance_notes} onChange={(e) => setQuoteForm((current) => ({ ...current, compliance_notes: e.target.value }))} />
             <div className="space-y-2">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Submitted Quote Documents</label>
-                <input
+                <label htmlFor="procurement-rfq-detail-submitted-quote-documents" className="block text-xs font-semibold text-neutral-700 mb-1.5">Submitted Quote Documents</label>
+                <input id="procurement-rfq-detail-submitted-quote-documents"
                   type="file"
                   multiple
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
@@ -598,19 +601,19 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
                 </div>
               )}
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={quoteForm.is_recommended} onChange={(e) => setQuoteForm((current) => ({ ...current, is_recommended: e.target.checked }))} />
+            <label htmlFor="procurement-rfq-detail-setquoteform-current-recommend-this-quote-for-aw" className="flex items-center gap-2 text-sm">
+              <input id="procurement-rfq-detail-setquoteform-current-recommend-this-quote-for-aw" type="checkbox" checked={quoteForm.is_recommended} onChange={(e) => setQuoteForm((current) => ({ ...current, is_recommended: e.target.checked }))} />
               Recommend this quote for award
             </label>
             {editingQuote && (
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
                 <p className="text-xs font-semibold text-neutral-700">Conflict of interest declaration</p>
-                <label className="flex items-start gap-2 text-sm">
-                  <input type="checkbox" className="mt-0.5" checked={coiDeclared} onChange={(e) => setCoiDeclared(e.target.checked)} />
+                <label htmlFor="procurement-rfq-detail-setcoideclared-e-target-checked-i-confirm-my-coi" className="flex items-start gap-2 text-sm">
+                  <input id="procurement-rfq-detail-setcoideclared-e-target-checked-i-confirm-my-coi" type="checkbox" className="mt-0.5" checked={coiDeclared} onChange={(e) => setCoiDeclared(e.target.checked)} />
                   <span>I confirm my COI status before assessing this quote.</span>
                 </label>
-                <label className="flex items-start gap-2 text-sm">
-                  <input type="checkbox" className="mt-0.5" checked={coiHasConflict} onChange={(e) => setCoiHasConflict(e.target.checked)} />
+                <label htmlFor="procurement-rfq-detail-setcoihasconflict-e-target-checked-i-have-a-conf" className="flex items-start gap-2 text-sm">
+                  <input id="procurement-rfq-detail-setcoihasconflict-e-target-checked-i-have-a-conf" type="checkbox" className="mt-0.5" checked={coiHasConflict} onChange={(e) => setCoiHasConflict(e.target.checked)} />
                   <span>I have a conflict of interest.</span>
                 </label>
                 {coiHasConflict && (
@@ -653,12 +656,12 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
             </select>
             <textarea className="form-input h-24 resize-none" placeholder="Award notes" value={awardNotes} onChange={(e) => setAwardNotes(e.target.value)} />
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
-              <label className="flex items-start gap-2 text-sm">
-                <input type="checkbox" className="mt-0.5" checked={coiDeclared} onChange={(e) => setCoiDeclared(e.target.checked)} />
+              <label htmlFor="procurement-rfq-detail-setcoideclared-e-target-checked-i-confirm-my-coi-2" className="flex items-start gap-2 text-sm">
+                <input id="procurement-rfq-detail-setcoideclared-e-target-checked-i-confirm-my-coi-2" type="checkbox" className="mt-0.5" checked={coiDeclared} onChange={(e) => setCoiDeclared(e.target.checked)} />
                 <span>I confirm my COI declaration before awarding.</span>
               </label>
-              <label className="flex items-start gap-2 text-sm">
-                <input type="checkbox" className="mt-0.5" checked={coiHasConflict} onChange={(e) => setCoiHasConflict(e.target.checked)} />
+              <label htmlFor="procurement-rfq-detail-setcoihasconflict-e-target-checked-i-have-a-conf-2" className="flex items-start gap-2 text-sm">
+                <input id="procurement-rfq-detail-setcoihasconflict-e-target-checked-i-have-a-conf-2" type="checkbox" className="mt-0.5" checked={coiHasConflict} onChange={(e) => setCoiHasConflict(e.target.checked)} />
                 <span>I have a conflict of interest.</span>
               </label>
               {coiHasConflict && (

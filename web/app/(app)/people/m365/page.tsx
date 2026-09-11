@@ -95,8 +95,8 @@ return (await peopleAuthorityApi.listDirectorySync()).data;
           run.mutate();
         }}
       >
-        <label className="flex items-center gap-2 text-sm text-neutral-700">
-          <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
+        <label htmlFor="people-m365-setdryrun-e-target-checked-dry-run" className="flex items-center gap-2 text-sm text-neutral-700">
+          <input id="people-m365-setdryrun-e-target-checked-dry-run" type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} />
           Dry run
         </label>
         <button type="submit" className="btn-primary text-sm" disabled={run.isPending}>
@@ -106,9 +106,9 @@ return (await peopleAuthorityApi.listDirectorySync()).data;
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-m365-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-m365-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

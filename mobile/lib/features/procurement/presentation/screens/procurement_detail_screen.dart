@@ -5,6 +5,7 @@ import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart' show AppDateFormatter;
 import '../../data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class ProcurementDetailScreen extends ConsumerStatefulWidget {
   const ProcurementDetailScreen({super.key, this.requestId});
@@ -152,47 +153,23 @@ class _ProcurementDetailScreenState extends ConsumerState<ProcurementDetailScree
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark, elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
-          onPressed: _safePopOrGoHome,
+    return StitchScreen(
+      title: 'Procurement Request',
+      fallbackRoute: '/procurement',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        title: const Text('Procurement Request',
-            style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-      ),
+      ],
       body: _loading
-          ? _buildSkeleton()
+          ? const StitchLoadingState(label: 'Loading procurement request')
           : _error != null
-              ? _buildError()
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : _buildBody(),
     );
   }
-
-  Widget _buildSkeleton() => ListView(
-    padding: const EdgeInsets.all(16),
-    children: List.generate(4, (i) => Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Container(
-        height: i == 0 ? 100 : 80,
-        decoration: BoxDecoration(color: AppColors.bgSurface, borderRadius: BorderRadius.circular(14)),
-      ),
-    )),
-  );
-
-  Widget _buildError() => Center(
-    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-      const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
-      const SizedBox(height: 12),
-      Text(_error!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 14)),
-      const SizedBox(height: 16),
-      ElevatedButton(onPressed: _load,
-        style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-        child: const Text('Retry', style: TextStyle(color: Colors.white))),
-    ]),
-  );
 
   Widget _buildBody() {
     final r = _request!;

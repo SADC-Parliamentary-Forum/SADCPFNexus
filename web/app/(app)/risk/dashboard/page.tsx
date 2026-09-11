@@ -8,6 +8,7 @@ import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -193,7 +194,7 @@ export default function RiskDashboardPage() {
             <h2 className="text-sm font-semibold text-neutral-800">Exposure by Department</h2>
           </div>
           {!dashboard?.by_department?.length ? (
-            <p className="px-5 py-6 text-sm text-neutral-400">No department data available.</p>
+            <EmptyState icon="apartment" title="No department data available." className="py-6 min-h-0" />
           ) : (
             <table className="data-table">
               <thead>
@@ -243,13 +244,10 @@ export default function RiskDashboardPage() {
               <span className="material-symbols-outlined text-[16px] text-red-500">warning</span>
               Escalated Risks
             </h2>
-            <Link href="/risk?status=escalated" className="text-xs font-medium text-primary">{t("risk.dashboard.viewAll")}</Link>
+            <Link href="/risk?status=escalated" className="btn-secondary text-xs py-1 px-2">{t("risk.dashboard.viewAll")}</Link>
           </div>
           {!dashboard?.escalated_risks?.length ? (
-            <div className="py-4 text-center">
-              <span className="material-symbols-outlined text-[32px] text-green-300 block mb-1">check_circle</span>
-              <p className="text-xs text-neutral-400">No escalated risks — good standing.</p>
-            </div>
+            <EmptyState icon="check_circle" title="No escalated risks — good standing." className="py-6 min-h-0" />
           ) : (
             <div className="space-y-2">
               {dashboard.escalated_risks.slice(0, 5).map((r) => {
@@ -309,11 +307,11 @@ export default function RiskDashboardPage() {
             <span className="material-symbols-outlined text-[16px] text-primary">history</span>
             Recent Activity
           </h2>
-          <Link href="/risk/audit-trail" className="text-xs font-medium text-primary">Full audit trail</Link>
+          <Link href="/risk/audit-trail" className="btn-secondary text-xs py-1 px-2">Full audit trail</Link>
         </div>
 
         {!dashboard?.recent_activity?.length ? (
-          <p className="text-sm text-neutral-400">No recent activity.</p>
+          <EmptyState icon="history" title="No recent activity." className="py-6 min-h-0" />
         ) : (
           <div className="relative">
             <div className="absolute left-3 top-0 bottom-0 w-px bg-neutral-200" />

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { financeApi } from "@/lib/api";
 import { formatSaCurrency } from "@/components/salary-advance/AdvanceQueueTable";
+import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
 
 const QUEUE_CARDS = [
   { key: "certify", label: "Pending certification", href: "/salary-advances/queues/certify", icon: "verified" },
@@ -38,21 +39,20 @@ export default function SalaryAdvanceFinanceDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
-            <Link href="/salary-advances" className="hover:text-neutral-700">Salary Advances</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Finance</span>
-          </div>
-          <h1 className="page-title">Salary Advance Finance Dashboard</h1>
-          <p className="page-subtitle">Queue volumes, outstanding exposure, and status mix.</p>
-        </div>
-        <div className="flex gap-2">
+      <SalaryAdvancePageHeader
+        title="Salary Advance Finance Dashboard"
+        subtitle="Queue volumes, outstanding exposure, and status mix."
+        crumbs={[
+          { label: "nav.salary_advances", href: "/salary-advances" },
+          { label: "Finance" },
+        ]}
+        actions={
+          <>
           <Link href="/salary-advances/register" className="btn-secondary py-2 px-4 text-sm">Register</Link>
           <Link href="/salary-advances/reports" className="btn-secondary py-2 px-4 text-sm">Reports</Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>}
 

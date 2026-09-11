@@ -6,6 +6,8 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetCycle, type BudgetSubmissionPack } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function statusLabel(status: string): string {
   return status.replaceAll("_", " ");
@@ -159,33 +161,46 @@ export default function BudgetCycleDetailPage() {
     ["planning", "department_preparation", "submitted_to_finance", "finance_review"].includes(cycle?.status ?? "");
 
   if (cycleQuery.isLoading) {
-    return <p className="p-6 text-sm text-[var(--muted)]">Loading cycle…</p>;
+    return (
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Budget cycle"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "Budget Cycles", href: "/budget/cycles" }, { label: "Cycle" }]} />}
+        />
+        <p className="text-sm text-neutral-400">Loading cycle…</p>
+      </div>
+    );
   }
 
   if (!cycle) {
     return (
-    <div className="space-y-5">
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Budget cycle"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "Budget Cycles", href: "/budget/cycles" }, { label: "Cycle" }]} />}
+        />
         <p className="text-sm text-red-700">Cycle not found.</p>
-        <Link href="/budget/cycles" className="text-sm text-[var(--primary)]">
-          Back
-        </Link>
+        <Link href="/budget/cycles" className="btn-secondary text-sm">Back to cycles</Link>
       </div>
     );
   }
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Link href="/budget/cycles" className="text-sm text-[var(--primary)] hover:underline">
-            ← Cycles
-          </Link>
-          <h1 className="page-title mt-1">
-            {cycle.financial_year?.label || cycle.financial_year?.code || `Cycle #${cycle.id}`}
-          </h1>
-          <p className="page-subtitle capitalize">Status: {statusLabel(cycle.status)}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <ModulePageHeader
+        title={cycle.financial_year?.label || cycle.financial_year?.code || `Cycle #${cycle.id}`}
+        subtitle={`Status: ${statusLabel(cycle.status)}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.finance", href: "/finance" },
+              { label: "Budget Cycles", href: "/budget/cycles" },
+              { label: cycle.financial_year?.label || cycle.financial_year?.code || `Cycle #${cycle.id}` },
+            ]}
+          />
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
           {canAdvance && (
             <button type="button" className="btn-secondary text-sm" onClick={() => advanceMut.mutate()} disabled={advanceMut.isPending}>
               Advance stage
@@ -201,8 +216,9 @@ export default function BudgetCycleDetailPage() {
               Lock & activate
             </button>
           )}
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">{message}</div>}
       {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-200">{error}</div>}
@@ -218,17 +234,19 @@ export default function BudgetCycleDetailPage() {
             onChange={(e) => setAssumptions(e.target.value)}
           />
           <div className="flex flex-wrap gap-3">
-            <label className="text-sm dark:text-neutral-200">
+            <label htmlFor="cycle-inflation" className="text-sm dark:text-neutral-200">
               Inflation %
               <input
+                id="cycle-inflation"
                 className="ml-2 w-24 rounded-lg border border-[var(--border)] px-2 py-1 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={inflation}
                 onChange={(e) => setInflation(e.target.value)}
               />
             </label>
-            <label className="text-sm dark:text-neutral-200">
+            <label htmlFor="cycle-deadline" className="text-sm dark:text-neutral-200">
               Department deadline
               <input
+                id="cycle-deadline"
                 type="date"
                 className="ml-2 rounded-lg border border-[var(--border)] px-2 py-1 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={deadline}
@@ -313,9 +331,10 @@ export default function BudgetCycleDetailPage() {
             Non-approved returns the cycle to Finance review.
           </p>
           <div className="grid gap-2 md:grid-cols-2">
-            <label className="text-sm dark:text-neutral-200">
+            <label htmlFor="cycle-decision-body" className="text-sm dark:text-neutral-200">
               Body
               <select
+                id="cycle-decision-body"
                 className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={decisionBody}
                 onChange={(e) => setDecisionBody(e.target.value as "fsc" | "exco" | "plenary")}
@@ -325,9 +344,10 @@ export default function BudgetCycleDetailPage() {
                 <option value="plenary">Plenary Assembly</option>
               </select>
             </label>
-            <label className="text-sm dark:text-neutral-200">
+            <label htmlFor="cycle-decision-outcome" className="text-sm dark:text-neutral-200">
               Decision
               <select
+                id="cycle-decision-outcome"
                 className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={decisionOutcome}
                 onChange={(e) => setDecisionOutcome(e.target.value)}
@@ -338,18 +358,20 @@ export default function BudgetCycleDetailPage() {
                 <option value="rejected">Rejected</option>
               </select>
             </label>
-            <label className="text-sm dark:text-neutral-200">
+            <label htmlFor="cycle-meeting-on" className="text-sm dark:text-neutral-200">
               Meeting date
               <input
+                id="cycle-meeting-on"
                 type="date"
                 className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100"
                 value={meetingOn}
                 onChange={(e) => setMeetingOn(e.target.value)}
               />
             </label>
-            <label className="text-sm dark:text-neutral-200">
+            <label htmlFor="cycle-minute-ref" className="text-sm dark:text-neutral-200">
               Minute / reference
               <input
+                id="cycle-minute-ref"
                 className="mt-1 w-full rounded-lg border border-[var(--border)] px-3 py-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:placeholder-neutral-500"
                 value={minuteRef}
                 onChange={(e) => setMinuteRef(e.target.value)}
@@ -399,7 +421,7 @@ export default function BudgetCycleDetailPage() {
       <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-white dark:border-neutral-700 dark:bg-neutral-900">
         <div className="border-b border-[var(--border)] px-4 py-3 text-sm font-semibold dark:border-neutral-700 dark:text-neutral-100">Submissions</div>
         {submissions.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-[var(--muted)] dark:text-neutral-400">No packs yet.</p>
+          <EmptyState icon="folder_open" title="No packs yet." />
         ) : (
           <table className="w-full text-left text-sm dark:text-neutral-200">
             <thead className="border-b border-[var(--border)] text-[var(--muted)] dark:border-neutral-700 dark:bg-neutral-950/60 dark:text-neutral-400">
@@ -417,7 +439,7 @@ export default function BudgetCycleDetailPage() {
                   <td className="px-4 py-2 capitalize">{statusLabel(s.status)}</td>
                   <td className="px-4 py-2">{s.items?.length ?? 0}</td>
                   <td className="px-4 py-2 text-right">
-                    <Link href={`/budget/submissions/${s.id}`} className="text-[var(--primary)] hover:underline">
+                    <Link href={`/budget/submissions/${s.id}`} className="btn-secondary text-xs">
                       Open
                     </Link>
                   </td>

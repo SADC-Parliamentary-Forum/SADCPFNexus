@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const priorityConfig: Record<string, { label: string; cls: string }> = {
   low:      { label: "Low",      cls: "badge-muted" },
@@ -157,9 +158,8 @@ export default function AllAssignmentsPage() {
           })}
         </div>
       ) : (
-        <div className="card p-14 text-center">
-          <span className="material-symbols-outlined text-4xl text-neutral-300 block">task_alt</span>
-          <p className="mt-3 text-sm text-neutral-500">No assignments found.</p>
+        <div className="card">
+          <EmptyState icon="task_alt" title="No assignments found." />
         </div>
       )}
     </div>

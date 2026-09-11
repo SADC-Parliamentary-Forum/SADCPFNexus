@@ -94,9 +94,9 @@ export default function StockBarcodeScanPage() {
       {err && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>}
 
       <form onSubmit={lookup} className="card flex flex-wrap items-end gap-3 p-4">
-        <label className="block min-w-[220px] flex-1 text-sm">
+        <label htmlFor="stock-scan-barcode-setbarcode-e-target-value-placeholder-sc" className="block min-w-[220px] flex-1 text-sm">
           <span className="text-xs font-semibold text-neutral-700">Barcode</span>
-          <input
+          <input id="stock-scan-barcode-setbarcode-e-target-value-placeholder-sc"
             className="form-input mt-1 w-full"
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
@@ -114,9 +114,9 @@ export default function StockBarcodeScanPage() {
           <p className="text-sm text-neutral-600">Code: {item.item_code} · Barcode: {item.barcode ?? "—"}</p>
           <p className="text-sm text-neutral-600">On hand: {item.current_balance ?? "—"} · Available: {item.available_quantity ?? "—"} {item.unit ?? ""}</p>
           <div className="flex flex-wrap items-end gap-2">
-            <label className="block text-sm">
+            <label htmlFor="stock-scan-count-setcount-e-target-value" className="block text-sm">
               <span className="text-xs font-semibold text-neutral-700">Count</span>
-              <input type="number" min="0" className="form-input mt-1 w-28" value={count} onChange={(e) => setCount(e.target.value)} />
+              <input id="stock-scan-count-setcount-e-target-value" type="number" min="0" className="form-input mt-1 w-28" value={count} onChange={(e) => setCount(e.target.value)} />
             </label>
             <button type="button" className="btn-secondary btn-sm" onClick={queueOffline}>Queue offline</button>
           </div>

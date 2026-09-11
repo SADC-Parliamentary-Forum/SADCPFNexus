@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { auditLogsApi, type AuditLogEntry } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // â”€â”€â”€ Config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const MODULES = [
@@ -200,11 +201,11 @@ export default function GenerateLedgerReportPage() {
         <h3 className="text-sm font-bold text-neutral-900">1. Report Scope</h3>
         <div className="space-y-2">
           {SCOPES.map((s) => (
-            <label key={s.value} className={cn(
+            <label htmlFor={`admin-ledger-generate-scope-${s.value}`} key={s.value} className={cn(
               "flex items-start gap-4 rounded-xl border p-4 cursor-pointer transition-all",
               scope === s.value ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-neutral-200 bg-white hover:border-neutral-300",
             )}>
-              <input type="radio" name="scope" value={s.value} checked={scope === s.value}
+              <input id={`admin-ledger-generate-scope-${s.value}`} type="radio" name="scope" value={s.value} checked={scope === s.value}
                 onChange={() => setScope(s.value)} className="mt-0.5 text-primary" />
               <div className="flex-1">
                 <p className="text-sm font-semibold text-neutral-900">{s.label}</p>
@@ -218,16 +219,16 @@ export default function GenerateLedgerReportPage() {
         </div>
         {scope === "module" && (
           <div className="mt-2 rounded-lg bg-neutral-50 border border-neutral-200 p-4">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1.5">Target Module</label>
-            <select className="form-input" value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)}>
+            <label htmlFor="admin-ledger-generate-target-module" className="block text-xs font-semibold text-neutral-600 mb-1.5">Target Module</label>
+            <select id="admin-ledger-generate-target-module" className="form-input" value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)}>
               {MODULES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
             </select>
           </div>
         )}
         {scope === "user" && (
           <div className="mt-2 rounded-lg bg-neutral-50 border border-neutral-200 p-4">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1.5">User (name or email)</label>
-            <input className="form-input" placeholder="Search by name or email…"
+            <label htmlFor="admin-ledger-generate-user-name-or-email" className="block text-xs font-semibold text-neutral-600 mb-1.5">User (name or email)</label>
+            <input id="admin-ledger-generate-user-name-or-email" className="form-input" placeholder="Search by name or email…"
               value={userFilter} onChange={(e) => setUserFilter(e.target.value)} />
           </div>
         )}
@@ -241,12 +242,12 @@ export default function GenerateLedgerReportPage() {
           <h3 className="text-sm font-bold text-neutral-900">2. Reporting Period</h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">From Date</label>
-              <input type="date" className="form-input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <label htmlFor="admin-ledger-generate-from-date" className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">From Date</label>
+              <input id="admin-ledger-generate-from-date" type="date" className="form-input" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">To Date</label>
-              <input type="date" className="form-input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              <label htmlFor="admin-ledger-generate-to-date" className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1">To Date</label>
+              <input id="admin-ledger-generate-to-date" type="date" className="form-input" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </div>
           </div>
           <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2.5 flex items-start gap-2">
@@ -259,8 +260,8 @@ export default function GenerateLedgerReportPage() {
           <h3 className="text-sm font-bold text-neutral-900">3. Event Types</h3>
           <div className="space-y-2">
             {EVENT_TYPES.map((et) => (
-              <label key={et.value} className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+              <label htmlFor={`admin-ledger-generate-event-type-${et.value}`} key={et.value} className="flex items-center gap-3 cursor-pointer">
+                <input id={`admin-ledger-generate-event-type-${et.value}`} type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                   checked={eventTypes.includes(et.value)}
                   onChange={() => toggleEventType(et.value)} />
                 <span className="text-sm font-medium text-neutral-700">{et.label}</span>
@@ -278,11 +279,11 @@ export default function GenerateLedgerReportPage() {
         <h3 className="text-sm font-bold text-neutral-900">4. Output Format</h3>
         <div className="grid sm:grid-cols-2 gap-3">
           {FORMATS.map((f) => (
-            <label key={f.value} className={cn(
+            <label htmlFor={`admin-ledger-generate-format-${f.value}`} key={f.value} className={cn(
               "flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-all",
               format === f.value ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-neutral-200 bg-white hover:border-neutral-300",
             )}>
-              <input type="radio" name="format" value={f.value} checked={format === f.value}
+              <input id={`admin-ledger-generate-format-${f.value}`} type="radio" name="format" value={f.value} checked={format === f.value}
                 onChange={() => setFormat(f.value)} className="text-primary" />
               <div className="flex-1">
                 <p className="text-sm font-bold text-neutral-900">{f.label}</p>
@@ -316,10 +317,7 @@ export default function GenerateLedgerReportPage() {
       </div>
 
       {previewLogs.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-14 text-neutral-300">
-          <span className="material-symbols-outlined text-[40px]">receipt_long</span>
-          <p className="text-sm text-neutral-400">No entries match the selected criteria.</p>
-        </div>
+        <EmptyState icon="receipt_long" title="No entries match the selected criteria." />
       ) : (
         <div className="card overflow-hidden">
           <div className="px-5 py-3 border-b border-neutral-100 bg-neutral-50 flex items-center justify-between">

@@ -63,8 +63,8 @@ export default function MandeSettingsPage() {
             <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800">{savedMsg}</div>
           )}
 
-          <label className="flex items-start gap-3">
-            <input
+          <label htmlFor="mande-settings-setform-auto-intake-on-pif-approve-when-enabled-" className="flex items-start gap-3">
+            <input id="mande-settings-setform-auto-intake-on-pif-approve-when-enabled-"
               type="checkbox"
               className="mt-1"
               checked={form.auto_intake}
@@ -79,8 +79,8 @@ export default function MandeSettingsPage() {
           </label>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Report due days</label>
-            <input
+            <label htmlFor="mande-settings-report-due-days" className="block text-xs font-semibold text-neutral-700 mb-1">Report due days</label>
+            <input id="mande-settings-report-due-days"
               type="number"
               min={1}
               max={365}
@@ -91,8 +91,8 @@ export default function MandeSettingsPage() {
             <p className="text-xs text-neutral-500 mt-1">Days after activity end date before a report is overdue.</p>
           </div>
 
-          <label className="flex items-start gap-3">
-            <input
+          <label htmlFor="mande-settings-setform-programme-manager-review-when-enabled-re" className="flex items-start gap-3">
+            <input id="mande-settings-setform-programme-manager-review-when-enabled-re"
               type="checkbox"
               className="mt-1"
               checked={form.programme_manager_review}

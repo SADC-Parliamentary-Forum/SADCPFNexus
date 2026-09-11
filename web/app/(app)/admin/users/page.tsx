@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const classColors: Record<string, string> = {
   UNCLASSIFIED: "badge-muted",
@@ -207,7 +208,7 @@ export default function AdminUsersPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           <span className="flex-1">{error}</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
+          <button type="button" className="btn-secondary text-xs" onClick={() => setError(null)}>
             Dismiss
           </button>
         </div>
@@ -399,7 +400,7 @@ export default function AdminUsersPage() {
                             <div className="flex items-center justify-end gap-3">
                               <Link
                                 href={`/admin/users/${user.id}`}
-                                className="text-xs font-semibold text-primary hover:underline"
+                                className="btn-secondary text-xs py-1 px-2"
                               >
                                 Edit
                               </Link>
@@ -409,7 +410,7 @@ export default function AdminUsersPage() {
                                   onClick={() => void handleDeactivate(user)}
                                   disabled={actionLoading === user.id || !gate.ok}
                                   title={!gate.ok ? gate.reason : undefined}
-                                  className="text-xs font-medium text-red-500 hover:underline disabled:opacity-50 disabled:no-underline"
+                                  className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50"
                                 >
                                   {actionLoading === user.id ? "…" : "Deactivate"}
                                 </button>
@@ -418,7 +419,7 @@ export default function AdminUsersPage() {
                                   type="button"
                                   onClick={() => void handleReactivate(user)}
                                   disabled={actionLoading === user.id}
-                                  className="text-xs font-medium text-green-600 hover:underline disabled:opacity-50"
+                                  className="btn-secondary text-xs py-1 px-2 text-green-700 disabled:opacity-50"
                                 >
                                   {actionLoading === user.id ? "…" : "Reactivate"}
                                 </button>
@@ -434,11 +435,11 @@ export default function AdminUsersPage() {
             </div>
 
             {users.length === 0 && (
-              <div className="py-16 text-center">
-                <span className="material-symbols-outlined text-5xl text-neutral-200">person_search</span>
-                <p className="mt-3 text-sm font-medium text-neutral-500">No users found</p>
-                <p className="text-xs text-neutral-400">Try adjusting your search or filters.</p>
-              </div>
+              <EmptyState
+                icon="person_search"
+                title="No users found"
+                description="Try adjusting your search or filters."
+              />
             )}
 
             <div className="border-t border-neutral-100 px-5 py-3 flex items-center justify-between">

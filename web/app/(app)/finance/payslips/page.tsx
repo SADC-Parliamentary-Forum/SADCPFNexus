@@ -135,7 +135,7 @@ export default function PayslipsPage() {
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-neutral-500" htmlFor="payslip-year">
+            <label htmlFor="payslip-year" className="mb-1 block text-xs font-medium uppercase tracking-wider text-neutral-500">
               Year
             </label>
             <select
@@ -212,10 +212,10 @@ export default function PayslipsPage() {
                 </td>
                 <td>
                   <div className="flex gap-3">
-                    <Link href={`/finance/payslips/${p.id}`} className="text-xs font-medium text-primary hover:underline">
+                    <Link href={`/finance/payslips/${p.id}`} className="btn-secondary text-xs py-1 px-2">
                       View
                     </Link>
-                    <button type="button" className="text-xs font-medium text-neutral-600 hover:underline" onClick={() => void handleDownload(p)}>
+                    <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => void handleDownload(p)}>
                       Download
                     </button>
                   </div>

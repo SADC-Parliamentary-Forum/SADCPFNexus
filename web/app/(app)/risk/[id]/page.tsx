@@ -364,7 +364,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
       <div className="card p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="space-y-1 flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-neutral-900 leading-snug">{risk.title}</h1>
+            <p className="text-lg font-semibold text-neutral-900 leading-snug">{risk.title}</p>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-mono text-xs text-neutral-400">{risk.risk_code}</span>
               <span className="text-neutral-300">·</span>
@@ -488,7 +488,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
                 )}
               </div>
               {!showActionForm && (
-                <button onClick={() => setShowActionForm(true)} className="text-xs text-primary hover:underline flex items-center gap-1">
+                <button type="button" onClick={() => setShowActionForm(true)} className="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">add</span> Add action
                 </button>
               )}
@@ -767,7 +767,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             )}
             {policySearch && !searchLoading && searchResults.length === 0 && (
-              <p className="text-xs text-neutral-400 italic">No policies found. <Link href="/risk/policies" className="text-primary hover:underline">Manage Policy Library →</Link></p>
+              <p className="text-xs text-neutral-400 italic">No policies found. <Link href="/risk/policies" className="btn-secondary text-xs py-0.5 px-2 inline-flex ml-1">Manage Policy Library</Link></p>
             )}
           </div>
         </div>
@@ -812,8 +812,8 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
             {modal === "escalate" && (
               <>
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Escalation Level <span className="text-red-500 dark:text-red-400">*</span></label>
-                  <select className="form-input w-full" value={modalData.level ?? ""} onChange={(e) => setModalData((p) => ({ ...p, level: e.target.value }))}>
+                  <label htmlFor="risk-escalate-level" className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Escalation Level <span className="text-red-500 dark:text-red-400">*</span></label>
+                  <select id="risk-escalate-level" className="form-input w-full" value={modalData.level ?? ""} onChange={(e) => setModalData((p) => ({ ...p, level: e.target.value }))}>
                     <option value="">Select…</option>
                     <option value="departmental">Departmental</option>
                     <option value="directorate">Directorate</option>
@@ -822,23 +822,23 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Notes</label>
-                  <textarea className="form-input w-full h-20 resize-none" value={modalData.notes ?? ""} onChange={(e) => setModalData((p) => ({ ...p, notes: e.target.value }))} placeholder="Reason for escalation…" />
+                  <label htmlFor="risk-escalate-notes" className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Notes</label>
+                  <textarea id="risk-escalate-notes" className="form-input w-full h-20 resize-none" value={modalData.notes ?? ""} onChange={(e) => setModalData((p) => ({ ...p, notes: e.target.value }))} placeholder="Reason for escalation…" />
                 </div>
               </>
             )}
 
             {modal === "approve" && (
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Review Notes</label>
-                <textarea className="form-input w-full h-20 resize-none" value={modalData.notes ?? ""} onChange={(e) => setModalData((p) => ({ ...p, notes: e.target.value }))} placeholder="Optional notes for the risk owner…" />
+                <label htmlFor="risk-approve-notes" className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Review Notes</label>
+                <textarea id="risk-approve-notes" className="form-input w-full h-20 resize-none" value={modalData.notes ?? ""} onChange={(e) => setModalData((p) => ({ ...p, notes: e.target.value }))} placeholder="Optional notes for the risk owner…" />
               </div>
             )}
 
             {modal === "close" && (
               <div>
-                <label className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Closure Evidence <span className="text-red-500 dark:text-red-400">*</span></label>
-                <textarea className="form-input w-full h-24 resize-none" value={modalData.evidence ?? ""} onChange={(e) => setModalData((p) => ({ ...p, evidence: e.target.value }))} placeholder="Document what evidence confirms this risk is closed…" />
+                <label htmlFor="risk-close-evidence" className="mb-1.5 block text-xs font-semibold text-neutral-700 dark:text-neutral-200">Closure Evidence <span className="text-red-500 dark:text-red-400">*</span></label>
+                <textarea id="risk-close-evidence" className="form-input w-full h-24 resize-none" value={modalData.evidence ?? ""} onChange={(e) => setModalData((p) => ({ ...p, evidence: e.target.value }))} placeholder="Document what evidence confirms this risk is closed…" />
               </div>
             )}
 

@@ -134,7 +134,7 @@ function VerifyTransactionPageContent() {
       {alreadyVerified && (
         <div className="rounded-lg bg-neutral-50 border border-neutral-200 text-neutral-600 px-4 py-4 flex items-center gap-3">
           <span className="material-symbols-outlined">check_circle</span>
-          <p>This transaction has already been {txn.verification_status}. <Link href={`/finance/balance-register/${register.id}`} className="text-primary hover:underline">Return to register</Link>.</p>
+          <p>This transaction has already been {txn.verification_status}. <Link href={`/finance/balance-register/${register.id}`} className="btn-secondary text-xs py-1 px-2">Return to register</Link>.</p>
         </div>
       )}
 
@@ -190,7 +190,7 @@ function VerifyTransactionPageContent() {
             <div className="col-span-2">
               <p className="text-xs text-neutral-400">Supporting document</p>
               <Link href={txn.supporting_document_path} target="_blank" rel="noopener noreferrer"
-                className="text-primary text-sm hover:underline flex items-center gap-1">
+                className="btn-secondary text-sm py-1 px-2 inline-flex items-center gap-1">
                 <span className="material-symbols-outlined text-base">description</span>
                 View document
               </Link>
@@ -229,10 +229,10 @@ function VerifyTransactionPageContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
+            <label htmlFor="balance-register-detail-verify-comments" className="block text-sm font-medium text-neutral-700 mb-2">
               Comments {verifyStatus === "rejected" ? <span className="text-red-500">*</span> : "(optional)"}
             </label>
-            <textarea
+            <textarea id="balance-register-detail-verify-comments"
               className="form-input w-full h-24 resize-none text-sm"
               placeholder="Add a comment..."
               value={comments}

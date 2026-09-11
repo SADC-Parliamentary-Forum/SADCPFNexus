@@ -6,6 +6,7 @@ import Link from "next/link";
 import { stockUnitsApi, type StockUnit } from "@/lib/api";
 import { canConfigureStockCatalogue, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function StockUnitsPage() {
   const { toast } = useToast();
@@ -54,12 +55,12 @@ export default function StockUnitsPage() {
       {canManage && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 grid md:grid-cols-3 gap-3 items-end">
           <div>
-            <label className="block text-xs font-semibold mb-1">Code</label>
-            <input className="form-input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="ream" />
+            <label htmlFor="stock-units-code" className="block text-xs font-semibold mb-1">Code</label>
+            <input id="stock-units-code" className="form-input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="ream" />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Name</label>
-            <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ream" />
+            <label htmlFor="stock-units-name" className="block text-xs font-semibold mb-1">Name</label>
+            <input id="stock-units-name" className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ream" />
           </div>
           <button type="button" className="btn-primary" onClick={create}>Add unit</button>
         </div>
@@ -68,9 +69,12 @@ export default function StockUnitsPage() {
       {loading ? (
         <p className="text-sm text-neutral-500">Loading…</p>
       ) : items.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-sm font-semibold text-neutral-600">No units of measure yet</p>
-          <p className="text-xs text-neutral-400 mt-1">Add units such as ream, box, pack, or each so items can be measured consistently.</p>
+        <div className="card">
+          <EmptyState
+            icon="straighten"
+            title="No units of measure yet"
+            description="Add units such as ream, box, pack, or each so items can be measured consistently."
+          />
         </div>
       ) : (
         <table className="w-full text-sm bg-white rounded-xl border border-neutral-200 overflow-hidden">
@@ -93,7 +97,7 @@ export default function StockUnitsPage() {
         </table>
       )}
 
-      <Link href="/stock" className="text-sm text-primary hover:underline">← Back to stock register</Link>
+      <Link href="/stock" className="btn-secondary text-sm">Back to stock register</Link>
     </div>
   );
 }

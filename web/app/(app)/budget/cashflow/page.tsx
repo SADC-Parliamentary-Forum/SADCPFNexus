@@ -232,8 +232,8 @@ export default function BudgetCashflowPage() {
 
       <div className="card grid gap-4 p-4 md:grid-cols-2">
         <div>
-          <label className="mb-1 block text-sm font-medium text-neutral-700">Financial year</label>
-          <select
+          <label htmlFor="budget-cashflow-financial-year" className="mb-1 block text-sm font-medium text-neutral-700">Financial year</label>
+          <select id="budget-cashflow-financial-year"
             className="form-input"
             value={effectiveFyId}
             onChange={(e) => {
@@ -250,8 +250,8 @@ export default function BudgetCashflowPage() {
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-sm font-medium text-neutral-700">Scenario overlay</label>
-          <select
+          <label htmlFor="budget-cashflow-scenario-overlay" className="mb-1 block text-sm font-medium text-neutral-700">Scenario overlay</label>
+          <select id="budget-cashflow-scenario-overlay"
             className="form-input"
             value={scenarioId}
             onChange={(e) => setScenarioId(e.target.value)}
@@ -275,8 +275,8 @@ export default function BudgetCashflowPage() {
           <h2 className="text-base font-semibold text-neutral-900">Create scenario</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-sm font-medium text-neutral-700">Name</label>
-              <input
+              <label htmlFor="budget-cashflow-name" className="mb-1 block text-sm font-medium text-neutral-700">Name</label>
+              <input id="budget-cashflow-name"
                 className="form-input"
                 value={createForm.name}
                 onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
@@ -284,8 +284,8 @@ export default function BudgetCashflowPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-neutral-700">Kind</label>
-              <select
+              <label htmlFor="budget-cashflow-kind" className="mb-1 block text-sm font-medium text-neutral-700">Kind</label>
+              <select id="budget-cashflow-kind"
                 className="form-input"
                 value={createForm.kind}
                 onChange={(e) => setCreateForm((f) => ({ ...f, kind: e.target.value }))}
@@ -297,8 +297,8 @@ export default function BudgetCashflowPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium text-neutral-700">Opening balance</label>
-              <input
+              <label htmlFor="budget-cashflow-opening-balance" className="mb-1 block text-sm font-medium text-neutral-700">Opening balance</label>
+              <input id="budget-cashflow-opening-balance"
                 className="form-input"
                 type="number"
                 step="0.01"
@@ -339,8 +339,8 @@ export default function BudgetCashflowPage() {
             <>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-neutral-700">Period (YYYY-MM)</label>
-                  <input
+                  <label htmlFor="budget-cashflow-period-yyyy-mm" className="mb-1 block text-sm font-medium text-neutral-700">Period (YYYY-MM)</label>
+                  <input id="budget-cashflow-period-yyyy-mm"
                     className="form-input"
                     value={adjForm.period}
                     onChange={(e) => setAdjForm((f) => ({ ...f, period: e.target.value }))}
@@ -348,8 +348,8 @@ export default function BudgetCashflowPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-neutral-700">Direction</label>
-                  <select
+                  <label htmlFor="budget-cashflow-direction" className="mb-1 block text-sm font-medium text-neutral-700">Direction</label>
+                  <select id="budget-cashflow-direction"
                     className="form-input"
                     value={adjForm.direction}
                     onChange={(e) => setAdjForm((f) => ({ ...f, direction: e.target.value }))}
@@ -359,8 +359,8 @@ export default function BudgetCashflowPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-neutral-700">Amount</label>
-                  <input
+                  <label htmlFor="budget-cashflow-amount" className="mb-1 block text-sm font-medium text-neutral-700">Amount</label>
+                  <input id="budget-cashflow-amount"
                     className="form-input"
                     type="number"
                     step="0.01"
@@ -370,8 +370,8 @@ export default function BudgetCashflowPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-neutral-700">Label</label>
-                  <input
+                  <label htmlFor="budget-cashflow-label" className="mb-1 block text-sm font-medium text-neutral-700">Label</label>
+                  <input id="budget-cashflow-label"
                     className="form-input"
                     value={adjForm.label}
                     onChange={(e) => setAdjForm((f) => ({ ...f, label: e.target.value }))}
@@ -397,7 +397,7 @@ export default function BudgetCashflowPage() {
                       </span>
                       <button
                         type="button"
-                        className="text-red-700 hover:underline"
+                        className="btn-secondary text-xs py-1 px-2 text-red-700"
                         onClick={() => deleteAdjustment.mutate(a.id)}
                       >
                         Remove
@@ -612,8 +612,8 @@ export default function BudgetCashflowPage() {
           {(scenariosQuery.data ?? []).map((s: CashflowScenario) => {
             const checked = compareIds.includes(String(s.id));
             return (
-              <label key={s.id} className="flex items-center gap-2 text-sm">
-                <input
+              <label htmlFor={`budget-cashflow-compare-${s.id}`} key={s.id} className="flex items-center gap-2 text-sm">
+                <input id={`budget-cashflow-compare-${s.id}`}
                   type="checkbox"
                   checked={checked}
                   onChange={() =>

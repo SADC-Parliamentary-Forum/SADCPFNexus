@@ -8,6 +8,8 @@ import { goodsReceiptsApi, goodsReceiptAttachmentsApi, GOODS_RECEIPT_DOC_TYPES, 
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   pending:   { label: "Pending",   cls: "text-amber-700 bg-amber-50 border-amber-200",   icon: "hourglass_empty" },
@@ -140,21 +142,21 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
       )}
 
       {activeTab === "details" && <>
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-        <Link href="/procurement" className="hover:text-primary transition-colors">Procurement</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href="/procurement/receipts" className="hover:text-primary transition-colors">Receipts</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="font-mono text-neutral-600">{grn.reference_number}</span>
-      </nav>
+      <ProcurementPageHeader
+        title="Goods Receipt Note"
+        subtitle={grn.reference_number}
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "Receipts", href: "/procurement/receipts" },
+          { label: grn.reference_number },
+        ]}
+      />
 
       {/* Hero */}
       <div className="card p-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">Goods Receipt Note</h1>
-            <p className="font-mono text-xs text-neutral-400 mt-0.5">{grn.reference_number}</p>
+            <p className="font-mono text-xs text-neutral-400">{grn.reference_number}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
@@ -194,7 +196,7 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
               label: "Purchase Order",
               icon: "receipt_long",
               value: grn.purchase_order ? (
-                <Link href={`/procurement/purchase-orders/${grn.purchase_order_id}`} className="text-primary hover:underline font-mono text-xs">
+                <Link href={`/procurement/purchase-orders/${grn.purchase_order_id}`} className="btn-secondary font-mono text-xs">
                   {grn.purchase_order.reference_number}
                 </Link>
               ) : <span className="font-mono text-xs text-neutral-400">PO-{grn.purchase_order_id}</span>,
@@ -267,7 +269,7 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
           </thead>
           <tbody>
             {items.length === 0 ? (
-              <tr><td colSpan={5} className="text-center text-neutral-400 py-8 text-sm">No items recorded.</td></tr>
+              <TableEmpty colSpan={5} title="No items recorded." />
             ) : items.map((item) => {
               const received  = item.quantity_received ?? 0;
               const accepted  = item.quantity_accepted ?? received;
@@ -307,7 +309,7 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
         </table>
       </div>
 
-      <Link href={`/procurement/receipts`} className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary transition-colors">
+      <Link href={`/procurement/receipts`} className="btn-secondary inline-flex items-center gap-1.5 text-sm">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Receipts
       </Link>

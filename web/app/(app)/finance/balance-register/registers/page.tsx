@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { getListData, getLastPage, getTotal } from "@/lib/listPagination";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const MODULE_LABELS: Record<string, string> = {
   salary_advance: "Salary Advance",
@@ -219,11 +220,7 @@ function RegistersPageContent() {
                 </tr>
               ))
             ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="text-center py-12 text-neutral-400 text-sm">
-                  No registers found.
-                </td>
-              </tr>
+              <TableEmpty colSpan={8} title="No registers found." />
             ) : (
               filtered.map((reg) => (
                 <tr key={reg.id} className="hover:bg-neutral-50">
@@ -245,7 +242,7 @@ function RegistersPageContent() {
                   <td>
                     <Link
                       href={`/finance/balance-register/${reg.id}`}
-                      className="text-xs text-primary hover:underline font-medium"
+                      className="btn-secondary text-xs py-1 px-2"
                     >
                       View
                     </Link>

@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { governanceApi, minutesApi, type GovernanceMeeting, type MeetingMinutesRecord } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -100,10 +101,7 @@ export default function MeetingsMinutesPage() {
         {loading ? (
           <div className="p-12 text-center text-neutral-400 text-sm">Loading…</div>
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-600">meeting_room</span>
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">No meetings found.</p>
-          </div>
+          <EmptyState icon="meeting_room" title="No meetings found." />
         ) : (
           <table className="data-table">
             <thead>
@@ -141,7 +139,7 @@ export default function MeetingsMinutesPage() {
                       )}
                     </td>
                     <td className="text-right">
-                      <button className="text-primary text-sm hover:underline">View</button>
+                      <button className="btn-secondary text-sm py-1 px-2">View</button>
                     </td>
                   </tr>
                 );
