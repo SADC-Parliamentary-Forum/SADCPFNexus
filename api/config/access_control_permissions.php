@@ -1042,6 +1042,8 @@ return [
         'linked_endpoints' => [
             'GET /api/v1/leave/import/template',
             'POST /api/v1/leave/import',
+            'GET /api/v1/leave/requests/bulk-import/template',
+            'POST /api/v1/leave/requests/bulk-import',
         ],
     ],
     'leave.balance.read.assigned_staff' => [
@@ -1173,6 +1175,23 @@ return [
         'mfa_required' => false,
         'linked_routes' => ['/leave/create'],
         'linked_endpoints' => ['POST /api/v1/leave/requests'],
+    ],
+    'leave.request.create.assigned' => [
+        'display_name' => 'Create leave for staff',
+        'description' => 'HR may create and submit leave for a selected employee without a personal delegation',
+        'module' => 'leave',
+        'feature' => 'request',
+        'action' => 'create',
+        'supported_scopes' => ['organisation'],
+        'risk_level' => 'medium',
+        'data_classification' => 'Internal',
+        'mfa_required' => false,
+        'linked_routes' => ['/hr/leave'],
+        'linked_endpoints' => [
+            'POST /api/v1/leave/requests',
+            'POST /api/v1/leave/requests/bulk-import',
+            'GET /api/v1/leave/requests/bulk-import/template',
+        ],
     ],
     'leave.request.edit.created' => [
         'display_name' => 'Edit created leave',

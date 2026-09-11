@@ -567,6 +567,11 @@ return [
             'POST' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import'],
             'WRITE' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import'],
         ]],
+        ['pattern' => 'api/v1/leave/requests/bulk-import*', 'permissions' => [
+            'READ' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import', 'leave.request.create.assigned'],
+            'POST' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import', 'leave.request.create.assigned'],
+            'WRITE' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import', 'leave.request.create.assigned'],
+        ]],
         ['pattern' => 'api/v1/leave*', 'permissions' => [
             'READ' => [
                 'leave.view', 'leave.approve', 'leave.admin', 'leave.module.view',
@@ -574,6 +579,7 @@ return [
             ],
             'POST' => [
                 'leave.create', 'leave.approve', 'leave.admin', 'leave.request.create.self',
+                'leave.request.create.assigned',
                 'leave.request.recommend.assigned', 'leave.request.return.assigned',
                 'leave.request.authorise.assigned', 'leave.request.reject.assigned',
                 'leave.balance.certify.assigned',
