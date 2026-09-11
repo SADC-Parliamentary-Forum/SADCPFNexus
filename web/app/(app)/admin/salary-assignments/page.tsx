@@ -222,35 +222,35 @@ export default function SalaryAssignmentsPage() {
         <Modal open title={`${editId ? "Edit" : "Assign"} Grade Band`} onClose={() => setShowModal(false)} size="lg">
           <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Employee <span className="text-red-500">*</span></label>
-                <select className="form-input w-full" value={form.user_id} onChange={(e) => setForm((f) => ({ ...f, user_id: e.target.value }))} required disabled={!!editId}>
+                <label htmlFor="admin-salary-assignments-employee" className="block text-sm font-medium text-neutral-700 mb-1">Employee <span className="text-red-500">*</span></label>
+                <select id="admin-salary-assignments-employee" className="form-input w-full" value={form.user_id} onChange={(e) => setForm((f) => ({ ...f, user_id: e.target.value }))} required disabled={!!editId}>
                   <option value="">Select employee…</option>
                   {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Grade Band <span className="text-red-500">*</span></label>
-                  <select className="form-input w-full" value={form.grade_band_id} onChange={(e) => setForm((f) => ({ ...f, grade_band_id: e.target.value, salary_scale_id: "" }))} required>
+                  <label htmlFor="admin-salary-assignments-grade-band" className="block text-sm font-medium text-neutral-700 mb-1">Grade Band <span className="text-red-500">*</span></label>
+                  <select id="admin-salary-assignments-grade-band" className="form-input w-full" value={form.grade_band_id} onChange={(e) => setForm((f) => ({ ...f, grade_band_id: e.target.value, salary_scale_id: "" }))} required>
                     <option value="">Select…</option>
                     {gradeBands.map((b) => <option key={b.id} value={b.id}>{b.code} — {b.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Notch # <span className="text-red-500">*</span></label>
-                  <input type="number" min={1} max={30} className="form-input w-full" value={form.notch_number} onChange={(e) => setForm((f) => ({ ...f, notch_number: e.target.value }))} required />
+                  <label htmlFor="admin-salary-assignments-notch" className="block text-sm font-medium text-neutral-700 mb-1">Notch # <span className="text-red-500">*</span></label>
+                  <input id="admin-salary-assignments-notch" type="number" min={1} max={30} className="form-input w-full" value={form.notch_number} onChange={(e) => setForm((f) => ({ ...f, notch_number: e.target.value }))} required />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Salary Scale (optional)</label>
-                <select className="form-input w-full" value={form.salary_scale_id} onChange={(e) => setForm((f) => ({ ...f, salary_scale_id: e.target.value }))}>
+                <label htmlFor="admin-salary-assignments-salary-scale-optional" className="block text-sm font-medium text-neutral-700 mb-1">Salary Scale (optional)</label>
+                <select id="admin-salary-assignments-salary-scale-optional" className="form-input w-full" value={form.salary_scale_id} onChange={(e) => setForm((f) => ({ ...f, salary_scale_id: e.target.value }))}>
                   <option value="">None</option>
                   {availableScales.map((s) => <option key={s.id} value={s.id}>Scale #{s.id}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Employment Type</label>
-                <select className="form-input w-full" value={form.employment_type} onChange={(e) => setForm((f) => ({ ...f, employment_type: e.target.value }))}>
+                <label htmlFor="admin-salary-assignments-employment-type" className="block text-sm font-medium text-neutral-700 mb-1">Employment Type</label>
+                <select id="admin-salary-assignments-employment-type" className="form-input w-full" value={form.employment_type} onChange={(e) => setForm((f) => ({ ...f, employment_type: e.target.value }))}>
                   <option value="">Not specified</option>
                   <option value="local">Local</option>
                   <option value="regional">Regional</option>
@@ -259,12 +259,12 @@ export default function SalaryAssignmentsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Effective From <span className="text-red-500">*</span></label>
-                  <input type="date" className="form-input w-full" value={form.effective_from} onChange={(e) => setForm((f) => ({ ...f, effective_from: e.target.value }))} required />
+                  <label htmlFor="admin-salary-assignments-effective-from" className="block text-sm font-medium text-neutral-700 mb-1">Effective From <span className="text-red-500">*</span></label>
+                  <input id="admin-salary-assignments-effective-from" type="date" className="form-input w-full" value={form.effective_from} onChange={(e) => setForm((f) => ({ ...f, effective_from: e.target.value }))} required />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Effective To</label>
-                  <input type="date" className="form-input w-full" value={form.effective_to} onChange={(e) => setForm((f) => ({ ...f, effective_to: e.target.value }))} />
+                  <label htmlFor="admin-salary-assignments-effective-to" className="block text-sm font-medium text-neutral-700 mb-1">Effective To</label>
+                  <input id="admin-salary-assignments-effective-to" type="date" className="form-input w-full" value={form.effective_to} onChange={(e) => setForm((f) => ({ ...f, effective_to: e.target.value }))} />
                 </div>
               </div>
               {formError && <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-sm">{formError}</div>}

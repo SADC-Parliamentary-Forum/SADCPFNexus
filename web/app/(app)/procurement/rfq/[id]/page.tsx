@@ -355,8 +355,8 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
             {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
             <div className="grid gap-2 md:grid-cols-2">
               {categories.map((category) => (
-                <label key={category.id} className={`rounded-xl border p-3 text-sm ${categoryIds.includes(category.id) ? "border-primary bg-primary/5" : "border-neutral-200"}`}>
-                  <input
+                <label htmlFor="procurement-rfq-detail-setcategoryids-current-current-includes-category" key={category.id} className={`rounded-xl border p-3 text-sm ${categoryIds.includes(category.id) ? "border-primary bg-primary/5" : "border-neutral-200"}`}>
+                  <input id="procurement-rfq-detail-setcategoryids-current-current-includes-category"
                     type="checkbox"
                     className="mr-2"
                     checked={categoryIds.includes(category.id)}
@@ -571,8 +571,8 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
             <textarea className="form-input h-24 resize-none" placeholder="Assessment notes" value={quoteForm.compliance_notes} onChange={(e) => setQuoteForm((current) => ({ ...current, compliance_notes: e.target.value }))} />
             <div className="space-y-2">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Submitted Quote Documents</label>
-                <input
+                <label htmlFor="procurement-rfq-detail-submitted-quote-documents" className="block text-xs font-semibold text-neutral-700 mb-1.5">Submitted Quote Documents</label>
+                <input id="procurement-rfq-detail-submitted-quote-documents"
                   type="file"
                   multiple
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
@@ -601,19 +601,19 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
                 </div>
               )}
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={quoteForm.is_recommended} onChange={(e) => setQuoteForm((current) => ({ ...current, is_recommended: e.target.checked }))} />
+            <label htmlFor="procurement-rfq-detail-setquoteform-current-recommend-this-quote-for-aw" className="flex items-center gap-2 text-sm">
+              <input id="procurement-rfq-detail-setquoteform-current-recommend-this-quote-for-aw" type="checkbox" checked={quoteForm.is_recommended} onChange={(e) => setQuoteForm((current) => ({ ...current, is_recommended: e.target.checked }))} />
               Recommend this quote for award
             </label>
             {editingQuote && (
               <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
                 <p className="text-xs font-semibold text-neutral-700">Conflict of interest declaration</p>
-                <label className="flex items-start gap-2 text-sm">
-                  <input type="checkbox" className="mt-0.5" checked={coiDeclared} onChange={(e) => setCoiDeclared(e.target.checked)} />
+                <label htmlFor="procurement-rfq-detail-setcoideclared-e-target-checked-i-confirm-my-coi" className="flex items-start gap-2 text-sm">
+                  <input id="procurement-rfq-detail-setcoideclared-e-target-checked-i-confirm-my-coi" type="checkbox" className="mt-0.5" checked={coiDeclared} onChange={(e) => setCoiDeclared(e.target.checked)} />
                   <span>I confirm my COI status before assessing this quote.</span>
                 </label>
-                <label className="flex items-start gap-2 text-sm">
-                  <input type="checkbox" className="mt-0.5" checked={coiHasConflict} onChange={(e) => setCoiHasConflict(e.target.checked)} />
+                <label htmlFor="procurement-rfq-detail-setcoihasconflict-e-target-checked-i-have-a-conf" className="flex items-start gap-2 text-sm">
+                  <input id="procurement-rfq-detail-setcoihasconflict-e-target-checked-i-have-a-conf" type="checkbox" className="mt-0.5" checked={coiHasConflict} onChange={(e) => setCoiHasConflict(e.target.checked)} />
                   <span>I have a conflict of interest.</span>
                 </label>
                 {coiHasConflict && (
@@ -656,12 +656,12 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
             </select>
             <textarea className="form-input h-24 resize-none" placeholder="Award notes" value={awardNotes} onChange={(e) => setAwardNotes(e.target.value)} />
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
-              <label className="flex items-start gap-2 text-sm">
-                <input type="checkbox" className="mt-0.5" checked={coiDeclared} onChange={(e) => setCoiDeclared(e.target.checked)} />
+              <label htmlFor="procurement-rfq-detail-setcoideclared-e-target-checked-i-confirm-my-coi-2" className="flex items-start gap-2 text-sm">
+                <input id="procurement-rfq-detail-setcoideclared-e-target-checked-i-confirm-my-coi-2" type="checkbox" className="mt-0.5" checked={coiDeclared} onChange={(e) => setCoiDeclared(e.target.checked)} />
                 <span>I confirm my COI declaration before awarding.</span>
               </label>
-              <label className="flex items-start gap-2 text-sm">
-                <input type="checkbox" className="mt-0.5" checked={coiHasConflict} onChange={(e) => setCoiHasConflict(e.target.checked)} />
+              <label htmlFor="procurement-rfq-detail-setcoihasconflict-e-target-checked-i-have-a-conf-2" className="flex items-start gap-2 text-sm">
+                <input id="procurement-rfq-detail-setcoihasconflict-e-target-checked-i-have-a-conf-2" type="checkbox" className="mt-0.5" checked={coiHasConflict} onChange={(e) => setCoiHasConflict(e.target.checked)} />
                 <span>I have a conflict of interest.</span>
               </label>
               {coiHasConflict && (

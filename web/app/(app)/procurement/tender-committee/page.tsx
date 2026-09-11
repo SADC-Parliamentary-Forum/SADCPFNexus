@@ -31,8 +31,8 @@ export default function TenderCommitteePage() {
 
       <div className="card p-4 flex gap-2 items-end">
         <div className="flex-1">
-          <label className="block text-xs font-semibold mb-1">New committee</label>
-          <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Standing Tender Committee" />
+          <label htmlFor="procurement-tender-committee-new-committee" className="block text-xs font-semibold mb-1">New committee</label>
+          <input id="procurement-tender-committee-new-committee" className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Standing Tender Committee" />
         </div>
         <button type="button" className="btn-primary" disabled={!name || createMut.isPending} onClick={() => createMut.mutate()}>
           Create

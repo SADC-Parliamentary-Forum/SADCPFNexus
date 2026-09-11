@@ -54,12 +54,12 @@ export default function StockUnitsPage() {
       {canManage && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 grid md:grid-cols-3 gap-3 items-end">
           <div>
-            <label className="block text-xs font-semibold mb-1">Code</label>
-            <input className="form-input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="ream" />
+            <label htmlFor="stock-units-code" className="block text-xs font-semibold mb-1">Code</label>
+            <input id="stock-units-code" className="form-input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="ream" />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Name</label>
-            <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ream" />
+            <label htmlFor="stock-units-name" className="block text-xs font-semibold mb-1">Name</label>
+            <input id="stock-units-name" className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ream" />
           </div>
           <button type="button" className="btn-primary" onClick={create}>Add unit</button>
         </div>

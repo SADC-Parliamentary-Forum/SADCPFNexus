@@ -207,8 +207,8 @@ function CapitaliseModal({
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Purchase Date *</label>
-              <input
+              <label htmlFor="assets-purchase-date" className="block text-xs font-semibold text-neutral-700 mb-1">Purchase Date *</label>
+              <input id="assets-purchase-date"
                 type="date"
                 className="form-input"
                 value={purchaseDate}
@@ -216,8 +216,8 @@ function CapitaliseModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Purchase Value *</label>
-              <input
+              <label htmlFor="assets-purchase-value" className="block text-xs font-semibold text-neutral-700 mb-1">Purchase Value *</label>
+              <input id="assets-purchase-value"
                 type="number"
                 min={0}
                 step="0.01"
@@ -227,8 +227,8 @@ function CapitaliseModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Useful Life (years)</label>
-              <input
+              <label htmlFor="assets-useful-life-years" className="block text-xs font-semibold text-neutral-700 mb-1">Useful Life (years)</label>
+              <input id="assets-useful-life-years"
                 type="number"
                 min={1}
                 max={100}
@@ -238,8 +238,8 @@ function CapitaliseModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Salvage Value</label>
-              <input
+              <label htmlFor="assets-salvage-value" className="block text-xs font-semibold text-neutral-700 mb-1">Salvage Value</label>
+              <input id="assets-salvage-value"
                 type="number"
                 min={0}
                 step="0.01"
@@ -249,8 +249,8 @@ function CapitaliseModal({
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Depreciation Method</label>
-              <select className="form-input" value={method} onChange={(e) => setMethod(e.target.value)}>
+              <label htmlFor="assets-depreciation-method" className="block text-xs font-semibold text-neutral-700 mb-1">Depreciation Method</label>
+              <select id="assets-depreciation-method" className="form-input" value={method} onChange={(e) => setMethod(e.target.value)}>
                 {DEPR_METHODS.map((m) => (
                   <option key={m.value} value={m.value}>
                     {m.label}
@@ -333,9 +333,9 @@ function DepreciationModal({
     }
   };
 
-  const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  const F = ({ label, htmlFor, children }: { label: string; htmlFor: string; children: React.ReactNode }) => (
     <div>
-      <label className="block text-xs font-semibold text-neutral-700 mb-1">{label}</label>
+      <label htmlFor={htmlFor} className="block text-xs font-semibold text-neutral-700 mb-1">{label}</label>
       {children}
     </div>
   );
@@ -368,25 +368,25 @@ function DepreciationModal({
           )}
 
           <div className="grid grid-cols-2 gap-4">
-            <F label="Purchase Date">
-              <input type="date" className="form-input" value={purchaseDate}
+            <F label="Purchase Date" htmlFor="assets-depr-purchase-date">
+              <input id="assets-depr-purchase-date" type="date" className="form-input" value={purchaseDate}
                 onChange={(e) => setPurchaseDate(e.target.value)} />
             </F>
-            <F label="Purchase Value *">
-              <input type="number" min={0} step="0.01" className="form-input" placeholder="0.00"
+            <F label="Purchase Value *" htmlFor="assets-depr-purchase-value">
+              <input id="assets-depr-purchase-value" type="number" min={0} step="0.01" className="form-input" placeholder="0.00"
                 value={purchaseValue} onChange={(e) => setPurchaseValue(e.target.value)} />
             </F>
-            <F label="Useful Life (years) *">
-              <input type="number" min={1} max={100} className="form-input" placeholder="e.g. 5"
+            <F label="Useful Life (years) *" htmlFor="assets-depr-useful-life">
+              <input id="assets-depr-useful-life" type="number" min={1} max={100} className="form-input" placeholder="e.g. 5"
                 value={usefulLife} onChange={(e) => setUsefulLife(e.target.value)} />
             </F>
-            <F label="Salvage / Residual Value">
-              <input type="number" min={0} step="0.01" className="form-input" placeholder="0.00"
+            <F label="Salvage / Residual Value" htmlFor="assets-depr-salvage">
+              <input id="assets-depr-salvage" type="number" min={0} step="0.01" className="form-input" placeholder="0.00"
                 value={salvageValue} onChange={(e) => setSalvageValue(e.target.value)} />
             </F>
             <div className="col-span-2">
-              <F label="Depreciation Method">
-                <select className="form-input" value={method} onChange={(e) => setMethod(e.target.value)}>
+              <F label="Depreciation Method" htmlFor="assets-depr-method">
+                <select id="assets-depr-method" className="form-input" value={method} onChange={(e) => setMethod(e.target.value)}>
                   {DEPR_METHODS.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
                 </select>
               </F>
@@ -599,9 +599,9 @@ function RejectCapitalisationModal({
           {t("assets.register.rejectTitle")}
         </h2>
         <p className="text-sm text-neutral-600">{asset.asset_code} — {asset.name}</p>
-        <label className="block text-xs font-semibold text-neutral-600">
+        <label htmlFor="assets-setreason-e-target-value-autofocus" className="block text-xs font-semibold text-neutral-600">
           {t("assets.register.rejectReason")}
-          <textarea
+          <textarea id="assets-setreason-e-target-value-autofocus"
             className="form-input mt-1 text-sm min-h-[96px]"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
@@ -1085,10 +1085,11 @@ export default function AssetsPage() {
       {view === "inventory" && !loading && hasInventory && (
         <div className="card p-3 flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[160px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.search")}</label>
+            <label htmlFor="assets-register-search" className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.search")}</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-neutral-400 text-[18px]">search</span>
               <input
+                id="assets-register-search"
                 className="form-input pl-8 text-sm"
                 placeholder={t("assets.register.searchPlaceholder")}
                 value={searchInput}
@@ -1097,8 +1098,8 @@ export default function AssetsPage() {
             </div>
           </div>
           <div className="min-w-[130px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.status")}</label>
-            <select
+            <label htmlFor="assets-register-status" className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.status")}</label>
+            <select id="assets-register-status"
               className="form-input text-sm"
               value={filterStatus}
               onChange={(e) => {
@@ -1119,8 +1120,8 @@ export default function AssetsPage() {
           </div>
           {categories.length > 0 && (
             <div className="min-w-[130px]">
-              <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.category")}</label>
-              <select
+              <label htmlFor="assets-field-2" className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.register.category")}</label>
+              <select id="assets-field-2"
                 className="form-input text-sm"
                 value={filterCategory}
                 onChange={(e) => {
@@ -1205,7 +1206,7 @@ export default function AssetsPage() {
           ) : pagedAssets.length > 0 ? (
             <>
             <div className="flex flex-wrap items-center gap-3">
-              <label className="inline-flex items-center gap-2 text-sm text-neutral-600">
+              <div className="inline-flex items-center gap-2 text-sm text-neutral-600">
                 <SelectAllCheckbox
                   checked={selection.allSelectableSelected}
                   indeterminate={selection.someSelectableSelected && !selection.allSelectableSelected}
@@ -1214,7 +1215,7 @@ export default function AssetsPage() {
                   label={t("assets.register.selectAll")}
                 />
                 <span data-testid="asset-register-select-all">{t("assets.register.selectAll")}</span>
-              </label>
+              </div>
               <p className="text-xs text-neutral-500">{t("assets.register.selectHint")}</p>
             </div>
             <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear}>

@@ -155,9 +155,9 @@ export default function FleetListPage() {
       {tab === "drivers" && (
         <div className="space-y-4">
           <form onSubmit={onDriver} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900 md:grid-cols-3">
-            <label className="space-y-1">
+            <label htmlFor="fleet-staff-member-setdriveruserid-e-target-value-sele" className="space-y-1">
               <span className="text-sm font-medium">Staff member</span>
-              <select
+              <select id="fleet-staff-member-setdriveruserid-e-target-value-sele"
                 className="input w-full"
                 required
                 value={driverUserId}
@@ -171,9 +171,9 @@ export default function FleetListPage() {
                 ))}
               </select>
             </label>
-            <label className="space-y-1">
+            <label htmlFor="fleet-licence-setlicence-e-target-value" className="space-y-1">
               <span className="text-sm font-medium">Licence #</span>
-              <input className="input w-full" value={licence} onChange={(e) => setLicence(e.target.value)} />
+              <input id="fleet-licence-setlicence-e-target-value" className="input w-full" value={licence} onChange={(e) => setLicence(e.target.value)} />
             </label>
             <div className="flex items-end">
               <button type="submit" className="btn-primary" disabled={createDriver.isPending}>
@@ -214,9 +214,9 @@ export default function FleetListPage() {
       {tab === "calendar" && (
         <div className="space-y-4">
           <form onSubmit={onBooking} className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 dark:border-neutral-700 dark:bg-neutral-900 md:grid-cols-2">
-            <label className="space-y-1">
+            <label htmlFor="fleet-vehicle-setbookingassetid-e-target-value-select" className="space-y-1">
               <span className="text-sm font-medium">Vehicle</span>
-              <select className="input w-full" required value={bookingAssetId} onChange={(e) => setBookingAssetId(e.target.value)}>
+              <select id="fleet-vehicle-setbookingassetid-e-target-value-select" className="input w-full" required value={bookingAssetId} onChange={(e) => setBookingAssetId(e.target.value)}>
                 <option value="">Select…</option>
                 {vehicles.map((v) => (
                   <option key={v.id} value={v.id}>
@@ -225,17 +225,17 @@ export default function FleetListPage() {
                 ))}
               </select>
             </label>
-            <label className="space-y-1">
+            <label htmlFor="fleet-purpose-setbookingpurpose-e-target-value" className="space-y-1">
               <span className="text-sm font-medium">Purpose</span>
-              <input className="input w-full" value={bookingPurpose} onChange={(e) => setBookingPurpose(e.target.value)} />
+              <input id="fleet-purpose-setbookingpurpose-e-target-value" className="input w-full" value={bookingPurpose} onChange={(e) => setBookingPurpose(e.target.value)} />
             </label>
-            <label className="space-y-1">
+            <label htmlFor="fleet-starts-setbookingstart-e-target-value" className="space-y-1">
               <span className="text-sm font-medium">Starts</span>
-              <input className="input w-full" type="datetime-local" required value={bookingStart} onChange={(e) => setBookingStart(e.target.value)} />
+              <input id="fleet-starts-setbookingstart-e-target-value" className="input w-full" type="datetime-local" required value={bookingStart} onChange={(e) => setBookingStart(e.target.value)} />
             </label>
-            <label className="space-y-1">
+            <label htmlFor="fleet-ends-setbookingend-e-target-value" className="space-y-1">
               <span className="text-sm font-medium">Ends</span>
-              <input className="input w-full" type="datetime-local" required value={bookingEnd} onChange={(e) => setBookingEnd(e.target.value)} />
+              <input id="fleet-ends-setbookingend-e-target-value" className="input w-full" type="datetime-local" required value={bookingEnd} onChange={(e) => setBookingEnd(e.target.value)} />
             </label>
             <div className="md:col-span-2">
               <button type="submit" className="btn-primary" disabled={createBooking.isPending}>

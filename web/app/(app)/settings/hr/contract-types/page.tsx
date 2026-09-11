@@ -51,8 +51,8 @@ function ContractTypeModal({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
-              <input
+              <label htmlFor="settings-hr-contract-types-code" className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
+              <input id="settings-hr-contract-types-code"
                 className="form-input text-sm uppercase"
                 value={form.code ?? ""}
                 onChange={(e) => set("code", e.target.value.toUpperCase())}
@@ -61,8 +61,8 @@ function ContractTypeModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Name *</label>
-              <input
+              <label htmlFor="settings-hr-contract-types-name" className="block text-xs font-medium text-neutral-700 mb-1">Name *</label>
+              <input id="settings-hr-contract-types-name"
                 className="form-input text-sm"
                 value={form.name ?? ""}
                 onChange={(e) => set("name", e.target.value)}
@@ -73,8 +73,8 @@ function ContractTypeModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Description</label>
-            <textarea
+            <label htmlFor="settings-hr-contract-types-description" className="block text-xs font-medium text-neutral-700 mb-1">Description</label>
+            <textarea id="settings-hr-contract-types-description"
               className="form-input text-sm resize-none"
               rows={2}
               value={form.description ?? ""}
@@ -131,8 +131,8 @@ function ContractTypeModal({
 
           {!form.is_permanent && form.has_probation && (
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Probation Months</label>
-              <input
+              <label htmlFor="settings-hr-contract-types-probation-months" className="block text-xs font-medium text-neutral-700 mb-1">Probation Months</label>
+              <input id="settings-hr-contract-types-probation-months"
                 type="number"
                 className="form-input text-sm"
                 min={1}
@@ -144,8 +144,8 @@ function ContractTypeModal({
           )}
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Notice Period (days) *</label>
-            <input
+            <label htmlFor="settings-hr-contract-types-notice-period-days" className="block text-xs font-medium text-neutral-700 mb-1">Notice Period (days) *</label>
+            <input id="settings-hr-contract-types-notice-period-days"
               type="number"
               className="form-input text-sm"
               min={1}
@@ -178,8 +178,8 @@ function ContractTypeModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select
+            <label htmlFor="settings-hr-contract-types-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="settings-hr-contract-types-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}

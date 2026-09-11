@@ -172,26 +172,26 @@ export default function StrategicPlanPage() {
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
-                <input className="form-input" value={modal.name ?? ""} onChange={(e) => setModal({ ...modal, name: e.target.value })} />
+                <label htmlFor="mande-strategic-plan-name" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+                <input id="mande-strategic-plan-name" className="form-input" value={modal.name ?? ""} onChange={(e) => setModal({ ...modal, name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Period</label>
-                <input className="form-input" value={modal.period ?? ""} onChange={(e) => setModal({ ...modal, period: e.target.value })} placeholder="e.g. 2024–2028" />
+                <label htmlFor="mande-strategic-plan-period" className="block text-xs font-semibold text-neutral-700 mb-1">Period</label>
+                <input id="mande-strategic-plan-period" className="form-input" value={modal.period ?? ""} onChange={(e) => setModal({ ...modal, period: e.target.value })} placeholder="e.g. 2024–2028" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Start</label>
-                  <input type="date" className="form-input" value={modal.start_date?.slice(0, 10) ?? ""} onChange={(e) => setModal({ ...modal, start_date: e.target.value })} />
+                  <label htmlFor="mande-strategic-plan-start" className="block text-xs font-semibold text-neutral-700 mb-1">Start</label>
+                  <input id="mande-strategic-plan-start" type="date" className="form-input" value={modal.start_date?.slice(0, 10) ?? ""} onChange={(e) => setModal({ ...modal, start_date: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">End</label>
-                  <input type="date" className="form-input" value={modal.end_date?.slice(0, 10) ?? ""} onChange={(e) => setModal({ ...modal, end_date: e.target.value })} />
+                  <label htmlFor="mande-strategic-plan-end" className="block text-xs font-semibold text-neutral-700 mb-1">End</label>
+                  <input id="mande-strategic-plan-end" type="date" className="form-input" value={modal.end_date?.slice(0, 10) ?? ""} onChange={(e) => setModal({ ...modal, end_date: e.target.value })} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
-                <textarea className="form-input min-h-[80px]" value={modal.description ?? ""} onChange={(e) => setModal({ ...modal, description: e.target.value })} />
+                <label htmlFor="mande-strategic-plan-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+                <textarea id="mande-strategic-plan-description" className="form-input min-h-[80px]" value={modal.description ?? ""} onChange={(e) => setModal({ ...modal, description: e.target.value })} />
               </div>
             </div>
             <div className="px-5 py-4 border-t border-neutral-100 flex justify-end gap-2">

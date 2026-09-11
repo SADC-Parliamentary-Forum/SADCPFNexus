@@ -392,3 +392,16 @@ test("operational detail and correspondence send forms bind labels with htmlFor 
   }
 });
 
+test("operational app pages and shared components do not use className-first labels", () => {
+  const offenders: string[] = [];
+  const skip = /\/(print|certificate)\//;
+  for (const fullPath of [...walkTsx(join(webRoot, "app/(app)")), ...walkTsx(join(webRoot, "components"))]) {
+    if (skip.test(fullPath) || fullPath.includes(".print.")) continue;
+    const source = readFileSync(fullPath, "utf8");
+    if (/<label className=/.test(source)) {
+      offenders.push(fullPath.replace(webRoot, ""));
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+

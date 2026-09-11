@@ -229,10 +229,10 @@ function VerifyTransactionPageContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
+            <label htmlFor="balance-register-detail-verify-comments" className="block text-sm font-medium text-neutral-700 mb-2">
               Comments {verifyStatus === "rejected" ? <span className="text-red-500">*</span> : "(optional)"}
             </label>
-            <textarea
+            <textarea id="balance-register-detail-verify-comments"
               className="form-input w-full h-24 resize-none text-sm"
               placeholder="Add a comment..."
               value={comments}

@@ -266,7 +266,7 @@ export default function NewAppraisalPage() {
 
         {/* Employee — locked to current user */}
         <div>
-          <label className="block text-sm font-semibold text-neutral-700 mb-1">Employee</label>
+          <p className="block text-sm font-semibold text-neutral-700 mb-1">Employee</p>
           <div className="form-input bg-neutral-50 text-neutral-700 flex items-center gap-2 cursor-not-allowed">
             <span className="material-symbols-outlined text-[18px] text-neutral-400">person</span>
             <span className="font-medium">{me?.name ?? "Loading…"}</span>
@@ -281,7 +281,7 @@ export default function NewAppraisalPage() {
         {/* Department — auto-detected */}
         {(department || loadingContext) && (
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Department</label>
+            <p className="block text-sm font-semibold text-neutral-700 mb-1">Department</p>
             <div className="form-input bg-neutral-50 text-neutral-700 flex items-center gap-2 cursor-not-allowed">
               <span className="material-symbols-outlined text-[18px] text-neutral-400">apartment</span>
               {loadingContext ? (
@@ -295,8 +295,8 @@ export default function NewAppraisalPage() {
 
         {/* Cycle */}
         <div>
-          <label className="block text-sm font-semibold text-neutral-700 mb-1">Appraisal cycle *</label>
-          <select
+          <label htmlFor="hr-appraisals-new-appraisal-cycle" className="block text-sm font-semibold text-neutral-700 mb-1">Appraisal cycle *</label>
+          <select id="hr-appraisals-new-appraisal-cycle"
             className="form-input w-full"
             value={cycleId}
             onChange={(e) => setCycleId(e.target.value)}
@@ -316,7 +316,7 @@ export default function NewAppraisalPage() {
 
         {/* Supervisor — auto-detected or searchable */}
         <div>
-          <label className="block text-sm font-semibold text-neutral-700 mb-1">Supervisor</label>
+          <p className="block text-sm font-semibold text-neutral-700 mb-1">Supervisor</p>
           {loadingContext ? (
             <div className="form-input bg-neutral-50 text-neutral-400 text-sm">Detecting from HR file…</div>
           ) : (
@@ -331,7 +331,7 @@ export default function NewAppraisalPage() {
 
         {/* HOD — auto-detected or searchable */}
         <div>
-          <label className="block text-sm font-semibold text-neutral-700 mb-1">Head of Department (HOD)</label>
+          <p className="block text-sm font-semibold text-neutral-700 mb-1">Head of Department (HOD)</p>
           {loadingContext ? (
             <div className="form-input bg-neutral-50 text-neutral-400 text-sm">Detecting from HR file…</div>
           ) : (
@@ -348,7 +348,7 @@ export default function NewAppraisalPage() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <div>
-              <label className="block text-sm font-semibold text-neutral-700">Key result areas</label>
+              <p className="block text-sm font-semibold text-neutral-700">Key result areas</p>
               <p className="text-xs text-neutral-400">Optional — you can add or edit KRAs on the next screen.</p>
             </div>
             <button type="button" onClick={addKra} className="btn-secondary text-xs flex items-center gap-1">

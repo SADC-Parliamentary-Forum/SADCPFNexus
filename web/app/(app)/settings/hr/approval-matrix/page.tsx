@@ -71,8 +71,8 @@ function ApprovalMatrixModal({
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Module *</label>
-            <select
+            <label htmlFor="settings-hr-approval-matrix-module" className="block text-xs font-medium text-neutral-700 mb-1">Module *</label>
+            <select id="settings-hr-approval-matrix-module"
               className="form-input text-sm"
               value={form.module ?? "hr"}
               onChange={(e) => set("module", e.target.value)}
@@ -84,8 +84,8 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Action Name *</label>
-            <input
+            <label htmlFor="settings-hr-approval-matrix-action-name" className="block text-xs font-medium text-neutral-700 mb-1">Action Name *</label>
+            <input id="settings-hr-approval-matrix-action-name"
               className="form-input text-sm"
               value={form.action_name ?? ""}
               onChange={(e) => set("action_name", e.target.value)}
@@ -94,8 +94,8 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Step Number</label>
-            <input
+            <label htmlFor="settings-hr-approval-matrix-step-number" className="block text-xs font-medium text-neutral-700 mb-1">Step Number</label>
+            <input id="settings-hr-approval-matrix-step-number"
               type="number"
               className="form-input text-sm"
               min={1}
@@ -107,8 +107,8 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Approver Role (name)</label>
-            <input
+            <label htmlFor="settings-hr-approval-matrix-approver-role-name" className="block text-xs font-medium text-neutral-700 mb-1">Approver Role (name)</label>
+            <input id="settings-hr-approval-matrix-approver-role-name"
               className="form-input text-sm"
               value={roleNameInput}
               onChange={(e) => {
@@ -120,8 +120,8 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Notes</label>
-            <textarea
+            <label htmlFor="settings-hr-approval-matrix-notes" className="block text-xs font-medium text-neutral-700 mb-1">Notes</label>
+            <textarea id="settings-hr-approval-matrix-notes"
               className="form-input text-sm resize-none"
               rows={2}
               value={form.notes ?? ""}
@@ -153,8 +153,8 @@ function ApprovalMatrixModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select
+            <label htmlFor="settings-hr-approval-matrix-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="settings-hr-approval-matrix-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}

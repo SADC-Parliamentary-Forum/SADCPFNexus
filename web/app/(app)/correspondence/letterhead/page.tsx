@@ -125,36 +125,36 @@ export default function LetterheadPage() {
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Organisation Name</label>
-                <input className="form-input" value={form.org_name ?? ""} onChange={(e) => set("org_name", e.target.value)} placeholder="e.g. SADC Parliamentary Forum" />
+                <label htmlFor="correspondence-letterhead-organisation-name" className="block text-xs font-semibold text-neutral-700 mb-1">Organisation Name</label>
+                <input id="correspondence-letterhead-organisation-name" className="form-input" value={form.org_name ?? ""} onChange={(e) => set("org_name", e.target.value)} placeholder="e.g. SADC Parliamentary Forum" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Abbreviation / Short Name</label>
-                <input className="form-input" value={form.org_abbreviation ?? ""} onChange={(e) => set("org_abbreviation", e.target.value)} placeholder="e.g. SADC-PF" />
+                <label htmlFor="correspondence-letterhead-abbreviation-short-name" className="block text-xs font-semibold text-neutral-700 mb-1">Abbreviation / Short Name</label>
+                <input id="correspondence-letterhead-abbreviation-short-name" className="form-input" value={form.org_abbreviation ?? ""} onChange={(e) => set("org_abbreviation", e.target.value)} placeholder="e.g. SADC-PF" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Tagline</label>
-                <input className="form-input" value={form.letterhead_tagline ?? ""} onChange={(e) => set("letterhead_tagline", e.target.value)} placeholder="e.g. Enhancing Parliamentary Democracy…" />
+                <label htmlFor="correspondence-letterhead-tagline" className="block text-xs font-semibold text-neutral-700 mb-1">Tagline</label>
+                <input id="correspondence-letterhead-tagline" className="form-input" value={form.letterhead_tagline ?? ""} onChange={(e) => set("letterhead_tagline", e.target.value)} placeholder="e.g. Enhancing Parliamentary Democracy…" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Physical Address</label>
-                <textarea className="form-input resize-none" rows={2} value={form.org_address ?? ""} onChange={(e) => set("org_address", e.target.value)} placeholder="129 Robert Mugabe Avenue, Windhoek" />
+                <label htmlFor="correspondence-letterhead-physical-address" className="block text-xs font-semibold text-neutral-700 mb-1">Physical Address</label>
+                <textarea id="correspondence-letterhead-physical-address" className="form-input resize-none" rows={2} value={form.org_address ?? ""} onChange={(e) => set("org_address", e.target.value)} placeholder="129 Robert Mugabe Avenue, Windhoek" />
               </div>
 
               <hr className="border-neutral-100" />
               <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Contact Details</p>
 
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Telephone</label>
-                <input className="form-input" value={form.letterhead_phone ?? ""} onChange={(e) => set("letterhead_phone", e.target.value)} placeholder="+264 61 287 2158" />
+                <label htmlFor="correspondence-letterhead-telephone" className="block text-xs font-semibold text-neutral-700 mb-1">Telephone</label>
+                <input id="correspondence-letterhead-telephone" className="form-input" value={form.letterhead_phone ?? ""} onChange={(e) => set("letterhead_phone", e.target.value)} placeholder="+264 61 287 2158" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Fax</label>
-                <input className="form-input" value={form.letterhead_fax ?? ""} onChange={(e) => set("letterhead_fax", e.target.value)} placeholder="+264 61 254 642" />
+                <label htmlFor="correspondence-letterhead-fax" className="block text-xs font-semibold text-neutral-700 mb-1">Fax</label>
+                <input id="correspondence-letterhead-fax" className="form-input" value={form.letterhead_fax ?? ""} onChange={(e) => set("letterhead_fax", e.target.value)} placeholder="+264 61 254 642" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Website</label>
-                <input className="form-input" value={form.letterhead_website ?? ""} onChange={(e) => set("letterhead_website", e.target.value)} placeholder="www.sadcpf.org" />
+                <label htmlFor="correspondence-letterhead-website" className="block text-xs font-semibold text-neutral-700 mb-1">Website</label>
+                <input id="correspondence-letterhead-website" className="form-input" value={form.letterhead_website ?? ""} onChange={(e) => set("letterhead_website", e.target.value)} placeholder="www.sadcpf.org" />
               </div>
 
               {dirty && (

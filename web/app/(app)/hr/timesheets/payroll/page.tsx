@@ -103,9 +103,9 @@ export default function TimesheetPayrollExportPage() {
       </div>
 
       <div className="space-y-3 rounded-lg border border-[var(--border)] p-4" data-testid="payroll-operator-stage">
-        <label className="block text-sm">
+        <label htmlFor="hr-timesheets-payroll-timesheet-period-setselectedperiodid-e-target-va" className="block text-sm">
           Timesheet period
-          <select
+          <select id="hr-timesheets-payroll-timesheet-period-setselectedperiodid-e-target-va"
             className="mt-1 w-full rounded border px-3 py-2"
             value={selectedPeriodId}
             onChange={(e) => setSelectedPeriodId(e.target.value)}

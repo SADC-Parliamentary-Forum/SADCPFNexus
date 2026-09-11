@@ -942,9 +942,9 @@ export default function AdvanceDetailPage() {
               {certifyMode === "certify" ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <label className="block text-xs font-semibold text-neutral-700">
+                    <label htmlFor="salary-advances-detail-confirmed-net-salary-setcertifyform-f-data-testi" className="block text-xs font-semibold text-neutral-700">
                       Confirmed net salary <span className="text-red-500">*</span>
-                      <input
+                      <input id="salary-advances-detail-confirmed-net-salary-setcertifyform-f-data-testi"
                         type="number"
                         min={0}
                         step="0.01"
@@ -954,9 +954,9 @@ export default function AdvanceDetailPage() {
                         data-testid="certify-net-salary"
                       />
                     </label>
-                    <label className="block text-xs font-semibold text-neutral-700">
+                    <label htmlFor="salary-advances-detail-confirmed-gross-optional-setcertifyform-f" className="block text-xs font-semibold text-neutral-700">
                       Confirmed gross (optional)
-                      <input
+                      <input id="salary-advances-detail-confirmed-gross-optional-setcertifyform-f"
                         type="number"
                         min={0}
                         step="0.01"
@@ -965,9 +965,9 @@ export default function AdvanceDetailPage() {
                         onChange={(e) => setCertifyForm((f) => ({ ...f, confirmed_gross_salary: e.target.value }))}
                       />
                     </label>
-                    <label className="block text-xs font-semibold text-neutral-700">
+                    <label htmlFor="salary-advances-detail-recommended-amount-setcertifyform-f-data-testid-" className="block text-xs font-semibold text-neutral-700">
                       Recommended amount <span className="text-red-500">*</span>
-                      <input
+                      <input id="salary-advances-detail-recommended-amount-setcertifyform-f-data-testid-"
                         type="number"
                         min={1}
                         step="0.01"
@@ -977,9 +977,9 @@ export default function AdvanceDetailPage() {
                         data-testid="certify-recommended-amount"
                       />
                     </label>
-                    <label className="block text-xs font-semibold text-neutral-700">
+                    <label htmlFor="salary-advances-detail-recovery-payroll-date-setcertifyform-f-data-test" className="block text-xs font-semibold text-neutral-700">
                       Recovery payroll date <span className="text-red-500">*</span>
-                      <input
+                      <input id="salary-advances-detail-recovery-payroll-date-setcertifyform-f-data-test"
                         type="date"
                         className="form-input mt-1 w-full"
                         value={certifyForm.intended_recovery_payroll_date}
@@ -991,9 +991,9 @@ export default function AdvanceDetailPage() {
                   <p className="text-[11px] text-neutral-500">
                     Salary basis for v1: <span className="font-semibold">confirmed net</span>. Max eligible is recalculated as 50% of confirmed net on certify.
                   </p>
-                  <label className="block text-xs font-semibold text-neutral-700">
+                  <label htmlFor="salary-advances-detail-comments-setcertifyform-f-placeholder-certificat" className="block text-xs font-semibold text-neutral-700">
                     Comments
-                    <textarea
+                    <textarea id="salary-advances-detail-comments-setcertifyform-f-placeholder-certificat"
                       className="form-input mt-1 w-full h-20 resize-none"
                       value={certifyForm.comments}
                       onChange={(e) => setCertifyForm((f) => ({ ...f, comments: e.target.value }))}
@@ -1002,9 +1002,9 @@ export default function AdvanceDetailPage() {
                   </label>
                 </div>
               ) : (
-                <label className="block text-xs font-semibold text-neutral-700">
+                <label htmlFor="salary-advances-detail-setactionreason-e-target-value-placeholder" className="block text-xs font-semibold text-neutral-700">
                   {certifyMode === "return" ? "Return reason" : "Not-eligible reason"} <span className="text-red-500">*</span>
-                  <textarea
+                  <textarea id="salary-advances-detail-setactionreason-e-target-value-placeholder"
                     className="form-input mt-1 w-full h-28 resize-none"
                     value={actionReason}
                     onChange={(e) => setActionReason(e.target.value)}
@@ -1038,9 +1038,9 @@ export default function AdvanceDetailPage() {
             <div className="p-6 space-y-3">
               <h3 className="text-base font-semibold text-neutral-900">Record payment</h3>
               <p className="text-sm text-neutral-500">Creates the BCRE liability register on disbursement.</p>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-payment-reference-setpaymentform-f-data-testid-p" className="block text-xs font-semibold text-neutral-700">
                 Payment reference <span className="text-red-500">*</span>
-                <input
+                <input id="salary-advances-detail-payment-reference-setpaymentform-f-data-testid-p"
                   type="text"
                   className="form-input mt-1 w-full"
                   value={paymentForm.payment_reference}
@@ -1048,9 +1048,9 @@ export default function AdvanceDetailPage() {
                   data-testid="payment-reference"
                 />
               </label>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-method-setpaymentform-f-bank-transfer-cash-chequ" className="block text-xs font-semibold text-neutral-700">
                 Method
-                <select
+                <select id="salary-advances-detail-method-setpaymentform-f-bank-transfer-cash-chequ"
                   className="form-input mt-1 w-full"
                   value={paymentForm.payment_method}
                   onChange={(e) => setPaymentForm((f) => ({ ...f, payment_method: e.target.value }))}
@@ -1061,9 +1061,9 @@ export default function AdvanceDetailPage() {
                   <option value="other">Other</option>
                 </select>
               </label>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-payment-date-setpaymentform-f" className="block text-xs font-semibold text-neutral-700">
                 Payment date
-                <input
+                <input id="salary-advances-detail-payment-date-setpaymentform-f"
                   type="date"
                   className="form-input mt-1 w-full"
                   value={paymentForm.payment_date}
@@ -1093,9 +1093,9 @@ export default function AdvanceDetailPage() {
             <div className="p-6 space-y-3">
               <h3 className="text-base font-semibold text-neutral-900">Record payroll recovery</h3>
               <p className="text-sm text-neutral-500">Posts a BCRE recovery transaction. Full EOM is the v1 policy default.</p>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-amount-setrecoveryform-f-data-testid-recovery-am" className="block text-xs font-semibold text-neutral-700">
                 Amount <span className="text-red-500">*</span>
-                <input
+                <input id="salary-advances-detail-amount-setrecoveryform-f-data-testid-recovery-am"
                   type="number"
                   min={0.01}
                   step="0.01"
@@ -1105,9 +1105,9 @@ export default function AdvanceDetailPage() {
                   data-testid="recovery-amount"
                 />
               </label>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-payroll-transaction-reference-setrecoveryform-f-" className="block text-xs font-semibold text-neutral-700">
                 Payroll transaction reference <span className="text-red-500">*</span>
-                <input
+                <input id="salary-advances-detail-payroll-transaction-reference-setrecoveryform-f-"
                   type="text"
                   required
                   className="form-input mt-1 w-full"
@@ -1117,9 +1117,9 @@ export default function AdvanceDetailPage() {
                   data-testid="recovery-reference"
                 />
               </label>
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="salary-advances-detail-notes-setrecoveryform-f" className="block text-xs font-semibold text-neutral-700">
                 Notes
-                <textarea
+                <textarea id="salary-advances-detail-notes-setrecoveryform-f"
                   className="form-input mt-1 w-full h-20 resize-none"
                   value={recoveryForm.notes}
                   onChange={(e) => setRecoveryForm((f) => ({ ...f, notes: e.target.value }))}

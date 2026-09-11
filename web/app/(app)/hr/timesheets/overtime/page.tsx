@@ -95,9 +95,9 @@ export default function OvertimeRequestsPage() {
       )}
 
       <form onSubmit={createRequest} className="grid gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 md:grid-cols-2">
-        <label className="text-sm">
+        <label htmlFor="hr-timesheets-overtime-work-date-setform-f" className="text-sm">
           Work date
-          <input
+          <input id="hr-timesheets-overtime-work-date-setform-f"
             type="date"
             required
             className="mt-1 w-full rounded border px-3 py-2"
@@ -105,9 +105,9 @@ export default function OvertimeRequestsPage() {
             onChange={(e) => setForm((f) => ({ ...f, work_date: e.target.value }))}
           />
         </label>
-        <label className="text-sm">
+        <label htmlFor="hr-timesheets-overtime-planned-hours-setform-f" className="text-sm">
           Planned hours
-          <input
+          <input id="hr-timesheets-overtime-planned-hours-setform-f"
             type="number"
             min={0.25}
             step={0.25}
@@ -117,9 +117,9 @@ export default function OvertimeRequestsPage() {
             onChange={(e) => setForm((f) => ({ ...f, planned_hours: e.target.value }))}
           />
         </label>
-        <label className="text-sm md:col-span-2">
+        <label htmlFor="hr-timesheets-overtime-reason-setform-f" className="text-sm md:col-span-2">
           Reason
-          <textarea
+          <textarea id="hr-timesheets-overtime-reason-setform-f"
             required
             className="mt-1 w-full rounded border px-3 py-2"
             rows={2}
@@ -127,9 +127,9 @@ export default function OvertimeRequestsPage() {
             onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
           />
         </label>
-        <label className="text-sm">
+        <label htmlFor="hr-timesheets-overtime-day-type-setform-f-normal-working-day-1-5-weeken" className="text-sm">
           Day type
-          <select
+          <select id="hr-timesheets-overtime-day-type-setform-f-normal-working-day-1-5-weeken"
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.day_type}
             onChange={(e) => setForm((f) => ({ ...f, day_type: e.target.value }))}

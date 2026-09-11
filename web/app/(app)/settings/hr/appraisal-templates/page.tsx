@@ -54,8 +54,8 @@ function AppraisalTemplateModal({
 
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Name *</label>
-            <input
+            <label htmlFor="settings-hr-appraisal-templates-name" className="block text-xs font-medium text-neutral-700 mb-1">Name *</label>
+            <input id="settings-hr-appraisal-templates-name"
               className="form-input text-sm"
               value={form.name ?? ""}
               onChange={(e) => set("name", e.target.value)}
@@ -65,8 +65,8 @@ function AppraisalTemplateModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Description</label>
-            <textarea
+            <label htmlFor="settings-hr-appraisal-templates-description" className="block text-xs font-medium text-neutral-700 mb-1">Description</label>
+            <textarea id="settings-hr-appraisal-templates-description"
               className="form-input text-sm resize-none"
               rows={2}
               value={form.description ?? ""}
@@ -76,8 +76,8 @@ function AppraisalTemplateModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Cycle Frequency</label>
-            <select
+            <label htmlFor="settings-hr-appraisal-templates-cycle-frequency" className="block text-xs font-medium text-neutral-700 mb-1">Cycle Frequency</label>
+            <select id="settings-hr-appraisal-templates-cycle-frequency"
               className="form-input text-sm"
               value={form.cycle_frequency ?? "annual"}
               onChange={(e) => set("cycle_frequency", e.target.value as HrAppraisalTemplate["cycle_frequency"])}
@@ -90,8 +90,8 @@ function AppraisalTemplateModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Rating Scale Max</label>
-              <input
+              <label htmlFor="settings-hr-appraisal-templates-rating-scale-max" className="block text-xs font-medium text-neutral-700 mb-1">Rating Scale Max</label>
+              <input id="settings-hr-appraisal-templates-rating-scale-max"
                 type="number"
                 className="form-input text-sm"
                 min={2}
@@ -102,8 +102,8 @@ function AppraisalTemplateModal({
               <p className="text-xs text-neutral-400 mt-1">e.g. 5 = rated 1–5</p>
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Default KRA Count</label>
-              <input
+              <label htmlFor="settings-hr-appraisal-templates-default-kra-count" className="block text-xs font-medium text-neutral-700 mb-1">Default KRA Count</label>
+              <input id="settings-hr-appraisal-templates-default-kra-count"
                 type="number"
                 className="form-input text-sm"
                 min={1}
@@ -138,8 +138,8 @@ function AppraisalTemplateModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select
+            <label htmlFor="settings-hr-appraisal-templates-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="settings-hr-appraisal-templates-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}

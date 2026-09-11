@@ -129,8 +129,8 @@ export default function BudgetReportsPage() {
       </div>
 
       <div className="card p-4">
-        <label className="block text-sm font-medium text-neutral-700 mb-1">Financial year</label>
-        <select
+        <label htmlFor="budget-reports-financial-year" className="block text-sm font-medium text-neutral-700 mb-1">Financial year</label>
+        <select id="budget-reports-financial-year"
           className="form-input max-w-sm"
           value={financialYearId}
           onChange={(e) => setFinancialYearId(e.target.value)}

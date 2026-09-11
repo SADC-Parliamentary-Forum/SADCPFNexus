@@ -106,18 +106,18 @@ export default function ReconciliationQueuePage() {
               </div>
               {resolvingId === row.id && (
                 <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
-                  <label className="block text-xs font-medium text-neutral-700">
+                  <label htmlFor={`salary-advance-recon-outcome-${row.id}`} className="block text-xs font-medium text-neutral-700">
                     Outcome
-                    <select className="mt-1 input w-full text-sm" value={outcome} onChange={(e) => setOutcome(e.target.value)}>
+                    <select id={`salary-advance-recon-outcome-${row.id}`} className="mt-1 input w-full text-sm" value={outcome} onChange={(e) => setOutcome(e.target.value)}>
                       <option value="balanced">Balanced</option>
                       <option value="adjusted">Adjusted</option>
                       <option value="written_off">Written off</option>
                       <option value="other">Other</option>
                     </select>
                   </label>
-                  <label className="block text-xs font-medium text-neutral-700">
+                  <label htmlFor={`salary-advance-recon-notes-${row.id}`} className="block text-xs font-medium text-neutral-700">
                     Resolution notes
-                    <textarea className="mt-1 input w-full text-sm min-h-[80px]" value={notes} onChange={(e) => setNotes(e.target.value)} />
+                    <textarea id={`salary-advance-recon-notes-${row.id}`} className="mt-1 input w-full text-sm min-h-[80px]" value={notes} onChange={(e) => setNotes(e.target.value)} />
                   </label>
                   <div className="flex gap-2">
                     <button type="button" disabled={busy || !notes.trim()} onClick={() => resolve(row)} className="btn-primary py-1.5 px-3 text-xs disabled:opacity-40">

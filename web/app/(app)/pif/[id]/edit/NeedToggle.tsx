@@ -24,8 +24,8 @@ export function NeedToggle({
         checked ? "border-primary/30 bg-primary/5" : "border-neutral-200 bg-white",
       )}
     >
-      <label className="flex cursor-pointer items-start gap-3">
-        <input
+      <label htmlFor="pif-detail-edit-NeedToggle-onchange-e-target-checked-classname-mt-0-5-round" className="flex cursor-pointer items-start gap-3">
+        <input id="pif-detail-edit-NeedToggle-onchange-e-target-checked-classname-mt-0-5-round"
           type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}

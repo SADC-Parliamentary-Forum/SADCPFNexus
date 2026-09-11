@@ -758,10 +758,10 @@ export default function ApprovalsPage() {
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">{rejectTarget.label}</p>
                 </div>
               </div>
-              <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              <label htmlFor="approvals-reason-for-rejection" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 Reason for rejection <span className="text-red-500">*</span>
               </label>
-              <textarea
+              <textarea id="approvals-reason-for-rejection"
                 className="form-input h-28 w-full resize-none"
                 placeholder="Please provide a clear reason…"
                 value={rejectReason}
@@ -815,11 +815,11 @@ export default function ApprovalsPage() {
                 and flagged in the audit trail. If this workflow does not permit self-authorisation, the action
                 will be blocked and it must instead be actioned by another approver.
               </div>
-              <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              <label htmlFor="approvals-comment-required-for-self-authorisation" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 Comment <span className="text-red-500">*</span>
                 <span className="ml-1 font-normal text-neutral-400">(required for self-authorisation)</span>
               </label>
-              <textarea
+              <textarea id="approvals-comment-required-for-self-authorisation"
                 className="form-input h-28 w-full resize-none"
                 placeholder="Explain why you are authorising your own request…"
                 value={selfApproveComment}
@@ -871,10 +871,10 @@ export default function ApprovalsPage() {
                 You will be removed as an approver for this step and an alternate approver will be notified. This
                 does not approve or reject the request — it only removes you from the decision.
               </p>
-              <label className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              <label htmlFor="approvals-reason" className="mb-1.5 block text-sm font-medium text-neutral-700 dark:text-neutral-300">
                 Reason <span className="text-red-500">*</span>
               </label>
-              <textarea
+              <textarea id="approvals-reason"
                 className="form-input h-28 w-full resize-none"
                 placeholder="Describe the conflict of interest…"
                 value={recuseReason}

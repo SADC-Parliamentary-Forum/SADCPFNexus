@@ -186,50 +186,50 @@ export default function IndicatorsPage() {
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Indicator name *</label>
-                <input className="form-input" value={modal.name ?? ""} onChange={(e) => setModal({ ...modal, name: e.target.value })} />
+                <label htmlFor="mande-indicators-indicator-name" className="block text-xs font-semibold text-neutral-700 mb-1">Indicator name *</label>
+                <input id="mande-indicators-indicator-name" className="form-input" value={modal.name ?? ""} onChange={(e) => setModal({ ...modal, name: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Result level *</label>
-                  <select className="form-input" value={modal.result_level} onChange={(e) => setModal({ ...modal, result_level: e.target.value as ResultLevel })}>
+                  <label htmlFor="mande-indicators-result-level" className="block text-xs font-semibold text-neutral-700 mb-1">Result level *</label>
+                  <select id="mande-indicators-result-level" className="form-input" value={modal.result_level} onChange={(e) => setModal({ ...modal, result_level: e.target.value as ResultLevel })}>
                     {RESULT_LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Unit of measure</label>
-                  <input className="form-input" value={modal.unit ?? ""} onChange={(e) => setModal({ ...modal, unit: e.target.value })} placeholder="e.g. count, %" />
+                  <label htmlFor="mande-indicators-unit-of-measure" className="block text-xs font-semibold text-neutral-700 mb-1">Unit of measure</label>
+                  <input id="mande-indicators-unit-of-measure" className="form-input" value={modal.unit ?? ""} onChange={(e) => setModal({ ...modal, unit: e.target.value })} placeholder="e.g. count, %" />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Baseline</label>
-                  <input type="number" className="form-input" value={modal.baseline_value as number ?? ""} onChange={(e) => setModal({ ...modal, baseline_value: e.target.value === "" ? null : Number(e.target.value) })} />
+                  <label htmlFor="mande-indicators-baseline" className="block text-xs font-semibold text-neutral-700 mb-1">Baseline</label>
+                  <input id="mande-indicators-baseline" type="number" className="form-input" value={modal.baseline_value as number ?? ""} onChange={(e) => setModal({ ...modal, baseline_value: e.target.value === "" ? null : Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Annual target</label>
-                  <input type="number" className="form-input" value={modal.annual_target as number ?? ""} onChange={(e) => setModal({ ...modal, annual_target: e.target.value === "" ? null : Number(e.target.value) })} />
+                  <label htmlFor="mande-indicators-annual-target" className="block text-xs font-semibold text-neutral-700 mb-1">Annual target</label>
+                  <input id="mande-indicators-annual-target" type="number" className="form-input" value={modal.annual_target as number ?? ""} onChange={(e) => setModal({ ...modal, annual_target: e.target.value === "" ? null : Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Cumulative target</label>
-                  <input type="number" className="form-input" value={modal.cumulative_target as number ?? ""} onChange={(e) => setModal({ ...modal, cumulative_target: e.target.value === "" ? null : Number(e.target.value) })} />
+                  <label htmlFor="mande-indicators-cumulative-target" className="block text-xs font-semibold text-neutral-700 mb-1">Cumulative target</label>
+                  <input id="mande-indicators-cumulative-target" type="number" className="form-input" value={modal.cumulative_target as number ?? ""} onChange={(e) => setModal({ ...modal, cumulative_target: e.target.value === "" ? null : Number(e.target.value) })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Frequency</label>
-                  <select className="form-input" value={modal.frequency ?? ""} onChange={(e) => setModal({ ...modal, frequency: (e.target.value || null) as Indicator["frequency"] })}>
+                  <label htmlFor="mande-indicators-frequency" className="block text-xs font-semibold text-neutral-700 mb-1">Frequency</label>
+                  <select id="mande-indicators-frequency" className="form-input" value={modal.frequency ?? ""} onChange={(e) => setModal({ ...modal, frequency: (e.target.value || null) as Indicator["frequency"] })}>
                     <option value="">—</option>
                     {FREQUENCIES.map((f) => <option key={f} value={f} className="capitalize">{f.replace("_", "-")}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Data source</label>
-                  <input className="form-input" value={modal.data_source ?? ""} onChange={(e) => setModal({ ...modal, data_source: e.target.value })} />
+                  <label htmlFor="mande-indicators-data-source" className="block text-xs font-semibold text-neutral-700 mb-1">Data source</label>
+                  <input id="mande-indicators-data-source" className="form-input" value={modal.data_source ?? ""} onChange={(e) => setModal({ ...modal, data_source: e.target.value })} />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Disaggregation</label>
+                <p className="block text-xs font-semibold text-neutral-700 mb-1">Disaggregation</p>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {DISAGG_OPTIONS.map((d) => (
                     <button key={d} type="button" onClick={() => toggleDisagg(d)}
@@ -240,12 +240,12 @@ export default function IndicatorsPage() {
                 </div>
               </div>
               <div className="flex items-center gap-6">
-                <label className="flex items-center gap-2 text-sm text-neutral-700">
-                  <input type="checkbox" checked={!!modal.evidence_required} onChange={(e) => setModal({ ...modal, evidence_required: e.target.checked })} />
+                <label htmlFor="mande-indicators-setmodal-evidence-required" className="flex items-center gap-2 text-sm text-neutral-700">
+                  <input id="mande-indicators-setmodal-evidence-required" type="checkbox" checked={!!modal.evidence_required} onChange={(e) => setModal({ ...modal, evidence_required: e.target.checked })} />
                   Evidence required
                 </label>
-                <label className="flex items-center gap-2 text-sm text-neutral-700">
-                  <input type="checkbox" checked={!!modal.is_active} onChange={(e) => setModal({ ...modal, is_active: e.target.checked })} />
+                <label htmlFor="mande-indicators-setmodal-active" className="flex items-center gap-2 text-sm text-neutral-700">
+                  <input id="mande-indicators-setmodal-active" type="checkbox" checked={!!modal.is_active} onChange={(e) => setModal({ ...modal, is_active: e.target.checked })} />
                   Active
                 </label>
               </div>

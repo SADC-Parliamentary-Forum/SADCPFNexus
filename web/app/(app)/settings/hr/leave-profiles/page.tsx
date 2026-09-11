@@ -51,8 +51,8 @@ function LeaveProfileModal({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Profile Code *</label>
-              <input
+              <label htmlFor="settings-hr-leave-profiles-profile-code" className="block text-xs font-medium text-neutral-700 mb-1">Profile Code *</label>
+              <input id="settings-hr-leave-profiles-profile-code"
                 className="form-input text-sm uppercase"
                 value={form.profile_code ?? ""}
                 onChange={(e) => set("profile_code", e.target.value.toUpperCase())}
@@ -61,8 +61,8 @@ function LeaveProfileModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Profile Name *</label>
-              <input
+              <label htmlFor="settings-hr-leave-profiles-profile-name" className="block text-xs font-medium text-neutral-700 mb-1">Profile Name *</label>
+              <input id="settings-hr-leave-profiles-profile-name"
                 className="form-input text-sm"
                 value={form.profile_name ?? ""}
                 onChange={(e) => set("profile_name", e.target.value)}
@@ -76,8 +76,8 @@ function LeaveProfileModal({
             <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wide">Leave Entitlements</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Annual Leave (days)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-annual-leave-days" className="block text-xs font-medium text-neutral-700 mb-1">Annual Leave (days)</label>
+                <input id="settings-hr-leave-profiles-annual-leave-days"
                   type="number"
                   className="form-input text-sm"
                   step="0.5"
@@ -87,8 +87,8 @@ function LeaveProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Sick Leave (days)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-sick-leave-days" className="block text-xs font-medium text-neutral-700 mb-1">Sick Leave (days)</label>
+                <input id="settings-hr-leave-profiles-sick-leave-days"
                   type="number"
                   className="form-input text-sm"
                   step="0.5"
@@ -98,8 +98,8 @@ function LeaveProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">LIL Days (Leave in Lieu)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-lil-days-leave-in-lieu" className="block text-xs font-medium text-neutral-700 mb-1">LIL Days (Leave in Lieu)</label>
+                <input id="settings-hr-leave-profiles-lil-days-leave-in-lieu"
                   type="number"
                   className="form-input text-sm"
                   step="0.5"
@@ -109,8 +109,8 @@ function LeaveProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Special Leave (days)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-special-leave-days" className="block text-xs font-medium text-neutral-700 mb-1">Special Leave (days)</label>
+                <input id="settings-hr-leave-profiles-special-leave-days"
                   type="number"
                   className="form-input text-sm"
                   step="0.5"
@@ -120,8 +120,8 @@ function LeaveProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Maternity Leave (days)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-maternity-leave-days" className="block text-xs font-medium text-neutral-700 mb-1">Maternity Leave (days)</label>
+                <input id="settings-hr-leave-profiles-maternity-leave-days"
                   type="number"
                   className="form-input text-sm"
                   min={0}
@@ -130,8 +130,8 @@ function LeaveProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Paternity Leave (days)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-paternity-leave-days" className="block text-xs font-medium text-neutral-700 mb-1">Paternity Leave (days)</label>
+                <input id="settings-hr-leave-profiles-paternity-leave-days"
                   type="number"
                   className="form-input text-sm"
                   min={0}
@@ -143,8 +143,8 @@ function LeaveProfileModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select
+            <label htmlFor="settings-hr-leave-profiles-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="settings-hr-leave-profiles-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}

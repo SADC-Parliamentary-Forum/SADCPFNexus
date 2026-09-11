@@ -376,8 +376,8 @@ function ReceiptsPageInner() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Received Date <span className="text-red-500">*</span></label>
-                <input
+                <label htmlFor="procurement-receipts-received-date" className="text-xs font-semibold text-neutral-600">Received Date <span className="text-red-500">*</span></label>
+                <input id="procurement-receipts-received-date"
                   type="date"
                   className="form-input"
                   value={receivedDate}
@@ -385,8 +385,8 @@ function ReceiptsPageInner() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Notes</label>
-                <input
+                <label htmlFor="procurement-receipts-notes" className="text-xs font-semibold text-neutral-600">Notes</label>
+                <input id="procurement-receipts-notes"
                   type="text"
                   className="form-input"
                   placeholder="Optional notes…"
@@ -415,8 +415,8 @@ function ReceiptsPageInner() {
                       </div>
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
-                          <label className="text-[10px] font-semibold uppercase text-neutral-400">Qty Received</label>
-                          <input
+                          <label htmlFor="procurement-receipts-qty-received" className="text-[10px] font-semibold uppercase text-neutral-400">Qty Received</label>
+                          <input id="procurement-receipts-qty-received"
                             type="number"
                             min="0"
                             max={row.quantity_ordered}
@@ -430,8 +430,8 @@ function ReceiptsPageInner() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[10px] font-semibold uppercase text-neutral-400">Qty Accepted</label>
-                          <input
+                          <label htmlFor="procurement-receipts-qty-accepted" className="text-[10px] font-semibold uppercase text-neutral-400">Qty Accepted</label>
+                          <input id="procurement-receipts-qty-accepted"
                             type="number"
                             min="0"
                             max={row.quantity_received}
@@ -445,8 +445,8 @@ function ReceiptsPageInner() {
                           />
                         </div>
                         <div className="space-y-1">
-                          <label className="text-[10px] font-semibold uppercase text-neutral-400">Condition Notes</label>
-                          <input
+                          <label htmlFor="procurement-receipts-condition-notes" className="text-[10px] font-semibold uppercase text-neutral-400">Condition Notes</label>
+                          <input id="procurement-receipts-condition-notes"
                             type="text"
                             className="form-input text-sm"
                             placeholder="Optional…"

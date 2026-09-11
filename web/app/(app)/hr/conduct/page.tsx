@@ -419,8 +419,8 @@ export default function ConductPage() {
                   <input id="conduct-incident-date" type="date" className="form-input w-full" value={newIncidentDate} onChange={(e) => setNewIncidentDate(e.target.value)} />
                 </div>
               </div>
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-neutral-700">
-                <input type="checkbox" checked={newIsConfidential} onChange={(e) => setNewIsConfidential(e.target.checked)} className="rounded border-neutral-300 text-primary" />
+              <label htmlFor="hr-conduct-setnewisconfidential-e-target-checked-classname-" className="flex items-center gap-2 cursor-pointer text-sm text-neutral-700">
+                <input id="hr-conduct-setnewisconfidential-e-target-checked-classname-" type="checkbox" checked={newIsConfidential} onChange={(e) => setNewIsConfidential(e.target.checked)} className="rounded border-neutral-300 text-primary" />
                 Mark as confidential
               </label>
               <div className="flex justify-end gap-3 pt-1">

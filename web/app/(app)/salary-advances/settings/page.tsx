@@ -187,17 +187,17 @@ export default function SalaryAdvanceSettingsPage() {
             <h2 className="text-sm font-semibold text-neutral-900">Activate new policy version</h2>
             <p className="text-xs text-neutral-500">Creates a new audited version. Prior tenant versions are deactivated. Consolidation and instalments remain disabled.</p>
             <div className="grid sm:grid-cols-2 gap-3">
-              <label className="text-xs font-medium text-neutral-700">Version label
-                <input required className="mt-1 input w-full" value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} placeholder="2026.2" />
+              <label htmlFor="salary-advances-settings-version-label-setform-placeholder-2026-2" className="text-xs font-medium text-neutral-700">Version label
+                <input id="salary-advances-settings-version-label-setform-placeholder-2026-2" required className="mt-1 input w-full" value={form.version} onChange={(e) => setForm({ ...form, version: e.target.value })} placeholder="2026.2" />
               </label>
-              <label className="text-xs font-medium text-neutral-700">Effective from
-                <input required type="date" className="mt-1 input w-full" value={form.effective_from} onChange={(e) => setForm({ ...form, effective_from: e.target.value })} />
+              <label htmlFor="salary-advances-settings-effective-from-setform" className="text-xs font-medium text-neutral-700">Effective from
+                <input id="salary-advances-settings-effective-from-setform" required type="date" className="mt-1 input w-full" value={form.effective_from} onChange={(e) => setForm({ ...form, effective_from: e.target.value })} />
               </label>
-              <label className="text-xs font-medium text-neutral-700">Max salary %
-                <input required type="number" min={1} max={100} className="mt-1 input w-full" value={form.max_salary_percentage} onChange={(e) => setForm({ ...form, max_salary_percentage: Number(e.target.value) })} />
+              <label htmlFor="salary-advances-settings-max-salary-setform" className="text-xs font-medium text-neutral-700">Max salary %
+                <input id="salary-advances-settings-max-salary-setform" required type="number" min={1} max={100} className="mt-1 input w-full" value={form.max_salary_percentage} onChange={(e) => setForm({ ...form, max_salary_percentage: Number(e.target.value) })} />
               </label>
-              <label className="text-xs font-medium text-neutral-700 sm:col-span-2">Change reason (required for audit)
-                <textarea required className="mt-1 input w-full min-h-[80px]" value={form.change_reason} onChange={(e) => setForm({ ...form, change_reason: e.target.value })} />
+              <label htmlFor="salary-advances-settings-change-reason-required-for-audit-setform" className="text-xs font-medium text-neutral-700 sm:col-span-2">Change reason (required for audit)
+                <textarea id="salary-advances-settings-change-reason-required-for-audit-setform" required className="mt-1 input w-full min-h-[80px]" value={form.change_reason} onChange={(e) => setForm({ ...form, change_reason: e.target.value })} />
               </label>
             </div>
             <button type="submit" disabled={saving} className="btn-primary py-2 px-4 text-sm disabled:opacity-40">
@@ -234,8 +234,8 @@ export default function SalaryAdvanceSettingsPage() {
               </p>
             </div>
             <form onSubmit={createException} className="grid sm:grid-cols-2 gap-3">
-              <label className="text-xs font-medium text-neutral-700">Employee
-                <input required type="text" inputMode="numeric" pattern="[0-9]*" list="salary-advance-employee-options" className="mt-1 input w-full" value={exceptionForm.employee_id} onChange={(e) => setExceptionForm({ ...exceptionForm, employee_id: e.target.value })} />
+              <label htmlFor="salary-advances-settings-employee-setexceptionform" className="text-xs font-medium text-neutral-700">Employee
+                <input id="salary-advances-settings-employee-setexceptionform" required type="text" inputMode="numeric" pattern="[0-9]*" list="salary-advance-employee-options" className="mt-1 input w-full" value={exceptionForm.employee_id} onChange={(e) => setExceptionForm({ ...exceptionForm, employee_id: e.target.value })} />
                 <datalist id="salary-advance-employee-options">
                   {employeeOptions.map((employee) => (
                     <option key={employee.id} value={employee.id}>
@@ -244,25 +244,25 @@ export default function SalaryAdvanceSettingsPage() {
                   ))}
                 </datalist>
               </label>
-              <label className="text-xs font-medium text-neutral-700">Exception type
-                <select className="mt-1 input w-full" value={exceptionForm.exception_type} onChange={(e) => setExceptionForm({ ...exceptionForm, exception_type: e.target.value })}>
+              <label htmlFor="salary-advances-settings-exception-type-setexceptionform-outstanding-bala" className="text-xs font-medium text-neutral-700">Exception type
+                <select id="salary-advances-settings-exception-type-setexceptionform-outstanding-bala" className="mt-1 input w-full" value={exceptionForm.exception_type} onChange={(e) => setExceptionForm({ ...exceptionForm, exception_type: e.target.value })}>
                   <option value="outstanding_balance">Outstanding balance</option>
                   <option value="max_percentage">Max percentage</option>
                   <option value="concurrent">Concurrent advances</option>
                   <option value="other">Other</option>
                 </select>
               </label>
-              <label className="text-xs font-medium text-neutral-700">Effective from
-                <input required type="date" className="mt-1 input w-full" value={exceptionForm.effective_from} onChange={(e) => setExceptionForm({ ...exceptionForm, effective_from: e.target.value })} />
+              <label htmlFor="salary-advances-settings-effective-from-setexceptionform" className="text-xs font-medium text-neutral-700">Effective from
+                <input id="salary-advances-settings-effective-from-setexceptionform" required type="date" className="mt-1 input w-full" value={exceptionForm.effective_from} onChange={(e) => setExceptionForm({ ...exceptionForm, effective_from: e.target.value })} />
               </label>
-              <label className="text-xs font-medium text-neutral-700">Effective to
-                <input type="date" className="mt-1 input w-full" value={exceptionForm.effective_to} onChange={(e) => setExceptionForm({ ...exceptionForm, effective_to: e.target.value })} />
+              <label htmlFor="salary-advances-settings-effective-to-setexceptionform" className="text-xs font-medium text-neutral-700">Effective to
+                <input id="salary-advances-settings-effective-to-setexceptionform" type="date" className="mt-1 input w-full" value={exceptionForm.effective_to} onChange={(e) => setExceptionForm({ ...exceptionForm, effective_to: e.target.value })} />
               </label>
-              <label className="text-xs font-medium text-neutral-700 sm:col-span-2">Reason
-                <input required className="mt-1 input w-full" value={exceptionForm.reason} onChange={(e) => setExceptionForm({ ...exceptionForm, reason: e.target.value })} />
+              <label htmlFor="salary-advances-settings-reason-setexceptionform" className="text-xs font-medium text-neutral-700 sm:col-span-2">Reason
+                <input id="salary-advances-settings-reason-setexceptionform" required className="mt-1 input w-full" value={exceptionForm.reason} onChange={(e) => setExceptionForm({ ...exceptionForm, reason: e.target.value })} />
               </label>
-              <label className="text-xs font-medium text-neutral-700 sm:col-span-2">Justification (audit)
-                <textarea required className="mt-1 input w-full min-h-[70px]" value={exceptionForm.justification} onChange={(e) => setExceptionForm({ ...exceptionForm, justification: e.target.value })} />
+              <label htmlFor="salary-advances-settings-justification-audit-setexceptionform" className="text-xs font-medium text-neutral-700 sm:col-span-2">Justification (audit)
+                <textarea id="salary-advances-settings-justification-audit-setexceptionform" required className="mt-1 input w-full min-h-[70px]" value={exceptionForm.justification} onChange={(e) => setExceptionForm({ ...exceptionForm, justification: e.target.value })} />
               </label>
               <div className="sm:col-span-2">
                 <button type="submit" disabled={saving} className="btn-secondary py-2 px-4 text-sm disabled:opacity-40">

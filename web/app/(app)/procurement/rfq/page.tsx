@@ -434,8 +434,8 @@ export default function RfqListPage() {
             )}
 
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-neutral-600">Approved Procurement Request</label>
-              <select
+              <label htmlFor="procurement-rfq-approved-procurement-request" className="block text-xs font-semibold text-neutral-600">Approved Procurement Request</label>
+              <select id="procurement-rfq-approved-procurement-request"
                 className="form-input"
                 value={selectedRequestId}
                 onChange={(e) => setSelectedRequestId(e.target.value ? Number(e.target.value) : "")}
@@ -474,7 +474,7 @@ export default function RfqListPage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="block text-xs font-semibold text-neutral-600">Supplier Categories</label>
+                  <p className="block text-xs font-semibold text-neutral-600">Supplier Categories</p>
                 <span className="text-[11px] text-neutral-400">Select 1 to 3 categories</span>
               </div>
               <div className="grid gap-2 md:grid-cols-2">
@@ -483,7 +483,7 @@ export default function RfqListPage() {
                     key={category.id}
                     className={`rounded-xl border p-3 text-sm ${categoryIds.includes(category.id) ? "border-primary bg-primary/5" : "border-neutral-200"}`}
                   >
-                    <input
+                    <input id="procurement-rfq-setcategoryids-current-current-includes-category"
                       type="checkbox"
                       className="mr-2"
                       checked={categoryIds.includes(category.id)}
@@ -503,12 +503,12 @@ export default function RfqListPage() {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Deadline</label>
-                <input type="date" className="form-input" value={rfqDeadline} onChange={(e) => setRfqDeadline(e.target.value)} />
+                <label htmlFor="procurement-rfq-deadline" className="block text-xs font-semibold text-neutral-600 mb-1">Deadline</label>
+                <input id="procurement-rfq-deadline" type="date" className="form-input" value={rfqDeadline} onChange={(e) => setRfqDeadline(e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">RFQ Notes</label>
-                <textarea
+                <label htmlFor="procurement-rfq-rfq-notes" className="block text-xs font-semibold text-neutral-600 mb-1">RFQ Notes</label>
+                <textarea id="procurement-rfq-rfq-notes"
                   className="form-input h-[42px] resize-none"
                   placeholder="Special instructions, delivery expectations, or submission notes"
                   value={rfqNotes}

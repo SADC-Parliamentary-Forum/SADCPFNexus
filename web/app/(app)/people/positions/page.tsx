@@ -109,17 +109,17 @@ return (await peopleAuthorityApi.listPositions()).data;
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-positions-title-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Title
-          <input className="form-input mt-1" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required />
+          <input id="people-positions-title-setform-f-required" className="form-input mt-1" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-positions-code-setform-f" className="block text-xs font-medium text-neutral-600">
           Code
-          <input className="form-input mt-1" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} />
+          <input id="people-positions-code-setform-f" className="form-input mt-1" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-positions-organisational-unit-setform-f-none" className="block text-xs font-medium text-neutral-600">
           Organisational unit
-          <select className="form-input mt-1" value={form.organisational_unit_id} onChange={(e) => setForm((f) => ({ ...f, organisational_unit_id: e.target.value }))}>
+          <select id="people-positions-organisational-unit-setform-f-none" className="form-input mt-1" value={form.organisational_unit_id} onChange={(e) => setForm((f) => ({ ...f, organisational_unit_id: e.target.value }))}>
             <option value="">None</option>
             {(unitsQuery.data ?? []).map((u) => (
               <option key={String(u.id)} value={String(u.id)}>{String(u.name ?? u.code ?? u.id)}</option>
@@ -135,9 +135,9 @@ return (await peopleAuthorityApi.listPositions()).data;
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-positions-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-positions-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

@@ -269,10 +269,10 @@ export default function SignatureSetupPage() {
                   </div>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-neutral-200 rounded-xl p-8 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                <label htmlFor="profile-signature-upload" className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-neutral-200 rounded-xl p-8 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                   <span className="material-symbols-outlined text-neutral-400 text-[32px]">image</span>
                   <span className="text-sm text-neutral-500">Click to choose PNG file</span>
-                  <input type="file" accept=".png,image/png" className="hidden" onChange={onFileChange} />
+                  <input id="profile-signature-upload" type="file" accept=".png,image/png" className="hidden" onChange={onFileChange} />
                 </label>
               )}
               <div className="flex justify-end">

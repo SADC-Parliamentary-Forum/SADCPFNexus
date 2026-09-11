@@ -336,9 +336,9 @@ export default function AssignmentsCalendarPage() {
           <p className="text-xs text-neutral-500">
             Paste a calendar file. Import creates draft assignments assigned to you — it does not issue or complete work.
           </p>
-          <label className="block text-xs font-medium text-neutral-600">
+          <label htmlFor="assignments-calendar-ics-text-seticstext-e-target-value-placeholder-b" className="block text-xs font-medium text-neutral-600">
             ICS text
-            <textarea
+            <textarea id="assignments-calendar-ics-text-seticstext-e-target-value-placeholder-b"
               className="form-input mt-1 min-h-32 font-mono text-xs"
               value={icsText}
               onChange={(e) => setIcsText(e.target.value)}

@@ -114,8 +114,8 @@ export default function TendersPage() {
       filters={
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[180px] flex-1">
-            <label className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
-            <input
+            <label htmlFor="procurement-tenders-search" className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
+            <input id="procurement-tenders-search"
               className="form-input text-sm"
               placeholder="Reference or title…"
               value={search}

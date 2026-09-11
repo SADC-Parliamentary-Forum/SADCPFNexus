@@ -128,17 +128,17 @@ return (await peopleAuthorityApi.listSkills()).data;
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-skills-code-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Code
-          <input className="form-input mt-1" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} required />
+          <input id="people-skills-code-setform-f-required" className="form-input mt-1" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-skills-name-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Name
-          <input className="form-input mt-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+          <input id="people-skills-name-setform-f-required" className="form-input mt-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-skills-category-setform-f" className="block text-xs font-medium text-neutral-600">
           Category
-          <input className="form-input mt-1" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
+          <input id="people-skills-category-setform-f" className="form-input mt-1" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} />
         </label>
         <div className="sm:col-span-3 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
@@ -155,27 +155,27 @@ return (await peopleAuthorityApi.listSkills()).data;
           assign.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-skills-person-setassignform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Person
-          <select className="form-input mt-1" value={assignForm.person_id} onChange={(e) => setAssignForm((f) => ({ ...f, person_id: e.target.value }))} required>
+          <select id="people-skills-person-setassignform-f-required-select" className="form-input mt-1" value={assignForm.person_id} onChange={(e) => setAssignForm((f) => ({ ...f, person_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(peopleQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-skills-skill-setassignform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Skill
-          <select className="form-input mt-1" value={assignForm.skill_id} onChange={(e) => setAssignForm((f) => ({ ...f, skill_id: e.target.value }))} required>
+          <select id="people-skills-skill-setassignform-f-required-select" className="form-input mt-1" value={assignForm.skill_id} onChange={(e) => setAssignForm((f) => ({ ...f, skill_id: e.target.value }))} required>
             <option value="">Select…</option>
             {rows.map((s) => (
               <option key={String(s.id)} value={String(s.id)}>{String(s.name ?? s.code ?? s.id)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-skills-level-setassignform-f-awareness-working-proficie" className="block text-xs font-medium text-neutral-600">
           Level
-          <select className="form-input mt-1" value={assignForm.level} onChange={(e) => setAssignForm((f) => ({ ...f, level: e.target.value }))}>
+          <select id="people-skills-level-setassignform-f-awareness-working-proficie" className="form-input mt-1" value={assignForm.level} onChange={(e) => setAssignForm((f) => ({ ...f, level: e.target.value }))}>
             <option value="awareness">Awareness</option>
             <option value="working">Working</option>
             <option value="proficient">Proficient</option>
@@ -190,9 +190,9 @@ return (await peopleAuthorityApi.listSkills()).data;
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-skills-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-skills-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

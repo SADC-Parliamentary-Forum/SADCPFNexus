@@ -165,13 +165,13 @@ export default function ResultsFrameworksPage() {
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
-                <input className="form-input" value={modal.name ?? ""} onChange={(e) => setModal({ ...modal, name: e.target.value })} />
+                <label htmlFor="mande-results-name" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+                <input id="mande-results-name" className="form-input" value={modal.name ?? ""} onChange={(e) => setModal({ ...modal, name: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Type *</label>
-                  <select
+                  <label htmlFor="mande-results-type" className="block text-xs font-semibold text-neutral-700 mb-1">Type *</label>
+                  <select id="mande-results-type"
                     className="form-input"
                     value={modal.type ?? "sadc_pf"}
                     onChange={(e) => setModal({ ...modal, type: e.target.value as ResultsFrameworkType })}
@@ -182,18 +182,18 @@ export default function ResultsFrameworksPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Donor name</label>
-                  <input className="form-input" value={modal.donor_name ?? ""} onChange={(e) => setModal({ ...modal, donor_name: e.target.value })} />
+                  <label htmlFor="mande-results-donor-name" className="block text-xs font-semibold text-neutral-700 mb-1">Donor name</label>
+                  <input id="mande-results-donor-name" className="form-input" value={modal.donor_name ?? ""} onChange={(e) => setModal({ ...modal, donor_name: e.target.value })} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">Start</label>
-                  <input type="date" className="form-input" value={modal.start_date?.slice(0, 10) ?? ""} onChange={(e) => setModal({ ...modal, start_date: e.target.value })} />
+                  <label htmlFor="mande-results-start" className="block text-xs font-semibold text-neutral-700 mb-1">Start</label>
+                  <input id="mande-results-start" type="date" className="form-input" value={modal.start_date?.slice(0, 10) ?? ""} onChange={(e) => setModal({ ...modal, start_date: e.target.value })} />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1">End</label>
-                  <input
+                  <label htmlFor="mande-results-end" className="block text-xs font-semibold text-neutral-700 mb-1">End</label>
+                  <input id="mande-results-end"
                     type="date"
                     className="form-input"
                     min={modal.start_date?.slice(0, 10) ?? undefined}
@@ -206,8 +206,8 @@ export default function ResultsFrameworksPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
-                <textarea className="form-input min-h-[80px]" value={modal.description ?? ""} onChange={(e) => setModal({ ...modal, description: e.target.value })} />
+                <label htmlFor="mande-results-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+                <textarea id="mande-results-description" className="form-input min-h-[80px]" value={modal.description ?? ""} onChange={(e) => setModal({ ...modal, description: e.target.value })} />
               </div>
             </div>
             <div className="px-5 py-4 border-t border-neutral-100 flex justify-end gap-2">

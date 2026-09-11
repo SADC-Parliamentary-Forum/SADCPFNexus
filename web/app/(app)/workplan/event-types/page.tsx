@@ -147,8 +147,8 @@ export default function WorkplanEventTypesPage() {
         <form onSubmit={handleSubmit} className="card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-neutral-900">{editingId ? "Edit event type" : "New event type"}</h2>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Name *</label>
-            <input
+            <label htmlFor="workplan-event-types-name" className="block text-sm font-semibold text-neutral-700 mb-1">Name *</label>
+            <input id="workplan-event-types-name"
               type="text"
               className="form-input w-full"
               value={name}
@@ -159,8 +159,8 @@ export default function WorkplanEventTypesPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1">Icon</label>
-              <input
+              <label htmlFor="workplan-event-types-icon" className="block text-sm font-semibold text-neutral-700 mb-1">Icon</label>
+              <input id="workplan-event-types-icon"
                 type="text"
                 className="form-input w-full font-mono text-sm"
                 value={icon}
@@ -170,8 +170,8 @@ export default function WorkplanEventTypesPage() {
               <p className="text-xs text-neutral-400 mt-1">Material Symbol icon name</p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1">Colour</label>
-              <select className="form-input w-full" value={color} onChange={(e) => setColor(e.target.value)}>
+              <label htmlFor="workplan-event-types-colour" className="block text-sm font-semibold text-neutral-700 mb-1">Colour</label>
+              <select id="workplan-event-types-colour" className="form-input w-full" value={color} onChange={(e) => setColor(e.target.value)}>
                 {COLOR_OPTIONS.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
@@ -179,8 +179,8 @@ export default function WorkplanEventTypesPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Sort order</label>
-            <input
+            <label htmlFor="workplan-event-types-sort-order" className="block text-sm font-semibold text-neutral-700 mb-1">Sort order</label>
+            <input id="workplan-event-types-sort-order"
               type="number"
               min={0}
               className="form-input w-full max-w-[120px]"

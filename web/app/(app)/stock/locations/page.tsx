@@ -55,16 +55,16 @@ export default function StockLocationsPage() {
       {canManage && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 grid md:grid-cols-4 gap-3 items-end">
           <div>
-            <label className="block text-xs font-semibold mb-1">Code</label>
-            <input className="form-input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="MAIN" />
+            <label htmlFor="stock-locations-code" className="block text-xs font-semibold mb-1">Code</label>
+            <input id="stock-locations-code" className="form-input" value={code} onChange={(e) => setCode(e.target.value)} placeholder="MAIN" />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Name</label>
-            <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Main store" />
+            <label htmlFor="stock-locations-name" className="block text-xs font-semibold mb-1">Name</label>
+            <input id="stock-locations-name" className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Main store" />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Description</label>
-            <input className="form-input" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <label htmlFor="stock-locations-description" className="block text-xs font-semibold mb-1">Description</label>
+            <input id="stock-locations-description" className="form-input" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <button type="button" className="btn-primary" onClick={create}>Add location</button>
         </div>

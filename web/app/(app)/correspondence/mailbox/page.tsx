@@ -120,8 +120,8 @@ export default function CorrespondenceMailboxPage() {
         </p>
         <div className="grid gap-3 md:grid-cols-2">
           <input className="form-input" placeholder="registry@sadcpf.org" value={settingsForm.mailbox_address} onChange={(e) => setSettingsForm((f) => ({ ...f, mailbox_address: e.target.value }))} />
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={settingsForm.enabled} onChange={(e) => setSettingsForm((f) => ({ ...f, enabled: e.target.checked }))} />
+          <label htmlFor="correspondence-mailbox-setsettingsform-f-enabled-for-suggestion-intake" className="flex items-center gap-2 text-sm">
+            <input id="correspondence-mailbox-setsettingsform-f-enabled-for-suggestion-intake" type="checkbox" checked={settingsForm.enabled} onChange={(e) => setSettingsForm((f) => ({ ...f, enabled: e.target.checked }))} />
             Enabled for suggestion intake
           </label>
           <input className="form-input" placeholder="IMAP host" value={settingsForm.imap_host} onChange={(e) => setSettingsForm((f) => ({ ...f, imap_host: e.target.value }))} />

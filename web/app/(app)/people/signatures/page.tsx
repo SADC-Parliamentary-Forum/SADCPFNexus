@@ -119,18 +119,18 @@ export default function Page() {
           enrol.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-signatures-person-setenrolform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Person
-          <select className="form-input mt-1" value={enrolForm.person_id} onChange={(e) => setEnrolForm((f) => ({ ...f, person_id: e.target.value }))} required>
+          <select id="people-signatures-person-setenrolform-f-required-select" className="form-input mt-1" value={enrolForm.person_id} onChange={(e) => setEnrolForm((f) => ({ ...f, person_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(peopleQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-signatures-enrolment-type-setenrolform-f" className="block text-xs font-medium text-neutral-600">
           Enrolment type
-          <input className="form-input mt-1" value={enrolForm.enrolment_type} onChange={(e) => setEnrolForm((f) => ({ ...f, enrolment_type: e.target.value }))} />
+          <input id="people-signatures-enrolment-type-setenrolform-f" className="form-input mt-1" value={enrolForm.enrolment_type} onChange={(e) => setEnrolForm((f) => ({ ...f, enrolment_type: e.target.value }))} />
         </label>
         <div className="flex items-end">
           <button type="submit" className="btn-primary text-sm" disabled={enrol.isPending}>
@@ -146,9 +146,9 @@ export default function Page() {
           activate.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-signatures-enrolment-id-setactivateid-e-target-value-requir" className="block text-xs font-medium text-neutral-600">
           Enrolment id
-          <input className="form-input mt-1" value={activateId} onChange={(e) => setActivateId(e.target.value)} required />
+          <input id="people-signatures-enrolment-id-setactivateid-e-target-value-requir" className="form-input mt-1" value={activateId} onChange={(e) => setActivateId(e.target.value)} required />
         </label>
         <button type="submit" className="btn-primary text-sm" disabled={activate.isPending}>
           {activate.isPending ? "Activating…" : "Activate signature"}
@@ -157,9 +157,9 @@ export default function Page() {
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-signatures-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-signatures-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

@@ -225,8 +225,8 @@ export default function PerformanceProfilePage() {
       <div className="card p-4 space-y-4">
         <h2 className="text-sm font-semibold text-neutral-900">Supervisor & HR notes</h2>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Supervisor summary</label>
-          <textarea
+          <label htmlFor="hr-performance-detail-supervisor-summary" className="block text-xs font-semibold text-neutral-700 mb-1">Supervisor summary</label>
+          <textarea id="hr-performance-detail-supervisor-summary"
             className="form-input min-h-[100px] resize-y"
             value={supervisorSummary}
             onChange={(e) => setSupervisorSummary(e.target.value)}
@@ -234,8 +234,8 @@ export default function PerformanceProfilePage() {
           />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">HR summary</label>
-          <textarea
+          <label htmlFor="hr-performance-detail-hr-summary" className="block text-xs font-semibold text-neutral-700 mb-1">HR summary</label>
+          <textarea id="hr-performance-detail-hr-summary"
             className="form-input min-h-[100px] resize-y"
             value={hrSummary}
             onChange={(e) => setHrSummary(e.target.value)}

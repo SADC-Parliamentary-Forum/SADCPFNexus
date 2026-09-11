@@ -250,19 +250,19 @@ export default function WorkflowDesignerPage() {
             </select>
             <input className="border rounded px-2 py-1 bg-transparent" type="number" placeholder="SLA hours" value={stage.sla_hours ?? ""} onChange={(e) => updateStage(index, { sla_hours: e.target.value ? Number(e.target.value) : null })} />
             <input className="border rounded px-2 py-1 bg-transparent" placeholder="Governance body" value={stage.governance_body_name || ""} onChange={(e) => updateStage(index, { governance_body_name: e.target.value || null })} />
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={Boolean(stage.requires_comment)} onChange={(e) => updateStage(index, { requires_comment: e.target.checked })} />
+            <label htmlFor="admin-workflows-designer-updatestage-index-requires-comment" className="flex items-center gap-2 text-sm">
+              <input id="admin-workflows-designer-updatestage-index-requires-comment" type="checkbox" checked={Boolean(stage.requires_comment)} onChange={(e) => updateStage(index, { requires_comment: e.target.checked })} />
               Requires comment
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={Boolean(stage.allow_return)} onChange={(e) => updateStage(index, { allow_return: e.target.checked })} />
+            <label htmlFor="admin-workflows-designer-updatestage-index-allow-return-for-correction" className="flex items-center gap-2 text-sm">
+              <input id="admin-workflows-designer-updatestage-index-allow-return-for-correction" type="checkbox" checked={Boolean(stage.allow_return)} onChange={(e) => updateStage(index, { allow_return: e.target.checked })} />
               Allow return for correction
             </label>
             <div className="md:col-span-2">
-              <label className="text-xs text-[var(--muted)] block mb-1">
+              <label htmlFor="admin-workflows-designer-condition-expression-json-e-g-field-amount-op-gt" className="text-xs text-[var(--muted)] block mb-1">
                 Condition expression (JSON — e.g. {"{"}"field":"amount","op":"gte","value":5000{"}"}, empty = always run)
               </label>
-              <textarea
+              <textarea id="admin-workflows-designer-condition-expression-json-e-g-field-amount-op-gt"
                 className="border rounded px-2 py-1 bg-transparent w-full font-mono text-xs"
                 rows={2}
                 placeholder='{"field":"amount","op":"gte","value":5000}'

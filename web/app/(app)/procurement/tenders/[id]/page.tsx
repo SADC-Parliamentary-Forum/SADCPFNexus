@@ -184,8 +184,8 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold">Winning quote</label>
-              <select
+              <label htmlFor="procurement-tenders-detail-winning-quote" className="mb-1 block text-xs font-semibold">Winning quote</label>
+              <select id="procurement-tenders-detail-winning-quote"
                 className="form-input"
                 value={awardQuoteId}
                 onChange={(e) => setAwardQuoteId(e.target.value)}
@@ -207,12 +207,12 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
             </div>
             <div />
             <div>
-              <label className="mb-1 block text-xs font-semibold">Contract start</label>
-              <input type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              <label htmlFor="procurement-tenders-detail-contract-start" className="mb-1 block text-xs font-semibold">Contract start</label>
+              <input id="procurement-tenders-detail-contract-start" type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold">Contract end</label>
-              <input type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              <label htmlFor="procurement-tenders-detail-contract-end" className="mb-1 block text-xs font-semibold">Contract end</label>
+              <input id="procurement-tenders-detail-contract-end" type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
           </div>
           <button

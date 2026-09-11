@@ -258,8 +258,8 @@ export default function TimesheetTemplatesAdminPage() {
           </h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Name</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-name" className="mb-1 block text-xs font-medium text-neutral-600">Name</label>
+              <input id="hr-timesheets-templates-name"
                 className="form-input"
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -268,8 +268,8 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Code</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-code" className="mb-1 block text-xs font-medium text-neutral-600">Code</label>
+              <input id="hr-timesheets-templates-code"
                 className="form-input font-mono"
                 value={form.code}
                 onChange={(e) => setForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))}
@@ -278,8 +278,8 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Donor</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-donor" className="mb-1 block text-xs font-medium text-neutral-600">Donor</label>
+              <input id="hr-timesheets-templates-donor"
                 className="form-input"
                 value={form.donor_name}
                 onChange={(e) => setForm((f) => ({ ...f, donor_name: e.target.value }))}
@@ -287,8 +287,8 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Sort order</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-sort-order" className="mb-1 block text-xs font-medium text-neutral-600">Sort order</label>
+              <input id="hr-timesheets-templates-sort-order"
                 type="number"
                 min={0}
                 className="form-input"
@@ -297,16 +297,16 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Description</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-description" className="mb-1 block text-xs font-medium text-neutral-600">Description</label>
+              <input id="hr-timesheets-templates-description"
                 className="form-input"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Default project</label>
-              <select
+              <label htmlFor="hr-timesheets-templates-default-project" className="mb-1 block text-xs font-medium text-neutral-600">Default project</label>
+              <select id="hr-timesheets-templates-default-project"
                 className="form-input"
                 value={form.project_id}
                 onChange={(e) => setForm((f) => ({ ...f, project_id: e.target.value }))}
@@ -320,8 +320,8 @@ export default function TimesheetTemplatesAdminPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Work bucket</label>
-              <select
+              <label htmlFor="hr-timesheets-templates-work-bucket" className="mb-1 block text-xs font-medium text-neutral-600">Work bucket</label>
+              <select id="hr-timesheets-templates-work-bucket"
                 className="form-input"
                 value={form.work_bucket}
                 onChange={(e) => setForm((f) => ({ ...f, work_bucket: e.target.value }))}
@@ -334,16 +334,16 @@ export default function TimesheetTemplatesAdminPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Activity type</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-activity-type" className="mb-1 block text-xs font-medium text-neutral-600">Activity type</label>
+              <input id="hr-timesheets-templates-activity-type"
                 className="form-input"
                 value={form.activity_type}
                 onChange={(e) => setForm((f) => ({ ...f, activity_type: e.target.value }))}
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">Entry category</label>
-              <input
+              <label htmlFor="hr-timesheets-templates-entry-category" className="mb-1 block text-xs font-medium text-neutral-600">Entry category</label>
+              <input id="hr-timesheets-templates-entry-category"
                 className="form-input"
                 value={form.entry_category}
                 onChange={(e) => setForm((f) => ({ ...f, entry_category: e.target.value }))}
@@ -351,10 +351,10 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-neutral-600">
+              <label htmlFor="hr-timesheets-templates-default-hours-day-no-ot-rates" className="mb-1 block text-xs font-medium text-neutral-600">
                 Default hours / day (no OT rates)
               </label>
-              <input
+              <input id="hr-timesheets-templates-default-hours-day-no-ot-rates"
                 type="number"
                 min={0}
                 max={24}
@@ -365,8 +365,8 @@ export default function TimesheetTemplatesAdminPage() {
               />
             </div>
             <div className="flex items-end">
-              <label className="flex items-center gap-2 text-sm text-neutral-700">
-                <input
+              <label htmlFor="hr-timesheets-templates-setform-f-active" className="flex items-center gap-2 text-sm text-neutral-700">
+                <input id="hr-timesheets-templates-setform-f-active"
                   type="checkbox"
                   checked={form.is_active}
                   onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}

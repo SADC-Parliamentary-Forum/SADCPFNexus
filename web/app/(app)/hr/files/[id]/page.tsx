@@ -429,8 +429,8 @@ export default function HrFileDetailPage() {
             {uploadError && <p className="text-sm text-red-600 mb-2">{uploadError}</p>}
             <form onSubmit={handleUploadDocument} className="flex flex-wrap gap-3 items-end">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Type</label>
-                <select className="form-input py-2 text-sm min-w-[160px]" value={docType} onChange={(e) => setDocType(e.target.value)} required>
+                <label htmlFor="hr-files-detail-type" className="block text-xs font-semibold text-neutral-700 mb-1">Type</label>
+                <select id="hr-files-detail-type" className="form-input py-2 text-sm min-w-[160px]" value={docType} onChange={(e) => setDocType(e.target.value)} required>
                   <option value="">Select…</option>
                   {DOCUMENT_TYPES.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -438,8 +438,8 @@ export default function HrFileDetailPage() {
                 </select>
               </div>
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
-                <input type="text" className="form-input w-full" value={docTitle} onChange={(e) => setDocTitle(e.target.value)} placeholder="Document title" required />
+                <label htmlFor="hr-files-detail-title" className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
+                <input id="hr-files-detail-title" type="text" className="form-input w-full" value={docTitle} onChange={(e) => setDocTitle(e.target.value)} placeholder="Document title" required />
               </div>
               <button type="submit" disabled={uploading} className="btn-primary py-2 px-4 text-sm disabled:opacity-50">
                 {uploading ? "Adding…" : "Add"}
@@ -692,8 +692,8 @@ export default function HrFileDetailPage() {
             <h3 className="text-sm font-semibold text-neutral-900 mb-3">Add timeline event</h3>
             <form onSubmit={handleAddTimelineEvent} className="space-y-3 max-w-md">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Event type</label>
-                <select className="form-input w-full py-2" value={eventType} onChange={(e) => setEventType(e.target.value)} required>
+                <label htmlFor="hr-files-detail-event-type" className="block text-xs font-semibold text-neutral-700 mb-1">Event type</label>
+                <select id="hr-files-detail-event-type" className="form-input w-full py-2" value={eventType} onChange={(e) => setEventType(e.target.value)} required>
                   <option value="">Select…</option>
                   {EVENT_TYPES.map((t) => (
                     <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
@@ -701,16 +701,16 @@ export default function HrFileDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
-                <input type="text" className="form-input w-full" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} required />
+                <label htmlFor="hr-files-detail-title-2" className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
+                <input id="hr-files-detail-title-2" type="text" className="form-input w-full" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} required />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Date</label>
-                <input type="date" className="form-input w-full" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+                <label htmlFor="hr-files-detail-date" className="block text-xs font-semibold text-neutral-700 mb-1">Date</label>
+                <input id="hr-files-detail-date" type="date" className="form-input w-full" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Description (optional)</label>
-                <textarea className="form-input w-full min-h-[80px]" value={eventDescription} onChange={(e) => setEventDescription(e.target.value)} />
+                <label htmlFor="hr-files-detail-description-optional" className="block text-xs font-semibold text-neutral-700 mb-1">Description (optional)</label>
+                <textarea id="hr-files-detail-description-optional" className="form-input w-full min-h-[80px]" value={eventDescription} onChange={(e) => setEventDescription(e.target.value)} />
               </div>
               <button type="submit" disabled={addingEvent} className="btn-primary py-2 px-4 text-sm disabled:opacity-50">
                 {addingEvent ? "Adding…" : "Add event"}

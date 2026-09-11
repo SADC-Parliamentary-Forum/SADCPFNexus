@@ -269,20 +269,20 @@ function EditModal({ vendor, onClose }: EditModalProps) {
           {tab === "basic" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Vendor Name <span className="text-red-500">*</span></label>
-                <input type="text" className="form-input" autoFocus value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+                <label htmlFor="procurement-vendors-detail-vendor-name" className="block text-xs font-semibold text-neutral-600 mb-1">Vendor Name <span className="text-red-500">*</span></label>
+                <input id="procurement-vendors-detail-vendor-name" type="text" className="form-input" autoFocus value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
               </div>
               {(["registration_number", "tax_number"] as const).map((k) => (
                 <div key={k}>
-                  <label className="block text-xs font-semibold text-neutral-600 mb-1">{k === "registration_number" ? "Registration Number" : "VAT / Tax Number"}</label>
-                  <input type="text" className="form-input" value={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} />
+                  <label htmlFor="procurement-vendors-detail-field" className="block text-xs font-semibold text-neutral-600 mb-1">{k === "registration_number" ? "Registration Number" : "VAT / Tax Number"}</label>
+                  <input id="procurement-vendors-detail-field" type="text" className="form-input" value={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} />
                 </div>
               ))}
               <div className="sm:col-span-2">
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-semibold text-neutral-600">
+                  <p className="block text-xs font-semibold text-neutral-600">
                     Categories <span className="text-red-500">*</span>
-                  </label>
+                  </p>
                   <span className={`text-xs font-medium tabular-nums ${form.category_ids.length === 3 ? "text-amber-600" : "text-neutral-400"}`}>
                     {form.category_ids.length} / 3 selected
                   </span>
@@ -325,19 +325,19 @@ function EditModal({ vendor, onClose }: EditModalProps) {
                 <p className="mt-1.5 text-[11px] text-neutral-400">Select up to 3 categories that best describe this vendor.</p>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Country</label>
-                <select className="form-input" value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}>
+                <label htmlFor="procurement-vendors-detail-country" className="block text-xs font-semibold text-neutral-600 mb-1">Country</label>
+                <select id="procurement-vendors-detail-country" className="form-input" value={form.country} onChange={(e) => setForm((f) => ({ ...f, country: e.target.value }))}>
                   <option value="">— Select —</option>
                   {COUNTRIES_EDIT.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Website</label>
-                <input type="url" className="form-input" value={form.website} onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))} placeholder="https://" />
+                <label htmlFor="procurement-vendors-detail-website" className="block text-xs font-semibold text-neutral-600 mb-1">Website</label>
+                <input id="procurement-vendors-detail-website" type="url" className="form-input" value={form.website} onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))} placeholder="https://" />
               </div>
               <div className="sm:col-span-2">
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-primary" checked={form.is_sme} onChange={(e) => setForm((f) => ({ ...f, is_sme: e.target.checked }))} />
+                <label htmlFor="procurement-vendors-detail-setform-f-small-or-medium-enterprise-sme" className="flex cursor-pointer items-center gap-2">
+                  <input id="procurement-vendors-detail-setform-f-small-or-medium-enterprise-sme" type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-primary" checked={form.is_sme} onChange={(e) => setForm((f) => ({ ...f, is_sme: e.target.checked }))} />
                   <span className="text-xs font-medium text-neutral-700">Small or Medium Enterprise (SME)</span>
                 </label>
               </div>
@@ -346,54 +346,54 @@ function EditModal({ vendor, onClose }: EditModalProps) {
           {tab === "contact" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Primary Contact Person</label>
-                <input type="text" className="form-input" value={form.contact_name} onChange={(e) => setForm((f) => ({ ...f, contact_name: e.target.value }))} />
+                <label htmlFor="procurement-vendors-detail-primary-contact-person" className="block text-xs font-semibold text-neutral-600 mb-1">Primary Contact Person</label>
+                <input id="procurement-vendors-detail-primary-contact-person" type="text" className="form-input" value={form.contact_name} onChange={(e) => setForm((f) => ({ ...f, contact_name: e.target.value }))} />
               </div>
               {(["contact_email", "contact_phone"] as const).map((k) => (
                 <div key={k}>
-                  <label className="block text-xs font-semibold text-neutral-600 mb-1">{k === "contact_email" ? "Contact Email" : "Contact Phone"}</label>
-                  <input type={k === "contact_email" ? "email" : "text"} className="form-input" value={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} />
+                  <label htmlFor="procurement-vendors-detail-field-2" className="block text-xs font-semibold text-neutral-600 mb-1">{k === "contact_email" ? "Contact Email" : "Contact Phone"}</label>
+                  <input id="procurement-vendors-detail-field-2" type={k === "contact_email" ? "email" : "text"} className="form-input" value={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} />
                 </div>
               ))}
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Address</label>
-                <input type="text" className="form-input" value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
+                <label htmlFor="procurement-vendors-detail-address" className="block text-xs font-semibold text-neutral-600 mb-1">Address</label>
+                <input id="procurement-vendors-detail-address" type="text" className="form-input" value={form.address} onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))} />
               </div>
             </div>
           )}
           {tab === "banking" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Bank Name</label>
-                <input type="text" className="form-input" value={form.bank_name} onChange={(e) => setForm((f) => ({ ...f, bank_name: e.target.value }))} />
+                <label htmlFor="procurement-vendors-detail-bank-name" className="block text-xs font-semibold text-neutral-600 mb-1">Bank Name</label>
+                <input id="procurement-vendors-detail-bank-name" type="text" className="form-input" value={form.bank_name} onChange={(e) => setForm((f) => ({ ...f, bank_name: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Payment Terms</label>
-                <select className="form-input" value={form.payment_terms} onChange={(e) => setForm((f) => ({ ...f, payment_terms: e.target.value }))}>
+                <label htmlFor="procurement-vendors-detail-payment-terms" className="block text-xs font-semibold text-neutral-600 mb-1">Payment Terms</label>
+                <select id="procurement-vendors-detail-payment-terms" className="form-input" value={form.payment_terms} onChange={(e) => setForm((f) => ({ ...f, payment_terms: e.target.value }))}>
                   <option value="">— Select —</option>
                   {PAYMENT_TERMS_EDIT.map((o) => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Account Number</label>
-                <input type="text" className="form-input" value={form.bank_account} onChange={(e) => setForm((f) => ({ ...f, bank_account: e.target.value }))} />
+                <label htmlFor="procurement-vendors-detail-account-number" className="block text-xs font-semibold text-neutral-600 mb-1">Account Number</label>
+                <input id="procurement-vendors-detail-account-number" type="text" className="form-input" value={form.bank_account} onChange={(e) => setForm((f) => ({ ...f, bank_account: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Branch / SWIFT Code</label>
-                <input type="text" className="form-input" value={form.bank_branch} onChange={(e) => setForm((f) => ({ ...f, bank_branch: e.target.value }))} />
+                <label htmlFor="procurement-vendors-detail-branch-swift-code" className="block text-xs font-semibold text-neutral-600 mb-1">Branch / SWIFT Code</label>
+                <input id="procurement-vendors-detail-branch-swift-code" type="text" className="form-input" value={form.bank_branch} onChange={(e) => setForm((f) => ({ ...f, bank_branch: e.target.value }))} />
               </div>
             </div>
           )}
           {tab === "admin" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Internal Notes</label>
-                <textarea className="form-input h-28 resize-none" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+                <label htmlFor="procurement-vendors-detail-internal-notes" className="block text-xs font-semibold text-neutral-600 mb-1">Internal Notes</label>
+                <textarea id="procurement-vendors-detail-internal-notes" className="form-input h-28 resize-none" value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
               </div>
               <div className="sm:col-span-2 flex gap-6">
                 {(["is_approved", "is_active"] as const).map((k) => (
-                  <label key={k} className="flex cursor-pointer items-center gap-2">
-                    <input type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-primary" checked={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.checked }))} />
+                  <label htmlFor="procurement-vendors-detail-setform-f" key={k} className="flex cursor-pointer items-center gap-2">
+                    <input id="procurement-vendors-detail-setform-f" type="checkbox" className="h-4 w-4 rounded border-neutral-300 text-primary" checked={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.checked }))} />
                     <span className="text-xs font-medium text-neutral-700">{k === "is_approved" ? "Approved" : "Active"}</span>
                   </label>
                 ))}
@@ -1049,10 +1049,10 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 {/* Contract selector */}
                 {contractsData && contractsData.length > 0 && (
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1">
+                    <label htmlFor="procurement-vendors-detail-linked-contract-optional" className="block text-xs font-semibold text-neutral-600 mb-1">
                       Linked Contract <span className="text-neutral-400 font-normal">(optional)</span>
                     </label>
-                    <select
+                    <select id="procurement-vendors-detail-linked-contract-optional"
                       className="form-input"
                       value={evalContractId}
                       onChange={(e) => setEvalContractId(e.target.value ? Number(e.target.value) : "")}
@@ -1065,10 +1065,10 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                 )}
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-600 mb-1">
+                  <label htmlFor="procurement-vendors-detail-notes-optional" className="block text-xs font-semibold text-neutral-600 mb-1">
                     Notes <span className="text-neutral-400 font-normal">(optional)</span>
                   </label>
-                  <textarea
+                  <textarea id="procurement-vendors-detail-notes-optional"
                     className="form-input h-16 resize-none"
                     placeholder="Additional evaluation notes…"
                     value={evalNotes}
@@ -1588,10 +1588,10 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+              <label htmlFor="procurement-vendors-detail-reason" className="block text-xs font-semibold text-neutral-700 mb-1.5">
                 Reason <span className="text-red-500">*</span>
               </label>
-              <textarea
+              <textarea id="procurement-vendors-detail-reason"
                 className="form-input w-full h-24 resize-none"
                 placeholder="Provide a formal reason for blacklisting this vendor…"
                 value={blacklistReason}
@@ -1599,10 +1599,10 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+              <label htmlFor="procurement-vendors-detail-reference-case-no-optional" className="block text-xs font-semibold text-neutral-700 mb-1.5">
                 Reference / Case No. <span className="text-neutral-400 font-normal">(optional)</span>
               </label>
-              <input
+              <input id="procurement-vendors-detail-reference-case-no-optional"
                 type="text"
                 className="form-input"
                 placeholder="e.g. AUDIT/2026/001"
@@ -1649,10 +1649,10 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{rejectError}</div>
             )}
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+              <label htmlFor="procurement-vendors-detail-reason-for-rejection" className="block text-xs font-semibold text-neutral-700 mb-1.5">
                 Reason for Rejection <span className="text-red-500">*</span>
               </label>
-              <textarea
+              <textarea id="procurement-vendors-detail-reason-for-rejection"
                 className="form-input w-full h-24 resize-none"
                 placeholder="Explain why this vendor is being rejected…"
                 value={rejectReason}
@@ -1692,8 +1692,8 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{portalPwError}</div>
             )}
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
-              <input
+              <label htmlFor="procurement-vendors-detail-new-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
+              <input id="procurement-vendors-detail-new-password"
                 type="password"
                 className="form-input"
                 value={portalPassword}
@@ -1702,8 +1702,8 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm Password</label>
-              <input
+              <label htmlFor="procurement-vendors-detail-confirm-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm Password</label>
+              <input id="procurement-vendors-detail-confirm-password"
                 type="password"
                 className="form-input"
                 value={portalPasswordConfirm}

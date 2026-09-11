@@ -318,12 +318,12 @@ export default function ProfileSecurityPage() {
         </div>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Current Password</label>
-            <input type="password" required className="form-input" placeholder="••••••••" value={pwForm.current} onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })} />
+            <label htmlFor="profile-security-current-password" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Current Password</label>
+            <input id="profile-security-current-password" type="password" required className="form-input" placeholder="••••••••" value={pwForm.current} onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">New Password</label>
-            <input type="password" required className="form-input" placeholder="••••••••" value={pwForm.next} onChange={(e) => setPwForm({ ...pwForm, next: e.target.value })} />
+            <label htmlFor="profile-security-new-password" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">New Password</label>
+            <input id="profile-security-new-password" type="password" required className="form-input" placeholder="••••••••" value={pwForm.next} onChange={(e) => setPwForm({ ...pwForm, next: e.target.value })} />
             {strength && (
               <div className="mt-2">
                 <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
@@ -347,8 +347,8 @@ export default function ProfileSecurityPage() {
             </ul>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Confirm New Password</label>
-            <input type="password" required className="form-input" placeholder="••••••••" value={pwForm.confirm} onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })} />
+            <label htmlFor="profile-security-confirm-new-password" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Confirm New Password</label>
+            <input id="profile-security-confirm-new-password" type="password" required className="form-input" placeholder="••••••••" value={pwForm.confirm} onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })} />
             {pwForm.confirm && pwForm.next !== pwForm.confirm && (
               <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
             )}
@@ -471,8 +471,8 @@ export default function ProfileSecurityPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Verification Code</label>
-              <input
+              <label htmlFor="profile-security-verification-code" className="block text-xs font-semibold text-neutral-700 mb-1.5">Verification Code</label>
+              <input id="profile-security-verification-code"
                 type="text"
                 inputMode="numeric"
                 maxLength={6}
@@ -528,8 +528,8 @@ export default function ProfileSecurityPage() {
               Confirm your password to disable 2FA. You will no longer be required to enter a code on login.
             </p>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Password</label>
-              <input
+              <label htmlFor="profile-security-password" className="block text-xs font-semibold text-neutral-700 mb-1">Password</label>
+              <input id="profile-security-password"
                 type="password"
                 className="form-input"
                 placeholder="••••••••"
@@ -644,8 +644,8 @@ export default function ProfileSecurityPage() {
               </button>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Detail level</label>
-              <select
+              <label htmlFor="profile-security-detail-level" className="block text-xs font-semibold text-neutral-700 mb-1">Detail level</label>
+              <select id="profile-security-detail-level"
                 className="form-input max-w-xs"
                 value={weeklyPref.detail_mode}
                 onChange={(e) => setWeeklyPref({ ...weeklyPref, detail_mode: e.target.value as WeeklySummaryPreference["detail_mode"] })}

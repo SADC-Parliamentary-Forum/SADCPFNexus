@@ -573,8 +573,8 @@ export default function OrganogramPage() {
             </div>
 
             <div className="mb-6">
-              <label className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">New Parent Unit</label>
-              <select
+              <label htmlFor="organogram-new-parent-unit" className="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-1.5 ml-1">New Parent Unit</label>
+              <select id="organogram-new-parent-unit"
                 className="input-field w-full"
                 value={newParentId === null || newParentId === "root" ? "root" : String(newParentId)}
                 onChange={e => setNewParentId(e.target.value === "root" ? "root" : parseInt(e.target.value))}

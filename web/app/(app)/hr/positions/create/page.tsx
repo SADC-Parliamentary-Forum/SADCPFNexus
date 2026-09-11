@@ -98,10 +98,10 @@ export default function CreatePositionPage() {
       <form onSubmit={handleSubmit} className="card p-6 space-y-5">
         {/* Department */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+          <label htmlFor="hr-positions-create-department" className="block text-sm font-medium text-neutral-700 mb-1.5">
             Department <span className="text-red-500">*</span>
           </label>
-          <select
+          <select id="hr-positions-create-department"
             value={form.department_id}
             onChange={(e) => set("department_id", e.target.value)}
             className={`form-input w-full ${errors.department_id ? "border-red-400" : ""}`}
@@ -116,10 +116,10 @@ export default function CreatePositionPage() {
 
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+          <label htmlFor="hr-positions-create-position-title" className="block text-sm font-medium text-neutral-700 mb-1.5">
             Position Title <span className="text-red-500">*</span>
           </label>
-          <input
+          <input id="hr-positions-create-position-title"
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
@@ -132,8 +132,8 @@ export default function CreatePositionPage() {
         {/* Grade + Headcount */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Grade</label>
-            <select
+            <label htmlFor="hr-positions-create-grade" className="block text-sm font-medium text-neutral-700 mb-1.5">Grade</label>
+            <select id="hr-positions-create-grade"
               value={form.grade}
               onChange={(e) => set("grade", e.target.value)}
               className="form-input w-full"
@@ -145,10 +145,10 @@ export default function CreatePositionPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+            <label htmlFor="hr-positions-create-headcount" className="block text-sm font-medium text-neutral-700 mb-1.5">
               Headcount <span className="text-red-500">*</span>
             </label>
-            <input
+            <input id="hr-positions-create-headcount"
               type="number"
               min={1}
               max={999}
@@ -162,8 +162,8 @@ export default function CreatePositionPage() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">Description</label>
-          <textarea
+          <label htmlFor="hr-positions-create-description" className="block text-sm font-medium text-neutral-700 mb-1.5">Description</label>
+          <textarea id="hr-positions-create-description"
             rows={3}
             value={form.description}
             onChange={(e) => set("description", e.target.value)}

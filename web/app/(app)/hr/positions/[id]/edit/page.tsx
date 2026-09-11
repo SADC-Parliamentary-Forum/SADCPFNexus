@@ -134,10 +134,10 @@ export default function EditPositionPage() {
       <form onSubmit={handleSubmit} className="card p-6 space-y-5">
         {/* Department */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+          <label htmlFor="hr-positions-detail-edit-department" className="block text-sm font-medium text-neutral-700 mb-1.5">
             Department <span className="text-red-500">*</span>
           </label>
-          <select
+          <select id="hr-positions-detail-edit-department"
             value={form.department_id}
             onChange={(e) => set("department_id", e.target.value)}
             className={`form-input w-full ${errors.department_id ? "border-red-400" : ""}`}
@@ -152,10 +152,10 @@ export default function EditPositionPage() {
 
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+          <label htmlFor="hr-positions-detail-edit-position-title" className="block text-sm font-medium text-neutral-700 mb-1.5">
             Position Title <span className="text-red-500">*</span>
           </label>
-          <input
+          <input id="hr-positions-detail-edit-position-title"
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
@@ -168,8 +168,8 @@ export default function EditPositionPage() {
         {/* Grade + Headcount */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Grade</label>
-            <select
+            <label htmlFor="hr-positions-detail-edit-grade" className="block text-sm font-medium text-neutral-700 mb-1.5">Grade</label>
+            <select id="hr-positions-detail-edit-grade"
               value={form.grade}
               onChange={(e) => set("grade", e.target.value)}
               className="form-input w-full"
@@ -181,10 +181,10 @@ export default function EditPositionPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+            <label htmlFor="hr-positions-detail-edit-headcount" className="block text-sm font-medium text-neutral-700 mb-1.5">
               Headcount <span className="text-red-500">*</span>
             </label>
-            <input
+            <input id="hr-positions-detail-edit-headcount"
               type="number"
               min={1}
               max={999}
@@ -198,8 +198,8 @@ export default function EditPositionPage() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">Description</label>
-          <textarea
+          <label htmlFor="hr-positions-detail-edit-description" className="block text-sm font-medium text-neutral-700 mb-1.5">Description</label>
+          <textarea id="hr-positions-detail-edit-description"
             rows={3}
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
@@ -211,7 +211,7 @@ export default function EditPositionPage() {
         {/* Assigned users (read-only info) */}
         {posRes?.users && posRes.users.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Assigned Users</label>
+            <p className="block text-sm font-medium text-neutral-700 mb-1.5">Assigned Users</p>
             <div className="flex flex-wrap gap-2">
               {posRes.users.map((u) => (
                 <span key={u.id} className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-100 text-neutral-700 rounded-full text-xs font-medium">

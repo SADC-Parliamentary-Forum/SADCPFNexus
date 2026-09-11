@@ -115,27 +115,27 @@ export default function Page() {
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-delegations-principal-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Principal
-          <select className="form-input mt-1" value={form.principal_person_id} onChange={(e) => setForm((f) => ({ ...f, principal_person_id: e.target.value }))} required>
+          <select id="people-delegations-principal-setform-f-required-select" className="form-input mt-1" value={form.principal_person_id} onChange={(e) => setForm((f) => ({ ...f, principal_person_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(peopleQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-delegations-delegate-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Delegate
-          <select className="form-input mt-1" value={form.delegate_person_id} onChange={(e) => setForm((f) => ({ ...f, delegate_person_id: e.target.value }))} required>
+          <select id="people-delegations-delegate-setform-f-required-select" className="form-input mt-1" value={form.delegate_person_id} onChange={(e) => setForm((f) => ({ ...f, delegate_person_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(peopleQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-delegations-type-setform-f-workflow-approval-signing-prepara" className="block text-xs font-medium text-neutral-600">
           Type
-          <select className="form-input mt-1" value={form.delegation_type} onChange={(e) => setForm((f) => ({ ...f, delegation_type: e.target.value }))}>
+          <select id="people-delegations-type-setform-f-workflow-approval-signing-prepara" className="form-input mt-1" value={form.delegation_type} onChange={(e) => setForm((f) => ({ ...f, delegation_type: e.target.value }))}>
             <option value="workflow">Workflow</option>
             <option value="approval">Approval</option>
             <option value="signing">Signing</option>
@@ -143,21 +143,21 @@ export default function Page() {
             <option value="general">General</option>
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-delegations-scope-action-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Scope action
-          <input className="form-input mt-1" value={form.scope_action} onChange={(e) => setForm((f) => ({ ...f, scope_action: e.target.value }))} required />
+          <input id="people-delegations-scope-action-setform-f-required" className="form-input mt-1" value={form.scope_action} onChange={(e) => setForm((f) => ({ ...f, scope_action: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-delegations-start-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Start
-          <input type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
+          <input id="people-delegations-start-setform-f-required" type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-delegations-end-setform-f-required" className="block text-xs font-medium text-neutral-600">
           End
-          <input type="date" className="form-input mt-1" value={form.end_at} onChange={(e) => setForm((f) => ({ ...f, end_at: e.target.value }))} required />
+          <input id="people-delegations-end-setform-f-required" type="date" className="form-input mt-1" value={form.end_at} onChange={(e) => setForm((f) => ({ ...f, end_at: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600 sm:col-span-2">
+        <label htmlFor="people-delegations-reason-setform-f" className="block text-xs font-medium text-neutral-600 sm:col-span-2">
           Reason
-          <input className="form-input mt-1" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
+          <input id="people-delegations-reason-setform-f" className="form-input mt-1" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
         </label>
         <div className="sm:col-span-2 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
@@ -168,9 +168,9 @@ export default function Page() {
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-delegations-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input className="form-input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter rows…" />
+          <input id="people-delegations-search-setq-e-target-value-placeholder-filter-ro" className="form-input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter rows…" />
         </label>
       </div>
 

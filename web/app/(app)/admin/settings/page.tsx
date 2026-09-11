@@ -91,20 +91,20 @@ export default function AdminSettingsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Organisation Name</label>
-                <input className="form-input" value={settings.org_name} onChange={(e) => setSettings({ ...settings, org_name: e.target.value })} />
+                <label htmlFor="admin-settings-organisation-name" className="block text-xs font-semibold text-neutral-700 mb-1">Organisation Name</label>
+                <input id="admin-settings-organisation-name" className="form-input" value={settings.org_name} onChange={(e) => setSettings({ ...settings, org_name: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Abbreviation</label>
-                <input className="form-input" value={settings.org_abbreviation} onChange={(e) => setSettings({ ...settings, org_abbreviation: e.target.value })} />
+                <label htmlFor="admin-settings-abbreviation" className="block text-xs font-semibold text-neutral-700 mb-1">Abbreviation</label>
+                <input id="admin-settings-abbreviation" className="form-input" value={settings.org_abbreviation} onChange={(e) => setSettings({ ...settings, org_abbreviation: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Logo URL</label>
-                <input className="form-input" value={settings.org_logo_url} onChange={(e) => setSettings({ ...settings, org_logo_url: e.target.value })} />
+                <label htmlFor="admin-settings-logo-url" className="block text-xs font-semibold text-neutral-700 mb-1">Logo URL</label>
+                <input id="admin-settings-logo-url" className="form-input" value={settings.org_logo_url} onChange={(e) => setSettings({ ...settings, org_logo_url: e.target.value })} />
               </div>
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Address</label>
-                <textarea rows={2} className="form-input resize-none" value={settings.org_address} onChange={(e) => setSettings({ ...settings, org_address: e.target.value })} />
+                <label htmlFor="admin-settings-address" className="block text-xs font-semibold text-neutral-700 mb-1">Address</label>
+                <textarea id="admin-settings-address" rows={2} className="form-input resize-none" value={settings.org_address} onChange={(e) => setSettings({ ...settings, org_address: e.target.value })} />
               </div>
             </div>
           </div>
@@ -118,20 +118,20 @@ export default function AdminSettingsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Fiscal start month</label>
-                <select className="form-input" value={settings.fiscal_start_month} onChange={(e) => setSettings({ ...settings, fiscal_start_month: e.target.value })}>
+                <label htmlFor="admin-settings-fiscal-start-month" className="block text-xs font-semibold text-neutral-700 mb-1">Fiscal start month</label>
+                <select id="admin-settings-fiscal-start-month" className="form-input" value={settings.fiscal_start_month} onChange={(e) => setSettings({ ...settings, fiscal_start_month: e.target.value })}>
                   {MONTHS.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Currency</label>
-                <select className="form-input" value={settings.default_currency} onChange={(e) => setSettings({ ...settings, default_currency: e.target.value })}>
+                <label htmlFor="admin-settings-currency" className="block text-xs font-semibold text-neutral-700 mb-1">Currency</label>
+                <select id="admin-settings-currency" className="form-input" value={settings.default_currency} onChange={(e) => setSettings({ ...settings, default_currency: e.target.value })}>
                   {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Timezone</label>
-                <select className="form-input" value={settings.timezone} onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}>
+                <label htmlFor="admin-settings-timezone" className="block text-xs font-semibold text-neutral-700 mb-1">Timezone</label>
+                <select id="admin-settings-timezone" className="form-input" value={settings.timezone} onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}>
                   {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
                 </select>
               </div>
@@ -147,20 +147,20 @@ export default function AdminSettingsPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Tagline</label>
-                <input className="form-input" value={settings.letterhead_tagline ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_tagline: e.target.value })} />
+                <label htmlFor="admin-settings-tagline" className="block text-xs font-semibold text-neutral-700 mb-1">Tagline</label>
+                <input id="admin-settings-tagline" className="form-input" value={settings.letterhead_tagline ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_tagline: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Phone</label>
-                <input className="form-input" value={settings.letterhead_phone ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_phone: e.target.value })} />
+                <label htmlFor="admin-settings-phone" className="block text-xs font-semibold text-neutral-700 mb-1">Phone</label>
+                <input id="admin-settings-phone" className="form-input" value={settings.letterhead_phone ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_phone: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Fax</label>
-                <input className="form-input" value={settings.letterhead_fax ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_fax: e.target.value })} />
+                <label htmlFor="admin-settings-fax" className="block text-xs font-semibold text-neutral-700 mb-1">Fax</label>
+                <input id="admin-settings-fax" className="form-input" value={settings.letterhead_fax ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_fax: e.target.value })} />
               </div>
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Website</label>
-                <input className="form-input" value={settings.letterhead_website ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_website: e.target.value })} />
+                <label htmlFor="admin-settings-website" className="block text-xs font-semibold text-neutral-700 mb-1">Website</label>
+                <input id="admin-settings-website" className="form-input" value={settings.letterhead_website ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_website: e.target.value })} />
               </div>
             </div>
           </div>

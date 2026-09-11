@@ -653,8 +653,8 @@ export default function WeeklySummariesPage() {
         >
           {editable ? (
             <div className="space-y-4">
-              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-neutral-200 bg-white p-4">
-                <input
+              <label htmlFor="weekly-summaries-setdeclared-e-target-checked-disabled" className="flex cursor-pointer items-start gap-3 rounded-xl border border-neutral-200 bg-white p-4">
+                <input id="weekly-summaries-setdeclared-e-target-checked-disabled"
                   type="checkbox"
                   className="mt-1 rounded border-neutral-300"
                   checked={declared}

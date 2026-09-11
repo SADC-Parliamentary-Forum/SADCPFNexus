@@ -135,8 +135,8 @@ export default function AdminTimesheetProjectsPage() {
       {isAdmin && (showAdd ? (
         <div className="card p-4 flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Label</label>
-            <input
+            <label htmlFor="admin-timesheet-projects-label" className="block text-xs font-medium text-neutral-600 mb-1">Label</label>
+            <input id="admin-timesheet-projects-label"
               type="text"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
@@ -145,8 +145,8 @@ export default function AdminTimesheetProjectsPage() {
             />
           </div>
           <div className="w-24">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Order</label>
-            <input
+            <label htmlFor="admin-timesheet-projects-order" className="block text-xs font-medium text-neutral-600 mb-1">Order</label>
+            <input id="admin-timesheet-projects-order"
               type="number"
               min={0}
               value={newSortOrder}

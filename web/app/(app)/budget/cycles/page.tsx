@@ -70,9 +70,9 @@ export default function BudgetCyclesPage() {
         <div className="rounded-xl border border-[var(--border)] bg-white p-4">
           <h2 className="mb-3 text-sm font-semibold text-[var(--foreground)]">Open a cycle</h2>
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-sm">
+            <label htmlFor="budget-cycles-financial-year-setfyid-e-target-value-select-fy" className="flex flex-col gap-1 text-sm">
               <span className="text-[var(--muted)]">Financial year</span>
-              <select
+              <select id="budget-cycles-financial-year-setfyid-e-target-value-select-fy"
                 className="min-w-[220px] rounded-lg border border-[var(--border)] px-3 py-2"
                 value={fyId}
                 onChange={(e) => setFyId(e.target.value)}

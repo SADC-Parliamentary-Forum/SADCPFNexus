@@ -105,22 +105,22 @@ return (await peopleAuthorityApi.listJobDescriptions()).data;
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-job-descriptions-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Position
-          <select className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
+          <select id="people-job-descriptions-position-setform-f-required-select" className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-job-descriptions-title-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Title
-          <input className="form-input mt-1" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required />
+          <input id="people-job-descriptions-title-setform-f-required" className="form-input mt-1" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600 sm:col-span-2">
+        <label htmlFor="people-job-descriptions-content-setform-f-rows" className="block text-xs font-medium text-neutral-600 sm:col-span-2">
           Content
-          <textarea className="form-input mt-1" value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} rows={3} />
+          <textarea id="people-job-descriptions-content-setform-f-rows" className="form-input mt-1" value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} rows={3} />
         </label>
         <div className="sm:col-span-2 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
@@ -131,9 +131,9 @@ return (await peopleAuthorityApi.listJobDescriptions()).data;
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-job-descriptions-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-job-descriptions-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

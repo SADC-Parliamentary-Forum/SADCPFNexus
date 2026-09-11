@@ -198,8 +198,8 @@ export default function AdminWorkflowPage() {
 
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Workflow Name</label>
-                  <input
+                  <label htmlFor="admin-workflows-workflow-name" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Workflow Name</label>
+                  <input id="admin-workflows-workflow-name"
                     className="form-input"
                     value={editing.name}
                     onChange={e => setEditing({ ...editing, name: e.target.value })}
@@ -207,8 +207,8 @@ export default function AdminWorkflowPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Module</label>
-                  <select
+                  <label htmlFor="admin-workflows-module" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Module</label>
+                  <select id="admin-workflows-module"
                     className="form-input"
                     value={editing.module_type}
                     onChange={e => setEditing({ ...editing, module_type: e.target.value })}
@@ -223,8 +223,8 @@ export default function AdminWorkflowPage() {
               {/* Targeting */}
               <div className="grid grid-cols-2 gap-4 mb-8 p-4 bg-neutral-50 rounded-xl border border-neutral-100">
                 <div>
-                  <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Applicability</label>
-                  <select
+                  <label htmlFor="admin-workflows-applicability" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Applicability</label>
+                  <select id="admin-workflows-applicability"
                     className="form-input"
                     value={editing.target_type ?? ""}
                     onChange={e => setEditing({ ...editing, target_type: (e.target.value as "programme" | "department") || null, target_id: null })}
@@ -236,8 +236,8 @@ export default function AdminWorkflowPage() {
                 </div>
                 {editing.target_type === "department" && (
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Department</label>
-                    <select
+                    <label htmlFor="admin-workflows-department" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Department</label>
+                    <select id="admin-workflows-department"
                       className="form-input"
                       value={editing.target_id ?? ""}
                       onChange={e => setEditing({ ...editing, target_id: e.target.value ? Number(e.target.value) : null })}
@@ -249,8 +249,8 @@ export default function AdminWorkflowPage() {
                 )}
                 {editing.target_type === "programme" && (
                   <div>
-                    <label className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Programme</label>
-                    <select
+                    <label htmlFor="admin-workflows-programme" className="block text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-1.5 ml-1">Programme</label>
+                    <select id="admin-workflows-programme"
                       className="form-input"
                       value={editing.target_id ?? ""}
                       onChange={e => setEditing({ ...editing, target_id: e.target.value ? Number(e.target.value) : null })}
@@ -264,7 +264,7 @@ export default function AdminWorkflowPage() {
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1">Approval Steps</label>
+                  <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1">Approval Steps</p>
                 </div>
 
                 {editing.steps?.map((step, idx) => (
@@ -276,8 +276,8 @@ export default function AdminWorkflowPage() {
                       <div className="flex items-start gap-4">
                         <div className="flex-1 grid grid-cols-3 gap-4">
                           <div className="col-span-1">
-                            <label className="block text-[10px] font-bold text-neutral-500 mb-1">Approver Type</label>
-                            <select
+                            <label htmlFor="admin-workflows-approver-type" className="block text-[10px] font-bold text-neutral-500 mb-1">Approver Type</label>
+                            <select id="admin-workflows-approver-type"
                               className="form-input py-1 text-xs"
                               value={step.approver_type}
                               onChange={e => handleUpdateStep(idx, { approver_type: e.target.value as any })}
@@ -292,8 +292,8 @@ export default function AdminWorkflowPage() {
                           <div className="col-span-2">
                             {step.approver_type === 'specific_role' && (
                               <>
-                                <label className="block text-[10px] font-bold text-neutral-500 mb-1">Select Role</label>
-                                <select
+                                <label htmlFor={`admin-workflows-select-role-${idx}`} className="block text-[10px] font-bold text-neutral-500 mb-1">Select Role</label>
+                                <select id={`admin-workflows-select-role-${idx}`}
                                   className="form-input py-1 text-xs"
                                   value={step.role_id || ""}
                                   onChange={e => handleUpdateStep(idx, { role_id: parseInt(e.target.value) })}
@@ -305,8 +305,8 @@ export default function AdminWorkflowPage() {
                             )}
                             {step.approver_type === 'specific_user' && (
                               <>
-                                <label className="block text-[10px] font-bold text-neutral-500 mb-1">Select User</label>
-                                <select
+                                <label htmlFor={`admin-workflows-select-user-${idx}`} className="block text-[10px] font-bold text-neutral-500 mb-1">Select User</label>
+                                <select id={`admin-workflows-select-user-${idx}`}
                                   className="form-input py-1 text-xs"
                                   value={step.user_id || ""}
                                   onChange={e => handleUpdateStep(idx, { user_id: parseInt(e.target.value) })}

@@ -229,9 +229,9 @@ export default function ProfileSettingsPage() {
                 return (
                   <div key={`${row.category}-${idx}`} className="rounded-lg border border-neutral-100 p-3">
                     <p className="text-sm font-medium capitalize">{row.category.replace(/_/g, " ")}{mandatory ? " (mandatory)" : ""}</p>
-                    <label className="mt-2 block text-xs font-medium text-neutral-500">
+                    <label htmlFor={`profile-settings-digest-item-immediate-daily-weekly-off-optional--${idx}`} className="mt-2 block text-xs font-medium text-neutral-500">
                       Digest
-                      <select
+                      <select id={`profile-settings-digest-item-immediate-daily-weekly-off-optional--${idx}`}
                         className="form-input mt-1"
                         value={row.digest_mode ?? "immediate"}
                         disabled={mandatory}
@@ -275,8 +275,8 @@ export default function ProfileSettingsPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Language</label>
-              <select
+              <label htmlFor="profile-settings-language" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Language</label>
+              <select id="profile-settings-language"
                 className="form-input"
                 value={prefs.language}
                 onChange={(e) => {
@@ -291,14 +291,14 @@ export default function ProfileSettingsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Timezone</label>
-              <select className="form-input" value={prefs.timezone} onChange={(e) => set("timezone", e.target.value)}>
+              <label htmlFor="profile-settings-timezone" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Timezone</label>
+              <select id="profile-settings-timezone" className="form-input" value={prefs.timezone} onChange={(e) => set("timezone", e.target.value)}>
                 {TIMEZONES.map((t) => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Date Format</label>
-              <select className="form-input" value={prefs.dateFormat} onChange={(e) => set("dateFormat", e.target.value)}>
+              <label htmlFor="profile-settings-date-format" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Date Format</label>
+              <select id="profile-settings-date-format" className="form-input" value={prefs.dateFormat} onChange={(e) => set("dateFormat", e.target.value)}>
                 {DATE_FORMATS.map((f) => <option key={f}>{f}</option>)}
               </select>
               <p className="text-[11px] text-neutral-400 mt-1">
@@ -318,8 +318,8 @@ export default function ProfileSettingsPage() {
               </p>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Display Currency</label>
-              <select className="form-input" value={prefs.currency} onChange={(e) => set("currency", e.target.value)}>
+              <label htmlFor="profile-settings-display-currency" className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1">Display Currency</label>
+              <select id="profile-settings-display-currency" className="form-input" value={prefs.currency} onChange={(e) => set("currency", e.target.value)}>
                 {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>

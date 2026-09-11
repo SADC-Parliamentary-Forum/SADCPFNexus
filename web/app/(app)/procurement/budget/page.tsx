@@ -254,8 +254,8 @@ export default function ProcurementBudgetPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Reserved amount</label>
-              <input
+              <label htmlFor="procurement-budget-reserved-amount" className="block text-xs font-semibold text-neutral-700 mb-1">Reserved amount</label>
+              <input id="procurement-budget-reserved-amount"
                 type="number"
                 min={0}
                 step="0.01"
@@ -265,8 +265,8 @@ export default function ProcurementBudgetPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Notes (optional)</label>
-              <textarea className="form-input h-20 resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <label htmlFor="procurement-budget-notes-optional" className="block text-xs font-semibold text-neutral-700 mb-1">Notes (optional)</label>
+              <textarea id="procurement-budget-notes-optional" className="form-input h-20 resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
             <div className="flex gap-2">
               <button type="button" className="btn-secondary flex-1" onClick={() => setReserveFor(null)}>

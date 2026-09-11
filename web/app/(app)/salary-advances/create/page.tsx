@@ -196,9 +196,9 @@ export default function SalaryAdvanceCreatePage() {
 
       {/* Advance type grid */}
       <div className="space-y-2">
-        <label className="block text-xs font-semibold text-neutral-700">
+        <p className="block text-xs font-semibold text-neutral-700">
           Advance Type <span className="text-red-500">*</span>
-        </label>
+        </p>
         {advanceTypes.length === 0 ? (
           <div className="space-y-2">
             {[1, 2, 3].map((i) => (
@@ -279,7 +279,7 @@ export default function SalaryAdvanceCreatePage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Amount */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-neutral-700">
+          <label htmlFor="salary-advance-create-amount" className="block text-xs font-semibold text-neutral-700">
             Amount ({defaultCurrency}) <span className="text-red-500">*</span>
           </label>
           <div className="relative">
@@ -287,6 +287,7 @@ export default function SalaryAdvanceCreatePage() {
               {currencySymbol}
             </span>
             <input
+              id="salary-advance-create-amount"
               type="number" min="100" step="100"
               className={cn("form-input pl-10", exceedsMax ? "border-red-300 ring-red-200 focus:border-red-400" : "")}
               placeholder="0.00"
@@ -312,7 +313,7 @@ export default function SalaryAdvanceCreatePage() {
 
         {/* Full EOM recovery */}
         <div className="space-y-1.5">
-          <label className="block text-xs font-semibold text-neutral-700">Recovery</label>
+          <p className="block text-xs font-semibold text-neutral-700">Recovery</p>
           <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
             <p className="text-sm font-semibold text-neutral-900">Full amount — one payroll month</p>
             <p className="text-xs text-neutral-500 mt-1">
@@ -329,10 +330,10 @@ export default function SalaryAdvanceCreatePage() {
 
       {/* Purpose */}
       <div className="space-y-1.5">
-        <label className="block text-xs font-semibold text-neutral-700">
+        <label htmlFor="salary-advances-create-purpose" className="block text-xs font-semibold text-neutral-700">
           Purpose <span className="text-red-500">*</span>
         </label>
-        <input
+        <input id="salary-advances-create-purpose"
           className="form-input"
           placeholder="e.g. Medical expenses, School fees, Home improvement…"
           value={purpose}
@@ -342,10 +343,10 @@ export default function SalaryAdvanceCreatePage() {
 
       {/* Justification */}
       <div className="space-y-1.5">
-        <label className="block text-xs font-semibold text-neutral-700">
+        <label htmlFor="salary-advances-create-detailed-justification" className="block text-xs font-semibold text-neutral-700">
           Detailed Justification <span className="text-red-500">*</span>
         </label>
-        <textarea
+        <textarea id="salary-advances-create-detailed-justification"
           rows={4}
           className="form-input resize-none"
           placeholder="Explain why this advance is necessary and how it will be used…"
@@ -450,8 +451,8 @@ export default function SalaryAdvanceCreatePage() {
 
       {/* Consent checkbox */}
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
+        <label htmlFor="salary-advances-create-setconsented-e-target-checked-i-authorise-full-p" className="flex items-start gap-3 cursor-pointer">
+          <input id="salary-advances-create-setconsented-e-target-checked-i-authorise-full-p"
             type="checkbox"
             className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
             checked={consented}

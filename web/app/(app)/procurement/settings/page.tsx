@@ -162,8 +162,8 @@ export default function ProcurementSettingsPage() {
               ] as const
             ).map((field) => (
               <div key={field.key}>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">{field.label}</label>
-                <input
+                <label htmlFor="procurement-settings-field" className="block text-xs font-semibold text-neutral-700 mb-1">{field.label}</label>
+                <input id="procurement-settings-field"
                   type="number"
                   min={0}
                   step={field.step}
@@ -181,8 +181,8 @@ export default function ProcurementSettingsPage() {
             ))}
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Split enforcement</label>
-              <select
+              <label htmlFor="procurement-settings-split-enforcement" className="block text-xs font-semibold text-neutral-700 mb-1">Split enforcement</label>
+              <select id="procurement-settings-split-enforcement"
                 className="form-input max-w-[240px]"
                 value={form.split_enforcement ?? "hard"}
                 onChange={(e) => setForm({ ...form, split_enforcement: e.target.value as "soft" | "hard" })}
@@ -193,8 +193,8 @@ export default function ProcurementSettingsPage() {
             </div>
 
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-3 space-y-2">
-              <label className="flex items-start gap-2 text-sm text-neutral-800">
-                <input
+              <label htmlFor="procurement-settings-setform-enable-ai-comparison-summaries-assistive" className="flex items-start gap-2 text-sm text-neutral-800">
+                <input id="procurement-settings-setform-enable-ai-comparison-summaries-assistive"
                   type="checkbox"
                   className="mt-0.5"
                   checked={!!form.ai_comparison_enabled}

@@ -33,12 +33,12 @@ export default function PlanningPage() {
 
       <div className="card p-4 grid gap-3 sm:grid-cols-[120px_1fr_auto] items-end">
         <div>
-          <label className="block text-xs font-semibold mb-1">Year</label>
-          <input type="number" className="form-input" value={year} onChange={(e) => setYear(Number(e.target.value))} />
+          <label htmlFor="procurement-planning-year" className="block text-xs font-semibold mb-1">Year</label>
+          <input id="procurement-planning-year" type="number" className="form-input" value={year} onChange={(e) => setYear(Number(e.target.value))} />
         </div>
         <div>
-          <label className="block text-xs font-semibold mb-1">Title</label>
-          <input className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="APP 2026" />
+          <label htmlFor="procurement-planning-title" className="block text-xs font-semibold mb-1">Title</label>
+          <input id="procurement-planning-title" className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="APP 2026" />
         </div>
         <button type="button" className="btn-primary" disabled={!title || createMut.isPending} onClick={() => createMut.mutate()}>
           Create plan

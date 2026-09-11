@@ -353,21 +353,21 @@ export default function AdminUserCreatePage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Full Name <span className="text-red-500">*</span></label>
-              <input className="form-input" placeholder="e.g. Sarah Jenkins" value={form.name} onChange={(e) => set("name", e.target.value)} />
+              <label htmlFor="admin-users-create-full-name" className="block text-xs font-semibold text-neutral-700 mb-1">Full Name <span className="text-red-500">*</span></label>
+              <input id="admin-users-create-full-name" className="form-input" placeholder="e.g. Sarah Jenkins" value={form.name} onChange={(e) => set("name", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Email Address <span className="text-red-500">*</span></label>
-              <input type="email" className="form-input" placeholder="user@sadcpf.org" value={form.email} onChange={(e) => set("email", e.target.value)} />
+              <label htmlFor="admin-users-create-email-address" className="block text-xs font-semibold text-neutral-700 mb-1">Email Address <span className="text-red-500">*</span></label>
+              <input id="admin-users-create-email-address" type="email" className="form-input" placeholder="user@sadcpf.org" value={form.email} onChange={(e) => set("email", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Employee Number</label>
-              <input className="form-input" placeholder="EMP-0001" value={form.employee_number} onChange={(e) => set("employee_number", e.target.value)} />
+              <label htmlFor="admin-users-create-employee-number" className="block text-xs font-semibold text-neutral-700 mb-1">Employee Number</label>
+              <input id="admin-users-create-employee-number" className="form-input" placeholder="EMP-0001" value={form.employee_number} onChange={(e) => set("employee_number", e.target.value)} />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Department <span className="text-red-500">*</span></label>
+              <label htmlFor="admin-users-create-department" className="block text-xs font-semibold text-neutral-700 mb-1">Department <span className="text-red-500">*</span></label>
               <div className="flex gap-2">
-                <select className="form-input flex-1" value={form.department_id} onChange={(e) => set("department_id", e.target.value)} disabled={isCreatingDept}>
+                <select id="admin-users-create-department" className="form-input flex-1" value={form.department_id} onChange={(e) => set("department_id", e.target.value)} disabled={isCreatingDept}>
                   <option value="">Select department…</option>
                   {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
@@ -385,9 +385,10 @@ export default function AdminUserCreatePage() {
               </div>
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Job Title</label>
+              <label htmlFor="admin-users-create-job-title" className="block text-xs font-semibold text-neutral-700 mb-1">Job Title</label>
               <div className="flex gap-2">
                 <select
+                  id="admin-users-create-job-title"
                   className="form-input flex-1"
                   value={form.job_title}
                   onChange={(e) => set("job_title", e.target.value)}
@@ -433,20 +434,20 @@ export default function AdminUserCreatePage() {
               )}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Phone Number</label>
-              <input type="tel" className="form-input" placeholder="+264 61 000 0000" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+              <label htmlFor="admin-users-create-phone-number" className="block text-xs font-semibold text-neutral-700 mb-1">Phone Number</label>
+              <input id="admin-users-create-phone-number" type="tel" className="form-input" placeholder="+264 61 000 0000" value={form.phone} onChange={(e) => set("phone", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Date of Birth</label>
-              <input type="date" className="form-input" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
+              <label htmlFor="admin-users-create-date-of-birth" className="block text-xs font-semibold text-neutral-700 mb-1">Date of Birth</label>
+              <input id="admin-users-create-date-of-birth" type="date" className="form-input" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Join Date</label>
-              <input type="date" className="form-input" value={form.join_date} onChange={(e) => set("join_date", e.target.value)} />
+              <label htmlFor="admin-users-create-join-date" className="block text-xs font-semibold text-neutral-700 mb-1">Join Date</label>
+              <input id="admin-users-create-join-date" type="date" className="form-input" value={form.join_date} onChange={(e) => set("join_date", e.target.value)} />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Bio</label>
-              <textarea className="form-input" placeholder="A brief biography" value={form.bio} onChange={(e) => set("bio", e.target.value)} rows={3} />
+              <label htmlFor="admin-users-create-bio" className="block text-xs font-semibold text-neutral-700 mb-1">Bio</label>
+              <textarea id="admin-users-create-bio" className="form-input" placeholder="A brief biography" value={form.bio} onChange={(e) => set("bio", e.target.value)} rows={3} />
             </div>
           </div>
         </div>
@@ -464,12 +465,12 @@ export default function AdminUserCreatePage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Nationality</label>
-                <input className="form-input" placeholder="e.g. Namibian" value={form.nationality} onChange={(e) => set("nationality", e.target.value)} />
+                <label htmlFor="admin-users-create-nationality" className="block text-xs font-semibold text-neutral-700 mb-1">Nationality</label>
+                <input id="admin-users-create-nationality" className="form-input" placeholder="e.g. Namibian" value={form.nationality} onChange={(e) => set("nationality", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Gender</label>
-                <select className="form-input" value={form.gender} onChange={(e) => set("gender", e.target.value)}>
+                <label htmlFor="admin-users-create-gender" className="block text-xs font-semibold text-neutral-700 mb-1">Gender</label>
+                <select id="admin-users-create-gender" className="form-input" value={form.gender} onChange={(e) => set("gender", e.target.value)}>
                   <option value="">Select…</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
@@ -477,8 +478,8 @@ export default function AdminUserCreatePage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Marital Status</label>
-                <select className="form-input" value={form.marital_status} onChange={(e) => set("marital_status", e.target.value)}>
+                <label htmlFor="admin-users-create-marital-status" className="block text-xs font-semibold text-neutral-700 mb-1">Marital Status</label>
+                <select id="admin-users-create-marital-status" className="form-input" value={form.marital_status} onChange={(e) => set("marital_status", e.target.value)}>
                   <option value="">Select…</option>
                   <option value="Single">Single</option>
                   <option value="Married">Married</option>
@@ -489,16 +490,16 @@ export default function AdminUserCreatePage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="col-span-2">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Residential Address Line 1</label>
-                <input className="form-input" placeholder="Street name and number" value={form.address_line1} onChange={(e) => set("address_line1", e.target.value)} />
+                <label htmlFor="admin-users-create-residential-address-line-1" className="block text-xs font-semibold text-neutral-700 mb-1">Residential Address Line 1</label>
+                <input id="admin-users-create-residential-address-line-1" className="form-input" placeholder="Street name and number" value={form.address_line1} onChange={(e) => set("address_line1", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">City</label>
-                <input className="form-input" placeholder="Windhoek" value={form.city} onChange={(e) => set("city", e.target.value)} />
+                <label htmlFor="admin-users-create-city" className="block text-xs font-semibold text-neutral-700 mb-1">City</label>
+                <input id="admin-users-create-city" className="form-input" placeholder="Windhoek" value={form.city} onChange={(e) => set("city", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Country</label>
-                <input className="form-input" placeholder="Namibia" value={form.country} onChange={(e) => set("country", e.target.value)} />
+                <label htmlFor="admin-users-create-country" className="block text-xs font-semibold text-neutral-700 mb-1">Country</label>
+                <input id="admin-users-create-country" className="form-input" placeholder="Namibia" value={form.country} onChange={(e) => set("country", e.target.value)} />
               </div>
             </div>
           </div>
@@ -511,16 +512,16 @@ export default function AdminUserCreatePage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-1">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Contact Name</label>
-                <input className="form-input" placeholder="Full Name" value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} />
+                <label htmlFor="admin-users-create-contact-name" className="block text-xs font-semibold text-neutral-700 mb-1">Contact Name</label>
+                <input id="admin-users-create-contact-name" className="form-input" placeholder="Full Name" value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Relationship</label>
-                <input className="form-input" placeholder="e.g. Spouse" value={form.emergency_contact_relationship} onChange={(e) => set("emergency_contact_relationship", e.target.value)} />
+                <label htmlFor="admin-users-create-relationship" className="block text-xs font-semibold text-neutral-700 mb-1">Relationship</label>
+                <input id="admin-users-create-relationship" className="form-input" placeholder="e.g. Spouse" value={form.emergency_contact_relationship} onChange={(e) => set("emergency_contact_relationship", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Contact Phone</label>
-                <input type="tel" className="form-input" placeholder="+264..." value={form.emergency_contact_phone} onChange={(e) => set("emergency_contact_phone", e.target.value)} />
+                <label htmlFor="admin-users-create-contact-phone" className="block text-xs font-semibold text-neutral-700 mb-1">Contact Phone</label>
+                <input id="admin-users-create-contact-phone" type="tel" className="form-input" placeholder="+264..." value={form.emergency_contact_phone} onChange={(e) => set("emergency_contact_phone", e.target.value)} />
               </div>
             </div>
           </div>
@@ -602,8 +603,8 @@ export default function AdminUserCreatePage() {
               <h3 className="text-sm font-semibold text-neutral-900">Security Settings</h3>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Data Classification Level</label>
-              <select className="form-input" value={form.classification} onChange={(e) => set("classification", e.target.value)}>
+              <label htmlFor="admin-users-create-data-classification-level" className="block text-xs font-semibold text-neutral-700 mb-1">Data Classification Level</label>
+              <select id="admin-users-create-data-classification-level" className="form-input" value={form.classification} onChange={(e) => set("classification", e.target.value)}>
                 {classifications.map((c) => <option key={c}>{c}</option>)}
               </select>
             </div>

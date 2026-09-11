@@ -98,10 +98,10 @@ function ReviewModal({
 
         <form onSubmit={handleSubmit} className="px-6 pt-2 pb-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">
+            <label htmlFor="hr-profile-requests-field" className="block text-xs font-semibold text-neutral-700 mb-1">
               {action === "approve" ? "Notes (optional)" : "Reason for rejection *"}
             </label>
-            <textarea
+            <textarea id="hr-profile-requests-field"
               rows={3}
               required={action === "reject"}
               value={notes}

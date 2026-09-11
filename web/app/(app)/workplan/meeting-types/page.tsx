@@ -126,8 +126,8 @@ export default function MeetingTypesPage() {
         <form onSubmit={handleSubmit} className="card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-neutral-900">{editingId ? "Edit meeting type" : "New meeting type"}</h2>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Name *</label>
-            <input
+            <label htmlFor="workplan-meeting-types-name" className="block text-sm font-semibold text-neutral-700 mb-1">Name *</label>
+            <input id="workplan-meeting-types-name"
               type="text"
               className="form-input w-full"
               value={name}
@@ -137,8 +137,8 @@ export default function MeetingTypesPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
-            <textarea
+            <label htmlFor="workplan-meeting-types-description" className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
+            <textarea id="workplan-meeting-types-description"
               className="form-input w-full min-h-[80px] resize-y"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -146,8 +146,8 @@ export default function MeetingTypesPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Sort order</label>
-            <input
+            <label htmlFor="workplan-meeting-types-sort-order" className="block text-sm font-semibold text-neutral-700 mb-1">Sort order</label>
+            <input id="workplan-meeting-types-sort-order"
               type="number"
               min={0}
               className="form-input w-full max-w-[120px]"

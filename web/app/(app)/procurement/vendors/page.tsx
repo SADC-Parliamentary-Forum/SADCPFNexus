@@ -209,10 +209,10 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
     opts?: { type?: string; placeholder?: string; required?: boolean; span2?: boolean }
   ) => (
     <div className={opts?.span2 ? "sm:col-span-2" : ""}>
-      <label className="block text-xs font-semibold text-neutral-600 mb-1">
+      <label htmlFor="procurement-vendors-field" className="block text-xs font-semibold text-neutral-600 mb-1">
         {label}{opts?.required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
-      <input
+      <input id="procurement-vendors-field"
         type={opts?.type ?? "text"}
         className="form-input"
         value={form[key] as string}
@@ -224,8 +224,8 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
 
   const sf = (key: keyof VendorFormValues, label: string, options: readonly string[]) => (
     <div>
-      <label className="block text-xs font-semibold text-neutral-600 mb-1">{label}</label>
-      <select
+      <label htmlFor="procurement-vendors-field-2" className="block text-xs font-semibold text-neutral-600 mb-1">{label}</label>
+      <select id="procurement-vendors-field-2"
         className="form-input"
         value={form[key] as string}
         onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
@@ -296,10 +296,10 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
           {tab === "basic" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">
+                <label htmlFor="procurement-vendors-vendor-company-name" className="block text-xs font-semibold text-neutral-600 mb-1">
                   Vendor / Company Name <span className="text-red-500">*</span>
                 </label>
-                <input
+                <input id="procurement-vendors-vendor-company-name"
                   ref={firstInputRef}
                   type="text"
                   className="form-input"
@@ -312,7 +312,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
               {tf("tax_number", "VAT / Tax Number", { placeholder: "e.g. 2012345678" })}
               <div className="sm:col-span-2 space-y-2">
                 <div className="flex items-center justify-between gap-3">
-                  <label className="block text-xs font-semibold text-neutral-600">Supplier Categories</label>
+                  <p className="block text-xs font-semibold text-neutral-600">Supplier Categories</p>
                   <span className="text-[11px] text-neutral-400">Select 1 to 3</span>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2">
@@ -323,7 +323,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
                         form.category_ids.includes(category.id) ? "border-primary bg-primary/5" : "border-neutral-200"
                       }`}
                     >
-                      <input
+                      <input id="procurement-vendors-setform-current"
                         type="checkbox"
                         className="mr-2"
                         checked={form.category_ids.includes(category.id)}
@@ -345,8 +345,8 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
               {tf("website", "Website", { type: "url", placeholder: "https://", span2: true })}
 
               <div className="sm:col-span-2">
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input
+                <label htmlFor="procurement-vendors-setform-f-small-or-medium-enterprise-sme" className="flex cursor-pointer items-center gap-2">
+                  <input id="procurement-vendors-setform-f-small-or-medium-enterprise-sme"
                     type="checkbox"
                     className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                     checked={form.is_sme}
@@ -387,8 +387,8 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
           {tab === "admin" && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="block text-xs font-semibold text-neutral-600 mb-1">Internal Notes</label>
-                <textarea
+                <label htmlFor="procurement-vendors-internal-notes" className="block text-xs font-semibold text-neutral-600 mb-1">Internal Notes</label>
+                <textarea id="procurement-vendors-internal-notes"
                   className="form-input h-28 resize-none"
                   value={form.notes}
                   onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
@@ -396,8 +396,8 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
                 />
               </div>
               <div className="sm:col-span-2 flex gap-6">
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input
+                <label htmlFor="procurement-vendors-setform-f-mark-as-approved" className="flex cursor-pointer items-center gap-2">
+                  <input id="procurement-vendors-setform-f-mark-as-approved"
                     type="checkbox"
                     className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                     checked={form.is_approved}
@@ -406,8 +406,8 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
                   <span className="text-xs font-medium text-neutral-700">Mark as Approved</span>
                 </label>
                 {isEdit && (
-                  <label className="flex cursor-pointer items-center gap-2">
-                    <input
+                  <label htmlFor="procurement-vendors-setform-f-active" className="flex cursor-pointer items-center gap-2">
+                    <input id="procurement-vendors-setform-f-active"
                       type="checkbox"
                       className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                       checked={form.is_active}
@@ -978,12 +978,12 @@ export default function VendorsPage() {
                   <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{pwError}</div>
                 )}
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
-                  <input type="password" className="form-input" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Minimum 8 characters" />
+                  <label htmlFor="procurement-vendors-new-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
+                  <input id="procurement-vendors-new-password" type="password" className="form-input" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="Minimum 8 characters" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm Password</label>
-                  <input type="password" className="form-input" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} placeholder="Repeat password" />
+                  <label htmlFor="procurement-vendors-confirm-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm Password</label>
+                  <input id="procurement-vendors-confirm-password" type="password" className="form-input" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} placeholder="Repeat password" />
                 </div>
                 <p className="text-[11px] text-neutral-400">The supplier will be required to set a new password on next login.</p>
                 <div className="flex gap-3">

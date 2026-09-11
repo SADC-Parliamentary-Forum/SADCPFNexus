@@ -353,8 +353,8 @@ export default function AssignmentsPage() {
                 <div className="bg-red-50 text-red-700 rounded-lg px-4 py-2 text-sm">{formError}</div>
               )}
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Title *</label>
-                <input
+                <label htmlFor="hr-assignments-title" className="block text-sm font-medium text-neutral-700 mb-1">Title *</label>
+                <input id="hr-assignments-title"
                   className="form-input"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -362,8 +362,8 @@ export default function AssignmentsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Assign To *</label>
-                <select
+                <label htmlFor="hr-assignments-assign-to" className="block text-sm font-medium text-neutral-700 mb-1">Assign To *</label>
+                <select id="hr-assignments-assign-to"
                   className="form-input"
                   value={form.assigned_to}
                   onChange={(e) => setForm((f) => ({ ...f, assigned_to: e.target.value }))}
@@ -377,8 +377,8 @@ export default function AssignmentsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
-                <textarea
+                <label htmlFor="hr-assignments-description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
+                <textarea id="hr-assignments-description"
                   className="form-input"
                   rows={3}
                   value={form.description}
@@ -388,8 +388,8 @@ export default function AssignmentsPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
-                  <select
+                  <label htmlFor="hr-assignments-priority" className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
+                  <select id="hr-assignments-priority"
                     className="form-input"
                     value={form.priority}
                     onChange={(e) => setForm((f) => ({ ...f, priority: e.target.value }))}
@@ -401,8 +401,8 @@ export default function AssignmentsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Est. Hours</label>
-                  <input
+                  <label htmlFor="hr-assignments-est-hours" className="block text-sm font-medium text-neutral-700 mb-1">Est. Hours</label>
+                  <input id="hr-assignments-est-hours"
                     className="form-input"
                     type="number"
                     min="0"
@@ -414,8 +414,8 @@ export default function AssignmentsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Due Date</label>
-                <input
+                <label htmlFor="hr-assignments-due-date" className="block text-sm font-medium text-neutral-700 mb-1">Due Date</label>
+                <input id="hr-assignments-due-date"
                   className="form-input"
                   type="date"
                   value={form.due_date}

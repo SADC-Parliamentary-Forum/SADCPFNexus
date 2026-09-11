@@ -95,8 +95,8 @@ export default function CreateAssignmentPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
-          <input
+          <label htmlFor="assignments-create-title" className="block text-sm font-medium text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
+          <input id="assignments-create-title"
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
@@ -109,8 +109,8 @@ export default function CreateAssignmentPage() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">Description <span className="text-red-500">*</span></label>
-          <textarea
+          <label htmlFor="assignments-create-description" className="block text-sm font-medium text-neutral-700 mb-1">Description <span className="text-red-500">*</span></label>
+          <textarea id="assignments-create-description"
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
             rows={4}
@@ -124,8 +124,8 @@ export default function CreateAssignmentPage() {
         {/* Objective + Expected Output */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Objective</label>
-            <textarea
+            <label htmlFor="assignments-create-objective" className="block text-sm font-medium text-neutral-700 mb-1">Objective</label>
+            <textarea id="assignments-create-objective"
               value={form.objective}
               onChange={(e) => set("objective", e.target.value)}
               rows={3}
@@ -134,8 +134,8 @@ export default function CreateAssignmentPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Expected Output</label>
-            <textarea
+            <label htmlFor="assignments-create-expected-output" className="block text-sm font-medium text-neutral-700 mb-1">Expected Output</label>
+            <textarea id="assignments-create-expected-output"
               value={form.expected_output}
               onChange={(e) => set("expected_output", e.target.value)}
               rows={3}
@@ -148,16 +148,16 @@ export default function CreateAssignmentPage() {
         {/* Type + Priority */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Assignment Type</label>
-            <select value={form.type} onChange={(e) => set("type", e.target.value)} className="form-input">
+            <label htmlFor="assignments-create-assignment-type" className="block text-sm font-medium text-neutral-700 mb-1">Assignment Type</label>
+            <select id="assignments-create-assignment-type" value={form.type} onChange={(e) => set("type", e.target.value)} className="form-input">
               <option value="individual">Individual</option>
               <option value="sector">Sector</option>
               <option value="collaborative">Collaborative</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
-            <select value={form.priority} onChange={(e) => set("priority", e.target.value)} className="form-input">
+            <label htmlFor="assignments-create-priority" className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
+            <select id="assignments-create-priority" value={form.priority} onChange={(e) => set("priority", e.target.value)} className="form-input">
               <option value="low">Low</option>
               <option value="medium">Medium</option>
               <option value="high">High</option>
@@ -169,8 +169,8 @@ export default function CreateAssignmentPage() {
         {/* Assignee + Department */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Assign To</label>
-            <select value={form.assigned_to} onChange={(e) => set("assigned_to", e.target.value)} className="form-input">
+            <label htmlFor="assignments-create-assign-to" className="block text-sm font-medium text-neutral-700 mb-1">Assign To</label>
+            <select id="assignments-create-assign-to" value={form.assigned_to} onChange={(e) => set("assigned_to", e.target.value)} className="form-input">
               <option value="">— Select staff member —</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -181,8 +181,8 @@ export default function CreateAssignmentPage() {
             {errors.assigned_to && <p className="mt-1 text-xs text-red-500">{errors.assigned_to}</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Department / Sector</label>
-            <select value={form.department_id} onChange={(e) => set("department_id", e.target.value)} className="form-input">
+            <label htmlFor="assignments-create-department-sector" className="block text-sm font-medium text-neutral-700 mb-1">Department / Sector</label>
+            <select id="assignments-create-department-sector" value={form.department_id} onChange={(e) => set("department_id", e.target.value)} className="form-input">
               <option value="">— Select department —</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
@@ -194,8 +194,8 @@ export default function CreateAssignmentPage() {
         {/* Dates */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Due Date <span className="text-red-500">*</span></label>
-            <input
+            <label htmlFor="assignments-create-due-date" className="block text-sm font-medium text-neutral-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+            <input id="assignments-create-due-date"
               type="date"
               value={form.due_date}
               onChange={(e) => set("due_date", e.target.value)}
@@ -205,8 +205,8 @@ export default function CreateAssignmentPage() {
             {errors.due_date && <p className="mt-1 text-xs text-red-500">{errors.due_date}</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Start Date</label>
-            <input
+            <label htmlFor="assignments-create-start-date" className="block text-sm font-medium text-neutral-700 mb-1">Start Date</label>
+            <input id="assignments-create-start-date"
               type="date"
               value={form.start_date}
               onChange={(e) => set("start_date", e.target.value)}
@@ -217,8 +217,8 @@ export default function CreateAssignmentPage() {
 
         {/* Check-in frequency */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">Check-in Frequency</label>
-          <select value={form.checkin_frequency} onChange={(e) => set("checkin_frequency", e.target.value)} className="form-input">
+          <label htmlFor="assignments-create-check-in-frequency" className="block text-sm font-medium text-neutral-700 mb-1">Check-in Frequency</label>
+          <select id="assignments-create-check-in-frequency" value={form.checkin_frequency} onChange={(e) => set("checkin_frequency", e.target.value)} className="form-input">
             <option value="">— None —</option>
             <option value="daily">Daily</option>
             <option value="weekly">Weekly</option>
@@ -228,8 +228,8 @@ export default function CreateAssignmentPage() {
         </div>
 
         {/* Confidential */}
-        <label className="flex items-center gap-3 cursor-pointer select-none">
-          <input
+        <label htmlFor="assignments-create-set-is-confidential-e-target-checked-classname-h" className="flex items-center gap-3 cursor-pointer select-none">
+          <input id="assignments-create-set-is-confidential-e-target-checked-classname-h"
             type="checkbox"
             checked={form.is_confidential}
             onChange={(e) => set("is_confidential", e.target.checked)}

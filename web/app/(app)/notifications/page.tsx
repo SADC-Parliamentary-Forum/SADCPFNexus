@@ -438,9 +438,9 @@ function InboxTab() {
           void runNlSearch();
         }}
       >
-        <label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-medium text-neutral-500">
+        <label htmlFor="notifications-inbox-search-setnlquery-e-target-value-placehold" className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-medium text-neutral-500">
           Inbox search
-          <input
+          <input id="notifications-inbox-search-setnlquery-e-target-value-placehold"
             className="form-input text-sm"
             value={nlQuery}
             onChange={(e) => setNlQuery(e.target.value)}

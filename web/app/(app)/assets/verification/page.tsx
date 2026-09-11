@@ -169,8 +169,8 @@ export default function AssetVerificationPage() {
       </div>
 
       <form onSubmit={scanTokenSubmit} className="card flex flex-wrap items-end gap-2 p-4">
-        <label className="text-sm flex-1">{t("assets.verify.scanToken")}
-          <input className="input mt-1" value={scanToken} onChange={(e) => setScanToken(e.target.value)} required />
+        <label htmlFor="assets-verification-setscantoken-e-target-value-required" className="text-sm flex-1">{t("assets.verify.scanToken")}
+          <input id="assets-verification-setscantoken-e-target-value-required" className="input mt-1" value={scanToken} onChange={(e) => setScanToken(e.target.value)} required />
         </label>
         <Button type="submit">{t("assets.verify.scan")}</Button>
       </form>

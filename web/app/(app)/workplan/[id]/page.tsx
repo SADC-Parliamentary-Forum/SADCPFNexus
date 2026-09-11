@@ -516,29 +516,29 @@ export default function WorkplanEventDetailPage() {
       {editMode ? (
         <form onSubmit={handleSave} className="card p-5 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
-            <input type="text" className="form-input w-full" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            <label htmlFor="workplan-detail-title" className="block text-sm font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
+            <input id="workplan-detail-title" type="text" className="form-input w-full" value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-semibold text-neutral-700">Event type <span className="text-red-500">*</span></label>
+              <label htmlFor="workplan-detail-event-type" className="block text-sm font-semibold text-neutral-700">Event type <span className="text-red-500">*</span></label>
               <button type="button" onClick={() => setManageEventTypes(true)} className="btn-secondary text-xs py-1 px-2 flex items-center gap-0.5">
                 <span className="material-symbols-outlined text-[13px]">settings</span>Manage
               </button>
             </div>
-            <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as WorkplanEvent["type"])}>
+            <select id="workplan-detail-event-type" className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as WorkplanEvent["type"])}>
               {eventTypes.map((et) => <option key={et.slug} value={et.slug}>{et.name}</option>)}
             </select>
           </div>
           {type === "meeting" && (
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-sm font-semibold text-neutral-700">Meeting Category</label>
+                <label htmlFor="workplan-detail-meeting-category" className="block text-sm font-semibold text-neutral-700">Meeting Category</label>
                 <button type="button" onClick={() => setManageMeetingTypes(true)} className="btn-secondary text-xs py-1 px-2 flex items-center gap-0.5">
                   <span className="material-symbols-outlined text-[13px]">settings</span>Manage
                 </button>
               </div>
-              <select className="form-input w-full" value={meetingTypeId}
+              <select id="workplan-detail-meeting-category" className="form-input w-full" value={meetingTypeId}
                 onChange={(e) => setMeetingTypeId(e.target.value === "" ? "" : Number(e.target.value))}>
                 <option value="">— Select —</option>
                 {meetingTypes.map((mt) => <option key={mt.id} value={mt.id}>{mt.name}</option>)}
@@ -547,20 +547,20 @@ export default function WorkplanEventDetailPage() {
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1">Date <span className="text-red-500">*</span></label>
-              <input type="date" className="form-input w-full" value={date} onChange={(e) => setDate(e.target.value)} required />
+              <label htmlFor="workplan-detail-date" className="block text-sm font-semibold text-neutral-700 mb-1">Date <span className="text-red-500">*</span></label>
+              <input id="workplan-detail-date" type="date" className="form-input w-full" value={date} onChange={(e) => setDate(e.target.value)} required />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1">End date</label>
-              <input type="date" className="form-input w-full" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              <label htmlFor="workplan-detail-end-date" className="block text-sm font-semibold text-neutral-700 mb-1">End date</label>
+              <input id="workplan-detail-end-date" type="date" className="form-input w-full" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
-            <textarea className="form-input w-full min-h-[100px] resize-y" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <label htmlFor="workplan-detail-description" className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
+            <textarea id="workplan-detail-description" className="form-input w-full min-h-[100px] resize-y" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Responsible persons</label>
+            <label htmlFor="workplan-detail-responsible-search" className="block text-sm font-semibold text-neutral-700 mb-1">Responsible persons</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {selectedResponsibleUsers.map((u) => (
                 <span key={u.id} className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-sm">
@@ -572,7 +572,7 @@ export default function WorkplanEventDetailPage() {
               ))}
             </div>
             <div className="relative">
-              <input type="text" className="form-input w-full" placeholder="Search by name or email…"
+              <input id="workplan-detail-responsible-search" type="text" className="form-input w-full" placeholder="Search by name or email…"
                 value={userSearch}
                 onChange={(e) => { setUserSearch(e.target.value); setResponsibleSearchOpen(true); }}
                 onFocus={() => setResponsibleSearchOpen(true)} />
@@ -675,10 +675,10 @@ export default function WorkplanEventDetailPage() {
                 <span className="text-xs bg-neutral-100 text-neutral-500 px-2 py-0.5 rounded-full">{attachments.length}</span>
               )}
             </div>
-            <label className={cn("btn-secondary text-xs flex items-center gap-1.5 cursor-pointer", uploading ? "opacity-50 pointer-events-none" : "")}>
+            <label htmlFor="workplan-detail-upload-file" className={cn("btn-secondary text-xs flex items-center gap-1.5 cursor-pointer", uploading ? "opacity-50 pointer-events-none" : "")}>
               <span className="material-symbols-outlined text-[16px]">upload_file</span>
               {uploading ? "Uploading…" : "Upload"}
-              <input type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
+              <input id="workplan-detail-upload-file" type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
             </label>
           </div>
           {attachments.length === 0 ? (

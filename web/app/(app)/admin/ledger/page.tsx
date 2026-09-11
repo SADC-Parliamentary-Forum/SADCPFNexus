@@ -283,8 +283,8 @@ export default function AdminLedgerPage() {
       {/* Filters */}
       <div className="card p-4 flex flex-wrap items-end gap-3">
         <div className="flex-1 min-w-36">
-          <label className="mb-1 block text-xs font-medium text-neutral-600">Module</label>
-          <select
+          <label htmlFor="admin-ledger-module" className="mb-1 block text-xs font-medium text-neutral-600">Module</label>
+          <select id="admin-ledger-module"
             className="form-input py-1.5 text-sm"
             value={moduleFilter}
             onChange={(e) => setModuleFilter(e.target.value)}
@@ -296,8 +296,8 @@ export default function AdminLedgerPage() {
         </div>
 
         <div className="flex-1 min-w-36">
-          <label className="mb-1 block text-xs font-medium text-neutral-600">Action</label>
-          <select
+          <label htmlFor="admin-ledger-action" className="mb-1 block text-xs font-medium text-neutral-600">Action</label>
+          <select id="admin-ledger-action"
             className="form-input py-1.5 text-sm"
             value={actionFilter}
             onChange={(e) => setActionFilter(e.target.value)}
@@ -309,10 +309,11 @@ export default function AdminLedgerPage() {
         </div>
 
         <div className="flex-1 min-w-44">
-          <label className="mb-1 block text-xs font-medium text-neutral-600">User (name / email)</label>
+          <label htmlFor="admin-ledger-user" className="mb-1 block text-xs font-medium text-neutral-600">User (name / email)</label>
           <div className="relative">
             <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-neutral-400 text-[16px]">search</span>
             <input
+              id="admin-ledger-user"
               type="text"
               className="form-input py-1.5 pl-8 text-sm"
               placeholder="Search user…"
@@ -323,12 +324,12 @@ export default function AdminLedgerPage() {
         </div>
 
         <div className="min-w-36">
-          <label className="mb-1 block text-xs font-medium text-neutral-600">From</label>
-          <input type="date" className="form-input py-1.5 text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          <label htmlFor="admin-ledger-from" className="mb-1 block text-xs font-medium text-neutral-600">From</label>
+          <input id="admin-ledger-from" type="date" className="form-input py-1.5 text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
         </div>
         <div className="min-w-36">
-          <label className="mb-1 block text-xs font-medium text-neutral-600">To</label>
-          <input type="date" className="form-input py-1.5 text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <label htmlFor="admin-ledger-to" className="mb-1 block text-xs font-medium text-neutral-600">To</label>
+          <input id="admin-ledger-to" type="date" className="form-input py-1.5 text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
         </div>
 
         {hasFilters && (

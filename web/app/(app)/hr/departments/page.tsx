@@ -142,12 +142,13 @@ export default function AdminDepartmentsPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="hr-departments-name" className="block text-xs font-semibold text-neutral-700">
                 Department Name <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">corporate_fare</span>
                 <input
+                  id="hr-departments-name"
                   className="form-input pl-8"
                   placeholder="e.g. Finance & Administration"
                   value={form.name}
@@ -156,12 +157,13 @@ export default function AdminDepartmentsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="hr-departments-code" className="block text-xs font-semibold text-neutral-700">
                 Department Code <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">tag</span>
                 <input
+                  id="hr-departments-code"
                   className="form-input pl-8 uppercase font-mono"
                   placeholder="e.g. FIN"
                   maxLength={6}
@@ -171,12 +173,13 @@ export default function AdminDepartmentsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="hr-departments-parent" className="block text-xs font-semibold text-neutral-700">
                 Parent Department
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">hub</span>
                 <select
+                  id="hr-departments-parent"
                   className="form-input pl-8"
                   value={form.parent_id || ""}
                   onChange={(e) => setForm((p) => ({ ...p, parent_id: e.target.value ? Number(e.target.value) : null }))}
@@ -190,12 +193,13 @@ export default function AdminDepartmentsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="hr-departments-supervisor" className="block text-xs font-semibold text-neutral-700">
                 Department Supervisor
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">person</span>
                 <select
+                  id="hr-departments-supervisor"
                   className="form-input pl-8"
                   value={form.supervisor_id || ""}
                   onChange={(e) => setForm((p) => ({ ...p, supervisor_id: e.target.value ? Number(e.target.value) : null }))}

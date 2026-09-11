@@ -585,8 +585,8 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
               onChange={(id) => setBudgetLineId(id)}
             />
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Reserved amount</label>
-              <input
+              <label htmlFor="procurement-reserved-amount" className="block text-xs font-semibold text-neutral-700 mb-1">Reserved amount</label>
+              <input id="procurement-reserved-amount"
                 type="number"
                 min={0}
                 step="0.01"
@@ -766,8 +766,8 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-neutral-600">Vendor Name *</label>
-                  <input
+                  <label htmlFor="procurement-quote-vendor-name" className="mb-1 block text-xs font-medium text-neutral-600">Vendor Name *</label>
+                  <input id="procurement-quote-vendor-name"
                     type="text"
                     className="form-input text-sm"
                     placeholder="e.g. ABC Supplies Ltd"
@@ -777,16 +777,16 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
                 </div>
                 <div className="flex gap-2">
                   <div className="w-24 flex-shrink-0">
-                    <label className="mb-1 block text-xs font-medium text-neutral-600">Currency</label>
-                    <select className="form-input text-sm" value={quoteCurrency} onChange={(e) => setQuoteCurrency(e.target.value)}>
+                    <label htmlFor="procurement-detail-currency" className="mb-1 block text-xs font-medium text-neutral-600">Currency</label>
+                    <select id="procurement-detail-currency" className="form-input text-sm" value={quoteCurrency} onChange={(e) => setQuoteCurrency(e.target.value)}>
                       {["NAD", "USD", "ZAR", "BWP", "ZMW", "MWK", "TZS", "EUR"].map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </select>
                   </div>
                   <div className="flex-1">
-                    <label className="mb-1 block text-xs font-medium text-neutral-600">Amount *</label>
-                    <input
+                    <label htmlFor="procurement-detail-amount" className="mb-1 block text-xs font-medium text-neutral-600">Amount *</label>
+                    <input id="procurement-detail-amount"
                       type="number"
                       min="0"
                       step="0.01"
@@ -798,8 +798,8 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
                   </div>
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-neutral-600">Quote Date</label>
-                  <input
+                  <label htmlFor="procurement-detail-quote-date" className="mb-1 block text-xs font-medium text-neutral-600">Quote Date</label>
+                  <input id="procurement-detail-quote-date"
                     type="date"
                     className="form-input text-sm"
                     value={quoteDate}
@@ -807,8 +807,8 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-neutral-600">Notes</label>
-                  <input
+                  <label htmlFor="procurement-detail-notes" className="mb-1 block text-xs font-medium text-neutral-600">Notes</label>
+                  <input id="procurement-detail-notes"
                     type="text"
                     className="form-input text-sm"
                     placeholder="Optional notes"
@@ -990,10 +990,10 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
 
             {hodAction === "reject" && (
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+                <label htmlFor="procurement-detail-rejection-reason" className="block text-xs font-semibold text-neutral-700 mb-1.5">
                   Rejection Reason <span className="text-red-500">*</span>
                 </label>
-                <textarea
+                <textarea id="procurement-detail-rejection-reason"
                   className="form-input w-full h-24 resize-none"
                   placeholder="Explain why this request is being rejected…"
                   value={hodRejReason}
@@ -1052,10 +1052,10 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">
+              <label htmlFor="procurement-detail-select-winning-quote" className="block text-xs font-semibold text-neutral-700 mb-1.5">
                 Select Winning Quote <span className="text-red-500">*</span>
               </label>
-              <select
+              <select id="procurement-detail-select-winning-quote"
                 className="form-input w-full"
                 value={awardQuoteId}
                 onChange={(e) => setAwardQuoteId(e.target.value ? Number(e.target.value) : "")}
@@ -1071,8 +1071,8 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Award Notes</label>
-              <textarea
+              <label htmlFor="procurement-detail-award-notes" className="block text-xs font-semibold text-neutral-700 mb-1.5">Award Notes</label>
+              <textarea id="procurement-detail-award-notes"
                 className="form-input w-full h-20 resize-none"
                 placeholder="Reason for selection, evaluation summary…"
                 value={awardNotes}
@@ -1081,8 +1081,8 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
             </div>
 
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 space-y-2">
-              <label className="flex items-start gap-2 text-sm">
-                <input
+              <label htmlFor="procurement-detail-setawardcoideclared-e-target-checked-i-declare-t" className="flex items-start gap-2 text-sm">
+                <input id="procurement-detail-setawardcoideclared-e-target-checked-i-declare-t"
                   type="checkbox"
                   className="mt-0.5"
                   checked={awardCoiDeclared}
@@ -1090,8 +1090,8 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
                 />
                 <span>I declare that I have no undeclared conflict of interest, or I have disclosed any conflict below.</span>
               </label>
-              <label className="flex items-start gap-2 text-sm">
-                <input
+              <label htmlFor="procurement-detail-setawardcoiconflict-e-target-checked-i-have-a-co" className="flex items-start gap-2 text-sm">
+                <input id="procurement-detail-setawardcoiconflict-e-target-checked-i-have-a-co"
                   type="checkbox"
                   className="mt-0.5"
                   checked={awardCoiConflict}

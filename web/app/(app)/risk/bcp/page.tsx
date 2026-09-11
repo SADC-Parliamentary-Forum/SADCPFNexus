@@ -149,29 +149,29 @@ export default function RiskBcpPage() {
         }}
         className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-2 dark:border-neutral-700 dark:bg-neutral-900"
       >
-        <label className="space-y-1">
+        <label htmlFor="risk-bcp-risk-id-setriskid-e-target-value" className="space-y-1">
           <span className="text-sm font-medium">Risk ID</span>
-          <input className="input w-full" required value={riskId} onChange={(e) => setRiskId(e.target.value)} />
+          <input id="risk-bcp-risk-id-setriskid-e-target-value" className="input w-full" required value={riskId} onChange={(e) => setRiskId(e.target.value)} />
         </label>
-        <label className="space-y-1">
+        <label htmlFor="risk-bcp-link-type-setlinktype-e-target-value-as-typeof-l" className="space-y-1">
           <span className="text-sm font-medium">Link type</span>
-          <select className="input w-full" value={linkType} onChange={(e) => setLinkType(e.target.value as typeof linkType)}>
+          <select id="risk-bcp-link-type-setlinktype-e-target-value-as-typeof-l" className="input w-full" value={linkType} onChange={(e) => setLinkType(e.target.value as typeof linkType)}>
             <option value="bcp_note">BCP note</option>
             <option value="insurance_policy">FA insurance policy</option>
           </select>
         </label>
-        <label className="space-y-1 md:col-span-2">
+        <label htmlFor="risk-bcp-title-settitle-e-target-value" className="space-y-1 md:col-span-2">
           <span className="text-sm font-medium">Title</span>
-          <input className="input w-full" required value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input id="risk-bcp-title-settitle-e-target-value" className="input w-full" required value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
-        <label className="space-y-1 md:col-span-2">
+        <label htmlFor="risk-bcp-notes-setnotes-e-target-value" className="space-y-1 md:col-span-2">
           <span className="text-sm font-medium">Notes</span>
-          <textarea className="input w-full min-h-20" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <textarea id="risk-bcp-notes-setnotes-e-target-value" className="input w-full min-h-20" value={notes} onChange={(e) => setNotes(e.target.value)} />
         </label>
         {linkType === "insurance_policy" && (
-          <label className="space-y-1">
+          <label htmlFor="risk-bcp-asset-insurance-policy-id-setpolicyid-e-target-v" className="space-y-1">
             <span className="text-sm font-medium">Asset insurance policy ID</span>
-            <input className="input w-full" required value={policyId} onChange={(e) => setPolicyId(e.target.value)} />
+            <input id="risk-bcp-asset-insurance-policy-id-setpolicyid-e-target-v" className="input w-full" required value={policyId} onChange={(e) => setPolicyId(e.target.value)} />
           </label>
         )}
         <div className="md:col-span-2">
@@ -220,21 +220,21 @@ export default function RiskBcpPage() {
           }}
           className="grid gap-3 md:grid-cols-4"
         >
-          <label className="space-y-1 md:col-span-2">
+          <label htmlFor="risk-bcp-title-setexercisetitle-e-target-value" className="space-y-1 md:col-span-2">
             <span className="text-sm font-medium">Title</span>
-            <input className="input w-full" required value={exerciseTitle} onChange={(e) => setExerciseTitle(e.target.value)} />
+            <input id="risk-bcp-title-setexercisetitle-e-target-value" className="input w-full" required value={exerciseTitle} onChange={(e) => setExerciseTitle(e.target.value)} />
           </label>
-          <label className="space-y-1">
+          <label htmlFor="risk-bcp-type-setexercisetype-e-target-value-tabletop-dri" className="space-y-1">
             <span className="text-sm font-medium">Type</span>
-            <select className="input w-full" value={exerciseType} onChange={(e) => setExerciseType(e.target.value)}>
+            <select id="risk-bcp-type-setexercisetype-e-target-value-tabletop-dri" className="input w-full" value={exerciseType} onChange={(e) => setExerciseType(e.target.value)}>
               <option value="tabletop">Tabletop</option>
               <option value="drill">Drill</option>
               <option value="full">Full</option>
             </select>
           </label>
-          <label className="space-y-1">
+          <label htmlFor="risk-bcp-scheduled-setexerciseat-e-target-value" className="space-y-1">
             <span className="text-sm font-medium">Scheduled</span>
-            <input className="input w-full" type="datetime-local" value={exerciseAt} onChange={(e) => setExerciseAt(e.target.value)} />
+            <input id="risk-bcp-scheduled-setexerciseat-e-target-value" className="input w-full" type="datetime-local" value={exerciseAt} onChange={(e) => setExerciseAt(e.target.value)} />
           </label>
           <div className="md:col-span-4">
             <button type="submit" className="btn-primary" disabled={createExercise.isPending}>
@@ -330,13 +330,13 @@ export default function RiskBcpPage() {
         className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-3 dark:border-neutral-700 dark:bg-neutral-900"
       >
         <h2 className="md:col-span-3 text-lg font-semibold">Interdependency mapping</h2>
-        <label className="space-y-1">
+        <label htmlFor="risk-bcp-risk-a-depends-setriskid-e-target-value" className="space-y-1">
           <span className="text-sm font-medium">Risk A (depends)</span>
-          <input className="input w-full" required value={riskId} onChange={(e) => setRiskId(e.target.value)} />
+          <input id="risk-bcp-risk-a-depends-setriskid-e-target-value" className="input w-full" required value={riskId} onChange={(e) => setRiskId(e.target.value)} />
         </label>
-        <label className="space-y-1">
+        <label htmlFor="risk-bcp-risk-b-dependency-setrelatedriskid-e-target-valu" className="space-y-1">
           <span className="text-sm font-medium">Risk B (dependency)</span>
-          <input className="input w-full" required value={relatedRiskId} onChange={(e) => setRelatedRiskId(e.target.value)} />
+          <input id="risk-bcp-risk-b-dependency-setrelatedriskid-e-target-valu" className="input w-full" required value={relatedRiskId} onChange={(e) => setRelatedRiskId(e.target.value)} />
         </label>
         <div className="flex items-end">
           <button type="submit" className="btn-primary" disabled={createDep.isPending}>

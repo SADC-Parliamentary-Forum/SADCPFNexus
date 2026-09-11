@@ -129,12 +129,12 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
           {canAct && (
             <div className="flex flex-wrap gap-2 items-end">
               <div className="flex-1 min-w-[160px]">
-                <label className="block text-xs mb-1">Title</label>
-                <input className="form-input" value={msTitle} onChange={(e) => setMsTitle(e.target.value)} />
+                <label htmlFor="contract-milestone-title" className="block text-xs mb-1">Title</label>
+                <input id="contract-milestone-title" className="form-input" value={msTitle} onChange={(e) => setMsTitle(e.target.value)} />
               </div>
               <div className="w-32">
-                <label className="block text-xs mb-1">Amount</label>
-                <input type="number" className="form-input" value={msAmount} onChange={(e) => setMsAmount(e.target.value)} />
+                <label htmlFor="contract-milestone-amount" className="block text-xs mb-1">Amount</label>
+                <input id="contract-milestone-amount" type="number" className="form-input" value={msAmount} onChange={(e) => setMsAmount(e.target.value)} />
               </div>
               <button type="button" className="btn-primary text-sm" disabled={!msTitle || addMilestoneMutation.isPending} onClick={() => addMilestoneMutation.mutate()}>Add</button>
             </div>

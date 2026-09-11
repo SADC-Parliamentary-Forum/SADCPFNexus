@@ -98,8 +98,8 @@ export default function NewWorkplanEventPage() {
 
       <form onSubmit={handleSubmit} className="card p-5 space-y-4">
         <div>
-          <label className="block text-sm font-semibold text-neutral-700 mb-1">Title *</label>
-          <input
+          <label htmlFor="workplan-new-title" className="block text-sm font-semibold text-neutral-700 mb-1">Title *</label>
+          <input id="workplan-new-title"
             type="text"
             className="form-input w-full"
             value={title}
@@ -109,8 +109,8 @@ export default function NewWorkplanEventPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-neutral-700 mb-1">Event type *</label>
-          <select className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as WorkplanEvent["type"])} required>
+          <label htmlFor="workplan-new-event-type" className="block text-sm font-semibold text-neutral-700 mb-1">Event type *</label>
+          <select id="workplan-new-event-type" className="form-input w-full" value={type} onChange={(e) => setType(e.target.value as WorkplanEvent["type"])} required>
             {eventTypes.map((et) => (
               <option key={et.slug} value={et.slug}>{et.name}</option>
             ))}
@@ -118,8 +118,8 @@ export default function NewWorkplanEventPage() {
         </div>
         {type === "meeting" && (
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Meeting Category</label>
-            <select
+            <label htmlFor="workplan-new-meeting-category" className="block text-sm font-semibold text-neutral-700 mb-1">Meeting Category</label>
+            <select id="workplan-new-meeting-category"
               className="form-input w-full"
               value={meetingTypeId}
               onChange={(e) => setMeetingTypeId(e.target.value === "" ? "" : Number(e.target.value))}
@@ -133,8 +133,8 @@ export default function NewWorkplanEventPage() {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Date *</label>
-            <input
+            <label htmlFor="workplan-new-date" className="block text-sm font-semibold text-neutral-700 mb-1">Date *</label>
+            <input id="workplan-new-date"
               type="date"
               className="form-input w-full"
               value={date}
@@ -143,8 +143,8 @@ export default function NewWorkplanEventPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">End date</label>
-            <input
+            <label htmlFor="workplan-new-end-date" className="block text-sm font-semibold text-neutral-700 mb-1">End date</label>
+            <input id="workplan-new-end-date"
               type="date"
               className="form-input w-full"
               min={date || undefined}
@@ -154,8 +154,8 @@ export default function NewWorkplanEventPage() {
           </div>
         </div>
         <div>
-          <label className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
-          <textarea
+          <label htmlFor="workplan-new-description" className="block text-sm font-semibold text-neutral-700 mb-1">Description</label>
+          <textarea id="workplan-new-description"
             className="form-input w-full min-h-[100px] resize-y"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -163,7 +163,7 @@ export default function NewWorkplanEventPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-neutral-700 mb-1">Responsible persons</label>
+          <label htmlFor="workplan-new-responsible-search" className="block text-sm font-semibold text-neutral-700 mb-1">Responsible persons</label>
           <div className="flex flex-wrap gap-2 mb-2">
             {selectedResponsibleUsers.map((u) => (
               <span
@@ -179,6 +179,7 @@ export default function NewWorkplanEventPage() {
           </div>
           <div className="relative">
             <input
+              id="workplan-new-responsible-search"
               type="text"
               className="form-input w-full"
               placeholder="Search by name or email..."

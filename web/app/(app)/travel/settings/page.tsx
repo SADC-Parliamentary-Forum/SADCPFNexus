@@ -368,8 +368,8 @@ export default function TravelSettingsPage() {
                     />
                   </FormField>
                   <div className="flex items-end">
-                    <label className="flex items-center gap-2 text-sm text-neutral-700">
-                      <input
+                    <label htmlFor="travel-settings-setform-active-rate" className="flex items-center gap-2 text-sm text-neutral-700">
+                      <input id="travel-settings-setform-active-rate"
                         type="checkbox"
                         className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                         checked={form.is_active}
@@ -618,8 +618,8 @@ export default function TravelSettingsPage() {
                     />
                   </FormField>
                   <div className="flex items-end sm:col-span-2">
-                    <label className="flex items-center gap-2 text-sm text-neutral-700">
-                      <input
+                    <label htmlFor="travel-settings-setsponsoredform-active-policy-rate" className="flex items-center gap-2 text-sm text-neutral-700">
+                      <input id="travel-settings-setsponsoredform-active-policy-rate"
                         type="checkbox"
                         className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                         checked={sponsoredForm.is_active}

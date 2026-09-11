@@ -47,13 +47,13 @@ export default function Page() {
           open.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-recertification-campaign-name-setname-e-target-value" className="block text-xs font-medium text-neutral-600">
           Campaign name
-          <input className="form-input mt-1" value={name} onChange={(e) => setName(e.target.value)} />
+          <input id="people-recertification-campaign-name-setname-e-target-value" className="form-input mt-1" value={name} onChange={(e) => setName(e.target.value)} />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-recertification-due-date-setduedate-e-target-value" className="block text-xs font-medium text-neutral-600">
           Due date
-          <input type="date" className="form-input mt-1" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <input id="people-recertification-due-date-setduedate-e-target-value" type="date" className="form-input mt-1" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </label>
         <button type="submit" className="btn-primary text-sm" disabled={open.isPending}>
           {open.isPending ? "Opening…" : "Open recertification campaign"}

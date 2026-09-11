@@ -326,21 +326,21 @@ function AssetDisposalPageInner() {
         >
           <h2 className="text-lg font-semibold">Complete disposal — {selected.reference}</h2>
           <div className="grid gap-3 md:grid-cols-3">
-            <label className="block text-sm">
+            <label htmlFor="assets-disposal-method-setcompleteform" className="block text-sm">
               Method
-              <select className="form-input mt-1 w-full" value={completeForm.method} onChange={(e) => setCompleteForm({ ...completeForm, method: e.target.value })}>
+              <select id="assets-disposal-method-setcompleteform" className="form-input mt-1 w-full" value={completeForm.method} onChange={(e) => setCompleteForm({ ...completeForm, method: e.target.value })}>
                 {METHODS.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
             </label>
-            <label className="block text-sm">
+            <label htmlFor="assets-disposal-proceeds-setcompleteform" className="block text-sm">
               Proceeds
-              <input type="number" min="0" step="0.01" className="form-input mt-1 w-full" value={completeForm.proceeds} onChange={(e) => setCompleteForm({ ...completeForm, proceeds: e.target.value })} />
+              <input id="assets-disposal-proceeds-setcompleteform" type="number" min="0" step="0.01" className="form-input mt-1 w-full" value={completeForm.proceeds} onChange={(e) => setCompleteForm({ ...completeForm, proceeds: e.target.value })} />
             </label>
-            <label className="block text-sm">
+            <label htmlFor="assets-disposal-accounting-reference-setcompleteform" className="block text-sm">
               Accounting reference
-              <input className="form-input mt-1 w-full" value={completeForm.accounting_reference} onChange={(e) => setCompleteForm({ ...completeForm, accounting_reference: e.target.value })} />
+              <input id="assets-disposal-accounting-reference-setcompleteform" className="form-input mt-1 w-full" value={completeForm.accounting_reference} onChange={(e) => setCompleteForm({ ...completeForm, accounting_reference: e.target.value })} />
             </label>
           </div>
           <div className="flex gap-2">

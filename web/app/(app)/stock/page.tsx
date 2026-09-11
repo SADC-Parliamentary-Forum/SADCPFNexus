@@ -172,22 +172,22 @@ export default function StockItemsPage() {
       {!loading && items.length > 0 && (
         <div className="card p-3 flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[160px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">Search</label>
+            <label htmlFor="stock-register-search" className="block text-xs font-semibold text-neutral-600 mb-1">Search</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-neutral-400 text-[18px]">search</span>
-              <input className="form-input pl-8 text-sm" placeholder="Name or item code…" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input id="stock-register-search" className="form-input pl-8 text-sm" placeholder="Name or item code…" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           </div>
           <div className="min-w-[150px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("stock.category")}</label>
-            <select className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+            <label htmlFor="stock-register-category" className="block text-xs font-semibold text-neutral-600 mb-1">{t("stock.category")}</label>
+            <select id="stock-register-category" className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
               <option value="all">All Categories</option>
               {categories.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
             </select>
           </div>
           <div className="min-w-[130px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
-            <select className="form-input text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <label htmlFor="stock-status" className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
+            <select id="stock-status" className="form-input text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
               <option value="active">Active</option>
               <option value="archived">Archived</option>
               <option value="all">All</option>

@@ -124,14 +124,14 @@ export default function StockReportsPage() {
 
       <div className="card p-3 flex flex-wrap gap-3 items-end">
         <div className="min-w-[180px]">
-          <label className="block text-xs font-semibold text-neutral-600 mb-1">Category</label>
-          <select className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+          <label htmlFor="stock-reports-category" className="block text-xs font-semibold text-neutral-600 mb-1">Category</label>
+          <select id="stock-reports-category" className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
             <option value="all">All Categories</option>
             {categories.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
           </select>
         </div>
-        <label className="flex items-center gap-2 text-sm text-neutral-700 mb-1.5 cursor-pointer">
-          <input type="checkbox" checked={lowOnly} onChange={(e) => setLowOnly(e.target.checked)} className="rounded border-neutral-300" />
+        <label htmlFor="stock-reports-setlowonly-e-target-checked-classname-rounded-bo" className="flex items-center gap-2 text-sm text-neutral-700 mb-1.5 cursor-pointer">
+          <input id="stock-reports-setlowonly-e-target-checked-classname-rounded-bo" type="checkbox" checked={lowOnly} onChange={(e) => setLowOnly(e.target.checked)} className="rounded border-neutral-300" />
           Low stock only
         </label>
       </div>

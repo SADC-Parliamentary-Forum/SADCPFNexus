@@ -384,8 +384,8 @@ export default function InvoicesPage() {
             <div className="space-y-4">
               {/* PO selector */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Purchase Order <span className="text-red-500">*</span></label>
-                <select
+                <label htmlFor="procurement-invoices-purchase-order" className="text-xs font-semibold text-neutral-600">Purchase Order <span className="text-red-500">*</span></label>
+                <select id="procurement-invoices-purchase-order"
                   className="form-input"
                   value={selectedPoId}
                   onChange={(e) => setSelectedPoId(e.target.value ? Number(e.target.value) : "")}
@@ -402,8 +402,8 @@ export default function InvoicesPage() {
               {/* GRN selector (optional) */}
               {availableGRNs.length > 0 && (
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Goods Receipt Note (optional)</label>
-                  <select
+                  <label htmlFor="procurement-invoices-goods-receipt-note-optional" className="text-xs font-semibold text-neutral-600">Goods Receipt Note (optional)</label>
+                  <select id="procurement-invoices-goods-receipt-note-optional"
                     className="form-input"
                     value={selectedGrnId}
                     onChange={(e) => setSelectedGrnId(e.target.value ? Number(e.target.value) : "")}
@@ -417,8 +417,8 @@ export default function InvoicesPage() {
               )}
 
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Vendor Invoice Number <span className="text-red-500">*</span></label>
-                <input
+                <label htmlFor="procurement-invoices-vendor-invoice-number" className="text-xs font-semibold text-neutral-600">Vendor Invoice Number <span className="text-red-500">*</span></label>
+                <input id="procurement-invoices-vendor-invoice-number"
                   type="text"
                   className="form-input"
                   placeholder="e.g. INV-2026-001"
@@ -429,19 +429,19 @@ export default function InvoicesPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Invoice Date <span className="text-red-500">*</span></label>
-                  <input type="date" className="form-input" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
+                  <label htmlFor="procurement-invoices-invoice-date" className="text-xs font-semibold text-neutral-600">Invoice Date <span className="text-red-500">*</span></label>
+                  <input id="procurement-invoices-invoice-date" type="date" className="form-input" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Due Date <span className="text-red-500">*</span></label>
-                  <input type="date" className="form-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                  <label htmlFor="procurement-invoices-due-date" className="text-xs font-semibold text-neutral-600">Due Date <span className="text-red-500">*</span></label>
+                  <input id="procurement-invoices-due-date" type="date" className="form-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Amount <span className="text-red-500">*</span></label>
-                  <input
+                  <label htmlFor="procurement-invoices-amount" className="text-xs font-semibold text-neutral-600">Amount <span className="text-red-500">*</span></label>
+                  <input id="procurement-invoices-amount"
                     type="number"
                     min="0"
                     step="0.01"
@@ -452,8 +452,8 @@ export default function InvoicesPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Currency</label>
-                  <input
+                  <label htmlFor="procurement-invoices-currency" className="text-xs font-semibold text-neutral-600">Currency</label>
+                  <input id="procurement-invoices-currency"
                     type="text"
                     className="form-input"
                     value={currency}

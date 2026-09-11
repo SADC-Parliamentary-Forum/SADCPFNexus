@@ -51,13 +51,13 @@ export default function Page() {
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-access-reviews-campaign-name-setname-e-target-value-required" className="block text-xs font-medium text-neutral-600">
           Campaign name
-          <input className="form-input mt-1" value={name} onChange={(e) => setName(e.target.value)} required />
+          <input id="people-access-reviews-campaign-name-setname-e-target-value-required" className="form-input mt-1" value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-access-reviews-due-date-setduedate-e-target-value" className="block text-xs font-medium text-neutral-600">
           Due date
-          <input type="date" className="form-input mt-1" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <input id="people-access-reviews-due-date-setduedate-e-target-value" type="date" className="form-input mt-1" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </label>
         <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
           {create.isPending ? "Saving…" : "Create access review"}

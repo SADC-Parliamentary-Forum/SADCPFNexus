@@ -52,8 +52,8 @@ function AllowanceProfileModal({
         <div className="space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
-              <input
+              <label htmlFor="settings-hr-allowance-profiles-code" className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
+              <input id="settings-hr-allowance-profiles-code"
                 className="form-input text-sm uppercase"
                 value={form.profile_code ?? ""}
                 onChange={(e) => set("profile_code", e.target.value.toUpperCase())}
@@ -62,8 +62,8 @@ function AllowanceProfileModal({
               />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Profile Name *</label>
-              <input
+              <label htmlFor="settings-hr-allowance-profiles-profile-name" className="block text-xs font-medium text-neutral-700 mb-1">Profile Name *</label>
+              <input id="settings-hr-allowance-profiles-profile-name"
                 className="form-input text-sm"
                 value={form.profile_name ?? ""}
                 onChange={(e) => set("profile_name", e.target.value)}
@@ -74,8 +74,8 @@ function AllowanceProfileModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Currency</label>
-            <input
+            <label htmlFor="settings-hr-allowance-profiles-currency" className="block text-xs font-medium text-neutral-700 mb-1">Currency</label>
+            <input id="settings-hr-allowance-profiles-currency"
               className="form-input text-sm uppercase"
               value={form.currency ?? "NAD"}
               onChange={(e) => set("currency", e.target.value.toUpperCase().slice(0, 3))}
@@ -88,8 +88,8 @@ function AllowanceProfileModal({
             <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wide">Monthly Allowances</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Transport</label>
-                <input
+                <label htmlFor="settings-hr-allowance-profiles-transport" className="block text-xs font-medium text-neutral-700 mb-1">Transport</label>
+                <input id="settings-hr-allowance-profiles-transport"
                   type="number"
                   className="form-input text-sm"
                   step="0.01"
@@ -99,8 +99,8 @@ function AllowanceProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Housing</label>
-                <input
+                <label htmlFor="settings-hr-allowance-profiles-housing" className="block text-xs font-medium text-neutral-700 mb-1">Housing</label>
+                <input id="settings-hr-allowance-profiles-housing"
                   type="number"
                   className="form-input text-sm"
                   step="0.01"
@@ -110,8 +110,8 @@ function AllowanceProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Communication</label>
-                <input
+                <label htmlFor="settings-hr-allowance-profiles-communication" className="block text-xs font-medium text-neutral-700 mb-1">Communication</label>
+                <input id="settings-hr-allowance-profiles-communication"
                   type="number"
                   className="form-input text-sm"
                   step="0.01"
@@ -121,8 +121,8 @@ function AllowanceProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Medical</label>
-                <input
+                <label htmlFor="settings-hr-allowance-profiles-medical" className="block text-xs font-medium text-neutral-700 mb-1">Medical</label>
+                <input id="settings-hr-allowance-profiles-medical"
                   type="number"
                   className="form-input text-sm"
                   step="0.01"
@@ -132,8 +132,8 @@ function AllowanceProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Subsistence</label>
-                <input
+                <label htmlFor="settings-hr-allowance-profiles-subsistence" className="block text-xs font-medium text-neutral-700 mb-1">Subsistence</label>
+                <input id="settings-hr-allowance-profiles-subsistence"
                   type="number"
                   className="form-input text-sm"
                   step="0.01"
@@ -161,8 +161,8 @@ function AllowanceProfileModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Notes</label>
-            <textarea
+            <label htmlFor="settings-hr-allowance-profiles-notes" className="block text-xs font-medium text-neutral-700 mb-1">Notes</label>
+            <textarea id="settings-hr-allowance-profiles-notes"
               className="form-input text-sm resize-none"
               rows={2}
               value={form.notes ?? ""}
@@ -172,8 +172,8 @@ function AllowanceProfileModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select
+            <label htmlFor="settings-hr-allowance-profiles-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="settings-hr-allowance-profiles-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}

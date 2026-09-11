@@ -387,10 +387,10 @@ function PurchaseOrdersPageInner() {
             <div className="space-y-4">
               {/* Procurement Request (required) */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">
+                <label htmlFor="procurement-purchase-orders-procurement-request" className="text-xs font-semibold text-neutral-600">
                   Procurement Request <span className="text-red-500">*</span>
                 </label>
-                <select
+                <select id="procurement-purchase-orders-procurement-request"
                   className="form-input"
                   value={selectedRequestId}
                   onChange={(e) => {
@@ -411,10 +411,10 @@ function PurchaseOrdersPageInner() {
 
               {/* Vendor (required) */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">
+                <label htmlFor="procurement-purchase-orders-vendor" className="text-xs font-semibold text-neutral-600">
                   Vendor <span className="text-red-500">*</span>
                 </label>
-                <select
+                <select id="procurement-purchase-orders-vendor"
                   className="form-input"
                   value={selectedVendorId}
                   onChange={(e) => setSelectedVendorId(e.target.value ? Number(e.target.value) : "")}
@@ -431,8 +431,8 @@ function PurchaseOrdersPageInner() {
 
               {/* Title */}
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">PO Title <span className="text-red-500">*</span></label>
-                <input
+                <label htmlFor="procurement-purchase-orders-po-title" className="text-xs font-semibold text-neutral-600">PO Title <span className="text-red-500">*</span></label>
+                <input id="procurement-purchase-orders-po-title"
                   type="text"
                   className="form-input"
                   placeholder="e.g. Office Supplies Q2 2026"
@@ -443,8 +443,8 @@ function PurchaseOrdersPageInner() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Currency</label>
-                  <input
+                  <label htmlFor="procurement-purchase-orders-currency" className="text-xs font-semibold text-neutral-600">Currency</label>
+                  <input id="procurement-purchase-orders-currency"
                     type="text"
                     className="form-input"
                     value={currency}
@@ -453,8 +453,8 @@ function PurchaseOrdersPageInner() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Payment Terms</label>
-                  <select className="form-input" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)}>
+                  <label htmlFor="procurement-purchase-orders-payment-terms" className="text-xs font-semibold text-neutral-600">Payment Terms</label>
+                  <select id="procurement-purchase-orders-payment-terms" className="form-input" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)}>
                     <option value="net_30">Net 30 days</option>
                     <option value="net_60">Net 60 days</option>
                     <option value="on_delivery">On Delivery</option>
@@ -464,12 +464,12 @@ function PurchaseOrdersPageInner() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Expected Delivery Date</label>
-                  <input type="date" className="form-input" value={expectedDelivery} onChange={(e) => setExpectedDelivery(e.target.value)} />
+                  <label htmlFor="procurement-purchase-orders-expected-delivery-date" className="text-xs font-semibold text-neutral-600">Expected Delivery Date</label>
+                  <input id="procurement-purchase-orders-expected-delivery-date" type="date" className="form-input" value={expectedDelivery} onChange={(e) => setExpectedDelivery(e.target.value)} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Delivery Address</label>
-                  <input
+                  <label htmlFor="procurement-purchase-orders-delivery-address" className="text-xs font-semibold text-neutral-600">Delivery Address</label>
+                  <input id="procurement-purchase-orders-delivery-address"
                     type="text"
                     className="form-input"
                     placeholder="Delivery location…"
@@ -496,8 +496,8 @@ function PurchaseOrdersPageInner() {
                   {poItems.map((row, idx) => (
                     <div key={idx} className="rounded-xl border border-neutral-100 bg-neutral-50 p-3 grid grid-cols-12 gap-2 items-start">
                       <div className="col-span-4 space-y-1">
-                        <label className="text-[10px] font-semibold uppercase text-neutral-400">Description</label>
-                        <input
+                        <label htmlFor="procurement-purchase-orders-description" className="text-[10px] font-semibold uppercase text-neutral-400">Description</label>
+                        <input id="procurement-purchase-orders-description"
                           type="text"
                           className="form-input text-sm"
                           placeholder="Item description…"
@@ -506,8 +506,8 @@ function PurchaseOrdersPageInner() {
                         />
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label className="text-[10px] font-semibold uppercase text-neutral-400">Qty</label>
-                        <input
+                        <label htmlFor="procurement-purchase-orders-qty" className="text-[10px] font-semibold uppercase text-neutral-400">Qty</label>
+                        <input id="procurement-purchase-orders-qty"
                           type="number"
                           min="1"
                           className="form-input text-sm"
@@ -516,8 +516,8 @@ function PurchaseOrdersPageInner() {
                         />
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label className="text-[10px] font-semibold uppercase text-neutral-400">Unit</label>
-                        <input
+                        <label htmlFor="procurement-purchase-orders-unit" className="text-[10px] font-semibold uppercase text-neutral-400">Unit</label>
+                        <input id="procurement-purchase-orders-unit"
                           type="text"
                           className="form-input text-sm"
                           placeholder="unit"
@@ -526,8 +526,8 @@ function PurchaseOrdersPageInner() {
                         />
                       </div>
                       <div className="col-span-3 space-y-1">
-                        <label className="text-[10px] font-semibold uppercase text-neutral-400">Unit Price</label>
-                        <input
+                        <label htmlFor="procurement-purchase-orders-unit-price" className="text-[10px] font-semibold uppercase text-neutral-400">Unit Price</label>
+                        <input id="procurement-purchase-orders-unit-price"
                           type="number"
                           min="0"
                           step="0.01"

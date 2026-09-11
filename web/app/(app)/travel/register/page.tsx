@@ -492,12 +492,13 @@ export default function TravelRegisterPage() {
       filters={
         <div className="flex flex-wrap items-end gap-3">
           <div className="min-w-[180px] flex-1">
-            <label className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
+            <label htmlFor="travel-register-search" className="mb-1 block text-xs font-semibold text-neutral-600">Search</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-[18px] text-neutral-400">
                 search
               </span>
               <input
+                id="travel-register-search"
                 className="form-input pl-8 text-sm"
                 placeholder="Reference, purpose, traveller, destination…"
                 value={search}
@@ -753,8 +754,8 @@ export default function TravelRegisterPage() {
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-xs font-semibold text-neutral-600">Purpose</label>
-                <input
+                <label htmlFor="travel-register-purpose" className="mb-1 block text-xs font-semibold text-neutral-600">Purpose</label>
+                <input id="travel-register-purpose"
                   className="form-input text-sm"
                   value={editForm.purpose}
                   onChange={(e) => setEditForm({ ...editForm, purpose: e.target.value })}
@@ -772,8 +773,8 @@ export default function TravelRegisterPage() {
                 />
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-neutral-600">Departure</label>
-                  <input
+                  <label htmlFor="travel-register-departure" className="mb-1 block text-xs font-semibold text-neutral-600">Departure</label>
+                  <input id="travel-register-departure"
                     type="date"
                     className="form-input text-sm"
                     value={editForm.departure_date}
@@ -781,8 +782,8 @@ export default function TravelRegisterPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-neutral-600">Return</label>
-                  <input
+                  <label htmlFor="travel-register-return" className="mb-1 block text-xs font-semibold text-neutral-600">Return</label>
+                  <input id="travel-register-return"
                     type="date"
                     className="form-input text-sm"
                     value={editForm.return_date}
@@ -791,8 +792,8 @@ export default function TravelRegisterPage() {
                 </div>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-neutral-600">Justification</label>
-                <textarea
+                <label htmlFor="travel-register-justification" className="mb-1 block text-xs font-semibold text-neutral-600">Justification</label>
+                <textarea id="travel-register-justification"
                   className="form-input min-h-[80px] text-sm"
                   value={editForm.justification}
                   onChange={(e) => setEditForm({ ...editForm, justification: e.target.value })}
@@ -850,8 +851,8 @@ export default function TravelRegisterPage() {
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-xs font-semibold text-neutral-600">Reason</label>
-                <textarea
+                <label htmlFor="travel-register-reason" className="mb-1 block text-xs font-semibold text-neutral-600">Reason</label>
+                <textarea id="travel-register-reason"
                   className="form-input min-h-[96px] text-sm"
                   placeholder="Why is this trip being cancelled?"
                   value={cancelReason}
