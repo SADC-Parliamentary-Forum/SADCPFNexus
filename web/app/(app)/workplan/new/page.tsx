@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { workplanApi, workplanMeetingTypesApi, workplanEventTypesApi, tenantUsersApi, type MeetingType, type WorkplanEventType, type TenantUserOption, type WorkplanEvent } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 export default function NewWorkplanEventPage() {
   const router = useRouter();
@@ -83,12 +84,10 @@ export default function NewWorkplanEventPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <Link href="/workplan" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
-          Workplan
-        </Link>
-        <h1 className="page-title">Add event</h1>
-      </div>
+      <ModulePageHeader
+        title="Add event"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.workplan", href: "/workplan" }, { label: "Add event" }]} />}
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

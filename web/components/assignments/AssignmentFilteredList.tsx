@@ -7,6 +7,8 @@ import { assignmentsApi, type Assignment } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { RegisterShell, type RegisterDensity } from "@/components/registers/RegisterShell";
+import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import {
   BulkSelectionBar,
   RowCheckbox,
@@ -103,6 +105,7 @@ export function AssignmentFilteredList({
     <RegisterShell
       title={title}
       subtitle={subtitle}
+      breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assignments", href: "/assignments" }, { label: title }]} />}
       density={density}
       onDensityChange={setDensity}
       loading={isLoading}
@@ -129,7 +132,7 @@ export function AssignmentFilteredList({
       }
       empty={
         !isLoading && !isError && assignments.length === 0 ? (
-          <div className="card p-8 text-center text-neutral-500 text-sm">No assignments in this view.</div>
+          <EmptyState icon="assignment" title="No assignments in this view." />
         ) : null
       }
     >
@@ -168,12 +171,12 @@ export function AssignmentFilteredList({
                     />
                   </td>
                   <td className="px-4 py-3 font-mono text-[10px] text-neutral-400">
-                    <Link href={`/assignments/${a.id}`} className="text-primary hover:underline">
+                    <Link href={`/assignments/${a.id}`} className="font-mono text-[10px] text-primary">
                       {a.reference_number}
                     </Link>
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={`/assignments/${a.id}`} className="font-semibold text-neutral-900 hover:underline">
+                    <Link href={`/assignments/${a.id}`} className="font-semibold text-neutral-900">
                       {a.title}
                     </Link>
                     {overdue ? <span className="ml-2 badge badge-danger">Overdue</span> : null}

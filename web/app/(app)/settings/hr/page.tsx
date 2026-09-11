@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const settingsLinks = [
   {
@@ -108,19 +109,11 @@ const settingsLinks = [
 export default function HrSettingsDashboard() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-      {/* Page header */}
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/admin" className="hover:text-neutral-700 transition-colors">Admin</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700 font-medium">HR Administration</span>
-        </div>
-        <h1 className="page-title">HR Master Data &amp; Rules</h1>
-        <p className="page-subtitle">
-          Governed configuration for position grading, salary scales, employment terms, and HR workflows.
-          All sensitive changes require approval before taking effect.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="HR Master Data & Rules"
+        subtitle="Governed configuration for position grading, salary scales, employment terms, and HR workflows. All sensitive changes require approval before taking effect."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.admin", href: "/admin" }, { label: "HR Administration" }]} />}
+      />
 
       {/* Governance notice */}
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 flex gap-3">
