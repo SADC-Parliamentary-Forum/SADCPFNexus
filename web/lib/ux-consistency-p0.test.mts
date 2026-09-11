@@ -187,6 +187,13 @@ test("remaining operational details use shared page chrome instead of adhoc h1",
     "procurement/[id]/page.tsx",
     "procurement/tenders/[id]/page.tsx",
     "procurement/vendors/[id]/page.tsx",
+    "travel/[id]/page.tsx",
+    "imprest/[id]/page.tsx",
+    "imprest/[id]/liquidate/page.tsx",
+    "assignments/[id]/page.tsx",
+    "hr/assignments/[id]/page.tsx",
+    "risk/[id]/page.tsx",
+    "risk/policies/[id]/page.tsx",
   ];
   for (const rel of pages) {
     const source = readFileSync(join(webRoot, "app/(app)", rel), "utf8");

@@ -14,6 +14,7 @@ import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { getListData } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { TravelDestinationFields } from "@/components/travel/DestinationPickers";
@@ -644,28 +645,21 @@ export default function TravelDetailPage() {
         ]}
       />
 
-      {/* Breadcrumb + title */}
+      <ModulePageHeader
+        title={request.purpose}
+        subtitle={`${[request.destination_city, request.destination_country].filter(Boolean).join(", ") || request.destination_country} · ${formatDateShort(request.departure_date)} → ${formatDateShort(request.return_date)}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.travel", href: "/travel" },
+              { label: request.reference_number },
+            ]}
+          />
+        }
+      />
       <div>
-        <nav className="flex items-center gap-1.5 text-xs text-neutral-400 mb-3">
-          <Link href="/travel" className="hover:text-primary transition-colors font-medium">Travel</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="font-mono text-neutral-500">{request.reference_number}</span>
-        </nav>
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">{request.purpose}</h1>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className="flex items-center gap-1 text-xs text-neutral-400">
-                <span className="material-symbols-outlined text-[13px]">location_on</span>
-                {[request.destination_city, request.destination_country].filter(Boolean).join(", ") || request.destination_country}
-              </span>
-              <span className="text-neutral-200">·</span>
-              <span className="flex items-center gap-1 text-xs text-neutral-400">
-                <span className="material-symbols-outlined text-[13px]">calendar_today</span>
-                {formatDateShort(request.departure_date)} → {formatDateShort(request.return_date)}
-              </span>
-            </div>
-          </div>
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>

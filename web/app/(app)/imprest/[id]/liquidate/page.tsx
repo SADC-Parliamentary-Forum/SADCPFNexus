@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { imprestApi, type ImprestRequest } from "@/lib/api";
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 function getStoredUser(): { id: number | null; roles: string[] } {
   const parsed = readStoredUser();
@@ -135,13 +136,19 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
   if (request.status === "liquidated") {
     return (
       <div className="w-full min-w-0 space-y-5">
-        <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-          <Link href="/imprest" className="hover:text-primary transition-colors">Imprest</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href={`/imprest/${request.id}`} className="hover:text-primary transition-colors font-mono">{request.reference_number}</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-600">Liquidated</span>
-        </nav>
+        <ModulePageHeader
+          title="Liquidation Submitted"
+          subtitle={request.reference_number}
+          breadcrumbs={
+            <PageBreadcrumbs
+              items={[
+                { label: "nav.imprest", href: "/imprest" },
+                { label: request.reference_number, href: `/imprest/${request.id}` },
+                { label: "Liquidated" },
+              ]}
+            />
+          }
+        />
 
         <div className="card p-6 space-y-4">
           <div className="flex items-center gap-3">
@@ -149,7 +156,7 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
               <span className="material-symbols-outlined text-[24px] text-green-600">check_circle</span>
             </div>
             <div>
-              <h1 className="text-xl font-bold text-neutral-900">Liquidation Submitted</h1>
+              <p className="text-lg font-semibold text-neutral-900">Liquidation Submitted</p>
               <p className="text-sm text-neutral-500">{request.reference_number}</p>
             </div>
           </div>
@@ -181,16 +188,19 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
   if (request.status !== "approved") {
     return (
       <div className="w-full min-w-0 space-y-5">
-        <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-          <Link href="/imprest" className="hover:text-primary transition-colors">Imprest</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href={`/imprest/${request.id}`} className="hover:text-primary transition-colors font-mono">{request.reference_number}</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-600">Liquidate</span>
-        </nav>
-
-        <div className="card p-6 space-y-3">
-          <h1 className="text-xl font-bold text-neutral-900">Liquidation Not Available</h1>
+        <ModulePageHeader
+          title="Liquidation Not Available"
+          subtitle={`This request is currently ${request.status}. Only approved imprest requests can be liquidated.`}
+          breadcrumbs={
+            <PageBreadcrumbs
+              items={[
+                { label: "nav.imprest", href: "/imprest" },
+                { label: request.reference_number, href: `/imprest/${request.id}` },
+                { label: "Liquidate" },
+              ]}
+            />
+          }
+        />
           <p className="text-sm text-neutral-600">
             This request is currently <strong>{request.status}</strong>. Only approved imprest requests can be liquidated.
           </p>
@@ -198,25 +208,30 @@ export default function ImprestLiquidatePage({ params }: { params: Promise<{ id:
             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
             Back to Request
           </Link>
-        </div>
       </div>
     );
   }
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-        <Link href="/imprest" className="hover:text-primary transition-colors">Imprest</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href={`/imprest/${request.id}`} className="hover:text-primary transition-colors font-mono">{request.reference_number}</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-600">Liquidate</span>
-      </nav>
+      <ModulePageHeader
+        title="Liquidate Imprest"
+        subtitle={request.purpose}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.imprest", href: "/imprest" },
+              { label: request.reference_number, href: `/imprest/${request.id}` },
+              { label: "Liquidate" },
+            ]}
+          />
+        }
+      />
 
       <div className="card p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">Liquidate Imprest</h1>
+            <p className="text-lg font-semibold text-neutral-900">Liquidate Imprest</p>
             <p className="text-sm text-neutral-500 mt-0.5">{request.purpose}</p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">

@@ -364,7 +364,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
       <div className="card p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="space-y-1 flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-neutral-900 leading-snug">{risk.title}</h1>
+            <p className="text-lg font-semibold text-neutral-900 leading-snug">{risk.title}</p>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-mono text-xs text-neutral-400">{risk.risk_code}</span>
               <span className="text-neutral-300">·</span>

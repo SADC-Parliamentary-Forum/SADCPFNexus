@@ -14,6 +14,7 @@ import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:                { label: "Approved",               cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle" },
@@ -244,18 +245,21 @@ export default function ImprestDetailPage() {
         currentHolder={null}
       />
 
-      {/* Breadcrumb + title */}
+      <ModulePageHeader
+        title="Imprest Request"
+        subtitle={request.purpose}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.imprest", href: "/imprest" },
+              { label: request.reference_number },
+            ]}
+          />
+        }
+      />
       <div>
-        <nav className="flex items-center gap-1.5 text-xs text-neutral-400 mb-3">
-          <Link href="/imprest" className="hover:text-primary transition-colors font-medium">Imprest</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="font-mono text-neutral-500">{request.reference_number}</span>
-        </nav>
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-neutral-900">Imprest Request</h1>
-            <p className="text-sm text-neutral-500 mt-0.5 line-clamp-1">{request.purpose}</p>
-          </div>
+          <div />
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>

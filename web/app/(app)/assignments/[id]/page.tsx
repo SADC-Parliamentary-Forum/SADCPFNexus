@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import { useToast } from "@/components/ui/Toast";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -318,42 +319,43 @@ export default function AssignmentDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1 text-sm text-neutral-500">
-        <Link href="/assignments" className="hover:text-primary">Assignments</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-700 font-medium truncate max-w-xs">{assignment.title}</span>
-      </nav>
-
       <WorkflowStatusBanner
         status={assignment.status}
         currentStage={null}
         currentHolder={assignment.assignee?.name ?? null}
       />
 
+      <ModulePageHeader
+        title={assignment.title}
+        subtitle={assignment.description}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.assignments", href: "/assignments" },
+              { label: assignment.reference_number },
+            ]}
+          />
+        }
+        meta={
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`badge ${s.cls}`}>
+              <span className="material-symbols-outlined text-[12px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>{s.icon}</span>
+              {s.label}
+            </span>
+            <span className={`badge ${p.cls}`}>{p.label} Priority</span>
+            {isOverdue && <span className="badge badge-danger">Overdue</span>}
+            {assignment.is_confidential && (
+              <span className="badge badge-muted">
+                <span className="material-symbols-outlined text-[12px] mr-1">lock</span>
+                Confidential
+              </span>
+            )}
+          </div>
+        }
+      />
+
       {/* Header card */}
       <div className="card p-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="text-xs font-mono text-neutral-400">{assignment.reference_number}</span>
-              <span className={`badge ${s.cls}`}>
-                <span className="material-symbols-outlined text-[12px] mr-1" style={{ fontVariationSettings: "'FILL' 1" }}>{s.icon}</span>
-                {s.label}
-              </span>
-              <span className={`badge ${p.cls}`}>{p.label} Priority</span>
-              {isOverdue && <span className="badge badge-danger">Overdue</span>}
-              {assignment.is_confidential && (
-                <span className="badge badge-muted">
-                  <span className="material-symbols-outlined text-[12px] mr-1">lock</span>
-                  Confidential
-                </span>
-              )}
-            </div>
-            <h1 className="text-xl font-bold text-neutral-900">{assignment.title}</h1>
-            <p className="text-sm text-neutral-500 mt-1">{assignment.description}</p>
-          </div>
-        </div>
 
         {/* Progress bar */}
         <div className="mt-4">
