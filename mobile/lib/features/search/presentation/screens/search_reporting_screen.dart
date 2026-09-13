@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class SearchReportingScreen extends ConsumerStatefulWidget {
   const SearchReportingScreen({super.key});
@@ -80,27 +81,16 @@ class _SearchReportingScreenState extends ConsumerState<SearchReportingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
+    return StitchScreen(
+      title: 'Search & Reporting',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: _isGridView ? 'List view' : 'Grid view',
+          icon: _isGridView ? Icons.list_rounded : Icons.grid_view_rounded,
+          onPressed: () => setState(() => _isGridView = !_isGridView),
         ),
-        title: const Text('Search & Reporting',
-          style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Icon(
-              _isGridView ? Icons.list_rounded : Icons.grid_view_rounded,
-              color: AppColors.textSecondary, size: 20),
-            onPressed: () => setState(() => _isGridView = !_isGridView),
-          ),
-        ],
-      ),
+      ],
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         child: Column(

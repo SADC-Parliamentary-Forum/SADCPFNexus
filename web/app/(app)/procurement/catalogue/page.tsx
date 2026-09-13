@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { catalogueApi, vendorsApi } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function CataloguePage() {
   const qc = useQueryClient();
@@ -64,8 +65,8 @@ export default function CataloguePage() {
 
       <div className="card p-4 grid gap-3 sm:grid-cols-4 items-end">
         <div>
-          <label className="block text-xs font-semibold mb-1">Vendor</label>
-          <select className="form-input" value={vendorId} onChange={(e) => setVendorId(e.target.value)}>
+          <label htmlFor="procurement-catalogue-vendor" className="block text-xs font-semibold mb-1">Vendor</label>
+          <select id="procurement-catalogue-vendor" className="form-input" value={vendorId} onChange={(e) => setVendorId(e.target.value)}>
             <option value="">Select…</option>
             {vendorList.map((v: { id: number; name: string }) => (
               <option key={v.id} value={v.id}>{v.name}</option>
@@ -73,12 +74,12 @@ export default function CataloguePage() {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold mb-1">Item</label>
-          <input className="form-input" value={itemName} onChange={(e) => setItemName(e.target.value)} />
+          <label htmlFor="procurement-catalogue-item" className="block text-xs font-semibold mb-1">Item</label>
+          <input id="procurement-catalogue-item" className="form-input" value={itemName} onChange={(e) => setItemName(e.target.value)} />
         </div>
         <div>
-          <label className="block text-xs font-semibold mb-1">Unit price</label>
-          <input type="number" className="form-input" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
+          <label htmlFor="procurement-catalogue-unit-price" className="block text-xs font-semibold mb-1">Unit price</label>
+          <input id="procurement-catalogue-unit-price" type="number" className="form-input" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} />
         </div>
         <button
           type="button"
@@ -168,7 +169,7 @@ export default function CataloguePage() {
                 );
               })}
               {(data ?? []).length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-400">No catalogue items.</td></tr>
+                <TableEmpty colSpan={5} title="No catalogue items." />
               )}
             </tbody>
           </table>

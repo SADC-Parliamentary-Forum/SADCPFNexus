@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 import { hrApi, type Timesheet } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -188,13 +189,20 @@ export default function MonthlyTimesheetPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="page-title">{MONTH_NAMES[month]} {year}</h1>
-          <p className="page-subtitle">Monthly timesheet overview</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <ModulePageHeader
+        title={`${MONTH_NAMES[month]} ${year}`}
+        subtitle="Monthly timesheet overview"
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Timesheets", href: "/hr/timesheets" },
+              { label: "Monthly" },
+            ]}
+          />
+        }
+        actions={
+          <>
           <Link href="/hr/timesheets" className="btn-secondary text-sm">Weekly View</Link>
           <button type="button" onClick={prevMonth} aria-label="Previous month" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
@@ -202,8 +210,9 @@ export default function MonthlyTimesheetPage() {
           <button type="button" onClick={nextMonth} aria-label="Next month" className="flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 hover:bg-neutral-100">
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Summary KPIs */}
       <div className="grid grid-cols-4 gap-4">
@@ -320,8 +329,8 @@ export default function MonthlyTimesheetPage() {
       )}
 
       <div className="flex justify-between">
-        <Link href="/hr/timesheets/history" className="text-xs text-neutral-500 hover:underline">All timesheets →</Link>
-        <Link href="/hr/timesheets" className="text-xs text-primary hover:underline">Open weekly view →</Link>
+        <Link href="/hr/timesheets/history" className="btn-secondary text-xs">All timesheets</Link>
+        <Link href="/hr/timesheets" className="btn-secondary text-xs">Open weekly view</Link>
       </div>
     </div>
   );

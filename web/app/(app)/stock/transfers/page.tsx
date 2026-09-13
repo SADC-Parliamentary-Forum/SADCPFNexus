@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { stockItemsApi, stockLocationsApi, stockTransfersApi, type StockItem, type StockLocation, type StockTransfer } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function StockTransfersPage() {
   const { toast } = useToast();
@@ -122,11 +123,7 @@ export default function StockTransfersPage() {
             </tr>
           ))}
           {rows.length === 0 && (
-            <tr>
-              <td className="px-4 py-6 text-center text-sm text-neutral-500" colSpan={4}>
-                No transfers yet.
-              </td>
-            </tr>
+            <TableEmpty colSpan={4} title="No transfers yet." />
           )}
         </tbody>
       </table>

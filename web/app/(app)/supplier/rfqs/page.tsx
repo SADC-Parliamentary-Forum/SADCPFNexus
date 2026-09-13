@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { supplierPortalApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function SupplierRfqsPage() {
   const { data, isLoading, isError } = useQuery({
@@ -37,11 +38,7 @@ export default function SupplierRfqsPage() {
           </thead>
           <tbody>
             {data.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="py-12 text-center text-sm text-neutral-500">
-                  No RFQs available for your approved categories.
-                </td>
-              </tr>
+              <TableEmpty colSpan={6} title="No RFQs available for your approved categories." />
             ) : (
               data.map((invitation) => (
                 <tr key={invitation.id}>
@@ -64,7 +61,7 @@ export default function SupplierRfqsPage() {
                   <td><span className="badge badge-muted">{invitation.status}</span></td>
                   <td className="text-sm text-neutral-600">{invitation.quote ? "Submitted" : "Pending"}</td>
                   <td className="text-right">
-                    <Link href={`/supplier/rfqs/${invitation.procurement_request_id}`} className="text-sm text-primary hover:underline">
+                    <Link href={`/supplier/rfqs/${invitation.procurement_request_id}`} className="btn-secondary text-sm py-1 px-2">
                       View
                     </Link>
                   </td>

@@ -105,17 +105,17 @@ return (await peopleAuthorityApi.listUnits()).data;
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-units-code-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Code
-          <input className="form-input mt-1" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} required />
+          <input id="people-units-code-setform-f-required" className="form-input mt-1" value={form.code} onChange={(e) => setForm((f) => ({ ...f, code: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-units-name-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Name
-          <input className="form-input mt-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
+          <input id="people-units-name-setform-f-required" className="form-input mt-1" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-units-unit-type-setform-f" className="block text-xs font-medium text-neutral-600">
           Unit type
-          <input className="form-input mt-1" value={form.unit_type} onChange={(e) => setForm((f) => ({ ...f, unit_type: e.target.value }))} />
+          <input id="people-units-unit-type-setform-f" className="form-input mt-1" value={form.unit_type} onChange={(e) => setForm((f) => ({ ...f, unit_type: e.target.value }))} />
         </label>
         <div className="sm:col-span-3 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
@@ -126,9 +126,9 @@ return (await peopleAuthorityApi.listUnits()).data;
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-units-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-units-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

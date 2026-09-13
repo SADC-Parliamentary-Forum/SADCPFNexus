@@ -5,6 +5,7 @@ import Link from "next/link";
 import { adminApi, type Department } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type SecurityGateStatus = "pass" | "fail";
 
@@ -118,42 +119,6 @@ export default function DataScopePage() {
           </div>
         }
       />
-
-      {/* Breadcrumb */}
-      <div className="hidden">
-        <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 dark:text-neutral-100 font-medium">Data Scope & RLS Status</span>
-      </div>
-
-      {/* Page header */}
-      <div className="hidden">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs text-green-600 font-medium uppercase tracking-wider">System Live</span>
-          </div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Data Scope & RLS Status</h1>
-          <p className="page-subtitle">
-            Active tenant scope monitoring · Row-Level Security integrity · Enforcement level: SEV-0
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Link href="/admin/ledger" className="btn-secondary flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">receipt_long</span>
-            Audit Log
-          </Link>
-          <button
-            type="button"
-            onClick={handleRunDiagnostics}
-            disabled={runningDiag}
-            className="btn-primary flex items-center gap-2 disabled:opacity-60"
-          >
-            <span className={cn("material-symbols-outlined text-[18px]", runningDiag ? "animate-spin" : "")}>refresh</span>
-            {runningDiag ? "Running…" : "Run Diagnostics"}
-          </button>
-        </div>
-      </div>
 
       {lastRun && (
         <div className="rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 px-4 py-3 flex items-center gap-2">
@@ -308,12 +273,10 @@ export default function DataScopePage() {
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-12 text-neutral-300">
-              <span className="material-symbols-outlined text-[36px]">domain</span>
-              <p className="text-sm text-neutral-400">
-                {search ? "No departments match your search." : "No departments found."}
-              </p>
-            </div>
+            <EmptyState
+              icon="domain"
+              title={search ? "No departments match your search." : "No departments found."}
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="data-table w-full">

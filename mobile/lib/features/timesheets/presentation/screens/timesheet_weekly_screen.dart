@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 /// Returns the Monday of the week containing [date].
 DateTime _getMonday(DateTime date) {
@@ -167,27 +168,26 @@ class _TimesheetWeeklyScreenState extends ConsumerState<TimesheetWeeklyScreen> {
     final weekLabel =
         '${DateFormat('d MMM').format(_weekStart)} – ${DateFormat('d MMM yyyy').format(_weekStart.add(const Duration(days: 4)))}';
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.bgDarkDark : AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: isDark ? AppColors.bgSurfaceDark : AppColors.bgSurface,
-        elevation: 0,
-        leading: BackButton(onPressed: () => context.canPop() ? context.pop() : context.go('/timesheets')),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Weekly Timesheet', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-            Text(weekLabel, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-          ],
+    return StitchScreen(
+      title: 'Weekly Timesheet',
+      fallbackRoute: '/timesheets',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Prev week',
+          icon: Icons.chevron_left_rounded,
+          onPressed: _prevWeek,
         ),
-        actions: [
-          IconButton(icon: const Icon(Icons.chevron_left_rounded), onPressed: _prevWeek, tooltip: 'Prev week'),
-          IconButton(icon: const Icon(Icons.chevron_right_rounded), onPressed: _nextWeek, tooltip: 'Next week'),
-        ],
-      ),
+        StitchIconAction(
+          tooltip: 'Next week',
+          icon: Icons.chevron_right_rounded,
+          onPressed: _nextWeek,
+        ),
+      ],
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+          ? const StitchLoadingState(label: 'Loading timesheet')
+          : _error != null
+              ? StitchErrorState(message: _error!, onRetry: _load)
+              : Column(
               children: [
                 // Status bar
                 if (_timesheet != null)
@@ -199,17 +199,11 @@ class _TimesheetWeeklyScreenState extends ConsumerState<TimesheetWeeklyScreen> {
                         _StatusChip(status: status),
                         const SizedBox(width: 8),
                         Text(
-                          'Week total: ${_entries.fold(0.0, (s, e) => s + ((e['hours'] as num?)?.toDouble() ?? 0.0)).toStringAsFixed(1)}h',
+                          '$weekLabel · ${_entries.fold(0.0, (s, e) => s + ((e['hours'] as num?)?.toDouble() ?? 0.0)).toStringAsFixed(1)}h',
                           style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
                         ),
                       ],
                     ),
-                  ),
-
-                if (_error != null)
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(_error!, style: const TextStyle(color: AppColors.danger)),
                   ),
 
                 // Day cards

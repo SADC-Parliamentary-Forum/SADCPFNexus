@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { payslipConfigApi, tenantUsersApi, type PayslipLineConfig, type TenantUserOption } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { TableEmpty } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 
 const COMPONENT_TYPES = [
@@ -224,12 +225,15 @@ export default function PayslipConfigPage() {
                 </tr>
               ))
             ) : configs.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12">
-                  <p className="text-sm text-neutral-400">No lines configured yet.</p>
-                  <button onClick={handleGenerateDefaults} className="text-sm text-primary hover:underline mt-2">Generate defaults from grade band</button>
-                </td>
-              </tr>
+              <TableEmpty
+                colSpan={7}
+                title="No lines configured yet."
+                action={
+                  <button type="button" onClick={handleGenerateDefaults} className="btn-secondary text-sm py-1 px-2">
+                    Generate defaults from grade band
+                  </button>
+                }
+              />
             ) : configs.map((cfg) => {
               const inline = editInline[cfg.id] ?? {};
               const isEditing = cfg.id in editInline;
@@ -286,17 +290,17 @@ export default function PayslipConfigPage() {
                     <div className="flex items-center gap-2">
                       {isEditing ? (
                         <>
-                          <button onClick={() => saveInline(cfg.id)} disabled={saving[cfg.id]} className="text-xs text-green-600 font-semibold hover:underline disabled:opacity-50">
+                          <button onClick={() => saveInline(cfg.id)} disabled={saving[cfg.id]} className="btn-secondary text-xs py-1 px-2 text-green-700 disabled:opacity-50">
                             {saving[cfg.id] ? "…" : "Save"}
                           </button>
-                          <button onClick={() => setEditInline((p) => { const n = { ...p }; delete n[cfg.id]; return n; })} className="text-xs text-neutral-400 hover:underline">
+                          <button onClick={() => setEditInline((p) => { const n = { ...p }; delete n[cfg.id]; return n; })} className="btn-secondary text-xs py-1 px-2">
                             Cancel
                           </button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => setEditInline((p) => ({ ...p, [cfg.id]: {} }))} className="text-xs text-primary hover:underline">Edit</button>
-                          <button onClick={() => handleRemove(cfg.id)} className="text-xs text-red-500 hover:underline">Remove</button>
+                          <button onClick={() => setEditInline((p) => ({ ...p, [cfg.id]: {} }))} className="btn-secondary text-xs py-1 px-2">Edit</button>
+                          <button onClick={() => handleRemove(cfg.id)} className="btn-secondary text-xs py-1 px-2 text-red-600">Remove</button>
                         </>
                       )}
                     </div>
@@ -313,25 +317,25 @@ export default function PayslipConfigPage() {
         <Modal open title="Add Payslip Line" onClose={() => setShowAddModal(false)} size="md">
           <form onSubmit={handleAddSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Component Key <span className="text-red-500">*</span></label>
-                <input className="form-input w-full font-mono text-sm" placeholder="e.g. housing_allowance or custom_bonus"
+                <label htmlFor="admin-payslip-config-user-component-key" className="block text-sm font-medium text-neutral-700 mb-1">Component Key <span className="text-red-500">*</span></label>
+                <input id="admin-payslip-config-user-component-key" className="form-input w-full font-mono text-sm" placeholder="e.g. housing_allowance or custom_bonus"
                   value={form.component_key} onChange={(e) => setForm((f) => ({ ...f, component_key: e.target.value }))} required maxLength={60} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Label <span className="text-red-500">*</span></label>
-                <input className="form-input w-full" placeholder="Displayed name on payslip"
+                <label htmlFor="admin-payslip-config-user-label" className="block text-sm font-medium text-neutral-700 mb-1">Label <span className="text-red-500">*</span></label>
+                <input id="admin-payslip-config-user-label" className="form-input w-full" placeholder="Displayed name on payslip"
                   value={form.label} onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))} required maxLength={100} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Type <span className="text-red-500">*</span></label>
-                  <select className="form-input w-full" value={form.component_type} onChange={(e) => setForm((f) => ({ ...f, component_type: e.target.value }))}>
+                  <label htmlFor="admin-payslip-config-user-type" className="block text-sm font-medium text-neutral-700 mb-1">Type <span className="text-red-500">*</span></label>
+                  <select id="admin-payslip-config-user-type" className="form-input w-full" value={form.component_type} onChange={(e) => setForm((f) => ({ ...f, component_type: e.target.value }))}>
                     {COMPONENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Source <span className="text-red-500">*</span></label>
-                  <select className="form-input w-full" value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))}>
+                  <label htmlFor="admin-payslip-config-user-source" className="block text-sm font-medium text-neutral-700 mb-1">Source <span className="text-red-500">*</span></label>
+                  <select id="admin-payslip-config-user-source" className="form-input w-full" value={form.source} onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))}>
                     <option value="manual">Manual (HR enters)</option>
                     <option value="system">System (auto-computed)</option>
                   </select>
@@ -339,8 +343,8 @@ export default function PayslipConfigPage() {
               </div>
               {form.source === "manual" && (
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Fixed Amount (NAD)</label>
-                  <input type="number" min={0} step={0.01} className="form-input w-full" placeholder="0.00"
+                  <label htmlFor="admin-payslip-config-user-fixed-amount-nad" className="block text-sm font-medium text-neutral-700 mb-1">Fixed Amount (NAD)</label>
+                  <input id="admin-payslip-config-user-fixed-amount-nad" type="number" min={0} step={0.01} className="form-input w-full" placeholder="0.00"
                     value={form.fixed_amount} onChange={(e) => setForm((f) => ({ ...f, fixed_amount: e.target.value }))} />
                 </div>
               )}

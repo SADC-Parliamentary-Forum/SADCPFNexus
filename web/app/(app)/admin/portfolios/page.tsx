@@ -81,17 +81,17 @@ export default function AdminPortfoliosPage() {
                 <div className="card p-5 space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold">Portfolio Name</label>
-                            <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                            <label htmlFor="admin-portfolios-portfolio-name" className="text-xs font-semibold">Portfolio Name</label>
+                            <input id="admin-portfolios-portfolio-name" className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-xs font-semibold">Label Color</label>
-                            <input type="color" className="h-10 w-full rounded border cursor-pointer" value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} />
+                            <label htmlFor="admin-portfolios-label-color" className="text-xs font-semibold">Label Color</label>
+                            <input id="admin-portfolios-label-color" type="color" className="h-10 w-full rounded border cursor-pointer" value={form.color} onChange={e => setForm({ ...form, color: e.target.value })} />
                         </div>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-xs font-semibold">Description</label>
-                        <textarea className="form-input min-h-[80px]" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                        <label htmlFor="admin-portfolios-description" className="text-xs font-semibold">Description</label>
+                        <textarea id="admin-portfolios-description" className="form-input min-h-[80px]" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
                     </div>
                     <div className="flex justify-end gap-2">
                         <button onClick={handleSave} disabled={saving} className="btn-primary">
@@ -123,8 +123,8 @@ export default function AdminPortfoliosPage() {
                                 <td className="text-sm text-neutral-500 max-w-xs truncate">{p.description}</td>
                                 <td>{p.users_count ?? 0} staff</td>
                                 <td className="text-right space-x-2">
-                                    <button onClick={() => startEdit(p)} className="text-primary hover:underline text-xs">Edit</button>
-                                    <button onClick={() => handleDelete(p.id, p.name)} className="text-red-600 hover:underline text-xs">Delete</button>
+                                    <button onClick={() => startEdit(p)} className="btn-secondary text-xs py-1 px-2">Edit</button>
+                                    <button onClick={() => handleDelete(p.id, p.name)} className="btn-secondary text-xs py-1 px-2 text-red-600">Delete</button>
                                 </td>
                             </tr>
                         ))}

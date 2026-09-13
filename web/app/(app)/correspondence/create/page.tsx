@@ -158,17 +158,17 @@ export default function CreateCorrespondencePage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Title *</label>
-            <input name="title" value={form.title} onChange={handleField} className="form-input w-full" placeholder="e.g. Request for Information on Budget Allocation" />
+            <label htmlFor="corr-create-title" className="block text-xs font-medium text-neutral-600 mb-1">Title *</label>
+            <input id="corr-create-title" name="title" value={form.title} onChange={handleField} className="form-input w-full" placeholder="e.g. Request for Information on Budget Allocation" />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Subject *</label>
-            <input name="subject" value={form.subject} onChange={handleField} className="form-input w-full" placeholder="Brief subject line" />
+            <label htmlFor="corr-create-subject" className="block text-xs font-medium text-neutral-600 mb-1">Subject *</label>
+            <input id="corr-create-subject" name="subject" value={form.subject} onChange={handleField} className="form-input w-full" placeholder="Brief subject line" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Type</label>
-            <select name="type" value={form.type} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-create-type" className="block text-xs font-medium text-neutral-600 mb-1">Type</label>
+            <select id="corr-create-type" name="type" value={form.type} onChange={handleField} className="form-input w-full">
               <option value="external">External</option>
               <option value="internal_memo">Internal Memo</option>
               <option value="diplomatic_note">Diplomatic Note</option>
@@ -177,16 +177,16 @@ export default function CreateCorrespondencePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Direction</label>
-            <select name="direction" value={form.direction} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-create-direction" className="block text-xs font-medium text-neutral-600 mb-1">Direction</label>
+            <select id="corr-create-direction" name="direction" value={form.direction} onChange={handleField} className="form-input w-full">
               <option value="outgoing">Outgoing</option>
               <option value="incoming">Incoming</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Priority</label>
-            <select name="priority" value={form.priority} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-create-priority" className="block text-xs font-medium text-neutral-600 mb-1">Priority</label>
+            <select id="corr-create-priority" name="priority" value={form.priority} onChange={handleField} className="form-input w-full">
               <option value="low">Low</option>
               <option value="normal">Normal</option>
               <option value="high">High</option>
@@ -195,8 +195,8 @@ export default function CreateCorrespondencePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Language</label>
-            <select name="language" value={form.language} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-create-language" className="block text-xs font-medium text-neutral-600 mb-1">Language</label>
+            <select id="corr-create-language" name="language" value={form.language} onChange={handleField} className="form-input w-full">
               <option value="en">English</option>
               <option value="fr">French</option>
               <option value="pt">Portuguese</option>
@@ -204,16 +204,16 @@ export default function CreateCorrespondencePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">
+            <label htmlFor="corr-create-file-code" className="block text-xs font-medium text-neutral-600 mb-1">
               File Code
               <span className="ml-1 text-neutral-400 font-normal">(used in reference number)</span>
             </label>
-            <input name="file_code" value={form.file_code} onChange={handleField} className="form-input w-full" placeholder="e.g. SRHR, PROC, FIN" />
+            <input id="corr-create-file-code" name="file_code" value={form.file_code} onChange={handleField} className="form-input w-full" placeholder="e.g. SRHR, PROC, FIN" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Signatory</label>
-            <select name="signatory_code" value={form.signatory_code} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-create-signatory-code" className="block text-xs font-medium text-neutral-600 mb-1">Signatory</label>
+            <select id="corr-create-signatory-code" name="signatory_code" value={form.signatory_code} onChange={handleField} className="form-input w-full">
               <option value="SG">Secretary General (SG)</option>
               <option value="DIR">Director (DIR)</option>
               <option value="HOD">Head of Department (HOD)</option>
@@ -221,8 +221,8 @@ export default function CreateCorrespondencePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Department</label>
-            <select name="department_id" value={form.department_id} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-create-department-id" className="block text-xs font-medium text-neutral-600 mb-1">Department</label>
+            <select id="corr-create-department-id" name="department_id" value={form.department_id} onChange={handleField} className="form-input w-full">
               <option value="">— Select department —</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
@@ -232,8 +232,9 @@ export default function CreateCorrespondencePage() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-neutral-600 mb-1">Cover Note / Body <span className="text-neutral-400 font-normal">(optional)</span></label>
+          <label htmlFor="corr-create-body" className="block text-xs font-medium text-neutral-600 mb-1">Cover Note / Body <span className="text-neutral-400 font-normal">(optional)</span></label>
           <textarea
+            id="corr-create-body"
             name="body"
             value={form.body}
             onChange={handleField}

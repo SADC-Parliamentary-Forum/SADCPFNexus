@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/date_format.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 /// SADC PF Calendar: Public Holidays (SADC region) and UN Days with alerts.
 class CalendarHolidaysScreen extends ConsumerStatefulWidget {
@@ -70,8 +71,9 @@ class _CalendarHolidaysScreenState extends ConsumerState<CalendarHolidaysScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
+    return StitchScreen(
+      title: 'SADC Calendar & Holidays',
+      fallbackRoute: '/dashboard',
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/calendar/upload'),
         backgroundColor: AppColors.primary,
@@ -79,44 +81,27 @@ class _CalendarHolidaysScreenState extends ConsumerState<CalendarHolidaysScreen>
         icon: const Icon(Icons.upload_file, size: 18),
         label: const Text('Upload', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'SADC Calendar & Holidays',
-          style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          indicatorColor: AppColors.primary,
-          tabs: const [
-            Tab(text: 'Public Holidays'),
-            Tab(text: 'UN Days'),
-          ],
-        ),
+      bottom: TabBar(
+        controller: _tabController,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textMuted,
+        indicatorColor: AppColors.primary,
+        tabs: const [
+          Tab(text: 'Public Holidays'),
+          Tab(text: 'UN Days'),
+        ],
       ),
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
+        ),
+      ],
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading calendar')
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.danger)),
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: _load,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : TabBarView(
                   controller: _tabController,
                   children: [
@@ -137,14 +122,14 @@ class _ListEntries extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (entries.isEmpty) {
-      return Center(
-        child: Text(
-          type == 'un_day'
-              ? 'No UN days in this year. Use upload to add entries.'
-              : 'No public holidays. Use upload to add SADC region holidays.',
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-        ),
+      return StitchEmptyState(
+        title: type == 'un_day'
+            ? 'No UN days in this year'
+            : 'No public holidays',
+        message: type == 'un_day'
+            ? 'Use upload to add UN day entries.'
+            : 'Use upload to add SADC region holidays.',
+        icon: type == 'un_day' ? Icons.public : Icons.celebration_outlined,
       );
     }
     return ListView.builder(

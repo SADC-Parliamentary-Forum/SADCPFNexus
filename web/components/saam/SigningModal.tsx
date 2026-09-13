@@ -170,10 +170,10 @@ export function SigningModal({
 
         {/* Comment */}
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">
+          <label htmlFor="saam-SigningModal-comment" className="block text-xs font-semibold text-neutral-700 mb-1">
             Comment {action === "reject" || action === "return" ? "*" : "(optional)"}
           </label>
-          <textarea
+          <textarea id="saam-SigningModal-comment"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             rows={3}
@@ -189,10 +189,10 @@ export function SigningModal({
         {/* Password re-entry */}
         {requirePassword && (
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">
+            <label htmlFor="saam-SigningModal-your-password" className="block text-xs font-semibold text-neutral-700 mb-1">
               Your Password <span className="text-red-500">*</span>
             </label>
-            <input
+            <input id="saam-SigningModal-your-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

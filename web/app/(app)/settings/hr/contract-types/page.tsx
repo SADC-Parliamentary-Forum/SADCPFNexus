@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrSettingsApi, type HrContractType } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function ContractTypeModal({
   item,
@@ -51,8 +51,8 @@ function ContractTypeModal({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
-              <input
+              <label htmlFor="settings-hr-contract-types-code" className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
+              <input id="settings-hr-contract-types-code"
                 className="form-input text-sm uppercase"
                 value={form.code ?? ""}
                 onChange={(e) => set("code", e.target.value.toUpperCase())}
@@ -61,8 +61,8 @@ function ContractTypeModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Name *</label>
-              <input
+              <label htmlFor="settings-hr-contract-types-name" className="block text-xs font-medium text-neutral-700 mb-1">Name *</label>
+              <input id="settings-hr-contract-types-name"
                 className="form-input text-sm"
                 value={form.name ?? ""}
                 onChange={(e) => set("name", e.target.value)}
@@ -73,8 +73,8 @@ function ContractTypeModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Description</label>
-            <textarea
+            <label htmlFor="settings-hr-contract-types-description" className="block text-xs font-medium text-neutral-700 mb-1">Description</label>
+            <textarea id="settings-hr-contract-types-description"
               className="form-input text-sm resize-none"
               rows={2}
               value={form.description ?? ""}
@@ -131,8 +131,8 @@ function ContractTypeModal({
 
           {!form.is_permanent && form.has_probation && (
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Probation Months</label>
-              <input
+              <label htmlFor="settings-hr-contract-types-probation-months" className="block text-xs font-medium text-neutral-700 mb-1">Probation Months</label>
+              <input id="settings-hr-contract-types-probation-months"
                 type="number"
                 className="form-input text-sm"
                 min={1}
@@ -144,8 +144,8 @@ function ContractTypeModal({
           )}
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Notice Period (days) *</label>
-            <input
+            <label htmlFor="settings-hr-contract-types-notice-period-days" className="block text-xs font-medium text-neutral-700 mb-1">Notice Period (days) *</label>
+            <input id="settings-hr-contract-types-notice-period-days"
               type="number"
               className="form-input text-sm"
               min={1}
@@ -178,8 +178,8 @@ function ContractTypeModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select
+            <label htmlFor="settings-hr-contract-types-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="settings-hr-contract-types-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}
@@ -250,23 +250,17 @@ export default function ContractTypesPage() {
           onSave={(form) => saveMutation.mutate(form)}
         />
       )}
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Contract Types</span>
-          </div>
-          <h1 className="page-title">Contract Types</h1>
-          <p className="page-subtitle">Define employment contract templates — permanent, fixed-term, temporary, and consultancy.</p>
-        </div>
-        <button onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
+      <HrSettingsHeader
+        title="Contract Types"
+        subtitle="Define employment contract templates — permanent, fixed-term, temporary, and consultancy."
+        actions={
+          <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Contract Type
         </button>
-      </div>
+        }
+      />
+
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -281,10 +275,7 @@ export default function ContractTypesPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : items.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300">description</span>
-            <p className="mt-2 text-sm text-neutral-500">No contract types yet. Create one to get started.</p>
-          </div>
+          <EmptyState icon="description" title="No contract types yet." description="Create one to get started." />
         ) : (
           <table className="data-table w-full">
             <thead>

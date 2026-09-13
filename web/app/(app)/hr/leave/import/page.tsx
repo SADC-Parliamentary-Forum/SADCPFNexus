@@ -130,7 +130,7 @@ export default function LeaveImportPage() {
       <form onSubmit={onSubmit} className="space-y-6">
         <FormSection title="leave.import.file" description="leave.import.hint" icon="upload_file">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <label className="block min-w-0 flex-1 text-sm font-medium text-neutral-700" htmlFor="leave-import-file">
+            <label htmlFor="leave-import-file" className="block min-w-0 flex-1 text-sm font-medium text-neutral-700">
               {t("leave.import.file")}
               <input
                 id="leave-import-file"

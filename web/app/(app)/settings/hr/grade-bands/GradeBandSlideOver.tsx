@@ -121,8 +121,8 @@ export function GradeBandSlideOver({
             <>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">Grade Code *</label>
-                  <input
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-grade-code" className="block text-xs font-medium text-neutral-700 mb-1">Grade Code *</label>
+                  <input id="hr-grade-bands-GradeBandSlideOver-grade-code"
                     className="form-input text-sm uppercase"
                     value={form.code ?? ""}
                     onChange={(e) => set("code", e.target.value.toUpperCase())}
@@ -132,8 +132,8 @@ export function GradeBandSlideOver({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">Band Group *</label>
-                  <select
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-band-group" className="block text-xs font-medium text-neutral-700 mb-1">Band Group *</label>
+                  <select id="hr-grade-bands-GradeBandSlideOver-band-group"
                     className="form-input text-sm"
                     value={form.band_group ?? "C"}
                     onChange={(e) => set("band_group", e.target.value as HrGradeBand["band_group"])}
@@ -148,8 +148,8 @@ export function GradeBandSlideOver({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Grade Label *</label>
-                <input
+                <label htmlFor="hr-grade-bands-GradeBandSlideOver-grade-label" className="block text-xs font-medium text-neutral-700 mb-1">Grade Label *</label>
+                <input id="hr-grade-bands-GradeBandSlideOver-grade-label"
                   className="form-input text-sm"
                   value={form.label ?? ""}
                   onChange={(e) => set("label", e.target.value)}
@@ -158,8 +158,8 @@ export function GradeBandSlideOver({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Employment Category *</label>
-                <select
+                <label htmlFor="hr-grade-bands-GradeBandSlideOver-employment-category" className="block text-xs font-medium text-neutral-700 mb-1">Employment Category *</label>
+                <select id="hr-grade-bands-GradeBandSlideOver-employment-category"
                   className="form-input text-sm"
                   value={form.employment_category ?? "local"}
                   onChange={(e) => set("employment_category", e.target.value as HrGradeBand["employment_category"])}
@@ -171,8 +171,8 @@ export function GradeBandSlideOver({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Job Family</label>
-                <select
+                <label htmlFor="hr-grade-bands-GradeBandSlideOver-job-family" className="block text-xs font-medium text-neutral-700 mb-1">Job Family</label>
+                <select id="hr-grade-bands-GradeBandSlideOver-job-family"
                   className="form-input text-sm"
                   value={form.job_family_id ?? ""}
                   onChange={(e) => set("job_family_id", e.target.value ? Number(e.target.value) : null as any)}
@@ -186,8 +186,8 @@ export function GradeBandSlideOver({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">Effective From *</label>
-                  <input
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-effective-from" className="block text-xs font-medium text-neutral-700 mb-1">Effective From *</label>
+                  <input id="hr-grade-bands-GradeBandSlideOver-effective-from"
                     type="date"
                     className="form-input text-sm"
                     value={form.effective_from ?? ""}
@@ -195,8 +195,8 @@ export function GradeBandSlideOver({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">Effective To</label>
-                  <input
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-effective-to" className="block text-xs font-medium text-neutral-700 mb-1">Effective To</label>
+                  <input id="hr-grade-bands-GradeBandSlideOver-effective-to"
                     type="date"
                     className="form-input text-sm"
                     value={form.effective_to ?? ""}
@@ -206,8 +206,8 @@ export function GradeBandSlideOver({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Notes / Policy Reference</label>
-                <textarea
+                <label htmlFor="hr-grade-bands-GradeBandSlideOver-notes-policy-reference" className="block text-xs font-medium text-neutral-700 mb-1">Notes / Policy Reference</label>
+                <textarea id="hr-grade-bands-GradeBandSlideOver-notes-policy-reference"
                   className="form-input text-sm resize-none"
                   rows={3}
                   value={form.notes ?? ""}
@@ -223,8 +223,8 @@ export function GradeBandSlideOver({
             <>
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">Min Notch</label>
-                  <input
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-min-notch" className="block text-xs font-medium text-neutral-700 mb-1">Min Notch</label>
+                  <input id="hr-grade-bands-GradeBandSlideOver-min-notch"
                     type="number"
                     className="form-input text-sm"
                     min={1} max={12}
@@ -233,8 +233,8 @@ export function GradeBandSlideOver({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">Max Notch</label>
-                  <input
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-max-notch" className="block text-xs font-medium text-neutral-700 mb-1">Max Notch</label>
+                  <input id="hr-grade-bands-GradeBandSlideOver-max-notch"
                     type="number"
                     className="form-input text-sm"
                     min={1} max={12}
@@ -243,8 +243,8 @@ export function GradeBandSlideOver({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">Leave Days / yr</label>
-                  <input
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-leave-days-yr" className="block text-xs font-medium text-neutral-700 mb-1">Leave Days / yr</label>
+                  <input id="hr-grade-bands-GradeBandSlideOver-leave-days-yr"
                     type="number"
                     className="form-input text-sm"
                     min={0} step={0.5}
@@ -256,8 +256,8 @@ export function GradeBandSlideOver({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">Probation (months)</label>
-                  <input
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-probation-months" className="block text-xs font-medium text-neutral-700 mb-1">Probation (months)</label>
+                  <input id="hr-grade-bands-GradeBandSlideOver-probation-months"
                     type="number"
                     className="form-input text-sm"
                     min={0} max={24}
@@ -266,8 +266,8 @@ export function GradeBandSlideOver({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-neutral-700 mb-1">Notice Period (days)</label>
-                  <input
+                  <label htmlFor="hr-grade-bands-GradeBandSlideOver-notice-period-days" className="block text-xs font-medium text-neutral-700 mb-1">Notice Period (days)</label>
+                  <input id="hr-grade-bands-GradeBandSlideOver-notice-period-days"
                     type="number"
                     className="form-input text-sm"
                     min={0}
@@ -278,9 +278,10 @@ export function GradeBandSlideOver({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Acting Allowance Rate</label>
+                <label htmlFor="grade-band-acting-allowance" className="block text-xs font-medium text-neutral-700 mb-1">Acting Allowance Rate</label>
                 <div className="relative">
                   <input
+                    id="grade-band-acting-allowance"
                     type="number"
                     className="form-input text-sm pr-10"
                     min={0} max={100} step={0.5}
@@ -321,8 +322,8 @@ export function GradeBandSlideOver({
           {tab === "compensation" && (
             <>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Travel Class</label>
-                <select
+                <label htmlFor="hr-grade-bands-GradeBandSlideOver-travel-class" className="block text-xs font-medium text-neutral-700 mb-1">Travel Class</label>
+                <select id="hr-grade-bands-GradeBandSlideOver-travel-class"
                   className="form-input text-sm"
                   value={form.travel_class ?? "economy"}
                   onChange={(e) => set("travel_class", e.target.value as HrGradeBand["travel_class"])}
@@ -334,7 +335,7 @@ export function GradeBandSlideOver({
                 </select>
               </div>
 
-              <label className="flex items-center justify-between py-2 px-3 rounded-lg bg-neutral-50 cursor-pointer">
+              <div className="flex items-center justify-between py-2 px-3 rounded-lg bg-neutral-50 cursor-pointer">
                 <div>
                   <p className="text-sm font-medium text-neutral-700">Overtime Eligible</p>
                   <p className="text-xs text-neutral-500">Staff at this grade may claim overtime pay.</p>
@@ -348,7 +349,7 @@ export function GradeBandSlideOver({
                 >
                   <div className={cn("absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform", form.overtime_eligible ? "translate-x-4" : "translate-x-0.5")} />
                 </div>
-              </label>
+              </div>
             </>
           )}
 

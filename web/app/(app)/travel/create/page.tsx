@@ -12,6 +12,7 @@ import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 import { getListData } from "@/lib/listPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Stepper } from "@/components/ui/Stepper";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 // ─── Funding items with icons ─────────────────────────────────────────────────
 const FUNDING_ITEMS: { item: string; icon: string }[] = [
@@ -84,11 +85,13 @@ function LocationCombobox({
   onChange,
   placeholder,
   locations,
+  id,
 }: {
   value: string;
   onChange: (val: string) => void;
   placeholder?: string;
   locations: string[];
+  id?: string;
 }) {
   const [query, setQuery] = useState(value);
   const [open, setOpen] = useState(false);
@@ -113,6 +116,7 @@ function LocationCombobox({
   return (
     <div ref={ref} className="relative">
       <input
+        id={id}
         className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
         placeholder={placeholder ?? "Type or select..."}
         value={query}
@@ -235,6 +239,7 @@ function hydrateFormFromRequest(data: TravelRequest): FormData {
 function TravelCreatePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { prompt } = useConfirm();
   const editParam = searchParams.get("edit");
   const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
 
@@ -575,10 +580,13 @@ function TravelCreatePageInner() {
           const errors = axiosErr?.response?.data?.errors;
           const conflicts = errors?.conflicts;
           if (Array.isArray(conflicts) && conflicts.length) {
-            const note = window.prompt(
-              `Conflicts detected:\n${conflicts.join("\n")}\n\nEnter resolution note to acknowledge, or Cancel to leave as draft.`,
-              "Reviewed with supervisor",
-            );
+            const note = await prompt({
+              title: "travel.conflicts.noteTitle",
+              message: conflicts.join("\n"),
+              label: "travel.conflicts.noteLabel",
+              defaultValue: "travel.conflicts.noteDefault",
+              required: true,
+            });
             if (note) {
               await travelApi.submit(createdId, {
                 acknowledge_conflicts: true,
@@ -666,10 +674,10 @@ function TravelCreatePageInner() {
 
           {canPrepareForOthers && (
             <div className="space-y-1.5 rounded-lg border border-blue-100 bg-blue-50/60 p-3" data-testid="travel-on-behalf-picker">
-              <label className="block text-xs font-medium text-neutral-700">
+              <label htmlFor="travel-create-traveller" className="block text-xs font-medium text-neutral-700">
                 Traveller (prepare on behalf)
               </label>
-              <select
+              <select id="travel-create-traveller"
                 className="form-input"
                 value={form.prepared_on_behalf_of}
                 onChange={(e) => updateField("prepared_on_behalf_of", e.target.value)}
@@ -691,10 +699,10 @@ function TravelCreatePageInner() {
 
           {/* Purpose */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-neutral-700">
+            <label htmlFor="travel-create-purpose-of-travel" className="block text-xs font-medium text-neutral-700">
               Purpose of Travel <span className="text-red-500">*</span>
             </label>
-            <input
+            <input id="travel-create-purpose-of-travel"
               className="form-input"
               placeholder="e.g. Annual Budget Review Meeting"
               value={form.purpose}
@@ -716,8 +724,8 @@ function TravelCreatePageInner() {
 
           {/* Host Organization */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-medium text-neutral-700">Host Organization</label>
-            <input
+            <label htmlFor="travel-create-host-organization" className="block text-xs font-medium text-neutral-700">Host Organization</label>
+            <input id="travel-create-host-organization"
               className="form-input"
               placeholder="e.g. African Union Commission"
               value={form.host_organization}
@@ -728,10 +736,10 @@ function TravelCreatePageInner() {
           {/* Dates + Currency */}
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-700">
+              <label htmlFor="travel-create-departure-date" className="block text-xs font-medium text-neutral-700">
                 Departure Date <span className="text-red-500">*</span>
               </label>
-              <input
+              <input id="travel-create-departure-date"
                 type="date"
                 className="form-input"
                 min={todayIso}
@@ -740,10 +748,10 @@ function TravelCreatePageInner() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-700">
+              <label htmlFor="travel-create-return-date" className="block text-xs font-medium text-neutral-700">
                 Return Date <span className="text-red-500">*</span>
               </label>
-              <input
+              <input id="travel-create-return-date"
                 type="date"
                 className="form-input"
                 min={form.departure_date || todayIso}
@@ -752,8 +760,8 @@ function TravelCreatePageInner() {
               />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-700">Currency</label>
-              <select
+              <label htmlFor="travel-create-currency" className="block text-xs font-medium text-neutral-700">Currency</label>
+              <select id="travel-create-currency"
                 className="form-input"
                 value={form.currency}
                 onChange={(e) => updateField("currency", e.target.value)}
@@ -773,9 +781,9 @@ function TravelCreatePageInner() {
 
           {/* PIF / Mission link */}
           <div className="space-y-3 pt-3 border-t border-neutral-100">
-            <label className="block text-xs font-semibold text-neutral-700">
+            <p className="block text-xs font-semibold text-neutral-700">
               Mission / PIF Connection <span className="text-red-500">*</span>
-            </label>
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
@@ -887,10 +895,11 @@ function TravelCreatePageInner() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-neutral-600">
+                      <label htmlFor={`travel-create-from-${i}`} className="block text-[11px] font-medium text-neutral-600">
                         From <span className="text-red-500">*</span>
                       </label>
                       <LocationCombobox
+                        id={`travel-create-from-${i}`}
                         value={leg.from_location}
                         onChange={(v) => updateLeg(i, "from_location", v)}
                         placeholder="Origin city, country"
@@ -898,10 +907,11 @@ function TravelCreatePageInner() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-neutral-600">
+                      <label htmlFor={`travel-create-to-${i}`} className="block text-[11px] font-medium text-neutral-600">
                         To <span className="text-red-500">*</span>
                       </label>
                       <LocationCombobox
+                        id={`travel-create-to-${i}`}
                         value={leg.to_location}
                         onChange={(v) => updateLeg(i, "to_location", v)}
                         placeholder="Destination city, country"
@@ -909,10 +919,10 @@ function TravelCreatePageInner() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-neutral-600">
+                      <label htmlFor={`travel-create-travel-date-${i}`} className="block text-[11px] font-medium text-neutral-600">
                         Travel Date <span className="text-red-500">*</span>
                       </label>
-                      <input
+                      <input id={`travel-create-travel-date-${i}`}
                         type="date"
                         className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                         value={leg.travel_date}
@@ -920,8 +930,8 @@ function TravelCreatePageInner() {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-medium text-neutral-600">Transport Mode</label>
-                      <select
+                      <label htmlFor={`travel-create-transport-mode-${i}`} className="block text-[11px] font-medium text-neutral-600">Transport Mode</label>
+                      <select id={`travel-create-transport-mode-${i}`}
                         className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                         value={leg.transport_mode}
                         onChange={(e) => updateLeg(i, "transport_mode", e.target.value)}
@@ -933,10 +943,10 @@ function TravelCreatePageInner() {
                       </select>
                     </div>
                     <div className="space-y-1 col-span-2 sm:col-span-1">
-                      <label className="block text-[11px] font-medium text-neutral-600">
+                      <label htmlFor={`travel-create-nights-${i}`} className="block text-[11px] font-medium text-neutral-600">
                         Nights at Destination
                       </label>
-                      <input
+                      <input id={`travel-create-nights-${i}`}
                         type="number"
                         min="0"
                         className="w-full rounded-md border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -1046,10 +1056,10 @@ function TravelCreatePageInner() {
                   {/* Amount inputs */}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[10px] font-medium text-neutral-500 mb-1">
+                      <label htmlFor={`travel-create-forum-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">
                         Forum ({form.currency})
                       </label>
-                      <input
+                      <input id={`travel-create-forum-${i}`}
                         type="number"
                         min="0"
                         step="0.01"
@@ -1060,10 +1070,10 @@ function TravelCreatePageInner() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-medium text-neutral-500 mb-1">
+                      <label htmlFor={`travel-create-host-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">
                         Host ({form.currency})
                       </label>
-                      <input
+                      <input id={`travel-create-host-${i}`}
                         type="number"
                         min="0"
                         step="0.01"
@@ -1081,8 +1091,8 @@ function TravelCreatePageInner() {
                       ["payor_donor", "Donor"],
                       ["payor_self", "Self"],
                     ] as const).map(([key, label]) => (
-                      <label key={key} className="inline-flex items-center gap-1">
-                        <input
+                      <label htmlFor={`travel-create-payor-${i}-${key}`} key={key} className="inline-flex items-center gap-1">
+                        <input id={`travel-create-payor-${i}-${key}`}
                           type="checkbox"
                           checked={Boolean(row[key])}
                           onChange={(e) => updateFundingRow(i, key, e.target.checked)}
@@ -1108,8 +1118,8 @@ function TravelCreatePageInner() {
                   {row.expanded && (
                     <div className="space-y-2 pt-1 border-t border-neutral-100">
                       <div>
-                        <label className="block text-[10px] font-medium text-neutral-500 mb-1">Funding Agency</label>
-                        <input
+                        <label htmlFor={`travel-create-funding-agency-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">Funding Agency</label>
+                        <input id={`travel-create-funding-agency-${i}`}
                           className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                           placeholder="e.g. SADCPF Core Budget"
                           value={row.funding_agency}
@@ -1118,8 +1128,8 @@ function TravelCreatePageInner() {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-medium text-neutral-500 mb-1">Project</label>
-                          <input
+                          <label htmlFor={`travel-create-project-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">Project</label>
+                          <input id={`travel-create-project-${i}`}
                             className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                             placeholder="Project name"
                             value={row.project}
@@ -1127,8 +1137,8 @@ function TravelCreatePageInner() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-neutral-500 mb-1">Budget Line (text note)</label>
-                          <input
+                          <label htmlFor={`travel-create-budget-line-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">Budget Line (text note)</label>
+                          <input id={`travel-create-budget-line-${i}`}
                             className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                             placeholder="Optional note if no institutional line"
                             value={row.budget_line}
@@ -1173,7 +1183,7 @@ function TravelCreatePageInner() {
 
           {/* Vehicle type */}
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-neutral-700">Vehicle Required</label>
+            <p className="block text-xs font-medium text-neutral-700">Vehicle Required</p>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { value: "sadcpf" as const, label: "SADCPF Vehicle", icon: "directions_car" },
@@ -1201,7 +1211,7 @@ function TravelCreatePageInner() {
             <div className="space-y-4">
               {/* Driver required */}
               <div className="flex items-center gap-4">
-                <label className="text-xs font-medium text-neutral-700 shrink-0">Driver Required?</label>
+                <p className="text-xs font-medium text-neutral-700 shrink-0">Driver Required?</p>
                 <div className="flex gap-2">
                   {[true, false].map((val) => (
                     <button
@@ -1223,8 +1233,8 @@ function TravelCreatePageInner() {
               {/* Driver name (SADCPF vehicle + driver required) */}
               {form.driver_required && form.vehicle_type === "sadcpf" && (
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-neutral-700">Driver Name</label>
-                  <input
+                  <label htmlFor="travel-create-driver-name" className="block text-xs font-medium text-neutral-700">Driver Name</label>
+                  <input id="travel-create-driver-name"
                     className="form-input"
                     placeholder="Enter driver's name (if known)"
                     value={form.driver_name}
@@ -1236,21 +1246,21 @@ function TravelCreatePageInner() {
               {form.vehicle_type === "private" && (
                 <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50/40 p-3" data-testid="private-mileage-fields">
                   <p className="text-xs text-amber-800">Private vehicle — mileage vs equivalent airfare comparison.</p>
-                  <label className="block text-xs font-medium text-neutral-700">Reason PF vehicle not used
-                    <textarea className="form-input mt-1" rows={2} value={form.private_vehicle_reason} onChange={(e) => updateField("private_vehicle_reason", e.target.value)} />
+                  <label htmlFor="travel-create-private-reason" className="block text-xs font-medium text-neutral-700">Reason PF vehicle not used
+                    <textarea id="travel-create-private-reason" className="form-input mt-1" rows={2} value={form.private_vehicle_reason} onChange={(e) => updateField("private_vehicle_reason", e.target.value)} />
                   </label>
-                  <label className="block text-xs font-medium text-neutral-700">Route
-                    <input className="form-input mt-1" value={form.private_vehicle_route} onChange={(e) => updateField("private_vehicle_route", e.target.value)} />
+                  <label htmlFor="travel-create-private-route" className="block text-xs font-medium text-neutral-700">Route
+                    <input id="travel-create-private-route" className="form-input mt-1" value={form.private_vehicle_route} onChange={(e) => updateField("private_vehicle_route", e.target.value)} />
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    <label className="text-xs font-medium text-neutral-700">Km
-                      <input type="number" className="form-input mt-1" value={form.estimated_kilometres} onChange={(e) => updateField("estimated_kilometres", e.target.value)} />
+                    <label htmlFor="travel-create-private-km" className="text-xs font-medium text-neutral-700">Km
+                      <input id="travel-create-private-km" type="number" className="form-input mt-1" value={form.estimated_kilometres} onChange={(e) => updateField("estimated_kilometres", e.target.value)} />
                     </label>
-                    <label className="text-xs font-medium text-neutral-700">Rate/km
-                      <input type="number" className="form-input mt-1" value={form.mileage_rate_per_km} onChange={(e) => updateField("mileage_rate_per_km", e.target.value)} />
+                    <label htmlFor="travel-create-private-rate" className="text-xs font-medium text-neutral-700">Rate/km
+                      <input id="travel-create-private-rate" type="number" className="form-input mt-1" value={form.mileage_rate_per_km} onChange={(e) => updateField("mileage_rate_per_km", e.target.value)} />
                     </label>
-                    <label className="text-xs font-medium text-neutral-700">Equiv. airfare
-                      <input type="number" className="form-input mt-1" value={form.equivalent_airfare} onChange={(e) => updateField("equivalent_airfare", e.target.value)} />
+                    <label htmlFor="travel-create-private-airfare" className="text-xs font-medium text-neutral-700">Equiv. airfare
+                      <input id="travel-create-private-airfare" type="number" className="form-input mt-1" value={form.equivalent_airfare} onChange={(e) => updateField("equivalent_airfare", e.target.value)} />
                     </label>
                   </div>
                 </div>
@@ -1317,10 +1327,10 @@ function TravelCreatePageInner() {
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
               </select>
-              <label className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5 cursor-pointer">
+              <label htmlFor="travel-create-upload-file-add-file" className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5 cursor-pointer">
                 <span className="material-symbols-outlined text-[15px]">upload_file</span>
                 Add file
-                <input
+                <input id="travel-create-upload-file-add-file"
                   type="file"
                   className="hidden"
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xlsx"

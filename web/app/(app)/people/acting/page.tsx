@@ -106,35 +106,35 @@ export default function Page() {
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-acting-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Position
-          <select className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
+          <select id="people-acting-position-setform-f-required-select" className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.name ?? p.code ?? p.id)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-acting-acting-person-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Acting person
-          <select className="form-input mt-1" value={form.person_id} onChange={(e) => setForm((f) => ({ ...f, person_id: e.target.value }))} required>
+          <select id="people-acting-acting-person-setform-f-required-select" className="form-input mt-1" value={form.person_id} onChange={(e) => setForm((f) => ({ ...f, person_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(peopleQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-acting-start-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Start
-          <input type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
+          <input id="people-acting-start-setform-f-required" type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-acting-end-setform-f" className="block text-xs font-medium text-neutral-600">
           End
-          <input type="date" className="form-input mt-1" value={form.end_at} onChange={(e) => setForm((f) => ({ ...f, end_at: e.target.value }))} />
+          <input id="people-acting-end-setform-f" type="date" className="form-input mt-1" value={form.end_at} onChange={(e) => setForm((f) => ({ ...f, end_at: e.target.value }))} />
         </label>
-        <label className="block text-xs font-medium text-neutral-600 sm:col-span-2">
+        <label htmlFor="people-acting-reason-setform-f" className="block text-xs font-medium text-neutral-600 sm:col-span-2">
           Reason
-          <input className="form-input mt-1" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
+          <input id="people-acting-reason-setform-f" className="form-input mt-1" value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} />
         </label>
         <div className="sm:col-span-2 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
@@ -145,9 +145,9 @@ export default function Page() {
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-acting-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input className="form-input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter rows…" />
+          <input id="people-acting-search-setq-e-target-value-placeholder-filter-ro" className="form-input mt-1" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter rows…" />
         </label>
       </div>
 
@@ -193,7 +193,7 @@ export default function Page() {
                     <td>{labelledObjectCell(r.end_at)}</td>
                     <td>
                       {r.status !== "approved" && r.status !== "active" && (
-                        <button type="button" className="text-xs text-emerald-700 hover:underline" onClick={() => approve.mutate(Number(r.id))} disabled={approve.isPending}>
+                        <button type="button" className="btn-secondary text-xs py-1 px-2 text-emerald-700" onClick={() => approve.mutate(Number(r.id))} disabled={approve.isPending}>
                           Approve
                         </button>
                       )}

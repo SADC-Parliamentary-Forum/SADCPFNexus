@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class PlenaryResolutionDashboardScreen extends ConsumerStatefulWidget {
   const PlenaryResolutionDashboardScreen({super.key});
@@ -66,31 +67,20 @@ class _PlenaryResolutionDashboardScreenState extends ConsumerState<PlenaryResolu
     final inProgressCount = _resolutions.where((r) => _normalizeStatus(r['status'] as String?) == 'In Progress').length;
     final deferredCount = _resolutions.where((r) => _normalizeStatus(r['status'] as String?) == 'Deferred').length;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary), onPressed: () => Navigator.pop(context)),
-        title: const Text('Plenary Resolutions', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh, color: AppColors.textSecondary), onPressed: _loading ? null : _load),
-        ],
-      ),
+    return StitchScreen(
+      title: 'Plenary Resolutions',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
+        ),
+      ],
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading resolutions')
           : _error != null
-              ? Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.danger)),
-                      const SizedBox(height: 12),
-                      TextButton(onPressed: _load, child: const Text('Retry')),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
@@ -125,7 +115,7 @@ class _PlenaryResolutionDashboardScreenState extends ConsumerState<PlenaryResolu
                     const Text('ALL RESOLUTIONS', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                     const SizedBox(height: 10),
                     if (_resolutions.isEmpty)
-                      const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('No resolutions yet.', style: TextStyle(color: AppColors.textMuted))))
+                      const StitchEmptyState(title: 'No resolutions yet')
                     else
                       ..._resolutions.map((r) => _resolutionCard(context, r)),
                   ],

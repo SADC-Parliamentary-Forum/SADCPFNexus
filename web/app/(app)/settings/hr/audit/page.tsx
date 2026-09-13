@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { hrSettingsApi } from "@/lib/api";
 import { LabelledChangeRows } from "@/components/ui/LabelledRecord";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function EventBadge({ event }: { event: string }) {
   const colorMap: Record<string, string> = {
@@ -40,16 +40,10 @@ export default function HrSettingsAuditPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700 font-medium">Settings Audit Log</span>
-        </div>
-        <h1 className="page-title">Settings Audit Log</h1>
-        <p className="page-subtitle">Immutable history of every change made to HR master data, with before/after values.</p>
-      </div>
+      <HrSettingsHeader
+        title="Settings Audit Log"
+        subtitle="Immutable history of every change made to HR master data, with before/after values."
+      />
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -74,11 +68,11 @@ export default function HrSettingsAuditPage() {
             <p className="text-xs text-neutral-400 mt-1">Check that /admin/audit-logs is accessible.</p>
           </div>
         ) : logs.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300">receipt_long</span>
-            <p className="mt-2 text-sm text-neutral-500">No HR settings changes recorded yet.</p>
-            <p className="text-xs text-neutral-400 mt-1">Changes to contract types, leave profiles, and other settings will appear here.</p>
-          </div>
+          <EmptyState
+            icon="receipt_long"
+            title="No HR settings changes recorded yet."
+            description="Changes to contract types, leave profiles, and other settings will appear here."
+          />
         ) : (
           <>
             <table className="data-table w-full">

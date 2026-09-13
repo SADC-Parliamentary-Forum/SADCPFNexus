@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class ResolutionsOversightScreen extends ConsumerStatefulWidget {
   const ResolutionsOversightScreen({super.key});
@@ -74,31 +75,20 @@ class _ResolutionsOversightScreenState extends ConsumerState<ResolutionsOversigh
     final completed = milestones.where((m) => (m['progress'] as double) >= 1.0).length;
     final overdue = milestones.where((m) => m['overdue'] as bool).length;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary), onPressed: () => Navigator.pop(context)),
-        title: const Text('Resolutions Oversight', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-        actions: [
-          IconButton(icon: const Icon(Icons.refresh, color: AppColors.textSecondary), onPressed: _loading ? null : _load),
-        ],
-      ),
+    return StitchScreen(
+      title: 'Resolutions Oversight',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
+        ),
+      ],
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading resolutions')
           : _error != null
-              ? Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: const TextStyle(color: AppColors.danger)),
-                      const SizedBox(height: 12),
-                      TextButton(onPressed: _load, child: const Text('Retry')),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
@@ -136,7 +126,7 @@ class _ResolutionsOversightScreenState extends ConsumerState<ResolutionsOversigh
                     const Text('IMPLEMENTATION TRACKER', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                     const SizedBox(height: 10),
                     if (milestones.isEmpty)
-                      const Padding(padding: EdgeInsets.all(24), child: Center(child: Text('No resolutions to track.', style: TextStyle(color: AppColors.textMuted))))
+                      const StitchEmptyState(title: 'No resolutions to track')
                     else
                       ...milestones.map((m) => _milestoneCard(context, m)),
                   ],

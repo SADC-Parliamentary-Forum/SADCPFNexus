@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supportTicketsApi, type SupportTicket } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const PRIORITY_BADGE: Record<SupportTicket["priority"], string> = {
   low: "badge badge-muted",
@@ -81,28 +82,30 @@ export default function SupportTicketsPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumb + header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <nav className="flex items-center gap-1 text-xs font-medium text-neutral-500 mb-1">
-            <Link href="/profile" className="hover:text-neutral-700">Profile</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">Support</span>
-          </nav>
-          <h1 className="page-title">Help &amp; Support</h1>
-          <p className="page-subtitle">Submit a support request to the system administrators.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => { setShowForm((v) => !v); setFormError(null); }}
-          className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
-        >
-          <span className="material-symbols-outlined text-[18px]">
-            {showForm ? "expand_less" : "add"}
-          </span>
-          {showForm ? "Cancel" : "New Ticket"}
-        </button>
-      </div>
+      <ModulePageHeader
+        title="Help & Support"
+        subtitle="Submit a support request to the system administrators."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Profile", href: "/profile" },
+              { label: "Support" },
+            ]}
+          />
+        }
+        actions={
+          <button
+            type="button"
+            onClick={() => { setShowForm((v) => !v); setFormError(null); }}
+            className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
+          >
+            <span className="material-symbols-outlined text-[18px]">
+              {showForm ? "expand_less" : "add"}
+            </span>
+            {showForm ? "Cancel" : "New Ticket"}
+          </button>
+        }
+      />
 
       {/* Inline create form */}
       {showForm && (
@@ -119,10 +122,11 @@ export default function SupportTicketsPage() {
               </div>
             )}
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">
+              <label htmlFor="support-subject" className="block text-xs font-semibold text-neutral-700 mb-1">
                 Subject <span className="text-red-500">*</span>
               </label>
               <input
+                id="support-subject"
                 type="text"
                 className="form-input w-full"
                 placeholder="Briefly describe the issue or request"
@@ -132,8 +136,9 @@ export default function SupportTicketsPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+              <label htmlFor="support-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
               <textarea
+                id="support-description"
                 rows={4}
                 className="form-input resize-none w-full"
                 placeholder="Provide full details so the support team can help you quickly…"
@@ -142,8 +147,9 @@ export default function SupportTicketsPage() {
               />
             </div>
             <div className="max-w-[200px]">
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Priority</label>
+              <label htmlFor="support-priority" className="block text-xs font-semibold text-neutral-700 mb-1">Priority</label>
               <select
+                id="support-priority"
                 className="form-input w-full"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as "low" | "medium" | "high")}
@@ -189,13 +195,11 @@ export default function SupportTicketsPage() {
             <span className="ml-2">Loading…</span>
           </div>
         ) : tickets.length === 0 ? (
-          <div className="card p-5 py-16 text-center">
-            <span className="material-symbols-outlined text-4xl text-neutral-200">confirmation_number</span>
-            <p className="mt-3 text-sm text-neutral-500">No support tickets yet.</p>
-            <p className="text-xs text-neutral-400 mt-1">
-              Submit a ticket above and the admin team will respond shortly.
-            </p>
-          </div>
+          <EmptyState
+            icon="confirmation_number"
+            title="No support tickets yet."
+            description="Submit a ticket above and the admin team will respond shortly."
+          />
         ) : (
           tickets.map((ticket) => (
             <div key={ticket.id} className="card p-5">

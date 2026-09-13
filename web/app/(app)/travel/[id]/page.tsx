@@ -14,6 +14,7 @@ import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { getListData } from "@/lib/listPagination";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { TravelDestinationFields } from "@/components/travel/DestinationPickers";
@@ -85,7 +86,7 @@ export default function TravelDetailPage() {
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [returnLoading, setReturnLoading] = useState(false);
   const [workflowMeta, setWorkflowMeta] = useState<any>(null);
-  const { confirm } = useConfirm();
+  const { confirm, prompt } = useConfirm();
 
   // Attachments
   const [attachments, setAttachments] = useState<ModuleAttachment[]>([]);
@@ -345,8 +346,13 @@ export default function TravelDetailPage() {
 
   const handleCancel = async () => {
     if (!request) return;
-    const reason = window.prompt("Cancellation reason (required):");
-    if (!reason?.trim()) return;
+    const reason = (await prompt({
+      title: "travel.cancel.reasonTitle",
+      label: "travel.cancel.reasonLabel",
+      required: true,
+      variant: "danger",
+    }))?.trim();
+    if (!reason) return;
     if (!(await confirm({ title: "Cancel Request", message: "Cancel this travel request? Budget reservations will be released where applicable.", variant: "danger" }))) return;
     setActionLoading(true);
     try {
@@ -639,29 +645,19 @@ export default function TravelDetailPage() {
         ]}
       />
 
-      {/* Breadcrumb + title */}
-      <div>
-        <nav className="flex items-center gap-1.5 text-xs text-neutral-400 mb-3">
-          <Link href="/travel" className="hover:text-primary transition-colors font-medium">Travel</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="font-mono text-neutral-500">{request.reference_number}</span>
-        </nav>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-neutral-900">{request.purpose}</h1>
-            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-              <span className="flex items-center gap-1 text-xs text-neutral-400">
-                <span className="material-symbols-outlined text-[13px]">location_on</span>
-                {[request.destination_city, request.destination_country].filter(Boolean).join(", ") || request.destination_country}
-              </span>
-              <span className="text-neutral-200">·</span>
-              <span className="flex items-center gap-1 text-xs text-neutral-400">
-                <span className="material-symbols-outlined text-[13px]">calendar_today</span>
-                {formatDateShort(request.departure_date)} → {formatDateShort(request.return_date)}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+      <ModulePageHeader
+        title={request.purpose}
+        subtitle={`${[request.destination_city, request.destination_country].filter(Boolean).join(", ") || request.destination_country} · ${formatDateShort(request.departure_date)} → ${formatDateShort(request.return_date)}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.travel", href: "/travel" },
+              { label: request.reference_number },
+            ]}
+          />
+        }
+      />
+      <div className="flex items-center justify-end gap-2 flex-wrap">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
               {s.label}
@@ -708,10 +704,13 @@ export default function TravelDetailPage() {
                       const axiosErr = err as { response?: { data?: { errors?: { conflicts?: string[] }; message?: string } } };
                       const conflicts = axiosErr?.response?.data?.errors?.conflicts;
                       if (Array.isArray(conflicts) && conflicts.length) {
-                        const note = window.prompt(
-                          `Conflicts detected:\n${conflicts.join("\n")}\n\nEnter resolution note to acknowledge and submit, or Cancel.`,
-                          "Reviewed with supervisor"
-                        );
+                        const note = await prompt({
+                          title: "travel.conflicts.noteTitle",
+                          message: conflicts.join("\n"),
+                          label: "travel.conflicts.noteLabel",
+                          defaultValue: "travel.conflicts.noteDefault",
+                          required: true,
+                        });
                         if (note) {
                           try {
                             await travelApi.submit(request.id, {
@@ -794,8 +793,6 @@ export default function TravelDetailPage() {
               </button>
             )}
           </div>
-        </div>
-      </div>
 
       {/* Returned for correction banner */}
       {isReturnedForCorrection && (
@@ -1058,9 +1055,10 @@ export default function TravelDetailPage() {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-            <label className="text-xs text-neutral-600">
+            <label htmlFor="travel-dsa-rate-type" className="text-xs text-neutral-600">
               Rate type
               <select
+                id="travel-dsa-rate-type"
                 className="form-input mt-1 w-full text-sm"
                 value={dsaRateType}
                 onChange={(e) => setDsaRateType(Number(e.target.value))}
@@ -1071,9 +1069,10 @@ export default function TravelDetailPage() {
                 <option value={3}>Type 3 — Incidentals only</option>
               </select>
             </label>
-            <label className="text-xs text-neutral-600">
+            <label htmlFor="travel-dsa-terminal" className="text-xs text-neutral-600">
               Terminal / comms total
               <input
+                id="travel-dsa-terminal"
                 className="form-input mt-1 w-full text-sm"
                 type="number"
                 min={0}
@@ -1141,13 +1140,13 @@ export default function TravelDetailPage() {
           <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Visa status &amp; reminders</h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <label className="flex items-center gap-2 text-sm text-neutral-700">
-            <input type="checkbox" checked={visaRequired} onChange={(e) => setVisaRequired(e.target.checked)} />
+          <label htmlFor="travel-visa-required" className="flex items-center gap-2 text-sm text-neutral-700">
+            <input id="travel-visa-required" type="checkbox" checked={visaRequired} onChange={(e) => setVisaRequired(e.target.checked)} />
             Visa required
           </label>
-          <label className="text-xs text-neutral-600">
+          <label htmlFor="travel-visa-status" className="text-xs text-neutral-600">
             Status
-            <select className="form-input mt-1 w-full text-sm" value={visaStatus} onChange={(e) => setVisaStatus(e.target.value)} disabled={!visaRequired}>
+            <select id="travel-visa-status" className="form-input mt-1 w-full text-sm" value={visaStatus} onChange={(e) => setVisaStatus(e.target.value)} disabled={!visaRequired}>
               <option value="pending">Pending</option>
               <option value="appointment_scheduled">Appointment scheduled</option>
               <option value="submitted">Submitted</option>
@@ -1157,17 +1156,17 @@ export default function TravelDetailPage() {
               <option value="not_required">Not required</option>
             </select>
           </label>
-          <label className="text-xs text-neutral-600">
+          <label htmlFor="travel-visa-appointment" className="text-xs text-neutral-600">
             Appointment date
-            <input className="form-input mt-1 w-full text-sm" type="date" value={visaAppointment} onChange={(e) => setVisaAppointment(e.target.value)} />
+            <input id="travel-visa-appointment" className="form-input mt-1 w-full text-sm" type="date" value={visaAppointment} onChange={(e) => setVisaAppointment(e.target.value)} />
           </label>
-          <label className="text-xs text-neutral-600">
+          <label htmlFor="travel-visa-expiry" className="text-xs text-neutral-600">
             Expiry date
-            <input className="form-input mt-1 w-full text-sm" type="date" value={visaExpiry} onChange={(e) => setVisaExpiry(e.target.value)} />
+            <input id="travel-visa-expiry" className="form-input mt-1 w-full text-sm" type="date" value={visaExpiry} onChange={(e) => setVisaExpiry(e.target.value)} />
           </label>
-          <label className="text-xs text-neutral-600 sm:col-span-2">
+          <label htmlFor="travel-visa-notes" className="text-xs text-neutral-600 sm:col-span-2">
             Notes
-            <textarea className="form-input mt-1 w-full text-sm" rows={2} value={visaNotes} onChange={(e) => setVisaNotes(e.target.value)} />
+            <textarea id="travel-visa-notes" className="form-input mt-1 w-full text-sm" rows={2} value={visaNotes} onChange={(e) => setVisaNotes(e.target.value)} />
           </label>
         </div>
         <button type="button" disabled={visaSaving} onClick={handleSaveVisa} className="btn-secondary py-2 px-4 text-xs" data-testid="travel-save-visa">
@@ -1212,29 +1211,29 @@ export default function TravelDetailPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Travel health pack</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={healthVaccReq} onChange={(e) => setHealthVaccReq(e.target.checked)} />
+            <label htmlFor="travel-health-vacc-req" className="flex items-center gap-2 text-sm">
+              <input id="travel-health-vacc-req" type="checkbox" checked={healthVaccReq} onChange={(e) => setHealthVaccReq(e.target.checked)} />
               Vaccination required
             </label>
-            <label className="text-xs text-neutral-600">
+            <label htmlFor="travel-health-vacc-status" className="text-xs text-neutral-600">
               Vaccination status
-              <input className="form-input mt-1 w-full text-sm" value={healthVaccStatus} onChange={(e) => setHealthVaccStatus(e.target.value)} />
+              <input id="travel-health-vacc-status" className="form-input mt-1 w-full text-sm" value={healthVaccStatus} onChange={(e) => setHealthVaccStatus(e.target.value)} />
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={healthProphReq} onChange={(e) => setHealthProphReq(e.target.checked)} />
+            <label htmlFor="travel-health-proph-req" className="flex items-center gap-2 text-sm">
+              <input id="travel-health-proph-req" type="checkbox" checked={healthProphReq} onChange={(e) => setHealthProphReq(e.target.checked)} />
               Prophylaxis required
             </label>
-            <label className="text-xs text-neutral-600">
+            <label htmlFor="travel-health-proph-status" className="text-xs text-neutral-600">
               Prophylaxis status
-              <input className="form-input mt-1 w-full text-sm" value={healthProphStatus} onChange={(e) => setHealthProphStatus(e.target.value)} />
+              <input id="travel-health-proph-status" className="form-input mt-1 w-full text-sm" value={healthProphStatus} onChange={(e) => setHealthProphStatus(e.target.value)} />
             </label>
-            <label className="text-xs text-neutral-600">
+            <label htmlFor="travel-health-cost" className="text-xs text-neutral-600">
               Estimated cost
-              <input className="form-input mt-1 w-full text-sm" type="number" value={healthCost} onChange={(e) => setHealthCost(e.target.value)} />
+              <input id="travel-health-cost" className="form-input mt-1 w-full text-sm" type="number" value={healthCost} onChange={(e) => setHealthCost(e.target.value)} />
             </label>
-            <label className="text-xs text-neutral-600 sm:col-span-2">
+            <label htmlFor="travel-health-notes" className="text-xs text-neutral-600 sm:col-span-2">
               Notes
-              <textarea className="form-input mt-1 w-full text-sm" rows={2} value={healthNotes} onChange={(e) => setHealthNotes(e.target.value)} />
+              <textarea id="travel-health-notes" className="form-input mt-1 w-full text-sm" rows={2} value={healthNotes} onChange={(e) => setHealthNotes(e.target.value)} />
             </label>
           </div>
           <button type="button" disabled={healthSaving} onClick={handleSaveHealth} className="btn-secondary py-2 px-4 text-xs" data-testid="travel-save-health">
@@ -1263,28 +1262,28 @@ export default function TravelDetailPage() {
           </ul>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <label className="text-xs text-neutral-600">Hotel
-            <input className="form-input mt-1 w-full text-sm" value={hotelName} onChange={(e) => setHotelName(e.target.value)} />
+          <label htmlFor="travel-hotel-name" className="text-xs text-neutral-600">Hotel
+            <input id="travel-hotel-name" className="form-input mt-1 w-full text-sm" value={hotelName} onChange={(e) => setHotelName(e.target.value)} />
           </label>
-          <label className="text-xs text-neutral-600">City
-            <input className="form-input mt-1 w-full text-sm" value={hotelCity} onChange={(e) => setHotelCity(e.target.value)} />
+          <label htmlFor="travel-hotel-city" className="text-xs text-neutral-600">City
+            <input id="travel-hotel-city" className="form-input mt-1 w-full text-sm" value={hotelCity} onChange={(e) => setHotelCity(e.target.value)} />
           </label>
-          <label className="text-xs text-neutral-600">Check-in
-            <input type="date" className="form-input mt-1 w-full text-sm" value={hotelCheckIn} onChange={(e) => setHotelCheckIn(e.target.value)} />
+          <label htmlFor="travel-hotel-check-in" className="text-xs text-neutral-600">Check-in
+            <input id="travel-hotel-check-in" type="date" className="form-input mt-1 w-full text-sm" value={hotelCheckIn} onChange={(e) => setHotelCheckIn(e.target.value)} />
           </label>
-          <label className="text-xs text-neutral-600">Check-out
-            <input type="date" className="form-input mt-1 w-full text-sm" value={hotelCheckOut} onChange={(e) => setHotelCheckOut(e.target.value)} />
+          <label htmlFor="travel-hotel-check-out" className="text-xs text-neutral-600">Check-out
+            <input id="travel-hotel-check-out" type="date" className="form-input mt-1 w-full text-sm" value={hotelCheckOut} onChange={(e) => setHotelCheckOut(e.target.value)} />
           </label>
-          <label className="text-xs text-neutral-600">Paid by
-            <select className="form-input mt-1 w-full text-sm" value={hotelPaidBy} onChange={(e) => setHotelPaidBy(e.target.value)}>
+          <label htmlFor="travel-hotel-paid-by" className="text-xs text-neutral-600">Paid by
+            <select id="travel-hotel-paid-by" className="form-input mt-1 w-full text-sm" value={hotelPaidBy} onChange={(e) => setHotelPaidBy(e.target.value)}>
               <option value="sadc_pf">SADC PF</option>
               <option value="host">Host</option>
               <option value="donor">Donor</option>
               <option value="self">Self</option>
             </select>
           </label>
-          <label className="text-xs text-neutral-600">Confirmation #
-            <input className="form-input mt-1 w-full text-sm" value={hotelConfirm} onChange={(e) => setHotelConfirm(e.target.value)} />
+          <label htmlFor="travel-hotel-confirm" className="text-xs text-neutral-600">Confirmation #
+            <input id="travel-hotel-confirm" className="form-input mt-1 w-full text-sm" value={hotelConfirm} onChange={(e) => setHotelConfirm(e.target.value)} />
           </label>
         </div>
         <button
@@ -1330,20 +1329,20 @@ export default function TravelDetailPage() {
           </p>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <label className="text-xs text-neutral-600">Estimated km
-            <input type="number" className="form-input mt-1 w-full text-sm" value={mileKm} onChange={(e) => setMileKm(e.target.value)} />
+          <label htmlFor="travel-mile-km" className="text-xs text-neutral-600">Estimated km
+            <input id="travel-mile-km" type="number" className="form-input mt-1 w-full text-sm" value={mileKm} onChange={(e) => setMileKm(e.target.value)} />
           </label>
-          <label className="text-xs text-neutral-600">Rate / km
-            <input type="number" className="form-input mt-1 w-full text-sm" value={mileRate} onChange={(e) => setMileRate(e.target.value)} />
+          <label htmlFor="travel-mile-rate" className="text-xs text-neutral-600">Rate / km
+            <input id="travel-mile-rate" type="number" className="form-input mt-1 w-full text-sm" value={mileRate} onChange={(e) => setMileRate(e.target.value)} />
           </label>
-          <label className="text-xs text-neutral-600">Equivalent airfare
-            <input type="number" className="form-input mt-1 w-full text-sm" value={mileAirfare} onChange={(e) => setMileAirfare(e.target.value)} />
+          <label htmlFor="travel-mile-airfare" className="text-xs text-neutral-600">Equivalent airfare
+            <input id="travel-mile-airfare" type="number" className="form-input mt-1 w-full text-sm" value={mileAirfare} onChange={(e) => setMileAirfare(e.target.value)} />
           </label>
-          <label className="text-xs text-neutral-600">Route
-            <input className="form-input mt-1 w-full text-sm" value={mileRoute} onChange={(e) => setMileRoute(e.target.value)} />
+          <label htmlFor="travel-mile-route" className="text-xs text-neutral-600">Route
+            <input id="travel-mile-route" className="form-input mt-1 w-full text-sm" value={mileRoute} onChange={(e) => setMileRoute(e.target.value)} />
           </label>
-          <label className="text-xs text-neutral-600 sm:col-span-2">Reason PF vehicle not used
-            <textarea className="form-input mt-1 w-full text-sm" rows={2} value={mileReason} onChange={(e) => setMileReason(e.target.value)} />
+          <label htmlFor="travel-mile-reason" className="text-xs text-neutral-600 sm:col-span-2">Reason PF vehicle not used
+            <textarea id="travel-mile-reason" className="form-input mt-1 w-full text-sm" rows={2} value={mileReason} onChange={(e) => setMileReason(e.target.value)} />
           </label>
         </div>
         <button
@@ -1411,17 +1410,17 @@ export default function TravelDetailPage() {
           </p>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <label className="text-xs text-neutral-600">
+          <label htmlFor="travel-proc-id" className="text-xs text-neutral-600">
             Procurement request ID
-            <input className="form-input mt-1 w-full text-sm" value={procId} onChange={(e) => setProcId(e.target.value)} placeholder="e.g. 42" data-testid="travel-proc-id" />
+            <input id="travel-proc-id" className="form-input mt-1 w-full text-sm" value={procId} onChange={(e) => setProcId(e.target.value)} placeholder="e.g. 42" data-testid="travel-proc-id" />
           </label>
-          <label className="flex items-center gap-2 text-sm mt-5">
-            <input type="checkbox" checked={procRequired} onChange={(e) => setProcRequired(e.target.checked)} />
+          <label htmlFor="travel-proc-required" className="flex items-center gap-2 text-sm mt-5">
+            <input id="travel-proc-required" type="checkbox" checked={procRequired} onChange={(e) => setProcRequired(e.target.checked)} />
             Link required by threshold
           </label>
-          <label className="text-xs text-neutral-600 sm:col-span-2">
+          <label htmlFor="travel-proc-reason" className="text-xs text-neutral-600 sm:col-span-2">
             Reason
-            <textarea className="form-input mt-1 w-full text-sm" rows={2} value={procReason} onChange={(e) => setProcReason(e.target.value)} />
+            <textarea id="travel-proc-reason" className="form-input mt-1 w-full text-sm" rows={2} value={procReason} onChange={(e) => setProcReason(e.target.value)} />
           </label>
         </div>
         <button type="button" disabled={procSaving} onClick={handleSaveProcurementLink} className="btn-secondary py-2 px-4 text-xs" data-testid="travel-save-procurement-link">
@@ -1438,9 +1437,10 @@ export default function TravelDetailPage() {
           <p className="text-xs text-neutral-500 mb-3">Mark days that are personal (no DSA). Official days remain payable.</p>
           <div className="space-y-2 max-h-56 overflow-y-auto">
             {personalDays.map((day, idx) => (
-              <label key={day.date} className="flex items-center justify-between gap-3 text-sm border-b border-neutral-50 py-1.5">
+              <label key={day.date} htmlFor={`travel-personal-day-${day.date}`} className="flex items-center justify-between gap-3 text-sm border-b border-neutral-50 py-1.5">
                 <span className="font-mono text-xs text-neutral-600">{day.date}</span>
                 <select
+                  id={`travel-personal-day-${day.date}`}
                   className="form-input text-xs py-1"
                   value={day.type}
                   onChange={(e) => {
@@ -1484,16 +1484,16 @@ export default function TravelDetailPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Fleet vehicle assignment</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="text-xs text-neutral-600">Vehicle
-              <select className="form-input mt-1 w-full text-sm" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
+            <label htmlFor="travel-vehicle-id" className="text-xs text-neutral-600">Vehicle
+              <select id="travel-vehicle-id" className="form-input mt-1 w-full text-sm" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
                 <option value="">Select fleet asset…</option>
                 {fleet.map((v) => (
                   <option key={v.id} value={v.id}>{v.asset_code} — {v.name} ({v.status})</option>
                 ))}
               </select>
             </label>
-            <label className="flex items-end gap-2 text-xs text-neutral-600 pb-2">
-              <input type="checkbox" checked={vehicleAck} onChange={(e) => setVehicleAck(e.target.checked)} />
+            <label htmlFor="travel-vehicle-ack" className="flex items-end gap-2 text-xs text-neutral-600 pb-2">
+              <input id="travel-vehicle-ack" type="checkbox" checked={vehicleAck} onChange={(e) => setVehicleAck(e.target.checked)} />
               Acknowledge overlapping assignment conflicts
             </label>
           </div>
@@ -1602,7 +1602,7 @@ export default function TravelDetailPage() {
               <div className="w-full text-xs text-neutral-600 mt-1">
                 Linked imprests:{" "}
                 {(request.imprest_requests ?? []).map((imp) => (
-                  <a key={imp.id} href={`/imprest/${imp.id}`} className="text-primary mr-2 underline">
+                  <a key={imp.id} href={`/imprest/${imp.id}`} className="btn-secondary text-xs py-0.5 px-2 inline-flex mr-2">
                     {imp.reference_number ?? `#${imp.id}`}
                   </a>
                 ))}
@@ -1755,13 +1755,13 @@ export default function TravelDetailPage() {
               <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{amendError}</p>
             )}
             <div className="grid grid-cols-2 gap-3">
-              <label className="text-xs text-neutral-500 space-y-1">
+              <label htmlFor="travel-amend-departure" className="text-xs text-neutral-500 space-y-1">
                 <span>Departure date</span>
-                <input type="date" className="form-input" value={amendDeparture} onChange={(e) => setAmendDeparture(e.target.value)} />
+                <input id="travel-amend-departure" type="date" className="form-input" value={amendDeparture} onChange={(e) => setAmendDeparture(e.target.value)} />
               </label>
-              <label className="text-xs text-neutral-500 space-y-1">
+              <label htmlFor="travel-amend-return" className="text-xs text-neutral-500 space-y-1">
                 <span>Return date</span>
-                <input type="date" className="form-input" value={amendReturn} onChange={(e) => setAmendReturn(e.target.value)} />
+                <input id="travel-amend-return" type="date" className="form-input" value={amendReturn} onChange={(e) => setAmendReturn(e.target.value)} />
               </label>
             </div>
             <TravelDestinationFields
@@ -1796,13 +1796,14 @@ export default function TravelDetailPage() {
                 }
               }}
             />
-            <label className="block text-xs text-neutral-500 space-y-1">
+            <label htmlFor="travel-amend-purpose" className="block text-xs text-neutral-500 space-y-1">
               <span>Purpose</span>
-              <input className="form-input" value={amendPurpose} onChange={(e) => setAmendPurpose(e.target.value)} />
+              <input id="travel-amend-purpose" className="form-input" value={amendPurpose} onChange={(e) => setAmendPurpose(e.target.value)} />
             </label>
-            <label className="block text-xs text-neutral-500 space-y-1">
+            <label htmlFor="travel-amend-reason" className="block text-xs text-neutral-500 space-y-1">
               <span>Reason for amendment</span>
               <textarea
+                id="travel-amend-reason"
                 className="form-input resize-none"
                 rows={2}
                 value={amendReason}

@@ -13,6 +13,7 @@ import {
 import { formatDate } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -396,7 +397,7 @@ function RecentEventsCard() {
         </div>
         <Link
           href="/saam/verify"
-          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+          className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
         >
           Verify document
           <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -417,18 +418,12 @@ function RecentEventsCard() {
           ))}
         </div>
       ) : events.length === 0 ? (
-        <div className="px-5 py-10 text-center">
-          <span
-            className="material-symbols-outlined text-neutral-300 text-[36px] mb-2 block"
-            style={{ fontVariationSettings: "'FILL' 0" }}
-          >
-            history_toggle_off
-          </span>
-          <p className="text-sm text-neutral-400">No signature activity yet.</p>
-          <p className="text-xs text-neutral-400 mt-1">
-            Your signing history will appear here after you sign your first document.
-          </p>
-        </div>
+        <EmptyState
+          icon="history_toggle_off"
+          title="No signature activity yet."
+          description="Your signing history will appear here after you sign your first document."
+          className="py-10 min-h-0"
+        />
       ) : (
         <div className="divide-y divide-neutral-50">
           {events.map((evt) => {
@@ -461,7 +456,7 @@ function RecentEventsCard() {
                 </div>
                 <Link
                   href={`/saam/verify/${shortType}/${evt.signable_id}`}
-                  className="flex-shrink-0 text-[11px] text-primary font-semibold hover:underline"
+                  className="btn-secondary text-[11px] py-1 px-2 flex-shrink-0"
                 >
                   Verify
                 </Link>
@@ -502,7 +497,7 @@ function DelegationSummaryCard({
         </div>
         <Link
           href="/saam/delegations"
-          className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+          className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1"
         >
           Manage all
           <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -612,7 +607,7 @@ function DelegationSummaryCard({
                   <div className="px-5 py-2">
                     <Link
                       href="/saam/delegations"
-                      className="text-xs text-primary font-semibold hover:underline"
+                      className="btn-secondary text-xs py-1 px-2"
                     >
                       +{activeOut.length - 3} more
                     </Link>
@@ -652,7 +647,7 @@ function DelegationSummaryCard({
           {activeOut.length === 0 && activeIn.length === 0 && (
             <p className="px-5 pb-5 text-xs text-neutral-400 text-center">
               No active delegations.{" "}
-              <Link href="/saam/delegations" className="text-primary font-semibold hover:underline">
+              <Link href="/saam/delegations" className="btn-secondary text-xs py-1 px-2">
                 Create one
               </Link>{" "}
               if you will be unavailable.

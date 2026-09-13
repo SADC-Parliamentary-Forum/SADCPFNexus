@@ -86,15 +86,15 @@ export default function PendingSgRoutingPage() {
             {routingId === item.id && (
               <div className="grid gap-3 sm:grid-cols-2 rounded-xl bg-neutral-50 p-3">
                 <div>
-                  <label className="text-xs text-neutral-600">Primary Action Owner *</label>
-                  <select className="form-input w-full mt-1" value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
+                  <label htmlFor={`correspondence-pending-owner-${item.id}`} className="text-xs text-neutral-600">Primary Action Owner *</label>
+                  <select id={`correspondence-pending-owner-${item.id}`} className="form-input w-full mt-1" value={ownerId} onChange={(e) => setOwnerId(e.target.value)}>
                     <option value="">Select officer…</option>
                     {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                   </select>
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="text-xs text-neutral-600">Instruction</label>
-                  <textarea className="form-input w-full mt-1" rows={2} value={instruction} onChange={(e) => setInstruction(e.target.value)} />
+                  <label htmlFor={`correspondence-pending-instruction-${item.id}`} className="text-xs text-neutral-600">Instruction</label>
+                  <textarea id={`correspondence-pending-instruction-${item.id}`} className="form-input w-full mt-1" rows={2} value={instruction} onChange={(e) => setInstruction(e.target.value)} />
                 </div>
                 <div className="sm:col-span-2 flex gap-2">
                   <button type="button" className="btn-primary text-xs" onClick={() => route(item.id)}>Confirm route</button>

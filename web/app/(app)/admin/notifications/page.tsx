@@ -248,10 +248,10 @@ export default function AdminNotificationsPage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Notifications admin" }]} />}
       />
         <div className="flex items-center gap-3 flex-wrap">
-          <Link href="/notifications" className="text-sm text-primary underline">
+          <Link href="/notifications" className="btn-secondary text-sm">
             Open user inbox
           </Link>
-          <Link href="/admin/notifications/governance" className="text-sm text-primary underline">
+          <Link href="/admin/notifications/governance" className="btn-secondary text-sm">
             Governance checklist (§124)
           </Link>
         </div>
@@ -317,8 +317,8 @@ export default function AdminNotificationsPage() {
                   <td className="px-3 py-2">{d.queue_priority}</td>
                   <td className="px-3 py-2 max-w-xs truncate">{d.rendered_subject}</td>
                   <td className="px-3 py-2 space-x-2">
-                    <button type="button" className="text-primary underline" onClick={() => retry(d.id)}>Retry</button>
-                    <button type="button" className="text-red-600 underline" onClick={() => suppress(d.id)}>Suppress</button>
+                    <button type="button" className="btn-secondary text-xs" onClick={() => retry(d.id)}>Retry</button>
+                    <button type="button" className="btn-secondary text-xs text-red-600" onClick={() => suppress(d.id)}>Suppress</button>
                   </td>
                 </tr>
               ))}
@@ -335,7 +335,7 @@ export default function AdminNotificationsPage() {
               {(failures.failed_deliveries ?? []).map((d) => (
                 <li key={d.id} className="flex justify-between gap-2">
                   <span>#{d.id} {d.channel} — {d.failure_code || d.status}</span>
-                  <button type="button" className="text-primary underline" onClick={() => retry(d.id)}>Retry</button>
+                  <button type="button" className="btn-secondary text-xs" onClick={() => retry(d.id)}>Retry</button>
                 </li>
               ))}
             </ul>

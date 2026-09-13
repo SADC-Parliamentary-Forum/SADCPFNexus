@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrSettingsApi, type HrGradeBand, type HrSalaryScale, type HrSalaryScaleNotch, type HrSettingsStatus } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { cn, formatCurrency as formatAmount } from "@/lib/utils";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { SalaryScaleSlideOver } from "./SalaryScaleSlideOver";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_BADGE: Record<HrSettingsStatus, string> = {
   draft:     "badge-muted",
@@ -108,26 +109,21 @@ export default function SalaryScalesPage() {
         onPublish={currentScale?.id ? () => lifecycleMutation.mutate({ action: "publish", id: currentScale.id! }) : undefined}
         saving={saveMutation.isPending || lifecycleMutation.isPending}
       />
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Salary Scales</span>
-          </div>
-          <h1 className="page-title">Salary Scales</h1>
-          <p className="page-subtitle">Notch-based salary structures linked to grade bands, with effective dating and approval workflow.</p>
-        </div>
-        <button
-          onClick={() => setSlideOver({ open: true, scale: null })}
-          className="btn-primary flex items-center gap-2 shrink-0"
-        >
+      <HrSettingsHeader
+        title="Salary Scales"
+        subtitle="Notch-based salary structures linked to grade bands, with effective dating and approval workflow."
+        actions={
+          <button
+            type="button"
+            onClick={() => setSlideOver({ open: true, scale: null })}
+            className="btn-primary flex items-center gap-2 shrink-0"
+          >
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Salary Scale
         </button>
-      </div>
+        }
+      />
+
 
       {/* Filters */}
       <div className="card p-4 flex flex-wrap gap-3">
@@ -164,13 +160,15 @@ export default function SalaryScalesPage() {
           </table>
         </div>
       ) : scales.length === 0 ? (
-        <div className="card p-12 text-center">
-          <span className="material-symbols-outlined text-[40px] text-neutral-300">payments</span>
-          <p className="mt-2 text-sm text-neutral-500">No salary scales found.</p>
-          <button onClick={() => setSlideOver({ open: true, scale: null })} className="btn-primary text-sm mt-4 mx-auto">
-            Create first salary scale
-          </button>
-        </div>
+        <EmptyState
+          icon="payments"
+          title="No salary scales found."
+          action={
+            <button type="button" onClick={() => setSlideOver({ open: true, scale: null })} className="btn-primary text-sm">
+              Create first salary scale
+            </button>
+          }
+        />
       ) : (
         <div className="space-y-4">
           {Object.entries(grouped).map(([gradeCode, gradeScales]) => {

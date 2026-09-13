@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, use } from "react";
-import Link from "next/link";
 import { ledgerVerificationsApi, auditLogsApi, type LedgerVerification, type AuditLogEntry } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -55,7 +55,7 @@ function exportCSV(verification: LedgerVerification, logs: AuditLogEntry[]) {
 // ─── Page ──────────────────────────────────────────────────────────────────
 
 export default function LedgerVerificationDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { success, error: showErrorToast, info } = useToast();
+  const { success } = useToast();
   const { id } = use(params);
   const numId = Number(id);
 
@@ -168,44 +168,6 @@ export default function LedgerVerificationDetailPage({ params }: { params: Promi
         }
       />
 
-      {/* Breadcrumb */}
-      <div className="hidden">
-        <Link href="/admin/ledger" className="hover:text-primary">Audit Ledger</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-800 font-medium">Verification #{verification.id}</span>
-      </div>
-
-      {/* Header row */}
-      <div className="hidden">
-        <div className="flex-1">
-          <h1 className="text-2xl font-semibold text-neutral-900">Ledger Verification Report</h1>
-          <p className="page-subtitle">
-            {verification.type === "manual" ? "Manual" : "Scheduled"} verification — {formatTs(verification.verified_at)}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => exportCSV(verification, logs)}
-            className="btn-secondary flex items-center gap-1.5"
-          >
-            <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
-          </button>
-          <button
-            type="button"
-            onClick={handleReverify}
-            disabled={reverifying}
-            className="btn-primary flex items-center gap-1.5 disabled:opacity-60"
-          >
-            <span className="material-symbols-outlined text-[18px]">
-              {reverifying ? "hourglass_top" : "verified_user"}
-            </span>
-            {reverifying ? "Verifying…" : "Re-verify"}
-          </button>
-        </div>
-      </div>
-
       {/* Verification metadata card */}
       <div className="card p-0 overflow-hidden">
         <div className={cn(
@@ -287,9 +249,7 @@ export default function LedgerVerificationDetailPage({ params }: { params: Promi
             </thead>
             <tbody>
               {logs.length === 0 && !logsLoading ? (
-                <tr>
-                  <td colSpan={7} className="text-center text-neutral-400 py-8">No entries found.</td>
-                </tr>
+                <TableEmpty colSpan={7} title="No entries found." />
               ) : logs.map((entry) => (
                 <tr key={entry.id}>
                   <td className="whitespace-nowrap text-xs text-neutral-500">{formatTs(entry.created_at)}</td>

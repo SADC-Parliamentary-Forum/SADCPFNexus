@@ -173,7 +173,7 @@ export default function AssignmentsDashboard() {
       <div>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-neutral-700">Recent Assignments</h2>
-          <Link href="/assignments/all" className="flex items-center gap-1 text-xs text-primary hover:underline">
+          <Link href="/assignments/all" className="btn-secondary text-xs py-1 px-2 flex items-center gap-1">
             View all
             <span className="material-symbols-outlined text-[13px]">chevron_right</span>
           </Link>

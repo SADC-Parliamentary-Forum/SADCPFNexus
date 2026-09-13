@@ -12,6 +12,8 @@ interface ModulePageHeaderProps {
   actions?: ReactNode;
   meta?: ReactNode;
   className?: string;
+  /** Optional test id on the page title heading. */
+  titleTestId?: string;
   /** Constrain to the same width as register pages */
   maxWidth?: "3xl" | "4xl" | "6xl" | "none";
 }
@@ -34,6 +36,7 @@ export function ModulePageHeader({
   actions,
   meta,
   className,
+  titleTestId,
   maxWidth = "none",
 }: ModulePageHeaderProps) {
   const { t } = useI18n();
@@ -42,7 +45,7 @@ export function ModulePageHeader({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           {breadcrumbs}
-          <h1 className="page-title">{t(title)}</h1>
+          <h1 className="page-title" data-testid={titleTestId}>{t(title)}</h1>
           {subtitle ? (
             typeof subtitle === "string" ? (
               <p className="page-subtitle">{t(subtitle)}</p>

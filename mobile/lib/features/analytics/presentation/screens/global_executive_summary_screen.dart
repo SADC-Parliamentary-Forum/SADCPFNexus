@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class GlobalExecutiveSummaryScreen extends ConsumerStatefulWidget {
   const GlobalExecutiveSummaryScreen({super.key});
@@ -77,36 +78,20 @@ class _GlobalExecutiveSummaryScreenState extends ConsumerState<GlobalExecutiveSu
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark, elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+    return StitchScreen(
+      title: 'Global Summary',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _load,
         ),
-        title: const Text('Global Summary',
-          style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, size: 20, color: AppColors.textMuted),
-            onPressed: _load,
-            tooltip: 'Refresh',
-          ),
-        ],
-      ),
+      ],
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading summary')
           : _error != null
-              ? Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.error_outline, color: AppColors.danger, size: 40),
-                    const SizedBox(height: 12),
-                    Text(_error!, style: const TextStyle(color: AppColors.textMuted, fontSize: 14)),
-                    const SizedBox(height: 16),
-                    TextButton(onPressed: _load, child: const Text('Retry', style: TextStyle(color: AppColors.primary))),
-                  ]),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : RefreshIndicator(
                   color: AppColors.primary,
                   backgroundColor: AppColors.bgSurface,

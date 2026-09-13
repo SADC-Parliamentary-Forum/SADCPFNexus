@@ -8,6 +8,8 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { GradeBandSlideOver } from "./GradeBandSlideOver";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_TABS = [
   { key: "", label: "All" },
@@ -125,26 +127,21 @@ export default function GradeBandsPage() {
         onPublish={slideGrade?.id ? () => lifecycleMutation.mutate({ action: "publish", id: slideGrade.id! }) : undefined}
         saving={mutation.isPending || lifecycleMutation.isPending}
       />
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Position Grades</span>
-          </div>
-          <h1 className="page-title">Position Grades</h1>
-          <p className="page-subtitle">Grade band master — defines employment conditions, eligibility rules, and notch ranges.</p>
-        </div>
-        <button
-          onClick={() => setSlideOver({ open: true, grade: null })}
-          className="btn-primary flex items-center gap-2 shrink-0"
-        >
+      <HrSettingsHeader
+        title="Position Grades"
+        subtitle="Grade band master — defines employment conditions, eligibility rules, and notch ranges."
+        actions={
+          <button
+            type="button"
+            onClick={() => setSlideOver({ open: true, grade: null })}
+            className="btn-primary flex items-center gap-2 shrink-0"
+          >
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Grade Band
         </button>
-      </div>
+        }
+      />
+
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -227,9 +224,8 @@ export default function GradeBandsPage() {
               : grades.length === 0
               ? (
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-neutral-400 text-sm">
-                    <span className="material-symbols-outlined text-[32px] block mb-2">grade</span>
-                    No grade bands found.
+                  <td colSpan={9}>
+                    <EmptyState icon="grade" title="No grade bands found." />
                   </td>
                 </tr>
               )

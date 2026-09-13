@@ -73,7 +73,7 @@ export default function AccessGovernanceHomePage() {
             {items.map((item) => (
               <li key={item.label} className="rounded-lg border border-neutral-100 px-3 py-2">
                 {item.href ? (
-                  <Link href={item.href} className="font-medium text-primary hover:underline">
+                  <Link href={item.href} className="font-medium text-primary">
                     {item.label}
                   </Link>
                 ) : (
@@ -84,7 +84,7 @@ export default function AccessGovernanceHomePage() {
                     {item.children.map((c) => (
                       <li key={c.label}>
                         {c.href ? (
-                          <Link href={c.href} className="hover:text-primary hover:underline">
+                          <Link href={c.href} className="hover:text-primary">
                             {c.label}
                           </Link>
                         ) : (

@@ -6,6 +6,7 @@ import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
 import '../../data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 /// View / issue RFQ for a procurement request (API-backed only).
 class ProcurementRfqScreen extends ConsumerStatefulWidget {
@@ -187,60 +188,21 @@ class _ProcurementRfqScreenState extends ConsumerState<ProcurementRfqScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppColors.textPrimary),
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/procurement');
-            }
-          },
+    return StitchScreen(
+      title: 'RFQ',
+      fallbackRoute: '/procurement',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        title: const Text('RFQ',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w800)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-            onPressed: _loading ? null : _load,
-          ),
-        ],
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading RFQ')
           : _error != null || _request == null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Text(_error ?? 'RFQ not found.',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                                color: AppColors.textSecondary)),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        onPressed: _load,
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary),
-                        child: const Text('Retry',
-                            style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(
+                  message: _error ?? 'RFQ not found.', onRetry: _load)
               : RefreshIndicator(
                   color: AppColors.primary,
                   onRefresh: _load,

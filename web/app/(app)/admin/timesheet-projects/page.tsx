@@ -7,6 +7,7 @@ import { adminApi, type TimesheetProject } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function AdminTimesheetProjectsPage() {
   const { confirm } = useConfirm();
@@ -135,8 +136,8 @@ export default function AdminTimesheetProjectsPage() {
       {isAdmin && (showAdd ? (
         <div className="card p-4 flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Label</label>
-            <input
+            <label htmlFor="admin-timesheet-projects-label" className="block text-xs font-medium text-neutral-600 mb-1">Label</label>
+            <input id="admin-timesheet-projects-label"
               type="text"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
@@ -145,8 +146,8 @@ export default function AdminTimesheetProjectsPage() {
             />
           </div>
           <div className="w-24">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Order</label>
-            <input
+            <label htmlFor="admin-timesheet-projects-order" className="block text-xs font-medium text-neutral-600 mb-1">Order</label>
+            <input id="admin-timesheet-projects-order"
               type="number"
               min={0}
               value={newSortOrder}
@@ -176,7 +177,11 @@ export default function AdminTimesheetProjectsPage() {
             Loading…
           </div>
         ) : list.length === 0 ? (
-          <div className="p-8 text-center text-sm text-neutral-500">No projects yet. Add one above or they will fall back to config defaults on the timesheets page.</div>
+          <EmptyState
+            icon="folder"
+            title="No projects yet."
+            description="Add one above or they will fall back to config defaults on the timesheets page."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
@@ -209,10 +214,10 @@ export default function AdminTimesheetProjectsPage() {
                         />
                       </td>
                       <td className="text-right">
-                        <button type="button" onClick={handleUpdate} disabled={saving} className="text-primary hover:underline text-sm font-medium mr-2">
+                        <button type="button" onClick={handleUpdate} disabled={saving} className="btn-secondary text-sm py-1 px-2 mr-2">
                           Save
                         </button>
-                        <button type="button" onClick={() => setEditId(null)} className="text-neutral-500 hover:underline text-sm">
+                        <button type="button" onClick={() => setEditId(null)} className="btn-secondary text-sm py-1 px-2">
                           Cancel
                         </button>
                       </td>
@@ -223,10 +228,10 @@ export default function AdminTimesheetProjectsPage() {
                       <td className="text-right text-neutral-600">{p.sort_order}</td>
                       {isAdmin && (
                         <td className="text-right">
-                          <button type="button" onClick={() => startEdit(p)} className="text-primary hover:underline text-sm font-medium mr-2">
+                          <button type="button" onClick={() => startEdit(p)} className="btn-secondary text-sm py-1 px-2 mr-2">
                             Edit
                           </button>
-                          <button type="button" onClick={() => handleDelete(p)} className="text-red-600 hover:underline text-sm font-medium">
+                          <button type="button" onClick={() => handleDelete(p)} className="btn-secondary text-sm py-1 px-2 text-red-600">
                             Delete
                           </button>
                         </td>

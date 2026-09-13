@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
   approved: { label: "Approved", cls: "badge-success" },
@@ -269,19 +270,11 @@ export default function ImprestPage() {
       stats={
         <>
           {(isError || error) && (
-            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              <span className="material-symbols-outlined text-[16px]">error_outline</span>
-              <span className="flex-1">{error ?? "Failed to load imprest requests."}</span>
-              {isError ? (
-                <button type="button" className="text-xs font-semibold underline" onClick={() => void refetch()}>
-                  Retry
-                </button>
-              ) : (
-                <button type="button" className="text-xs font-semibold underline" onClick={() => setError(null)}>
-                  Dismiss
-                </button>
-              )}
-            </div>
+            <ErrorBanner
+              message={error ?? "Failed to load imprest requests."}
+              onRetry={isError ? () => void refetch() : undefined}
+              onDismiss={isError ? undefined : () => setError(null)}
+            />
           )}
           <div className="grid grid-cols-3 gap-4">
             {[
@@ -382,22 +375,22 @@ export default function ImprestPage() {
       }
       empty={
         !loading && filtered.length === 0 ? (
-          <div className="card overflow-hidden">
-            <div className="px-5 py-16 text-center">
-              <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">
-                account_balance_wallet
-              </span>
-              <p className="text-sm font-semibold text-neutral-600">No imprest requests found</p>
-              <p className="mt-1 text-xs text-neutral-400">
-                {filter === "all" && !search
+          <div className="card">
+            <EmptyState
+              icon="account_balance_wallet"
+              title="No imprest requests found"
+              description={
+                filter === "all" && !search
                   ? "Create a petty cash request to get started."
-                  : "No rows match the current filters."}
-              </p>
-              <Link href="/imprest/create" className="btn-primary mt-5 inline-flex text-sm">
-                <span className="material-symbols-outlined text-[18px]">add</span>
-                New Imprest Request
-              </Link>
-            </div>
+                  : "No rows match the current filters."
+              }
+              action={
+                <Link href="/imprest/create" className="btn-primary inline-flex text-sm">
+                  <span className="material-symbols-outlined text-[18px]">add</span>
+                  New Imprest Request
+                </Link>
+              }
+            />
           </div>
         ) : undefined
       }
@@ -461,7 +454,7 @@ export default function ImprestPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <Link
                           href={"/imprest/" + req.id}
-                          className="text-xs font-medium text-primary hover:underline"
+                          className="btn-secondary text-xs py-1 px-2"
                         >
                           View
                         </Link>
@@ -469,7 +462,7 @@ export default function ImprestPage() {
                           <>
                             <Link
                               href={"/imprest/create?edit=" + req.id}
-                              className="text-xs font-medium text-neutral-600 hover:underline"
+                              className="btn-secondary text-xs py-1 px-2"
                             >
                               Edit
                             </Link>
@@ -477,7 +470,7 @@ export default function ImprestPage() {
                               type="button"
                               disabled={busy}
                               onClick={() => void handleDelete(req)}
-                              className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                              className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50"
                             >
                               Delete
                             </button>
@@ -488,7 +481,7 @@ export default function ImprestPage() {
                             type="button"
                             disabled={busy}
                             onClick={() => void handleWithdraw(req)}
-                            className="text-xs font-medium text-amber-700 hover:underline disabled:opacity-50"
+                            className="btn-secondary text-xs py-1 px-2 text-amber-700 disabled:opacity-50"
                           >
                             Withdraw
                           </button>
@@ -496,7 +489,7 @@ export default function ImprestPage() {
                         {needsRetire && (
                           <Link
                             href={"/imprest/" + req.id + "/liquidate"}
-                            className="text-xs font-medium text-amber-600 hover:underline"
+                            className="btn-secondary text-xs py-1 px-2"
                           >
                             Retire
                           </Link>

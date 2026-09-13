@@ -374,7 +374,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
 
               {/* Date Span */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-neutral-700">Date Span</label>
+                <p className="mb-1.5 block text-xs font-medium text-neutral-700">Date Span</p>
                 {/* Mode tabs */}
                 <div className="mb-2.5 flex overflow-hidden rounded-lg border border-neutral-200">
                   {(["single", "week", "range"] as SpanMode[]).map((mode) => (
@@ -439,9 +439,10 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
 
               {/* Hours */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-neutral-700">Hours</label>
+                <label htmlFor="quick-entry-hours" className="mb-1.5 block text-xs font-medium text-neutral-700">Hours</label>
                 <div className="flex items-center gap-2">
                   <input
+                    id="quick-entry-hours"
                     type="number"
                     step="0.5"
                     min="0.5"
@@ -472,8 +473,8 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
 
               {/* Activity type */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-neutral-700">Activity</label>
-                <select
+                <label htmlFor="timesheets-QuickEntrySlideOver-activity" className="mb-1.5 block text-xs font-medium text-neutral-700">Activity</label>
+                <select id="timesheets-QuickEntrySlideOver-activity"
                   className="form-input"
                   value={activityType}
                   onChange={(e) => setActivityType(e.target.value)}
@@ -497,7 +498,7 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
 
               {projects.length > 0 && (
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-neutral-700" htmlFor="quick-entry-project">
+                  <label htmlFor="quick-entry-project" className="mb-1.5 block text-xs font-medium text-neutral-700">
                     Project
                   </label>
                   <select
@@ -517,11 +518,12 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
               {/* Work assignment (for task type) */}
               {selectedType.id === "task" && (
                 <div>
-                  <label className="mb-1.5 block text-xs font-medium text-neutral-700">Assignment</label>
+                  <label htmlFor="quick-entry-assignment" className="mb-1.5 block text-xs font-medium text-neutral-700">Assignment</label>
                   {loadingAssignments ? (
                     <div className="h-9 animate-pulse rounded-lg bg-neutral-100" />
                   ) : (
                     <select
+                      id="quick-entry-assignment"
                       className="form-input"
                       value={workAssignmentId ?? ""}
                       onChange={(e) => setWorkAssignmentId(e.target.value ? Number(e.target.value) : null)}
@@ -539,10 +541,10 @@ export function QuickEntrySlideOver({ open, weekStart, projects, onClose, onAdd,
 
               {/* Description / notes */}
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-neutral-700">
+                <label htmlFor="timesheets-QuickEntrySlideOver-notes-optional" className="mb-1.5 block text-xs font-medium text-neutral-700">
                   Notes <span className="text-neutral-400">(optional)</span>
                 </label>
-                <textarea
+                <textarea id="timesheets-QuickEntrySlideOver-notes-optional"
                   rows={3}
                   placeholder="Add any additional notes..."
                   className="form-input resize-none"

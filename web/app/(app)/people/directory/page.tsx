@@ -182,9 +182,9 @@ export default function StaffDirectoryPage() {
       }
       filters={
         <div className="flex flex-wrap items-end gap-3">
-          <label className="block min-w-[220px] flex-1 text-xs font-medium text-neutral-600">
+          <label htmlFor="people-directory-search" className="block min-w-[220px] flex-1 text-xs font-medium text-neutral-600">
             Search
-            <input
+            <input id="people-directory-search"
               className="form-input mt-1"
               placeholder="Name, email, employee number…"
               value={q}

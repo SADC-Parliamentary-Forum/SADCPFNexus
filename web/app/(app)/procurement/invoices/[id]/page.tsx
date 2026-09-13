@@ -7,6 +7,7 @@ import { invoicesApi, invoiceAttachmentsApi, INVOICE_DOC_TYPES, type Invoice, ty
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
+import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   received: { label: "Received", cls: "text-amber-700 bg-amber-50 border-amber-200",    icon: "inbox"        },
@@ -133,22 +134,21 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
       )}
 
       {activeTab === "details" && <>
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-neutral-400">
-        <Link href="/procurement" className="hover:text-primary transition-colors">Procurement</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href="/procurement/invoices" className="hover:text-primary transition-colors">Invoices</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="font-mono text-neutral-600">{inv.reference_number}</span>
-      </nav>
+      <ProcurementPageHeader
+        title="Invoice"
+        subtitle={inv.reference_number}
+        crumbs={[
+          { label: "nav.procurement", href: "/procurement" },
+          { label: "Invoices", href: "/procurement/invoices" },
+          { label: inv.reference_number },
+        ]}
+      />
 
       {/* Hero */}
       <div className="card p-5">
         <div className="flex items-start justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-xl font-bold text-neutral-900">Invoice</h1>
-            <p className="font-mono text-xs text-neutral-400 mt-0.5">{inv.reference_number}</p>
-            <p className="text-xs text-neutral-400 mt-0.5">Vendor ref: <span className="font-mono">{inv.vendor_invoice_number}</span></p>
+            <p className="text-xs text-neutral-400">Vendor ref: <span className="font-mono">{inv.vendor_invoice_number}</span></p>
           </div>
           <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
@@ -250,7 +250,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-[11px] font-semibold uppercase text-neutral-400">Purchase Order</p>
             </div>
             {inv.purchase_order ? (
-              <Link href={`/procurement/purchase-orders/${inv.purchase_order_id}`} className="font-mono text-xs text-primary hover:underline block">
+              <Link href={`/procurement/purchase-orders/${inv.purchase_order_id}`} className="btn-secondary font-mono text-xs">
                 {inv.purchase_order.reference_number}
               </Link>
             ) : <span className="text-xs text-neutral-400">—</span>}
@@ -263,7 +263,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
               <p className="text-[11px] font-semibold uppercase text-neutral-400">Goods Receipt Note</p>
             </div>
             {inv.goods_receipt_note ? (
-              <Link href={`/procurement/receipts/${inv.goods_receipt_note_id}?po=${inv.purchase_order_id}`} className="font-mono text-xs text-primary hover:underline block">
+              <Link href={`/procurement/receipts/${inv.goods_receipt_note_id}?po=${inv.purchase_order_id}`} className="btn-secondary font-mono text-xs">
                 {inv.goods_receipt_note.reference_number}
               </Link>
             ) : <span className="text-xs text-neutral-400">Not linked</span>}
@@ -278,7 +278,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      <Link href="/procurement/invoices" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary transition-colors">
+      <Link href="/procurement/invoices" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Invoices
       </Link>

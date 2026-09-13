@@ -10,6 +10,7 @@ import {
   type ResultsFramework,
 } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Tab = "strategic" | "donor";
 
@@ -217,7 +218,7 @@ export default function MandeReportsPage() {
                   <h2 className="text-sm font-semibold text-neutral-800">Activities per strategic goal</h2>
                 </div>
                 {strategic.data.activities_per_goal.length === 0 ? (
-                  <p className="px-5 py-8 text-center text-sm text-neutral-400">No data.</p>
+                  <EmptyState icon="flag" title="No data." className="py-8 min-h-0" />
                 ) : (
                   <table className="data-table">
                     <thead>
@@ -244,8 +245,8 @@ export default function MandeReportsPage() {
         <>
           <div className="card p-4 flex items-end gap-3 flex-wrap">
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">Results framework</label>
-              <select
+              <label htmlFor="mande-reports-results-framework" className="text-xs text-neutral-500 block mb-1">Results framework</label>
+              <select id="mande-reports-results-framework"
                 className="input text-sm max-w-md"
                 value={frameworkId}
                 onChange={(e) => setFrameworkId(e.target.value)}
@@ -259,8 +260,8 @@ export default function MandeReportsPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">Status</label>
-              <select
+              <label htmlFor="mande-reports-status" className="text-xs text-neutral-500 block mb-1">Status</label>
+              <select id="mande-reports-status"
                 className="input text-sm"
                 value={reviewStatus}
                 onChange={(e) => setReviewStatus(e.target.value)}
@@ -272,12 +273,12 @@ export default function MandeReportsPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">From</label>
-              <input type="date" className="input text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <label htmlFor="mande-reports-from" className="text-xs text-neutral-500 block mb-1">From</label>
+              <input id="mande-reports-from" type="date" className="input text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs text-neutral-500 block mb-1">To</label>
-              <input type="date" className="input text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              <label htmlFor="mande-reports-to" className="text-xs text-neutral-500 block mb-1">To</label>
+              <input id="mande-reports-to" type="date" className="input text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
             </div>
           </div>
 
@@ -325,7 +326,7 @@ export default function MandeReportsPage() {
                     </h2>
                   </div>
                   {donor.data.activities.length === 0 ? (
-                    <p className="px-5 py-8 text-center text-sm text-neutral-400">No activities.</p>
+                    <EmptyState icon="assignment" title="No activities." className="py-8 min-h-0" />
                   ) : (
                     <table className="data-table">
                       <thead>
@@ -351,9 +352,11 @@ export default function MandeReportsPage() {
                     </h2>
                   </div>
                   {donor.data.indicators.length === 0 ? (
-                    <p className="px-5 py-8 text-center text-sm text-neutral-400">
-                      Select a results framework to see indicator aggregation.
-                    </p>
+                    <EmptyState
+                      icon="speed"
+                      title="Select a results framework to see indicator aggregation."
+                      className="py-8 min-h-0"
+                    />
                   ) : (
                     <table className="data-table">
                       <thead>

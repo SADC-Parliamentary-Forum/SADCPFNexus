@@ -96,9 +96,9 @@ return (await peopleAuthorityApi.listSodReports()).data;
           analyse.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-sod-report-title-settitle-e-target-value-placeholder" className="block text-xs font-medium text-neutral-600">
           Report title
-          <input className="form-input mt-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Optional" />
+          <input id="people-sod-report-title-settitle-e-target-value-placeholder" className="form-input mt-1" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Optional" />
         </label>
         <div className="flex items-end gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={analyse.isPending}>
@@ -109,9 +109,9 @@ return (await peopleAuthorityApi.listSodReports()).data;
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-sod-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-sod-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

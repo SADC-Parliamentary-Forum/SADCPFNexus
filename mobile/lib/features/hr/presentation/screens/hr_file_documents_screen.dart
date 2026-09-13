@@ -7,6 +7,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class HrFileDocumentsScreen extends ConsumerStatefulWidget {
   final int fileId;
@@ -89,30 +90,43 @@ class _HrFileDocumentsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        title: Text(
-          'Documents — ${widget.employeeName}',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
+    return StitchScreen(
+      title: 'Documents',
+      fallbackRoute: '/dashboard',
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading documents')
           : _error != null
-              ? _buildError()
+              ? StitchErrorState(
+                  message: _error ?? 'Failed to load documents',
+                  onRetry: _loadData,
+                )
               : Column(
                   children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          widget.employeeName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textMuted,
+                          ),
+                        ),
+                      ),
+                    ),
                     _buildFilterRow(),
                     Expanded(
                       child: _filtered.isEmpty
-                          ? _buildEmpty()
+                          ? StitchEmptyState(
+                              title: 'No documents found',
+                              message: _selectedType == 'all'
+                                  ? 'No documents have been uploaded for this employee.'
+                                  : 'No "$_selectedType" documents found.',
+                              icon: Icons.folder_open_outlined,
+                            )
                           : RefreshIndicator(
                               onRefresh: _loadData,
                               color: AppColors.primary,
@@ -129,49 +143,6 @@ class _HrFileDocumentsScreenState
                     ),
                   ],
                 ),
-    );
-  }
-
-  Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: AppColors.danger),
-            const SizedBox(height: 12),
-            const Text(
-              'Failed to load documents',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error ?? '',
-              style: const TextStyle(
-                  fontSize: 12, color: AppColors.textMuted),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loadData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.textPrimary,
-                minimumSize: const Size(140, 44),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -220,36 +191,6 @@ class _HrFileDocumentsScreenState
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.folder_open_outlined,
-              size: 56,
-              color: AppColors.textMuted.withValues(alpha: 0.5)),
-          const SizedBox(height: 12),
-          const Text(
-            'No documents found',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            _selectedType == 'all'
-                ? 'No documents have been uploaded for this employee.'
-                : 'No "$_selectedType" documents found.',
-            style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-            textAlign: TextAlign.center,
-          ),
-        ],
       ),
     );
   }

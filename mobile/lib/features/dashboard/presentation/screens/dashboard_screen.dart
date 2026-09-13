@@ -156,9 +156,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return StitchScreen(
         title: 'Dashboard',
         showAppBar: false,
-        body: SafeArea(
-          child: Center(child: CircularProgressIndicator(color: c.primary)),
-        ),
+        body: const StitchLoadingState(label: 'Loading dashboard'),
       );
     }
 
@@ -166,40 +164,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return StitchScreen(
         title: 'Dashboard',
         showAppBar: false,
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.cloud_off_outlined,
-                      color: c.onSurface.withValues(alpha: 0.7), size: 48),
-                  const SizedBox(height: 16),
-                  Text(_error!,
-                      textAlign: TextAlign.center,
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: c.onSurface.withValues(alpha: 0.7),
-                        fontSize: 14,
-                      )),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: _load,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Retry'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: c.primary,
-                      foregroundColor: c.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(kStitchRoundness),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        body: StitchErrorState(message: _error!, onRetry: _load),
       );
     }
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class DelegationMeetingsScreen extends ConsumerStatefulWidget {
   const DelegationMeetingsScreen({super.key});
@@ -52,15 +53,23 @@ class _DelegationMeetingsScreenState extends ConsumerState<DelegationMeetingsScr
     final filtered = _filtered;
     final upcomingCount = _meetings.where((m) => (m['status'] as String?) == 'upcoming').length;
     final completedCount = _meetings.length - upcomingCount;
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary), onPressed: () => Navigator.pop(context)),
-        title: const Text('Meetings & Delegations', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-        actions: [IconButton(icon: const Icon(Icons.calendar_month, color: AppColors.primary), onPressed: _load)],
+    return StitchScreen(
+      title: 'Meetings & Delegations',
+      fallbackRoute: '/dashboard',
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {},
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.bgDark,
+        icon: const Icon(Icons.add, size: 18),
+        label: const Text('Schedule', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.calendar_month,
+          onPressed: _load,
+        ),
+      ],
       body: Column(
         children: [
           Padding(
@@ -101,20 +110,11 @@ class _DelegationMeetingsScreenState extends ConsumerState<DelegationMeetingsScr
           const SizedBox(height: 12),
           Expanded(
             child: _loading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+                ? const StitchLoadingState(label: 'Loading meetings')
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(_error!, style: const TextStyle(color: AppColors.danger)),
-                            const SizedBox(height: 8),
-                            TextButton(onPressed: _load, child: const Text('Retry')),
-                          ],
-                        ),
-                      )
+                    ? StitchErrorState(message: _error!, onRetry: _load)
                     : filtered.isEmpty
-                        ? const Center(child: Text('No meetings found', style: TextStyle(color: AppColors.textMuted)))
+                        ? const StitchEmptyState(title: 'No meetings found')
                         : ListView.separated(
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -123,13 +123,6 @@ class _DelegationMeetingsScreenState extends ConsumerState<DelegationMeetingsScr
                           ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {},
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.bgDark,
-        icon: const Icon(Icons.add, size: 18),
-        label: const Text('Schedule', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
   }

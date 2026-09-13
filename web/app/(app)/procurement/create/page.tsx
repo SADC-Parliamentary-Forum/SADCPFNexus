@@ -216,10 +216,10 @@ export default function ProcurementCreatePage() {
             <h3 className="text-sm font-semibold text-neutral-900">Requisition Details</h3>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-700">
+              <label htmlFor="procurement-create-requisition-title" className="block text-xs font-medium text-neutral-700">
                 Requisition Title <span className="text-red-500">*</span>
               </label>
-              <input
+              <input id="procurement-create-requisition-title"
                 className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                 placeholder="e.g. Office Furniture for Conference Room"
                 value={form.title}
@@ -229,10 +229,10 @@ export default function ProcurementCreatePage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700">
+                <label htmlFor="procurement-create-category" className="block text-xs font-medium text-neutral-700">
                   Category <span className="text-red-500">*</span>
                 </label>
-                <select
+                <select id="procurement-create-category"
                   className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   value={form.category}
                   onChange={(e) => set("category", e.target.value)}
@@ -243,8 +243,8 @@ export default function ProcurementCreatePage() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700">Procurement Method</label>
-                <select
+                <label htmlFor="procurement-create-procurement-method" className="block text-xs font-medium text-neutral-700">Procurement Method</label>
+                <select id="procurement-create-procurement-method"
                   className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   value={form.procurement_method}
                   onChange={(e) => set("procurement_method", e.target.value)}
@@ -255,13 +255,14 @@ export default function ProcurementCreatePage() {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700">Budget Line</label>
+                <label htmlFor="procurement-create-budget-line" className="block text-xs font-medium text-neutral-700">Budget Line</label>
                 {budgetsLoading ? (
                   <div className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-400">
                     Loading budgets...
                   </div>
                 ) : (
                   <select
+                    id="procurement-create-budget-line"
                     className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                     value={form.budget_line}
                     onChange={(e) => set("budget_line", e.target.value)}
@@ -287,8 +288,8 @@ export default function ProcurementCreatePage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-neutral-700">Required By Date</label>
-                <input
+                <label htmlFor="procurement-create-required-by-date" className="block text-xs font-medium text-neutral-700">Required By Date</label>
+                <input id="procurement-create-required-by-date"
                   type="date"
                   className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   value={form.required_by_date}
@@ -298,10 +299,10 @@ export default function ProcurementCreatePage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-700">
+              <label htmlFor="procurement-create-description" className="block text-xs font-medium text-neutral-700">
                 Description <span className="text-red-500">*</span>
               </label>
-              <textarea
+              <textarea id="procurement-create-description"
                 rows={3}
                 className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
                 placeholder="Describe what is being procured and why it is needed..."
@@ -311,8 +312,8 @@ export default function ProcurementCreatePage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-700">Justification</label>
-              <textarea
+              <label htmlFor="procurement-create-justification" className="block text-xs font-medium text-neutral-700">Justification</label>
+              <textarea id="procurement-create-justification"
                 rows={2}
                 className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
                 placeholder="Provide the business justification and expected outcome..."
@@ -417,8 +418,8 @@ export default function ProcurementCreatePage() {
           {splitWarning && (
             <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-3 space-y-2">
               <p className="text-sm text-amber-800">{splitWarning}</p>
-              <label className="block text-xs font-semibold text-amber-900">Split justification</label>
-              <textarea
+              <label htmlFor="procurement-create-split-justification" className="block text-xs font-semibold text-amber-900">Split justification</label>
+              <textarea id="procurement-create-split-justification"
                 className="form-input w-full h-20 resize-none text-sm"
                 placeholder="Explain why this should not be treated as a split purchase…"
                 value={splitJustification}

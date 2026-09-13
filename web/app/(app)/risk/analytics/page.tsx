@@ -6,6 +6,7 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { riskApi, type RiskMatrixData, type RiskDashboardData, type RiskCategory } from "@/lib/api";
 import { exportToCsv } from "@/lib/csvExport";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -180,7 +181,7 @@ export default function RiskAnalyticsPage() {
         <div className="card p-5">
           <h2 className="text-sm font-semibold text-neutral-800 mb-4">By Category</h2>
           {total === 0 ? (
-            <p className="text-xs text-neutral-400">No data available.</p>
+            <EmptyState icon="category" title="No data available." className="py-6 min-h-0" />
           ) : (
             <div className="space-y-3">
               {(Object.entries(matrix?.by_category ?? {}) as [RiskCategory, number][])
@@ -220,7 +221,7 @@ export default function RiskAnalyticsPage() {
           <p className="text-xs text-neutral-500 mt-0.5">Compliance grade: A (no critical, no overdue) · B (≤1 critical) · C (≤3 critical) · D (&gt; 3 critical)</p>
         </div>
         {!dashboard?.by_department?.length ? (
-          <p className="px-5 py-6 text-sm text-neutral-400">No departmental data available.</p>
+          <EmptyState icon="apartment" title="No departmental data available." className="py-6 min-h-0" />
         ) : (
           <table className="data-table">
             <thead>
@@ -272,7 +273,7 @@ export default function RiskAnalyticsPage() {
       <div className="card p-5">
         <h2 className="text-sm font-semibold text-neutral-800 mb-4">Risks by Workflow Status</h2>
         {total === 0 ? (
-          <p className="text-sm text-neutral-400">No data available.</p>
+          <EmptyState icon="stacked_bar_chart" title="No data available." className="py-6 min-h-0" />
         ) : (
           <div className="space-y-3">
             {(Object.entries(matrix?.by_status ?? {}) as [string, number][])

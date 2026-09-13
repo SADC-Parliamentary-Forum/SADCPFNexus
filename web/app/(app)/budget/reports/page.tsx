@@ -11,6 +11,7 @@ import {
   type BudgetCycleStatusRow,
   type BudgetUtilisationRow,
 } from "@/lib/api";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 type TabId = "utilisation" | "ageing" | "changes" | "cycles";
 type GroupBy = "line" | "department" | "funding_source";
@@ -129,8 +130,8 @@ export default function BudgetReportsPage() {
       </div>
 
       <div className="card p-4">
-        <label className="block text-sm font-medium text-neutral-700 mb-1">Financial year</label>
-        <select
+        <label htmlFor="budget-reports-financial-year" className="block text-sm font-medium text-neutral-700 mb-1">Financial year</label>
+        <select id="budget-reports-financial-year"
           className="form-input max-w-sm"
           value={financialYearId}
           onChange={(e) => setFinancialYearId(e.target.value)}
@@ -380,7 +381,7 @@ function ChangesPanel({
             {row.approver_path.map((step) => step.label).join(" → ")}
           </td>
           <td className="px-4 py-3 text-right">
-            <Link href={`/budget/changes/${row.id}`} className="text-[var(--primary)] hover:underline">
+            <Link href={`/budget/changes/${row.id}`} className="font-medium text-[var(--primary)]">
               Open
             </Link>
           </td>
@@ -426,7 +427,7 @@ function CyclesPanel({
             )}
           </td>
           <td className="px-4 py-3 text-right">
-            <Link href={`/budget/cycles/${row.id}`} className="text-[var(--primary)] hover:underline">
+            <Link href={`/budget/cycles/${row.id}`} className="font-medium text-[var(--primary)]">
               Open
             </Link>
           </td>
@@ -455,14 +456,14 @@ function ReportTable({
     return <p className="text-sm text-[var(--muted)]">Loading…</p>;
   }
   if (error) {
-    return (
-      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-        Failed to load report.
-      </div>
-    );
+    return <ErrorBanner message="Failed to load report." />;
   }
   if (rowCount === 0) {
-    return <p className="text-sm text-[var(--muted)]">{empty}</p>;
+    return (
+      <div className="card">
+        <EmptyState icon="table_chart" title={empty} className="py-8 min-h-0" />
+      </div>
+    );
   }
 
   return (

@@ -15,6 +15,7 @@ import { apiErrorMessage } from "@/lib/apiError";
 import { isBudgetConfirmed } from "@/lib/procurementBudget";
 import { formatDateShort } from "@/lib/utils";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -146,7 +147,7 @@ export default function ProcurementBudgetPage() {
         <h2 className="text-sm font-semibold text-neutral-800">Awaiting budget confirmation</h2>
         <div className="card overflow-x-auto">
           {needsReservation.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-neutral-400 text-center">No requests awaiting budget reservation.</p>
+            <EmptyState icon="account_balance" title="No requests awaiting budget reservation." className="py-8 min-h-0" />
           ) : (
             <table className="data-table">
               <thead>
@@ -190,7 +191,7 @@ export default function ProcurementBudgetPage() {
         <h2 className="text-sm font-semibold text-neutral-800">Budget reserved — approve request</h2>
         <div className="card overflow-x-auto">
           {awaitingApproval.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-neutral-400 text-center">No budget-reserved requests awaiting approval.</p>
+            <EmptyState icon="gavel" title="No budget-reserved requests awaiting approval." className="py-8 min-h-0" />
           ) : (
             <table className="data-table">
               <thead>
@@ -216,7 +217,7 @@ export default function ProcurementBudgetPage() {
                           : "—"}
                       </td>
                       <td className="whitespace-nowrap flex gap-2">
-                        <Link href={`/procurement/${req.id}`} className="text-xs text-primary hover:underline">
+                        <Link href={`/procurement/${req.id}`} className="btn-secondary text-xs py-1 px-2">
                           View
                         </Link>
                         <button
@@ -254,8 +255,8 @@ export default function ProcurementBudgetPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Reserved amount</label>
-              <input
+              <label htmlFor="procurement-budget-reserved-amount" className="block text-xs font-semibold text-neutral-700 mb-1">Reserved amount</label>
+              <input id="procurement-budget-reserved-amount"
                 type="number"
                 min={0}
                 step="0.01"
@@ -265,8 +266,8 @@ export default function ProcurementBudgetPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Notes (optional)</label>
-              <textarea className="form-input h-20 resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} />
+              <label htmlFor="procurement-budget-notes-optional" className="block text-xs font-semibold text-neutral-700 mb-1">Notes (optional)</label>
+              <textarea id="procurement-budget-notes-optional" className="form-input h-20 resize-none" value={notes} onChange={(e) => setNotes(e.target.value)} />
             </div>
             <div className="flex gap-2">
               <button type="button" className="btn-secondary flex-1" onClick={() => setReserveFor(null)}>

@@ -127,9 +127,10 @@ function ChangePasswordSection({ userId }: { userId: number }) {
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
+            <label htmlFor="admin-users-detail-new-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">New Password</label>
             <div className="relative">
               <input
+                id="admin-users-detail-new-password"
                 type={showNew ? "text" : "password"}
                 className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 placeholder="Min. 8 characters"
@@ -155,9 +156,10 @@ function ChangePasswordSection({ userId }: { userId: number }) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm New Password</label>
+            <label htmlFor="admin-users-detail-confirm-password" className="block text-xs font-semibold text-neutral-700 mb-1.5">Confirm New Password</label>
             <div className="relative">
               <input
+                id="admin-users-detail-confirm-password"
                 type={showConfirm ? "text" : "password"}
                 className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 pr-10 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 placeholder="Repeat password"
@@ -633,28 +635,28 @@ export default function UserEditPage() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Full Name <span className="text-red-500">*</span></label>
-                      <input type="text" value={form.name} onChange={(e) => set("name", e.target.value)} className={inputCls} required />
+                      <label htmlFor="admin-users-detail-full-name" className="text-sm font-bold text-neutral-700 ml-1">Full Name <span className="text-red-500">*</span></label>
+                      <input id="admin-users-detail-full-name" type="text" value={form.name} onChange={(e) => set("name", e.target.value)} className={inputCls} required />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Email Address <span className="text-red-500">*</span></label>
-                      <input type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={inputCls} required />
+                      <label htmlFor="admin-users-detail-email-address" className="text-sm font-bold text-neutral-700 ml-1">Email Address <span className="text-red-500">*</span></label>
+                      <input id="admin-users-detail-email-address" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} className={inputCls} required />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Employee Number</label>
-                      <input type="text" placeholder="e.g. EMP-001" value={form.employee_number} onChange={(e) => set("employee_number", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-employee-number" className="text-sm font-bold text-neutral-700 ml-1">Employee Number</label>
+                      <input id="admin-users-detail-employee-number" type="text" placeholder="e.g. EMP-001" value={form.employee_number} onChange={(e) => set("employee_number", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Primary Phone</label>
-                      <input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-primary-phone" className="text-sm font-bold text-neutral-700 ml-1">Primary Phone</label>
+                      <input id="admin-users-detail-primary-phone" type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Date of Birth</label>
-                      <input type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-date-of-birth" className="text-sm font-bold text-neutral-700 ml-1">Date of Birth</label>
+                      <input id="admin-users-detail-date-of-birth" type="date" value={form.date_of_birth} onChange={(e) => set("date_of_birth", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Gender</label>
-                      <select value={form.gender} onChange={(e) => set("gender", e.target.value)} className={inputCls}>
+                      <label htmlFor="admin-users-detail-gender" className="text-sm font-bold text-neutral-700 ml-1">Gender</label>
+                      <select id="admin-users-detail-gender" value={form.gender} onChange={(e) => set("gender", e.target.value)} className={inputCls}>
                         <option value="">Select Gender</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
@@ -662,12 +664,12 @@ export default function UserEditPage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Nationality</label>
-                      <input type="text" placeholder="e.g. Namibian" value={form.nationality} onChange={(e) => set("nationality", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-nationality" className="text-sm font-bold text-neutral-700 ml-1">Nationality</label>
+                      <input id="admin-users-detail-nationality" type="text" placeholder="e.g. Namibian" value={form.nationality} onChange={(e) => set("nationality", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Marital Status</label>
-                      <select value={form.marital_status} onChange={(e) => set("marital_status", e.target.value)} className={inputCls}>
+                      <label htmlFor="admin-users-detail-marital-status" className="text-sm font-bold text-neutral-700 ml-1">Marital Status</label>
+                      <select id="admin-users-detail-marital-status" value={form.marital_status} onChange={(e) => set("marital_status", e.target.value)} className={inputCls}>
                         <option value="">Select…</option>
                         <option value="Single">Single</option>
                         <option value="Married">Married</option>
@@ -686,15 +688,15 @@ export default function UserEditPage() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Department</label>
-                      <select value={form.department_id} onChange={(e) => set("department_id", e.target.value)} className={inputCls}>
+                      <label htmlFor="admin-users-detail-department" className="text-sm font-bold text-neutral-700 ml-1">Department</label>
+                      <select id="admin-users-detail-department" value={form.department_id} onChange={(e) => set("department_id", e.target.value)} className={inputCls}>
                         <option value="">Select Department</option>
                         {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Establishment Position</label>
-                      <select value={form.position_id} onChange={(e) => set("position_id", e.target.value)} className={inputCls}>
+                      <label htmlFor="admin-users-detail-establishment-position" className="text-sm font-bold text-neutral-700 ml-1">Establishment Position</label>
+                      <select id="admin-users-detail-establishment-position" value={form.position_id} onChange={(e) => set("position_id", e.target.value)} className={inputCls}>
                         <option value="">No position assigned</option>
                         {positions
                           .filter((p) => !form.department_id || String(p.department_id) === form.department_id)
@@ -707,18 +709,18 @@ export default function UserEditPage() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Official Job Title</label>
-                      <input type="text" placeholder="e.g. Senior Specialist" value={form.job_title} onChange={(e) => set("job_title", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-official-job-title" className="text-sm font-bold text-neutral-700 ml-1">Official Job Title</label>
+                      <input id="admin-users-detail-official-job-title" type="text" placeholder="e.g. Senior Specialist" value={form.job_title} onChange={(e) => set("job_title", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Join Date</label>
-                      <input type="date" value={form.join_date} onChange={(e) => set("join_date", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-join-date" className="text-sm font-bold text-neutral-700 ml-1">Join Date</label>
+                      <input id="admin-users-detail-join-date" type="date" value={form.join_date} onChange={(e) => set("join_date", e.target.value)} className={inputCls} />
                     </div>
                   </div>
 
                   {/* Portfolios */}
                   <div className="mt-6 space-y-2">
-                    <label className="text-sm font-bold text-neutral-700 ml-1">Portfolios & Committees</label>
+                    <p className="text-sm font-bold text-neutral-700 ml-1">Portfolios & Committees</p>
                     <div className="flex flex-wrap gap-2 pt-1">
                       {portfolios.length === 0 && (
                         <p className="text-xs text-neutral-400 italic py-2">No portfolios defined.</p>
@@ -755,16 +757,16 @@ export default function UserEditPage() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2 space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Address Line 1</label>
-                      <input type="text" placeholder="Street name and number" value={form.address_line1} onChange={(e) => set("address_line1", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-address-line-1" className="text-sm font-bold text-neutral-700 ml-1">Address Line 1</label>
+                      <input id="admin-users-detail-address-line-1" type="text" placeholder="Street name and number" value={form.address_line1} onChange={(e) => set("address_line1", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">City</label>
-                      <input type="text" placeholder="Windhoek" value={form.city} onChange={(e) => set("city", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-city" className="text-sm font-bold text-neutral-700 ml-1">City</label>
+                      <input id="admin-users-detail-city" type="text" placeholder="Windhoek" value={form.city} onChange={(e) => set("city", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Country</label>
-                      <input type="text" placeholder="Namibia" value={form.country} onChange={(e) => set("country", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-country" className="text-sm font-bold text-neutral-700 ml-1">Country</label>
+                      <input id="admin-users-detail-country" type="text" placeholder="Namibia" value={form.country} onChange={(e) => set("country", e.target.value)} className={inputCls} />
                     </div>
                   </div>
                 </section>
@@ -777,16 +779,16 @@ export default function UserEditPage() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Contact Name</label>
-                      <input type="text" placeholder="Full Name" value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-contact-name" className="text-sm font-bold text-neutral-700 ml-1">Contact Name</label>
+                      <input id="admin-users-detail-contact-name" type="text" placeholder="Full Name" value={form.emergency_contact_name} onChange={(e) => set("emergency_contact_name", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Relationship</label>
-                      <input type="text" placeholder="e.g. Spouse" value={form.emergency_contact_relationship} onChange={(e) => set("emergency_contact_relationship", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-relationship" className="text-sm font-bold text-neutral-700 ml-1">Relationship</label>
+                      <input id="admin-users-detail-relationship" type="text" placeholder="e.g. Spouse" value={form.emergency_contact_relationship} onChange={(e) => set("emergency_contact_relationship", e.target.value)} className={inputCls} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Contact Phone</label>
-                      <input type="tel" placeholder="+264..." value={form.emergency_contact_phone} onChange={(e) => set("emergency_contact_phone", e.target.value)} className={inputCls} />
+                      <label htmlFor="admin-users-detail-contact-phone" className="text-sm font-bold text-neutral-700 ml-1">Contact Phone</label>
+                      <input id="admin-users-detail-contact-phone" type="tel" placeholder="+264..." value={form.emergency_contact_phone} onChange={(e) => set("emergency_contact_phone", e.target.value)} className={inputCls} />
                     </div>
                   </div>
                 </section>
@@ -824,14 +826,14 @@ export default function UserEditPage() {
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {availableRoles.map((role) => (
-                        <label key={role.id} className={cn(
+                        <label htmlFor="admin-users-detail-setassignedroles-current-current-includes-role-n" key={role.id} className={cn(
                           "cursor-pointer flex items-center justify-between p-4 rounded-xl border transition-all",
                           assignedRoles.includes(role.name)
                             ? "border-primary bg-primary/5 ring-1 ring-primary"
                             : "border-neutral-200 bg-white hover:border-neutral-300"
                         )}>
                           <div className="flex items-center gap-3">
-                            <input type="checkbox" name="roles" value={role.name} checked={assignedRoles.includes(role.name)} onChange={() => setAssignedRoles((current) => current.includes(role.name) ? current.filter((item) => item !== role.name) : [...current, role.name])} className="w-4 h-4 rounded text-primary focus:ring-primary" />
+                            <input id="admin-users-detail-setassignedroles-current-current-includes-role-n" type="checkbox" name="roles" value={role.name} checked={assignedRoles.includes(role.name)} onChange={() => setAssignedRoles((current) => current.includes(role.name) ? current.filter((item) => item !== role.name) : [...current, role.name])} className="w-4 h-4 rounded text-primary focus:ring-primary" />
                             <span className="text-sm font-bold text-neutral-900">{role.name}</span>
                           </div>
                           <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">System</span>
@@ -984,8 +986,8 @@ export default function UserEditPage() {
                     Account Status
                   </h3>
                   <div className="flex items-center gap-6">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <input
+                    <label htmlFor="admin-users-detail-set-is-active-true-classname-w-4-h-4-text-primar" className="flex items-center gap-3 cursor-pointer group">
+                      <input id="admin-users-detail-set-is-active-true-classname-w-4-h-4-text-primar"
                         type="radio"
                         checked={form.is_active}
                         onChange={() => set("is_active", true)}
@@ -996,8 +998,8 @@ export default function UserEditPage() {
                         <span className="text-xs text-neutral-400">Can log in and access modules</span>
                       </div>
                     </label>
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <input
+                    <label htmlFor="admin-users-detail-set-is-active-false-classname-w-4-h-4-text-red-6" className="flex items-center gap-3 cursor-pointer group">
+                      <input id="admin-users-detail-set-is-active-false-classname-w-4-h-4-text-red-6"
                         type="radio"
                         checked={!form.is_active}
                         onChange={() => set("is_active", false)}
@@ -1022,8 +1024,8 @@ export default function UserEditPage() {
                   </h3>
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-neutral-700 ml-1">Data Classification Level</label>
-                      <select value={form.classification} onChange={(e) => set("classification", e.target.value)} className={inputCls}>
+                      <label htmlFor="admin-users-detail-data-classification-level" className="text-sm font-bold text-neutral-700 ml-1">Data Classification Level</label>
+                      <select id="admin-users-detail-data-classification-level" value={form.classification} onChange={(e) => set("classification", e.target.value)} className={inputCls}>
                         {CLASSIFICATIONS.map((c) => <option key={c} value={c}>{c}</option>)}
                       </select>
                       <p className="text-xs text-neutral-400 ml-1">Controls the sensitivity tier of data this user can access.</p>

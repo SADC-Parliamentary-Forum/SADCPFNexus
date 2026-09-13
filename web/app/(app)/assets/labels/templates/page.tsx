@@ -228,8 +228,8 @@ export default function AssetLabelTemplatesPage() {
   }
 
   const mmField = (key: keyof FormState, label: string) => (
-    <label className="text-xs font-semibold">{label}
-      <input
+    <label htmlFor="assets-labels-templates-patchnumber-key-number-e-target-value" className="text-xs font-semibold">{label}
+      <input id="assets-labels-templates-patchnumber-key-number-e-target-value"
         type="number"
         step="0.1"
         className="form-input mt-1"
@@ -240,8 +240,8 @@ export default function AssetLabelTemplatesPage() {
   );
 
   const intField = (key: keyof FormState, label: string) => (
-    <label className="text-xs font-semibold">{label}
-      <input
+    <label htmlFor="assets-labels-templates-patchnumber-key-number-e-target-value-2" className="text-xs font-semibold">{label}
+      <input id="assets-labels-templates-patchnumber-key-number-e-target-value-2"
         type="number"
         step="1"
         min={1}
@@ -285,14 +285,14 @@ export default function AssetLabelTemplatesPage() {
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <label className="text-xs font-semibold">{t("assets.labels.fieldName")}
-              <input className="form-input mt-1" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+            <label htmlFor="assets-labels-templates-setform-p" className="text-xs font-semibold">{t("assets.labels.fieldName")}
+              <input id="assets-labels-templates-setform-p" className="form-input mt-1" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
             </label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldCode")}
-              <input className="form-input mt-1 font-mono" disabled={!!editId} value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toLowerCase().replace(/\s+/g, "_") }))} />
+            <label htmlFor="assets-labels-templates-setform-p-2" className="text-xs font-semibold">{t("assets.labels.fieldCode")}
+              <input id="assets-labels-templates-setform-p-2" className="form-input mt-1 font-mono" disabled={!!editId} value={form.code} onChange={(e) => setForm((p) => ({ ...p, code: e.target.value.toLowerCase().replace(/\s+/g, "_") }))} />
             </label>
-            <label className="text-xs font-semibold">{t("assets.labels.fieldKind")}
-              <select className="form-input mt-1" value={form.kind} onChange={(e) => setForm((p) => ({ ...p, kind: e.target.value as FormState["kind"] }))}>
+            <label htmlFor="assets-labels-templates-setform-p-3" className="text-xs font-semibold">{t("assets.labels.fieldKind")}
+              <select id="assets-labels-templates-setform-p-3" className="form-input mt-1" value={form.kind} onChange={(e) => setForm((p) => ({ ...p, kind: e.target.value as FormState["kind"] }))}>
                 <option value="permanent">{t("assets.labels.kindPermanent")}</option>
                 <option value="custody">{t("assets.labels.kindCustody")}</option>
               </select>
@@ -307,8 +307,8 @@ export default function AssetLabelTemplatesPage() {
             {mmField("v_gap_mm", t("assets.labels.fieldVGap"))}
             {intField("rows", t("assets.labels.fieldRows"))}
             {intField("columns", t("assets.labels.fieldCols"))}
-            <label className="text-xs font-semibold">{t("assets.labels.fieldFont")}
-              <input
+            <label htmlFor="assets-labels-templates-patchnumber-font-pt-number-e-target-value" className="text-xs font-semibold">{t("assets.labels.fieldFont")}
+              <input id="assets-labels-templates-patchnumber-font-pt-number-e-target-value"
                 type="number"
                 step="1"
                 min={6}
@@ -348,12 +348,12 @@ export default function AssetLabelTemplatesPage() {
           />
 
           <div className="flex flex-wrap items-center gap-4">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.is_default} onChange={(e) => setForm((p) => ({ ...p, is_default: e.target.checked }))} />
+            <label htmlFor="assets-labels-templates-setform-p-4" className="flex items-center gap-2 text-sm">
+              <input id="assets-labels-templates-setform-p-4" type="checkbox" checked={form.is_default} onChange={(e) => setForm((p) => ({ ...p, is_default: e.target.checked }))} />
               {t("assets.labels.fieldDefault")}
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} />
+            <label htmlFor="assets-labels-templates-setform-p-5" className="flex items-center gap-2 text-sm">
+              <input id="assets-labels-templates-setform-p-5" type="checkbox" checked={form.is_active} onChange={(e) => setForm((p) => ({ ...p, is_active: e.target.checked }))} />
               {t("assets.labels.fieldActive")}
             </label>
             <div className="ml-auto flex gap-2">

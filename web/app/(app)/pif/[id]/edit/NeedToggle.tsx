@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 export function NeedToggle({
@@ -16,6 +17,7 @@ export function NeedToggle({
   hint?: string;
   children?: ReactNode;
 }) {
+  const id = useId();
   return (
     <div
       data-testid="pif-need-toggle"
@@ -24,8 +26,9 @@ export function NeedToggle({
         checked ? "border-primary/30 bg-primary/5" : "border-neutral-200 bg-white",
       )}
     >
-      <label className="flex cursor-pointer items-start gap-3">
+      <label htmlFor={id} className="flex cursor-pointer items-start gap-3">
         <input
+          id={id}
           type="checkbox"
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}

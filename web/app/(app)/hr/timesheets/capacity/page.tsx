@@ -50,13 +50,13 @@ export default function TimesheetCapacityPage() {
         data-testid="timesheet-capacity-week-picker"
         onSubmit={(e) => e.preventDefault()}
       >
-        <label className="text-sm">
+        <label htmlFor="hr-timesheets-capacity-week-start-setweekstart-e-target-value" className="text-sm">
           Week start
-          <input className="form-input mt-1" type="date" value={weekStart} onChange={(e) => setWeekStart(e.target.value)} />
+          <input id="hr-timesheets-capacity-week-start-setweekstart-e-target-value" className="form-input mt-1" type="date" value={weekStart} onChange={(e) => setWeekStart(e.target.value)} />
         </label>
-        <label className="text-sm">
+        <label htmlFor="hr-timesheets-capacity-week-end-setweekend-e-target-value" className="text-sm">
           Week end
-          <input className="form-input mt-1" type="date" value={weekEnd} onChange={(e) => setWeekEnd(e.target.value)} />
+          <input id="hr-timesheets-capacity-week-end-setweekend-e-target-value" className="form-input mt-1" type="date" value={weekEnd} onChange={(e) => setWeekEnd(e.target.value)} />
         </label>
         <button
           type="button"

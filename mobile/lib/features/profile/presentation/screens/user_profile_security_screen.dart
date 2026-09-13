@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class UserProfileSecurityScreen extends ConsumerStatefulWidget {
   const UserProfileSecurityScreen({super.key});
@@ -223,56 +224,20 @@ class _UserProfileSecurityScreenState
     final muted = c.onSurface.withValues(alpha: 0.55);
     final secondary = c.onSurface.withValues(alpha: 0.75);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            size: 18,
-            color: c.onSurface,
-          ),
-          onPressed: () => Navigator.pop(context),
+    return StitchScreen(
+      title: 'Security Settings',
+      fallbackRoute: '/profile',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        title: Text(
-          'Security Settings',
-          style: TextStyle(
-            color: c.onSurface,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: c.onSurface),
-            onPressed: _loading ? null : _load,
-          ),
-        ],
-      ),
+      ],
       body: _loading
-          ? Center(
-              child: CircularProgressIndicator(color: c.primary),
-            )
+          ? const StitchLoadingState(label: 'Loading security settings')
           : _error != null
-              ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _error!,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: AppColors.danger),
-                        ),
-                        const SizedBox(height: 12),
-                        TextButton(onPressed: _load, child: const Text('Retry')),
-                      ],
-                    ),
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [

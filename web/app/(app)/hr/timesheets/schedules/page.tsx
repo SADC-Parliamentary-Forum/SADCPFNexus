@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 type Schedule = {
   id: number;
@@ -50,12 +51,12 @@ export default function WorkSchedulesPage() {
         title="Work Schedules"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Work Schedules" }]} />}
       />
-        <Link href="/hr/timesheets" className="text-sm text-[var(--brand)] hover:underline">
+        <Link href="/hr/timesheets" className="btn-secondary text-sm py-1 px-2">
           Timesheets
         </Link>
       </div>
 
-      {error && <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div>}
+      {error && <ErrorBanner message={error} />}
 
       {expected && (
         <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4">
@@ -64,6 +65,13 @@ export default function WorkSchedulesPage() {
         </div>
       )}
 
+      {schedules.length === 0 ? (
+        <EmptyState
+          icon="calendar_clock"
+          title="No schedules yet."
+          description="The API will seed the standard office schedule on first expected-hours request."
+        />
+      ) : (
       <ul className="space-y-3">
         {schedules.map((s) => (
           <li key={s.id} className="rounded-lg border border-[var(--border)] p-4">
@@ -79,12 +87,8 @@ export default function WorkSchedulesPage() {
             </div>
           </li>
         ))}
-        {schedules.length === 0 && (
-          <li className="text-sm text-[var(--text-secondary)]">
-            No schedules yet — the API will seed the standard office schedule on first expected-hours request.
-          </li>
-        )}
       </ul>
+      )}
     </div>
   );
 }

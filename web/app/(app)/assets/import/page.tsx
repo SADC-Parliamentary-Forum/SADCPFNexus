@@ -8,6 +8,7 @@ import { ListPagination } from "@/components/ui/ListPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Counts = Record<string, number>;
 type StagingRow = {
@@ -83,6 +84,7 @@ function filterKey(filter: string): string {
 
 export default function AssetImportPage() {
   const { t } = useI18n();
+  const { prompt } = useConfirm();
   const [mode, setMode] = useState<"legacy" | "template">("template");
   const [counts, setCounts] = useState<Counts | null>(null);
   const [equation, setEquation] = useState<Equation | null>(null);
@@ -255,7 +257,14 @@ export default function AssetImportPage() {
 
   async function exclude(row: StagingRow) {
     if (!batchId) return;
-    const reason = window.prompt(t("assets.import.excludePrompt")) || t("assets.import.excludeReason");
+    const reason = (await prompt({
+      title: "assets.import.excludeTitle",
+      message: "assets.import.excludePrompt",
+      label: "common.reason",
+      required: true,
+      defaultValue: "assets.import.excludeReason",
+    }))?.trim();
+    if (!reason) return;
     await assetImportApi.exclude(batchId, row.id, reason);
     await loadPreview(batchId);
     await loadStaging(batchId);
@@ -392,18 +401,18 @@ export default function AssetImportPage() {
 
       <form onSubmit={onUpload} className="card space-y-3 p-4">
         <div className="flex gap-3">
-          <label className="text-sm">
-            <input type="radio" checked={mode === "legacy"} onChange={() => setMode("legacy")} /> {t("assets.import.legacy")}
+          <label htmlFor="assets-import-setmode-legacy" className="text-sm">
+            <input id="assets-import-setmode-legacy" type="radio" checked={mode === "legacy"} onChange={() => setMode("legacy")} /> {t("assets.import.legacy")}
           </label>
-          <label className="text-sm">
-            <input type="radio" checked={mode === "template"} onChange={() => setMode("template")} /> {t("assets.import.template")}
+          <label htmlFor="assets-import-setmode-template" className="text-sm">
+            <input id="assets-import-setmode-template" type="radio" checked={mode === "template"} onChange={() => setMode("template")} /> {t("assets.import.template")}
           </label>
         </div>
         {mode === "legacy" ? (
           <div className="grid gap-3 sm:grid-cols-3">
-            <label className="text-sm">{t("assets.import.categoryFile")}<input className="input mt-1" type="file" name="category" accept=".xls,.xlsx" required /></label>
-            <label className="text-sm">{t("assets.import.locationFile")}<input className="input mt-1" type="file" name="location" accept=".xls,.xlsx" required /></label>
-            <label className="text-sm">{t("assets.import.stagingFile")}<input className="input mt-1" type="file" name="staging" accept=".xlsx" /></label>
+            <label htmlFor="assets-import-field" className="text-sm">{t("assets.import.categoryFile")}<input id="assets-import-field" className="input mt-1" type="file" name="category" accept=".xls,.xlsx" required /></label>
+            <label htmlFor="assets-import-field-2" className="text-sm">{t("assets.import.locationFile")}<input id="assets-import-field-2" className="input mt-1" type="file" name="location" accept=".xls,.xlsx" required /></label>
+            <label htmlFor="assets-import-field-3" className="text-sm">{t("assets.import.stagingFile")}<input id="assets-import-field-3" className="input mt-1" type="file" name="staging" accept=".xlsx" /></label>
           </div>
         ) : (
           <div className="space-y-2">
@@ -412,7 +421,7 @@ export default function AssetImportPage() {
               <Button type="button" variant="secondary" onClick={() => void downloadTemplate()} disabled={busy}>
                 {t("assets.import.downloadTemplate")}
               </Button>
-              <label className="text-sm">{t("assets.import.template")}<input className="input mt-1" type="file" name="template" accept=".xlsx" required /></label>
+              <label htmlFor="assets-import-field-4" className="text-sm">{t("assets.import.template")}<input id="assets-import-field-4" className="input mt-1" type="file" name="template" accept=".xlsx" required /></label>
             </div>
           </div>
         )}
@@ -469,8 +478,8 @@ export default function AssetImportPage() {
       )}
 
       <div className="flex flex-wrap items-end gap-2">
-        <label className="text-sm">{t("common.search")}
-          <input className="input mt-1" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+        <label htmlFor="assets-import-field-5" className="text-sm">{t("common.search")}
+          <input id="assets-import-field-5" className="input mt-1" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
         </label>
         <div className="flex flex-wrap gap-2">
           {FILTERS.map((f) => (
@@ -486,7 +495,7 @@ export default function AssetImportPage() {
         </div>
       </div>
 
-      <div className="table-wrap">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
         <table className="data-table">
           <thead>
             <tr>
@@ -538,11 +547,11 @@ export default function AssetImportPage() {
       {editing && (
         <FormSection title="common.edit" description={editing.asset_tag ?? undefined} dense>
           <form onSubmit={saveEdit} className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm">{t("assets.import.colName")}<input className="input mt-1" name="asset_name" defaultValue={editing.asset_name ?? ""} /></label>
-            <label className="text-sm">{t("assets.import.colSerial")}<input className="input mt-1" name="serial_number" defaultValue={editing.serial_number ?? ""} /></label>
-            <label className="text-sm">{t("assets.import.colMake")}<input className="input mt-1" name="make" defaultValue={editing.make ?? ""} /></label>
-            <label className="text-sm">{t("assets.import.colModel")}<input className="input mt-1" name="model" defaultValue={editing.model ?? ""} /></label>
-            <label className="text-sm sm:col-span-2">{t("assets.import.notes")}<input className="input mt-1" name="admin_notes" /></label>
+            <label htmlFor="assets-import-field-6" className="text-sm">{t("assets.import.colName")}<input id="assets-import-field-6" className="input mt-1" name="asset_name" defaultValue={editing.asset_name ?? ""} /></label>
+            <label htmlFor="assets-import-field-7" className="text-sm">{t("assets.import.colSerial")}<input id="assets-import-field-7" className="input mt-1" name="serial_number" defaultValue={editing.serial_number ?? ""} /></label>
+            <label htmlFor="assets-import-field-8" className="text-sm">{t("assets.import.colMake")}<input id="assets-import-field-8" className="input mt-1" name="make" defaultValue={editing.make ?? ""} /></label>
+            <label htmlFor="assets-import-field-9" className="text-sm">{t("assets.import.colModel")}<input id="assets-import-field-9" className="input mt-1" name="model" defaultValue={editing.model ?? ""} /></label>
+            <label htmlFor="assets-import-field-10" className="text-sm sm:col-span-2">{t("assets.import.notes")}<input id="assets-import-field-10" className="input mt-1" name="admin_notes" /></label>
             <div className="flex flex-wrap gap-2 sm:col-span-2">
               <Button type="submit" disabled={busy}>{t("common.save")}</Button>
               <Button type="button" variant="secondary" onClick={markSerialUnavailable}>{t("assets.import.markSerialUnavailable")}</Button>
@@ -550,8 +559,8 @@ export default function AssetImportPage() {
             </div>
           </form>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <label className="text-sm">{t("assets.import.nexusLocation")}
-              <select className="input mt-1" value={mapLocationId} onChange={(e) => setMapLocationId(e.target.value === "" ? "" : Number(e.target.value))}>
+            <label htmlFor="assets-import-setmaplocationid-e-target-value-number-e-target-" className="text-sm">{t("assets.import.nexusLocation")}
+              <select id="assets-import-setmaplocationid-e-target-value-number-e-target-" className="input mt-1" value={mapLocationId} onChange={(e) => setMapLocationId(e.target.value === "" ? "" : Number(e.target.value))}>
                 <option value="">{t("assets.import.createLocation")}</option>
                 {locations.map((loc) => <option key={loc.id} value={loc.id}>{loc.name}</option>)}
               </select>
@@ -559,8 +568,8 @@ export default function AssetImportPage() {
             <div className="self-end">
               <Button type="button" onClick={confirmLocationMap} disabled={busy || !editing.legacy_location}>{t("assets.import.mapLocation")}</Button>
             </div>
-            <label className="text-sm">{t("assets.import.custodianType")}
-              <select className="input mt-1" value={custodianType} onChange={(e) => setCustodianType(e.target.value)}>
+            <label htmlFor="assets-import-setcustodiantype-e-target-value" className="text-sm">{t("assets.import.custodianType")}
+              <select id="assets-import-setcustodiantype-e-target-value" className="input mt-1" value={custodianType} onChange={(e) => setCustodianType(e.target.value)}>
                 <option value="shared">{t("assets.import.custodianShared")}</option>
                 <option value="store">{t("assets.import.custodianStore")}</option>
                 <option value="department">{t("assets.import.custodianDepartment")}</option>
@@ -568,16 +577,16 @@ export default function AssetImportPage() {
               </select>
             </label>
             {custodianType === "department" && (
-              <label className="text-sm">{t("assets.import.custodianDepartment")}
-                <select className="input mt-1" value={custodianDepartmentId} onChange={(e) => setCustodianDepartmentId(e.target.value === "" ? "" : Number(e.target.value))}>
+              <label htmlFor="assets-import-setcustodiandepartmentid-e-target-value-number-e" className="text-sm">{t("assets.import.custodianDepartment")}
+                <select id="assets-import-setcustodiandepartmentid-e-target-value-number-e" className="input mt-1" value={custodianDepartmentId} onChange={(e) => setCustodianDepartmentId(e.target.value === "" ? "" : Number(e.target.value))}>
                   <option value=""></option>
                   {departments.map((dept) => <option key={dept.id} value={dept.id}>{dept.name}</option>)}
                 </select>
               </label>
             )}
             {custodianType === "user" && (
-              <label className="text-sm">{t("assets.import.selectUser")}
-                <select className="input mt-1" value={custodianUserId} onChange={(e) => setCustodianUserId(e.target.value === "" ? "" : Number(e.target.value))}>
+              <label htmlFor="assets-import-setcustodianuserid-e-target-value-number-e-targe" className="text-sm">{t("assets.import.selectUser")}
+                <select id="assets-import-setcustodianuserid-e-target-value-number-e-targe" className="input mt-1" value={custodianUserId} onChange={(e) => setCustodianUserId(e.target.value === "" ? "" : Number(e.target.value))}>
                   <option value="">{t("assets.notAssigned")}</option>
                   {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>

@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { positionsApi, adminApi, type Position, type Department } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const GRADES = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"];
 
@@ -55,22 +57,17 @@ export default function PositionsPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/hr" className="hover:text-primary">HR</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Positions</span>
-          </div>
-          <h1 className="page-title">Positions (Establishment)</h1>
-          <p className="page-subtitle">Manage establishment positions across all departments.</p>
-        </div>
-        <Link href="/hr/positions/create" className="btn-primary">
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          New Position
-        </Link>
-      </div>
+      <ModulePageHeader
+        title="Positions (Establishment)"
+        subtitle="Manage establishment positions across all departments."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.hr", href: "/hr" }, { label: "Positions" }]} />}
+        actions={
+          <Link href="/hr/positions/create" className="btn-primary">
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            New Position
+          </Link>
+        }
+      />
 
       {/* Filters */}
       <div className="card p-4 flex flex-wrap gap-3 items-center">
@@ -107,17 +104,17 @@ export default function PositionsPage() {
           ))}
         </div>
       ) : positions.length === 0 ? (
-        <div className="card p-16 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
-            <span className="material-symbols-outlined text-3xl text-neutral-300">work</span>
-          </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600">No positions found</p>
-          <p className="text-xs text-neutral-400 mt-1">Create your first establishment position.</p>
-          <Link href="/hr/positions/create" className="btn-primary mt-5 inline-flex">
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            New Position
-          </Link>
-        </div>
+        <EmptyState
+          icon="work"
+          title="No positions found"
+          description="Create your first establishment position."
+          action={
+            <Link href="/hr/positions/create" className="btn-primary">
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              New Position
+            </Link>
+          }
+        />
       ) : (
         <div className="space-y-6">
           {Object.entries(grouped).map(([deptName, deptPositions]) => (

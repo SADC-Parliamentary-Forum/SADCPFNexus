@@ -104,9 +104,9 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
       {msg && <p className="text-sm text-green-700">{msg}</p>}
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-privilege-alerts-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-privilege-alerts-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -163,7 +163,7 @@ return (await peopleAuthorityApi.listPrivilegeAlerts()).data;
                       {r.status !== "acknowledged" && (
                         <button
                           type="button"
-                          className="text-xs text-emerald-700 hover:underline"
+                          className="btn-secondary text-xs py-1 px-2 text-emerald-700"
                           onClick={() => ack.mutate(Number(r.id))}
                           disabled={ack.isPending}
                         >

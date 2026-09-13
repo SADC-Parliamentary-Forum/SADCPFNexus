@@ -185,7 +185,7 @@ export default function SignatureSetupPage() {
                 </div>
                 <button
                   onClick={() => revokeSignature(tab)}
-                  className="text-xs font-semibold text-red-500 hover:underline flex-shrink-0"
+                  className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600"
                 >
                   Revoke
                 </button>
@@ -265,14 +265,14 @@ export default function SignatureSetupPage() {
                   <img src={uploadPreview} alt="preview" className="max-h-16 max-w-[160px] object-contain" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-neutral-700">{uploadFile?.name}</p>
-                    <button onClick={() => { setUploadFile(null); setUploadPreview(null); }} className="text-xs text-red-500 hover:underline mt-0.5">Remove</button>
+                    <button onClick={() => { setUploadFile(null); setUploadPreview(null); }} className="btn-secondary text-xs py-1 px-2 mt-0.5 text-red-600">Remove</button>
                   </div>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-neutral-200 rounded-xl p-8 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                <label htmlFor="profile-signature-upload" className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-neutral-200 rounded-xl p-8 cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
                   <span className="material-symbols-outlined text-neutral-400 text-[32px]">image</span>
                   <span className="text-sm text-neutral-500">Click to choose PNG file</span>
-                  <input type="file" accept=".png,image/png" className="hidden" onChange={onFileChange} />
+                  <input id="profile-signature-upload" type="file" accept=".png,image/png" className="hidden" onChange={onFileChange} />
                 </label>
               )}
               <div className="flex justify-end">

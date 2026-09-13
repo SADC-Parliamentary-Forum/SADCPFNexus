@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetChangeRequest } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 export default function BudgetChangeDetailPage() {
   const params = useParams();
@@ -68,30 +69,46 @@ export default function BudgetChangeDetailPage() {
 
   const row = query.data;
 
-  if (query.isLoading) return <p className="p-6 text-sm text-[var(--muted)]">Loading…</p>;
+  if (query.isLoading) {
+    return (
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Budget change"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "Budget Changes", href: "/budget/changes" }, { label: "Change" }]} />}
+        />
+        <p className="text-sm text-neutral-400">Loading…</p>
+      </div>
+    );
+  }
   if (!row) {
     return (
-    <div className="space-y-5">
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Budget change"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "Budget Changes", href: "/budget/changes" }, { label: "Change" }]} />}
+        />
         <p className="text-sm text-red-700">Not found.</p>
-        <Link href="/budget/changes">Back</Link>
+        <Link href="/budget/changes" className="btn-secondary text-sm">Back to changes</Link>
       </div>
     );
   }
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Link href="/budget/changes" className="text-sm text-[var(--primary)] hover:underline">
-            ← Changes
-          </Link>
-          <h1 className="page-title mt-1">{row.title}</h1>
-          <p className="page-subtitle capitalize">
-            {row.type} · {row.status.replaceAll("_", " ")}
-            {row.requires_sg ? " · requires SG" : ""}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <ModulePageHeader
+        title={row.title}
+        subtitle={`${row.type} · ${row.status.replaceAll("_", " ")}${row.requires_sg ? " · requires SG" : ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.finance", href: "/finance" },
+              { label: "Budget Changes", href: "/budget/changes" },
+              { label: row.title },
+            ]}
+          />
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
           {["draft", "returned"].includes(row.status) && (
             <button type="button" className="btn-primary text-sm" onClick={() => submitMut.mutate()} disabled={submitMut.isPending}>
               Submit
@@ -117,8 +134,9 @@ export default function BudgetChangeDetailPage() {
               Apply
             </button>
           )}
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
       {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}

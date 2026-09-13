@@ -52,8 +52,8 @@ export default function VerifyDocumentPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-neutral-600">Document Type <span className="text-red-500">*</span></label>
-          <select
+          <label htmlFor="saam-verify-document-type" className="text-xs font-semibold text-neutral-600">Document Type <span className="text-red-500">*</span></label>
+          <select id="saam-verify-document-type"
             className="form-input"
             value={docType}
             onChange={(e) => setDocType(e.target.value)}
@@ -66,8 +66,8 @@ export default function VerifyDocumentPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs font-semibold text-neutral-600">Document ID <span className="text-red-500">*</span></label>
-          <input
+          <label htmlFor="saam-verify-document-id" className="text-xs font-semibold text-neutral-600">Document ID <span className="text-red-500">*</span></label>
+          <input id="saam-verify-document-id"
             type="number"
             min="1"
             className="form-input"

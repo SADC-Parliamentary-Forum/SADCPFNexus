@@ -124,8 +124,8 @@ export function StockMovementModal({
 
           {!presetItem && (
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Stock Item *</label>
-              <select className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value ? Number(e.target.value) : "")}>
+              <label htmlFor="stock-move-item" className="block text-xs font-semibold text-neutral-700 mb-1">Stock Item *</label>
+              <select id="stock-move-item" className="form-input" value={itemId} onChange={(e) => setItemId(e.target.value ? Number(e.target.value) : "")}>
                 <option value="">Select an item…</option>
                 {items.map((i) => (
                   <option key={i.id} value={i.id}>{i.item_code} — {i.name} (bal: {i.current_balance})</option>
@@ -135,8 +135,8 @@ export function StockMovementModal({
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Movement Type *</label>
-            <select className="form-input" value={type} onChange={(e) => setType(e.target.value as MovementType)}>
+            <label htmlFor="stock-move-type" className="block text-xs font-semibold text-neutral-700 mb-1">Movement Type *</label>
+            <select id="stock-move-type" className="form-input" value={type} onChange={(e) => setType(e.target.value as MovementType)}>
               {TYPE_OPTIONS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
             <p className="text-xs text-neutral-400 mt-1">{typeMeta.help}</p>
@@ -144,8 +144,9 @@ export function StockMovementModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Quantity *</label>
+              <label htmlFor="stock-move-qty" className="block text-xs font-semibold text-neutral-700 mb-1">Quantity *</label>
               <input
+                id="stock-move-qty"
                 type="number"
                 className="form-input"
                 placeholder={type === "adjustment" ? "e.g. -5 or 5" : "e.g. 10"}
@@ -154,15 +155,16 @@ export function StockMovementModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Date *</label>
-              <input type="date" className="form-input" value={date} onChange={(e) => setDate(e.target.value)} />
+              <label htmlFor="stock-move-date" className="block text-xs font-semibold text-neutral-700 mb-1">Date *</label>
+              <input id="stock-move-date" type="date" className="form-input" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
           </div>
 
           {type === "out" && (
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Issued To</label>
+              <label htmlFor="stock-move-issued-to" className="block text-xs font-semibold text-neutral-700 mb-1">Issued To</label>
               <input
+                id="stock-move-issued-to"
                 className="form-input"
                 placeholder="Recipient name / department"
                 value={issuedTo}
@@ -173,12 +175,12 @@ export function StockMovementModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Reference</label>
-              <input className="form-input" placeholder="GRN / requisition no." value={reference} onChange={(e) => setReference(e.target.value)} />
+              <label htmlFor="stock-move-reference" className="block text-xs font-semibold text-neutral-700 mb-1">Reference</label>
+              <input id="stock-move-reference" className="form-input" placeholder="GRN / requisition no." value={reference} onChange={(e) => setReference(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Reason code</label>
-              <select className="form-input" value={reasonCode} onChange={(e) => setReasonCode(e.target.value as StockReasonCode | "")}>
+              <label htmlFor="stock-move-reason-code" className="block text-xs font-semibold text-neutral-700 mb-1">Reason code</label>
+              <select id="stock-move-reason-code" className="form-input" value={reasonCode} onChange={(e) => setReasonCode(e.target.value as StockReasonCode | "")}>
                 <option value="">Optional…</option>
                 {REASON_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
@@ -186,8 +188,8 @@ export function StockMovementModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Reason / Note</label>
-            <input className="form-input" placeholder="Optional detail" value={reason} onChange={(e) => setReason(e.target.value)} />
+            <label htmlFor="stock-move-reason" className="block text-xs font-semibold text-neutral-700 mb-1">Reason / Note</label>
+            <input id="stock-move-reason" className="form-input" placeholder="Optional detail" value={reason} onChange={(e) => setReason(e.target.value)} />
           </div>
         </div>
 

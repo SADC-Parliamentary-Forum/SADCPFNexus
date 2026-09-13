@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class ResolutionImplementationDetailsScreen extends StatelessWidget {
   const ResolutionImplementationDetailsScreen({super.key, this.resolution});
@@ -34,14 +35,16 @@ class ResolutionImplementationDetailsScreen extends StatelessWidget {
     final dateStr = adoptedAt != null ? AppDateFormatter.short(adoptedAt) : '—';
     final description = resolution?['description'] as String?;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark, elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary), onPressed: () => Navigator.pop(context)),
-        title: const Text('Resolution Details', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-        actions: [IconButton(icon: const Icon(Icons.share_outlined, color: AppColors.textSecondary), onPressed: () {})],
-      ),
+    return StitchScreen(
+      title: 'Resolution Details',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Share',
+          icon: Icons.share_outlined,
+          onPressed: () {},
+        ),
+      ],
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

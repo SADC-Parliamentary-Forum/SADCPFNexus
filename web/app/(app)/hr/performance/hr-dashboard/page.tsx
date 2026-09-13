@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { performanceTrackerApi, type PerformanceTracker } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_LABELS: Record<string, string> = {
   excellent: "Excellent",
@@ -63,7 +64,6 @@ const SECTIONS: { id: DashboardSection; label: string; icon: string }[] = [
 ];
 
 export default function HrPerformanceDashboardPage() {
-  const router = useRouter();
   const [section, setSection] = useState<DashboardSection>("overview");
   const [overview, setOverview] = useState<{
     status_counts: Record<string, number>;
@@ -117,20 +117,20 @@ export default function HrPerformanceDashboardPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <nav className="flex items-center gap-1.5 text-xs text-neutral-400 mb-1">
-            <button onClick={() => router.push("/hr")} className="hover:text-neutral-600">HR</button>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <button onClick={() => router.push("/hr/performance")} className="hover:text-neutral-600">Performance Tracker</button>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">HR Monitoring Dashboard</span>
-          </nav>
-          <h1 className="page-title">HR Performance Monitoring</h1>
-          <p className="page-subtitle">Institution-wide performance intelligence, watchlist monitoring, and pre-appraisal evidence overview.</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <ModulePageHeader
+        title="HR Performance Monitoring"
+        subtitle="Institution-wide performance intelligence, watchlist monitoring, and pre-appraisal evidence overview."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Performance Tracker", href: "/hr/performance" },
+              { label: "HR Monitoring Dashboard" },
+            ]}
+          />
+        }
+        actions={
+          <>
           <Link href="/hr/performance/team" className="btn-secondary flex items-center gap-2 py-2 px-3 text-sm">
             <span className="material-symbols-outlined text-[18px]">group</span>
             Team View
@@ -139,14 +139,15 @@ export default function HrPerformanceDashboardPage() {
             <span className="material-symbols-outlined text-[18px]">trending_up</span>
             All Trackers
           </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
           <span className="material-symbols-outlined text-[16px]">error_outline</span>
           {error}
-          <button onClick={load} className="ml-auto text-red-700 font-semibold hover:underline">Retry</button>
+          <button type="button" onClick={load} className="ml-auto btn-secondary text-xs">Retry</button>
         </div>
       )}
 
@@ -288,7 +289,7 @@ export default function HrPerformanceDashboardPage() {
                   </div>
                   <div className="divide-y divide-neutral-50 max-h-64 overflow-y-auto">
                     {allTrackers.filter((t) => t.trend === "improving").length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-neutral-400 text-center">No improving trend data.</p>
+                      <EmptyState icon="trending_up" title="No improving trend data." className="py-6 min-h-0" />
                     ) : (
                       allTrackers.filter((t) => t.trend === "improving").slice(0, 10).map((t) => (
                         <Link key={t.id} href={`/hr/performance/${t.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
@@ -354,10 +355,7 @@ export default function HrPerformanceDashboardPage() {
                   <span className="badge badge-warning">{devActionTrackers.length}</span>
                 </div>
                 {devActionTrackers.length === 0 ? (
-                  <div className="py-12 text-center">
-                    <span className="material-symbols-outlined text-4xl text-neutral-200">emoji_events</span>
-                    <p className="mt-3 text-sm text-neutral-400">No open development actions.</p>
-                  </div>
+                  <EmptyState icon="emoji_events" title="No open development actions." />
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="data-table">
@@ -391,7 +389,7 @@ export default function HrPerformanceDashboardPage() {
                                 {t.assignment_completion_rate != null ? `${t.assignment_completion_rate}%` : "—"}
                               </td>
                               <td className="text-right">
-                                <Link href={`/hr/performance/${t.id}`} className="text-sm font-semibold text-primary hover:underline">
+                                <Link href={`/hr/performance/${t.id}`} className="btn-secondary text-xs">
                                   View profile
                                 </Link>
                               </td>
@@ -433,7 +431,7 @@ export default function HrPerformanceDashboardPage() {
                         </Link>
                       ))}
                     {allTrackers.filter((t) => (t.commendation_count ?? 0) > 0).length === 0 && (
-                      <p className="px-4 py-6 text-sm text-neutral-400 text-center">No commendations recorded.</p>
+                      <EmptyState icon="star" title="No commendations recorded." className="py-6 min-h-0" />
                     )}
                   </div>
                 </div>
@@ -448,7 +446,7 @@ export default function HrPerformanceDashboardPage() {
                   </div>
                   <div className="divide-y divide-neutral-50 max-h-64 overflow-y-auto">
                     {warningTrackers.length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-neutral-400 text-center">No active warnings.</p>
+                      <EmptyState icon="gavel" title="No active warnings." className="py-6 min-h-0" />
                     ) : (
                       warningTrackers.slice(0, 10).map((t) => (
                         <Link key={t.id} href={`/hr/performance/${t.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-neutral-50/50 transition-colors">
@@ -575,7 +573,7 @@ function TrackerTable({
                       )}
                     </td>
                     <td className="text-right">
-                      <Link href={`/hr/performance/${t.id}`} className="text-sm font-semibold text-primary hover:underline">
+                      <Link href={`/hr/performance/${t.id}`} className="btn-secondary text-xs">
                         View
                       </Link>
                     </td>

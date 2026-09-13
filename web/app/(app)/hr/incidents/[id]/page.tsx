@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { hrIncidentsApi, type HrIncident } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const STEPS: { key: HrIncident["status"]; label: string; icon: string }[] = [
   { key: "reported",     label: "Reported",     icon: "report" },
@@ -88,7 +89,7 @@ export default function IncidentDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
-        <Link href="/hr/incidents" className="text-sm font-semibold text-primary hover:underline">Back to Incidents</Link>
+        <Link href="/hr/incidents" className="btn-secondary text-sm">Back to Incidents</Link>
       </div>
     );
   }
@@ -103,28 +104,25 @@ export default function IncidentDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/hr" className="hover:text-primary transition-colors">HR</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <Link href="/hr/incidents" className="hover:text-primary transition-colors">Incidents</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">{incident.reference_number}</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">{incident.subject}</h1>
-          <p className="page-subtitle">
-            Reported by {incident.reporter?.name ?? "Unknown"} · {formatDateShort(incident.reported_at)}
-          </p>
-        </div>
-        <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${sev.bg}`}>
-          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>{sev.icon}</span>
-          {sev.label} Severity
-        </span>
-      </div>
+      <ModulePageHeader
+        title={incident.subject}
+        subtitle={`Reported by ${incident.reporter?.name ?? "Unknown"} · ${formatDateShort(incident.reported_at)}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Incidents", href: "/hr/incidents" },
+              { label: incident.reference_number },
+            ]}
+          />
+        }
+        meta={
+          <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${sev.bg}`}>
+            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>{sev.icon}</span>
+            {sev.label} Severity
+          </span>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
@@ -313,8 +311,8 @@ export default function IncidentDetailPage() {
       )}
 
       <div className="flex gap-3 pb-4">
-        <Link href="/hr/incidents" className="text-sm font-semibold text-primary hover:underline">
-          ← Back to Incidents
+        <Link href="/hr/incidents" className="btn-secondary text-sm">
+          Back to Incidents
         </Link>
       </div>
     </div>

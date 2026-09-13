@@ -200,7 +200,7 @@ export default function DecisionsRegisterPage() {
             { label: "Due", value: d.due_date ? formatDateShort(d.due_date) : "—" },
           ]}
           actions={(d) => (
-            <Link href={`/decisions/${d.id}`} className="text-xs font-medium text-primary hover:underline">
+            <Link href={`/decisions/${d.id}`} className="btn-secondary text-xs py-1 px-2">
               View
             </Link>
           )}
@@ -224,7 +224,7 @@ export default function DecisionsRegisterPage() {
                 return (
                   <tr key={d.id}>
                     <td className="font-mono text-xs">
-                      <Link href={`/decisions/${d.id}`} className="font-medium text-primary hover:underline">
+                      <Link href={`/decisions/${d.id}`} className="font-medium text-primary">
                         {d.reference_number}
                       </Link>
                       {d.is_confidential ? (
@@ -232,7 +232,7 @@ export default function DecisionsRegisterPage() {
                       ) : null}
                     </td>
                     <td>
-                      <Link href={`/decisions/${d.id}`} className="font-medium text-neutral-900 hover:underline dark:text-neutral-100">
+                      <Link href={`/decisions/${d.id}`} className="font-medium text-neutral-900 dark:text-neutral-100">
                         {d.title}
                       </Link>
                     </td>

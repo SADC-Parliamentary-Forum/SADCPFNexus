@@ -28,6 +28,7 @@ import { unwrapEntity } from "@/lib/unwrapEntity";
 import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { useToast } from "@/components/ui/Toast";
 import { personLabel } from "@/lib/pifForm";
+import { TableEmpty, EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -719,7 +720,7 @@ export default function PifDetailPage() {
                 </thead>
                 <tbody>
                   {activities.length === 0 ? (
-                    <tr><td colSpan={6} className="py-10 text-center text-sm text-neutral-400">No activities yet.</td></tr>
+                    <TableEmpty colSpan={6} title="No activities yet." />
                   ) : activities.map((a) => (
                     <tr key={a.id}>
                       <td>
@@ -764,7 +765,9 @@ export default function PifDetailPage() {
               </button>
             </div>
             {milestones.length === 0 ? (
-              <div className="card p-8 text-center text-sm text-neutral-400">No milestones yet.</div>
+              <div className="card">
+                <EmptyState icon="flag" title="No milestones yet." />
+              </div>
             ) : milestones.map((m) => (
               <div key={m.id} className="card p-4">
                 <div className="flex items-start justify-between gap-2 mb-2">
@@ -800,7 +803,9 @@ export default function PifDetailPage() {
               </button>
             </div>
             {deliverables.length === 0 ? (
-              <div className="card p-8 text-center text-sm text-neutral-400">No deliverables yet.</div>
+              <div className="card">
+                <EmptyState icon="inventory_2" title="No deliverables yet." />
+              </div>
             ) : deliverables.map((d) => (
               <div key={d.id} className="card p-4">
                 <div className="flex items-start justify-between gap-2">
@@ -858,7 +863,7 @@ export default function PifDetailPage() {
                 </thead>
                 <tbody>
                   {budgetLines.length === 0 ? (
-                    <tr><td colSpan={6} className="py-10 text-center text-sm text-neutral-400">No budget lines.</td></tr>
+                    <TableEmpty colSpan={6} title="No budget lines." />
                   ) : budgetLines.map((b) => {
                     const variance = Number(b.amount) - Number(b.actual_spent);
                     return (
@@ -937,7 +942,7 @@ export default function PifDetailPage() {
                   </thead>
                   <tbody>
                     {procItems.length === 0 ? (
-                      <tr><td colSpan={8} className="py-10 text-center text-sm text-neutral-400">No procurement items.</td></tr>
+                      <TableEmpty colSpan={8} title="No procurement items." />
                     ) : procItems.map((p) => {
                       const linked = !!p.procurement_request_id;
                       const selectable = ["approved", "amended"].includes(programme.status) && !linked;
@@ -965,7 +970,7 @@ export default function PifDetailPage() {
                           <td><span className={`badge ${PROC_BADGE[p.status] ?? "badge-muted"} capitalize`}>{p.status}</span></td>
                           <td className="text-xs">
                             {linked ? (
-                              <Link href={`/procurement/${p.procurement_request_id}`} className="text-primary hover:underline">
+                              <Link href={`/procurement/${p.procurement_request_id}`} className="btn-secondary text-xs py-1 px-2">
                                 PRQ linked
                               </Link>
                             ) : (
@@ -990,16 +995,16 @@ export default function PifDetailPage() {
           </p>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Request title</label>
-              <input
+              <label htmlFor="pif-detail-request-title" className="block text-xs font-semibold text-neutral-700 mb-1">Request title</label>
+              <input id="pif-detail-request-title"
                 className="form-input w-full"
                 value={sendProcTitle}
                 onChange={(e) => setSendProcTitle(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Category</label>
-              <select className="form-input w-full" value={sendProcCategory} onChange={(e) => setSendProcCategory(e.target.value)}>
+              <label htmlFor="pif-detail-category" className="block text-xs font-semibold text-neutral-700 mb-1">Category</label>
+              <select id="pif-detail-category" className="form-input w-full" value={sendProcCategory} onChange={(e) => setSendProcCategory(e.target.value)}>
                 <option value="goods">Goods</option>
                 <option value="services">Services</option>
                 <option value="works">Works</option>
@@ -1046,15 +1051,15 @@ export default function PifDetailPage() {
           </p>
           <div className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Mission title (optional light group)</label>
-              <input className="form-input w-full" value={missionTitle} onChange={(e) => setMissionTitle(e.target.value)} />
+              <label htmlFor="pif-detail-mission-title-optional-light-group" className="block text-xs font-semibold text-neutral-700 mb-1">Mission title (optional light group)</label>
+              <input id="pif-detail-mission-title-optional-light-group" className="form-input w-full" value={missionTitle} onChange={(e) => setMissionTitle(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Travellers</label>
+              <p className="block text-xs font-semibold text-neutral-700 mb-1">Travellers</p>
               <div className="max-h-48 overflow-y-auto border rounded-lg p-2 space-y-1">
                 {tenantUsers.map((u) => (
-                  <label key={u.id} className="flex items-center gap-2 text-sm py-1 px-1 hover:bg-neutral-50 rounded">
-                    <input
+                  <label htmlFor={`pif-detail-traveller-${u.id}`} key={u.id} className="flex items-center gap-2 text-sm py-1 px-1 hover:bg-neutral-50 rounded">
+                    <input id={`pif-detail-traveller-${u.id}`}
                       type="checkbox"
                       checked={selectedTravellerIds.includes(u.id)}
                       onChange={(e) => {
@@ -1181,8 +1186,8 @@ export default function PifDetailPage() {
               className="flex flex-wrap items-end gap-3"
             >
               <div className="flex-1 min-w-[140px]">
-                <label className="block text-xs font-medium text-neutral-500 mb-1">Type</label>
-                <select
+                <label htmlFor="pif-detail-type" className="block text-xs font-medium text-neutral-500 mb-1">Type</label>
+                <select id="pif-detail-type"
                   name="attachment_type"
                   required
                   className="w-full rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary"
@@ -1194,8 +1199,8 @@ export default function PifDetailPage() {
                 </select>
               </div>
               <div className="flex-1 min-w-[180px]">
-                <label className="block text-xs font-medium text-neutral-500 mb-1">File</label>
-                <input
+                <label htmlFor="pif-detail-file" className="block text-xs font-medium text-neutral-500 mb-1">File</label>
+                <input id="pif-detail-file"
                   name="attachment_file"
                   type="file"
                   required
@@ -1301,7 +1306,7 @@ export default function PifDetailPage() {
                                       setChosenQuoteModal({ open: true, attachment: a });
                                       setChosenReason(a.selection_reason ?? "");
                                     }}
-                                    className="text-xs text-primary hover:underline"
+                                    className="btn-secondary text-xs py-1 px-2"
                                     title="Mark as chosen quote"
                                   >
                                     Mark as chosen
@@ -1439,8 +1444,8 @@ export default function PifDetailPage() {
               <div className="mb-4 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
                 <p className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-2">Declaration</p>
                 <p className="text-sm text-neutral-700 mb-3">{DECLARATION_TEXT}</p>
-                <label className="flex items-start gap-2 cursor-pointer">
-                  <input
+                <label htmlFor="pif-detail-setdeclarationconfirmed-e-target-checked-classna" className="flex items-start gap-2 cursor-pointer">
+                  <input id="pif-detail-setdeclarationconfirmed-e-target-checked-classna"
                     type="checkbox"
                     checked={declarationConfirmed}
                     onChange={(e) => setDeclarationConfirmed(e.target.checked)}
@@ -1528,34 +1533,34 @@ export default function PifDetailPage() {
         <Modal title={actModal.editing ? "Edit Activity" : "Add Activity"} onClose={() => setActModal({ open: false })}>
           <form onSubmit={handleSaveActivity} className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
-              <input required className="form-input" value={actForm.name} onChange={(e) => setActForm({ ...actForm, name: e.target.value })} />
+              <label htmlFor="pif-detail-name" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+              <input id="pif-detail-name" required className="form-input" value={actForm.name} onChange={(e) => setActForm({ ...actForm, name: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
-              <textarea rows={2} className="form-input resize-none" value={actForm.description} onChange={(e) => setActForm({ ...actForm, description: e.target.value })} />
+              <label htmlFor="pif-detail-description" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+              <textarea id="pif-detail-description" rows={2} className="form-input resize-none" value={actForm.description} onChange={(e) => setActForm({ ...actForm, description: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Budget ({programme.primary_currency})</label>
-                <input type="number" min="0" className="form-input" value={actForm.budget_allocation} onChange={(e) => setActForm({ ...actForm, budget_allocation: e.target.value })} />
+                <label htmlFor="pif-detail-budget" className="block text-xs font-semibold text-neutral-700 mb-1">Budget ({programme.primary_currency})</label>
+                <input id="pif-detail-budget" type="number" min="0" className="form-input" value={actForm.budget_allocation} onChange={(e) => setActForm({ ...actForm, budget_allocation: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Responsible</label>
-                <input className="form-input" value={actForm.responsible} onChange={(e) => setActForm({ ...actForm, responsible: e.target.value })} />
+                <label htmlFor="pif-detail-responsible" className="block text-xs font-semibold text-neutral-700 mb-1">Responsible</label>
+                <input id="pif-detail-responsible" className="form-input" value={actForm.responsible} onChange={(e) => setActForm({ ...actForm, responsible: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Start Date</label>
-                <input type="date" className="form-input" value={actForm.start_date} onChange={(e) => setActForm({ ...actForm, start_date: e.target.value })} />
+                <label htmlFor="pif-detail-start-date" className="block text-xs font-semibold text-neutral-700 mb-1">Start Date</label>
+                <input id="pif-detail-start-date" type="date" className="form-input" value={actForm.start_date} onChange={(e) => setActForm({ ...actForm, start_date: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">End Date</label>
-                <input type="date" className="form-input" value={actForm.end_date} onChange={(e) => setActForm({ ...actForm, end_date: e.target.value })} />
+                <label htmlFor="pif-detail-end-date" className="block text-xs font-semibold text-neutral-700 mb-1">End Date</label>
+                <input id="pif-detail-end-date" type="date" className="form-input" value={actForm.end_date} onChange={(e) => setActForm({ ...actForm, end_date: e.target.value })} />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
-              <select className="form-input" value={actForm.status} onChange={(e) => setActForm({ ...actForm, status: e.target.value })}>
+              <label htmlFor="pif-detail-status" className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
+              <select id="pif-detail-status" className="form-input" value={actForm.status} onChange={(e) => setActForm({ ...actForm, status: e.target.value })}>
                 {["draft", "approved", "in_progress", "completed", "postponed", "cancelled"].map((s) => (
                   <option key={s} value={s}>{s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}</option>
                 ))}
@@ -1576,22 +1581,22 @@ export default function PifDetailPage() {
         <Modal title={msModal.editing ? "Edit Milestone" : "Add Milestone"} onClose={() => setMsModal({ open: false })}>
           <form onSubmit={handleSaveMilestone} className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
-              <input required className="form-input" value={msForm.name} onChange={(e) => setMsForm({ ...msForm, name: e.target.value })} />
+              <label htmlFor="pif-detail-name-2" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+              <input id="pif-detail-name-2" required className="form-input" value={msForm.name} onChange={(e) => setMsForm({ ...msForm, name: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Target Date</label>
-                <input type="date" className="form-input" value={msForm.target_date} onChange={(e) => setMsForm({ ...msForm, target_date: e.target.value })} />
+                <label htmlFor="pif-detail-target-date" className="block text-xs font-semibold text-neutral-700 mb-1">Target Date</label>
+                <input id="pif-detail-target-date" type="date" className="form-input" value={msForm.target_date} onChange={(e) => setMsForm({ ...msForm, target_date: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Completion %</label>
-                <input type="number" min="0" max="100" className="form-input" value={msForm.completion_pct} onChange={(e) => setMsForm({ ...msForm, completion_pct: e.target.value })} />
+                <label htmlFor="pif-detail-completion" className="block text-xs font-semibold text-neutral-700 mb-1">Completion %</label>
+                <input id="pif-detail-completion" type="number" min="0" max="100" className="form-input" value={msForm.completion_pct} onChange={(e) => setMsForm({ ...msForm, completion_pct: e.target.value })} />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
-              <select className="form-input" value={msForm.status} onChange={(e) => setMsForm({ ...msForm, status: e.target.value })}>
+              <label htmlFor="pif-detail-status-2" className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
+              <select id="pif-detail-status-2" className="form-input" value={msForm.status} onChange={(e) => setMsForm({ ...msForm, status: e.target.value })}>
                 {["pending", "achieved", "missed"].map((s) => (
                   <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
                 ))}
@@ -1612,20 +1617,20 @@ export default function PifDetailPage() {
         <Modal title={delModal.editing ? "Edit Deliverable" : "Add Deliverable"} onClose={() => setDelModal({ open: false })}>
           <form onSubmit={handleSaveDeliverable} className="space-y-3">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
-              <input required className="form-input" value={delForm.name} onChange={(e) => setDelForm({ ...delForm, name: e.target.value })} />
+              <label htmlFor="pif-detail-name-3" className="block text-xs font-semibold text-neutral-700 mb-1">Name *</label>
+              <input id="pif-detail-name-3" required className="form-input" value={delForm.name} onChange={(e) => setDelForm({ ...delForm, name: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
-              <textarea rows={2} className="form-input resize-none" value={delForm.description} onChange={(e) => setDelForm({ ...delForm, description: e.target.value })} />
+              <label htmlFor="pif-detail-description-2" className="block text-xs font-semibold text-neutral-700 mb-1">Description</label>
+              <textarea id="pif-detail-description-2" rows={2} className="form-input resize-none" value={delForm.description} onChange={(e) => setDelForm({ ...delForm, description: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Due Date</label>
-              <input type="date" className="form-input" value={delForm.due_date} onChange={(e) => setDelForm({ ...delForm, due_date: e.target.value })} />
+              <label htmlFor="pif-detail-due-date" className="block text-xs font-semibold text-neutral-700 mb-1">Due Date</label>
+              <input id="pif-detail-due-date" type="date" className="form-input" value={delForm.due_date} onChange={(e) => setDelForm({ ...delForm, due_date: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
-              <select className="form-input" value={delForm.status} onChange={(e) => setDelForm({ ...delForm, status: e.target.value })}>
+              <label htmlFor="pif-detail-status-3" className="block text-xs font-semibold text-neutral-700 mb-1">Status</label>
+              <select id="pif-detail-status-3" className="form-input" value={delForm.status} onChange={(e) => setDelForm({ ...delForm, status: e.target.value })}>
                 {["pending", "submitted", "accepted"].map((s) => (
                   <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
                 ))}
@@ -1646,8 +1651,8 @@ export default function PifDetailPage() {
         <Modal title="Reject Programme" onClose={() => setRejectModal(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for rejection <span className="text-red-500">*</span></label>
-              <textarea
+              <label htmlFor="pif-detail-reason-for-rejection" className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for rejection <span className="text-red-500">*</span></label>
+              <textarea id="pif-detail-reason-for-rejection"
                 rows={3}
                 className="form-input resize-none"
                 placeholder="Provide a clear reason…"

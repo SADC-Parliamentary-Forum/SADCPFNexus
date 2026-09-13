@@ -174,8 +174,8 @@ function NewReportPageInner() {
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Report Details</p>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Deployment <span className="text-red-500">*</span></label>
-              <select className="form-input" value={form.deployment_id} onChange={(e) => set("deployment_id", e.target.value)} required>
+              <label htmlFor="srhr-reports-new-deployment" className="block text-xs font-medium text-neutral-700 mb-1.5">Deployment <span className="text-red-500">*</span></label>
+              <select id="srhr-reports-new-deployment" className="form-input" value={form.deployment_id} onChange={(e) => set("deployment_id", e.target.value)} required>
                 <option value="">Select deployment…</option>
                 {deployments.map((d) => (
                   <option key={d.id} value={d.id}>
@@ -185,8 +185,8 @@ function NewReportPageInner() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Report Type</label>
-              <select className="form-input" value={form.report_type} onChange={(e) => set("report_type", e.target.value)}>
+              <label htmlFor="srhr-reports-new-report-type" className="block text-xs font-medium text-neutral-700 mb-1.5">Report Type</label>
+              <select id="srhr-reports-new-report-type" className="form-input" value={form.report_type} onChange={(e) => set("report_type", e.target.value)}>
                 <option value="monthly">Monthly</option>
                 <option value="quarterly">Quarterly</option>
                 <option value="annual">Annual</option>
@@ -195,16 +195,16 @@ function NewReportPageInner() {
             </div>
             <div />
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Period Start <span className="text-red-500">*</span></label>
-              <input type="date" className="form-input" value={form.period_start} onChange={(e) => set("period_start", e.target.value)} required />
+              <label htmlFor="srhr-reports-new-period-start" className="block text-xs font-medium text-neutral-700 mb-1.5">Period Start <span className="text-red-500">*</span></label>
+              <input id="srhr-reports-new-period-start" type="date" className="form-input" value={form.period_start} onChange={(e) => set("period_start", e.target.value)} required />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Period End <span className="text-red-500">*</span></label>
-              <input type="date" className="form-input" value={form.period_end} onChange={(e) => set("period_end", e.target.value)} required />
+              <label htmlFor="srhr-reports-new-period-end" className="block text-xs font-medium text-neutral-700 mb-1.5">Period End <span className="text-red-500">*</span></label>
+              <input id="srhr-reports-new-period-end" type="date" className="form-input" value={form.period_end} onChange={(e) => set("period_end", e.target.value)} required />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-neutral-700 mb-1.5">Report Title <span className="text-red-500">*</span></label>
-              <input className="form-input" placeholder="e.g. February 2026 Monthly Activity Report" value={form.title} onChange={(e) => set("title", e.target.value)} required />
+              <label htmlFor="srhr-reports-new-report-title" className="block text-xs font-medium text-neutral-700 mb-1.5">Report Title <span className="text-red-500">*</span></label>
+              <input id="srhr-reports-new-report-title" className="form-input" placeholder="e.g. February 2026 Monthly Activity Report" value={form.title} onChange={(e) => set("title", e.target.value)} required />
             </div>
           </div>
         </div>
@@ -253,16 +253,16 @@ function NewReportPageInner() {
         <div className="card p-6 space-y-5">
           <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">Analysis & Planning</p>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Challenges Faced</label>
-            <textarea className="form-input" rows={3} placeholder="Describe any obstacles or challenges encountered…" value={form.challenges_faced} onChange={(e) => set("challenges_faced", e.target.value)} />
+            <label htmlFor="srhr-reports-new-challenges-faced" className="block text-xs font-medium text-neutral-700 mb-1.5">Challenges Faced</label>
+            <textarea id="srhr-reports-new-challenges-faced" className="form-input" rows={3} placeholder="Describe any obstacles or challenges encountered…" value={form.challenges_faced} onChange={(e) => set("challenges_faced", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Recommendations</label>
-            <textarea className="form-input" rows={3} placeholder="Recommendations to SADC-PF or the host parliament…" value={form.recommendations} onChange={(e) => set("recommendations", e.target.value)} />
+            <label htmlFor="srhr-reports-new-recommendations" className="block text-xs font-medium text-neutral-700 mb-1.5">Recommendations</label>
+            <textarea id="srhr-reports-new-recommendations" className="form-input" rows={3} placeholder="Recommendations to SADC-PF or the host parliament…" value={form.recommendations} onChange={(e) => set("recommendations", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Plan for Next Period</label>
-            <textarea className="form-input" rows={3} placeholder="Key activities planned for the next reporting period…" value={form.next_period_plan} onChange={(e) => set("next_period_plan", e.target.value)} />
+            <label htmlFor="srhr-reports-new-plan-for-next-period" className="block text-xs font-medium text-neutral-700 mb-1.5">Plan for Next Period</label>
+            <textarea id="srhr-reports-new-plan-for-next-period" className="form-input" rows={3} placeholder="Key activities planned for the next reporting period…" value={form.next_period_plan} onChange={(e) => set("next_period_plan", e.target.value)} />
           </div>
         </div>
 

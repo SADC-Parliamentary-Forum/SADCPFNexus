@@ -3,6 +3,7 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useQuery } from "@tanstack/react-query";
 import { inventoryApi } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function UnifiedInventoryRegisterPage() {
   const query = useQuery({
@@ -41,7 +42,7 @@ export default function UnifiedInventoryRegisterPage() {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={4} className="py-6 text-neutral-400">No linked register entries yet.</td></tr>
+                <TableEmpty colSpan={4} title="No linked register entries yet." />
               )}
             </tbody>
           </table>

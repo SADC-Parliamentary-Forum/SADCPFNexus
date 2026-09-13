@@ -33,6 +33,7 @@ export function TravelDestinationFields({
   onAddCountry,
   onAddCity,
   adding = false,
+  idPrefix = "travel-destination",
 }: {
   country: string;
   city: string;
@@ -42,14 +43,16 @@ export function TravelDestinationFields({
   onAddCountry: (name: string) => Promise<void>;
   onAddCity: (country: string, name: string) => Promise<void>;
   adding?: boolean;
+  idPrefix?: string;
 }) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className="space-y-1.5">
-        <label className="block text-xs font-medium text-neutral-700">
+        <label htmlFor={`${idPrefix}-country`} className="block text-xs font-medium text-neutral-700">
           Destination Country <span className="text-red-500">*</span>
         </label>
         <CountrySelect
+          id={`${idPrefix}-country`}
           value={country}
           countries={countries}
           adding={adding}
@@ -61,8 +64,9 @@ export function TravelDestinationFields({
         />
       </div>
       <div className="space-y-1.5">
-        <label className="block text-xs font-medium text-neutral-700">City</label>
+        <label htmlFor={`${idPrefix}-city`} className="block text-xs font-medium text-neutral-700">City</label>
         <CitySelect
+          id={`${idPrefix}-city`}
           value={city}
           country={country}
           countries={countries}
@@ -76,12 +80,14 @@ export function TravelDestinationFields({
 }
 
 function CountrySelect({
+  id,
   value,
   countries,
   onChange,
   onAdd,
   adding,
 }: {
+  id: string;
   value: string;
   countries: TravelDestinationCountry[];
   onChange: (v: string) => void;
@@ -111,6 +117,7 @@ function CountrySelect({
   return (
     <div ref={ref} className="relative">
       <button
+        id={id}
         type="button"
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-left focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -210,6 +217,7 @@ function CountrySelect({
 }
 
 function CitySelect({
+  id,
   value,
   country,
   countries,
@@ -217,6 +225,7 @@ function CitySelect({
   onAdd,
   adding,
 }: {
+  id: string;
   value: string;
   country: string;
   countries: TravelDestinationCountry[];
@@ -248,6 +257,7 @@ function CitySelect({
   if (!country.trim()) {
     return (
       <input
+        id={id}
         className="form-input"
         disabled
         placeholder="Select a country first"
@@ -260,6 +270,7 @@ function CitySelect({
   return (
     <div ref={ref} className="relative">
       <button
+        id={id}
         type="button"
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-left focus:border-primary focus:ring-1 focus:ring-primary outline-none"

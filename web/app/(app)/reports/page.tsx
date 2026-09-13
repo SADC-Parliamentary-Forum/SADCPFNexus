@@ -15,6 +15,7 @@ import {
 } from "@/lib/api";
 import { getStoredUser, hasPermission } from "@/lib/auth";
 import { formatDateTable } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -477,21 +478,21 @@ export default function ReportsPage() {
             <span className="badge badge-muted">{schedules.length} schedules</span>
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-4">
-            <label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Name
-              <input className="form-input mt-1 text-sm" value={scheduleForm.label} onChange={(event) => setScheduleForm((prev) => ({ ...prev, label: event.target.value }))} placeholder="Monthly travel report" />
+            <label htmlFor="reports-name-setscheduleform-prev-placeholder-monthly-tr" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Name
+              <input id="reports-name-setscheduleform-prev-placeholder-monthly-tr" className="form-input mt-1 text-sm" value={scheduleForm.label} onChange={(event) => setScheduleForm((prev) => ({ ...prev, label: event.target.value }))} placeholder="Monthly travel report" />
             </label>
-            <label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Frequency
-              <select className="form-input mt-1 text-sm" value={scheduleForm.frequency} onChange={(event) => setScheduleForm((prev) => ({ ...prev, frequency: event.target.value }))}>
+            <label htmlFor="reports-frequency-setscheduleform-prev-daily-weekly-mont" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Frequency
+              <select id="reports-frequency-setscheduleform-prev-daily-weekly-mont" className="form-input mt-1 text-sm" value={scheduleForm.frequency} onChange={(event) => setScheduleForm((prev) => ({ ...prev, frequency: event.target.value }))}>
                 <option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option>
               </select>
             </label>
-            <label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Format
-              <select className="form-input mt-1 text-sm" value={scheduleForm.format} onChange={(event) => setScheduleForm((prev) => ({ ...prev, format: event.target.value }))}>
+            <label htmlFor="reports-format-setscheduleform-prev-csv-excel-pdf" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Format
+              <select id="reports-format-setscheduleform-prev-csv-excel-pdf" className="form-input mt-1 text-sm" value={scheduleForm.format} onChange={(event) => setScheduleForm((prev) => ({ ...prev, format: event.target.value }))}>
                 <option value="csv">CSV</option><option value="xlsx">Excel</option><option value="pdf">PDF</option>
               </select>
             </label>
-            <label className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Recipients
-              <input className="form-input mt-1 text-sm" value={scheduleForm.recipients} onChange={(event) => setScheduleForm((prev) => ({ ...prev, recipients: event.target.value }))} placeholder="name@example.org" />
+            <label htmlFor="reports-recipients-setscheduleform-prev-placeholder-name" className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Recipients
+              <input id="reports-recipients-setscheduleform-prev-placeholder-name" className="form-input mt-1 text-sm" value={scheduleForm.recipients} onChange={(event) => setScheduleForm((prev) => ({ ...prev, recipients: event.target.value }))} placeholder="name@example.org" />
             </label>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -594,8 +595,8 @@ export default function ReportsPage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {/* Period from */}
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">From</label>
-                  <input
+                  <label htmlFor="reports-from" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">From</label>
+                  <input id="reports-from"
                     type="date"
                     className="form-input text-sm"
                     value={filters.period_from}
@@ -604,8 +605,8 @@ export default function ReportsPage() {
                 </div>
                 {/* Period to */}
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">To</label>
-                  <input
+                  <label htmlFor="reports-to" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">To</label>
+                  <input id="reports-to"
                     type="date"
                     className="form-input text-sm"
                     value={filters.period_to}
@@ -615,8 +616,8 @@ export default function ReportsPage() {
                 {/* Staff member (managers only) */}
                 {isManager && (
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Staff Member</label>
-                    <select
+                    <label htmlFor="reports-staff-member" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Staff Member</label>
+                    <select id="reports-staff-member"
                       className="form-input text-sm"
                       value={filters.user_id}
                       onChange={(e) => setFilters((f) => ({ ...f, user_id: e.target.value }))}
@@ -630,8 +631,8 @@ export default function ReportsPage() {
                 )}
                 {/* Department */}
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Department</label>
-                  <select
+                  <label htmlFor="reports-department" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Department</label>
+                  <select id="reports-department"
                     className="form-input text-sm"
                     value={filters.department_id}
                     onChange={(e) => setFilters((f) => ({ ...f, department_id: e.target.value }))}
@@ -645,8 +646,8 @@ export default function ReportsPage() {
                 {/* Status */}
                 {module.statusOptions.length > 0 && (
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Status</label>
-                    <select
+                    <label htmlFor="reports-status" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Status</label>
+                    <select id="reports-status"
                       className="form-input text-sm"
                       value={filters.status}
                       onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
@@ -661,8 +662,8 @@ export default function ReportsPage() {
                 {/* Governance: committee */}
                 {activeModule === "governance" && (
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Committee</label>
-                    <input
+                    <label htmlFor="reports-committee" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Committee</label>
+                    <input id="reports-committee"
                       type="text"
                       className="form-input text-sm"
                       placeholder="e.g. ExCo"
@@ -674,8 +675,8 @@ export default function ReportsPage() {
                 {/* Assets: category */}
                 {activeModule === "assets" && (
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Category</label>
-                    <select
+                    <label htmlFor="reports-category" className="block text-xs font-semibold text-neutral-600 dark:text-neutral-400 mb-1">Category</label>
+                    <select id="reports-category"
                       className="form-input text-sm"
                       value={filters.category}
                       onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value }))}
@@ -767,9 +768,8 @@ export default function ReportsPage() {
 
           {/* Preview table */}
           {rows !== null && rows.length === 0 && (
-            <div className="card px-5 py-10 text-center text-sm text-neutral-400">
-              <span className="material-symbols-outlined text-4xl block mb-2 text-neutral-300">search_off</span>
-              No records found for the selected filters.
+            <div className="card">
+              <EmptyState icon="search_off" title="No records found for the selected filters." />
             </div>
           )}
 

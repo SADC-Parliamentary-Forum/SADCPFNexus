@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useFormatDate } from "@/lib/useFormatDate";
 import { canAccessRoute, getStoredUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const STATUS_BADGE: Record<string, string> = {
   approved:  "badge-success",
@@ -393,8 +394,8 @@ export default function HRLeavePage() {
       }
       empty={
         !loading && filtered.length === 0 ? (
-          <div className="card px-5 py-16 text-center text-sm text-neutral-400">
-            No leave requests found.
+          <div className="card">
+            <EmptyState icon="event_available" title="No leave requests found." />
           </div>
         ) : undefined
       }
@@ -425,15 +426,7 @@ export default function HRLeavePage() {
             <tbody>
               {loading
                 ? Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-                : filtered.length === 0
-                  ? (
-                    <tr>
-                      <td colSpan={8} className="py-10 text-center text-sm text-neutral-400">
-                        No leave requests found.
-                      </td>
-                    </tr>
-                  )
-                  : paged.map((r) => (
+                : paged.map((r) => (
                     <tr key={r.id}>
                       <td className="font-mono text-xs text-neutral-600">{r.reference_number}</td>
                       <td className="font-medium text-neutral-900">{r.requester?.name ?? "—"}</td>

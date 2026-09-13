@@ -159,17 +159,17 @@ export default function IncomingMailPage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Title / From *</label>
-            <input name="title" value={form.title} onChange={handleField} className="form-input w-full" placeholder="e.g. Letter from Ministry of Finance — Budget Queries" />
+            <label htmlFor="corr-incoming-title" className="block text-xs font-medium text-neutral-600 mb-1">Title / From *</label>
+            <input id="corr-incoming-title" name="title" value={form.title} onChange={handleField} className="form-input w-full" placeholder="e.g. Letter from Ministry of Finance — Budget Queries" />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Subject *</label>
-            <input name="subject" value={form.subject} onChange={handleField} className="form-input w-full" placeholder="Subject matter of the incoming letter" />
+            <label htmlFor="corr-incoming-subject" className="block text-xs font-medium text-neutral-600 mb-1">Subject *</label>
+            <input id="corr-incoming-subject" name="subject" value={form.subject} onChange={handleField} className="form-input w-full" placeholder="Subject matter of the incoming letter" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Type</label>
-            <select name="type" value={form.type} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-incoming-type" className="block text-xs font-medium text-neutral-600 mb-1">Type</label>
+            <select id="corr-incoming-type" name="type" value={form.type} onChange={handleField} className="form-input w-full">
               <option value="external">External</option>
               <option value="internal_memo">Internal Memo</option>
               <option value="diplomatic_note">Diplomatic Note</option>
@@ -178,8 +178,8 @@ export default function IncomingMailPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Priority</label>
-            <select name="priority" value={form.priority} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-incoming-priority" className="block text-xs font-medium text-neutral-600 mb-1">Priority</label>
+            <select id="corr-incoming-priority" name="priority" value={form.priority} onChange={handleField} className="form-input w-full">
               <option value="low">Low</option>
               <option value="normal">Normal</option>
               <option value="high">High</option>
@@ -188,8 +188,8 @@ export default function IncomingMailPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Language</label>
-            <select name="language" value={form.language} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-incoming-language" className="block text-xs font-medium text-neutral-600 mb-1">Language</label>
+            <select id="corr-incoming-language" name="language" value={form.language} onChange={handleField} className="form-input w-full">
               <option value="en">English</option>
               <option value="fr">French</option>
               <option value="pt">Portuguese</option>
@@ -197,21 +197,21 @@ export default function IncomingMailPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">File Code</label>
-            <input name="file_code" value={form.file_code} onChange={handleField} className="form-input w-full" placeholder="e.g. SRHR, PROC, FIN" />
+            <label htmlFor="corr-incoming-file-code" className="block text-xs font-medium text-neutral-600 mb-1">File Code</label>
+            <input id="corr-incoming-file-code" name="file_code" value={form.file_code} onChange={handleField} className="form-input w-full" placeholder="e.g. SRHR, PROC, FIN" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Sender name</label>
-            <input name="sender_name" value={form.sender_name} onChange={handleField} className="form-input w-full" placeholder="Person or office" />
+            <label htmlFor="corr-incoming-sender-name" className="block text-xs font-medium text-neutral-600 mb-1">Sender name</label>
+            <input id="corr-incoming-sender-name" name="sender_name" value={form.sender_name} onChange={handleField} className="form-input w-full" placeholder="Person or office" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Sender organisation</label>
-            <input name="sender_organisation" value={form.sender_organisation} onChange={handleField} className="form-input w-full" />
+            <label htmlFor="corr-incoming-sender-organisation" className="block text-xs font-medium text-neutral-600 mb-1">Sender organisation</label>
+            <input id="corr-incoming-sender-organisation" name="sender_organisation" value={form.sender_organisation} onChange={handleField} className="form-input w-full" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Channel</label>
-            <select name="channel" value={form.channel} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-incoming-channel" className="block text-xs font-medium text-neutral-600 mb-1">Channel</label>
+            <select id="corr-incoming-channel" name="channel" value={form.channel} onChange={handleField} className="form-input w-full">
               <option value="post">Post</option>
               <option value="email">Email</option>
               <option value="hand">Hand delivery</option>
@@ -221,8 +221,8 @@ export default function IncomingMailPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Confidentiality</label>
-            <select name="confidentiality" value={form.confidentiality} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-incoming-confidentiality" className="block text-xs font-medium text-neutral-600 mb-1">Confidentiality</label>
+            <select id="corr-incoming-confidentiality" name="confidentiality" value={form.confidentiality} onChange={handleField} className="form-input w-full">
               <option value="general_official">General Official</option>
               <option value="internal">Internal</option>
               <option value="restricted">Restricted</option>
@@ -234,13 +234,13 @@ export default function IncomingMailPage() {
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Summary</label>
-            <textarea name="summary" value={form.summary} onChange={handleField} className="form-input w-full" rows={2} />
+            <label htmlFor="corr-incoming-summary" className="block text-xs font-medium text-neutral-600 mb-1">Summary</label>
+            <textarea id="corr-incoming-summary" name="summary" value={form.summary} onChange={handleField} className="form-input w-full" rows={2} />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-600 mb-1">Route to Department</label>
-            <select name="department_id" value={form.department_id} onChange={handleField} className="form-input w-full">
+            <label htmlFor="corr-incoming-department-id" className="block text-xs font-medium text-neutral-600 mb-1">Route to Department</label>
+            <select id="corr-incoming-department-id" name="department_id" value={form.department_id} onChange={handleField} className="form-input w-full">
               <option value="">— No routing —</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>{d.name}</option>
@@ -250,8 +250,8 @@ export default function IncomingMailPage() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-neutral-600 mb-1">Notes <span className="text-neutral-400 font-normal">(optional)</span></label>
-          <textarea name="body" value={form.body} onChange={handleField} rows={3} className="form-input w-full resize-y" placeholder="Any routing instructions or notes…" />
+          <label htmlFor="corr-incoming-body" className="block text-xs font-medium text-neutral-600 mb-1">Notes <span className="text-neutral-400 font-normal">(optional)</span></label>
+          <textarea id="corr-incoming-body" name="body" value={form.body} onChange={handleField} rows={3} className="form-input w-full resize-y" placeholder="Any routing instructions or notes…" />
         </div>
       </div>
 

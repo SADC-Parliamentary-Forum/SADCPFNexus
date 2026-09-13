@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import api, { assetQrApi, assetUnregisteredFindsApi, assetVerificationApi } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 type Campaign = { id: number; name: string; status: string; starts_on: string; ends_on?: string };
 type Counts = Record<string, number>;
@@ -12,6 +13,7 @@ type Find = { id: number; description: string; status: string; found_location?: 
 
 export default function AssetVerificationPage() {
   const { t } = useI18n();
+  const { prompt } = useConfirm();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const [name, setName] = useState("");
@@ -104,7 +106,11 @@ export default function AssetVerificationPage() {
   }
 
   async function promoteFind(find: Find) {
-    const tag = window.prompt(t("assets.verify.promoteTag"));
+    const tag = (await prompt({
+      title: "assets.verify.promoteTitle",
+      label: "assets.verify.promoteTag",
+      required: true,
+    }))?.trim();
     if (!tag) return;
     await assetUnregisteredFindsApi.promote(find.id, { asset_tag: tag, name: find.description });
     await load(activeId ?? undefined);
@@ -136,7 +142,7 @@ export default function AssetVerificationPage() {
         <input className="input" type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} required />
         <Button type="submit" disabled={creating}>{creating ? t("common.loading") : t("common.create")}</Button>
       </form>
-      <div className="table-wrap">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
         <table className="data-table">
           <thead>
             <tr>
@@ -163,8 +169,8 @@ export default function AssetVerificationPage() {
       </div>
 
       <form onSubmit={scanTokenSubmit} className="card flex flex-wrap items-end gap-2 p-4">
-        <label className="text-sm flex-1">{t("assets.verify.scanToken")}
-          <input className="input mt-1" value={scanToken} onChange={(e) => setScanToken(e.target.value)} required />
+        <label htmlFor="assets-verification-setscantoken-e-target-value-required" className="text-sm flex-1">{t("assets.verify.scanToken")}
+          <input id="assets-verification-setscantoken-e-target-value-required" className="input mt-1" value={scanToken} onChange={(e) => setScanToken(e.target.value)} required />
         </label>
         <Button type="submit">{t("assets.verify.scan")}</Button>
       </form>

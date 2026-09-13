@@ -230,7 +230,7 @@ export default function AdminEmailPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold text-neutral-900">Incoming — correspondence registry</h2>
-                <p className="mt-1 text-xs text-neutral-500">Designated registry mailbox only. Suggestions are never auto-registered. <Link href="/correspondence/mailbox" className="text-primary hover:underline">Open mailbox queue</Link></p>
+                <p className="mt-1 text-xs text-neutral-500">Designated registry mailbox only. Suggestions are never auto-registered. <Link href="/correspondence/mailbox" className="btn-secondary text-xs py-1 px-2">Open mailbox queue</Link></p>
               </div>
               <StatusPill configured={registryMeta.configured} />
             </div>
@@ -241,7 +241,7 @@ export default function AdminEmailPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold text-neutral-900">Incoming — procurement invoices</h2>
-                <p className="mt-1 text-xs text-neutral-500">Designated invoice mailbox. Attachments become intakes for review and are never auto-confirmed. <Link href="/procurement/inbox" className="text-primary hover:underline">Open procurement inbox</Link></p>
+                <p className="mt-1 text-xs text-neutral-500">Designated invoice mailbox. Attachments become intakes for review and are never auto-confirmed. <Link href="/procurement/inbox" className="btn-secondary text-xs py-1 px-2">Open procurement inbox</Link></p>
               </div>
               <StatusPill configured={invoicesMeta.configured} />
             </div>

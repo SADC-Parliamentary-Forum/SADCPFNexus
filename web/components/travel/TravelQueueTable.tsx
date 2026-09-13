@@ -6,6 +6,8 @@ import { travelApi, type TravelRequest } from "@/lib/api";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import {
   DEFAULT_PAGE_SIZE,
   clientPageCount,
@@ -300,43 +302,33 @@ export function TravelQueueTable({
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/travel" className="transition-colors hover:text-neutral-700">
-              Travel
+      <ModulePageHeader
+        title={title}
+        subtitle={subtitle}
+        breadcrumbs={
+          <PageBreadcrumbs items={[{ label: "nav.travel", href: "/travel" }, { label: title }]} />
+        }
+        actions={
+          <>
+            <button
+              type="button"
+              className="btn-secondary text-sm disabled:opacity-50"
+              disabled={rows.length === 0}
+              onClick={handleExport}
+            >
+              <span className="material-symbols-outlined text-[18px]">download</span>
+              Export CSV
+            </button>
+            <Link href="/travel/register" className="btn-secondary text-sm">
+              <span className="material-symbols-outlined text-[18px]">menu_book</span>
+              Register
             </Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700">{title}</span>
-          </div>
-          <h1 className="page-title">{title}</h1>
-          <p className="page-subtitle">{subtitle}</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="btn-secondary text-sm disabled:opacity-50"
-            disabled={rows.length === 0}
-            onClick={handleExport}
-          >
-            <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
-          </button>
-          <Link href="/travel/register" className="btn-secondary text-sm">
-            <span className="material-symbols-outlined text-[18px]">menu_book</span>
-            Register
-          </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {error && (
-        <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          <span className="flex-1">{error}</span>
-          <button type="button" className="text-xs font-semibold underline" onClick={() => void load()}>
-            Retry
-          </button>
-        </div>
+        <ErrorBanner message={error} onRetry={() => void load()} />
       )}
 
       {!loading && (
@@ -456,7 +448,7 @@ export function TravelQueueTable({
             ))}
           </select>
           {hasFilters && (
-            <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={clearFilters}>
+            <button type="button" className="btn-secondary text-xs" onClick={clearFilters}>
               Clear filters
             </button>
           )}
@@ -472,24 +464,22 @@ export function TravelQueueTable({
             ))}
           </div>
         ) : rows.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <span className="material-symbols-outlined mb-2 block text-[40px] text-neutral-300">
-              {hasFilters ? "filter_alt_off" : "inbox"}
-            </span>
-            <p className="text-sm font-semibold text-neutral-600">
-              {hasFilters ? "No matches for these filters" : "No items in this queue"}
-            </p>
-            <p className="mt-1 text-xs text-neutral-400">
-              {hasFilters
+          <EmptyState
+            icon={hasFilters ? "filter_alt_off" : "inbox"}
+            title={hasFilters ? "No matches for these filters" : "No items in this queue"}
+            description={
+              hasFilters
                 ? "Try clearing stage, requester, or date range."
-                : emptyHint ?? "Nothing awaiting action right now."}
-            </p>
-            {hasFilters && (
-              <button type="button" className="btn-secondary mt-4 text-sm" onClick={clearFilters}>
-                Clear filters
-              </button>
-            )}
-          </div>
+                : emptyHint ?? "Nothing awaiting action right now."
+            }
+            action={
+              hasFilters ? (
+                <button type="button" className="btn-secondary text-sm" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              ) : null
+            }
+          />
         ) : (
           <>
             <div className="overflow-x-auto">
@@ -575,7 +565,7 @@ export function TravelQueueTable({
                         <td>
                           <Link
                             href={`/travel/${t.id}`}
-                            className="text-xs font-medium text-primary hover:underline"
+                            className="btn-secondary py-1 px-2 text-xs"
                           >
                             Open
                           </Link>

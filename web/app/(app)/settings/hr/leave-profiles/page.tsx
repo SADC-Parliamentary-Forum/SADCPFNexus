@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrSettingsApi, type HrLeaveProfile } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function LeaveProfileModal({
   item,
@@ -51,8 +51,8 @@ function LeaveProfileModal({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Profile Code *</label>
-              <input
+              <label htmlFor="settings-hr-leave-profiles-profile-code" className="block text-xs font-medium text-neutral-700 mb-1">Profile Code *</label>
+              <input id="settings-hr-leave-profiles-profile-code"
                 className="form-input text-sm uppercase"
                 value={form.profile_code ?? ""}
                 onChange={(e) => set("profile_code", e.target.value.toUpperCase())}
@@ -61,8 +61,8 @@ function LeaveProfileModal({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Profile Name *</label>
-              <input
+              <label htmlFor="settings-hr-leave-profiles-profile-name" className="block text-xs font-medium text-neutral-700 mb-1">Profile Name *</label>
+              <input id="settings-hr-leave-profiles-profile-name"
                 className="form-input text-sm"
                 value={form.profile_name ?? ""}
                 onChange={(e) => set("profile_name", e.target.value)}
@@ -76,8 +76,8 @@ function LeaveProfileModal({
             <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wide">Leave Entitlements</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Annual Leave (days)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-annual-leave-days" className="block text-xs font-medium text-neutral-700 mb-1">Annual Leave (days)</label>
+                <input id="settings-hr-leave-profiles-annual-leave-days"
                   type="number"
                   className="form-input text-sm"
                   step="0.5"
@@ -87,8 +87,8 @@ function LeaveProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Sick Leave (days)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-sick-leave-days" className="block text-xs font-medium text-neutral-700 mb-1">Sick Leave (days)</label>
+                <input id="settings-hr-leave-profiles-sick-leave-days"
                   type="number"
                   className="form-input text-sm"
                   step="0.5"
@@ -98,8 +98,8 @@ function LeaveProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">LIL Days (Leave in Lieu)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-lil-days-leave-in-lieu" className="block text-xs font-medium text-neutral-700 mb-1">LIL Days (Leave in Lieu)</label>
+                <input id="settings-hr-leave-profiles-lil-days-leave-in-lieu"
                   type="number"
                   className="form-input text-sm"
                   step="0.5"
@@ -109,8 +109,8 @@ function LeaveProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Special Leave (days)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-special-leave-days" className="block text-xs font-medium text-neutral-700 mb-1">Special Leave (days)</label>
+                <input id="settings-hr-leave-profiles-special-leave-days"
                   type="number"
                   className="form-input text-sm"
                   step="0.5"
@@ -120,8 +120,8 @@ function LeaveProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Maternity Leave (days)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-maternity-leave-days" className="block text-xs font-medium text-neutral-700 mb-1">Maternity Leave (days)</label>
+                <input id="settings-hr-leave-profiles-maternity-leave-days"
                   type="number"
                   className="form-input text-sm"
                   min={0}
@@ -130,8 +130,8 @@ function LeaveProfileModal({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-700 mb-1">Paternity Leave (days)</label>
-                <input
+                <label htmlFor="settings-hr-leave-profiles-paternity-leave-days" className="block text-xs font-medium text-neutral-700 mb-1">Paternity Leave (days)</label>
+                <input id="settings-hr-leave-profiles-paternity-leave-days"
                   type="number"
                   className="form-input text-sm"
                   min={0}
@@ -143,8 +143,8 @@ function LeaveProfileModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select
+            <label htmlFor="settings-hr-leave-profiles-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="settings-hr-leave-profiles-status"
               className="form-input text-sm"
               value={form.is_active ? "active" : "inactive"}
               onChange={(e) => set("is_active", e.target.value === "active")}
@@ -215,23 +215,17 @@ export default function LeaveProfilesPage() {
           onSave={(form) => saveMutation.mutate(form)}
         />
       )}
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Leave Profiles</span>
-          </div>
-          <h1 className="page-title">Leave Profiles</h1>
-          <p className="page-subtitle">Set leave day entitlements by grade category for each leave type.</p>
-        </div>
-        <button onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
+      <HrSettingsHeader
+        title="Leave Profiles"
+        subtitle="Set leave day entitlements by grade category for each leave type."
+        actions={
+          <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Profile
         </button>
-      </div>
+        }
+      />
+
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -246,10 +240,7 @@ export default function LeaveProfilesPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : items.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300">event_available</span>
-            <p className="mt-2 text-sm text-neutral-500">No leave profiles yet. Create one to get started.</p>
-          </div>
+          <EmptyState icon="event_available" title="No leave profiles yet." description="Create one to get started." />
         ) : (
           <table className="data-table w-full">
             <thead>

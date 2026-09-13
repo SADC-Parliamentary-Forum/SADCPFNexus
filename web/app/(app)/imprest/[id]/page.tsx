@@ -14,6 +14,7 @@ import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
 import { WorkflowStatusBanner } from "@/components/workflow/WorkflowStatusBanner";
 import { ReturnModal } from "@/components/workflow/ReturnModal";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:                { label: "Approved",               cls: "text-green-700 bg-green-50 border-green-200",        icon: "check_circle" },
@@ -244,18 +245,21 @@ export default function ImprestDetailPage() {
         currentHolder={null}
       />
 
-      {/* Breadcrumb + title */}
+      <ModulePageHeader
+        title="Imprest Request"
+        subtitle={request.purpose}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.imprest", href: "/imprest" },
+              { label: request.reference_number },
+            ]}
+          />
+        }
+      />
       <div>
-        <nav className="flex items-center gap-1.5 text-xs text-neutral-400 mb-3">
-          <Link href="/imprest" className="hover:text-primary transition-colors font-medium">Imprest</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="font-mono text-neutral-500">{request.reference_number}</span>
-        </nav>
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-neutral-900">Imprest Request</h1>
-            <p className="text-sm text-neutral-500 mt-0.5 line-clamp-1">{request.purpose}</p>
-          </div>
+          <div />
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
@@ -591,10 +595,11 @@ export default function ImprestDetailPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                      <label htmlFor="imprest-retire-amount" className="block text-xs font-semibold text-neutral-700 mb-1">
                         Amount Spent ({request.currency}) <span className="text-red-500">*</span>
                       </label>
                       <input
+                        id="imprest-retire-amount"
                         type="number"
                         step="0.01"
                         min="0"
@@ -613,8 +618,9 @@ export default function ImprestDetailPage() {
                       )}
                     </div>
                     <div>
-                      <label className="block text-xs font-semibold text-neutral-700 mb-1">Notes / Explanation</label>
+                      <label htmlFor="imprest-retire-notes" className="block text-xs font-semibold text-neutral-700 mb-1">Notes / Explanation</label>
                       <input
+                        id="imprest-retire-notes"
                         type="text"
                         className="form-input w-full"
                         placeholder="Optional: notes on expenditure"
@@ -626,8 +632,9 @@ export default function ImprestDetailPage() {
 
                   <div className="rounded-xl bg-neutral-50 border border-neutral-100 p-4">
                     <p className="text-xs font-semibold text-neutral-600 mb-2">Receipt Upload</p>
-                    <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <label htmlFor="imprest-retire-receipts" className="flex items-center gap-3 cursor-pointer select-none">
                       <input
+                        id="imprest-retire-receipts"
                         type="checkbox"
                         checked={retireReceipts}
                         onChange={(e) => setRetireReceipts(e.target.checked)}

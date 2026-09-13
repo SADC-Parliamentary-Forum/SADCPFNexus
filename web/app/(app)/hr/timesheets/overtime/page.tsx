@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type OtReq = {
   id: number;
@@ -85,7 +86,7 @@ export default function OvertimeRequestsPage() {
         title="My Overtime Requests"
         breadcrumbs={<PageBreadcrumbs items={[{ label: "My Overtime Requests" }]} />}
       />
-        <Link href="/hr/timesheets" className="text-sm text-[var(--brand)] hover:underline">
+        <Link href="/hr/timesheets" className="btn-secondary text-sm py-1 px-2">
           Back to timesheets
         </Link>
       </div>
@@ -95,9 +96,9 @@ export default function OvertimeRequestsPage() {
       )}
 
       <form onSubmit={createRequest} className="grid gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 md:grid-cols-2">
-        <label className="text-sm">
+        <label htmlFor="hr-timesheets-overtime-work-date-setform-f" className="text-sm">
           Work date
-          <input
+          <input id="hr-timesheets-overtime-work-date-setform-f"
             type="date"
             required
             className="mt-1 w-full rounded border px-3 py-2"
@@ -105,9 +106,9 @@ export default function OvertimeRequestsPage() {
             onChange={(e) => setForm((f) => ({ ...f, work_date: e.target.value }))}
           />
         </label>
-        <label className="text-sm">
+        <label htmlFor="hr-timesheets-overtime-planned-hours-setform-f" className="text-sm">
           Planned hours
-          <input
+          <input id="hr-timesheets-overtime-planned-hours-setform-f"
             type="number"
             min={0.25}
             step={0.25}
@@ -117,9 +118,9 @@ export default function OvertimeRequestsPage() {
             onChange={(e) => setForm((f) => ({ ...f, planned_hours: e.target.value }))}
           />
         </label>
-        <label className="text-sm md:col-span-2">
+        <label htmlFor="hr-timesheets-overtime-reason-setform-f" className="text-sm md:col-span-2">
           Reason
-          <textarea
+          <textarea id="hr-timesheets-overtime-reason-setform-f"
             required
             className="mt-1 w-full rounded border px-3 py-2"
             rows={2}
@@ -127,9 +128,9 @@ export default function OvertimeRequestsPage() {
             onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
           />
         </label>
-        <label className="text-sm">
+        <label htmlFor="hr-timesheets-overtime-day-type-setform-f-normal-working-day-1-5-weeken" className="text-sm">
           Day type
-          <select
+          <select id="hr-timesheets-overtime-day-type-setform-f-normal-working-day-1-5-weeken"
             className="mt-1 w-full rounded border px-3 py-2"
             value={form.day_type}
             onChange={(e) => setForm((f) => ({ ...f, day_type: e.target.value }))}
@@ -170,11 +171,7 @@ export default function OvertimeRequestsPage() {
               </tr>
             )}
             {!loading && items.length === 0 && (
-              <tr>
-                <td colSpan={5} className="px-3 py-6 text-center text-[var(--text-secondary)]">
-                  No overtime requisitions yet.
-                </td>
-              </tr>
+              <TableEmpty colSpan={5} title="No overtime requisitions yet." />
             )}
             {items.map((row) => (
               <tr key={row.id} className="border-t border-[var(--border)]">
@@ -188,7 +185,7 @@ export default function OvertimeRequestsPage() {
                   {row.status === "draft" && (
                     <button
                       type="button"
-                      className="text-[var(--brand)] hover:underline"
+                      className="btn-secondary text-xs py-1 px-2"
                       onClick={() => void submitReq(row.id)}
                     >
                       Submit

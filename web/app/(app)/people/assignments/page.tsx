@@ -122,35 +122,35 @@ export default function Page() {
           assign.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-assignments-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Position
-          <select className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
+          <select id="people-assignments-position-setform-f-required-select" className="form-input mt-1" value={form.position_id} onChange={(e) => setForm((f) => ({ ...f, position_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-assignments-person-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Person
-          <select className="form-input mt-1" value={form.person_id} onChange={(e) => setForm((f) => ({ ...f, person_id: e.target.value }))} required>
+          <select id="people-assignments-person-setform-f-required-select" className="form-input mt-1" value={form.person_id} onChange={(e) => setForm((f) => ({ ...f, person_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(peopleQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-assignments-assignment-type-setform-f-substantive-acting-tem" className="block text-xs font-medium text-neutral-600">
           Assignment type
-          <select className="form-input mt-1" value={form.assignment_type} onChange={(e) => setForm((f) => ({ ...f, assignment_type: e.target.value }))}>
+          <select id="people-assignments-assignment-type-setform-f-substantive-acting-tem" className="form-input mt-1" value={form.assignment_type} onChange={(e) => setForm((f) => ({ ...f, assignment_type: e.target.value }))}>
             <option value="substantive">Substantive</option>
             <option value="acting">Acting</option>
             <option value="temporary">Temporary</option>
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-assignments-start-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Start
-          <input type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
+          <input id="people-assignments-start-setform-f-required" type="date" className="form-input mt-1" value={form.start_at} onChange={(e) => setForm((f) => ({ ...f, start_at: e.target.value }))} required />
         </label>
         <div className="sm:col-span-4 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={assign.isPending}>
@@ -161,9 +161,9 @@ export default function Page() {
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-assignments-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-assignments-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

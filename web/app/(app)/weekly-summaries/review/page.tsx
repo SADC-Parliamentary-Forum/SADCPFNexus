@@ -315,7 +315,7 @@ export default function WeeklySummariesReviewPage() {
                         <tr key={id ?? `pending-${idx}`} className="border-b border-neutral-50">
                           <td className="py-2 pr-3">
                             {id ? (
-                              <Link href={`/weekly-summaries/${id}`} className="font-medium text-primary hover:underline">
+                              <Link href={`/weekly-summaries/${id}`} className="font-medium text-primary">
                                 {String(row.reference ?? `Report ${id}`)}
                               </Link>
                             ) : (

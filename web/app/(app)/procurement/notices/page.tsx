@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { noticeBoardApi } from "@/lib/api";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type Notice = {
   id?: number;
@@ -102,16 +103,18 @@ export default function StaffNoticeBoardPage() {
           </article>
         ))}
         {!isLoading && (data?.length ?? 0) === 0 && (
-          <div className="card p-8 text-center text-sm text-neutral-400">No published notices.</div>
+          <div className="card">
+            <EmptyState icon="campaign" title="No published notices." />
+          </div>
         )}
       </div>
 
       {pack.data ? (
         <div className="card space-y-3 p-4 text-sm" data-testid="newspaper-notice-checklist">
           <p className="font-medium">Checklist for {String(pack.data.reference_number)}</p>
-          <label className="block text-sm">
+          <label htmlFor="procurement-notices-template-settemplatekey-e-target-value" className="block text-sm">
             Template
-            <select className="form-input mt-1" value={templateKey} onChange={(e) => setTemplateKey(e.target.value)}>
+            <select id="procurement-notices-template-settemplatekey-e-target-value" className="form-input mt-1" value={templateKey} onChange={(e) => setTemplateKey(e.target.value)}>
               {(templates.data?.templates ?? []).map((t) => (
                 <option key={String(t.key)} value={String(t.key)}>{String(t.label)}</option>
               ))}
@@ -151,8 +154,8 @@ export default function StaffNoticeBoardPage() {
           </div>
           {copyMsg ? <p className="text-xs text-green-700">{copyMsg}</p> : null}
           {((pack.data.checklist as Array<Record<string, unknown>>) ?? []).map((item) => (
-            <label key={String(item.key)} className="flex items-center gap-2">
-              <input
+            <label htmlFor="procurement-notices-setticks-prev" key={String(item.key)} className="flex items-center gap-2">
+              <input id="procurement-notices-setticks-prev"
                 type="checkbox"
                 checked={Boolean(ticks[String(item.key)] ?? item.complete)}
                 disabled={!item.manual}

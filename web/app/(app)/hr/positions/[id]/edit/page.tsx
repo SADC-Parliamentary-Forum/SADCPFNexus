@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { positionsApi, adminApi, type Department, type Position } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const GRADES = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"];
 
@@ -110,20 +111,19 @@ export default function EditPositionPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumb + header */}
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/hr" className="hover:text-primary">HR</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href="/hr/positions" className="hover:text-primary">Positions</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700 font-medium">Edit Position</span>
-        </div>
-        <h1 className="page-title">Edit Position</h1>
-        <p className="page-subtitle text-neutral-500 text-sm">
-          {posRes?.title ?? "Loading…"} · {posRes?.department?.name ?? ""}
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Edit Position"
+        subtitle={`${posRes?.title ?? "Loading…"} · ${posRes?.department?.name ?? ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Positions", href: "/hr/positions" },
+              { label: "Edit Position" },
+            ]}
+          />
+        }
+      />
 
       {errors._global && (
         <div className="bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3">
@@ -134,10 +134,10 @@ export default function EditPositionPage() {
       <form onSubmit={handleSubmit} className="card p-6 space-y-5">
         {/* Department */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+          <label htmlFor="hr-positions-detail-edit-department" className="block text-sm font-medium text-neutral-700 mb-1.5">
             Department <span className="text-red-500">*</span>
           </label>
-          <select
+          <select id="hr-positions-detail-edit-department"
             value={form.department_id}
             onChange={(e) => set("department_id", e.target.value)}
             className={`form-input w-full ${errors.department_id ? "border-red-400" : ""}`}
@@ -152,10 +152,10 @@ export default function EditPositionPage() {
 
         {/* Title */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+          <label htmlFor="hr-positions-detail-edit-position-title" className="block text-sm font-medium text-neutral-700 mb-1.5">
             Position Title <span className="text-red-500">*</span>
           </label>
-          <input
+          <input id="hr-positions-detail-edit-position-title"
             type="text"
             value={form.title}
             onChange={(e) => set("title", e.target.value)}
@@ -168,8 +168,8 @@ export default function EditPositionPage() {
         {/* Grade + Headcount */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Grade</label>
-            <select
+            <label htmlFor="hr-positions-detail-edit-grade" className="block text-sm font-medium text-neutral-700 mb-1.5">Grade</label>
+            <select id="hr-positions-detail-edit-grade"
               value={form.grade}
               onChange={(e) => set("grade", e.target.value)}
               className="form-input w-full"
@@ -181,10 +181,10 @@ export default function EditPositionPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+            <label htmlFor="hr-positions-detail-edit-headcount" className="block text-sm font-medium text-neutral-700 mb-1.5">
               Headcount <span className="text-red-500">*</span>
             </label>
-            <input
+            <input id="hr-positions-detail-edit-headcount"
               type="number"
               min={1}
               max={999}
@@ -198,8 +198,8 @@ export default function EditPositionPage() {
 
         {/* Description */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1.5">Description</label>
-          <textarea
+          <label htmlFor="hr-positions-detail-edit-description" className="block text-sm font-medium text-neutral-700 mb-1.5">Description</label>
+          <textarea id="hr-positions-detail-edit-description"
             rows={3}
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
@@ -211,7 +211,7 @@ export default function EditPositionPage() {
         {/* Assigned users (read-only info) */}
         {posRes?.users && posRes.users.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Assigned Users</label>
+            <p className="block text-sm font-medium text-neutral-700 mb-1.5">Assigned Users</p>
             <div className="flex flex-wrap gap-2">
               {posRes.users.map((u) => (
                 <span key={u.id} className="inline-flex items-center gap-1.5 px-3 py-1 bg-neutral-100 text-neutral-700 rounded-full text-xs font-medium">

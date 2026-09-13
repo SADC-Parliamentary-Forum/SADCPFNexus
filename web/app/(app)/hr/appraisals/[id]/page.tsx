@@ -11,6 +11,7 @@ import {
   type AppraisalAttachment,
 } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -242,8 +243,8 @@ function RatingRadioRow({
           {disabled ? (
             value === opt ? <RatingPill rating={opt} /> : null
           ) : (
-            <label className="flex items-center justify-center cursor-pointer">
-              <input
+            <label htmlFor={`hr-appraisal-rating-${index}-${opt}`} className="flex items-center justify-center cursor-pointer">
+              <input id={`hr-appraisal-rating-${index}-${opt}`}
                 type="radio"
                 name={`factor-${index}`}
                 value={opt}
@@ -669,7 +670,7 @@ export default function AppraisalDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
-        <Link href="/hr/appraisals" className="text-sm font-semibold text-primary hover:underline">Back to Appraisals</Link>
+        <Link href="/hr/appraisals" className="btn-secondary text-sm">Back to Appraisals</Link>
       </div>
     );
   }
@@ -678,7 +679,7 @@ export default function AppraisalDetailPage() {
     return (
       <div className="w-full min-w-0 space-y-4">
         <div className="rounded-xl bg-neutral-50 border border-neutral-200 px-4 py-3 text-sm text-neutral-600">Appraisal not found.</div>
-        <Link href="/hr/appraisals" className="text-sm font-semibold text-primary hover:underline">Back to Appraisals</Link>
+        <Link href="/hr/appraisals" className="btn-secondary text-sm">Back to Appraisals</Link>
       </div>
     );
   }
@@ -714,20 +715,19 @@ export default function AppraisalDetailPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
 
-      {/* Header */}
-      <div>
-        <div className="flex items-center gap-1 text-xs text-neutral-500 mb-1">
-          <Link href="/hr" className="hover:text-neutral-700 font-medium">HR</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <Link href="/hr/appraisals" className="hover:text-neutral-700 font-medium">Appraisals</Link>
-        </div>
-        <h1 className="page-title">{employeeName}</h1>
-        <p className="page-subtitle">
-          {appraisal.cycle?.title ?? `Cycle #${appraisal.cycle_id}`}
-          {appraisal.cycle?.period_start && appraisal.cycle?.period_end &&
-            ` · ${formatDate(appraisal.cycle.period_start)} – ${formatDate(appraisal.cycle.period_end)}`}
-        </p>
-      </div>
+      <ModulePageHeader
+        title={employeeName}
+        subtitle={`${appraisal.cycle?.title ?? `Cycle #${appraisal.cycle_id}`}${appraisal.cycle?.period_start && appraisal.cycle?.period_end ? ` · ${formatDate(appraisal.cycle.period_start)} – ${formatDate(appraisal.cycle.period_end)}` : ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Appraisals", href: "/hr/appraisals" },
+              { label: employeeName },
+            ]}
+          />
+        }
+      />
 
       {/* Status bar */}
       <div className="card p-4 flex flex-wrap items-center gap-4">
@@ -825,7 +825,7 @@ export default function AppraisalDetailPage() {
                 <button
                   type="button"
                   onClick={() => setAchievements((p) => [...p, { category: "", description: "" }])}
-                  className="text-xs font-semibold text-primary hover:underline flex items-center gap-1"
+                  className="btn-secondary text-xs flex items-center gap-1"
                 >
                   <span className="material-symbols-outlined text-[14px]">add</span>Add row
                 </button>
@@ -966,10 +966,10 @@ export default function AppraisalDetailPage() {
                 Supporting Evidence
               </h3>
               <div className="flex flex-wrap gap-2 mb-3">
-                <label className="btn-secondary py-1.5 px-3 text-xs cursor-pointer flex items-center gap-1">
+                <label htmlFor="hr-appraisals-detail-upload-file" className="btn-secondary py-1.5 px-3 text-xs cursor-pointer flex items-center gap-1">
                   <span className="material-symbols-outlined text-[16px]">upload_file</span>
                   {uploading ? "Uploading…" : "Upload files"}
-                  <input type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                  <input id="hr-appraisals-detail-upload-file" type="file" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
                 </label>
               </div>
               {attachments.length > 0 && (
@@ -978,8 +978,8 @@ export default function AppraisalDetailPage() {
                     <li key={a.id} className="flex items-center justify-between rounded-lg border border-neutral-100 px-3 py-2 text-xs">
                       <span className="font-medium text-neutral-800 truncate">{a.original_filename}</span>
                       <div className="flex gap-2 flex-shrink-0">
-                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="text-primary hover:underline">Download</button>
-                        <button type="button" onClick={() => handleDeleteAttachment(a.id)} className="text-red-600 hover:underline">Delete</button>
+                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="btn-secondary text-xs">Download</button>
+                        <button type="button" onClick={() => handleDeleteAttachment(a.id)} className="btn-secondary text-xs text-red-600">Delete</button>
                       </div>
                     </li>
                   ))}
@@ -1004,8 +1004,8 @@ export default function AppraisalDetailPage() {
                 <ul className="mt-2 space-y-1">
                   {evidenceLinks.map((link, i) => (
                     <li key={i} className="flex items-center gap-2 text-xs">
-                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate">{link.title || link.url}</a>
-                      <button type="button" onClick={() => setEvidenceLinks((p) => p.filter((_, idx) => idx !== i))} className="text-red-600 hover:underline flex-shrink-0">Remove</button>
+                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs truncate">{link.title || link.url}</a>
+                      <button type="button" onClick={() => setEvidenceLinks((p) => p.filter((_, idx) => idx !== i))} className="btn-secondary text-xs text-red-600 flex-shrink-0">Remove</button>
                     </li>
                   ))}
                 </ul>
@@ -1111,7 +1111,7 @@ export default function AppraisalDetailPage() {
                     {attachments.map((a) => (
                       <li key={a.id} className="flex items-center justify-between rounded-lg border border-neutral-100 px-3 py-2 text-xs">
                         <span className="font-medium text-neutral-800">{a.original_filename}</span>
-                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="text-primary hover:underline">Download</button>
+                        <button type="button" onClick={() => handleDownloadAttachment(a)} className="btn-secondary text-xs">Download</button>
                       </li>
                     ))}
                   </ul>
@@ -1120,7 +1120,7 @@ export default function AppraisalDetailPage() {
                   <ul className="space-y-1">
                     {evidenceLinks.map((link, i) => (
                       <li key={i}>
-                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs">{link.title || link.url}</a>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs">{link.title || link.url}</a>
                       </li>
                     ))}
                   </ul>
@@ -1208,8 +1208,8 @@ export default function AppraisalDetailPage() {
                     { label: "Confirmation", state: svConfirmation, set: setSvConfirmation },
                     { label: "Demotion", state: svDemotion, set: setSvDemotion },
                   ].map(({ label, state, set }) => (
-                    <label key={label} className="flex items-center gap-2 cursor-pointer text-sm text-neutral-700">
-                      <input
+                    <label htmlFor={`hr-appraisals-detail-recommend-${label.toLowerCase().replace(/\s+/g, "-")}`} key={label} className="flex items-center gap-2 cursor-pointer text-sm text-neutral-700">
+                      <input id={`hr-appraisals-detail-recommend-${label.toLowerCase().replace(/\s+/g, "-")}`}
                         type="checkbox"
                         checked={state}
                         onChange={(e) => set(e.target.checked)}
@@ -1220,8 +1220,8 @@ export default function AppraisalDetailPage() {
                   ))}
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-neutral-600 mb-1">Other recommended actions</label>
-                  <textarea
+                  <label htmlFor="hr-appraisals-detail-other-recommended-actions" className="block text-xs font-semibold text-neutral-600 mb-1">Other recommended actions</label>
+                  <textarea id="hr-appraisals-detail-other-recommended-actions"
                     className="form-input w-full min-h-[60px] resize-y text-sm"
                     placeholder="Describe any other recommended actions"
                     value={svOtherAction}
@@ -1235,20 +1235,20 @@ export default function AppraisalDetailPage() {
                 <h3 className="text-sm font-semibold text-neutral-800 mb-3">3.D&nbsp; Recommended Development Plan</h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1">i. Scope / role changes</label>
-                    <textarea className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Describe recommended scope or role changes" value={svScopeChanges} onChange={(e) => setSvScopeChanges(e.target.value)} />
+                    <label htmlFor="hr-appraisals-detail-i-scope-role-changes" className="block text-xs font-semibold text-neutral-600 mb-1">i. Scope / role changes</label>
+                    <textarea id="hr-appraisals-detail-i-scope-role-changes" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Describe recommended scope or role changes" value={svScopeChanges} onChange={(e) => setSvScopeChanges(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1">ii.a Skills and knowledge development</label>
-                    <textarea className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Identify skill gaps and learning needs" value={svSkillsKnowledge} onChange={(e) => setSvSkillsKnowledge(e.target.value)} />
+                    <label htmlFor="hr-appraisals-detail-ii-a-skills-and-knowledge-development" className="block text-xs font-semibold text-neutral-600 mb-1">ii.a Skills and knowledge development</label>
+                    <textarea id="hr-appraisals-detail-ii-a-skills-and-knowledge-development" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Identify skill gaps and learning needs" value={svSkillsKnowledge} onChange={(e) => setSvSkillsKnowledge(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1">ii.b Developmental actions</label>
-                    <textarea className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Specific training, coaching, or assignments" value={svDevActions} onChange={(e) => setSvDevActions(e.target.value)} />
+                    <label htmlFor="hr-appraisals-detail-ii-b-developmental-actions" className="block text-xs font-semibold text-neutral-600 mb-1">ii.b Developmental actions</label>
+                    <textarea id="hr-appraisals-detail-ii-b-developmental-actions" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Specific training, coaching, or assignments" value={svDevActions} onChange={(e) => setSvDevActions(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1">iii. Career development</label>
-                    <textarea className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Long-term career development considerations" value={svCareer} onChange={(e) => setSvCareer(e.target.value)} />
+                    <label htmlFor="hr-appraisals-detail-iii-career-development" className="block text-xs font-semibold text-neutral-600 mb-1">iii. Career development</label>
+                    <textarea id="hr-appraisals-detail-iii-career-development" className="form-input w-full min-h-[60px] resize-y text-sm" placeholder="Long-term career development considerations" value={svCareer} onChange={(e) => setSvCareer(e.target.value)} />
                   </div>
                 </div>
               </div>
@@ -1389,8 +1389,8 @@ export default function AppraisalDetailPage() {
           {canFillSection5 ? (
             <form onSubmit={handleSubmitSection5} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-1">Recommendation to SG</label>
-                <textarea
+                <label htmlFor="hr-appraisals-detail-recommendation-to-sg" className="block text-sm font-semibold text-neutral-700 mb-1">Recommendation to SG</label>
+                <textarea id="hr-appraisals-detail-recommendation-to-sg"
                   className="form-input w-full min-h-[80px] resize-y text-sm"
                   placeholder="Your recommendation to the Secretary General regarding this employee's performance."
                   value={hodRecommendation}
@@ -1399,8 +1399,8 @@ export default function AppraisalDetailPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-1">Comments</label>
-                <textarea
+                <label htmlFor="hr-appraisals-detail-comments" className="block text-sm font-semibold text-neutral-700 mb-1">Comments</label>
+                <textarea id="hr-appraisals-detail-comments"
                   className="form-input w-full min-h-[70px] resize-y text-sm"
                   placeholder="Additional HOD comments."
                   value={hodComments}
@@ -1481,8 +1481,8 @@ export default function AppraisalDetailPage() {
             <form onSubmit={handleFinalize} className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-neutral-700 mb-1">Overall Rating (numeric, 0–10)</label>
-                  <input
+                  <label htmlFor="hr-appraisals-detail-overall-rating-numeric-0-10" className="block text-sm font-semibold text-neutral-700 mb-1">Overall Rating (numeric, 0–10)</label>
+                  <input id="hr-appraisals-detail-overall-rating-numeric-0-10"
                     type="number"
                     min={0}
                     max={10}
@@ -1494,24 +1494,24 @@ export default function AppraisalDetailPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-neutral-700 mb-1">Overall Rating Label</label>
-                  <select className="form-input w-full text-sm" value={finalOverallLabel} onChange={(e) => setFinalOverallLabel(e.target.value)}>
+                  <label htmlFor="hr-appraisals-detail-overall-rating-label" className="block text-sm font-semibold text-neutral-700 mb-1">Overall Rating Label</label>
+                  <select id="hr-appraisals-detail-overall-rating-label" className="form-input w-full text-sm" value={finalOverallLabel} onChange={(e) => setFinalOverallLabel(e.target.value)}>
                     <option value="">Select label</option>
                     {RATING_OPTIONS.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
                   </select>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-1">HR Consolidation Comments (Section 7)</label>
-                <textarea className="form-input w-full min-h-[80px] resize-y text-sm" placeholder="HR consolidation notes" value={hrComments} onChange={(e) => setHrComments(e.target.value)} />
+                <label htmlFor="hr-appraisals-detail-hr-consolidation-comments-section-7" className="block text-sm font-semibold text-neutral-700 mb-1">HR Consolidation Comments (Section 7)</label>
+                <textarea id="hr-appraisals-detail-hr-consolidation-comments-section-7" className="form-input w-full min-h-[80px] resize-y text-sm" placeholder="HR consolidation notes" value={hrComments} onChange={(e) => setHrComments(e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-1">SG Decision (Section 8)</label>
-                <textarea className="form-input w-full min-h-[80px] resize-y text-sm" placeholder="Secretary General's decision and comments" value={sgDecision} onChange={(e) => setSgDecision(e.target.value)} />
+                <label htmlFor="hr-appraisals-detail-sg-decision-section-8" className="block text-sm font-semibold text-neutral-700 mb-1">SG Decision (Section 8)</label>
+                <textarea id="hr-appraisals-detail-sg-decision-section-8" className="form-input w-full min-h-[80px] resize-y text-sm" placeholder="Secretary General's decision and comments" value={sgDecision} onChange={(e) => setSgDecision(e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-neutral-700 mb-1">Final Development Plan</label>
-                <textarea className="form-input w-full min-h-[80px] resize-y text-sm" placeholder="Consolidated development plan for the employee" value={developmentPlan} onChange={(e) => setDevelopmentPlan(e.target.value)} />
+                <label htmlFor="hr-appraisals-detail-final-development-plan" className="block text-sm font-semibold text-neutral-700 mb-1">Final Development Plan</label>
+                <textarea id="hr-appraisals-detail-final-development-plan" className="form-input w-full min-h-[80px] resize-y text-sm" placeholder="Consolidated development plan for the employee" value={developmentPlan} onChange={(e) => setDevelopmentPlan(e.target.value)} />
               </div>
               <button type="submit" disabled={finalSubmitting || !finalOverallLabel} className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px]">{finalSubmitting ? "progress_activity" : "gavel"}</span>
@@ -1601,7 +1601,7 @@ export default function AppraisalDetailPage() {
 
       {/* Back link */}
       <div className="flex justify-end gap-3 pt-2">
-        <Link href="/hr/appraisals" className="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+        <Link href="/hr/appraisals" className="btn-secondary text-sm flex items-center gap-1">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
           Back to Appraisals
         </Link>

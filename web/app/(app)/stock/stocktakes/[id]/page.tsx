@@ -7,6 +7,7 @@ import { stocktakesApi, type Stocktake, type StocktakeLine } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const OFFLINE_QUEUE_KEY = "sadcpf.stocktake.offlineQueue";
 
@@ -195,36 +196,41 @@ export default function StocktakeDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <p className="text-xs font-mono text-neutral-400">{stocktake.reference_number}</p>
-          <h1 className="page-title">{stocktake.name}</h1>
-          <p className="page-subtitle capitalize">
-            Status: {stocktake.status.replace("_", " ")} · Count date: {formatDateShort(stocktake.count_date)}
-            {stocktake.is_blind ? " · Blind count" : ""}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link href="/stock/stocktakes" className="btn-secondary">Back</Link>
-          {canIssue && editable && (
-            <>
-              <button type="button" className="btn-secondary" disabled={saving} onClick={() => applyBrowserQueue(false)}>
-                Apply browser queue
+      <ModulePageHeader
+        title={stocktake.name}
+        subtitle={`Status: ${stocktake.status.replace("_", " ")} · Count date: ${formatDateShort(stocktake.count_date)}${stocktake.is_blind ? " · Blind count" : ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.stock", href: "/stock" },
+              { label: "Stocktakes", href: "/stock/stocktakes" },
+              { label: stocktake.reference_number || stocktake.name },
+            ]}
+          />
+        }
+        actions={
+          <div className="flex gap-2 flex-wrap">
+            <Link href="/stock/stocktakes" className="btn-secondary">Back</Link>
+            {canIssue && editable && (
+              <>
+                <button type="button" className="btn-secondary" disabled={saving} onClick={() => applyBrowserQueue(false)}>
+                  Apply browser queue
+                </button>
+                <button type="button" className="btn-secondary" disabled={saving} onClick={() => setShowSyncModal(true)}>
+                  Offline Sync Queue
+                </button>
+                <button type="button" className="btn-secondary" disabled={saving} onClick={saveCounts}>Save counts</button>
+                <button type="button" className="btn-primary" disabled={saving} onClick={complete}>Submit / Complete</button>
+              </>
+            )}
+            {canIssue && stocktake.status === "pending_approval" && (
+              <button type="button" className="btn-primary" disabled={saving} onClick={approveVariances}>
+                Approve variances
               </button>
-              <button type="button" className="btn-secondary" disabled={saving} onClick={() => setShowSyncModal(true)}>
-                Offline Sync Queue
-              </button>
-              <button type="button" className="btn-secondary" disabled={saving} onClick={saveCounts}>Save counts</button>
-              <button type="button" className="btn-primary" disabled={saving} onClick={complete}>Submit / Complete</button>
-            </>
-          )}
-          {canIssue && stocktake.status === "pending_approval" && (
-            <button type="button" className="btn-primary" disabled={saving} onClick={approveVariances}>
-              Approve variances
-            </button>
-          )}
-        </div>
-      </div>
+            )}
+          </div>
+        }
+      />
 
       {showSyncModal && (
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-3">

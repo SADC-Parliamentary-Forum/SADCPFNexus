@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { financeApi, type Budget, type BudgetLine } from "@/lib/api";
 import { formatCurrency as formatMoney } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function toNumber(value: unknown): number {
   const n = Number(value);
@@ -175,25 +177,20 @@ export default function BudgetDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumbs */}
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/finance" className="hover:text-primary transition-colors">Finance</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <Link href="/finance/budget" className="hover:text-primary transition-colors">Budgets</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">{budget.name}</span>
-      </div>
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">{budget.name}</h1>
-          <p className="page-subtitle">
-            {budget.type === "core" ? "Core budget" : "Project budget"} · {budget.year} · {budget.currency}
-          </p>
-        </div>
-        <Link href="/finance/budget" className="btn-secondary">Back to List</Link>
-      </div>
+      <ModulePageHeader
+        title={budget.name}
+        subtitle={`${budget.type === "core" ? "Core budget" : "Project budget"} · ${budget.year} · ${budget.currency}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.finance", href: "/finance" },
+              { label: "Budgets", href: "/finance/budget" },
+              { label: budget.name },
+            ]}
+          />
+        }
+        actions={<Link href="/finance/budget" className="btn-secondary">Back to List</Link>}
+      />
 
       {error && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">{error}</div>
@@ -275,7 +272,7 @@ export default function BudgetDetailPage() {
           <span className="text-xs text-neutral-500">{lines.length} lines</span>
         </div>
         {lines.length === 0 ? (
-          <div className="px-5 py-10 text-center text-sm text-neutral-500">No budget lines available for this budget.</div>
+          <EmptyState icon="table_chart" title="No budget lines available for this budget." className="py-10 min-h-0" />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table w-full">

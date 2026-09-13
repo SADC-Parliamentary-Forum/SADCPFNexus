@@ -161,31 +161,32 @@ export default function DocumentsSection({
   const renderFields = (
     draft: DraftRow,
     onChange: (patch: Partial<DraftRow>) => void,
+    idPrefix: string,
     onFieldBlur?: () => void
   ) => (
     <div className="space-y-3">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
-          <input className="form-input w-full" value={draft.title} onChange={(e) => onChange({ title: e.target.value })} onBlur={onFieldBlur} />
+          <label htmlFor={`${idPrefix}-title`} className="block text-xs font-semibold text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
+          <input id={`${idPrefix}-title`} className="form-input w-full" value={draft.title} onChange={(e) => onChange({ title: e.target.value })} onBlur={onFieldBlur} />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Document type <span className="text-red-500">*</span></label>
-          <input className="form-input w-full" placeholder="e.g. Concept Note, Agenda, Report" value={draft.document_type} onChange={(e) => onChange({ document_type: e.target.value })} onBlur={onFieldBlur} />
+          <label htmlFor={`${idPrefix}-document-type`} className="block text-xs font-semibold text-neutral-700 mb-1">Document type <span className="text-red-500">*</span></label>
+          <input id={`${idPrefix}-document-type`} className="form-input w-full" placeholder="e.g. Concept Note, Agenda, Report" value={draft.document_type} onChange={(e) => onChange({ document_type: e.target.value })} onBlur={onFieldBlur} />
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Word count</label>
-          <input type="number" min="0" className="form-input w-full" value={draft.word_count} onChange={(e) => onChange({ word_count: e.target.value })} onBlur={onFieldBlur} />
+          <label htmlFor={`${idPrefix}-word-count`} className="block text-xs font-semibold text-neutral-700 mb-1">Word count</label>
+          <input id={`${idPrefix}-word-count`} type="number" min="0" className="form-input w-full" value={draft.word_count} onChange={(e) => onChange({ word_count: e.target.value })} onBlur={onFieldBlur} />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Budget line</label>
-          <input className="form-input w-full" value={draft.budget_line} onChange={(e) => onChange({ budget_line: e.target.value })} onBlur={onFieldBlur} />
+          <label htmlFor={`${idPrefix}-budget-line`} className="block text-xs font-semibold text-neutral-700 mb-1">Budget line</label>
+          <input id={`${idPrefix}-budget-line`} className="form-input w-full" value={draft.budget_line} onChange={(e) => onChange({ budget_line: e.target.value })} onBlur={onFieldBlur} />
         </div>
       </div>
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
+      <label htmlFor={`${idPrefix}-translation-required`} className="flex items-center gap-2 cursor-pointer">
+        <input id={`${idPrefix}-translation-required`}
           type="checkbox"
           checked={draft.translation_required}
           onChange={(e) => {
@@ -199,20 +200,20 @@ export default function DocumentsSection({
       {draft.translation_required && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Source language</label>
-            <input className="form-input w-full" value={draft.source_language} onChange={(e) => onChange({ source_language: e.target.value })} onBlur={onFieldBlur} />
+            <label htmlFor={`${idPrefix}-source-language`} className="block text-xs font-semibold text-neutral-700 mb-1">Source language</label>
+            <input id={`${idPrefix}-source-language`} className="form-input w-full" value={draft.source_language} onChange={(e) => onChange({ source_language: e.target.value })} onBlur={onFieldBlur} />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Target language(s) <span className="text-red-500">*</span></label>
+            <label htmlFor={`${idPrefix}-target-languages`} className="block text-xs font-semibold text-neutral-700 mb-1">Target language(s) <span className="text-red-500">*</span></label>
             <p className="text-xs text-neutral-400 mb-1">Comma-separated, e.g. French, Portuguese</p>
-            <input className="form-input w-full" value={draft.target_languages} onChange={(e) => onChange({ target_languages: e.target.value })} onBlur={onFieldBlur} />
+            <input id={`${idPrefix}-target-languages`} className="form-input w-full" value={draft.target_languages} onChange={(e) => onChange({ target_languages: e.target.value })} onBlur={onFieldBlur} />
           </div>
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Owner (registered user)</label>
-          <select
+          <label htmlFor={`${idPrefix}-owner-user`} className="block text-xs font-semibold text-neutral-700 mb-1">Owner (registered user)</label>
+          <select id={`${idPrefix}-owner-user`}
             className="form-input w-full"
             value={draft.owner_user_id === "" ? "" : String(draft.owner_user_id)}
             onChange={(e) => onChange({ owner_user_id: e.target.value === "" ? "" : Number(e.target.value) })}
@@ -225,23 +226,23 @@ export default function DocumentsSection({
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Or owner name (external)</label>
-          <input className="form-input w-full" value={draft.owner_name} onChange={(e) => onChange({ owner_name: e.target.value })} onBlur={onFieldBlur} />
+          <label htmlFor={`${idPrefix}-owner-name`} className="block text-xs font-semibold text-neutral-700 mb-1">Or owner name (external)</label>
+          <input id={`${idPrefix}-owner-name`} className="form-input w-full" value={draft.owner_name} onChange={(e) => onChange({ owner_name: e.target.value })} onBlur={onFieldBlur} />
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Owner organisation</label>
-          <input className="form-input w-full" value={draft.owner_organisation} onChange={(e) => onChange({ owner_organisation: e.target.value })} onBlur={onFieldBlur} />
+          <label htmlFor={`${idPrefix}-owner-org`} className="block text-xs font-semibold text-neutral-700 mb-1">Owner organisation</label>
+          <input id={`${idPrefix}-owner-org`} className="form-input w-full" value={draft.owner_organisation} onChange={(e) => onChange({ owner_organisation: e.target.value })} onBlur={onFieldBlur} />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-neutral-700 mb-1">Deadline</label>
-          <input type="date" className="form-input w-full" value={draft.deadline} onChange={(e) => onChange({ deadline: e.target.value })} onBlur={onFieldBlur} />
+          <label htmlFor={`${idPrefix}-deadline`} className="block text-xs font-semibold text-neutral-700 mb-1">Deadline</label>
+          <input id={`${idPrefix}-deadline`} type="date" className="form-input w-full" value={draft.deadline} onChange={(e) => onChange({ deadline: e.target.value })} onBlur={onFieldBlur} />
         </div>
       </div>
       <div>
-        <label className="block text-xs font-semibold text-neutral-700 mb-1">Comments</label>
-        <textarea rows={2} className="form-input w-full resize-none" value={draft.comments} onChange={(e) => onChange({ comments: e.target.value })} onBlur={onFieldBlur} />
+        <label htmlFor={`${idPrefix}-comments`} className="block text-xs font-semibold text-neutral-700 mb-1">Comments</label>
+        <textarea id={`${idPrefix}-comments`} rows={2} className="form-input w-full resize-none" value={draft.comments} onChange={(e) => onChange({ comments: e.target.value })} onBlur={onFieldBlur} />
       </div>
     </div>
   );
@@ -258,7 +259,7 @@ export default function DocumentsSection({
                 <span className="material-symbols-outlined text-[18px]">delete</span>
               </button>
             </div>
-            {renderFields(draft, (patch) => updateDraft(row.id, patch), () => persistRow(row.id))}
+            {renderFields(draft, (patch) => updateDraft(row.id, patch), `pif-doc-${row.id}`, () => persistRow(row.id))}
           </div>
         );
       })}
@@ -266,7 +267,7 @@ export default function DocumentsSection({
       {pending ? (
         <div className="rounded-xl border-2 border-dashed border-primary/40 p-4 space-y-3">
           <span className="text-xs font-semibold text-primary">New document</span>
-          {renderFields(pending, (patch) => setPending((p) => (p ? { ...p, ...patch } : p)))}
+          {renderFields(pending, (patch) => setPending((p) => (p ? { ...p, ...patch } : p)), "pif-doc-pending")}
           <div className="flex justify-end gap-2">
             <button type="button" onClick={() => setPending(null)} className="btn-secondary px-3 py-1.5 text-xs">Discard</button>
             <button type="button" disabled={saving} onClick={savePending} className="btn-primary px-3 py-1.5 text-xs disabled:opacity-50">
@@ -275,7 +276,7 @@ export default function DocumentsSection({
           </div>
         </div>
       ) : (
-        <button type="button" onClick={() => setPending(emptyDraft)} className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+        <button type="button" onClick={() => setPending(emptyDraft)} className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
           <span className="material-symbols-outlined text-[14px]">add</span>
           Add document
         </button>

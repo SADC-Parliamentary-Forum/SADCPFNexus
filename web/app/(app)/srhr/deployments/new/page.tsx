@@ -102,30 +102,30 @@ function NewDeploymentPageInner() {
       <form onSubmit={handleSubmit} className="card p-6 space-y-5">
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Researcher <span className="text-red-500">*</span></label>
-            <select className="form-input" value={form.employee_id} onChange={(e) => set("employee_id", e.target.value)} required>
+            <label htmlFor="srhr-deployments-new-researcher" className="block text-xs font-medium text-neutral-700 mb-1.5">Researcher <span className="text-red-500">*</span></label>
+            <select id="srhr-deployments-new-researcher" className="form-input" value={form.employee_id} onChange={(e) => set("employee_id", e.target.value)} required>
               <option value="">Select researcher…</option>
               {users.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Parliament <span className="text-red-500">*</span></label>
-            <select className="form-input" value={form.parliament_id} onChange={(e) => set("parliament_id", e.target.value)} required>
+            <label htmlFor="srhr-deployments-new-parliament" className="block text-xs font-medium text-neutral-700 mb-1.5">Parliament <span className="text-red-500">*</span></label>
+            <select id="srhr-deployments-new-parliament" className="form-input" value={form.parliament_id} onChange={(e) => set("parliament_id", e.target.value)} required>
               <option value="">Select parliament…</option>
               {parliaments.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Deployment Type</label>
-            <select className="form-input" value={form.deployment_type} onChange={(e) => set("deployment_type", e.target.value)}>
+            <label htmlFor="srhr-deployments-new-deployment-type" className="block text-xs font-medium text-neutral-700 mb-1.5">Deployment Type</label>
+            <select id="srhr-deployments-new-deployment-type" className="form-input" value={form.deployment_type} onChange={(e) => set("deployment_type", e.target.value)}>
               <option value="field_researcher">Field Researcher</option>
               <option value="secondment">Secondment</option>
               <option value="other">Other</option>
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Research Area</label>
-            <select className="form-input" value={form.research_area} onChange={(e) => set("research_area", e.target.value)}>
+            <label htmlFor="srhr-deployments-new-research-area" className="block text-xs font-medium text-neutral-700 mb-1.5">Research Area</label>
+            <select id="srhr-deployments-new-research-area" className="form-input" value={form.research_area} onChange={(e) => set("research_area", e.target.value)}>
               <option value="">Select area…</option>
               <option value="SRHR">SRHR</option>
               <option value="Gender & Equality">Gender &amp; Equality</option>
@@ -138,12 +138,12 @@ function NewDeploymentPageInner() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Start Date <span className="text-red-500">*</span></label>
-            <input type="date" className="form-input" value={form.start_date} onChange={(e) => set("start_date", e.target.value)} required />
+            <label htmlFor="srhr-deployments-new-start-date" className="block text-xs font-medium text-neutral-700 mb-1.5">Start Date <span className="text-red-500">*</span></label>
+            <input id="srhr-deployments-new-start-date" type="date" className="form-input" value={form.start_date} onChange={(e) => set("start_date", e.target.value)} required />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">End Date <span className="text-neutral-400">(optional)</span></label>
-            <input type="date" className="form-input" min={form.start_date || undefined} value={form.end_date} onChange={(e) => set("end_date", e.target.value)} />
+            <label htmlFor="srhr-deployments-new-end-date-optional" className="block text-xs font-medium text-neutral-700 mb-1.5">End Date <span className="text-neutral-400">(optional)</span></label>
+            <input id="srhr-deployments-new-end-date-optional" type="date" className="form-input" min={form.start_date || undefined} value={form.end_date} onChange={(e) => set("end_date", e.target.value)} />
           </div>
         </div>
 
@@ -152,36 +152,36 @@ function NewDeploymentPageInner() {
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Supervisor Name</label>
-            <input className="form-input" placeholder="e.g. Hon. Grace Mutasa" value={form.supervisor_name} onChange={(e) => set("supervisor_name", e.target.value)} />
+            <label htmlFor="srhr-deployments-new-supervisor-name" className="block text-xs font-medium text-neutral-700 mb-1.5">Supervisor Name</label>
+            <input id="srhr-deployments-new-supervisor-name" className="form-input" placeholder="e.g. Hon. Grace Mutasa" value={form.supervisor_name} onChange={(e) => set("supervisor_name", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Supervisor Title</label>
-            <input className="form-input" placeholder="e.g. Committee Chairperson" value={form.supervisor_title} onChange={(e) => set("supervisor_title", e.target.value)} />
+            <label htmlFor="srhr-deployments-new-supervisor-title" className="block text-xs font-medium text-neutral-700 mb-1.5">Supervisor Title</label>
+            <input id="srhr-deployments-new-supervisor-title" className="form-input" placeholder="e.g. Committee Chairperson" value={form.supervisor_title} onChange={(e) => set("supervisor_title", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Supervisor Email</label>
-            <input type="email" className="form-input" value={form.supervisor_email} onChange={(e) => set("supervisor_email", e.target.value)} />
+            <label htmlFor="srhr-deployments-new-supervisor-email" className="block text-xs font-medium text-neutral-700 mb-1.5">Supervisor Email</label>
+            <input id="srhr-deployments-new-supervisor-email" type="email" className="form-input" value={form.supervisor_email} onChange={(e) => set("supervisor_email", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1.5">Supervisor Phone</label>
-            <input className="form-input" placeholder="+263…" value={form.supervisor_phone} onChange={(e) => set("supervisor_phone", e.target.value)} />
+            <label htmlFor="srhr-deployments-new-supervisor-phone" className="block text-xs font-medium text-neutral-700 mb-1.5">Supervisor Phone</label>
+            <input id="srhr-deployments-new-supervisor-phone" className="form-input" placeholder="+263…" value={form.supervisor_phone} onChange={(e) => set("supervisor_phone", e.target.value)} />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-neutral-700 mb-1.5">Research Focus <span className="text-neutral-400">(optional)</span></label>
-          <textarea className="form-input" rows={2} placeholder="Describe the specific research scope and objectives…" value={form.research_focus} onChange={(e) => set("research_focus", e.target.value)} />
+          <label htmlFor="srhr-deployments-new-research-focus-optional" className="block text-xs font-medium text-neutral-700 mb-1.5">Research Focus <span className="text-neutral-400">(optional)</span></label>
+          <textarea id="srhr-deployments-new-research-focus-optional" className="form-input" rows={2} placeholder="Describe the specific research scope and objectives…" value={form.research_focus} onChange={(e) => set("research_focus", e.target.value)} />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-neutral-700 mb-1.5">Terms of Reference</label>
-          <textarea className="form-input" rows={4} placeholder="Summarise the researcher's mandate and key responsibilities…" value={form.terms_of_reference} onChange={(e) => set("terms_of_reference", e.target.value)} />
+          <label htmlFor="srhr-deployments-new-terms-of-reference" className="block text-xs font-medium text-neutral-700 mb-1.5">Terms of Reference</label>
+          <textarea id="srhr-deployments-new-terms-of-reference" className="form-input" rows={4} placeholder="Summarise the researcher's mandate and key responsibilities…" value={form.terms_of_reference} onChange={(e) => set("terms_of_reference", e.target.value)} />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-neutral-700 mb-1.5">Notes</label>
-          <textarea className="form-input" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+          <label htmlFor="srhr-deployments-new-notes" className="block text-xs font-medium text-neutral-700 mb-1.5">Notes</label>
+          <textarea id="srhr-deployments-new-notes" className="form-input" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">

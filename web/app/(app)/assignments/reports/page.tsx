@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { assignmentsApi } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function AssignmentReportsPage() {
   const { data, isLoading, isError } = useQuery({
@@ -46,6 +47,9 @@ export default function AssignmentReportsPage() {
           <div className="grid md:grid-cols-2 gap-4">
             <div className="card p-5">
               <h2 className="text-sm font-semibold mb-3">By source</h2>
+              {Object.keys(data.by_source ?? {}).length === 0 ? (
+                <EmptyState icon="hub" title="No source-linked assignments yet." className="py-6 min-h-0" />
+              ) : (
               <ul className="space-y-1 text-sm">
                 {Object.entries(data.by_source ?? {}).map(([k, v]) => (
                   <li key={k} className="flex justify-between">
@@ -53,10 +57,8 @@ export default function AssignmentReportsPage() {
                     <span className="font-mono">{v}</span>
                   </li>
                 ))}
-                {Object.keys(data.by_source ?? {}).length === 0 && (
-                  <li className="text-neutral-500">No source-linked assignments yet.</li>
-                )}
               </ul>
+              )}
             </div>
             <div className="card p-5">
               <h2 className="text-sm font-semibold mb-3">Blockers</h2>

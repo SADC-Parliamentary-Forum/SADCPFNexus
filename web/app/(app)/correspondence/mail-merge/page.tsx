@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { correspondenceApi } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const TOKEN = /\{\{([a-z0-9_]+)\}\}/gi;
 
@@ -100,23 +100,25 @@ export default function CorrespondenceMailMergePage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-          <Link href="/correspondence" className="hover:text-neutral-700">Correspondence</Link>
-          <span>/</span>
-          <span className="text-neutral-700">Mail merge</span>
-        </div>
-        <h1 className="page-title">Mail merge</h1>
-        <p className="page-subtitle">
-          Substitute template fields into a letter draft. AI assist on letter detail requires human confirm and never auto-sends.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Mail merge"
+        subtitle="Substitute template fields into a letter draft. AI assist on letter detail requires human confirm and never auto-sends."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "Correspondence", href: "/correspondence" },
+              { label: "Mail merge" },
+            ]}
+          />
+        }
+      />
 
       <div className="space-y-4 rounded-lg border border-neutral-200 bg-white p-5">
         <div className="flex flex-wrap items-end gap-3">
-          <label className="block flex-1 text-sm">
-            <span className="mb-1 block text-neutral-600">Template</span>
+          <div className="flex-1">
+            <label htmlFor="mail-merge-template" className="mb-1 block text-sm text-neutral-600">Template</label>
             <select
+              id="mail-merge-template"
               className="form-input w-full"
               value={templateId}
               onChange={(e) => {
@@ -131,7 +133,7 @@ export default function CorrespondenceMailMergePage() {
                 <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
               ))}
             </select>
-          </label>
+          </div>
           <button type="button" className="btn-secondary text-sm" onClick={() => createTemplateMutation.mutate()} disabled={createTemplateMutation.isPending}>
             Seed acknowledgement template
           </button>
@@ -149,15 +151,16 @@ export default function CorrespondenceMailMergePage() {
         {tokens.length > 0 && (
           <div className="grid gap-3 sm:grid-cols-2">
             {tokens.map((token) => (
-              <label key={token} className="block text-sm">
-                <span className="mb-1 block text-neutral-600">{labelFor(token)}</span>
+              <div key={token} className="block text-sm">
+                <label htmlFor={`mail-merge-${token}`} className="mb-1 block text-neutral-600">{labelFor(token)}</label>
                 <input
+                  id={`mail-merge-${token}`}
                   className="form-input w-full"
                   value={fields[token] ?? ""}
                   onChange={(e) => setFields((prev) => ({ ...prev, [token]: e.target.value }))}
                   placeholder={`{{${token}}}`}
                 />
-              </label>
+              </div>
             ))}
           </div>
         )}

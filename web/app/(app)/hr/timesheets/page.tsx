@@ -9,6 +9,7 @@ import { USER_KEY } from "@/lib/constants";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { TIMESHEET_HUB_CARDS } from "@/lib/hubs/timesheets";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import {
   firstTimesheetRowErrorMessage,
   normalizeTimesheetEntry,
@@ -561,11 +562,7 @@ export default function TimesheetsPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {loading ? (
         <div className="space-y-4 animate-pulse">
@@ -624,17 +621,11 @@ export default function TimesheetsPage() {
               ) : null}
 
               {entries.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-neutral-100">
-                    <span className="material-symbols-outlined text-[24px] text-neutral-400">schedule</span>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-neutral-700">No entries yet</p>
-                    <p className="text-xs text-neutral-400 mt-1">
-                      Apply a template, add a row, or use Quick entry
-                    </p>
-                  </div>
-                  {isDraft && (
+                <EmptyState
+                  icon="schedule"
+                  title="No entries yet"
+                  description="Apply a template, add a row, or use Quick entry"
+                  action={isDraft ? (
                     <div className="flex gap-2">
                       <button type="button" className="btn-secondary text-sm" onClick={handleAddBlankRow}>
                         Add row
@@ -647,8 +638,8 @@ export default function TimesheetsPage() {
                         Quick entry
                       </button>
                     </div>
-                  )}
-                </div>
+                  ) : undefined}
+                />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="data-table w-full min-w-[880px]">

@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetSubmissionPack } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 function money(n: number): string {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -68,16 +69,26 @@ export default function BudgetSubmissionDetailPage() {
   const pack = query.data;
 
   if (query.isLoading) {
-    return <p className="p-6 text-sm text-[var(--muted)]">Loading submission…</p>;
+    return (
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Budget submission"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "Budget Cycles", href: "/budget/cycles" }, { label: "Submission" }]} />}
+        />
+        <p className="text-sm text-neutral-400">Loading submission…</p>
+      </div>
+    );
   }
 
   if (!pack) {
     return (
-    <div className="space-y-5">
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Budget submission"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.finance", href: "/finance" }, { label: "Budget Cycles", href: "/budget/cycles" }, { label: "Submission" }]} />}
+        />
         <p className="text-sm text-red-700">Submission not found.</p>
-        <Link href="/budget/cycles" className="text-sm text-[var(--primary)]">
-          Back to cycles
-        </Link>
+        <Link href="/budget/cycles" className="btn-secondary text-sm">Back to cycles</Link>
       </div>
     );
   }
@@ -86,21 +97,21 @@ export default function BudgetSubmissionDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Link
-            href={`/budget/cycles/${pack.budget_cycle_id}`}
-            className="text-sm text-[var(--primary)] hover:underline"
-          >
-            ← Cycle
-          </Link>
-          <h1 className="page-title mt-1">{pack.title}</h1>
-          <p className="page-subtitle capitalize">
-            {pack.type} · {pack.status.replaceAll("_", " ")}
-            {pack.preparer?.name ? ` · Prepared by ${pack.preparer.name}` : ""}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <ModulePageHeader
+        title={pack.title}
+        subtitle={`${pack.type} · ${pack.status.replaceAll("_", " ")}${pack.preparer?.name ? ` · Prepared by ${pack.preparer.name}` : ""}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.finance", href: "/finance" },
+              { label: "Budget Cycles", href: "/budget/cycles" },
+              { label: "Cycle", href: `/budget/cycles/${pack.budget_cycle_id}` },
+              { label: pack.title },
+            ]}
+          />
+        }
+        actions={
+          <div className="flex flex-wrap gap-2">
           {["draft", "returned"].includes(pack.status) && (
             <button type="button" className="btn-primary text-sm" onClick={() => submitMut.mutate()} disabled={submitMut.isPending}>
               Submit
@@ -111,8 +122,9 @@ export default function BudgetSubmissionDetailPage() {
               Accept
             </button>
           )}
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {message && <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{message}</div>}
       {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}

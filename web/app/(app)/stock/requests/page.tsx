@@ -69,8 +69,8 @@ export default function StockRequestsPage() {
       {canManage && (
         <div className="rounded-xl border border-neutral-200 bg-white p-4 flex flex-wrap gap-3 items-end">
           <div>
-            <label className="block text-xs font-semibold mb-1">Item</label>
-            <select className="form-input min-w-[220px]" value={itemId} onChange={(e) => setItemId(e.target.value)}>
+            <label htmlFor="stock-requests-item" className="block text-xs font-semibold mb-1">Item</label>
+            <select id="stock-requests-item" className="form-input min-w-[220px]" value={itemId} onChange={(e) => setItemId(e.target.value)}>
               <option value="">Select…</option>
               {items.map((i) => (
                 <option key={i.id} value={i.id}>
@@ -80,12 +80,12 @@ export default function StockRequestsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Qty</label>
-            <input type="number" min={1} className="form-input w-24" value={qty} onChange={(e) => setQty(e.target.value)} />
+            <label htmlFor="stock-requests-qty" className="block text-xs font-semibold mb-1">Qty</label>
+            <input id="stock-requests-qty" type="number" min={1} className="form-input w-24" value={qty} onChange={(e) => setQty(e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-semibold mb-1">Purpose</label>
-            <input className="form-input" value={purpose} onChange={(e) => setPurpose(e.target.value)} />
+            <label htmlFor="stock-requests-purpose" className="block text-xs font-semibold mb-1">Purpose</label>
+            <input id="stock-requests-purpose" className="form-input" value={purpose} onChange={(e) => setPurpose(e.target.value)} />
           </div>
           <button type="button" className="btn-primary" onClick={create}>Submit request</button>
         </div>
@@ -104,7 +104,7 @@ export default function StockRequestsPage() {
           {rows.map((r) => (
             <tr key={r.id} className="border-t border-neutral-100">
               <td className="px-4 py-2">
-                <Link className="text-primary-700 hover:underline" href={`/stock/requests`}>{r.reference_number}</Link>
+                <Link className="btn-secondary text-xs py-1 px-2" href={`/stock/requests`}>{r.reference_number}</Link>
               </td>
               <td className="px-4 py-2">{r.purpose ?? "—"}</td>
               <td className="px-4 py-2">{r.status}</td>

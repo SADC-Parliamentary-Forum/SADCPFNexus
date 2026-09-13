@@ -78,13 +78,13 @@ test("people acting page can create and approve", () => {
 
 test("people onboarding page redirects to lifecycle onboarding create", () => {
   const source = readFileSync(join(webRoot, "app/(app)/people/onboarding/page.tsx"), "utf8");
-  assert.match(source, /router\.replace\(["']\/lifecycle\/onboarding\/create["']\)/);
+  assert.match(source, /redirect\(["']\/lifecycle\/onboarding\/create["']\)/);
   assert.doesNotMatch(source, /createOnboarding/);
 });
 
 test("people offboarding page redirects to lifecycle separation create", () => {
   const source = readFileSync(join(webRoot, "app/(app)/people/offboarding/page.tsx"), "utf8");
-  assert.match(source, /router\.replace\(["']\/lifecycle\/separation\/create["']\)/);
+  assert.match(source, /redirect\(["']\/lifecycle\/separation\/create["']\)/);
   assert.doesNotMatch(source, /createOffboarding/);
 });
 

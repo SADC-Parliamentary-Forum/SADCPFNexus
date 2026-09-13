@@ -12,6 +12,8 @@ import {
 } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const MODULE_LABELS: Record<string, string> = {
   salary_advance: "Salary Advance",
@@ -187,30 +189,27 @@ export default function RegisterDetailPage() {
 
   return (
     <div className="space-y-5">
-      {/* Breadcrumb */}
-      <nav className="text-sm text-neutral-500 flex items-center gap-1 flex-wrap">
-        <Link href="/finance" className="hover:text-primary">Finance</Link>
-        <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <Link href="/finance/balance-register" className="hover:text-primary">Balance Register</Link>
-        <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <Link href="/finance/balance-register/registers" className="hover:text-primary">All Registers</Link>
-        <span className="material-symbols-outlined text-xs">chevron_right</span>
-        <span className="text-neutral-800 font-medium">{register.reference_number}</span>
-      </nav>
-
-      {/* Title row */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="page-title">{register.reference_number}</h1>
-            <span className={`${statusCfg.badge} flex items-center gap-1 text-xs px-2 py-1 rounded-full`}>
-              <span className="material-symbols-outlined text-xs">{statusCfg.icon}</span>
-              {statusCfg.label}
-            </span>
-          </div>
-          <p className="page-subtitle">{MODULE_LABELS[register.module_type] ?? register.module_type} — Balance Register</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
+      <ModulePageHeader
+        title={register.reference_number}
+        subtitle={`${MODULE_LABELS[register.module_type] ?? register.module_type} — Balance Register`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.finance", href: "/finance" },
+              { label: "Balance Register", href: "/finance/balance-register" },
+              { label: "All Registers", href: "/finance/balance-register/registers" },
+              { label: register.reference_number },
+            ]}
+          />
+        }
+        meta={
+          <span className={`${statusCfg.badge} flex items-center gap-1 text-xs px-2 py-1 rounded-full`}>
+            <span className="material-symbols-outlined text-xs">{statusCfg.icon}</span>
+            {statusCfg.label}
+          </span>
+        }
+        actions={
+          <div className="flex gap-2 flex-wrap">
           {register.status === "active" && (
             <button onClick={handleLock} disabled={lockLoading}
               className="btn-secondary text-sm flex items-center gap-1">
@@ -233,7 +232,8 @@ export default function RegisterDetailPage() {
             </Link>
           )}
         </div>
-      </div>
+        }
+      />
 
       {/* Acknowledgement Banner */}
       {latestAck && latestAck.status !== "pending" && (
@@ -405,7 +405,7 @@ export default function RegisterDetailPage() {
             </thead>
             <tbody>
               {txns.length === 0 ? (
-                <tr><td colSpan={9} className="text-center py-10 text-sm text-neutral-400">No transactions yet.</td></tr>
+                <TableEmpty colSpan={9} title="No transactions yet." />
               ) : txns.map(t => {
                 const tc = TXN_TYPE_CONFIG[t.type] ?? { label: t.type, color: "", icon: "circle" };
                 const vc = VERIFY_STATUS_CONFIG[t.verification_status] ?? { badge: "badge-muted", label: t.verification_status };
@@ -431,7 +431,7 @@ export default function RegisterDetailPage() {
                     <td>
                       {t.verification_status === "pending" && (
                         <Link href={`/finance/balance-register/${register.id}/verify?txn=${t.id}`}
-                          className="text-xs text-primary hover:underline font-medium">
+                          className="btn-secondary text-xs py-1 px-2">
                           Verify
                         </Link>
                       )}
@@ -462,7 +462,7 @@ export default function RegisterDetailPage() {
             </thead>
             <tbody>
               {adjustmentTxns.length === 0 ? (
-                <tr><td colSpan={6} className="text-center py-10 text-sm text-neutral-400">No adjustments or write-offs.</td></tr>
+                <TableEmpty colSpan={6} title="No adjustments or write-offs." />
               ) : adjustmentTxns.map(t => {
                 const tc = TXN_TYPE_CONFIG[t.type];
                 const vc = VERIFY_STATUS_CONFIG[t.verification_status];
@@ -523,7 +523,7 @@ export default function RegisterDetailPage() {
             </thead>
             <tbody>
               {verifications.length === 0 ? (
-                <tr><td colSpan={5} className="text-center py-10 text-sm text-neutral-400">No verification records.</td></tr>
+                <TableEmpty colSpan={5} title="No verification records." />
               ) : verifications.map(v => (
                 <tr key={v.id}>
                   <td className="text-sm text-neutral-500">#{v.transaction_id}</td>
@@ -547,7 +547,7 @@ export default function RegisterDetailPage() {
           <p className="text-sm text-neutral-500 text-center py-8">
             Full audit trail available in{" "}
             <Link href={`/analytics/ledger?auditable_type=App\\Models\\BalanceRegister&auditable_id=${register.id}`}
-              className="text-primary hover:underline">Analytics → Audit Integrity Ledger</Link>.
+              className="btn-secondary text-xs py-1 px-2">Analytics → Audit Integrity Ledger</Link>.
           </p>
         </div>
       )}

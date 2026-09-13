@@ -170,13 +170,6 @@ export default function WorkflowDesignerPage() {
         }
       />
 
-      <div className="hidden">
-        <p className="text-sm text-[var(--muted)]">Workflow Engine · Phase 2</p>
-        <h1 className="text-2xl font-semibold">Visual workflow designer</h1>
-        <p className="text-sm mt-1">Edit stages, transitions, conditions, and actor selectors. Validate before publish.</p>
-        <Link href="/admin/workflows" className="text-sm underline mt-2 inline-block">Back to Workflows</Link>
-      </div>
-
       <div className="flex gap-3 flex-wrap">
         <select
           className="border rounded px-3 py-2 bg-transparent"
@@ -188,14 +181,15 @@ export default function WorkflowDesignerPage() {
             <option key={d.id} value={d.id}>{d.name} ({d.module_type})</option>
           ))}
         </select>
-        <button disabled={!versionId || busy} onClick={saveAndLint} className="px-3 py-2 border rounded">Save & lint</button>
-        <button disabled={!versionId || busy || Boolean(lint && !lint.valid)} onClick={publish} className="px-3 py-2 border rounded">Approve & publish</button>
+        <button disabled={!versionId || busy} onClick={saveAndLint} className="btn-secondary text-sm">Save & lint</button>
+        <button disabled={!versionId || busy || Boolean(lint && !lint.valid)} onClick={publish} className="btn-primary text-sm">Approve & publish</button>
       </div>
 
       {selectedId && (
         <div className="border rounded p-3 flex flex-wrap items-center gap-3">
-          <label className="text-sm font-medium">Self-approval policy</label>
+          <label htmlFor="wf-self-approval" className="text-sm font-medium">Self-approval policy</label>
           <select
+            id="wf-self-approval"
             className="border rounded px-2 py-1 bg-transparent"
             value={selfApprovalPolicy}
             onChange={(e) => saveSelfApprovalPolicy(e.target.value)}
@@ -256,19 +250,19 @@ export default function WorkflowDesignerPage() {
             </select>
             <input className="border rounded px-2 py-1 bg-transparent" type="number" placeholder="SLA hours" value={stage.sla_hours ?? ""} onChange={(e) => updateStage(index, { sla_hours: e.target.value ? Number(e.target.value) : null })} />
             <input className="border rounded px-2 py-1 bg-transparent" placeholder="Governance body" value={stage.governance_body_name || ""} onChange={(e) => updateStage(index, { governance_body_name: e.target.value || null })} />
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={Boolean(stage.requires_comment)} onChange={(e) => updateStage(index, { requires_comment: e.target.checked })} />
+            <label htmlFor="admin-workflows-designer-updatestage-index-requires-comment" className="flex items-center gap-2 text-sm">
+              <input id="admin-workflows-designer-updatestage-index-requires-comment" type="checkbox" checked={Boolean(stage.requires_comment)} onChange={(e) => updateStage(index, { requires_comment: e.target.checked })} />
               Requires comment
             </label>
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={Boolean(stage.allow_return)} onChange={(e) => updateStage(index, { allow_return: e.target.checked })} />
+            <label htmlFor="admin-workflows-designer-updatestage-index-allow-return-for-correction" className="flex items-center gap-2 text-sm">
+              <input id="admin-workflows-designer-updatestage-index-allow-return-for-correction" type="checkbox" checked={Boolean(stage.allow_return)} onChange={(e) => updateStage(index, { allow_return: e.target.checked })} />
               Allow return for correction
             </label>
             <div className="md:col-span-2">
-              <label className="text-xs text-[var(--muted)] block mb-1">
+              <label htmlFor="admin-workflows-designer-condition-expression-json-e-g-field-amount-op-gt" className="text-xs text-[var(--muted)] block mb-1">
                 Condition expression (JSON — e.g. {"{"}"field":"amount","op":"gte","value":5000{"}"}, empty = always run)
               </label>
-              <textarea
+              <textarea id="admin-workflows-designer-condition-expression-json-e-g-field-amount-op-gt"
                 className="border rounded px-2 py-1 bg-transparent w-full font-mono text-xs"
                 rows={2}
                 placeholder='{"field":"amount","op":"gte","value":5000}'

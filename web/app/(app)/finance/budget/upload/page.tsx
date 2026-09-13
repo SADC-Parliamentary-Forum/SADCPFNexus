@@ -126,8 +126,8 @@ export default function BudgetUploadPage() {
             {/* Basic Setup */}
             <div className="card p-5 space-y-4">
                 <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Budget Name *</label>
-                    <input
+                    <label htmlFor="finance-budget-upload-budget-name" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Budget Name *</label>
+                    <input id="finance-budget-upload-budget-name"
                         className="form-input"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -137,8 +137,8 @@ export default function BudgetUploadPage() {
 
                 <div className="grid grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Year *</label>
-                        <input
+                        <label htmlFor="finance-budget-upload-year" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Year *</label>
+                        <input id="finance-budget-upload-year"
                             type="number"
                             className="form-input"
                             value={year}
@@ -147,15 +147,15 @@ export default function BudgetUploadPage() {
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Type *</label>
-                        <select className="form-input" value={type} onChange={(e) => setType(e.target.value as any)}>
+                        <label htmlFor="finance-budget-upload-type" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Type *</label>
+                        <select id="finance-budget-upload-type" className="form-input" value={type} onChange={(e) => setType(e.target.value as any)}>
                             <option value="core">Core Budget</option>
                             <option value="project">Project / Extra-Budgetary</option>
                         </select>
                     </div>
                     <div>
-                        <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Currency *</label>
-                        <select className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                        <label htmlFor="finance-budget-upload-currency" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Currency *</label>
+                        <select id="finance-budget-upload-currency" className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                             <option value="USD">USD</option>
                             <option value="NAD">NAD</option>
                             <option value="ZAR">ZAR</option>
@@ -165,8 +165,8 @@ export default function BudgetUploadPage() {
                 </div>
 
                 <div>
-                    <label className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Description</label>
-                    <textarea
+                    <label htmlFor="finance-budget-upload-description" className="block text-xs font-semibold text-neutral-600 mb-1.5 uppercase tracking-wide">Description</label>
+                    <textarea id="finance-budget-upload-description"
                         className="form-input min-h-[60px]"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
@@ -179,17 +179,17 @@ export default function BudgetUploadPage() {
             <div className="card">
                 <div className="card-header border-b border-neutral-100 flex items-center justify-between">
                     <h2 className="text-lg font-semibold text-neutral-800">Import CSV Lines</h2>
-                    <a href="#" className="text-sm font-medium text-primary hover:underline">Download Template</a>
+                    <a href="#" className="btn-secondary text-sm py-1 px-2">Download Template</a>
                 </div>
                 <div className="p-5">
                     <div className="flex items-center justify-center w-full">
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-neutral-50 hover:bg-neutral-100 transition-colors">
+                        <label htmlFor="finance-budget-upload-cloud-upload-click-to-upload-a-csv-file-format-c" className="flex flex-col items-center justify-center w-full h-32 border-2 border-neutral-300 border-dashed rounded-lg cursor-pointer bg-neutral-50 hover:bg-neutral-100 transition-colors">
                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                 <span className="material-symbols-outlined text-3xl text-neutral-400 mb-2">cloud_upload</span>
                                 <p className="mb-1 text-sm text-neutral-500 font-medium">Click to upload a CSV file</p>
                                 <p className="text-xs text-neutral-400">Format: Category, Account Code, Description, Amount</p>
                             </div>
-                            <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
+                            <input id="finance-budget-upload-cloud-upload-click-to-upload-a-csv-file-format-c" type="file" accept=".csv" className="hidden" onChange={handleFileUpload} />
                         </label>
                     </div>
 

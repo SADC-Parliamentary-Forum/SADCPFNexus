@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetCycle } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 function statusLabel(status: string): string {
   return status.replaceAll("_", " ");
@@ -63,16 +64,16 @@ export default function BudgetCyclesPage() {
       </div>
 
       {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        <ErrorBanner message={error} />
       )}
 
       {canFinance && (
         <div className="rounded-xl border border-[var(--border)] bg-white p-4">
           <h2 className="mb-3 text-sm font-semibold text-[var(--foreground)]">Open a cycle</h2>
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-sm">
+            <label htmlFor="budget-cycles-financial-year-setfyid-e-target-value-select-fy" className="flex flex-col gap-1 text-sm">
               <span className="text-[var(--muted)]">Financial year</span>
-              <select
+              <select id="budget-cycles-financial-year-setfyid-e-target-value-select-fy"
                 className="min-w-[220px] rounded-lg border border-[var(--border)] px-3 py-2"
                 value={fyId}
                 onChange={(e) => setFyId(e.target.value)}
@@ -100,7 +101,9 @@ export default function BudgetCyclesPage() {
       {cyclesQuery.isLoading ? (
         <p className="text-sm text-[var(--muted)]">Loading cycles…</p>
       ) : cycles.length === 0 ? (
-        <p className="text-sm text-[var(--muted)]">No budget cycles yet.</p>
+        <div className="card">
+          <EmptyState icon="event_repeat" title="No budget cycles yet." />
+        </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-[var(--border)] bg-white">
           <table className="w-full text-left text-sm">
@@ -123,7 +126,7 @@ export default function BudgetCyclesPage() {
                       : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <Link href={`/budget/cycles/${c.id}`} className="text-[var(--primary)] hover:underline">
+                    <Link href={`/budget/cycles/${c.id}`} className="font-medium text-[var(--primary)]">
                       Open
                     </Link>
                   </td>

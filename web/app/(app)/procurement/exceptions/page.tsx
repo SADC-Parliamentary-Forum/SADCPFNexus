@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { procurementWorkbenchApi } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function ProcurementExceptionsPage() {
   const qc = useQueryClient();
@@ -26,7 +27,11 @@ export default function ProcurementExceptionsPage() {
       />
       {isLoading && <p className="text-sm text-neutral-500">Loading exceptions…</p>}
       {isError && <p className="text-sm text-rose-700">Could not load the exception register.</p>}
-      {!isLoading && rows.length === 0 && <p className="text-sm text-neutral-500">No exceptions recorded.</p>}
+      {!isLoading && rows.length === 0 && (
+        <div className="card">
+          <EmptyState icon="gavel" title="No exceptions recorded." />
+        </div>
+      )}
       <ul className="space-y-2">
         {rows.map((row) => (
           <li key={row.id} className="flex items-center justify-between rounded-lg border border-neutral-200 bg-white px-4 py-3 text-sm">

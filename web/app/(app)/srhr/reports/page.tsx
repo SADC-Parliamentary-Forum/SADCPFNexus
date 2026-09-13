@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { researcherReportsApi, type ResearcherReport } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   draft:              { label: "Draft",              cls: "badge-muted"    },
@@ -117,9 +118,7 @@ export default function ResearcherReportsPage() {
                 ))
               : reports.length === 0
               ? (
-                  <tr>
-                    <td colSpan={8} className="text-center py-10 text-neutral-400 text-sm">No reports found.</td>
-                  </tr>
+                  <TableEmpty colSpan={8} title="No reports found." />
                 )
               : reports.map((r) => (
                   <tr key={r.id}>
@@ -139,7 +138,7 @@ export default function ResearcherReportsPage() {
                       </span>
                     </td>
                     <td>
-                      <Link href={`/srhr/reports/${r.id}`} className="text-xs text-primary hover:underline">View</Link>
+                      <Link href={`/srhr/reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">View</Link>
                     </td>
                   </tr>
                 ))}

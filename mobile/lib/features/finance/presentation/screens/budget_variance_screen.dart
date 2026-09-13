@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCREEN  (Audit Log — wired to /admin/audit-logs)
@@ -119,32 +120,16 @@ class _BudgetVarianceScreenState extends ConsumerState<BudgetVarianceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary, size: 18),
-          onPressed: () => Navigator.of(context).maybePop(),
+    return StitchScreen(
+      title: 'Audit Log',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh_rounded,
+          onPressed: _load,
         ),
-        title: const Text(
-          'Audit Log',
-          style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.w700),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded,
-                color: AppColors.textSecondary),
-            onPressed: _load,
-          ),
-        ],
-      ),
+      ],
       body: Column(
         children: [
           // ── Immutable Ledger Banner ──────────────────────────────────
@@ -234,35 +219,13 @@ class _BudgetVarianceScreenState extends ConsumerState<BudgetVarianceScreen> {
           // ── Timeline List ────────────────────────────────────────────
           Expanded(
             child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                        color: AppColors.primary))
+                ? const StitchLoadingState(label: 'Loading audit log')
                 : _error != null
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.error_outline_rounded,
-                                color: AppColors.danger, size: 40),
-                            const SizedBox(height: 12),
-                            Text(_error!,
-                                style: const TextStyle(
-                                    color: AppColors.textSecondary)),
-                            const SizedBox(height: 12),
-                            TextButton(
-                              onPressed: _load,
-                              child: const Text('Retry',
-                                  style:
-                                      TextStyle(color: AppColors.primary)),
-                            ),
-                          ],
-                        ),
-                      )
+                    ? StitchErrorState(message: _error!, onRetry: _load)
                     : _grouped.isEmpty
-                        ? const Center(
-                            child: Text('No audit entries found.',
-                                style: TextStyle(
-                                    color: AppColors.textMuted)))
+                        ? const StitchEmptyState(
+                            title: 'No audit entries found.',
+                          )
                         : ListView.builder(
                             padding:
                                 const EdgeInsets.fromLTRB(16, 0, 16, 100),

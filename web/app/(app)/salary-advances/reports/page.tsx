@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
+import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
 
 const REPORTS = [
   { id: "register", label: "Full register", hint: "All salary advances for the tenant", pack: "register", status: "" },
@@ -38,15 +39,14 @@ export default function SalaryAdvanceReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-1.5 text-xs font-medium text-neutral-500 mb-1">
-          <Link href="/salary-advances" className="hover:text-neutral-700">Salary Advances</Link>
-          <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-          <span className="text-neutral-700">Reports</span>
-        </div>
-        <h1 className="page-title">Salary Advance Reports</h1>
-        <p className="page-subtitle">CSV exports for register, outstanding, status, and recovery packs.</p>
-      </div>
+      <SalaryAdvancePageHeader
+        title="Salary Advance Reports"
+        subtitle="CSV exports for register, outstanding, status, and recovery packs."
+        crumbs={[
+          { label: "nav.salary_advances", href: "/salary-advances" },
+          { label: "Reports" },
+        ]}
+      />
 
       {error && <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>}
 
@@ -70,9 +70,9 @@ export default function SalaryAdvanceReportsPage() {
       <div className="card p-5">
         <p className="text-sm text-neutral-600">
           For interactive browsing, use the{" "}
-          <Link href="/salary-advances/register" className="text-primary font-medium hover:underline">Salary Advance Register</Link>
+          <Link href="/salary-advances/register" className="btn-secondary text-xs">Salary Advance Register</Link>
           {" "}or the central{" "}
-          <Link href="/reports" className="text-primary font-medium hover:underline">Reports</Link> module.
+          <Link href="/reports" className="btn-secondary text-xs">Reports</Link> module.
         </p>
       </div>
     </div>

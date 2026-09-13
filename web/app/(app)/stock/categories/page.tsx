@@ -6,6 +6,7 @@ import { canConfigureStockCatalogue, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 interface ApiError {
   response?: { data?: { message?: string } };
@@ -126,12 +127,12 @@ export default function StockCategoriesPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">Name <span className="text-red-500">*</span></label>
-              <input className="form-input" placeholder="e.g. Stationery" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
+              <label htmlFor="stock-categories-name" className="block text-xs font-semibold text-neutral-700">Name <span className="text-red-500">*</span></label>
+              <input id="stock-categories-name" className="form-input" placeholder="e.g. Stationery" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">Code <span className="text-red-500">*</span></label>
-              <input
+              <label htmlFor="stock-categories-code" className="block text-xs font-semibold text-neutral-700">Code <span className="text-red-500">*</span></label>
+              <input id="stock-categories-code"
                 className="form-input font-mono"
                 placeholder="e.g. stationery"
                 value={form.code}
@@ -141,8 +142,8 @@ export default function StockCategoriesPage() {
               {editId && <p className="text-xs text-neutral-400">Code cannot be changed when editing.</p>}
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">Sort order</label>
-              <input type="number" min={0} className="form-input" value={form.sort_order} onChange={(e) => setForm((p) => ({ ...p, sort_order: Number(e.target.value) || 0 }))} />
+              <label htmlFor="stock-categories-sort-order" className="block text-xs font-semibold text-neutral-700">Sort order</label>
+              <input id="stock-categories-sort-order" type="number" min={0} className="form-input" value={form.sort_order} onChange={(e) => setForm((p) => ({ ...p, sort_order: Number(e.target.value) || 0 }))} />
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-1">
@@ -188,16 +189,16 @@ export default function StockCategoriesPage() {
             ))}
           </div>
         ) : categories.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 mx-auto mb-4">
-              <span className="material-symbols-outlined text-3xl text-neutral-300">category</span>
-            </div>
-            <p className="text-sm font-semibold text-neutral-500">No categories yet</p>
-            <p className="text-xs text-neutral-400 mt-1">Create categories to organise your consumable stock.</p>
-            <button onClick={() => setShowForm(true)} className="btn-primary mt-4">
-              <span className="material-symbols-outlined text-[16px]">add</span>New Category
-            </button>
-          </div>
+          <EmptyState
+            icon="category"
+            title="No categories yet"
+            description="Create categories to organise your consumable stock."
+            action={
+              <button type="button" onClick={() => setShowForm(true)} className="btn-primary">
+                <span className="material-symbols-outlined text-[16px]">add</span>New Category
+              </button>
+            }
+          />
         ) : (
           <ul className="divide-y divide-neutral-100">
             {categories.map((cat) => (

@@ -3,6 +3,7 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import { correspondenceApi, type CorrespondenceSubjectFile } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function SubjectFilesPage() {
   const [files, setFiles] = useState<CorrespondenceSubjectFile[]>([]);
@@ -55,7 +56,7 @@ export default function SubjectFilesPage() {
 
       <div className="card divide-y divide-neutral-100">
         {loading && <div className="p-6 text-neutral-400 text-center">Loading…</div>}
-        {!loading && files.length === 0 && <div className="p-6 text-neutral-400 text-center">No subject files yet.</div>}
+        {!loading && files.length === 0 && <EmptyState icon="folder" title="No subject files yet." />}
         {files.map((f) => (
           <div key={f.id} className="px-4 py-3 flex items-center justify-between gap-3">
             <div>

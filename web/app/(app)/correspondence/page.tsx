@@ -118,7 +118,7 @@ export default function CorrespondencePage() {
             <span className="material-symbols-outlined text-neutral-400 text-[18px]">mark_email_read</span>
             <h3 className="text-sm font-semibold text-neutral-900">Recent Correspondence</h3>
           </div>
-          <Link href="/correspondence/registry" className="text-xs text-primary hover:underline">View register →</Link>
+          <Link href="/correspondence/registry" className="btn-secondary text-xs py-1 px-2">View register</Link>
         </div>
         <div className="divide-y divide-neutral-100">
           {loading && <div className="p-6 text-center text-sm text-neutral-400">Loading…</div>}

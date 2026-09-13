@@ -82,8 +82,8 @@ export default function AssetReportsPage() {
         <h2 className="text-base font-semibold text-neutral-900">{t("assets.reports.registerPack")}</h2>
         <p className="text-sm text-neutral-500">{t("assets.reports.registerHint")}</p>
         <div className="max-w-xs">
-          <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.reports.status")}</label>
-          <select
+          <label htmlFor="assets-reports-field" className="block text-xs font-semibold text-neutral-600 mb-1">{t("assets.reports.status")}</label>
+          <select id="assets-reports-field"
             className="form-input text-sm"
             value={status}
             onChange={(e) => setStatus(e.target.value)}

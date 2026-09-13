@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const FIELD_LABELS: Record<string, string> = {
   base_currency: "Base currency",
@@ -90,9 +91,7 @@ export default function BudgetFxRatesPage() {
                 </tr>
               ))}
               {(Array.isArray(list) ? list : rows).length === 0 && (
-                <tr>
-                  <td colSpan={4} className="p-4 text-center text-sm text-neutral-500">No rates yet.</td>
-                </tr>
+                <TableEmpty colSpan={4} title="No rates yet." />
               )}
             </tbody>
           </table>

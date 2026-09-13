@@ -6,7 +6,7 @@ import { travelApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
-import { EmptyState } from "@/components/ui/EmptyState";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type DsaRate = {
   id: number;
@@ -111,11 +111,7 @@ function SettingsTable({
           children
         ) : (
           <tbody>
-            <tr>
-              <td colSpan={columns} className="p-0">
-                <EmptyState icon={empty.icon} title={empty.title} description={empty.description} className="min-h-0 py-8" />
-              </td>
-            </tr>
+            <TableEmpty colSpan={columns} icon={empty.icon} title={empty.title} description={empty.description} />
           </tbody>
         )}
       </table>
@@ -368,8 +364,8 @@ export default function TravelSettingsPage() {
                     />
                   </FormField>
                   <div className="flex items-end">
-                    <label className="flex items-center gap-2 text-sm text-neutral-700">
-                      <input
+                    <label htmlFor="travel-settings-setform-active-rate" className="flex items-center gap-2 text-sm text-neutral-700">
+                      <input id="travel-settings-setform-active-rate"
                         type="checkbox"
                         className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                         checked={form.is_active}
@@ -618,8 +614,8 @@ export default function TravelSettingsPage() {
                     />
                   </FormField>
                   <div className="flex items-end sm:col-span-2">
-                    <label className="flex items-center gap-2 text-sm text-neutral-700">
-                      <input
+                    <label htmlFor="travel-settings-setsponsoredform-active-policy-rate" className="flex items-center gap-2 text-sm text-neutral-700">
+                      <input id="travel-settings-setsponsoredform-active-policy-rate"
                         type="checkbox"
                         className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                         checked={sponsoredForm.is_active}

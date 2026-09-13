@@ -5,6 +5,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 function defaultDueDate(): string {
   const d = new Date();
@@ -97,27 +98,27 @@ export default function RecurringAssignmentsPage() {
       <form onSubmit={onSubmit} className="card space-y-3 p-4">
         <h2 className="text-sm font-semibold text-neutral-900">Create template</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block text-sm sm:col-span-2">
+          <label htmlFor="assignments-recurring-title-setform-f-required" className="block text-sm sm:col-span-2">
             <span className="mb-1 block text-neutral-600">Title</span>
-            <input
+            <input id="assignments-recurring-title-setform-f-required"
               className="form-input w-full"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               required
             />
           </label>
-          <label className="block text-sm sm:col-span-2">
+          <label htmlFor="assignments-recurring-description-setform-f-required" className="block text-sm sm:col-span-2">
             <span className="mb-1 block text-neutral-600">Description</span>
-            <textarea
+            <textarea id="assignments-recurring-description-setform-f-required"
               className="form-input min-h-20 w-full"
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               required
             />
           </label>
-          <label className="block text-sm">
+          <label htmlFor="assignments-recurring-first-due-date-setform-f-required" className="block text-sm">
             <span className="mb-1 block text-neutral-600">First due date</span>
-            <input
+            <input id="assignments-recurring-first-due-date-setform-f-required"
               type="date"
               className="form-input w-full"
               value={form.due_date}
@@ -125,9 +126,9 @@ export default function RecurringAssignmentsPage() {
               required
             />
           </label>
-          <label className="block text-sm">
+          <label htmlFor="assignments-recurring-frequency-setform-f-weekly-biweekly-monthly" className="block text-sm">
             <span className="mb-1 block text-neutral-600">Frequency</span>
-            <select
+            <select id="assignments-recurring-frequency-setform-f-weekly-biweekly-monthly"
               className="form-input w-full"
               value={form.frequency}
               onChange={(e) => setForm((f) => ({ ...f, frequency: e.target.value }))}
@@ -146,8 +147,12 @@ export default function RecurringAssignmentsPage() {
       {isLoading && <p className="text-sm text-neutral-500">Loading…</p>}
 
       {(data ?? []).length === 0 && !isLoading && (
-        <div className="card p-8 text-sm text-neutral-500 text-center">
-          No recurring templates yet. Use the form above to create one.
+        <div className="card">
+          <EmptyState
+            icon="repeat"
+            title="No recurring templates yet."
+            description="Use the form above to create one."
+          />
         </div>
       )}
 

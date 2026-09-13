@@ -132,13 +132,13 @@ export default function AccessRequestsPage() {
                     </td>
                     <td>
                       <div className="flex flex-wrap gap-2">
-                        <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={() => decide(r.id, "approve", "supervisor")}>
+                        <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => decide(r.id, "approve", "supervisor")}>
                           Supervisor OK
                         </button>
-                        <button type="button" className="text-xs font-medium text-emerald-700 hover:underline" onClick={() => decide(r.id, "approve", "approver")}>
+                        <button type="button" className="btn-secondary text-xs py-1 px-2 text-emerald-700" onClick={() => decide(r.id, "approve", "approver")}>
                           Approve
                         </button>
-                        <button type="button" className="text-xs font-medium text-red-600 hover:underline" onClick={() => decide(r.id, "reject", "approver")}>
+                        <button type="button" className="btn-secondary text-xs py-1 px-2 text-red-600" onClick={() => decide(r.id, "reject", "approver")}>
                           Reject
                         </button>
                       </div>

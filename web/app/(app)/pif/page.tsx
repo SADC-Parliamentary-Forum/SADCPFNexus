@@ -270,13 +270,13 @@ export default function PifPage() {
                   <td className="text-xs text-neutral-500">{formatDateShort(p.end_date)}</td>
                   <td>
                     <div className="flex flex-wrap gap-2">
-                      <Link href={`/pif/${p.id}`} className="text-xs font-medium text-primary hover:underline">
+                      <Link href={`/pif/${p.id}`} className="btn-secondary text-xs py-1 px-2">
                         View
                       </Link>
                       {(p.status === "draft" || p.status === "amendment_draft") && (
                         <Link
                           href={`/pif/${p.id}/edit`}
-                          className="text-xs font-medium text-neutral-600 hover:underline"
+                          className="btn-secondary text-xs py-1 px-2"
                         >
                           Edit
                         </Link>

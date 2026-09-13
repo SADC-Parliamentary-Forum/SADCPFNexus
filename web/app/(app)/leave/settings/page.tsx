@@ -130,8 +130,8 @@ export default function LeaveSettingsPage() {
             <form onSubmit={createVersion} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-neutral-700">Version</label>
-                <input
+                <label htmlFor="leave-settings-version" className="mb-1 block text-xs font-semibold text-neutral-700">Version</label>
+                <input id="leave-settings-version"
                   className="form-input"
                   value={form.version}
                   onChange={(e) => setForm({ ...form, version: e.target.value })}
@@ -140,8 +140,8 @@ export default function LeaveSettingsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-neutral-700">Effective from</label>
-                <input
+                <label htmlFor="leave-settings-effective-from" className="mb-1 block text-xs font-semibold text-neutral-700">Effective from</label>
+                <input id="leave-settings-effective-from"
                   type="date"
                   className="form-input"
                   value={form.effective_from}
@@ -150,8 +150,8 @@ export default function LeaveSettingsPage() {
                 />
               </div>
               <div className="col-span-2">
-                <label className="mb-1 block text-xs font-semibold text-neutral-700">Workflow mode</label>
-                <select
+                <label htmlFor="leave-settings-workflow-mode" className="mb-1 block text-xs font-semibold text-neutral-700">Workflow mode</label>
+                <select id="leave-settings-workflow-mode"
                   className="form-input"
                   value={form.workflow_mode}
                   onChange={(e) =>
@@ -170,8 +170,8 @@ export default function LeaveSettingsPage() {
                 </select>
               </div>
               <div className="col-span-2">
-                <label className="flex items-center gap-2 text-sm text-neutral-700">
-                  <input
+                <label htmlFor="leave-settings-setform-disabled-classname-h-4-w-4-rounded-borde" className="flex items-center gap-2 text-sm text-neutral-700">
+                  <input id="leave-settings-setform-disabled-classname-h-4-w-4-rounded-borde"
                     type="checkbox"
                     checked={form.admin_review_required || form.workflow_mode === "director_principal"}
                     onChange={(e) => setForm({ ...form, admin_review_required: e.target.checked })}
@@ -182,8 +182,8 @@ export default function LeaveSettingsPage() {
                 </label>
               </div>
               <div className="col-span-2">
-                <label className="mb-1 block text-xs font-semibold text-neutral-700">Change reason</label>
-                <textarea
+                <label htmlFor="leave-settings-change-reason" className="mb-1 block text-xs font-semibold text-neutral-700">Change reason</label>
+                <textarea id="leave-settings-change-reason"
                   className="form-input resize-none"
                   rows={2}
                   value={form.change_reason}

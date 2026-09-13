@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { travelApi } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type ToilRow = {
   id: number;
@@ -22,7 +28,6 @@ const STATUS_LABEL: Record<string, string> = {
   rejected: "Rejected",
   expired: "Expired",
   extended: "Extended (SG)",
-  // legacy (pre-migration)
   candidate: "Pending supervisor",
   ot_authorised: "Pending supervisor",
   duty_confirmed: "Pending HR",
@@ -30,49 +35,66 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function TravelToilPage() {
+  const { t } = useI18n();
+  const { prompt } = useConfirm();
+  const { success, error } = useToast();
   const [rows, setRows] = useState<ToilRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState<string | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     travelApi.listToil({ per_page: 50 })
       .then((r) => setRows((r.data.data as ToilRow[]) ?? []))
+      .catch((err: unknown) => error(apiErrorMessage(err, t("travel.toil.loadError"))))
       .finally(() => setLoading(false));
-  };
+  }, [error, t]);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   const act = async (fn: () => Promise<unknown>, ok: string) => {
     try {
       await fn();
-      setMsg(ok);
+      success(t(ok));
       load();
-    } catch {
-      setMsg("Action failed.");
+    } catch (err: unknown) {
+      error(apiErrorMessage(err, t("travel.toil.actionFailed")));
     }
   };
 
   const extend = async (id: number) => {
-    const reason = window.prompt("SG extension reason (required):");
-    if (!reason?.trim()) {
-      setMsg("Extension cancelled — reason is required.");
+    const reason = (await prompt({
+      title: "travel.toil.extendTitle",
+      label: "travel.toil.extendReason",
+      required: true,
+    }))?.trim();
+    if (!reason) {
+      error(t("travel.toil.extendCancelled"));
       return;
     }
-    const expires = window.prompt("New expiry date (YYYY-MM-DD), or leave blank for +30 days:");
+    const expires = await prompt({
+      title: "travel.toil.extendTitle",
+      message: "travel.toil.extendExpiryHint",
+      label: "travel.toil.extendExpiry",
+      inputType: "date",
+    });
     await act(
       () => travelApi.toilExtend(id, {
-        reason: reason.trim(),
+        reason,
         ...(expires?.trim() ? { expires_at: expires.trim() } : {}),
       }),
-      "Expiry extended by SG — leave credit retained with new expiry.",
+      "travel.toil.extendOk",
     );
   };
 
   const reject = async (id: number) => {
-    const reason = window.prompt("Rejection reason (required):");
-    if (!reason?.trim()) return;
-    await act(() => travelApi.toilReject(id, reason.trim()), "Candidate rejected — no leave credited.");
+    const reason = (await prompt({
+      title: "travel.toil.rejectTitle",
+      label: "travel.toil.rejectReason",
+      required: true,
+      variant: "danger",
+    }))?.trim();
+    if (!reason) return;
+    await act(() => travelApi.toilReject(id, reason), "travel.toil.rejected");
   };
 
   const awaitsSupervisor = (s: string) =>
@@ -80,80 +102,84 @@ export default function TravelToilPage() {
   const awaitsHr = (s: string) => s === "pending_hr" || s === "duty_confirmed";
 
   return (
-    <div className="p-6 w-full min-w-0 space-y-4">
-      <h1 className="text-2xl font-semibold text-neutral-900">Auto-TOIL approval queue</h1>
-      <p className="text-sm text-neutral-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-        Weekend / public-holiday duty days are auto-calculated and notified to supervisor + HR.
-        Leave credit is applied only after supervisor confirms duty and HR validates.
-        Accrual expires 30 days from accrual date unless the Secretary General extends.
-      </p>
-      {msg && <p className="text-sm text-primary">{msg}</p>}
-      {loading ? <p className="text-sm text-neutral-400">Loading…</p> : (
-        <table className="data-table w-full">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Traveller</th>
-              <th>Travel</th>
-              <th>Hours</th>
-              <th>Status</th>
-              <th>Expires</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr><td colSpan={7} className="py-8 text-center text-neutral-400">No TOIL candidates.</td></tr>
-            ) : rows.map((r) => (
-              <tr key={r.id}>
-                <td>{r.candidate_date}</td>
-                <td>{r.user?.name ?? "—"}</td>
-                <td className="font-mono text-sm">{r.travel_request?.reference_number ?? "—"}</td>
-                <td>{r.hours}</td>
-                <td>{STATUS_LABEL[r.status] ?? r.status}</td>
-                <td>{r.expires_at ?? "—"}</td>
-                <td className="space-x-2 text-xs">
-                  {awaitsSupervisor(r.status) && (
-                    <button
-                      type="button"
-                      className="btn-secondary py-1 px-2"
-                      onClick={() => act(() => travelApi.toilConfirmDuty(r.id), "Duty confirmed — pending HR")}
-                    >
-                      Confirm duty
-                    </button>
-                  )}
-                  {awaitsHr(r.status) && (
-                    <button
-                      type="button"
-                      className="btn-primary py-1 px-2"
-                      onClick={() => act(() => travelApi.toilHrValidate(r.id), "Credited to Leave accrual (no leave request auto-created)")}
-                    >
-                      HR validate &amp; credit
-                    </button>
-                  )}
-                  {(r.status === "credited" || r.status === "extended" || r.status === "expired") && (
-                    <button
-                      type="button"
-                      className="btn-secondary py-1 px-2"
-                      onClick={() => extend(r.id)}
-                    >
-                      SG extend
-                    </button>
-                  )}
-                  {awaitsSupervisor(r.status) || awaitsHr(r.status) ? (
-                    <button
-                      type="button"
-                      className="btn-secondary py-1 px-2 text-red-700"
-                      onClick={() => reject(r.id)}
-                    >
-                      Reject
-                    </button>
-                  ) : null}
-                </td>
+    <div className="w-full min-w-0 space-y-5">
+      <ModulePageHeader
+        title="travel.toil.title"
+        subtitle="travel.toil.subtitle"
+        breadcrumbs={
+          <PageBreadcrumbs items={[{ label: "nav.travel", href: "/travel" }, { label: "travel.toil.title" }]} />
+        }
+      />
+      {loading ? (
+        <p className="text-sm text-neutral-400">{t("common.loading")}</p>
+      ) : rows.length === 0 ? (
+        <EmptyState icon="event_busy" title="travel.toil.empty" description="travel.toil.emptyHint" />
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
+          <table className="data-table w-full">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Traveller</th>
+                <th>Travel</th>
+                <th>Hours</th>
+                <th>Status</th>
+                <th>Expires</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.candidate_date}</td>
+                  <td>{r.user?.name ?? "—"}</td>
+                  <td className="font-mono text-sm">{r.travel_request?.reference_number ?? "—"}</td>
+                  <td>{r.hours}</td>
+                  <td>{STATUS_LABEL[r.status] ?? r.status}</td>
+                  <td>{r.expires_at ?? "—"}</td>
+                  <td className="space-x-2 text-xs">
+                    {awaitsSupervisor(r.status) && (
+                      <button
+                        type="button"
+                        className="btn-secondary py-1 px-2"
+                        onClick={() => act(() => travelApi.toilConfirmDuty(r.id), "travel.toil.dutyConfirmed")}
+                      >
+                        {t("travel.toil.confirmDuty")}
+                      </button>
+                    )}
+                    {awaitsHr(r.status) && (
+                      <button
+                        type="button"
+                        className="btn-primary py-1 px-2"
+                        onClick={() => act(() => travelApi.toilHrValidate(r.id), "travel.toil.credited")}
+                      >
+                        {t("travel.toil.hrValidate")}
+                      </button>
+                    )}
+                    {(r.status === "credited" || r.status === "extended" || r.status === "expired") && (
+                      <button
+                        type="button"
+                        className="btn-secondary py-1 px-2"
+                        onClick={() => extend(r.id)}
+                      >
+                        {t("travel.toil.sgExtend")}
+                      </button>
+                    )}
+                    {awaitsSupervisor(r.status) || awaitsHr(r.status) ? (
+                      <button
+                        type="button"
+                        className="btn-secondary py-1 px-2 text-red-700"
+                        onClick={() => reject(r.id)}
+                      >
+                        {t("common.reject")}
+                      </button>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

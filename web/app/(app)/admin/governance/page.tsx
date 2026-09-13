@@ -5,6 +5,7 @@ import Link from "next/link";
 import { governanceConfigApi, auditLogsApi, type GovernanceConfig, type AuditLogEntry } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -100,31 +101,6 @@ export default function AdminGovernanceConfigPage() {
         }
       />
 
-      <div className="hidden">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/admin" className="hover:text-primary transition-colors">Admin</Link>
-            <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-            <span className="text-neutral-900 font-medium">Governance Configuration</span>
-          </div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Governance Configuration</h1>
-          <p className="page-subtitle text-neutral-500 max-w-2xl">Manage institutional data policies, aggregation thresholds, and access controls for the platform.</p>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={() => setConfig(DEFAULTS)} className="btn-secondary px-4 py-2 text-sm flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">restart_alt</span>Reset
-          </button>
-          <button onClick={handleSave} disabled={saving} className={`btn-primary px-5 py-2 text-sm flex items-center gap-2 transition-colors disabled:opacity-60 ${saved ? "!bg-green-600" : ""}`}>
-            {saving ? (
-              <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-            ) : (
-              <span className="material-symbols-outlined text-[18px]">{saved ? "check" : "save"}</span>
-            )}
-            {saved ? "Saved!" : "Save Changes"}
-          </button>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-7 space-y-6">
           {/* Datasets */}
@@ -140,8 +116,8 @@ export default function AdminGovernanceConfigPage() {
                 { key: "infra", label: "Procurement Logs", badge: "Public", badgeColor: "bg-green-100 text-green-700" },
                 { key: "personnel", label: "Personnel Records", badge: "Restricted", badgeColor: "bg-red-100 text-red-700" },
               ]).map(({ key, label, badge, badgeColor }) => (
-                <label key={key} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors hover:border-primary/50 ${config.datasets[key] ? "border-primary/30 bg-primary/5" : "border-neutral-100 bg-neutral-50"}`}>
-                  <input type="checkbox" checked={!!config.datasets[key]} onChange={() => update("datasets", { ...config.datasets, [key]: !config.datasets[key] })} className="h-5 w-5 rounded border-neutral-300 text-primary focus:ring-primary/20" />
+                <label htmlFor="admin-governance-update-datasets-classname-h-5-w-5-rounded-border" key={key} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-colors hover:border-primary/50 ${config.datasets[key] ? "border-primary/30 bg-primary/5" : "border-neutral-100 bg-neutral-50"}`}>
+                  <input id="admin-governance-update-datasets-classname-h-5-w-5-rounded-border" type="checkbox" checked={!!config.datasets[key]} onChange={() => update("datasets", { ...config.datasets, [key]: !config.datasets[key] })} className="h-5 w-5 rounded border-neutral-300 text-primary focus:ring-primary/20" />
                   <div>
                     <p className="font-semibold text-neutral-900 text-sm">{label}</p>
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeColor}`}>{badge}</span>
@@ -159,23 +135,23 @@ export default function AdminGovernanceConfigPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Min Group Size</label>
+                <label htmlFor="admin-governance-min-group-size" className="block text-xs font-semibold text-neutral-700 mb-1">Min Group Size</label>
                 <div className="relative">
-                  <input type="number" value={config.min_group_size} onChange={(e) => update("min_group_size", Number(e.target.value))} className="form-input pr-12" />
+                  <input id="admin-governance-min-group-size" type="number" value={config.min_group_size} onChange={(e) => update("min_group_size", Number(e.target.value))} className="form-input pr-12" />
                   <div className="absolute inset-y-0 right-0 flex items-center pr-3 text-neutral-400 text-xs pointer-events-none">pax</div>
                 </div>
                 <p className="text-[11px] text-neutral-400 mt-1">Groups smaller than this are suppressed.</p>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Time Granularity</label>
-                <select className="form-input" value={config.granularity} onChange={(e) => update("granularity", e.target.value)}>
+                <label htmlFor="admin-governance-time-granularity" className="block text-xs font-semibold text-neutral-700 mb-1">Time Granularity</label>
+                <select id="admin-governance-time-granularity" className="form-input" value={config.granularity} onChange={(e) => update("granularity", e.target.value)}>
                   {["Daily", "Weekly", "Monthly", "Quarterly"].map((g) => <option key={g}>{g}</option>)}
                 </select>
                 <p className="text-[11px] text-neutral-400 mt-1">Minimum time window for data buckets.</p>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Variance Limit (%)</label>
-                <input type="number" value={config.variance_limit} onChange={(e) => update("variance_limit", Number(e.target.value))} className="form-input" />
+                <label htmlFor="admin-governance-variance-limit" className="block text-xs font-semibold text-neutral-700 mb-1">Variance Limit (%)</label>
+                <input id="admin-governance-variance-limit" type="number" value={config.variance_limit} onChange={(e) => update("variance_limit", Number(e.target.value))} className="form-input" />
                 <p className="text-[11px] text-neutral-400 mt-1">Acceptable deviation for noise injection.</p>
               </div>
             </div>
@@ -188,7 +164,7 @@ export default function AdminGovernanceConfigPage() {
                 <div className="p-2 bg-primary/10 rounded-lg text-primary"><span className="material-symbols-outlined">history</span></div>
                 <div><h2 className="font-bold text-neutral-900">Recent System Activity</h2><p className="text-xs text-neutral-500">Latest audit log entries from the platform.</p></div>
               </div>
-              <Link href="/admin/audit-trail" className="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+              <Link href="/admin/audit-trail" className="btn-secondary text-xs flex items-center gap-1">
                 View Full Audit<span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </Link>
             </div>
@@ -197,7 +173,7 @@ export default function AdminGovernanceConfigPage() {
                 <thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Module</th><th>Record</th></tr></thead>
                 <tbody>
                   {recentLogs.length === 0 ? (
-                    <tr><td colSpan={5} className="text-center py-8 text-neutral-400 text-xs">No audit entries available</td></tr>
+                    <TableEmpty colSpan={5} title="No audit entries available" />
                   ) : recentLogs.map((l) => (
                     <tr key={l.id}>
                       <td className="text-xs text-neutral-400 whitespace-nowrap">{formatDateShort(l.timestamp)}</td>
@@ -263,8 +239,8 @@ export default function AdminGovernanceConfigPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-2">Retention Period: <span className="text-primary font-bold">{config.retention_days} days</span></label>
-                <input type="range" min={1} max={90} value={config.retention_days} onChange={(e) => update("retention_days", Number(e.target.value))} className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-primary" />
+                <label htmlFor="admin-governance-retention-period-days" className="block text-xs font-semibold text-neutral-700 mb-2">Retention Period: <span className="text-primary font-bold">{config.retention_days} days</span></label>
+                <input id="admin-governance-retention-period-days" type="range" min={1} max={90} value={config.retention_days} onChange={(e) => update("retention_days", Number(e.target.value))} className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-primary" />
                 <p className="text-xs text-neutral-400 mt-1">Days before export logs are purged.</p>
               </div>
             </div>

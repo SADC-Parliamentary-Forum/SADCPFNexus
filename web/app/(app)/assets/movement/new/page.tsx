@@ -40,8 +40,8 @@ function AssetSearch({ value, onSelect }: { value: Asset | null; onSelect: (a: A
 
   return (
     <div ref={ref} className="relative">
-      <label className="block text-xs font-semibold text-neutral-700 mb-1">Asset <span className="text-red-500">*</span></label>
-      <input className="form-input" placeholder="Search by code or name…" value={query}
+      <label htmlFor="assets-movement-new-asset" className="block text-xs font-semibold text-neutral-700 mb-1">Asset <span className="text-red-500">*</span></label>
+      <input id="assets-movement-new-asset" className="form-input" placeholder="Search by code or name…" value={query}
         onChange={(e) => { setQuery(e.target.value); onSelect(null); }} autoComplete="off" />
       {open && options.length > 0 && (
         <div className="absolute z-50 mt-1 w-full rounded-xl border border-neutral-200 bg-white shadow-lg overflow-hidden">
@@ -86,8 +86,8 @@ function UserSearch({ label, value, onSelect, required }: { label: string; value
 
   return (
     <div ref={ref} className="relative">
-      <label className="block text-xs font-semibold text-neutral-700 mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
-      <input className="form-input" placeholder="Search by name or email…" value={query}
+      <label htmlFor="assets-movement-new-field" className="block text-xs font-semibold text-neutral-700 mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
+      <input id="assets-movement-new-field" className="form-input" placeholder="Search by name or email…" value={query}
         onChange={(e) => { setQuery(e.target.value); onSelect(null); }} autoComplete="off" />
       {open && options.length > 0 && (
         <div className="absolute z-50 mt-1 w-full rounded-xl border border-neutral-200 bg-white shadow-lg overflow-hidden">
@@ -222,18 +222,18 @@ function NewAssetMovementPageContent() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Movement Date <span className="text-red-500">*</span></label>
-            <input type="date" className="form-input" value={movementDate} onChange={(e) => setMovementDate(e.target.value)} />
+            <label htmlFor="assets-movement-new-movement-date" className="block text-xs font-semibold text-neutral-700 mb-1">Movement Date <span className="text-red-500">*</span></label>
+            <input id="assets-movement-new-movement-date" type="date" className="form-input" value={movementDate} onChange={(e) => setMovementDate(e.target.value)} />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Reason</label>
-            <input className="form-input" placeholder="e.g. Staff member changed role, asset sent for annual service…" value={reason} onChange={(e) => setReason(e.target.value)} />
+            <label htmlFor="assets-movement-new-reason" className="block text-xs font-semibold text-neutral-700 mb-1">Reason</label>
+            <input id="assets-movement-new-reason" className="form-input" placeholder="e.g. Staff member changed role, asset sent for annual service…" value={reason} onChange={(e) => setReason(e.target.value)} />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Notes</label>
-            <textarea rows={3} className="form-input resize-none" placeholder="Additional notes for the asset register…" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <label htmlFor="assets-movement-new-notes" className="block text-xs font-semibold text-neutral-700 mb-1">Notes</label>
+            <textarea id="assets-movement-new-notes" rows={3} className="form-input resize-none" placeholder="Additional notes for the asset register…" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>
 

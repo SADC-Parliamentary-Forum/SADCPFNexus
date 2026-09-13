@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class EmployeePerformanceProfileScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> tracker;
@@ -194,27 +195,9 @@ class _EmployeePerformanceProfileScreenState
 
     final hrNotes = t['hr_summary'] as String?;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              'Performance Profile',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-            ),
-            Text(
-              name,
-              style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-            ),
-          ],
-        ),
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-      ),
+    return StitchScreen(
+      title: 'Performance Profile',
+      fallbackRoute: '/hr/performance',
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [

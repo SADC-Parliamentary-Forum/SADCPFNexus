@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type Policy = {
   id: number;
@@ -65,7 +66,7 @@ export default function AssetSettingsPage() {
                 <td>{p.is_active ? "Yes" : "No"}</td>
               </tr>
             ))}
-            {policies.length === 0 && <tr><td colSpan={4}>No policies — default USD 250 is created on first capitalisation.</td></tr>}
+            {policies.length === 0 && <TableEmpty colSpan={4} title="No policies — default USD 250 is created on first capitalisation." />}
           </tbody>
         </table>
       </section>
@@ -84,7 +85,7 @@ export default function AssetSettingsPage() {
                 <td>{l.building ?? "—"}</td>
               </tr>
             ))}
-            {locations.length === 0 && <tr><td colSpan={3}>No locations configured.</td></tr>}
+            {locations.length === 0 && <TableEmpty colSpan={3} title="No locations configured." />}
           </tbody>
         </table>
       </section>

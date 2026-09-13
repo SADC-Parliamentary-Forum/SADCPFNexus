@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  SCREEN
@@ -87,69 +88,20 @@ class _AuditComplianceScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.textPrimary, size: 18),
-          onPressed: () => Navigator.of(context).maybePop(),
+    return StitchScreen(
+      title: 'Audit Dashboard',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh_rounded,
+          onPressed: _loading ? null : _load,
         ),
-        title: const Column(
-          children: [
-            Text(
-              'Audit Dashboard',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              'SADC PF NEXUS · GOVERNANCE',
-              style: TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.0,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded,
-                color: AppColors.textSecondary),
-            onPressed: _load,
-          ),
-        ],
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading audit dashboard')
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.error_outline_rounded,
-                          color: AppColors.danger, size: 40),
-                      const SizedBox(height: 12),
-                      Text(_error!,
-                          style: const TextStyle(
-                              color: AppColors.textSecondary)),
-                      const SizedBox(height: 12),
-                      TextButton(
-                        onPressed: _load,
-                        child: const Text('Retry',
-                            style: TextStyle(color: AppColors.primary)),
-                      ),
-                    ],
-                  ),
-                )
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
                   children: [

@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { assignmentsApi } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function AssignmentsCapacityPage() {
   const { data, isLoading, isError } = useQuery({
@@ -23,23 +25,24 @@ export default function AssignmentsCapacityPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-            <Link href="/assignments" className="hover:text-neutral-700">Assignments</Link>
-            <span>/</span>
-            <span className="text-neutral-700">Capacity</span>
-          </div>
-          <h1 className="page-title">Team capacity</h1>
-          <p className="page-subtitle">
-            Open workload by assignee (priority-weighted). Not a performance score.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/assignments/calendar" className="btn-secondary text-sm">Calendar &amp; ICS</Link>
-          <Link href="/assignments/workload" className="btn-secondary text-sm">Workload forecast</Link>
-        </div>
-      </div>
+      <ModulePageHeader
+        title="Team capacity"
+        subtitle="Open workload by assignee (priority-weighted). Not a performance score."
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.assignments", href: "/assignments" },
+              { label: "Capacity" },
+            ]}
+          />
+        }
+        actions={
+          <>
+            <Link href="/assignments/calendar" className="btn-secondary text-sm">Calendar &amp; ICS</Link>
+            <Link href="/assignments/workload" className="btn-secondary text-sm">Workload forecast</Link>
+          </>
+        }
+      />
 
       {isLoading && <p className="text-sm text-neutral-500">Loading capacity…</p>}
       {isError && <p className="text-sm text-red-700">Failed to load capacity view.</p>}
@@ -85,8 +88,8 @@ export default function AssignmentsCapacityPage() {
             ))}
             {!isLoading && assignees.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-neutral-500">
-                  No open assignments in scope.
+                <td colSpan={5}>
+                  <EmptyState icon="groups" title="No open assignments in scope." />
                 </td>
               </tr>
             )}

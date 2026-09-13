@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { travelApi } from "@/lib/api";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
@@ -30,7 +31,7 @@ export default function TravelFinanceDashboardPage() {
         <Link href="/travel/queues/finance" className="btn-primary">Finance queue</Link>
       </div>
       {isLoading && <p className="text-sm text-neutral-400">Loading…</p>}
-      {isError && <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">Unable to load finance dashboard.</div>}
+      {isError && <ErrorBanner message="Unable to load finance dashboard." />}
       {data && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="travel-finance-dashboard">
@@ -46,7 +47,7 @@ export default function TravelFinanceDashboardPage() {
           <div className="card p-4">
             <h2 className="text-sm font-semibold mb-2">Cost by programme</h2>
             {(data.cost_by_programme ?? []).length === 0 ? (
-              <p className="text-sm text-neutral-400">No programme costs yet.</p>
+              <EmptyState icon="account_tree" title="No programme costs yet." className="py-6 min-h-0" />
             ) : (
               <ul className="text-sm space-y-1">
                 {(data.cost_by_programme as any[]).slice(0, 8).map((row) => (

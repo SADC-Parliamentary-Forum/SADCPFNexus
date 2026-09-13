@@ -12,6 +12,7 @@ import {
   selectionColumnClass,
 } from "@/components/ui/BulkSelectionBar";
 import { useRowSelection } from "@/lib/useRowSelection";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function MasterRegisterPage() {
   const [items, setItems] = useState<CorrespondenceLetter[]>([]);
@@ -90,8 +91,8 @@ export default function MasterRegisterPage() {
       }
       empty={
         !loading && items.length === 0 ? (
-          <div className="card px-5 py-16 text-center text-sm text-neutral-500">
-            No correspondence entries in the master register.
+          <div className="card">
+            <EmptyState icon="mail" title="No correspondence entries in the master register." />
           </div>
         ) : null
       }
@@ -129,7 +130,7 @@ export default function MasterRegisterPage() {
                   {(item.received_at || item.approved_at || item.created_at || "").slice(0, 10)}
                 </td>
                 <td className="px-4 py-3 font-mono text-xs">
-                  <Link href={`/correspondence/${item.id}`} className="text-primary hover:underline">
+                  <Link href={`/correspondence/${item.id}`} className="font-medium text-primary">
                     {item.registry_reference || item.reference_number || `#${item.id}`}
                   </Link>
                 </td>

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { stockItemsApi, stockWriteOffsApi, type StockItem, type StockWriteOff } from "@/lib/api";
 import { canIssueStock, canManageStock, getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function StockWriteOffsPage() {
   const { toast } = useToast();
@@ -107,11 +108,7 @@ export default function StockWriteOffsPage() {
             </tr>
           ))}
           {rows.length === 0 && (
-            <tr>
-              <td className="px-4 py-6 text-center text-sm text-neutral-500" colSpan={6}>
-                No write-offs yet.
-              </td>
-            </tr>
+            <TableEmpty colSpan={6} title="No write-offs yet." />
           )}
         </tbody>
       </table>

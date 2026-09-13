@@ -196,8 +196,8 @@ export default function NewIncidentPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Subject / Title <span className="text-red-500">*</span></label>
-            <input
+            <label htmlFor="hr-incidents-new-subject-title" className="block text-xs font-semibold text-neutral-700 mb-1">Subject / Title <span className="text-red-500">*</span></label>
+            <input id="hr-incidents-new-subject-title"
               className="form-input"
               placeholder="Brief description of what occurred…"
               value={subject}
@@ -206,8 +206,8 @@ export default function NewIncidentPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Detailed Description <span className="text-red-500">*</span></label>
-            <textarea
+            <label htmlFor="hr-incidents-new-detailed-description" className="block text-xs font-semibold text-neutral-700 mb-1">Detailed Description <span className="text-red-500">*</span></label>
+            <textarea id="hr-incidents-new-detailed-description"
               rows={5}
               className="form-input resize-none"
               placeholder="Describe the incident in full detail — what happened, how it happened, who was involved, and the immediate impact…"
@@ -219,22 +219,22 @@ export default function NewIncidentPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Incident Date (if known)</label>
-              <input type="date" className="form-input" value={incidentDate} onChange={(e) => setIncidentDate(e.target.value)} />
+              <label htmlFor="hr-incidents-new-incident-date-if-known" className="block text-xs font-semibold text-neutral-700 mb-1">Incident Date (if known)</label>
+              <input id="hr-incidents-new-incident-date-if-known" type="date" className="form-input" value={incidentDate} onChange={(e) => setIncidentDate(e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-neutral-700 mb-1">Location</label>
-              <input className="form-input" placeholder="e.g. Office Block A, Floor 2" value={location} onChange={(e) => setLocation(e.target.value)} />
+              <label htmlFor="hr-incidents-new-location" className="block text-xs font-semibold text-neutral-700 mb-1">Location</label>
+              <input id="hr-incidents-new-location" className="form-input" placeholder="e.g. Office Block A, Floor 2" value={location} onChange={(e) => setLocation(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-neutral-700 mb-1">Witnesses (optional)</label>
-            <input className="form-input" placeholder="Names of witnesses, if any…" value={witnesses} onChange={(e) => setWitnesses(e.target.value)} />
+            <label htmlFor="hr-incidents-new-witnesses-optional" className="block text-xs font-semibold text-neutral-700 mb-1">Witnesses (optional)</label>
+            <input id="hr-incidents-new-witnesses-optional" className="form-input" placeholder="Names of witnesses, if any…" value={witnesses} onChange={(e) => setWitnesses(e.target.value)} />
           </div>
 
-          <label className="flex items-center gap-3 cursor-pointer select-none">
-            <input type="checkbox" checked={isConfidential} onChange={(e) => setIsConfidential(e.target.checked)}
+          <label htmlFor="hr-incidents-new-setisconfidential-e-target-checked-classname-h-4" className="flex items-center gap-3 cursor-pointer select-none">
+            <input id="hr-incidents-new-setisconfidential-e-target-checked-classname-h-4" type="checkbox" checked={isConfidential} onChange={(e) => setIsConfidential(e.target.checked)}
               className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary" />
             <div>
               <p className="text-sm font-medium text-neutral-900">Mark as Confidential</p>

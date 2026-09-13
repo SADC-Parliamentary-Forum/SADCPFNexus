@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class ExecutiveCockpitScreen extends ConsumerStatefulWidget {
   const ExecutiveCockpitScreen({super.key});
@@ -105,28 +106,18 @@ class _ExecutiveCockpitScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+    return StitchScreen(
+      title: 'Executive Cockpit',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _load,
         ),
-        title: const Text('Executive Cockpit',
-            style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w700)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-            onPressed: _load,
-          ),
-          Container(
-            margin: const EdgeInsets.only(right: 12),
+        Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: Container(
             width: 32,
             height: 32,
             decoration: const BoxDecoration(
@@ -143,13 +134,15 @@ class _ExecutiveCockpitScreenState
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading cockpit')
           : _error != null
-              ? _buildError()
+              ? StitchErrorState(
+                  message: _error ?? 'Failed to load cockpit data',
+                  onRetry: _load,
+                )
               : RefreshIndicator(
                   onRefresh: _load,
                   color: AppColors.primary,
@@ -354,42 +347,6 @@ class _ExecutiveCockpitScreenState
                     ],
                   ),
                 ),
-    );
-  }
-
-  Widget _buildError() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
-            const SizedBox(height: 12),
-            const Text('Failed to load cockpit data',
-                style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            Text(_error ?? '',
-                style:
-                    const TextStyle(color: AppColors.textMuted, fontSize: 12),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _load,
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textPrimary,
-                  minimumSize: const Size(140, 44),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8))),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

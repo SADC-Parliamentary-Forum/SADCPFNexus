@@ -6,6 +6,7 @@ import { policyApi, type Policy, type RiskAttachment, type RiskDocumentType } fr
 import RiskDocumentsPanel from "@/components/ui/RiskDocumentsPanel";
 import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { formatDateShort } from "@/lib/utils";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const LEVEL_CLS: Record<string, string> = {
   low:      "text-green-700 bg-green-100 border-green-300",
@@ -58,14 +59,23 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   return (
     <RiskPageFrame>
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm text-neutral-500">
-        <Link href="/risk" className="hover:text-primary">Risk Register</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <Link href="/risk/policies" className="hover:text-primary">Policy Library</Link>
-        <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-        <span className="text-neutral-700 truncate max-w-xs">{policy.title}</span>
-      </div>
+      <ModulePageHeader
+        title={policy.title}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "risk.hub", href: "/risk" },
+              { label: "Policy Library", href: "/risk/policies" },
+              { label: policy.title },
+            ]}
+          />
+        }
+        meta={
+          <span className={`badge-${policy.status === "active" ? "success" : "muted"} capitalize`}>
+            {policy.status}
+          </span>
+        }
+      />
 
       {/* Header card */}
       <div className="card p-6">
@@ -73,7 +83,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
           <div className="space-y-1 flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-indigo-500 text-[22px]">policy</span>
-              <h1 className="text-xl font-bold text-neutral-900 leading-tight">{policy.title}</h1>
+              <p className="text-lg font-semibold text-neutral-900 leading-tight">{policy.title}</p>
             </div>
             <div className="flex flex-wrap gap-3 mt-2 text-xs text-neutral-500">
               {policy.owner_name && (
@@ -185,7 +195,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
         </div>
       )}
 
-      <Link href="/risk/policies" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary">
+      <Link href="/risk/policies" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
         Back to Policy Library
       </Link>

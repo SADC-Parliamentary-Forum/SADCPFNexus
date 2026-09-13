@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { assetsApi, assetCategoriesApi, tenantUsersApi, type Asset, type AssetCategory } from "@/lib/api";
 import { canManageAssets, getStoredUser } from "@/lib/auth";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const STATUSES = ["active", "service_due", "loan_out", "retired"] as const;
 const DEPRECIATION_METHODS = [
@@ -228,18 +229,28 @@ export default function EditAssetPage() {
 
   if (loading) {
     return (
-      <div className="w-full min-w-0 p-8 flex items-center justify-center gap-2 text-neutral-500">
-        <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
-        <span className="text-sm">Loading asset…</span>
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Edit Asset"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "Edit Asset" }]} />}
+        />
+        <div className="p-8 flex items-center justify-center gap-2 text-neutral-500">
+          <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
+          <span className="text-sm">Loading asset…</span>
+        </div>
       </div>
     );
   }
 
   if (error && !asset) {
     return (
-      <div className="w-full min-w-0 p-8">
+      <div className="w-full min-w-0 space-y-6">
+        <ModulePageHeader
+          title="Edit Asset"
+          breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "Edit Asset" }]} />}
+        />
         <p className="text-red-600">{error}</p>
-        <Link href="/assets" className="text-primary mt-2 inline-block text-sm">Back to Assets</Link>
+        <Link href="/assets" className="btn-secondary mt-2 inline-flex text-sm">Back to Assets</Link>
       </div>
     );
   }
@@ -255,19 +266,11 @@ export default function EditAssetPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-          <Link href="/assets" className="hover:text-primary transition-colors">
-            Assets
-          </Link>
-          <span>/</span>
-          <span className="text-neutral-700 font-medium">Edit {asset.asset_code}</span>
-        </div>
-        <h2 className="text-xl font-bold text-neutral-900">Edit Asset</h2>
-        <p className="text-sm text-neutral-500 mt-0.5">
-          Update the asset details below. You can attach a new invoice to replace the existing one.
-        </p>
-      </div>
+      <ModulePageHeader
+        title="Edit Asset"
+        subtitle="Update the asset details below. You can attach a new invoice to replace the existing one."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.assets", href: "/assets" }, { label: "Edit Asset" }]} />}
+      />
 
       <div className="rounded-xl bg-white border border-neutral-100 shadow-card p-5">
         <div className="flex items-center gap-2">
@@ -362,7 +365,7 @@ export default function EditAssetPage() {
                 </select>
                 {categories.length === 0 && (
                   <p className="text-xs text-neutral-500">
-                    <Link href="/assets/categories" className="text-primary hover:underline">
+                    <Link href="/assets/categories" className="btn-secondary text-xs py-1 px-2">
                       Add a category
                     </Link>
                   </p>
@@ -565,7 +568,7 @@ export default function EditAssetPage() {
               <button
                 type="button"
                 onClick={() => setCurrentStep((s) => s - 1)}
-                className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors disabled:opacity-50"
+                className="btn-secondary inline-flex items-center gap-2 disabled:opacity-50"
                 disabled={submitting}
               >
                 <span className="material-symbols-outlined text-[18px]">arrow_back</span>
@@ -574,7 +577,7 @@ export default function EditAssetPage() {
             )}
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/assets" className="rounded-lg border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50 transition-colors">
+            <Link href="/assets" className="btn-secondary">
               Cancel
             </Link>
             {currentStep < 4 ? (
@@ -582,7 +585,7 @@ export default function EditAssetPage() {
                 type="button"
                 onClick={() => setCurrentStep((s) => s + 1)}
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="btn-primary inline-flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next Step
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -591,7 +594,7 @@ export default function EditAssetPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary/90 transition-colors disabled:opacity-50"
+                className="btn-primary inline-flex items-center gap-2 disabled:opacity-50"
               >
                 {submitting ? "Saving…" : "Save changes"}
                 <span className={`material-symbols-outlined text-[18px] ${submitting ? "animate-spin" : ""}`}>{submitting ? "progress_activity" : "save"}</span>

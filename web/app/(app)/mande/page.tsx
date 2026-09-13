@@ -8,6 +8,7 @@ import { mandeApi, type MeDashboardData } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { MANDE_HUB_CARDS } from "@/lib/hubs/mande";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const STATUS_BADGE: Record<string, string> = {
   not_submitted: "badge-muted",
@@ -80,9 +81,7 @@ export default function MandeDashboardPage() {
 
       <ModuleHubCards cards={MANDE_HUB_CARDS} />
 
-      {isError && (
-        <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">Failed to load M&amp;E dashboard.</div>
-      )}
+      {isError && <ErrorBanner message="Failed to load M&E dashboard." />}
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
@@ -106,7 +105,7 @@ export default function MandeDashboardPage() {
               <Bar key={i} label={g.goal_title} value={g.total} max={maxGoal} color="bg-indigo-400" />
             ))}
             {!isLoading && (data?.by_strategic_goal?.length ?? 0) === 0 && (
-              <p className="text-xs text-neutral-400">No activity reports yet.</p>
+              <EmptyState icon="flag" title="No activity reports yet." className="py-6 min-h-0" />
             )}
           </div>
         </div>
@@ -119,7 +118,7 @@ export default function MandeDashboardPage() {
               <Bar key={i} label={a.area_name} value={a.total} max={maxArea} color="bg-teal-400" />
             ))}
             {!isLoading && (data?.by_thematic_area?.length ?? 0) === 0 && (
-              <p className="text-xs text-neutral-400">No activity reports yet.</p>
+              <EmptyState icon="category" title="No activity reports yet." className="py-6 min-h-0" />
             )}
           </div>
         </div>
@@ -129,10 +128,10 @@ export default function MandeDashboardPage() {
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100">
           <h2 className="text-sm font-semibold text-neutral-800">M&amp;E Review Queue</h2>
-          <Link href="/mande/review-queue" className="text-xs text-primary hover:underline">View all</Link>
+          <Link href="/mande/review-queue" className="btn-secondary text-xs py-1 px-2">View all</Link>
         </div>
         {(data?.review_queue?.length ?? 0) === 0 ? (
-          <p className="px-5 py-8 text-center text-sm text-neutral-400">No reports awaiting review.</p>
+          <EmptyState icon="rate_review" title="No reports awaiting review." className="py-8 min-h-0" />
         ) : (
           <table className="data-table">
             <thead>
@@ -146,7 +145,7 @@ export default function MandeDashboardPage() {
                   <td className="text-xs text-neutral-500">{r.pif_number ?? "—"}</td>
                   <td><span className={`badge ${STATUS_BADGE[r.review_status] ?? "badge-muted"}`}>{r.review_status.replace("_", " ")}</span></td>
                   <td className="text-xs text-neutral-400">{r.submitted_at ? formatDateShort(r.submitted_at) : "—"}</td>
-                  <td><Link href={`/mande/activity-reports/${r.id}`} className="text-primary text-xs hover:underline">Open</Link></td>
+                  <td><Link href={`/mande/activity-reports/${r.id}`} className="btn-secondary text-xs py-1 px-2">Open</Link></td>
                 </tr>
               ))}
             </tbody>

@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { assetsApi, type AssetInsuranceClaim, type AssetInsurancePolicy } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function AssetInsurancePage() {
   const qc = useQueryClient();
@@ -112,27 +113,27 @@ export default function AssetInsurancePage() {
       {tab === "policies" && (
         <>
           <div className="card grid gap-3 p-4 md:grid-cols-3">
-            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-number">
+            <label htmlFor="policy-number" className="space-y-1 text-xs font-semibold text-neutral-700">
               Policy number
               <input id="policy-number" className="form-input" value={policyForm.policy_number} onChange={(e) => setPolicyForm((f) => ({ ...f, policy_number: e.target.value }))} />
             </label>
-            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-insurer">
+            <label htmlFor="policy-insurer" className="space-y-1 text-xs font-semibold text-neutral-700">
               Insurer
               <input id="policy-insurer" className="form-input" value={policyForm.insurer_name} onChange={(e) => setPolicyForm((f) => ({ ...f, insurer_name: e.target.value }))} />
             </label>
-            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-coverage-type">
+            <label htmlFor="policy-coverage-type" className="space-y-1 text-xs font-semibold text-neutral-700">
               Coverage type
               <input id="policy-coverage-type" className="form-input" value={policyForm.coverage_type} onChange={(e) => setPolicyForm((f) => ({ ...f, coverage_type: e.target.value }))} />
             </label>
-            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-effective-from">
+            <label htmlFor="policy-effective-from" className="space-y-1 text-xs font-semibold text-neutral-700">
               Effective from
               <input id="policy-effective-from" className="form-input" type="date" value={policyForm.effective_from} onChange={(e) => setPolicyForm((f) => ({ ...f, effective_from: e.target.value }))} />
             </label>
-            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-effective-to">
+            <label htmlFor="policy-effective-to" className="space-y-1 text-xs font-semibold text-neutral-700">
               Effective to
               <input id="policy-effective-to" className="form-input" type="date" value={policyForm.effective_to} onChange={(e) => setPolicyForm((f) => ({ ...f, effective_to: e.target.value }))} />
             </label>
-            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="policy-sum-insured">
+            <label htmlFor="policy-sum-insured" className="space-y-1 text-xs font-semibold text-neutral-700">
               Sum insured
               <input id="policy-sum-insured" className="form-input" type="number" min={0} value={policyForm.sum_insured} onChange={(e) => setPolicyForm((f) => ({ ...f, sum_insured: e.target.value }))} />
             </label>
@@ -167,7 +168,7 @@ export default function AssetInsurancePage() {
                   </tr>
                 ))}
                 {policies.length === 0 && (
-                  <tr><td colSpan={5} className="py-6 text-neutral-400">No policies yet.</td></tr>
+                  <TableEmpty colSpan={5} title="No policies yet." />
                 )}
               </tbody>
             </table>
@@ -178,7 +179,7 @@ export default function AssetInsurancePage() {
       {tab === "claims" && (
         <>
           <div className="card grid gap-3 p-4 md:grid-cols-3">
-            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="claim-policy">
+            <label htmlFor="claim-policy" className="space-y-1 text-xs font-semibold text-neutral-700">
               Policy
             <select id="claim-policy" className="form-input" value={claimForm.policy_id} onChange={(e) => setClaimForm((f) => ({ ...f, policy_id: e.target.value }))}>
               <option value="">Select policy</option>
@@ -187,19 +188,19 @@ export default function AssetInsurancePage() {
               ))}
             </select>
             </label>
-            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="claim-number">
+            <label htmlFor="claim-number" className="space-y-1 text-xs font-semibold text-neutral-700">
               Claim number
               <input id="claim-number" className="form-input" value={claimForm.claim_number} onChange={(e) => setClaimForm((f) => ({ ...f, claim_number: e.target.value }))} />
             </label>
-            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="claim-incident-date">
+            <label htmlFor="claim-incident-date" className="space-y-1 text-xs font-semibold text-neutral-700">
               Incident date
               <input id="claim-incident-date" className="form-input" type="date" value={claimForm.incident_date} onChange={(e) => setClaimForm((f) => ({ ...f, incident_date: e.target.value }))} />
             </label>
-            <label className="space-y-1 text-xs font-semibold text-neutral-700" htmlFor="claim-amount">
+            <label htmlFor="claim-amount" className="space-y-1 text-xs font-semibold text-neutral-700">
               Claim amount
               <input id="claim-amount" className="form-input" type="number" min={0} value={claimForm.claim_amount} onChange={(e) => setClaimForm((f) => ({ ...f, claim_amount: e.target.value }))} />
             </label>
-            <label className="space-y-1 text-xs font-semibold text-neutral-700 md:col-span-2" htmlFor="claim-description">
+            <label htmlFor="claim-description" className="space-y-1 text-xs font-semibold text-neutral-700 md:col-span-2">
               Description
               <input id="claim-description" className="form-input" value={claimForm.description} onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))} />
             </label>
@@ -234,7 +235,7 @@ export default function AssetInsurancePage() {
                   </tr>
                 ))}
                 {claims.length === 0 && (
-                  <tr><td colSpan={5} className="py-6 text-neutral-400">No claims yet.</td></tr>
+                  <TableEmpty colSpan={5} title="No claims yet." />
                 )}
               </tbody>
             </table>

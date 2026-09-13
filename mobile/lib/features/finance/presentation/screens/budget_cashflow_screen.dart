@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 /// Read-only budget cashflow / availability depth.
 class BudgetCashflowScreen extends ConsumerStatefulWidget {
@@ -60,27 +61,20 @@ class _BudgetCashflowScreenState extends ConsumerState<BudgetCashflowScreen> {
   Widget build(BuildContext context) {
     final budgets = extractListData(
         _availability?['items'] ?? _availability?['data'] ?? _availability);
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        title: const Text('Budget (read-only)',
-            style: TextStyle(
-                color: AppColors.textPrimary, fontWeight: FontWeight.w800)),
-        actions: [
-          IconButton(
-            onPressed: _load,
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
+    return StitchScreen(
+      title: 'Budget (read-only)',
+      fallbackRoute: '/finance/command-center',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
+        ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading budget')
           : _error != null
-              ? Center(
-                  child: Text(_error!,
-                      style: const TextStyle(color: AppColors.textSecondary)))
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : RefreshIndicator(
                   color: AppColors.primary,
                   onRefresh: _load,

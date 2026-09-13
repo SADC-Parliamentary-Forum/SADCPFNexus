@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { bcreApi, type BalanceRegister } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function fmt2(n: number | string) {
   return Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -61,11 +62,8 @@ export default function UpdateBalancePage() {
         notes:         notes.trim() || undefined,
       });
       router.push(`/finance/balance-register/${register.id}`);
-    } catch (e: any) {
-      const msg = e?.response?.data?.message
-        ?? e?.response?.data?.errors
-        ?? "Failed to record transaction.";
-      setSubmitError(typeof msg === "object" ? JSON.stringify(msg) : msg);
+    } catch (e: unknown) {
+      setSubmitError(apiErrorMessage(e, "finance.bcre.updateFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -135,8 +133,9 @@ export default function UpdateBalancePage() {
       <form onSubmit={handleSubmit} className="card p-6 space-y-5">
         {/* Transaction type */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">Transaction Type <span className="text-red-500">*</span></label>
+          <label htmlFor="bcre-txn-type" className="block text-sm font-medium text-neutral-700 mb-2">Transaction Type <span className="text-red-500">*</span></label>
           <select
+            id="bcre-txn-type"
             className="form-input w-full"
             value={txnType}
             onChange={e => setTxnType(e.target.value)}
@@ -150,8 +149,9 @@ export default function UpdateBalancePage() {
 
         {/* Amount */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">Amount (NAD) <span className="text-red-500">*</span></label>
+          <label htmlFor="bcre-amount" className="block text-sm font-medium text-neutral-700 mb-2">Amount (NAD) <span className="text-red-500">*</span></label>
           <input
+            id="bcre-amount"
             type="number"
             min="0.01"
             step="0.01"
@@ -185,8 +185,9 @@ export default function UpdateBalancePage() {
 
         {/* Reference document */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">Reference Document</label>
+          <label htmlFor="bcre-reference" className="block text-sm font-medium text-neutral-700 mb-2">Reference Document</label>
           <input
+            id="bcre-reference"
             type="text"
             className="form-input w-full"
             placeholder="e.g. Payslip PSL-2026-04 or Receipt #1234"
@@ -198,8 +199,9 @@ export default function UpdateBalancePage() {
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-2">Notes</label>
+          <label htmlFor="bcre-notes" className="block text-sm font-medium text-neutral-700 mb-2">Notes</label>
           <textarea
+            id="bcre-notes"
             className="form-input w-full h-24 resize-none text-sm"
             placeholder="Optional notes about this transaction..."
             value={notes}

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { assetsApi, type Asset } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type AssetOption = { id: number; asset_code: string; name: string; status: string; book_value?: number };
 type Disposal = {
@@ -227,7 +228,7 @@ function AssetDisposalPageInner() {
       )}
 
       <div className="grid gap-4 lg:grid-cols-5">
-        <div className="table-wrap lg:col-span-3">
+        <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900 lg:col-span-3">
           <table className="data-table">
             <thead>
               <tr>
@@ -242,7 +243,7 @@ function AssetDisposalPageInner() {
               {rows.map((d) => (
                 <tr key={d.id} className={selected?.id === d.id ? "bg-neutral-50" : undefined}>
                   <td>
-                    <button type="button" className="text-primary hover:underline" onClick={() => setSelected(d)}>
+                    <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => setSelected(d)}>
                       {d.reference}
                     </button>
                   </td>
@@ -286,9 +287,7 @@ function AssetDisposalPageInner() {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr>
-                  <td colSpan={5}>No disposal requests.</td>
-                </tr>
+                <TableEmpty colSpan={5} title="No disposal requests." />
               )}
             </tbody>
           </table>
@@ -326,21 +325,21 @@ function AssetDisposalPageInner() {
         >
           <h2 className="text-lg font-semibold">Complete disposal — {selected.reference}</h2>
           <div className="grid gap-3 md:grid-cols-3">
-            <label className="block text-sm">
+            <label htmlFor="assets-disposal-method-setcompleteform" className="block text-sm">
               Method
-              <select className="form-input mt-1 w-full" value={completeForm.method} onChange={(e) => setCompleteForm({ ...completeForm, method: e.target.value })}>
+              <select id="assets-disposal-method-setcompleteform" className="form-input mt-1 w-full" value={completeForm.method} onChange={(e) => setCompleteForm({ ...completeForm, method: e.target.value })}>
                 {METHODS.map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
             </label>
-            <label className="block text-sm">
+            <label htmlFor="assets-disposal-proceeds-setcompleteform" className="block text-sm">
               Proceeds
-              <input type="number" min="0" step="0.01" className="form-input mt-1 w-full" value={completeForm.proceeds} onChange={(e) => setCompleteForm({ ...completeForm, proceeds: e.target.value })} />
+              <input id="assets-disposal-proceeds-setcompleteform" type="number" min="0" step="0.01" className="form-input mt-1 w-full" value={completeForm.proceeds} onChange={(e) => setCompleteForm({ ...completeForm, proceeds: e.target.value })} />
             </label>
-            <label className="block text-sm">
+            <label htmlFor="assets-disposal-accounting-reference-setcompleteform" className="block text-sm">
               Accounting reference
-              <input className="form-input mt-1 w-full" value={completeForm.accounting_reference} onChange={(e) => setCompleteForm({ ...completeForm, accounting_reference: e.target.value })} />
+              <input id="assets-disposal-accounting-reference-setcompleteform" className="form-input mt-1 w-full" value={completeForm.accounting_reference} onChange={(e) => setCompleteForm({ ...completeForm, accounting_reference: e.target.value })} />
             </label>
           </div>
           <div className="flex gap-2">

@@ -111,31 +111,31 @@ const chart = (await peopleAuthorityApi.orgChart()).data.data as any; return cha
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-reporting-subordinate-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Subordinate position
-          <select className="form-input mt-1" value={form.subordinate_position_id} onChange={(e) => setForm((f) => ({ ...f, subordinate_position_id: e.target.value }))} required>
+          <select id="people-reporting-subordinate-position-setform-f-required-select" className="form-input mt-1" value={form.subordinate_position_id} onChange={(e) => setForm((f) => ({ ...f, subordinate_position_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-reporting-supervisor-position-setform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Supervisor position
-          <select className="form-input mt-1" value={form.supervisor_position_id} onChange={(e) => setForm((f) => ({ ...f, supervisor_position_id: e.target.value }))} required>
+          <select id="people-reporting-supervisor-position-setform-f-required-select" className="form-input mt-1" value={form.supervisor_position_id} onChange={(e) => setForm((f) => ({ ...f, supervisor_position_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(positionsQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{String(p.title ?? p.code ?? p.id)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-reporting-relationship-setform-f" className="block text-xs font-medium text-neutral-600">
           Relationship
-          <input className="form-input mt-1" value={form.relationship_type} onChange={(e) => setForm((f) => ({ ...f, relationship_type: e.target.value }))} />
+          <input id="people-reporting-relationship-setform-f" className="form-input mt-1" value={form.relationship_type} onChange={(e) => setForm((f) => ({ ...f, relationship_type: e.target.value }))} />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-reporting-effective-from-setform-f-required" className="block text-xs font-medium text-neutral-600">
           Effective from
-          <input type="date" className="form-input mt-1" value={form.effective_from} onChange={(e) => setForm((f) => ({ ...f, effective_from: e.target.value }))} required />
+          <input id="people-reporting-effective-from-setform-f-required" type="date" className="form-input mt-1" value={form.effective_from} onChange={(e) => setForm((f) => ({ ...f, effective_from: e.target.value }))} required />
         </label>
         <div className="sm:col-span-2 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
@@ -146,9 +146,9 @@ const chart = (await peopleAuthorityApi.orgChart()).data.data as any; return cha
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-reporting-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-reporting-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

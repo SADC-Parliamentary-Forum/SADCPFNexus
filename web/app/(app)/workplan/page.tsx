@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useFormatDate } from "@/lib/useFormatDate";
 import Link from "next/link";
@@ -481,7 +482,7 @@ function CalendarView({
                         <button
                           type="button"
                           onClick={() => onOpenEvent(ev.id)}
-                          className={`text-[10px] font-semibold px-2 py-0.5 rounded ${c.text} hover:underline`}
+                          className="btn-secondary text-[10px] py-0.5 px-2"
                         >
                           Open
                         </button>
@@ -1155,12 +1156,16 @@ export default function WorkplanListPage() {
         ) : (
           /* ── List view ── */
           list.length === 0 ? (
-            <div className="py-16 text-center">
-              <span className="material-symbols-outlined text-4xl text-neutral-200">calendar_month</span>
-              <p className="mt-3 text-sm text-neutral-500">No workplan events found.</p>
-              <Link href="/workplan/new" className="text-sm font-semibold text-primary hover:underline mt-2 inline-block">
-                Add your first event
-              </Link>
+            <div className="py-4">
+              <EmptyState
+                icon="calendar_month"
+                title="No workplan events found."
+                action={
+                  <Link href="/workplan/new" className="btn-primary text-sm">
+                    Add your first event
+                  </Link>
+                }
+              />
             </div>
           ) : (
             <div className="overflow-x-auto -m-5">

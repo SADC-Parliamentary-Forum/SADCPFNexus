@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 /// A focused day-level view for a specific date, showing existing entries
 /// and allowing new entries to be added via a bottom sheet.
@@ -108,25 +109,15 @@ class _TimesheetDayScreenState extends ConsumerState<TimesheetDayScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dayFull = DateFormat('EEEE, d MMMM yyyy').format(DateTime.parse(widget.date));
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.bgDarkDark : AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: isDark ? AppColors.bgSurfaceDark : AppColors.bgSurface,
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Day Detail', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-            Text(dayFull, style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
-          ],
+    return StitchScreen(
+      title: dayFull,
+      fallbackRoute: '/timesheets',
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : _saveAndPop,
+          child: const Text('Done', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
         ),
-        actions: [
-          TextButton(
-            onPressed: _saving ? null : _saveAndPop,
-            child: const Text('Done', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
+      ],
       body: Column(
         children: [
           // Overlay banner (leave/travel/holiday)
@@ -184,18 +175,10 @@ class _TimesheetDayScreenState extends ConsumerState<TimesheetDayScreen> {
           // Entries list
           Expanded(
             child: _entries.isEmpty
-                ? const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.schedule_outlined, size: 48, color: AppColors.textMuted),
-                        SizedBox(height: 12),
-                        Text('No entries for this day', style: TextStyle(fontWeight: FontWeight.w600)),
-                        SizedBox(height: 6),
-                        Text('Tap + to add your first entry',
-                            style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
-                      ],
-                    ),
+                ? const StitchEmptyState(
+                    title: 'No entries for this day',
+                    message: 'Tap + to add your first entry',
+                    icon: Icons.schedule_outlined,
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),

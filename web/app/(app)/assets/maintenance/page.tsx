@@ -3,6 +3,7 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 type RecordRow = {
   id: number;
@@ -31,7 +32,7 @@ export default function AssetMaintenancePage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Maintenance & Warranty" }]} />}
       />
       </div>
-      <div className="table-wrap">
+      <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
         <table className="data-table">
           <thead>
             <tr><th>Asset</th><th>Title</th><th>Type</th><th>Warranty</th><th>Status</th></tr>
@@ -46,7 +47,7 @@ export default function AssetMaintenancePage() {
                 <td>{r.status}</td>
               </tr>
             ))}
-            {rows.length === 0 && <tr><td colSpan={5}>No maintenance records.</td></tr>}
+            {rows.length === 0 && <TableEmpty colSpan={5} title="No maintenance records." />}
           </tbody>
         </table>
       </div>

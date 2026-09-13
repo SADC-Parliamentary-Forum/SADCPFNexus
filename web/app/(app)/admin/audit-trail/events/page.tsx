@@ -35,7 +35,7 @@ export default function AuditTrailEventTypesPage() {
         subtitle="Read-heavy controlled taxonomy (PRD §11–§13)."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Event type registry & detail" }]} />}
       />
-        <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
+        <Link href="/admin/audit-trail" className="btn-secondary text-sm">Back</Link>
       </div>
 
       {error && <div className="text-sm text-amber-700">{error}</div>}

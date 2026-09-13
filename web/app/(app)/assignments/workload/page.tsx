@@ -25,9 +25,9 @@ export default function AssignmentsWorkloadPage() {
       />
         <Link href="/assignments/capacity" className="btn-secondary text-sm">Capacity bands</Link>
       </div>
-      <label className="card inline-flex items-center gap-2 p-3 text-sm" data-testid="workload-weeks">
+      <label htmlFor="assignments-workload-weeks-setweeks-number-e-target-value" className="card inline-flex items-center gap-2 p-3 text-sm" data-testid="workload-weeks">
         Weeks
-        <select className="form-input" value={weeks} onChange={(e) => setWeeks(Number(e.target.value))}>
+        <select id="assignments-workload-weeks-setweeks-number-e-target-value" className="form-input" value={weeks} onChange={(e) => setWeeks(Number(e.target.value))}>
           {[2, 4, 8, 12].map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}

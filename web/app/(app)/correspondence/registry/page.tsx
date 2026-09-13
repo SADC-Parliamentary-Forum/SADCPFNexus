@@ -5,6 +5,7 @@ import { Suspense, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   draft: { label: "Draft", cls: "badge-muted" },
@@ -161,14 +162,14 @@ function CorrespondenceRegistryPageInner() {
               <tr><td colSpan={7} className="px-4 py-8 text-center text-neutral-400">Loading…</td></tr>
             )}
             {!loading && letters.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-neutral-400">No records.</td></tr>
+              <TableEmpty colSpan={7} title="No records." />
             )}
             {letters.map((l) => {
               const st = statusConfig[l.status] ?? { label: l.status, cls: "badge-muted" };
               return (
                 <tr key={l.id} className="border-t border-neutral-100 hover:bg-neutral-50">
                   <td className="px-4 py-3 font-mono text-xs">
-                    <Link href={`/correspondence/${l.id}`} className="text-primary hover:underline">
+                    <Link href={`/correspondence/${l.id}`} className="font-medium text-primary">
                       {l.registry_reference || l.reference_number || `#${l.id}`}
                     </Link>
                   </td>

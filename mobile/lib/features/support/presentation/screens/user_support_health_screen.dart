@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class UserSupportHealthScreen extends ConsumerStatefulWidget {
   const UserSupportHealthScreen({super.key});
@@ -154,21 +155,17 @@ class _UserSupportHealthScreenState extends ConsumerState<UserSupportHealthScree
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark, elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 18, color: AppColors.textPrimary), onPressed: () => Navigator.pop(context)),
-        title: const Text('Support & Health', style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-        bottom: TabBar(
-          controller: _tabs,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
-          indicatorColor: AppColors.primary,
-          indicatorSize: TabBarIndicatorSize.label,
-          labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-          tabs: const [Tab(text: 'My Tickets'), Tab(text: 'System'), Tab(text: 'FAQ')],
-        ),
+    return StitchScreen(
+      title: 'Support & Health',
+      fallbackRoute: '/dashboard',
+      bottom: TabBar(
+        controller: _tabs,
+        labelColor: AppColors.primary,
+        unselectedLabelColor: AppColors.textMuted,
+        indicatorColor: AppColors.primary,
+        indicatorSize: TabBarIndicatorSize.label,
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        tabs: const [Tab(text: 'My Tickets'), Tab(text: 'System'), Tab(text: 'FAQ')],
       ),
       body: TabBarView(
         controller: _tabs,
@@ -198,20 +195,11 @@ class _UserSupportHealthScreenState extends ConsumerState<UserSupportHealthScree
       const Text('MY TICKETS', style: TextStyle(color: AppColors.textMuted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
       const SizedBox(height: 10),
       if (_loadingTickets)
-        const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary)))
+        const StitchLoadingState(label: 'Loading tickets')
       else if (_ticketsError != null)
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Text(_ticketsError!, style: const TextStyle(color: AppColors.danger)),
-              const SizedBox(height: 8),
-              TextButton(onPressed: _loadTickets, child: const Text('Retry')),
-            ],
-          ),
-        )
+        StitchErrorState(message: _ticketsError!, onRetry: _loadTickets)
       else if (_tickets.isEmpty)
-        const Padding(padding: EdgeInsets.all(16), child: Text('No tickets yet.', style: TextStyle(color: AppColors.textMuted)))
+        const StitchEmptyState(title: 'No tickets yet')
       else
         ..._tickets.map((t) {
           final status = (t['status'] as String?) ?? 'open';

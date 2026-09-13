@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { workAssignmentsApi, WorkAssignment, WorkAssignmentUpdate } from "@/lib/api";
 import { formatDate, formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const UPDATE_TYPE_ICONS: Record<string, string> = {
   progress: "radio_button_unchecked",
@@ -186,35 +186,34 @@ export default function AssignmentDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-5">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1 text-sm text-neutral-500">
-        <Link href="/hr" className="hover:text-primary">HR</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <Link href="/hr/assignments" className="hover:text-primary">Assignments</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-700 font-medium truncate max-w-xs">{assignment.title}</span>
-      </nav>
-
-      {/* Header card */}
-      <div className="card p-5">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`badge ${priorityBadge(assignment.priority)}`}>
-                {assignment.priority.charAt(0).toUpperCase() + assignment.priority.slice(1)} Priority
+      <ModulePageHeader
+        title={assignment.title}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Assignments", href: "/hr/assignments" },
+              { label: assignment.title },
+            ]}
+          />
+        }
+        meta={
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`badge ${priorityBadge(assignment.priority)}`}>
+              {assignment.priority.charAt(0).toUpperCase() + assignment.priority.slice(1)} Priority
+            </span>
+            <span className={`badge ${statusBadge(assignment.status)}`}>
+              {statusLabel(assignment.status)}
+            </span>
+            {assignment.is_overdue && (
+              <span className="badge badge-danger flex items-center gap-1">
+                <span className="material-symbols-outlined text-[13px]">schedule</span>
+                Overdue
               </span>
-              <span className={`badge ${statusBadge(assignment.status)}`}>
-                {statusLabel(assignment.status)}
-              </span>
-              {assignment.is_overdue && (
-                <span className="badge badge-danger flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[13px]">schedule</span>
-                  Overdue
-                </span>
-              )}
-            </div>
-            <h1 className="text-xl font-bold text-neutral-800">{assignment.title}</h1>
+            )}
           </div>
+        }
+        actions={
           <div className="flex flex-wrap gap-2 flex-shrink-0">
             {canStart && (
               <button className="btn-primary flex items-center gap-1" onClick={handleStart} disabled={actionLoading}>
@@ -243,8 +242,8 @@ export default function AssignmentDetailPage() {
               </button>
             )}
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Info grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -334,8 +333,9 @@ export default function AssignmentDetailPage() {
           )}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-neutral-500 mb-1">Type</label>
+              <label htmlFor="hr-assignment-update-type" className="block text-xs font-medium text-neutral-500 mb-1">Type</label>
               <select
+                id="hr-assignment-update-type"
                 className="form-input"
                 value={updateType}
                 onChange={(e) => setUpdateType(e.target.value)}
@@ -348,8 +348,9 @@ export default function AssignmentDetailPage() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-500 mb-1">Hours Logged</label>
+              <label htmlFor="hr-assignment-hours" className="block text-xs font-medium text-neutral-500 mb-1">Hours Logged</label>
               <input
+                id="hr-assignment-hours"
                 className="form-input"
                 type="number"
                 min="0"
@@ -361,8 +362,9 @@ export default function AssignmentDetailPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-500 mb-1">Content *</label>
+            <label htmlFor="hr-assignment-content" className="block text-xs font-medium text-neutral-500 mb-1">Content *</label>
             <textarea
+              id="hr-assignment-content"
               className="form-input"
               rows={3}
               placeholder="Describe the update, progress, or blocker..."
@@ -398,10 +400,11 @@ export default function AssignmentDetailPage() {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">
+                <label htmlFor="hr-assignment-completion-notes" className="block text-sm font-medium text-neutral-700 mb-1">
                   Completion Notes (optional)
                 </label>
                 <textarea
+                  id="hr-assignment-completion-notes"
                   className="form-input"
                   rows={4}
                   placeholder="Summarize what was completed, any outcomes or follow-up items..."

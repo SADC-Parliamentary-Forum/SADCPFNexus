@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { procurementAnalyticsApi, type ProcurementFlag } from "@/lib/api";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const flagSeverityConfig: Record<string, { cls: string; bg: string; icon: string }> = {
   critical: { cls: "text-red-700",    bg: "bg-red-50 border-red-200",    icon: "error"         },
@@ -92,7 +93,7 @@ export default function ProcurementAnalyticsPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Spend by Category</h3>
           </div>
           {categories.length === 0 ? (
-            <p className="text-sm text-neutral-400 text-center py-6">No spend data available.</p>
+            <EmptyState icon="bar_chart" title="No spend data available." className="py-6 min-h-0" />
           ) : (
             <div className="space-y-3">
               {categories.map((c) => (
@@ -120,7 +121,7 @@ export default function ProcurementAnalyticsPage() {
             <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Top Vendors by Spend</h3>
           </div>
           {vendors.length === 0 ? (
-            <p className="text-sm text-neutral-400 text-center py-6">No vendor data available.</p>
+            <EmptyState icon="storefront" title="No vendor data available." className="py-6 min-h-0" />
           ) : (
             <div className="space-y-3">
               {vendors.map((v) => (

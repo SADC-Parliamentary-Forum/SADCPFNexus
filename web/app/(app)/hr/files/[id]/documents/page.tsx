@@ -8,6 +8,7 @@ import { getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const CONFIDENTIALITY_BADGE: Record<HrFileDocument["confidentiality_level"], string> = {
   standard: "badge-muted",
@@ -145,8 +146,8 @@ export default function HrFileDocumentsPage() {
       {/* Filter */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex items-center gap-2">
-          <label className="text-sm text-neutral-600 font-medium">Filter by type:</label>
-          <select
+          <label htmlFor="hr-files-detail-documents-filter-by-type" className="text-sm text-neutral-600 font-medium">Filter by type:</label>
+          <select id="hr-files-detail-documents-filter-by-type"
             className="form-input w-52"
             value={docTypeFilter}
             onChange={(e) => setDocTypeFilter(e.target.value)}
@@ -177,13 +178,15 @@ export default function HrFileDocumentsPage() {
           ))}
         </div>
       ) : documents.length === 0 ? (
-        <div className="card p-12 text-center text-neutral-400">
-          <span className="material-symbols-outlined text-5xl block mb-2">folder_open</span>
-          <p className="font-medium">No documents found</p>
-          <p className="text-sm mt-1">{docTypeFilter ? "Try clearing the filter" : "Start by adding a document to this file"}</p>
-          {isHR && (
-            <button className="btn-primary mt-4" onClick={() => setShowUpload(true)}>Add First Document</button>
-          )}
+        <div className="card">
+          <EmptyState
+            icon="folder_open"
+            title="No documents found"
+            description={docTypeFilter ? "Try clearing the filter" : "Start by adding a document to this file"}
+            action={isHR ? (
+              <button type="button" className="btn-primary" onClick={() => setShowUpload(true)}>Add First Document</button>
+            ) : undefined}
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -252,38 +255,38 @@ export default function HrFileDocumentsPage() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Document Type <span className="text-red-500">*</span></label>
-                <select className="form-input" value={uploadForm.document_type} onChange={(e) => setUploadForm((f) => ({ ...f, document_type: e.target.value }))}>
+                <label htmlFor="hr-files-detail-documents-document-type" className="block text-sm font-medium text-neutral-700 mb-1">Document Type <span className="text-red-500">*</span></label>
+                <select id="hr-files-detail-documents-document-type" className="form-input" value={uploadForm.document_type} onChange={(e) => setUploadForm((f) => ({ ...f, document_type: e.target.value }))}>
                   {DOC_TYPES.map((t) => (
                     <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
-                <input type="text" className="form-input" placeholder="Document title" value={uploadForm.title} onChange={(e) => setUploadForm((f) => ({ ...f, title: e.target.value }))} />
+                <label htmlFor="hr-files-detail-documents-title" className="block text-sm font-medium text-neutral-700 mb-1">Title <span className="text-red-500">*</span></label>
+                <input id="hr-files-detail-documents-title" type="text" className="form-input" placeholder="Document title" value={uploadForm.title} onChange={(e) => setUploadForm((f) => ({ ...f, title: e.target.value }))} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">File Name</label>
-                <input type="text" className="form-input" placeholder="e.g. contract_2024.pdf" value={uploadForm.file_name} onChange={(e) => setUploadForm((f) => ({ ...f, file_name: e.target.value }))} />
+                <label htmlFor="hr-files-detail-documents-file-name" className="block text-sm font-medium text-neutral-700 mb-1">File Name</label>
+                <input id="hr-files-detail-documents-file-name" type="text" className="form-input" placeholder="e.g. contract_2024.pdf" value={uploadForm.file_name} onChange={(e) => setUploadForm((f) => ({ ...f, file_name: e.target.value }))} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Confidentiality</label>
-                  <select className="form-input" value={uploadForm.confidentiality_level} onChange={(e) => setUploadForm((f) => ({ ...f, confidentiality_level: e.target.value as HrFileDocument["confidentiality_level"] }))}>
+                  <label htmlFor="hr-files-detail-documents-confidentiality" className="block text-sm font-medium text-neutral-700 mb-1">Confidentiality</label>
+                  <select id="hr-files-detail-documents-confidentiality" className="form-input" value={uploadForm.confidentiality_level} onChange={(e) => setUploadForm((f) => ({ ...f, confidentiality_level: e.target.value as HrFileDocument["confidentiality_level"] }))}>
                     <option value="standard">Standard</option>
                     <option value="restricted">Restricted</option>
                     <option value="confidential">Confidential</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-1">Issue Date</label>
-                  <input type="date" className="form-input" value={uploadForm.issue_date} onChange={(e) => setUploadForm((f) => ({ ...f, issue_date: e.target.value }))} />
+                  <label htmlFor="hr-files-detail-documents-issue-date" className="block text-sm font-medium text-neutral-700 mb-1">Issue Date</label>
+                  <input id="hr-files-detail-documents-issue-date" type="date" className="form-input" value={uploadForm.issue_date} onChange={(e) => setUploadForm((f) => ({ ...f, issue_date: e.target.value }))} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-1">Remarks</label>
-                <textarea className="form-input resize-none" rows={2} placeholder="Optional notes..." value={uploadForm.remarks} onChange={(e) => setUploadForm((f) => ({ ...f, remarks: e.target.value }))} />
+                <label htmlFor="hr-files-detail-documents-remarks" className="block text-sm font-medium text-neutral-700 mb-1">Remarks</label>
+                <textarea id="hr-files-detail-documents-remarks" className="form-input resize-none" rows={2} placeholder="Optional notes..." value={uploadForm.remarks} onChange={(e) => setUploadForm((f) => ({ ...f, remarks: e.target.value }))} />
               </div>
             </div>
             <div className="flex gap-3 mt-5">

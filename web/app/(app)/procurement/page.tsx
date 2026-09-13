@@ -9,6 +9,7 @@ import { canViewProcurementVendors, getStoredUser, hasPermission, isSystemAdmin 
 import { formatDateShort } from "@/lib/utils";
 import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { PROCUREMENT_HUB_CARDS } from "@/lib/hubs/procurement";
+import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   approved:  { label: "Approved",  cls: "badge-success" },
@@ -117,12 +118,7 @@ export default function ProcurementPage() {
         </div>
       )}
 
-      {isError && (
-        <div className="rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 px-4 py-3 text-sm text-red-700 dark:text-red-400 flex items-center gap-2">
-          <span className="material-symbols-outlined text-[16px]">error_outline</span>
-          Failed to load procurement requests.
-        </div>
-      )}
+      {isError && <ErrorBanner message="Failed to load procurement requests." />}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -216,20 +212,18 @@ export default function ProcurementPage() {
           })}
         </div>
       ) : (
-        <div className="card p-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-700/40 mx-auto">
-            <span className="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-500">shopping_cart</span>
-          </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600 dark:text-neutral-400">No procurement requests found</p>
-          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
-            {statusFilter === "All" ? "Create a requisition to get started." : `No ${statusFilter.toLowerCase()} requests.`}
-          </p>
-          {canCreateRequest && (
-            <Link href="/procurement/create" className="btn-primary mt-5 inline-flex">
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              New Requisition
-            </Link>
-          )}
+        <div className="card">
+          <EmptyState
+            icon="shopping_cart"
+            title="No procurement requests found"
+            description={statusFilter === "All" ? "Create a requisition to get started." : `No ${statusFilter.toLowerCase()} requests.`}
+            action={canCreateRequest ? (
+              <Link href="/procurement/create" className="btn-primary inline-flex">
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                New Requisition
+              </Link>
+            ) : undefined}
+          />
         </div>
       )}
     </div>

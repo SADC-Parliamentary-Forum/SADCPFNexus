@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { platformAuditApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function AuditTrailIntegrityPage() {
   const { success, error, info } = useToast();
@@ -54,7 +55,7 @@ export default function AuditTrailIntegrityPage() {
         subtitle="Hash-chain verification and periodic checkpoints."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Integrity report" }]} />}
       />
-        <Link href="/admin/audit-trail" className="text-sm text-primary underline">Back</Link>
+        <Link href="/admin/audit-trail" className="btn-secondary text-sm">Back</Link>
       </div>
 
       <div className="flex gap-2">
@@ -93,7 +94,7 @@ export default function AuditTrailIntegrityPage() {
               </tr>
             ))}
             {checkpoints.length === 0 && (
-              <tr><td colSpan={4} className="px-4 py-6 text-center text-neutral-500">No checkpoints yet.</td></tr>
+              <TableEmpty colSpan={4} title="No checkpoints yet." />
             )}
           </tbody>
         </table>

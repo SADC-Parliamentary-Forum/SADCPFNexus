@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class CorrespondenceDetailScreen extends ConsumerStatefulWidget {
   const CorrespondenceDetailScreen({super.key, required this.letterId});
@@ -54,26 +54,21 @@ class _CorrespondenceDetailScreenState
   Widget build(BuildContext context) {
     final l = _letter;
     final hold = l?['legal_hold'] == true;
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new,
-              size: 18, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+    return StitchScreen(
+      title: 'Letter',
+      fallbackRoute: '/correspondence',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        title: const Text('Letter',
-            style: TextStyle(
-                color: AppColors.textPrimary, fontWeight: FontWeight.w800)),
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading letter')
           : _error != null || l == null
-              ? Center(
-                  child: Text(_error ?? 'Not found',
-                      style: const TextStyle(color: AppColors.textSecondary)))
+              ? StitchErrorState(
+                  message: _error ?? 'Not found', onRetry: _load)
               : ListView(
                   padding: const EdgeInsets.all(16),
                   children: [

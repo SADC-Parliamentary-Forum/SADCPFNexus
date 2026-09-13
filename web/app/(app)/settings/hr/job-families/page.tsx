@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { hrSettingsApi, type HrJobFamily } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/utils";
+import { HrSettingsHeader } from "@/components/hr/HrSettingsHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const ICON_OPTIONS = [
   "star", "gavel", "account_balance", "people", "computer",
@@ -51,22 +51,22 @@ function FamilyModal({
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Name *</label>
-              <input className="form-input text-sm" value={form.name ?? ""} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Finance & Accounting" />
+              <label htmlFor="settings-hr-job-families-name" className="block text-xs font-medium text-neutral-700 mb-1">Name *</label>
+              <input id="settings-hr-job-families-name" className="form-input text-sm" value={form.name ?? ""} onChange={(e) => set("name", e.target.value)} placeholder="e.g. Finance & Accounting" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
-              <input className="form-input text-sm uppercase" value={form.code ?? ""} onChange={(e) => set("code", e.target.value.toUpperCase())} placeholder="e.g. FIN" maxLength={20} />
+              <label htmlFor="settings-hr-job-families-code" className="block text-xs font-medium text-neutral-700 mb-1">Code *</label>
+              <input id="settings-hr-job-families-code" className="form-input text-sm uppercase" value={form.code ?? ""} onChange={(e) => set("code", e.target.value.toUpperCase())} placeholder="e.g. FIN" maxLength={20} />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Description</label>
-            <textarea className="form-input text-sm resize-none" rows={2} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} placeholder="Optional description…" />
+            <label htmlFor="settings-hr-job-families-description" className="block text-xs font-medium text-neutral-700 mb-1">Description</label>
+            <textarea id="settings-hr-job-families-description" className="form-input text-sm resize-none" rows={2} value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} placeholder="Optional description…" />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Colour</label>
+            <p className="block text-xs font-medium text-neutral-700 mb-1">Colour</p>
             <div className="flex gap-2 flex-wrap">
               {COLOR_OPTIONS.map((c) => (
                 <button
@@ -81,7 +81,7 @@ function FamilyModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Icon</label>
+            <p className="block text-xs font-medium text-neutral-700 mb-1">Icon</p>
             <div className="flex gap-2 flex-wrap">
               {ICON_OPTIONS.map((ic) => (
                 <button
@@ -97,8 +97,8 @@ function FamilyModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
-            <select className="form-input text-sm" value={form.status ?? "active"} onChange={(e) => set("status", e.target.value)}>
+            <label htmlFor="settings-hr-job-families-status" className="block text-xs font-medium text-neutral-700 mb-1">Status</label>
+            <select id="settings-hr-job-families-status" className="form-input text-sm" value={form.status ?? "active"} onChange={(e) => set("status", e.target.value)}>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
             </select>
@@ -165,23 +165,17 @@ export default function JobFamiliesPage() {
           onSave={(form) => saveMutation.mutate(form)}
         />
       )}
-
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500 mb-1">
-            <Link href="/settings/hr" className="hover:text-primary">HR Administration</Link>
-            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            <span className="text-neutral-700 font-medium">Job Families</span>
-          </div>
-          <h1 className="page-title">Job Families</h1>
-          <p className="page-subtitle">Group positions into functional families used for competency mapping and appraisals.</p>
-        </div>
-        <button onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
+      <HrSettingsHeader
+        title="Job Families"
+        subtitle="Group positions into functional families used for competency mapping and appraisals."
+        actions={
+          <button type="button" onClick={() => setModal(null)} className="btn-primary flex items-center gap-2 shrink-0">
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Family
         </button>
-      </div>
+        }
+      />
+
 
       {/* Table */}
       <div className="card overflow-hidden">
@@ -196,10 +190,7 @@ export default function JobFamiliesPage() {
             <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
           </div>
         ) : families.length === 0 ? (
-          <div className="p-12 text-center">
-            <span className="material-symbols-outlined text-[40px] text-neutral-300">category</span>
-            <p className="mt-2 text-sm text-neutral-500">No job families yet. Create one to get started.</p>
-          </div>
+          <EmptyState icon="category" title="No job families yet." description="Create one to get started." />
         ) : (
           <table className="data-table w-full">
             <thead>

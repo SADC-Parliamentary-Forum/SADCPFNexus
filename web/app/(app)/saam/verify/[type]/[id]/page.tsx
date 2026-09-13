@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { saamApi, type SignatureEvent, type SignedDocument } from "@/lib/api";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const actionConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approve:     { label: "Approved",     cls: "badge-success", icon: "check_circle" },
@@ -63,18 +64,18 @@ export default function VerifyPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-neutral-500">
-        <Link href="/correspondence" className="hover:text-primary transition-colors capitalize">{type}</Link>
-        <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-        <span className="text-neutral-900 font-medium">Signing Audit Trail</span>
-      </div>
-
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="page-title">Document Verification</h1>
-          <p className="page-subtitle capitalize">{type} #{id} — signing chain &amp; authentication record</p>
-        </div>
+      <ModulePageHeader
+        title="Document Verification"
+        subtitle={`${type} #${id} — signing chain & authentication record`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: String(type), href: "/correspondence" },
+              { label: "Signing Audit Trail" },
+            ]}
+          />
+        }
+        actions={
         <div className="flex gap-2 flex-shrink-0">
           {events.length > 0 && !signedDoc && (
             <button onClick={handleGenerate} disabled={generating} className="btn-secondary text-sm flex items-center gap-1.5">
@@ -93,7 +94,8 @@ export default function VerifyPage() {
             </button>
           )}
         </div>
-      </div>
+        }
+      />
 
       {error && (
         <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
@@ -126,7 +128,7 @@ export default function VerifyPage() {
         {loading ? (
           <div className="p-8 text-center text-sm text-neutral-400">Loading…</div>
         ) : events.length === 0 ? (
-          <div className="p-8 text-center text-sm text-neutral-400">No signing events recorded yet.</div>
+          <EmptyState icon="verified" title="No signing events recorded yet." className="py-8 min-h-0" />
         ) : (
           <div className="divide-y divide-neutral-100">
             {events.map((event, idx) => {

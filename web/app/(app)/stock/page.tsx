@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -171,22 +172,22 @@ export default function StockItemsPage() {
       {!loading && items.length > 0 && (
         <div className="card p-3 flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[160px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">Search</label>
+            <label htmlFor="stock-register-search" className="block text-xs font-semibold text-neutral-600 mb-1">Search</label>
             <div className="relative">
               <span className="material-symbols-outlined absolute left-2.5 top-2.5 text-neutral-400 text-[18px]">search</span>
-              <input className="form-input pl-8 text-sm" placeholder="Name or item code…" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input id="stock-register-search" className="form-input pl-8 text-sm" placeholder="Name or item code…" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
           </div>
           <div className="min-w-[150px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">{t("stock.category")}</label>
-            <select className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
+            <label htmlFor="stock-register-category" className="block text-xs font-semibold text-neutral-600 mb-1">{t("stock.category")}</label>
+            <select id="stock-register-category" className="form-input text-sm" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
               <option value="all">All Categories</option>
               {categories.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
             </select>
           </div>
           <div className="min-w-[130px]">
-            <label className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
-            <select className="form-input text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+            <label htmlFor="stock-status" className="block text-xs font-semibold text-neutral-600 mb-1">Status</label>
+            <select id="stock-status" className="form-input text-sm" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
               <option value="active">Active</option>
               <option value="archived">Archived</option>
               <option value="all">All</option>
@@ -224,7 +225,7 @@ export default function StockItemsPage() {
                       <div className="flex items-center gap-2">
                         <div>
                           <p className="font-medium text-neutral-900">
-                            <Link href={`/stock/${i.id}`} className="hover:text-primary hover:underline">{i.name}</Link>
+                            <Link href={`/stock/${i.id}`} className="font-medium text-primary">{i.name}</Link>
                           </p>
                           <p className="text-xs font-mono text-neutral-400">{i.item_code}{i.unit ? ` · ${i.unit}` : ""}</p>
                         </div>
@@ -257,24 +258,30 @@ export default function StockItemsPage() {
           </div>
         </div>
       ) : items.length > 0 ? (
-        <div className="card p-10 text-center">
-          <span className="material-symbols-outlined text-3xl text-neutral-300">search_off</span>
-          <p className="mt-2 text-sm font-semibold text-neutral-600">No items match your filters</p>
-          <button type="button" onClick={() => { setSearch(""); setFilterCategory("all"); setFilterStatus("active"); }} className="mt-3 text-xs text-primary hover:underline">Clear filters</button>
+        <div className="card">
+          <EmptyState
+            icon="search_off"
+            title="No items match your filters"
+            action={
+              <button type="button" onClick={() => { setSearch(""); setFilterCategory("all"); setFilterStatus("active"); }} className="btn-secondary text-xs">
+                Clear filters
+              </button>
+            }
+          />
         </div>
       ) : (
-        <div className="card p-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 mx-auto">
-            <span className="material-symbols-outlined text-4xl text-neutral-300">inventory</span>
-          </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600">No stock items yet</p>
-          <p className="text-xs text-neutral-400 mt-1">Add consumable items to start tracking balances and reorder levels.</p>
-          {canManage && (
-            <button type="button" onClick={openNew} className="btn-primary mt-5 inline-flex">
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              New Item
-            </button>
-          )}
+        <div className="card">
+          <EmptyState
+            icon="inventory"
+            title="No stock items yet"
+            description="Add consumable items to start tracking balances and reorder levels."
+            action={canManage ? (
+              <button type="button" onClick={openNew} className="btn-primary inline-flex">
+                <span className="material-symbols-outlined text-[18px]">add</span>
+                New Item
+              </button>
+            ) : undefined}
+          />
         </div>
       )}
 

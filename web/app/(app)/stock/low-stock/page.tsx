@@ -5,6 +5,7 @@ import { stockItemsApi, type StockItem } from "@/lib/api";
 import { canIssueStock, getStoredUser } from "@/lib/auth";
 import { StockMovementModal } from "@/components/stock/StockMovementModal";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function LowStockPage() {
   const [items, setItems] = useState<StockItem[]>([]);
@@ -96,12 +97,12 @@ export default function LowStockPage() {
           </div>
         </div>
       ) : (
-        <div className="card p-16 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50 mx-auto">
-            <span className="material-symbols-outlined text-4xl text-green-400">check_circle</span>
-          </div>
-          <p className="mt-4 text-sm font-semibold text-neutral-600">All stock levels are healthy</p>
-          <p className="text-xs text-neutral-400 mt-1">No items are at or below their reorder level.</p>
+        <div className="card">
+          <EmptyState
+            icon="check_circle"
+            title="All stock levels are healthy"
+            description="No items are at or below their reorder level."
+          />
         </div>
       )}
 

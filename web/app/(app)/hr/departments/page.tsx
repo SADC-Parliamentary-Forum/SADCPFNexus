@@ -6,6 +6,7 @@ import { adminApi, type Department, type User } from "@/lib/api";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default function AdminDepartmentsPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -142,12 +143,13 @@ export default function AdminDepartmentsPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="hr-departments-name" className="block text-xs font-semibold text-neutral-700">
                 Department Name <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">corporate_fare</span>
                 <input
+                  id="hr-departments-name"
                   className="form-input pl-8"
                   placeholder="e.g. Finance & Administration"
                   value={form.name}
@@ -156,12 +158,13 @@ export default function AdminDepartmentsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="hr-departments-code" className="block text-xs font-semibold text-neutral-700">
                 Department Code <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">tag</span>
                 <input
+                  id="hr-departments-code"
                   className="form-input pl-8 uppercase font-mono"
                   placeholder="e.g. FIN"
                   maxLength={6}
@@ -171,12 +174,13 @@ export default function AdminDepartmentsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="hr-departments-parent" className="block text-xs font-semibold text-neutral-700">
                 Parent Department
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">hub</span>
                 <select
+                  id="hr-departments-parent"
                   className="form-input pl-8"
                   value={form.parent_id || ""}
                   onChange={(e) => setForm((p) => ({ ...p, parent_id: e.target.value ? Number(e.target.value) : null }))}
@@ -190,12 +194,13 @@ export default function AdminDepartmentsPage() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-neutral-700">
+              <label htmlFor="hr-departments-supervisor" className="block text-xs font-semibold text-neutral-700">
                 Department Supervisor
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-300 text-[16px]">person</span>
                 <select
+                  id="hr-departments-supervisor"
                   className="form-input pl-8"
                   value={form.supervisor_id || ""}
                   onChange={(e) => setForm((p) => ({ ...p, supervisor_id: e.target.value ? Number(e.target.value) : null }))}
@@ -283,19 +288,17 @@ export default function AdminDepartmentsPage() {
             ))}
           </div>
         ) : departments.length === 0 ? (
-          <div className="px-5 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 mx-auto mb-4">
-              <span className="material-symbols-outlined text-3xl text-neutral-300">corporate_fare</span>
-            </div>
-            <p className="text-sm font-semibold text-neutral-500">No departments yet</p>
-            <p className="text-xs text-neutral-400 mt-1">{isAdmin ? "Create your first department to get started." : "You can view departments only."}</p>
-            {isAdmin && (
-              <button onClick={() => setShowForm(true)} className="btn-primary mt-4">
+          <EmptyState
+            icon="corporate_fare"
+            title="No departments yet"
+            description={isAdmin ? "Create your first department to get started." : "You can view departments only."}
+            action={isAdmin ? (
+              <button type="button" onClick={() => setShowForm(true)} className="btn-primary">
                 <span className="material-symbols-outlined text-[16px]">add</span>
                 New Department
               </button>
-            )}
-          </div>
+            ) : undefined}
+          />
         ) : (
           <table className="data-table">
             <thead>

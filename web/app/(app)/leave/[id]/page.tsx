@@ -812,10 +812,10 @@ export default function LeaveDetailPage() {
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
-          <label className={`btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5 cursor-pointer ${uploadLoading ? "opacity-50 pointer-events-none" : ""}`}>
+          <label htmlFor="leave-detail-upload-file-catch-finally" className={`btn-secondary py-1.5 px-3 text-xs flex items-center gap-1.5 cursor-pointer ${uploadLoading ? "opacity-50 pointer-events-none" : ""}`}>
             <span className="material-symbols-outlined text-[15px]">upload_file</span>
             {uploadLoading ? "Uploading…" : "Upload File"}
-            <input
+            <input id="leave-detail-upload-file-catch-finally"
               type="file"
               className="hidden"
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
@@ -910,10 +910,10 @@ export default function LeaveDetailPage() {
               </div>
             </div>
             <p className="text-sm text-neutral-600 mb-4 bg-amber-50 rounded-lg px-3 py-2 border border-amber-100">{balanceError}</p>
-            <label className="block text-sm font-medium text-neutral-700 mb-2">
+            <label htmlFor="leave-detail-override-justification" className="block text-sm font-medium text-neutral-700 mb-2">
               Override Justification <span className="text-red-500">*</span>
             </label>
-            <textarea
+            <textarea id="leave-detail-override-justification"
               value={overrideReason}
               onChange={(e) => setOverrideReason(e.target.value)}
               placeholder="Provide a written justification for overriding the leave balance check…"

@@ -369,8 +369,8 @@ function LeaveCreatePageInner() {
 
                 {singleDay ? (
                   <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <label className="flex items-center gap-2 text-sm text-neutral-700">
-                      <input
+                    <label htmlFor="leave-create-updatesegment-segment-uid-classname-h-4-w-4-roun" className="flex items-center gap-2 text-sm text-neutral-700">
+                      <input id="leave-create-updatesegment-segment-uid-classname-h-4-w-4-roun"
                         type="checkbox"
                         checked={halfDay}
                         onChange={(event) =>
@@ -444,7 +444,7 @@ function LeaveCreatePageInner() {
             );
           })}
 
-          <button type="button" onClick={addSegment} className="text-sm font-semibold text-primary hover:underline">
+          <button type="button" onClick={addSegment} className="btn-secondary text-sm py-1 px-2">
             Add another period
           </button>
 
@@ -488,8 +488,8 @@ function LeaveCreatePageInner() {
                 onChange={(event) => setLeaveAddress(event.target.value)}
               />
             </FormField>
-            <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 sm:col-span-2">
-              <input
+            <label htmlFor="leave-create-sethandoverrequired-event-target-checked-classna" className="flex items-center gap-2 text-sm font-medium text-neutral-700 sm:col-span-2">
+              <input id="leave-create-sethandoverrequired-event-target-checked-classna"
                 type="checkbox"
                 checked={handoverRequired}
                 onChange={(event) => setHandoverRequired(event.target.checked)}
@@ -511,7 +511,7 @@ function LeaveCreatePageInner() {
         ) : (
           <button
             type="button"
-            className="mt-3 text-sm font-semibold text-primary hover:underline"
+            className="btn-secondary text-sm py-1 px-2 mt-3"
             onClick={() => setShowAwayDetails(true)}
           >
             Add contact and handover

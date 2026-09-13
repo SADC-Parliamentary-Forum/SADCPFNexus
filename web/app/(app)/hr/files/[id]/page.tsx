@@ -10,6 +10,7 @@ import {
   type HrFileTimelineEvent,
 } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const FILE_STATUS_LABELS: Record<string, string> = {
   active: "Active",
@@ -233,7 +234,7 @@ export default function HrFileDetailPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
           {error ?? "Not found"}
         </div>
-        <Link href="/hr/files" className="text-sm font-semibold text-primary hover:underline">
+        <Link href="/hr/files" className="btn-secondary text-sm">
           Back to HR Files
         </Link>
       </div>
@@ -248,18 +249,19 @@ export default function HrFileDetailPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div>
-        <Link href="/hr" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
-          HR
-        </Link>
-        <Link href="/hr/files" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 block">
-          Personal Files
-        </Link>
-        <h1 className="page-title">{employeeName}</h1>
-        <p className="page-subtitle">
-          {file.current_position ?? "—"} · {file.department?.name ?? "—"}
-        </p>
-      </div>
+      <ModulePageHeader
+        title={employeeName}
+        subtitle={`${file.current_position ?? "—"} · ${file.department?.name ?? "—"}`}
+        breadcrumbs={
+          <PageBreadcrumbs
+            items={[
+              { label: "nav.hr", href: "/hr" },
+              { label: "Personal Files", href: "/hr/files" },
+              { label: employeeName },
+            ]}
+          />
+        }
+      />
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-neutral-200 overflow-x-auto">
@@ -402,8 +404,8 @@ export default function HrFileDetailPage() {
           <p className="text-sm text-neutral-600">
             Open development actions: <strong>{file.open_development_action_count}</strong> · Training hours this cycle: <strong>{file.training_hours_current_cycle}</strong>
           </p>
-          <Link href="/hr/performance" className="text-sm font-semibold text-primary hover:underline">
-            View Performance Tracker →
+          <Link href="/hr/performance" className="btn-secondary text-sm">
+            View Performance Tracker
           </Link>
         </div>
       )}
@@ -427,8 +429,8 @@ export default function HrFileDetailPage() {
             {uploadError && <p className="text-sm text-red-600 mb-2">{uploadError}</p>}
             <form onSubmit={handleUploadDocument} className="flex flex-wrap gap-3 items-end">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Type</label>
-                <select className="form-input py-2 text-sm min-w-[160px]" value={docType} onChange={(e) => setDocType(e.target.value)} required>
+                <label htmlFor="hr-files-detail-type" className="block text-xs font-semibold text-neutral-700 mb-1">Type</label>
+                <select id="hr-files-detail-type" className="form-input py-2 text-sm min-w-[160px]" value={docType} onChange={(e) => setDocType(e.target.value)} required>
                   <option value="">Select…</option>
                   {DOCUMENT_TYPES.map((t) => (
                     <option key={t} value={t}>{t}</option>
@@ -436,8 +438,8 @@ export default function HrFileDetailPage() {
                 </select>
               </div>
               <div className="flex-1 min-w-[200px]">
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
-                <input type="text" className="form-input w-full" value={docTitle} onChange={(e) => setDocTitle(e.target.value)} placeholder="Document title" required />
+                <label htmlFor="hr-files-detail-title" className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
+                <input id="hr-files-detail-title" type="text" className="form-input w-full" value={docTitle} onChange={(e) => setDocTitle(e.target.value)} placeholder="Document title" required />
               </div>
               <button type="submit" disabled={uploading} className="btn-primary py-2 px-4 text-sm disabled:opacity-50">
                 {uploading ? "Adding…" : "Add"}
@@ -477,7 +479,7 @@ export default function HrFileDetailPage() {
                           <button
                             type="button"
                             onClick={() => handleDeleteDocument(doc.id)}
-                            className="text-sm text-red-600 hover:underline"
+                            className="btn-secondary text-xs text-red-600"
                           >
                             Delete
                           </button>
@@ -660,9 +662,9 @@ export default function HrFileDetailPage() {
               {file.active_warning_flag && (
                 <span className="badge badge-danger">Active warning on file</span>
               )}
-              <Link href="/hr/performance" className="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+              <Link href="/hr/performance" className="btn-secondary text-xs flex items-center gap-1">
                 <span className="material-symbols-outlined text-[14px]">trending_up</span>
-                View performance tracker →
+                View performance tracker
               </Link>
             </div>
           </div>
@@ -690,8 +692,8 @@ export default function HrFileDetailPage() {
             <h3 className="text-sm font-semibold text-neutral-900 mb-3">Add timeline event</h3>
             <form onSubmit={handleAddTimelineEvent} className="space-y-3 max-w-md">
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Event type</label>
-                <select className="form-input w-full py-2" value={eventType} onChange={(e) => setEventType(e.target.value)} required>
+                <label htmlFor="hr-files-detail-event-type" className="block text-xs font-semibold text-neutral-700 mb-1">Event type</label>
+                <select id="hr-files-detail-event-type" className="form-input w-full py-2" value={eventType} onChange={(e) => setEventType(e.target.value)} required>
                   <option value="">Select…</option>
                   {EVENT_TYPES.map((t) => (
                     <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
@@ -699,16 +701,16 @@ export default function HrFileDetailPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
-                <input type="text" className="form-input w-full" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} required />
+                <label htmlFor="hr-files-detail-title-2" className="block text-xs font-semibold text-neutral-700 mb-1">Title</label>
+                <input id="hr-files-detail-title-2" type="text" className="form-input w-full" value={eventTitle} onChange={(e) => setEventTitle(e.target.value)} required />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Date</label>
-                <input type="date" className="form-input w-full" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
+                <label htmlFor="hr-files-detail-date" className="block text-xs font-semibold text-neutral-700 mb-1">Date</label>
+                <input id="hr-files-detail-date" type="date" className="form-input w-full" value={eventDate} onChange={(e) => setEventDate(e.target.value)} required />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-neutral-700 mb-1">Description (optional)</label>
-                <textarea className="form-input w-full min-h-[80px]" value={eventDescription} onChange={(e) => setEventDescription(e.target.value)} />
+                <label htmlFor="hr-files-detail-description-optional" className="block text-xs font-semibold text-neutral-700 mb-1">Description (optional)</label>
+                <textarea id="hr-files-detail-description-optional" className="form-input w-full min-h-[80px]" value={eventDescription} onChange={(e) => setEventDescription(e.target.value)} />
               </div>
               <button type="submit" disabled={addingEvent} className="btn-primary py-2 px-4 text-sm disabled:opacity-50">
                 {addingEvent ? "Adding…" : "Add event"}
@@ -739,7 +741,7 @@ export default function HrFileDetailPage() {
       )}
 
       <div className="flex justify-end">
-        <Link href="/hr/files" className="text-sm font-semibold text-primary hover:underline">
+        <Link href="/hr/files" className="btn-secondary text-sm">
           Back to HR Files
         </Link>
       </div>

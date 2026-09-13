@@ -126,10 +126,11 @@ export default function ImprestCreatePage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="block text-xs font-medium text-neutral-700">Amount Requested <span className="text-red-500">*</span></label>
+                <label htmlFor="imprest-create-amount" className="block text-xs font-medium text-neutral-700">Amount Requested <span className="text-red-500">*</span></label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">$</span>
                   <input
+                    id="imprest-create-amount"
                     type="number"
                     min="1"
                     step="0.01"
@@ -141,8 +142,8 @@ export default function ImprestCreatePage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="block text-xs font-medium text-neutral-700">Currency</label>
-                <select
+                <label htmlFor="imprest-create-currency" className="block text-xs font-medium text-neutral-700">Currency</label>
+                <select id="imprest-create-currency"
                   className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   value={form.currency}
                   onChange={(e) => updateField("currency", e.target.value)}
@@ -156,8 +157,8 @@ export default function ImprestCreatePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-medium text-neutral-700">Expected Liquidation Date <span className="text-red-500">*</span></label>
-              <input
+              <label htmlFor="imprest-create-expected-liquidation-date" className="block text-xs font-medium text-neutral-700">Expected Liquidation Date <span className="text-red-500">*</span></label>
+              <input id="imprest-create-expected-liquidation-date"
                 type="date"
                 className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-900 focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                 value={form.expected_liquidation_date}
@@ -167,8 +168,8 @@ export default function ImprestCreatePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="block text-xs font-medium text-neutral-700">Purpose of Imprest <span className="text-red-500">*</span></label>
-              <textarea
+              <label htmlFor="imprest-create-purpose-of-imprest" className="block text-xs font-medium text-neutral-700">Purpose of Imprest <span className="text-red-500">*</span></label>
+              <textarea id="imprest-create-purpose-of-imprest"
                 rows={4}
                 className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
                 placeholder="Describe the specific need for these funds..."
@@ -227,8 +228,8 @@ export default function ImprestCreatePage() {
         <FormSection title="Supporting Justification" icon="description" className="space-y-5">
 
           <div className="space-y-2">
-            <label className="block text-xs font-medium text-neutral-700">Detailed Justification</label>
-            <textarea
+            <label htmlFor="imprest-create-detailed-justification" className="block text-xs font-medium text-neutral-700">Detailed Justification</label>
+            <textarea id="imprest-create-detailed-justification"
               rows={6}
               className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-sm text-neutral-900 placeholder-neutral-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none"
               placeholder="Provide detailed justification for this imprest request, including why alternative procurement channels are not suitable..."

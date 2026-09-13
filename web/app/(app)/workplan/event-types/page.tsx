@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { workplanEventTypesApi, type WorkplanEventType } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const COLOR_OPTIONS = [
   { value: "neutral", label: "Grey" },
@@ -120,25 +121,21 @@ export default function WorkplanEventTypesPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Link href="/workplan" className="text-xs font-medium text-neutral-500 hover:text-neutral-700 mb-1 inline-block">
-            Workplan
-          </Link>
-          <h1 className="page-title">Event types</h1>
-          <p className="page-subtitle">
-            Categories used when creating workplan events. Existing events keep a deleted type.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => { resetForm(); setShowForm(true); }}
-          className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
-        >
-          <span className="material-symbols-outlined text-[18px]">add</span>
-          Add event type
-        </button>
-      </div>
+      <ModulePageHeader
+        title="Event types"
+        subtitle="Categories used when creating workplan events. Existing events keep a deleted type."
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "nav.workplan", href: "/workplan" }, { label: "Event types" }]} />}
+        actions={
+          <button
+            type="button"
+            onClick={() => { resetForm(); setShowForm(true); }}
+            className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Add event type
+          </button>
+        }
+      />
 
       {error && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">
@@ -151,8 +148,8 @@ export default function WorkplanEventTypesPage() {
         <form onSubmit={handleSubmit} className="card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-neutral-900">{editingId ? "Edit event type" : "New event type"}</h2>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Name *</label>
-            <input
+            <label htmlFor="workplan-event-types-name" className="block text-sm font-semibold text-neutral-700 mb-1">Name *</label>
+            <input id="workplan-event-types-name"
               type="text"
               className="form-input w-full"
               value={name}
@@ -163,8 +160,8 @@ export default function WorkplanEventTypesPage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1">Icon</label>
-              <input
+              <label htmlFor="workplan-event-types-icon" className="block text-sm font-semibold text-neutral-700 mb-1">Icon</label>
+              <input id="workplan-event-types-icon"
                 type="text"
                 className="form-input w-full font-mono text-sm"
                 value={icon}
@@ -174,8 +171,8 @@ export default function WorkplanEventTypesPage() {
               <p className="text-xs text-neutral-400 mt-1">Material Symbol icon name</p>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-neutral-700 mb-1">Colour</label>
-              <select className="form-input w-full" value={color} onChange={(e) => setColor(e.target.value)}>
+              <label htmlFor="workplan-event-types-colour" className="block text-sm font-semibold text-neutral-700 mb-1">Colour</label>
+              <select id="workplan-event-types-colour" className="form-input w-full" value={color} onChange={(e) => setColor(e.target.value)}>
                 {COLOR_OPTIONS.map((c) => (
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
@@ -183,8 +180,8 @@ export default function WorkplanEventTypesPage() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-neutral-700 mb-1">Sort order</label>
-            <input
+            <label htmlFor="workplan-event-types-sort-order" className="block text-sm font-semibold text-neutral-700 mb-1">Sort order</label>
+            <input id="workplan-event-types-sort-order"
               type="number"
               min={0}
               className="form-input w-full max-w-[120px]"
@@ -212,7 +209,7 @@ export default function WorkplanEventTypesPage() {
             <span className="ml-2">Loading…</span>
           </div>
         ) : list.length === 0 ? (
-          <div className="py-12 text-center text-sm text-neutral-500">No event types found.</div>
+          <EmptyState icon="event" title="No event types found." />
         ) : (
           <div className="overflow-x-auto">
             <table className="data-table">
@@ -247,10 +244,10 @@ export default function WorkplanEventTypesPage() {
                     <td className="text-sm text-neutral-600 capitalize">{et.color}</td>
                     <td className="text-sm text-neutral-600">{et.sort_order ?? "—"}</td>
                     <td className="text-right">
-                      <button type="button" onClick={() => handleEdit(et)} className="text-sm font-semibold text-primary hover:underline mr-3">
+                      <button type="button" onClick={() => handleEdit(et)} className="btn-secondary text-xs py-1 px-2 mr-2">
                         Edit
                       </button>
-                      <button type="button" onClick={() => handleDelete(et)} className="text-sm font-semibold text-red-600 hover:underline">
+                      <button type="button" onClick={() => handleDelete(et)} className="btn-secondary text-xs py-1 px-2 text-red-600">
                         Delete
                       </button>
                     </td>

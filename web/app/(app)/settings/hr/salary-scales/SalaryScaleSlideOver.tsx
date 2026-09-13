@@ -128,8 +128,8 @@ export function SalaryScaleSlideOver({
           {/* Grade + currency + dates */}
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Grade Band *</label>
-              <select
+              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-grade-band" className="block text-xs font-medium text-neutral-700 mb-1">Grade Band *</label>
+              <select id="hr-salary-scales-SalaryScaleSlideOver-grade-band"
                 className="form-input text-sm"
                 value={gradeBandId}
                 onChange={(e) => setGradeBandId(e.target.value ? Number(e.target.value) : "")}
@@ -150,25 +150,25 @@ export function SalaryScaleSlideOver({
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Currency</label>
-              <input className="form-input text-sm uppercase" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} maxLength={3} />
+              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-currency" className="block text-xs font-medium text-neutral-700 mb-1">Currency</label>
+              <input id="hr-salary-scales-SalaryScaleSlideOver-currency" className="form-input text-sm uppercase" value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} maxLength={3} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Effective From *</label>
-              <input type="date" className="form-input text-sm" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
+              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-effective-from" className="block text-xs font-medium text-neutral-700 mb-1">Effective From *</label>
+              <input id="hr-salary-scales-SalaryScaleSlideOver-effective-from" type="date" className="form-input text-sm" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
             </div>
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-neutral-700 mb-1">Effective To</label>
-              <input type="date" className="form-input text-sm" value={effectiveTo} onChange={(e) => setEffectiveTo(e.target.value)} />
+              <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-effective-to" className="block text-xs font-medium text-neutral-700 mb-1">Effective To</label>
+              <input id="hr-salary-scales-SalaryScaleSlideOver-effective-to" type="date" className="form-input text-sm" value={effectiveTo} onChange={(e) => setEffectiveTo(e.target.value)} />
             </div>
           </div>
 
           {/* Notch table */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-neutral-700">Notch Structure ({notches.length}/12)</label>
+              <p className="text-xs font-medium text-neutral-700">Notch Structure ({notches.length}/12)</p>
               {isDraft && notches.length < 12 && (
-                <button onClick={addNotch} className="text-xs text-primary hover:underline flex items-center gap-1">
+                <button onClick={addNotch} className="btn-secondary text-xs py-1 px-2 inline-flex items-center gap-1">
                   <span className="material-symbols-outlined text-[14px]">add</span>
                   Add notch
                 </button>
@@ -233,8 +233,8 @@ export function SalaryScaleSlideOver({
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-medium text-neutral-700 mb-1">Notes / Reference</label>
-            <textarea
+            <label htmlFor="hr-salary-scales-SalaryScaleSlideOver-notes-reference" className="block text-xs font-medium text-neutral-700 mb-1">Notes / Reference</label>
+            <textarea id="hr-salary-scales-SalaryScaleSlideOver-notes-reference"
               className="form-input text-sm resize-none"
               rows={2}
               value={notes}
@@ -246,7 +246,7 @@ export function SalaryScaleSlideOver({
           {/* Governance */}
           {isEdit && (
             <div>
-              <label className="block text-xs font-medium text-neutral-700 mb-2">Governance</label>
+              <p className="block text-xs font-medium text-neutral-700 mb-2">Governance</p>
               <div className="rounded-xl bg-neutral-50 border border-neutral-200 divide-y divide-neutral-100">
                 {[
                   { label: "Status",       value: <span className={cn("badge text-[11px]", STATUS_BADGE[status])}>{status}</span> },

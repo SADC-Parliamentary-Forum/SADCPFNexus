@@ -109,7 +109,7 @@ export default function MyWorkProcurementEvaluationsPage() {
                     <td className="text-right">
                       <Link
                         href={`/procurement/evaluations?highlight=${r.id}`}
-                        className="text-xs font-medium text-primary hover:underline"
+                        className="btn-secondary text-xs py-1 px-2"
                       >
                         Open
                       </Link>

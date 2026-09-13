@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../../../../shared/widgets/stitch_screen.dart';
 
 /// Upload Public Holidays (SADC region) and UN Days via API.
 class CalendarUploadScreen extends ConsumerStatefulWidget {
@@ -127,20 +128,9 @@ class _CalendarUploadScreenState extends ConsumerState<CalendarUploadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'Upload Holidays & UN Days',
-          style: TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.w700),
-        ),
-      ),
+    return StitchScreen(
+      title: 'Upload Holidays & UN Days',
+      fallbackRoute: '/calendar',
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

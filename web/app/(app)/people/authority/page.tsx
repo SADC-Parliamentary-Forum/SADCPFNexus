@@ -130,17 +130,17 @@ return (await peopleAuthorityApi.listAuthorities()).data;
           create.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-authority-code-setcreateform-f-required" className="block text-xs font-medium text-neutral-600">
           Code
-          <input className="form-input mt-1" value={createForm.code} onChange={(e) => setCreateForm((f) => ({ ...f, code: e.target.value }))} required />
+          <input id="people-authority-code-setcreateform-f-required" className="form-input mt-1" value={createForm.code} onChange={(e) => setCreateForm((f) => ({ ...f, code: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-authority-name-setcreateform-f-required" className="block text-xs font-medium text-neutral-600">
           Name
-          <input className="form-input mt-1" value={createForm.name} onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))} required />
+          <input id="people-authority-name-setcreateform-f-required" className="form-input mt-1" value={createForm.name} onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))} required />
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-authority-module-setcreateform-f" className="block text-xs font-medium text-neutral-600">
           Module
-          <input className="form-input mt-1" value={createForm.module} onChange={(e) => setCreateForm((f) => ({ ...f, module: e.target.value }))} />
+          <input id="people-authority-module-setcreateform-f" className="form-input mt-1" value={createForm.module} onChange={(e) => setCreateForm((f) => ({ ...f, module: e.target.value }))} />
         </label>
         <div className="sm:col-span-3 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
@@ -156,34 +156,34 @@ return (await peopleAuthorityApi.listAuthorities()).data;
           assign.mutate();
         }}
       >
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-authority-authority-setassignform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Authority
-          <select className="form-input mt-1" value={assignForm.authority_definition_id} onChange={(e) => setAssignForm((f) => ({ ...f, authority_definition_id: e.target.value }))} required>
+          <select id="people-authority-authority-setassignform-f-required-select" className="form-input mt-1" value={assignForm.authority_definition_id} onChange={(e) => setAssignForm((f) => ({ ...f, authority_definition_id: e.target.value }))} required>
             <option value="">Select…</option>
             {filtered.map((r) => (
               <option key={String(r.id)} value={String(r.id)}>{String(r.name ?? r.code ?? r.id)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-authority-assignee-type-setassignform-f-person-position" className="block text-xs font-medium text-neutral-600">
           Assignee type
-          <select className="form-input mt-1" value={assignForm.assignee_type} onChange={(e) => setAssignForm((f) => ({ ...f, assignee_type: e.target.value }))}>
+          <select id="people-authority-assignee-type-setassignform-f-person-position" className="form-input mt-1" value={assignForm.assignee_type} onChange={(e) => setAssignForm((f) => ({ ...f, assignee_type: e.target.value }))}>
             <option value="Person">Person</option>
             <option value="Position">Position</option>
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-authority-assignee-setassignform-f-required-select" className="block text-xs font-medium text-neutral-600">
           Assignee
-          <select className="form-input mt-1" value={assignForm.assignee_id} onChange={(e) => setAssignForm((f) => ({ ...f, assignee_id: e.target.value }))} required>
+          <select id="people-authority-assignee-setassignform-f-required-select" className="form-input mt-1" value={assignForm.assignee_id} onChange={(e) => setAssignForm((f) => ({ ...f, assignee_id: e.target.value }))} required>
             <option value="">Select…</option>
             {(peopleQuery.data ?? []).map((p) => (
               <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
             ))}
           </select>
         </label>
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-authority-effective-from-setassignform-f-required" className="block text-xs font-medium text-neutral-600">
           Effective from
-          <input type="date" className="form-input mt-1" value={assignForm.effective_from} onChange={(e) => setAssignForm((f) => ({ ...f, effective_from: e.target.value }))} required />
+          <input id="people-authority-effective-from-setassignform-f-required" type="date" className="form-input mt-1" value={assignForm.effective_from} onChange={(e) => setAssignForm((f) => ({ ...f, effective_from: e.target.value }))} required />
         </label>
         <div className="sm:col-span-4 flex items-center gap-3">
           <button type="submit" className="btn-primary text-sm" disabled={assign.isPending}>
@@ -194,9 +194,9 @@ return (await peopleAuthorityApi.listAuthorities()).data;
       </form>
 
       <div className="card p-3">
-        <label className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-authority-search-setq-e-target-value-placeholder-filter-ro" className="block text-xs font-medium text-neutral-600">
           Search
-          <input
+          <input id="people-authority-search-setq-e-target-value-placeholder-filter-ro"
             className="form-input mt-1"
             value={q}
             onChange={(e) => setQ(e.target.value)}

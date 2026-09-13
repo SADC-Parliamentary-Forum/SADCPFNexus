@@ -103,21 +103,21 @@ export function CreateAssignmentFromSourceModal({
             <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
           )}
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Title</label>
-            <input className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} />
+            <label htmlFor="assignment-from-title" className="block text-sm font-medium text-neutral-700 mb-1">Title</label>
+            <input id="assignment-from-title" className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
-            <textarea className="form-input min-h-[80px]" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <label htmlFor="assignment-from-description" className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
+            <textarea id="assignment-from-description" className="form-input min-h-[80px]" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Due date</label>
-              <input type="date" className="form-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              <label htmlFor="assignment-from-due" className="block text-sm font-medium text-neutral-700 mb-1">Due date</label>
+              <input id="assignment-from-due" type="date" className="form-input" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
-              <select className="form-input" value={priority} onChange={(e) => setPriority(e.target.value as AssignmentPriority)}>
+              <label htmlFor="assignment-from-priority" className="block text-sm font-medium text-neutral-700 mb-1">Priority</label>
+              <select id="assignment-from-priority" className="form-input" value={priority} onChange={(e) => setPriority(e.target.value as AssignmentPriority)}>
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
@@ -127,8 +127,8 @@ export function CreateAssignmentFromSourceModal({
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1">Assignee</label>
-            <select className="form-input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
+            <label htmlFor="assignment-from-assignee" className="block text-sm font-medium text-neutral-700 mb-1">Assignee</label>
+            <select id="assignment-from-assignee" className="form-input" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
               <option value="">— Unassigned / department claim —</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>

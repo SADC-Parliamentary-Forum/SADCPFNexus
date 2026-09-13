@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 class RegionalComplianceTrackerScreen extends ConsumerStatefulWidget {
   const RegionalComplianceTrackerScreen({super.key});
@@ -199,32 +200,20 @@ class _RegionalComplianceTrackerScreenState
       return _statusScore(item['status']?.toString()) >= 0.8;
     }).length;
 
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgDark,
-        elevation: 0,
-        title: const Text(
-          'Regional Compliance',
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+    return StitchScreen(
+      title: 'Regional Compliance',
+      fallbackRoute: '/dashboard',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loading ? null : _load,
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: AppColors.textSecondary),
-            onPressed: _loading ? null : _load,
-          ),
-        ],
-      ),
+      ],
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )
+          ? const StitchLoadingState(label: 'Loading compliance')
           : _error != null
-              ? _ComplianceError(message: _error!, onRetry: _load)
+              ? StitchErrorState(message: _error!, onRetry: _load)
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
@@ -669,42 +658,6 @@ class _CommitteePill extends StatelessWidget {
                 color: AppColors.textMuted,
                 fontSize: 9,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ComplianceError extends StatelessWidget {
-  const _ComplianceError({required this.message, required this.onRetry});
-
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 44, color: AppColors.danger),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Retry'),
             ),
           ],
         ),

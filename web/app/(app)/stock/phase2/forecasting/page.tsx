@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { stockDemandApi, type StockDemandRow } from "@/lib/api";
+import { TableEmpty } from "@/components/ui/EmptyState";
 
 export default function StockDemandForecastPage() {
   const [lookback, setLookback] = useState(90);
@@ -25,8 +26,8 @@ export default function StockDemandForecastPage() {
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Demand / reorder suggestions" }]} />}
       />
         <div className="flex items-center gap-2">
-          <label className="text-sm text-neutral-600">Lookback days</label>
-          <select className="form-input w-28" value={lookback} onChange={(e) => setLookback(Number(e.target.value))}>
+          <label htmlFor="stock-phase2-forecasting-lookback-days" className="text-sm text-neutral-600">Lookback days</label>
+          <select id="stock-phase2-forecasting-lookback-days" className="form-input w-28" value={lookback} onChange={(e) => setLookback(Number(e.target.value))}>
             <option value={30}>30</option>
             <option value={60}>60</option>
             <option value={90}>90</option>
@@ -70,7 +71,7 @@ export default function StockDemandForecastPage() {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={6} className="py-6 text-neutral-400">No stock items.</td></tr>
+                <TableEmpty colSpan={6} title="No stock items." />
               )}
             </tbody>
           </table>

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/theme/app_theme.dart';
+import 'package:sadcpf_nexus/shared/widgets/stitch_screen.dart';
 
 /// Expanded supervisor team view with detailed performance metrics,
 /// workload indicators, update compliance, and conduct flags for each direct report.
@@ -112,25 +113,23 @@ class _SupervisorTeamDetailScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        title: const Text('My Team — Supervisor View'),
-        backgroundColor: AppColors.bgDark,
-        foregroundColor: AppColors.textPrimary,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadData,
-          ),
-        ],
-      ),
+    return StitchScreen(
+      title: 'My Team — Supervisor View',
+      fallbackRoute: '/hr/performance',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Refresh',
+          icon: Icons.refresh,
+          onPressed: _loadData,
+        ),
+      ],
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const StitchLoadingState(label: 'Loading team')
           : _error != null
-              ? _buildError()
+              ? StitchErrorState(
+                  message: _error ?? 'Failed to load team data',
+                  onRetry: _loadData,
+                )
               : Column(
                   children: [
                     _buildSummaryBar(),
@@ -140,32 +139,6 @@ class _SupervisorTeamDetailScreenState
                     ),
                   ],
                 ),
-    );
-  }
-
-  Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
-          const SizedBox(height: 12),
-          Text(
-            _error ?? 'Failed to load team data',
-            style: const TextStyle(color: AppColors.textMuted, fontSize: 14),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _loadData,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.bgDark,
-            ),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
     );
   }
 
