@@ -250,7 +250,7 @@ export default function MinutesDetailPage() {
             {attachments.map((att) => (
               <li key={att.id} className="flex items-center justify-between gap-3 text-sm">
                 <span className="truncate">{att.original_filename}</span>
-                <button type="button" className="text-primary hover:underline" onClick={() => void downloadAttachment(att)}>
+                <button type="button" className="btn-secondary text-xs py-1 px-2" onClick={() => void downloadAttachment(att)}>
                   Download
                 </button>
               </li>

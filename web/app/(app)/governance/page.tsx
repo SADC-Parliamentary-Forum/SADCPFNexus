@@ -232,7 +232,7 @@ export default function MeetingsMinutesPage() {
               { label: "Chair", value: m.chairperson || "—" },
             ]}
             actions={(m) => (
-              <Link href={`/governance/minutes/${m.id}`} className="text-xs font-medium text-primary hover:underline">
+              <Link href={`/governance/minutes/${m.id}`} className="btn-secondary text-xs py-1 px-2">
                 View
               </Link>
             )}
@@ -254,7 +254,7 @@ export default function MeetingsMinutesPage() {
                 {rows.map((m) => (
                   <tr key={m.id}>
                     <td>
-                      <Link href={`/governance/minutes/${m.id}`} className="font-medium text-neutral-900 hover:underline dark:text-neutral-100">
+                      <Link href={`/governance/minutes/${m.id}`} className="font-medium text-neutral-900 dark:text-neutral-100">
                         {m.title}
                       </Link>
                       {m.chairperson ? <div className="text-xs text-neutral-500">Chair: {m.chairperson}</div> : null}
@@ -272,7 +272,7 @@ export default function MeetingsMinutesPage() {
                       </span>
                     </td>
                     <td className="text-right">
-                      <Link href={`/governance/minutes/${m.id}`} className="text-sm font-medium text-primary hover:underline">
+                      <Link href={`/governance/minutes/${m.id}`} className="btn-secondary text-xs py-1 px-2">
                         View
                       </Link>
                     </td>
@@ -314,7 +314,7 @@ export default function MeetingsMinutesPage() {
                         <td className="text-right">
                           <Link
                             href={`/governance/minutes/new?${params.toString()}`}
-                            className="text-sm font-medium text-primary hover:underline"
+                            className="btn-secondary text-xs py-1 px-2"
                           >
                             Record minutes
                           </Link>

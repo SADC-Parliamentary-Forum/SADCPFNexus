@@ -138,7 +138,7 @@ export default function DecisionDetailPage() {
       {data.minutes && minutesHref ? (
         <FormSection title="Linked minutes" icon="meeting_room">
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            <Link href={minutesHref} className="font-medium text-primary hover:underline">
+            <Link href={minutesHref} className="font-medium text-primary">
               {data.minutes.title}
             </Link>
             {data.minutes.meeting_date ? ` (${formatDateShort(data.minutes.meeting_date)})` : ""}
