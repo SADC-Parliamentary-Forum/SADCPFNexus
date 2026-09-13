@@ -4,13 +4,40 @@ namespace App\Http\Controllers\Api\V1\Workplan;
 
 use App\Http\Controllers\Controller;
 use App\Models\WorkplanEvent;
+use App\Modules\Workplan\Services\WorkplanEventImportService;
 use App\Modules\Workplan\Services\WorkplanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class WorkplanController extends Controller
 {
-    public function __construct(private readonly WorkplanService $service) {}
+    public function __construct(
+        private readonly WorkplanService $service,
+        private readonly WorkplanEventImportService $import,
+    ) {}
+
+    public function importTemplate(): Response
+    {
+        return response(WorkplanEventImportService::TEMPLATE_CSV, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="workplan-events-template.csv"',
+        ]);
+    }
+
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt', 'max:4096'],
+        ]);
+
+        $result = $this->import->importCsv($request->user(), $request->file('file'));
+
+        return response()->json([
+            'message' => "Imported {$result['created_count']} event(s), {$result['error_count']} row error(s).",
+            'data' => $result,
+        ]);
+    }
 
     public function index(Request $request): JsonResponse
     {
