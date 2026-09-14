@@ -75,6 +75,31 @@ class SupplierDocumentRegisterTest extends TestCase
         $this->assertSame('111122223333', $vendor->fresh()->bank_account);
     }
 
+    public function test_approved_supplier_category_change_queues_request(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $old = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_locked']);
+        $new = $this->makeSupplierCategory($tenant, ['name' => 'Office Supplies', 'code' => 'office_locked']);
+        [$http, $supplier] = $this->asSupplier($tenant);
+        $vendor = Vendor::find($supplier->vendor_id);
+        $vendor->update([
+            'status' => Vendor::STATUS_APPROVED,
+            'critical_fields_locked_at' => now(),
+        ]);
+        $vendor->categories()->sync([$old->id]);
+
+        $http->putJson('/api/v1/procurement/supplier/wizard', [
+            'category_ids' => [$new->id],
+        ])->assertOk();
+
+        $this->assertEqualsCanonicalizing([$old->id], $vendor->fresh()->categories()->pluck('supplier_categories.id')->all());
+        $this->assertDatabaseHas('supplier_change_requests', [
+            'vendor_id' => $vendor->id,
+            'field_group' => SupplierChangeRequest::GROUP_CATEGORIES,
+            'status' => SupplierChangeRequest::STATUS_PENDING,
+        ]);
+    }
+
     public function test_expiry_monitor_notifies_and_is_idempotent_per_window(): void
     {
         $tenant = Tenant::factory()->create();

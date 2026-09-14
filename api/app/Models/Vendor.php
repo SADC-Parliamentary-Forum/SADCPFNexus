@@ -233,6 +233,28 @@ class Vendor extends Model
         return in_array($this->normalizedStatus(), self::PENDING_REVIEW_STATUSES, true);
     }
 
+    /**
+     * Rejected, suspended, debarred, or archived vendors must not use the portal.
+     * Expired stays reachable so suppliers can upload replacement documents.
+     */
+    public function portalAccessBlocked(): bool
+    {
+        return in_array($this->normalizedStatus(), [
+            self::STATUS_REJECTED,
+            self::STATUS_SUSPENDED,
+            self::STATUS_DEBARRED,
+            self::STATUS_ARCHIVED,
+        ], true);
+    }
+
+    public function canSubmitApplication(): bool
+    {
+        return in_array($this->normalizedStatus(), [
+            self::STATUS_DRAFT,
+            self::STATUS_CORRECTION_REQUIRED,
+        ], true);
+    }
+
     public function syncLegacyFlagsFromStatus(): void
     {
         $status = $this->normalizedStatus();

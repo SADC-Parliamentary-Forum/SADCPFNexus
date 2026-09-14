@@ -3,6 +3,7 @@
 namespace App\Modules\Procurement\Services;
 
 use App\Models\User;
+use App\Models\Vendor;
 use App\Services\NotificationService;
 use App\Support\FrontendUrl;
 use Illuminate\Support\Carbon;
@@ -62,8 +63,23 @@ class SupplierEmailVerificationService
             abort(422, 'This verification link is invalid.');
         }
 
+        $updates = [];
         if (! $user->email_verified_at) {
-            $user->forceFill(['email_verified_at' => now(), 'is_active' => true])->save();
+            $updates['email_verified_at'] = now();
+        }
+
+        // Confirm the address, but never re-enable a staff-disabled portal user.
+        // First-time draft applicants are still activated because draft is a login status.
+        if (! $user->is_active) {
+            $user->loadMissing('vendor');
+            $vendor = $user->vendor;
+            if ($vendor && in_array($vendor->normalizedStatus(), Vendor::PORTAL_LOGIN_STATUSES, true)) {
+                $updates['is_active'] = true;
+            }
+        }
+
+        if ($updates !== []) {
+            $user->forceFill($updates)->save();
         }
 
         return $user->fresh();

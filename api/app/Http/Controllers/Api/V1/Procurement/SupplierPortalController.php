@@ -9,7 +9,6 @@ use App\Models\ProcurementQuote;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\RfqInvitation;
-use App\Models\SupplierCategory;
 use App\Models\SupplierChangeRequest;
 use App\Models\SupplierDocument;
 use App\Models\User;
@@ -26,6 +25,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -341,7 +341,7 @@ class SupplierPortalController extends Controller
             'bank_branch'    => ['nullable', 'string', 'max:255'],
             'payment_terms'  => ['nullable', 'string', 'max:50'],
             'category_ids'   => ['nullable', 'array', 'min:1'],
-            'category_ids.*' => ['integer', 'exists:supplier_categories,id'],
+            'category_ids.*' => ['integer', Rule::exists('supplier_categories', 'id')->where('tenant_id', $vendor->tenant_id)],
             'documents'      => ['nullable', 'array', 'max:15'],
             'documents.*'    => ['file', 'max:25600'],
             'document_types' => ['nullable', 'array'],
@@ -378,23 +378,17 @@ class SupplierPortalController extends Controller
         ]);
 
         if (!empty($data['category_ids'])) {
-            $categoryIds = SupplierCategory::query()
-                ->where('tenant_id', $request->user()->tenant_id)
-                ->whereIn('id', $data['category_ids'])
-                ->pluck('id')
-                ->all();
-            $vendor->categories()->sync($categoryIds);
-            $vendor->update([
-                'category'                  => SupplierCategory::whereIn('id', $categoryIds)->orderBy('name')->pluck('name')->join(', '),
-            ]);
-
-            $this->notifyProcurementOfProfileUpdate(
-                tenantId: $request->user()->tenant_id,
-                supplier: $vendor->name,
-                contact: $vendor->contact_name ?: $vendor->name,
-                categories: SupplierCategory::whereIn('id', $categoryIds)->orderBy('name')->pluck('name')->join(', '),
-                url: '/procurement/vendors/' . $vendor->id
-            );
+            $result = $this->changeRequests->queueCategoryIds($vendor, $data['category_ids'], $request->user());
+            if ($result instanceof Vendor) {
+                $categoryNames = $result->categories()->orderBy('name')->pluck('name')->join(', ');
+                $this->notifyProcurementOfProfileUpdate(
+                    tenantId: $request->user()->tenant_id,
+                    supplier: $result->name,
+                    contact: $result->contact_name ?: $result->name,
+                    categories: $categoryNames,
+                    url: '/procurement/vendors/' . $result->id
+                );
+            }
         }
 
         foreach ($request->file('documents', []) as $index => $file) {
@@ -415,6 +409,8 @@ class SupplierPortalController extends Controller
             ->where('tenant_id', $user->tenant_id)
             ->where('id', $user->vendor_id)
             ->firstOrFail();
+
+        abort_if($vendor->portalAccessBlocked(), 403, 'This supplier account is not permitted to use the portal.');
 
         if ($approvedOnly) {
             $evaluation = $this->eligibility->evaluate($vendor);

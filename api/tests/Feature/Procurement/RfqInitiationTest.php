@@ -4,6 +4,7 @@ namespace Tests\Feature\Procurement;
 
 use App\Mail\ModuleNotificationMail;
 use App\Models\ProcurementRequest;
+use App\Models\SupplierChangeRequest;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vendor;
@@ -209,9 +210,18 @@ class RfqInitiationTest extends TestCase
             'id'     => $vendor->id,
             'status' => 'approved',
         ]);
+        $this->assertEqualsCanonicalizing(
+            [$oldCategory->id],
+            $vendor->fresh()->categories()->pluck('supplier_categories.id')->all()
+        );
+        $this->assertDatabaseHas('supplier_change_requests', [
+            'vendor_id' => $vendor->id,
+            'field_group' => SupplierChangeRequest::GROUP_CATEGORIES,
+            'status' => SupplierChangeRequest::STATUS_PENDING,
+        ]);
         $this->assertDatabaseHas('notifications', [
             'user_id' => $officer->id,
-            'trigger' => 'supplier.profile_updated',
+            'trigger' => 'supplier.change_request_submitted',
         ]);
     }
 }

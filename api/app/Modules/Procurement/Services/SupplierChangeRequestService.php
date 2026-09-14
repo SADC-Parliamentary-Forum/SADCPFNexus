@@ -3,6 +3,7 @@
 namespace App\Modules\Procurement\Services;
 
 use App\Models\SupplierApprovalLog;
+use App\Models\SupplierCategory;
 use App\Models\SupplierChangeRequest;
 use App\Models\User;
 use App\Models\Vendor;
@@ -45,6 +46,27 @@ class SupplierChangeRequestService
         $this->notifyProcurement($vendor, $request);
 
         return $request;
+    }
+
+    /**
+     * @param  list<int|string>  $ids
+     */
+    public function queueCategoryIds(Vendor $vendor, array $ids, User $actor, ?string $reason = null): Vendor|SupplierChangeRequest|null
+    {
+        $valid = SupplierCategory::query()
+            ->where('tenant_id', $vendor->tenant_id)
+            ->whereIn('id', array_map('intval', $ids))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $current = $vendor->categories()->pluck('supplier_categories.id')->map(fn ($id) => (int) $id)->sort()->values()->all();
+        $next = collect($valid)->sort()->values()->all();
+        if ($current === $next) {
+            return null;
+        }
+
+        return $this->queueOrApply($vendor, SupplierChangeRequest::GROUP_CATEGORIES, ['category_ids' => $valid], $actor, $reason);
     }
 
     public function approve(SupplierChangeRequest $request, User $reviewer, ?string $remarks = null): SupplierChangeRequest
@@ -124,6 +146,9 @@ class SupplierChangeRequestService
             SupplierChangeRequest::GROUP_OWNERSHIP => [
                 'owners' => $vendor->owners()->get(['full_name', 'role', 'ownership_percent', 'nationality', 'id_number', 'is_beneficial_owner', 'is_pep', 'sort_order'])->toArray(),
             ],
+            SupplierChangeRequest::GROUP_CATEGORIES => [
+                'category_ids' => $vendor->categories()->pluck('supplier_categories.id')->map(fn ($id) => (int) $id)->values()->all(),
+            ],
             default => [],
         };
     }
@@ -145,8 +170,24 @@ class SupplierChangeRequestService
                 'finance_verified_by' => null,
             ]),
             SupplierChangeRequest::GROUP_OWNERSHIP => $this->replaceOwners($vendor, $payload['owners'] ?? []),
+            SupplierChangeRequest::GROUP_CATEGORIES => $this->syncCategories($vendor, $payload['category_ids'] ?? []),
             default => null,
         };
+    }
+
+    /**
+     * @param  list<int|string>  $ids
+     */
+    public function syncCategories(Vendor $vendor, array $ids): void
+    {
+        $categories = SupplierCategory::query()
+            ->where('tenant_id', $vendor->tenant_id)
+            ->whereIn('id', array_map('intval', $ids))
+            ->orderBy('name')
+            ->get();
+
+        $vendor->categories()->sync($categories->pluck('id')->all());
+        $vendor->category = $categories->pluck('name')->join(', ');
     }
 
     /**

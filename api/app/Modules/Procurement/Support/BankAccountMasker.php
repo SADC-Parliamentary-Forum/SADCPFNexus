@@ -16,6 +16,19 @@ final class BankAccountMasker
         return '••••'.$last;
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    public static function maskPayload(array $payload): array
+    {
+        if (array_key_exists('bank_account', $payload)) {
+            $payload['bank_account'] = self::mask(is_string($payload['bank_account']) ? $payload['bank_account'] : null);
+        }
+
+        return $payload;
+    }
+
     public static function canViewFull(mixed $user): bool
     {
         if (! $user) {

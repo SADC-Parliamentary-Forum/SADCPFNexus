@@ -4,6 +4,7 @@ namespace Tests\Feature\Procurement;
 
 use App\Models\Attachment;
 use App\Models\Tenant;
+use App\Models\Vendor;
 use Tests\TestCase;
 
 class SupplierRegistrationTest extends TestCase
@@ -353,5 +354,54 @@ class SupplierRegistrationTest extends TestCase
 
         $this->assertFalse((bool) $user->fresh()->is_active);
         $this->assertNotNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_email_verification_does_not_reactivate_an_unverified_rejected_supplier(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeSupplierUser($tenant, [
+            'email_verified_at' => null,
+            'is_active' => false,
+        ]);
+        Vendor::query()->whereKey($user->vendor_id)->update([
+            'status' => Vendor::STATUS_REJECTED,
+            'is_active' => false,
+        ]);
+
+        $url = app(\App\Modules\Procurement\Services\SupplierEmailVerificationService::class)->signedFrontendUrl($user);
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->postJson('/api/v1/procurement/suppliers/verify-email', [
+            'user' => $query['user'],
+            'expires' => $query['expires'],
+            'signature' => $query['signature'],
+        ])->assertOk();
+
+        $fresh = $user->fresh();
+        $this->assertFalse((bool) $fresh->is_active);
+        $this->assertNotNull($fresh->email_verified_at);
+    }
+
+    public function test_email_verification_activates_an_unverified_draft_applicant(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeSupplierUser($tenant, [
+            'email_verified_at' => null,
+            'is_active' => false,
+        ]);
+        Vendor::query()->whereKey($user->vendor_id)->update(['status' => Vendor::STATUS_DRAFT]);
+
+        $url = app(\App\Modules\Procurement\Services\SupplierEmailVerificationService::class)->signedFrontendUrl($user);
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->postJson('/api/v1/procurement/suppliers/verify-email', [
+            'user' => $query['user'],
+            'expires' => $query['expires'],
+            'signature' => $query['signature'],
+        ])->assertOk();
+
+        $fresh = $user->fresh();
+        $this->assertTrue((bool) $fresh->is_active);
+        $this->assertNotNull($fresh->email_verified_at);
     }
 }

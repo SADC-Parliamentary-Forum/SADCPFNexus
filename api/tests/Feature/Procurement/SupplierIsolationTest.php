@@ -7,10 +7,9 @@ use App\Models\ProcurementQuote;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\RfqInvitation;
+use App\Models\SupplierChangeRequest;
 use App\Models\SupplierDocument;
-use App\Models\SupplierDocumentRequirementType;
 use App\Models\Tenant;
-use App\Models\User;
 use App\Models\Vendor;
 use App\Modules\Procurement\Services\SupplierCatalogueSeeder;
 use App\Modules\Procurement\Support\BankAccountMasker;
@@ -171,5 +170,63 @@ class SupplierIsolationTest extends TestCase
         $http->postJson('/api/v1/procurement/supplier/submit-application')
             ->assertUnprocessable()
             ->assertJsonPath('data.can_submit', false);
+    }
+
+    public function test_rejected_supplier_cannot_resubmit_application(): void
+    {
+        $tenant = Tenant::factory()->create();
+        app(SupplierCatalogueSeeder::class)->ensureForTenant((int) $tenant->id);
+        [$http, $user] = $this->asSupplier($tenant);
+        $vendor = Vendor::find($user->vendor_id);
+        $vendor->update(['status' => Vendor::STATUS_REJECTED]);
+
+        $http->postJson('/api/v1/procurement/supplier/submit-application')
+            ->assertForbidden();
+        $this->assertSame(Vendor::STATUS_REJECTED, $vendor->fresh()->status);
+    }
+
+    public function test_staff_without_bank_permission_do_not_see_account_on_banking_change_request(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $supplier] = $this->asSupplier($tenant);
+        $vendor = Vendor::find($supplier->vendor_id);
+        $vendor->update([
+            'status' => Vendor::STATUS_APPROVED,
+            'bank_name' => 'FNB',
+            'bank_account' => '111122223333',
+            'bank_branch' => 'Windhoek',
+            'critical_fields_locked_at' => now(),
+        ]);
+
+        $http->putJson('/api/v1/procurement/supplier/wizard', [
+            'bank_name' => 'Standard Bank',
+            'bank_account' => '999988887777',
+            'bank_branch' => 'Katutura',
+        ])->assertOk();
+
+        $change = SupplierChangeRequest::query()
+            ->where('vendor_id', $vendor->id)
+            ->where('field_group', SupplierChangeRequest::GROUP_BANKING)
+            ->firstOrFail();
+
+        $viewer = $this->makeUser('staff', $tenant);
+        $viewer->givePermissionTo(['procurement.view', 'procurement.manage_vendors']);
+
+        $list = $this->asUser($viewer)
+            ->getJson("/api/v1/procurement/vendors/{$vendor->id}/change-requests")
+            ->assertOk()
+            ->json('data.0');
+
+        $this->assertSame(BankAccountMasker::mask('999988887777'), $list['payload']['bank_account'] ?? null);
+        $this->assertSame(BankAccountMasker::mask('111122223333'), $list['previous_payload']['bank_account'] ?? null);
+
+        $reject = $this->asUser($viewer)
+            ->postJson("/api/v1/procurement/vendors/{$vendor->id}/change-requests/{$change->id}/reject", [
+                'remarks' => 'Not acceptable',
+            ]);
+
+        $reject->assertForbidden();
+        $this->assertStringNotContainsString('999988887777', $reject->getContent());
+        $this->assertSame(SupplierChangeRequest::STATUS_PENDING, $change->fresh()->status);
     }
 }

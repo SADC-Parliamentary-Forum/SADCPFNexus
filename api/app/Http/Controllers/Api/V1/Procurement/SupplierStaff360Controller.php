@@ -161,24 +161,8 @@ class SupplierStaff360Controller extends Controller
     {
         $this->assertView($request, $vendor);
         $rows = $vendor->changeRequests()->with(['requester:id,name', 'reviewer:id,name'])->latest()->get();
-        if (! BankAccountMasker::canViewFull($request->user())) {
-            $rows->transform(function (SupplierChangeRequest $row) {
-                if ($row->field_group === SupplierChangeRequest::GROUP_BANKING) {
-                    $payload = $row->payload ?? [];
-                    $previous = $row->previous_payload ?? [];
-                    if (isset($payload['bank_account'])) {
-                        $payload['bank_account'] = BankAccountMasker::mask($payload['bank_account']);
-                    }
-                    if (isset($previous['bank_account'])) {
-                        $previous['bank_account'] = BankAccountMasker::mask($previous['bank_account']);
-                    }
-                    $row->payload = $payload;
-                    $row->previous_payload = $previous;
-                }
-
-                return $row;
-            });
-        }
+        $canSeeBank = BankAccountMasker::canViewFull($request->user());
+        $rows->transform(fn (SupplierChangeRequest $row) => $this->presentChangeRequest($row, $canSeeBank));
 
         return response()->json(['data' => $rows]);
     }
@@ -194,7 +178,10 @@ class SupplierStaff360Controller extends Controller
 
         return response()->json([
             'message' => 'Change request approved.',
-            'data' => $this->changeRequests->approve($changeRequest, $request->user(), $data['remarks'] ?? null),
+            'data' => $this->presentChangeRequest(
+                $this->changeRequests->approve($changeRequest, $request->user(), $data['remarks'] ?? null),
+                BankAccountMasker::canViewFull($request->user())
+            ),
         ]);
     }
 
@@ -202,11 +189,17 @@ class SupplierStaff360Controller extends Controller
     {
         $this->assertManage($request, $vendor);
         $this->assertChangeRequest($vendor, $changeRequest);
+        if ($changeRequest->field_group === SupplierChangeRequest::GROUP_BANKING) {
+            $this->assertBank($request);
+        }
         $data = $request->validate(['remarks' => ['required', 'string', 'max:2000']]);
 
         return response()->json([
             'message' => 'Change request rejected.',
-            'data' => $this->changeRequests->reject($changeRequest, $request->user(), $data['remarks']),
+            'data' => $this->presentChangeRequest(
+                $this->changeRequests->reject($changeRequest, $request->user(), $data['remarks']),
+                BankAccountMasker::canViewFull($request->user())
+            ),
         ]);
     }
 
@@ -314,5 +307,15 @@ class SupplierStaff360Controller extends Controller
         if ((int) $request->vendor_id !== (int) $vendor->id) {
             abort(404);
         }
+    }
+
+    private function presentChangeRequest(SupplierChangeRequest $change, bool $canSeeBank): SupplierChangeRequest
+    {
+        if ($change->field_group === SupplierChangeRequest::GROUP_BANKING && ! $canSeeBank) {
+            $change->payload = BankAccountMasker::maskPayload($change->payload ?? []);
+            $change->previous_payload = BankAccountMasker::maskPayload($change->previous_payload ?? []);
+        }
+
+        return $change;
     }
 }

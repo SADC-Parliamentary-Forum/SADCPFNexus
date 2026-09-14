@@ -19,6 +19,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SupplierPortalApplicationController extends Controller
@@ -57,6 +58,10 @@ class SupplierPortalApplicationController extends Controller
                 'message' => 'Application is incomplete.',
                 'data' => $summary,
             ], 422);
+        }
+
+        if (! $vendor->canSubmitApplication()) {
+            abort(422, 'This application cannot be submitted in its current status.');
         }
 
         $vendor->fill([
@@ -117,7 +122,7 @@ class SupplierPortalApplicationController extends Controller
             'bank_account' => ['nullable', 'string', 'max:100'],
             'bank_branch' => ['nullable', 'string', 'max:255'],
             'category_ids' => ['nullable', 'array', 'min:1'],
-            'category_ids.*' => ['integer', 'exists:supplier_categories,id'],
+            'category_ids.*' => ['integer', Rule::exists('supplier_categories', 'id')->where('tenant_id', $vendor->tenant_id)],
             'owners' => ['nullable', 'array', 'max:50'],
             'owners.*.full_name' => ['required_with:owners', 'string', 'max:255'],
             'owners.*.role' => ['nullable', 'string', 'max:80'],
@@ -178,15 +183,10 @@ class SupplierPortalApplicationController extends Controller
         }
 
         if (! empty($data['category_ids'])) {
-            $ids = \App\Models\SupplierCategory::query()
-                ->where('tenant_id', $vendor->tenant_id)
-                ->whereIn('id', $data['category_ids'])
-                ->pluck('id')
-                ->all();
-            $vendor->categories()->sync($ids);
-            $vendor->update([
-                'category' => \App\Models\SupplierCategory::whereIn('id', $ids)->orderBy('name')->pluck('name')->join(', '),
-            ]);
+            $result = $this->changeRequests->queueCategoryIds($vendor, $data['category_ids'], $actor);
+            if ($result instanceof SupplierChangeRequest) {
+                $queued[] = $result;
+            }
         }
 
         return response()->json([
@@ -334,10 +334,14 @@ class SupplierPortalApplicationController extends Controller
         $user = $request->user();
         abort_unless($user->isSupplier() && $user->vendor_id, 403);
 
-        return Vendor::query()
+        $vendor = Vendor::query()
             ->where('tenant_id', $user->tenant_id)
             ->where('id', $user->vendor_id)
             ->firstOrFail();
+
+        abort_if($vendor->portalAccessBlocked(), 403, 'This supplier account is not permitted to use the portal.');
+
+        return $vendor;
     }
 
     private function procurementRecipients(int $tenantId): \Illuminate\Support\Collection

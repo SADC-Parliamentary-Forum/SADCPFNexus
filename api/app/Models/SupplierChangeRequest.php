@@ -16,6 +16,7 @@ class SupplierChangeRequest extends Model
     public const GROUP_TAX = 'tax_number';
     public const GROUP_OWNERSHIP = 'ownership';
     public const GROUP_BANKING = 'banking';
+    public const GROUP_CATEGORIES = 'categories';
 
     public const CRITICAL_GROUPS = [
         self::GROUP_LEGAL_NAME,
@@ -23,6 +24,7 @@ class SupplierChangeRequest extends Model
         self::GROUP_TAX,
         self::GROUP_OWNERSHIP,
         self::GROUP_BANKING,
+        self::GROUP_CATEGORIES,
     ];
 
     protected $fillable = [

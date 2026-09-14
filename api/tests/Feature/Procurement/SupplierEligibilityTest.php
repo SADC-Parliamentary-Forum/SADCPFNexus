@@ -237,4 +237,58 @@ class SupplierEligibilityTest extends TestCase
         $this->assertSame(Vendor::STATUS_CONDITIONALLY_APPROVED, $vendor->fresh()->status);
         $this->assertFalse((bool) $vendor->fresh()->is_approved);
     }
+
+    public function test_funding_source_extra_requires_verification_when_configured(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $vendor = Vendor::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Donor Docs Co',
+            'status' => Vendor::STATUS_APPROVED,
+            'is_approved' => true,
+            'is_active' => true,
+        ]);
+
+        $type = SupplierDocumentRequirementType::create([
+            'tenant_id' => $tenant->id,
+            'code' => 'eu_declaration',
+            'label' => 'EU declaration',
+            'mandatory' => false,
+            'required_for_rfq' => false,
+            'funding_source' => 'EU',
+            'requires_verification' => true,
+            'is_active' => true,
+            'sort_order' => 90,
+        ]);
+
+        SupplierDocument::create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'requirement_type_id' => $type->id,
+            'type_code' => $type->code,
+            'name' => 'EU declaration',
+            'status' => SupplierDocument::STATUS_PENDING,
+            'is_current' => true,
+            'version' => 1,
+        ]);
+
+        $officer = $this->makeProcurementOfficer($tenant);
+        $rfq = ProcurementRequest::create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $officer->id,
+            'title' => 'EU-funded RFQ',
+            'description' => 'Funding extras',
+            'category' => 'goods',
+            'estimated_value' => 1000,
+            'currency' => 'NAD',
+            'status' => 'approved',
+            'rfq_issued_at' => now(),
+        ]);
+        $rfq->funding_source = 'EU';
+
+        $evaluation = app(SupplierEligibilityService::class)->evaluate($vendor, $rfq);
+        $this->assertFalse($evaluation['can_submit_quotes']);
+        $this->assertContains('funding_source_documents', $evaluation['reasons']);
+        $this->assertFalse($evaluation['funding_source_extras'][0]['satisfied']);
+    }
 }

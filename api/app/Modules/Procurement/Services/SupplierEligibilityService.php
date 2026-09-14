@@ -204,11 +204,16 @@ class SupplierEligibilityService
         $rows = [];
         foreach ($types as $type) {
             $doc = $currentDocs->get($type->code);
+            $verifiedOk = ! $type->requires_verification
+                || ($doc && $doc->status === SupplierDocument::STATUS_VERIFIED);
             $rows[] = [
                 'code' => $type->code,
                 'label' => $type->label,
                 'funding_source' => $funding,
-                'satisfied' => $doc !== null && ! $doc->isExpired() && $doc->status !== SupplierDocument::STATUS_REJECTED,
+                'satisfied' => $doc !== null
+                    && ! $doc->isExpired()
+                    && $doc->status !== SupplierDocument::STATUS_REJECTED
+                    && $verifiedOk,
                 'document_id' => $doc?->id,
             ];
         }
