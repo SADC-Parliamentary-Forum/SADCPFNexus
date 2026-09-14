@@ -393,7 +393,7 @@ function TicketActionsMenu({
         disabled={busy}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="material-symbols-outlined text-[20px]">more_vert</span>
+        <span className="material-symbols-outlined text-[20px]" aria-hidden="true">more_vert</span>
       </button>
       {open && (
         <>
@@ -402,10 +402,10 @@ function TicketActionsMenu({
             role="menu"
             className="absolute right-0 top-full mt-1 w-48 rounded-xl border border-neutral-200 bg-white shadow-xl z-50 overflow-hidden py-1"
           >
-            <MenuItem icon="visibility" label="View" onClick={() => run(onView)} />
-            <MenuItem icon="edit" label="Edit" disabled={!editable} onClick={() => run(onEdit)} />
-            <MenuItem icon="check_circle" label="Close ticket" disabled={!editable} onClick={() => run(onCloseTicket)} />
-            <MenuItem icon="delete" label="Delete" danger onClick={() => run(onDelete)} />
+            <MenuItem testId="support-ticket-action-view" icon="visibility" label="View" onClick={() => run(onView)} />
+            <MenuItem testId="support-ticket-action-edit" icon="edit" label="Edit" disabled={!editable} onClick={() => run(onEdit)} />
+            <MenuItem testId="support-ticket-action-close" icon="check_circle" label="Close ticket" disabled={!editable} onClick={() => run(onCloseTicket)} />
+            <MenuItem testId="support-ticket-action-delete" icon="delete" label="Delete" danger onClick={() => run(onDelete)} />
           </div>
         </>
       )}
@@ -419,17 +419,20 @@ function MenuItem({
   onClick,
   disabled,
   danger,
+  testId,
 }: {
   icon: string;
   label: string;
   onClick: () => void;
   disabled?: boolean;
   danger?: boolean;
+  testId: string;
 }) {
   return (
     <button
       type="button"
       role="menuitem"
+      data-testid={testId}
       disabled={disabled}
       onClick={onClick}
       className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm text-left disabled:opacity-40 disabled:cursor-not-allowed ${
@@ -438,7 +441,7 @@ function MenuItem({
           : "text-neutral-700 hover:bg-neutral-50"
       }`}
     >
-      <span className="material-symbols-outlined text-[18px]">{icon}</span>
+      <span className="material-symbols-outlined text-[18px]" aria-hidden="true">{icon}</span>
       {label}
     </button>
   );

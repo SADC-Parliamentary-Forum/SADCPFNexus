@@ -30,11 +30,12 @@ test.describe("Help & Support", () => {
     await expect(card).toBeVisible({ timeout: 15_000 });
 
     await card.getByTestId("support-ticket-actions").click();
-    await page.getByRole("menuitem", { name: /^view$/i }).click();
+    await expect(card.getByRole("menuitem", { name: /^view$/i })).toBeVisible();
+    await card.getByTestId("support-ticket-action-view").click();
     await expect(page.getByTestId("support-ticket-detail")).toContainText(subject);
 
     await card.getByTestId("support-ticket-actions").click();
-    await page.getByRole("menuitem", { name: /^edit$/i }).click();
+    await card.getByTestId("support-ticket-action-edit").click();
     await expect(page.getByRole("heading", { name: /edit support ticket/i })).toBeVisible();
     await page.getByLabel(/subject/i).fill(updated);
     await page.getByRole("button", { name: /save changes/i }).click();
@@ -42,7 +43,7 @@ test.describe("Help & Support", () => {
 
     const updatedCard = page.getByTestId("support-ticket-card").filter({ hasText: updated });
     await updatedCard.getByTestId("support-ticket-actions").click();
-    await page.getByRole("menuitem", { name: /^delete$/i }).click();
+    await updatedCard.getByTestId("support-ticket-action-delete").click();
     await page.getByRole("button", { name: /^delete$/i }).click();
     await expect(page.getByTestId("support-ticket-card").filter({ hasText: updated })).toHaveCount(0, { timeout: 15_000 });
   });
