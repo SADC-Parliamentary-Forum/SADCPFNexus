@@ -41,6 +41,18 @@ export function clearAuthCookie(): void {
   document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0`;
 }
 
+const PORTAL_COOKIE = "sadcpf_portal";
+
+export function setPortalCookie(portal: "staff" | "supplier"): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${PORTAL_COOKIE}=${portal}; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
+}
+
+export function clearPortalCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${PORTAL_COOKIE}=; path=/; max-age=0`;
+}
+
 const api = axios.create({
   baseURL: "/api",
   withCredentials: true,
@@ -120,12 +132,14 @@ api.interceptors.response.use(
           path.startsWith("/reset-password") ||
           path.startsWith("/setup") ||
           path.startsWith("/approval") ||
-          path.startsWith("/supplier");
+          path === "/supplier/login" ||
+          path === "/supplier/register";
 
         if (!isPublicAuthPath && !_redirecting401) {
           _redirecting401 = true;
           clearStoredUser();
           clearAuthCookie();
+          clearPortalCookie();
 
           // Best-effort: invalidate the server-side session so Laravel emits a
           // Set-Cookie that wipes the httpOnly session cookie. Without this the
@@ -139,9 +153,10 @@ api.interceptors.response.use(
               .catch(() => { /* ignore — session is already invalid */ });
           }
 
+          const supplierArea = path === "/supplier" || path.startsWith("/supplier/");
           window.location.href = data?.code === "session_idle_timeout"
-            ? "/login?reason=idle"
-            : "/login";
+            ? (supplierArea ? "/supplier/login?reason=idle" : "/login?reason=idle")
+            : (supplierArea ? "/supplier/login" : "/login");
         }
       } else if (status && status >= 500) {
         captureClientException(error, { status, url: error.config?.url });
@@ -155,12 +170,13 @@ export default api;
 
 // Typed API helpers
 export const authApi = {
-  login: async (email: string, password: string, code?: string) => {
+  login: async (
+    email: string,
+    password: string,
+    code?: string,
+    options?: { portal?: "staff" | "supplier"; captchaToken?: string; honeypot?: string },
+  ) => {
     await ensureCsrfCookie();
-    // Omit `code` entirely unless it is a valid 6-digit TOTP string — sending
-    // `code: undefined` or empty string can make Laravel's optional `digits:6`
-    // rule fail depending on JSON shape, and trimming email avoids 422 on
-    // validation from whitespace.
     const trimmedEmail = email.trim();
     const body: Record<string, string> = {
       email: trimmedEmail,
@@ -168,9 +184,22 @@ export const authApi = {
       client_type: "browser",
       device_name: "web",
     };
+    if (options?.portal) body.portal = options.portal;
+    if (options?.captchaToken) body.captcha_token = options.captchaToken;
+    if (options?.honeypot) body.website_confirm = options.honeypot;
     const c = code?.trim();
     if (c && /^\d{6}$/.test(c)) body.code = c;
     return api.post<{ user?: AuthUser; mfa_required?: boolean; message?: string }>("/auth/login", body);
+  },
+  captchaConfig: async () => {
+    await ensureCsrfCookie();
+    return api.get<{ enabled: boolean; driver: string; site_key: string | null }>("/auth/captcha");
+  },
+  captchaChallenge: async () => {
+    await ensureCsrfCookie();
+    return api.post<{ enabled?: boolean; driver?: string; token: string | null; expires_at?: number }>(
+      "/auth/captcha-challenge",
+    );
   },
   logout: () => api.post("/auth/logout"),
   me: () => api.get<AuthUser>("/auth/me"),
@@ -193,7 +222,7 @@ export const authApi = {
     });
   },
   getInvitation: async (token: string) =>
-    api.get<{ data: { email: string; name?: string | null; expires_at?: string | null } }>(
+    api.get<{ data: { email: string; name?: string | null; is_supplier?: boolean; expires_at?: string | null } }>(
       `/auth/invitations/${encodeURIComponent(token)}`
     ),
   activateInvitation: async (token: string, password: string, passwordConfirmation: string) => {
@@ -3911,6 +3940,7 @@ export interface Vendor {
   recent_quotes?: VendorQuote[];
   ratings?: VendorRating[];
   my_rating?: VendorRating | null;
+  attachments?: ProcurementAttachment[];
 }
 
 export interface VendorContract {
@@ -4064,7 +4094,21 @@ export const supplierCategoriesApi = {
 
 export const supplierRegistrationApi = {
   register: (formData: FormData) =>
-    api.post<{ data: { vendor_id: number; user_id: number; status: string }; message: string }>(
+    api.post<{
+      data: {
+        vendor_id: number;
+        user_id: number;
+        status: string;
+        documents?: Array<{
+          id: number;
+          original_filename: string;
+          document_type: string | null;
+          mime_type: string | null;
+          size_bytes: number | null;
+        }>;
+      };
+      message: string;
+    }>(
       "/procurement/suppliers/register",
       formData,
       { headers: { "Content-Type": "multipart/form-data" } }
@@ -8588,6 +8632,11 @@ export const invoiceAttachmentsApi             = makeAttachmentApi("invoices",  
 export const contractAttachmentsApi            = makeAttachmentApi("contracts",      "signed_contract");
 export const goodsReceiptAttachmentsApi        = makeAttachmentApi("receipts",       "delivery_note");
 export const vendorAttachmentsApi              = makeAttachmentApi("vendors",        "company_profile");
+
+export const supplierPortalAttachmentsApi = {
+  downloadUrl: (attachmentId: number): string =>
+    `${api.defaults.baseURL}/procurement/supplier/attachments/${attachmentId}/download`,
+};
 
 export const quoteAttachmentsApi = {
   list: (requestId: number, quoteId: number) =>

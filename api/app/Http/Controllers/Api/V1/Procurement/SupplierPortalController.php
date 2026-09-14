@@ -18,7 +18,9 @@ use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Storage;
 use InvalidArgumentException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SupplierPortalController extends Controller
 {
@@ -33,6 +35,29 @@ class SupplierPortalController extends Controller
         $vendor->load(['categories', 'attachments', 'portalUsers:id,vendor_id,name,email,is_active']);
 
         return response()->json(['data' => $vendor]);
+    }
+
+    public function downloadAttachment(Request $request, Attachment $attachment): StreamedResponse|JsonResponse
+    {
+        $vendor = $this->currentVendor($request);
+        if ($attachment->attachable_type !== Vendor::class || (int) $attachment->attachable_id !== (int) $vendor->id) {
+            abort(404);
+        }
+        if (! $attachment->storage_path || ! Storage::disk('local')->exists($attachment->storage_path)) {
+            return response()->json(['message' => 'File not found.'], 404);
+        }
+
+        return response()->streamDownload(
+            function () use ($attachment) {
+                $stream = Storage::disk('local')->readStream($attachment->storage_path);
+                if (is_resource($stream)) {
+                    fpassthru($stream);
+                    fclose($stream);
+                }
+            },
+            $attachment->original_filename,
+            ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
+        );
     }
 
     public function dashboard(Request $request): JsonResponse
@@ -244,7 +269,7 @@ class SupplierPortalController extends Controller
             'payment_terms'  => ['nullable', 'string', 'max:50'],
             'category_ids'   => ['nullable', 'array', 'min:1', 'max:3'],
             'category_ids.*' => ['integer', 'exists:supplier_categories,id'],
-            'documents'      => ['nullable', 'array'],
+            'documents'      => ['nullable', 'array', 'max:15'],
             'documents.*'    => ['file', 'max:25600'],
             'document_types' => ['nullable', 'array'],
             'document_types.*' => ['nullable', 'string', 'in:' . implode(',', Attachment::VENDOR_DOCUMENT_TYPES)],

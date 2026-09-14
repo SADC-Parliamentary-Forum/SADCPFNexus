@@ -9,6 +9,7 @@ use App\Models\SupplierCategory;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Services\CaptchaService;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
 use App\Support\UploadContentSniffer;
@@ -22,10 +23,12 @@ class SupplierRegistrationController extends Controller
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly WorkflowService $workflowService,
+        private readonly CaptchaService $captcha,
     ) {}
 
     public function register(Request $request): JsonResponse
     {
+        $this->captcha->assertBrowserSubmission($request, consume: false, allowMobileBypass: false);
         $tenant = $this->resolveTenant($request);
 
         $isIndividual = $request->input('supplier_type', 'company') === 'individual';
@@ -50,10 +53,12 @@ class SupplierRegistrationController extends Controller
             'password_confirmation'=> ['required', 'string'],
             'category_ids'         => ['required', 'array', 'min:1', 'max:3'],
             'category_ids.*'       => ['integer', 'exists:supplier_categories,id'],
-            'documents'            => ['required', 'array', 'min:1'],
+            'documents'            => ['required', 'array', 'min:1', 'max:15'],
             'documents.*'          => ['file', 'max:25600'],
-            'document_types'       => ['nullable', 'array'],
+            'document_types'       => ['nullable', 'array', 'max:15'],
             'document_types.*'     => ['nullable', 'string', 'in:' . implode(',', Attachment::VENDOR_DOCUMENT_TYPES)],
+            'captcha_token'        => ['nullable', 'string'],
+            CaptchaService::HONEYPOT_FIELD => ['nullable', 'string'],
         ]);
 
         $categoryIds = SupplierCategory::query()
@@ -103,13 +108,21 @@ class SupplierRegistrationController extends Controller
             'job_title'       => 'Supplier',
             'classification'  => 'UNCLASSIFIED',
             'is_active'       => false,
+            'account_status'  => User::STATUS_ACTIVE,
+            'setup_completed' => true,
         ]);
         $user->assignRole(Role::findByName('Supplier', 'sanctum'));
 
         foreach ($request->file('documents', []) as $index => $file) {
             $documentTypes = $request->input('document_types', []);
             $documentType = $documentTypes[$index] ?? Attachment::DOCUMENT_TYPE_COMPANY_PROFILE;
-            $mime = UploadContentSniffer::assertAllowed($file);
+            try {
+                $mime = UploadContentSniffer::assertAllowed($file);
+            } catch (\Illuminate\Validation\ValidationException) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    "documents.{$index}" => ['The uploaded file type is not allowed.'],
+                ]);
+            }
             $path = $file->store('attachments/vendors/' . $vendor->id, ['disk' => 'local']);
             $vendor->attachments()->create([
                 'tenant_id'         => $tenant->id,
@@ -149,12 +162,19 @@ class SupplierRegistrationController extends Controller
             );
         }
 
+        $documents = $vendor->attachments()
+            ->get(['id', 'original_filename', 'document_type', 'mime_type', 'size_bytes', 'created_at'])
+            ->values();
+
+        $this->captcha->consumeBrowserChallenge($request);
+
         return response()->json([
             'message' => 'Supplier registration submitted. Your account will be activated after procurement approval.',
             'data'    => [
                 'vendor_id' => $vendor->id,
                 'user_id'   => $user->id,
                 'status'    => $vendor->status,
+                'documents' => $documents,
             ],
         ], 201);
     }

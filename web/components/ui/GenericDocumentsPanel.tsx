@@ -36,6 +36,7 @@ interface Props {
   onDelete: (id: number) => Promise<void>;
   downloadUrl: (id: number) => string;
   accept?: string;
+  readOnly?: boolean;
 }
 
 export default function GenericDocumentsPanel({
@@ -48,6 +49,7 @@ export default function GenericDocumentsPanel({
   onDelete,
   downloadUrl,
   accept = ".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif",
+  readOnly = false,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [docType, setDocType] = useState(defaultType);
@@ -102,6 +104,7 @@ export default function GenericDocumentsPanel({
       )}
 
       {/* Upload Area */}
+      {!readOnly && (
       <div className="space-y-4">
         <div
           className={cn(
@@ -176,6 +179,7 @@ export default function GenericDocumentsPanel({
           </div>
         )}
       </div>
+      )}
 
       {/* Document List */}
       {loading ? (
@@ -216,6 +220,7 @@ export default function GenericDocumentsPanel({
                   <span className="material-symbols-outlined text-[16px]">download</span>
                   Download
                 </button>
+                {!readOnly && (
                 <button
                   type="button"
                   onClick={() => handleDelete(doc.id)}
@@ -224,6 +229,7 @@ export default function GenericDocumentsPanel({
                 >
                   <span className="material-symbols-outlined text-[16px]">delete</span>
                 </button>
+                )}
               </div>
             </div>
           ))}

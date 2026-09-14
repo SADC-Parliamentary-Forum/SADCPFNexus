@@ -11,6 +11,7 @@ function ActivateAccountForm() {
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState<string | null>(null);
+  const [isSupplier, setIsSupplier] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,7 @@ function ActivateAccountForm() {
         if (cancelled) return;
         setEmail(data.data.email);
         setName(data.data.name ?? null);
+        setIsSupplier(Boolean(data.data.is_supplier));
       } catch (err: unknown) {
         if (cancelled) return;
         const ax = err as { response?: { data?: { message?: string } } };
@@ -83,7 +85,7 @@ function ActivateAccountForm() {
             <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
               Account activated. You can now sign in.
             </div>
-            <Link href="/login" className="inline-flex text-sm font-medium text-primary hover:underline">
+            <Link href={isSupplier ? "/supplier/login" : "/login"} className="inline-flex text-sm font-medium text-primary hover:underline">
               Go to sign in
             </Link>
           </div>

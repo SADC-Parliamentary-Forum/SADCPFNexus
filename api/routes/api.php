@@ -20,6 +20,8 @@ Route::prefix('v1')->group(function () {
 
     // Public auth routes
     Route::prefix('auth')->group(function () {
+        Route::get('captcha', [AuthController::class, 'captchaConfig'])->middleware('throttle:30,1');
+        Route::post('captcha-challenge', [AuthController::class, 'captchaChallenge'])->middleware('throttle:20,1');
         Route::post('login', [AuthController::class, 'login'])->middleware('throttle:login');
         Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
         Route::post('access-request', [AuthController::class, 'accessRequest'])->middleware('throttle:5,1');
@@ -754,6 +756,7 @@ Route::prefix('v1')->group(function () {
 
             Route::prefix('supplier')->group(function () {
                 Route::get('me', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'me']);
+                Route::get('attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'downloadAttachment']);
                 Route::put('profile', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'updateProfile']);
                 Route::get('dashboard', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'dashboard']);
                 Route::get('rfqs', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'rfqs']);

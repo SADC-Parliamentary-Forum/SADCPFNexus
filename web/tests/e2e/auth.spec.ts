@@ -3,7 +3,7 @@
  * Run under the "auth" project (no pre-stored state — tests the login UI itself).
  */
 import { test, expect } from "@playwright/test";
-import { clearBrowserAuth } from "./helpers/auth";
+import { clearBrowserAuth, completeLoginCaptcha } from "./helpers/auth";
 
 test.describe("Login page", () => {
   test.beforeEach(async ({ page }) => {
@@ -28,6 +28,7 @@ test.describe("Login page", () => {
   test("shows error for wrong credentials", async ({ page }) => {
     await page.locator('input[type="email"]').fill("nobody@example.com");
     await page.locator('input[type="password"]').fill("WrongPassword!");
+    await completeLoginCaptcha(page);
     await page.locator('button[type="submit"]').click();
 
     // Wait for an error message to appear
@@ -38,6 +39,7 @@ test.describe("Login page", () => {
   test("successful login redirects to dashboard", async ({ page }) => {
     await page.locator('input[type="email"]').fill("staff@sadcpf.org");
     await page.locator('input[type="password"]').fill("Staff@2024!");
+    await completeLoginCaptcha(page);
     await page.locator('button[type="submit"]').click();
 
     await page.waitForURL("**/dashboard", { timeout: 15_000 });
@@ -47,6 +49,7 @@ test.describe("Login page", () => {
   test("successful login establishes a browser session", async ({ page }) => {
     await page.locator('input[type="email"]').fill("staff@sadcpf.org");
     await page.locator('input[type="password"]').fill("Staff@2024!");
+    await completeLoginCaptcha(page);
     await page.locator('button[type="submit"]').click();
 
     await page.waitForURL("**/dashboard", { timeout: 15_000 });
@@ -144,6 +147,7 @@ test.describe("Logout", () => {
     await page.goto("/login");
     await page.locator('input[type="email"]').fill("staff@sadcpf.org");
     await page.locator('input[type="password"]').fill("Staff@2024!");
+    await completeLoginCaptcha(page);
     await page.locator('button[type="submit"]').click();
     await page.waitForURL("**/dashboard", { timeout: 15_000 });
 
@@ -167,5 +171,21 @@ test.describe("Logout", () => {
       headers: { Accept: "application/json" },
     });
     expect(meResponse.status()).toBe(401);
+  });
+});
+
+test.describe("Supplier portal login", () => {
+  test("renders a supplier-only sign-in page", async ({ page }) => {
+    await page.goto("/supplier/login");
+    await expect(page.getByRole("heading", { name: /supplier sign in/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /register your supplier account/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /staff sign in/i }).first()).toBeVisible();
+    await expect(page.getByText(/travel & mission/i)).toHaveCount(0);
+  });
+
+  test("staff login page points suppliers to the supplier portal", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByRole("heading", { name: /staff sign in/i })).toBeVisible();
+    await expect(page.getByRole("link", { name: /go to the supplier portal/i })).toBeVisible();
   });
 });

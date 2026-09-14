@@ -23,8 +23,16 @@ const checks = [
     file: "app/(auth)/login/page.tsx",
     includes: [
       'from "@/lib/api"',
-      "setSetupCompleteCookie",
       "clearSetupCompleteCookie",
+      "PortalSignInForm",
+    ],
+  },
+  {
+    file: "components/auth/PortalSignInForm.tsx",
+    includes: [
+      'from "@/lib/api"',
+      "setSetupCompleteCookie",
+      "setPortalCookie",
     ],
   },
   {

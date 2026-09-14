@@ -10,6 +10,7 @@
 import { test as setup, type Page } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { completeLoginCaptcha } from "./helpers/auth";
 
 const AUTH_DIR = path.join(process.cwd(), "playwright/.auth");
 const EMPTY_STATE = { cookies: [] as unknown[], origins: [] as unknown[] };
@@ -43,6 +44,7 @@ async function loginAndSave(
     await page.waitForLoadState("networkidle");
     await page.locator('input[type="email"]').fill(email);
     await page.locator('input[type="password"]').fill(password);
+    await completeLoginCaptcha(page);
     await page.locator('button[type="submit"]').click();
     await page.waitForURL(
       /\/(dashboard|setup|reset-password|profile)(\/.*)?(\?.*)?$/,

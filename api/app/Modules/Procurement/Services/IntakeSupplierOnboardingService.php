@@ -111,7 +111,7 @@ class IntakeSupplierOnboardingService
                 'sent' => false,
                 'email' => null,
                 'password_emailed' => false,
-                'login_url' => FrontendUrl::to('login'),
+                'login_url' => FrontendUrl::to('supplier/login'),
                 'activation_hint' => 'The supplier will receive an activation link at /activate-account to choose a password. Nexus never emails a password.',
             ];
 
@@ -184,7 +184,7 @@ class IntakeSupplierOnboardingService
             'invited_at' => now(),
             'status_changed_at' => now(),
             'must_reset_password' => true,
-            'setup_completed' => false,
+            'setup_completed' => true,
         ]);
         $user->syncRoles($this->roles->assignmentRoleNames('Supplier'));
         app(PermissionRegistrar::class)->forgetCachedPermissions();
@@ -197,7 +197,7 @@ class IntakeSupplierOnboardingService
     {
         $this->users->issueInvitation($user, $actor, true, 'supplier.portal_invited', [
             'supplier' => $vendor->name,
-            'login_url' => FrontendUrl::to('login'),
+            'login_url' => FrontendUrl::to('supplier/login'),
             'portal_url' => FrontendUrl::to('supplier'),
             'role' => 'Supplier',
         ]);
