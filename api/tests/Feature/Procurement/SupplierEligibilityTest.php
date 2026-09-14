@@ -7,7 +7,6 @@ use App\Models\RfqInvitation;
 use App\Models\SupplierDocument;
 use App\Models\SupplierDocumentRequirementType;
 use App\Models\Tenant;
-use App\Models\User;
 use App\Models\Vendor;
 use App\Modules\Procurement\Services\SupplierCatalogueSeeder;
 use App\Modules\Procurement\Services\SupplierComplianceMonitor;
@@ -139,5 +138,103 @@ class SupplierEligibilityTest extends TestCase
         ]);
         $this->assertSame(Vendor::STATUS_DEBARRED, $vendor->fresh()->status);
         $this->assertFalse(app(SupplierEligibilityService::class)->evaluate($vendor->fresh())['can_submit_quotes']);
+    }
+
+    public function test_rfq_eligibility_override_allows_quote_submit_during_compliance_warning(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asSupplier($tenant);
+        $vendor = Vendor::find($user->vendor_id);
+        $vendor->update(['status' => Vendor::STATUS_COMPLIANCE_WARNING]);
+        $officer = $this->makeProcurementOfficer($tenant);
+
+        $rfq = ProcurementRequest::create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $officer->id,
+            'title' => 'Override quote RFQ',
+            'description' => 'Portal quote',
+            'category' => 'goods',
+            'estimated_value' => 1000,
+            'currency' => 'NAD',
+            'status' => 'approved',
+            'rfq_issued_at' => now(),
+            'rfq_deadline' => now()->addDays(7)->toDateString(),
+        ]);
+        $invitation = RfqInvitation::create([
+            'tenant_id' => $tenant->id,
+            'procurement_request_id' => $rfq->id,
+            'vendor_id' => $vendor->id,
+            'invitation_type' => 'system',
+            'status' => 'pending',
+            'invited_at' => now(),
+        ]);
+
+        $http->postJson("/api/v1/procurement/supplier/rfqs/{$rfq->id}/quote", [
+            'quoted_amount' => 250,
+            'currency' => 'NAD',
+        ])->assertForbidden();
+
+        $invitation->update(['eligibility_override' => true]);
+
+        $http->postJson("/api/v1/procurement/supplier/rfqs/{$rfq->id}/quote", [
+            'quoted_amount' => 250,
+            'currency' => 'NAD',
+        ])->assertCreated();
+    }
+
+    public function test_compliance_warning_restore_keeps_conditional_approval(): void
+    {
+        $tenant = Tenant::factory()->create();
+        app(SupplierCatalogueSeeder::class)->ensureForTenant((int) $tenant->id);
+
+        $vendor = Vendor::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Conditional Restore Co',
+            'country' => 'Namibia',
+            'status' => Vendor::STATUS_CONDITIONALLY_APPROVED,
+            'approved_at' => now(),
+            'is_approved' => false,
+            'is_active' => true,
+        ]);
+
+        $tax = SupplierDocumentRequirementType::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('code', 'tax_clearance')
+            ->firstOrFail();
+
+        $doc = SupplierDocument::create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'requirement_type_id' => $tax->id,
+            'type_code' => 'tax_clearance',
+            'name' => 'Tax clearance',
+            'expiry_date' => now()->subDay()->toDateString(),
+            'status' => SupplierDocument::STATUS_VERIFIED,
+            'is_current' => true,
+            'version' => 1,
+        ]);
+
+        foreach (['registration_certificate', 'bank_details'] as $code) {
+            $type = SupplierDocumentRequirementType::query()->where('tenant_id', $tenant->id)->where('code', $code)->firstOrFail();
+            SupplierDocument::create([
+                'tenant_id' => $tenant->id,
+                'vendor_id' => $vendor->id,
+                'requirement_type_id' => $type->id,
+                'type_code' => $code,
+                'name' => $code,
+                'status' => SupplierDocument::STATUS_VERIFIED,
+                'is_current' => true,
+                'version' => 1,
+            ]);
+        }
+
+        app(SupplierComplianceMonitor::class)->flipComplianceWarnings();
+        $this->assertSame(Vendor::STATUS_COMPLIANCE_WARNING, $vendor->fresh()->status);
+
+        $doc->update(['expiry_date' => now()->addYear()->toDateString()]);
+        app(SupplierComplianceMonitor::class)->flipComplianceWarnings();
+
+        $this->assertSame(Vendor::STATUS_CONDITIONALLY_APPROVED, $vendor->fresh()->status);
+        $this->assertFalse((bool) $vendor->fresh()->is_approved);
     }
 }

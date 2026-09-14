@@ -198,7 +198,7 @@ class SupplierPortalController extends Controller
 
     public function submitQuote(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        $vendor = $this->currentVendor($request, true);
+        $vendor = $this->currentVendor($request);
 
         $invitation = RfqInvitation::query()
             ->where('tenant_id', $request->user()->tenant_id)

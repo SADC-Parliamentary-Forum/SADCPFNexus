@@ -2,6 +2,7 @@
 
 namespace App\Modules\Procurement\Services;
 
+use App\Models\SupplierApprovalLog;
 use App\Models\SupplierComplianceNotice;
 use App\Models\SupplierDocument;
 use App\Models\User;
@@ -84,6 +85,14 @@ class SupplierComplianceMonitor
             if (in_array($status, [Vendor::STATUS_APPROVED, Vendor::STATUS_CONDITIONALLY_APPROVED], true)
                 && $evaluation['compliance_status'] === 'non_compliant'
             ) {
+                SupplierApprovalLog::create([
+                    'tenant_id' => $vendor->tenant_id,
+                    'vendor_id' => $vendor->id,
+                    'action' => 'compliance_warning',
+                    'reason' => 'Mandatory compliance documents expired or invalid.',
+                    'metadata' => ['from_status' => $status],
+                    'performed_at' => now(),
+                ]);
                 $vendor->fill(['status' => Vendor::STATUS_COMPLIANCE_WARNING]);
                 $vendor->syncLegacyFlagsFromStatus();
                 $vendor->save();
@@ -92,8 +101,7 @@ class SupplierComplianceMonitor
             }
 
             if ($status === Vendor::STATUS_COMPLIANCE_WARNING && $evaluation['compliance_status'] !== 'non_compliant') {
-                $restored = $vendor->approved_at ? Vendor::STATUS_APPROVED : Vendor::STATUS_CONDITIONALLY_APPROVED;
-                $vendor->fill(['status' => $restored]);
+                $vendor->fill(['status' => $this->statusBeforeWarning($vendor)]);
                 $vendor->syncLegacyFlagsFromStatus();
                 $vendor->save();
             }
@@ -112,6 +120,32 @@ class SupplierComplianceMonitor
         }
 
         return null;
+    }
+
+    private function statusBeforeWarning(Vendor $vendor): string
+    {
+        $warning = SupplierApprovalLog::query()
+            ->where('vendor_id', $vendor->id)
+            ->where('action', 'compliance_warning')
+            ->latest('performed_at')
+            ->latest('id')
+            ->first();
+
+        $previous = $warning?->metadata['from_status'] ?? null;
+        if (in_array($previous, [Vendor::STATUS_APPROVED, Vendor::STATUS_CONDITIONALLY_APPROVED], true)) {
+            return $previous;
+        }
+
+        $lastApproval = SupplierApprovalLog::query()
+            ->where('vendor_id', $vendor->id)
+            ->whereIn('action', ['approved', 'conditionally_approved'])
+            ->latest('performed_at')
+            ->latest('id')
+            ->value('action');
+
+        return $lastApproval === 'conditionally_approved'
+            ? Vendor::STATUS_CONDITIONALLY_APPROVED
+            : Vendor::STATUS_APPROVED;
     }
 
     private function alreadyNoticed(SupplierDocument $document, string $window, Carbon $asOf): bool

@@ -64,8 +64,6 @@ class SupplierEmailVerificationService
 
         if (! $user->email_verified_at) {
             $user->forceFill(['email_verified_at' => now(), 'is_active' => true])->save();
-        } elseif (! $user->is_active) {
-            $user->forceFill(['is_active' => true])->save();
         }
 
         return $user->fresh();

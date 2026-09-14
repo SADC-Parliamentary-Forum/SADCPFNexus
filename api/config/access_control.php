@@ -178,6 +178,10 @@ return [
             'READ' => ['procurement.admin', 'procurement.manage_vendors', 'procurement.view'],
             'WRITE' => ['procurement.admin'],
         ]],
+        ['pattern' => 'api/v1/procurement/supplier/*', 'permissions' => [
+            'READ' => ['supplier.portal', 'procurement.bid.read.own'],
+            'WRITE' => ['supplier.portal', 'procurement.bid.submit.own'],
+        ]],
         ['pattern' => 'api/v1/procurement/newspaper-notice-templates', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin'],
         ]],

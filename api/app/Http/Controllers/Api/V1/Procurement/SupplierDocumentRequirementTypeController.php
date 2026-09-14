@@ -8,6 +8,7 @@ use App\Modules\Procurement\Services\SupplierCatalogueSeeder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class SupplierDocumentRequirementTypeController extends Controller
 {
@@ -88,7 +89,11 @@ class SupplierDocumentRequirementTypeController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
             'mandatory' => ['sometimes', 'boolean'],
             'country' => ['nullable', 'string', 'max:100'],
-            'supplier_category_id' => ['nullable', 'integer', 'exists:supplier_categories,id'],
+            'supplier_category_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('supplier_categories', 'id')->where('tenant_id', $request->user()->tenant_id),
+            ],
             'has_expiry' => ['sometimes', 'boolean'],
             'warning_days' => ['sometimes', 'integer', 'min:1', 'max:365'],
             'required_at_registration' => ['sometimes', 'boolean'],

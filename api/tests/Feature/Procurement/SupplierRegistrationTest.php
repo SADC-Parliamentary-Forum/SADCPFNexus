@@ -332,4 +332,26 @@ class SupplierRegistrationTest extends TestCase
             'destination_snapshot'  => 'gita@ackmail.test',
         ]);
     }
+
+    public function test_email_verification_link_does_not_reactivate_a_deactivated_account(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeSupplierUser($tenant);
+        $user->forceFill([
+            'email_verified_at' => now()->subDay(),
+            'is_active' => false,
+        ])->save();
+
+        $url = app(\App\Modules\Procurement\Services\SupplierEmailVerificationService::class)->signedFrontendUrl($user);
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->postJson('/api/v1/procurement/suppliers/verify-email', [
+            'user' => $query['user'],
+            'expires' => $query['expires'],
+            'signature' => $query['signature'],
+        ])->assertOk();
+
+        $this->assertFalse((bool) $user->fresh()->is_active);
+        $this->assertNotNull($user->fresh()->email_verified_at);
+    }
 }

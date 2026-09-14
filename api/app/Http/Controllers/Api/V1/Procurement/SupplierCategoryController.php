@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class SupplierCategoryController extends Controller
 {
@@ -40,8 +41,9 @@ class SupplierCategoryController extends Controller
     {
         $this->ensureCanManage($request);
 
+        $tenantId = (int) $request->user()->tenant_id;
         $data = $request->validate([
-            'parent_id'   => ['nullable', 'integer', 'exists:supplier_categories,id'],
+            'parent_id'   => ['nullable', 'integer', Rule::exists('supplier_categories', 'id')->where('tenant_id', $tenantId)],
             'name'        => ['required', 'string', 'max:150'],
             'code'        => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -67,8 +69,15 @@ class SupplierCategoryController extends Controller
             abort(404);
         }
 
+        $tenantId = (int) $request->user()->tenant_id;
         $data = $request->validate([
-            'parent_id'   => ['nullable', 'integer', 'exists:supplier_categories,id'],
+            'parent_id'   => [
+                'nullable',
+                'integer',
+                'different:id',
+                Rule::exists('supplier_categories', 'id')->where('tenant_id', $tenantId),
+                Rule::notIn([$supplierCategory->id]),
+            ],
             'name'        => ['sometimes', 'required', 'string', 'max:150'],
             'code'        => ['sometimes', 'required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],

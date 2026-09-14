@@ -100,4 +100,17 @@ class SupplierDocumentRegisterTest extends TestCase
         $this->assertGreaterThan(0, $first);
         $this->assertSame(0, $second);
     }
+
+    public function test_category_parent_must_belong_to_the_same_tenant(): void
+    {
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        $foreign = $this->makeSupplierCategory($tenantB, ['name' => 'Foreign Parent', 'code' => 'foreign_parent']);
+        [$http] = $this->asProcurementOfficer($tenantA);
+
+        $http->postJson('/api/v1/procurement/supplier-categories', [
+            'name' => 'Child of foreign',
+            'parent_id' => $foreign->id,
+        ])->assertUnprocessable();
+    }
 }
