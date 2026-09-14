@@ -12,6 +12,7 @@ use App\Models\AssetTransfer;
 use App\Models\Lifecycle\LifecycleCase;
 use App\Models\Lifecycle\LifecycleJourneyTemplate;
 use App\Models\Lifecycle\LifecycleJourneyTemplateVersion;
+use App\Models\Lifecycle\LifecycleStageInstance;
 use App\Models\Lifecycle\LifecycleTaskInstance;
 use App\Models\Tenant;
 use App\Models\User;
@@ -314,12 +315,12 @@ class AssetLifecycleGapfillTest extends TestCase
         $this->asUser($bob)->postJson('/api/v1/asset-transfers/'.$transfer->id.'/accept')->assertOk();
 
         $this->assertSame($bob->id, $asset->fresh()->assigned_to);
-        $history = $http->getJson('/api/v1/assets/'.$asset->id.'/assignment-history')->json('data');
+        $history = $this->asUser($admin)->getJson('/api/v1/assets/'.$asset->id.'/assignment-history')->json('data');
         $assignees = collect($history)->pluck('assigned_to')->all();
         $this->assertContains($alice->id, $assignees);
         $this->assertContains($bob->id, $assignees);
 
-        $timeline = $http->getJson('/api/v1/assets/'.$asset->id.'/timeline')->assertOk()->json('data');
+        $timeline = $this->asUser($admin)->getJson('/api/v1/assets/'.$asset->id.'/timeline')->assertOk()->json('data');
         $this->assertNotEmpty($timeline);
     }
 
@@ -385,9 +386,18 @@ class AssetLifecycleGapfillTest extends TestCase
             'created_by' => $admin->id,
             'terminal_payment_blocked' => true,
         ]);
+        $stage = LifecycleStageInstance::create([
+            'tenant_id' => $tenant->id,
+            'case_id' => $case->id,
+            'stage_key' => 'clearance',
+            'name' => 'Clearance',
+            'sort_order' => 1,
+            'status' => 'in_progress',
+        ]);
         $task = LifecycleTaskInstance::create([
             'tenant_id' => $tenant->id,
             'case_id' => $case->id,
+            'stage_instance_id' => $stage->id,
             'task_key' => 'ict_clearance',
             'title' => 'ICT asset return and account closure',
             'status' => 'pending',

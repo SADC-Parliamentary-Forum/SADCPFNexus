@@ -7,7 +7,6 @@ use App\Models\Asset;
 use App\Models\AssetCheckout;
 use App\Models\AssetIncident;
 use App\Models\AssetLocation;
-use App\Models\AssetMaintenanceRecord;
 use App\Models\AssetSubcategory;
 use App\Models\AssetTimelineEvent;
 use App\Models\AssetTransfer;

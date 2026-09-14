@@ -3,13 +3,10 @@
 namespace App\Modules\Lifecycle\Services;
 
 use App\Models\Asset;
-use App\Models\HrPersonalFile;
 use App\Models\Lifecycle\LifecycleCase;
 use App\Models\Lifecycle\LifecycleTaskInstance;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LifecycleClearanceService

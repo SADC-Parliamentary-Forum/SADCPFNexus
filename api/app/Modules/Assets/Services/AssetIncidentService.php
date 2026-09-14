@@ -8,7 +8,6 @@ use App\Models\AuditLog;
 use App\Models\User;
 use App\Modules\Assets\Support\AssetAccess;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
 
 class AssetIncidentService
 {

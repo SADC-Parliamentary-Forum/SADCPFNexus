@@ -396,7 +396,7 @@ class LifecycleCaseService
         $tasks = LifecycleTaskInstance::with(['lifecycleCase.employee:id,name'])
             ->where('tenant_id', $user->tenant_id)
             ->where('status', '!=', 'completed')
-            ->whereHas('lifecycleCase', function ($q) use ($user) {
+            ->whereHas('lifecycleCase', function ($q) {
                 $q->where('status', 'in_progress');
             })
             ->orderBy('due_date')
@@ -435,6 +435,7 @@ class LifecycleCaseService
             if ($group->isEmpty()) {
                 return true;
             }
+
             // At least one optional in each group must be complete if group exists
             return $group->contains(fn ($t) => $t->status === 'completed') || $group->every(fn ($t) => $t->status === 'pending');
         });

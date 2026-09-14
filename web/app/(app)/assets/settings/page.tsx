@@ -16,7 +16,7 @@ type Policy = {
   is_active: boolean;
 };
 
-type Location = { id: number; code: string; name: string; building?: string };
+type Location = { id: number; code: string; name: string; building?: string | null };
 
 export default function AssetSettingsPage() {
   const { t } = useI18n();
