@@ -157,7 +157,7 @@ export function CaptchaGate({ value, onChange }: Props) {
               id={checkboxId}
               type="checkbox"
               className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
-              checked={value.verified}
+              checked={value.verified || issuing}
               disabled={issuing}
               onChange={(event) => {
                 if (event.target.checked) {
