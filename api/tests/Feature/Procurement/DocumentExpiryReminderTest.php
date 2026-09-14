@@ -4,8 +4,12 @@ namespace Tests\Feature\Procurement;
 
 use App\Models\SupplierDocument;
 use App\Models\Tenant;
+use App\Models\User;
 use App\Models\Vendor;
+use App\Modules\Procurement\Services\SupplierComplianceMonitor;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Artisan;
+use Mockery;
 use Tests\TestCase;
 
 class DocumentExpiryReminderTest extends TestCase
@@ -33,11 +37,16 @@ class DocumentExpiryReminderTest extends TestCase
             'version' => 1,
         ]);
 
+        $keys = [];
+        $mock = Mockery::mock(NotificationService::class);
+        $mock->shouldReceive('dispatch')->andReturnUsing(function (User $recipient, string $key) use (&$keys) {
+            $keys[] = $recipient->id.':'.$key;
+        });
+        $this->app->forgetInstance(SupplierComplianceMonitor::class);
+        $this->app->instance(NotificationService::class, $mock);
+
         $exit = Artisan::call('procurement:send-document-expiry-reminders');
         $this->assertSame(0, $exit);
-        $this->assertDatabaseHas('notifications', [
-            'user_id' => $officer->id,
-            'trigger' => 'procurement.vendor_document.expiring',
-        ]);
+        $this->assertContains($officer->id.':procurement.vendor_document.expiring', $keys);
     }
 }
