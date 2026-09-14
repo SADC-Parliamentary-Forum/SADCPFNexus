@@ -358,9 +358,13 @@ class NotificationService
                 'subject' => 'New supplier application awaiting review',
                 'body'    => "Dear {{name}},\n\nA new supplier application has been submitted.\n\nSupplier: {{supplier}}\nPrimary contact: {{contact}}\n\nPlease log in to procurement and review the application.\n\nRegards,\nSADC-PF Procurement",
             ],
+            'supplier.application_received' => [
+                'subject' => 'We received your SADC-PF supplier application',
+                'body'    => "Dear {{name}},\n\nThank you for registering {{supplier}} on the SADC-PF Nexus supplier portal.\n\nProcurement will review your application. You will receive another email when a decision is made. You cannot sign in until the application is approved.\n\nAfter approval, sign in at {{login_url}}\n\nIf you did not submit this application, contact Procurement immediately. Nexus will never email you a password.\n\nRegards,\nSADC-PF Procurement",
+            ],
             'supplier.approved' => [
                 'subject' => 'Your supplier account has been approved',
-                'body'    => "Dear {{name}},\n\nYour supplier registration for {{supplier}} has been approved.\n\nYou can now log in to the supplier portal and participate in RFQs.\n\nRegards,\nSADC-PF Procurement",
+                'body'    => "Dear {{name}},\n\nYour supplier registration for {{supplier}} has been approved.\n\nYou can now log in to the supplier portal and participate in RFQs:\n{{login_url}}\n\nRegards,\nSADC-PF Procurement",
             ],
             'supplier.rejected' => [
                 'subject' => 'Your supplier application was not approved',

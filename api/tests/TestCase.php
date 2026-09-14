@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\SupplierCategory;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Models\Vendor;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -198,6 +199,41 @@ abstract class TestCase extends BaseTestCase
     protected function asGovernanceOfficer(?Tenant $tenant = null): array
     {
         $user = $this->makeGovernanceOfficer($tenant);
+        return [$this->asUser($user), $user];
+    }
+
+    protected function makeSupplierUser(?Tenant $tenant = null, array $overrides = []): User
+    {
+        $tenant ??= Tenant::factory()->create();
+        $email = $overrides['email'] ?? ('supplier-'.uniqid().'@example.test');
+        unset($overrides['email']);
+
+        $vendor = Vendor::create([
+            'tenant_id'     => $tenant->id,
+            'name'          => 'Portal Supplies '.uniqid(),
+            'contact_email' => $email,
+            'is_approved'   => true,
+            'is_active'     => true,
+            'status'        => 'approved',
+        ]);
+
+        $user = User::factory()->create(array_merge([
+            'tenant_id'       => $tenant->id,
+            'vendor_id'       => $vendor->id,
+            'email'           => $email,
+            'is_active'       => true,
+            'account_status'  => User::STATUS_ACTIVE,
+            'setup_completed' => true,
+        ], $overrides));
+        $user->assignRole('Supplier');
+
+        return $user;
+    }
+
+    protected function asSupplier(?Tenant $tenant = null, array $overrides = []): array
+    {
+        $user = $this->makeSupplierUser($tenant, $overrides);
+
         return [$this->asUser($user), $user];
     }
 

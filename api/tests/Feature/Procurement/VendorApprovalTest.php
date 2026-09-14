@@ -3,6 +3,7 @@
 namespace Tests\Feature\Procurement;
 
 use App\Models\Tenant;
+use App\Models\User;
 use App\Models\Vendor;
 use Tests\TestCase;
 
@@ -118,5 +119,62 @@ class VendorApprovalTest extends TestCase
 
         $http->postJson("/api/v1/procurement/vendors/{$vendor->id}/approve")
              ->assertNotFound();
+    }
+
+    public function test_approving_vendor_emails_the_portal_user(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $vendor = $this->makePendingVendor($tenant);
+        $portalUser = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'email'     => 'pending-portal@example.test',
+            'is_active' => false,
+        ]);
+        $portalUser->assignRole('Supplier');
+
+        [$http] = $this->asProcurementOfficer($tenant);
+
+        $http->postJson("/api/v1/procurement/vendors/{$vendor->id}/approve")
+             ->assertOk();
+
+        $this->assertTrue((bool) $portalUser->fresh()->is_active);
+        $this->assertDatabaseHas('notification_outbox', [
+            'event_type' => 'supplier.approved',
+            'status'     => 'published',
+        ]);
+        $this->assertDatabaseHas('notification_channel_deliveries', [
+            'channel'              => 'email',
+            'destination_snapshot' => 'pending-portal@example.test',
+        ]);
+    }
+
+    public function test_rejecting_vendor_emails_the_deactivated_portal_user(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $vendor = $this->makePendingVendor($tenant);
+        $portalUser = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'email'     => 'rejected-portal@example.test',
+            'is_active' => false,
+        ]);
+        $portalUser->assignRole('Supplier');
+
+        [$http] = $this->asProcurementOfficer($tenant);
+
+        $http->postJson("/api/v1/procurement/vendors/{$vendor->id}/reject", [
+            'reason' => 'Incomplete tax clearance',
+        ])->assertOk();
+
+        $this->assertFalse((bool) $portalUser->fresh()->is_active);
+        $this->assertDatabaseHas('notification_outbox', [
+            'event_type' => 'supplier.rejected',
+            'status'     => 'published',
+        ]);
+        $this->assertDatabaseHas('notification_channel_deliveries', [
+            'channel'              => 'email',
+            'destination_snapshot' => 'rejected-portal@example.test',
+        ]);
     }
 }

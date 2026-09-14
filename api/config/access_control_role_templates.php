@@ -391,7 +391,13 @@ return [
     'External Supplier' => [
         'purpose' => 'Supplier portal and own procurement interactions',
         'risk_level' => 'medium',
-        'permissions' => ['procurement.bid.submit.own', 'procurement.bid.read.own', 'supplier.portal'],
+        'permissions' => [
+            'procurement.bid.submit.own',
+            'procurement.bid.read.own',
+            'supplier.portal',
+            'support.view',
+            'support.create',
+        ],
         'inherits' => [],
         'legacy_roles' => ['Supplier', 'Supplier Finance User'],
         'feature_only' => false,

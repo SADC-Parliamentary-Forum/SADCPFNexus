@@ -152,8 +152,23 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(HrPersonnelFileSection::class, HrPersonnelFileSectionPolicy::class);
         Gate::policy(HrApprovalMatrix::class, HrApprovalMatrixPolicy::class);
 
-        Event::listen(MessageSending::class, function (): void {
-            $tenantId = auth()->user()?->tenant_id;
+        Event::listen(MessageSending::class, function (MessageSending $event): void {
+            $tenantId = auth()->user()?->tenant_id
+                ?? ($event->data['tenantId'] ?? null);
+
+            if (! $tenantId) {
+                $row = \App\Models\TenantMailSetting::query()
+                    ->where('smtp_enabled', true)
+                    ->whereNotNull('smtp_host')
+                    ->whereNotNull('smtp_username')
+                    ->whereNotNull('smtp_password_encrypted')
+                    ->orderBy('id')
+                    ->first();
+                if ($row?->smtpConfigured()) {
+                    $tenantId = $row->tenant_id;
+                }
+            }
+
             if ($tenantId) {
                 app(\App\Modules\Admin\Services\TenantMailRuntime::class)->apply((int) $tenantId);
             }

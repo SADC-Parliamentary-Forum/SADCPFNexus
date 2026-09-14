@@ -52,7 +52,7 @@ final class OperatorCredentialStatusService
             'configured' => $envConfigured || $dbConfigured,
             'driver' => 'smtp',
             'secret_source' => 'admin_or_env',
-            'guidance' => 'Set host, username, and password under Admin → Email. Env MAIL_* remains a fallback. Passwords are never shown.',
+            'guidance' => 'Set host, username, and password under Admin → Email. Env MAIL_MAILER=smtp is a fallback. MAIL_MAILER=log never sends. Passwords are never shown.',
             'details' => [
                 'admin_configured' => $dbConfigured,
                 'env_mailer' => config('mail.default'),

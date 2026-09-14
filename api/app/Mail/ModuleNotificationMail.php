@@ -19,6 +19,7 @@ class ModuleNotificationMail extends Mailable
         public readonly ?string $approveUrl = null,
         public readonly ?string $rejectUrl = null,
         public readonly ?string $openUrl = null,
+        public readonly ?int $tenantId = null,
     ) {}
 
     public function envelope(): Envelope

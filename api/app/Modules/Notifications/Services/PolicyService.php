@@ -24,6 +24,12 @@ class PolicyService
         'user.sessions_',
         'programme.approved',
         'assignment.issued',
+        'supplier.portal_invited',
+        'supplier.application_received',
+        'supplier.approved',
+        'supplier.rejected',
+        'supplier.info_requested',
+        'supplier.suspended',
     ];
 
     public function resolvePolicy(int $tenantId, string $eventKey): array

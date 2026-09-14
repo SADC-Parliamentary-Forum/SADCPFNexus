@@ -128,6 +128,17 @@ class NavigationManifestService
             $items[] = $this->item('Salary Advances', '/salary-advances', 'payments');
         }
 
+        if ($has('supplier.portal')) {
+            $items[] = $this->item('Supplier Portal', '/supplier', 'storefront', children: [
+                $this->item('Overview', '/supplier', 'dashboard'),
+                $this->item('RFQs', '/supplier/rfqs', 'request_quote'),
+                $this->item('Purchase Orders', '/supplier/purchase-orders', 'receipt_long'),
+                $this->item('Invoices', '/supplier/invoices', 'description'),
+                $this->item('Profile', '/supplier/profile', 'badge'),
+                $this->item('Help & Support', '/profile/support', 'help'),
+            ]);
+        }
+
         if ($has('admin.roles.view', 'roles.view', 'roles.manage', 'admin.access.simulate')) {
             $items[] = $this->item('Access Governance', '/admin/access', 'admin_panel_settings', children: [
                 $this->item('Role Catalogue', '/admin/access/roles', 'badge'),
