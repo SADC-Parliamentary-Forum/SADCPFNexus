@@ -37,11 +37,28 @@ export function skipWithoutAuth(role: AuthRole): void {
   );
 }
 
+export async function completeLoginCaptcha(
+  page: import("@playwright/test").Page
+): Promise<void> {
+  const gate = page.getByTestId("captcha-gate");
+  await gate.waitFor({ state: "attached", timeout: 10_000 }).catch(() => undefined);
+  await page
+    .locator('[data-testid="captcha-gate"][data-ready="true"]')
+    .waitFor({ state: "attached", timeout: 10_000 })
+    .catch(() => undefined);
+  const checkbox = page.getByRole("checkbox", { name: /i am not a robot|je ne suis pas un robot|não sou um robô/i });
+  if (await checkbox.isVisible().catch(() => false)) {
+    await checkbox.check();
+    await expect(checkbox).toBeChecked();
+    await expect(checkbox).toBeEnabled({ timeout: 10_000 });
+  }
+}
+
 /** True when the page shows a login form (session expired / unauthorized redirect). */
 export async function landedOnLogin(
   page: import("@playwright/test").Page
 ): Promise<boolean> {
-  if (page.url().includes("/login")) return true;
+  if (page.url().includes("/login") || page.url().includes("/supplier/login")) return true;
   const email = page.locator('input[type="email"]');
   return email.isVisible({ timeout: 1_500 }).catch(() => false);
 }

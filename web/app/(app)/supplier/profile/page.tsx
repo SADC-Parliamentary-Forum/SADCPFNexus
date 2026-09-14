@@ -3,8 +3,9 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supplierCategoriesApi, supplierPortalApi } from "@/lib/api";
+import { supplierCategoriesApi, supplierPortalApi, vendorAttachmentsApi, VENDOR_DOC_TYPES } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { SupplierDocumentsField, type PendingSupplierDocument } from "@/components/auth/SupplierDocumentsField";
 
 export default function SupplierProfilePage() {
   const queryClient = useQueryClient();
@@ -19,7 +20,7 @@ export default function SupplierProfilePage() {
   const [bankBranch, setBankBranch] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("");
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
-  const [documents, setDocuments] = useState<File[]>([]);
+  const [documents, setDocuments] = useState<PendingSupplierDocument[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const profileQuery = useQuery({
@@ -59,7 +60,10 @@ export default function SupplierProfilePage() {
       formData.append("bank_branch", bankBranch);
       formData.append("payment_terms", paymentTerms);
       categoryIds.forEach((id) => formData.append("category_ids[]", String(id)));
-      documents.forEach((file) => formData.append("documents[]", file));
+      documents.forEach((item) => {
+        formData.append("documents[]", item.file);
+        formData.append("document_types[]", item.documentType);
+      });
       return supplierPortalApi.updateProfile(formData);
     },
     onSuccess: () => {
@@ -159,9 +163,36 @@ export default function SupplierProfilePage() {
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-neutral-700">Supporting Documents</p>
-          <input type="file" multiple onChange={(e) => setDocuments(Array.from(e.target.files ?? []))} />
-          {documents.length > 0 && <p className="text-xs text-neutral-500">{documents.length} file(s) ready to upload.</p>}
+          <p className="text-sm font-semibold text-neutral-700">Uploaded documents</p>
+          {(profileQuery.data.attachments ?? []).length === 0 ? (
+            <p className="text-sm text-neutral-500">No documents on file yet.</p>
+          ) : (
+            <ul className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white">
+              {(profileQuery.data.attachments ?? []).map((doc) => (
+                <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-neutral-800">{doc.original_filename}</p>
+                    <p className="text-xs capitalize text-neutral-500">
+                      {VENDOR_DOC_TYPES.find((type) => type.value === doc.document_type)?.label
+                        ?? doc.document_type?.replace(/_/g, " ")
+                        ?? "Document"}
+                    </p>
+                  </div>
+                  <a
+                    href={vendorAttachmentsApi.downloadUrl(profileQuery.data.id, doc.id)}
+                    className="text-sm font-medium text-primary-800 hover:underline"
+                  >
+                    Download
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-sm font-semibold text-neutral-700">Add supporting documents</p>
+          <SupplierDocumentsField documents={documents} onChange={setDocuments} />
         </div>
 
         <button className="btn-primary disabled:opacity-60" disabled={mutation.isPending || categoryIds.length === 0} onClick={() => mutation.mutate()}>

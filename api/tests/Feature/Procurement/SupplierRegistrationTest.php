@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Procurement;
 
+use App\Models\Attachment;
 use App\Models\Tenant;
 use Tests\TestCase;
 
@@ -108,5 +109,152 @@ class SupplierRegistrationTest extends TestCase
                 'name'   => 'Stationery Hub',
                 'status' => 'pending_approval',
             ]);
+    }
+
+    public function test_supplier_registration_stores_multiple_typed_documents_visible_to_procurement(): void
+    {
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_multi']);
+
+        $response = $this->post('/api/v1/procurement/suppliers/register', [
+            'tenant_id'             => $tenant->id,
+            'company_name'          => 'Multi Doc Supplies',
+            'registration_number'   => 'REG-400',
+            'tax_number'            => 'TAX-400',
+            'contact_name'          => 'Dana Vendor',
+            'contact_email'         => 'dana@multidoc.test',
+            'contact_phone'         => '+264000004',
+            'address'               => 'Windhoek',
+            'country'               => 'Namibia',
+            'bank_name'             => 'FNB',
+            'bank_account'          => '400400400',
+            'bank_branch'           => 'Windhoek',
+            'password'              => 'Secret123!',
+            'password_confirmation' => 'Secret123!',
+            'category_ids'          => [$category->id],
+            'documents'             => [
+                $this->fakePdf('company-profile.pdf'),
+                $this->fakePdf('tax-clearance.pdf'),
+                $this->fakePdf('bank-letter.pdf'),
+            ],
+            'document_types'        => [
+                Attachment::DOCUMENT_TYPE_COMPANY_PROFILE,
+                Attachment::DOCUMENT_TYPE_TAX_CLEARANCE,
+                Attachment::DOCUMENT_TYPE_BANK_DETAILS,
+            ],
+        ], ['Accept' => 'application/json']);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.status', 'pending_approval')
+            ->assertJsonCount(3, 'data.documents');
+
+        $this->assertSame('company-profile.pdf', $response->json('data.documents.0.original_filename'));
+        $this->assertSame(Attachment::DOCUMENT_TYPE_TAX_CLEARANCE, $response->json('data.documents.1.document_type'));
+
+        $vendorId = (int) $response->json('data.vendor_id');
+        $this->assertDatabaseHas('users', [
+            'email' => 'dana@multidoc.test',
+            'vendor_id' => $vendorId,
+            'setup_completed' => true,
+        ]);
+
+        [$http] = $this->asProcurementOfficer($tenant);
+        $http->getJson("/api/v1/procurement/vendors/{$vendorId}/attachments")
+            ->assertOk()
+            ->assertJsonCount(3, 'data')
+            ->assertJsonFragment(['original_filename' => 'company-profile.pdf'])
+            ->assertJsonFragment(['original_filename' => 'tax-clearance.pdf'])
+            ->assertJsonFragment(['original_filename' => 'bank-letter.pdf']);
+    }
+
+    public function test_supplier_registration_requires_captcha_when_enabled(): void
+    {
+        config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null]);
+
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_captcha']);
+
+        $this->post('/api/v1/procurement/suppliers/register', [
+            'tenant_id'             => $tenant->id,
+            'company_name'          => 'Captcha Supplies',
+            'registration_number'   => 'REG-500',
+            'tax_number'            => 'TAX-500',
+            'contact_name'          => 'Evan Vendor',
+            'contact_email'         => 'evan@captcha.test',
+            'contact_phone'         => '+264000005',
+            'address'               => 'Windhoek',
+            'country'               => 'Namibia',
+            'bank_name'             => 'FNB',
+            'bank_account'          => '500500500',
+            'bank_branch'           => 'Windhoek',
+            'password'              => 'Secret123!',
+            'password_confirmation' => 'Secret123!',
+            'category_ids'          => [$category->id],
+            'documents'             => [$this->fakePdf('company-profile.pdf')],
+        ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['captcha_token']);
+    }
+
+    public function test_supplier_registration_does_not_skip_captcha_for_mobile_client_type(): void
+    {
+        config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null]);
+
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_mobile_captcha']);
+
+        $this->post('/api/v1/procurement/suppliers/register', [
+            'tenant_id'             => $tenant->id,
+            'company_name'          => 'Mobile Captcha Supplies',
+            'registration_number'   => 'REG-501',
+            'tax_number'            => 'TAX-501',
+            'contact_name'          => 'Evan Mobile',
+            'contact_email'         => 'evan.mobile@captcha.test',
+            'contact_phone'         => '+264000015',
+            'address'               => 'Windhoek',
+            'country'               => 'Namibia',
+            'bank_name'             => 'FNB',
+            'bank_account'          => '501501501',
+            'bank_branch'           => 'Windhoek',
+            'password'              => 'Secret123!',
+            'password_confirmation' => 'Secret123!',
+            'category_ids'          => [$category->id],
+            'documents'             => [$this->fakePdf('company-profile.pdf')],
+            'client_type'           => 'mobile',
+        ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['captcha_token']);
+    }
+
+    public function test_supplier_registration_rejects_more_than_fifteen_documents(): void
+    {
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_limit']);
+
+        $documents = [];
+        for ($i = 1; $i <= 16; $i++) {
+            $documents[] = $this->fakePdf("doc-{$i}.pdf");
+        }
+
+        $this->post('/api/v1/procurement/suppliers/register', [
+            'tenant_id'             => $tenant->id,
+            'company_name'          => 'Overflow Docs',
+            'registration_number'   => 'REG-600',
+            'tax_number'            => 'TAX-600',
+            'contact_name'          => 'Fran Vendor',
+            'contact_email'         => 'fran@overflowdocs.test',
+            'contact_phone'         => '+264000006',
+            'address'               => 'Windhoek',
+            'country'               => 'Namibia',
+            'bank_name'             => 'FNB',
+            'bank_account'          => '600600600',
+            'bank_branch'           => 'Windhoek',
+            'password'              => 'Secret123!',
+            'password_confirmation' => 'Secret123!',
+            'category_ids'          => [$category->id],
+            'documents'             => $documents,
+        ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['documents']);
     }
 }

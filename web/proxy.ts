@@ -20,6 +20,7 @@ const PUBLIC_PATHS = [
   "/forgot-password",
   "/request-password",
   "/activate-account",
+  "/supplier/login",
   "/supplier/register",
   "/tender-notices",
   "/parliament-connect",
@@ -77,8 +78,9 @@ function isPublicPath(path: string): boolean {
 }
 
 function buildLoginRedirect(request: NextRequest, from: string): NextResponse {
-  const loginUrl = new URL(LOGIN_PATH, request.url);
-  if (from && from !== "/" && from !== LOGIN_PATH) {
+  const supplierFlow = from === "/supplier" || from.startsWith("/supplier/");
+  const loginUrl = new URL(supplierFlow ? "/supplier/login" : LOGIN_PATH, request.url);
+  if (from && from !== "/" && from !== LOGIN_PATH && from !== "/supplier/login") {
     loginUrl.searchParams.set("from", from);
   }
   return NextResponse.redirect(loginUrl);
@@ -107,7 +109,7 @@ export function proxy(request: NextRequest) {
   }
 
   if (isPublicPath(path)) {
-    if (path === LOGIN_PATH && isAuth) {
+    if ((path === LOGIN_PATH || path === "/supplier/login") && isAuth) {
       const wantsSignOut = request.nextUrl.searchParams.has(LOGIN_SIGNOUT_PARAM);
       if (!wantsSignOut) {
         return NextResponse.redirect(new URL(
@@ -115,7 +117,9 @@ export function proxy(request: NextRequest) {
             ? RESET_PATH
             : !setupComplete
               ? SETUP_PATH
-              : "/dashboard",
+              : path === "/supplier/login"
+                ? "/supplier"
+                : "/dashboard",
           request.url
         ));
       }

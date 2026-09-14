@@ -9,6 +9,7 @@ use App\Models\AuditLog;
 use App\Models\DeviceToken;
 use App\Models\User;
 use App\Models\UserSession;
+use App\Services\CaptchaService;
 use App\Support\PasswordPolicy;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,22 @@ use PragmaRX\Google2FA\Google2FA;
 
 class AuthController extends Controller
 {
+    public function __construct(private readonly CaptchaService $captcha) {}
+
+    public function captchaConfig(): JsonResponse
+    {
+        return response()->json($this->captcha->publicConfig());
+    }
+
+    public function captchaChallenge(): JsonResponse
+    {
+        if (! $this->captcha->enabled() || $this->captcha->driver() === 'turnstile') {
+            return response()->json($this->captcha->publicConfig() + ['token' => null]);
+        }
+
+        return response()->json($this->captcha->publicConfig() + $this->captcha->issueChallenge());
+    }
+
     public function forgotPassword(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -121,12 +138,17 @@ class AuthController extends Controller
         }
 
         $request->validate([
-            'email'       => ['required', 'email'],
-            'password'    => ['required', 'string'],
-            'device_name' => ['nullable', 'string', 'max:255'],
-            'client_type' => ['nullable', 'string', 'in:browser,mobile'],
-            'code'        => ['nullable', 'string', 'digits:6'],
+            'email'            => ['required', 'email'],
+            'password'         => ['required', 'string'],
+            'device_name'      => ['nullable', 'string', 'max:255'],
+            'client_type'      => ['nullable', 'string', 'in:browser,mobile'],
+            'portal'           => ['nullable', 'string', 'in:staff,supplier'],
+            'code'             => ['nullable', 'string', 'digits:6'],
+            'captcha_token'    => ['nullable', 'string'],
+            CaptchaService::HONEYPOT_FIELD => ['nullable', 'string'],
         ]);
+
+        $this->captcha->assertBrowserSubmission($request, consume: false);
 
         $user = User::where('email', $request->email)->first();
 
@@ -136,8 +158,11 @@ class AuthController extends Controller
                 'tags'       => 'auth',
             ]);
 
+            $this->captcha->consumeBrowserChallenge($request);
             $this->invalidLogin();
         }
+
+        $this->assertPortalMatchesUser($request, $user);
 
         if (! $user->accountAllowsAuthentication()) {
             AuditLog::record('auth.login.blocked', [
@@ -147,6 +172,7 @@ class AuthController extends Controller
                 'tags'           => 'auth',
             ]);
 
+            $this->captcha->consumeBrowserChallenge($request);
             $this->invalidLogin();
         }
 
@@ -176,6 +202,7 @@ class AuthController extends Controller
                     'tags'           => 'auth',
                 ]);
 
+                $this->captcha->consumeBrowserChallenge($request);
                 throw ValidationException::withMessages([
                     'code' => ['Invalid or expired verification code.'],
                 ]);
@@ -188,6 +215,7 @@ class AuthController extends Controller
             ]);
         }
 
+        $this->captcha->consumeBrowserChallenge($request);
         $user->update(['last_login_at' => now()]);
 
         $isMobileClient = $this->isMobileClient($request);
@@ -560,6 +588,28 @@ class AuthController extends Controller
         ]);
     }
 
+    private function assertPortalMatchesUser(Request $request, User $user): void
+    {
+        $portal = $request->input('portal');
+        if (! is_string($portal) || $portal === '') {
+            return;
+        }
+
+        if ($portal === 'staff' && $user->isSupplier()) {
+            $this->captcha->consumeBrowserChallenge($request);
+            throw ValidationException::withMessages([
+                'email' => ['This is the staff portal. Sign in through the supplier portal.'],
+            ]);
+        }
+
+        if ($portal === 'supplier' && ! $user->isSupplier()) {
+            $this->captcha->consumeBrowserChallenge($request);
+            throw ValidationException::withMessages([
+                'email' => ['This is the supplier portal. Staff must sign in through the staff portal.'],
+            ]);
+        }
+    }
+
     private function isMobileClient(Request $request): bool
     {
         if ($request->input('client_type') === 'mobile') {
@@ -641,7 +691,7 @@ class AuthController extends Controller
             'classification'      => $user->classification,
             'mfa_enabled'           => (bool) $user->mfa_enabled,
             'must_reset_password'   => (bool) $user->must_reset_password,
-            'setup_completed'       => (bool) $user->setup_completed,
+            'setup_completed'       => (bool) $user->setup_completed || $user->isSupplier(),
             'idle_timeout_minutes'  => $user->idle_timeout_minutes,
             'roles'                 => $user->getRoleNames(),
             'permissions'         => $user->getAllPermissions()->pluck('name'),

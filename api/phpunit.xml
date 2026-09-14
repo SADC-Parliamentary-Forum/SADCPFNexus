@@ -30,5 +30,7 @@
         <env name="SENTRY_LARAVEL_DSN" value=""/>
         <!-- Keep invoice OCR honest in CI; tests bind FakeOcrEngine when they need extracted text. -->
         <env name="PROCUREMENT_OCR_DRIVER" value="unconfigured" force="true"/>
+        <!-- Dedicated captcha tests turn this on. Browser login/register still covered there. -->
+        <env name="CAPTCHA_ENABLED" value="false"/>
     </php>
 </phpunit>

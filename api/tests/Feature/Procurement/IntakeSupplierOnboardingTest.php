@@ -62,7 +62,7 @@ class IntakeSupplierOnboardingTest extends TestCase
         $this->assertTrue((bool) $res->json('invitation.sent'));
         $this->assertSame($email, $res->json('invitation.email'));
         $this->assertFalse((bool) $res->json('invitation.password_emailed'));
-        $this->assertStringContainsString('/login', (string) $res->json('invitation.login_url'));
+        $this->assertStringContainsString('/supplier/login', (string) $res->json('invitation.login_url'));
         $this->assertStringContainsString('activate-account', (string) $res->json('invitation.activation_hint'));
         $this->assertArrayNotHasKey('password', $res->json('invitation') ?? []);
         $this->assertArrayNotHasKey('password', $res->json('data') ?? []);
@@ -89,7 +89,7 @@ class IntakeSupplierOnboardingTest extends TestCase
         $this->assertNotNull($note);
         $this->assertSame('supplier.portal_invited', $note->trigger);
         $this->assertStringContainsString('activate', strtolower((string) $note->body));
-        $this->assertStringContainsString('/login', (string) $note->body);
+        $this->assertStringContainsString('/supplier/login', (string) $note->body);
         $this->assertDoesNotMatchRegularExpression('/password\\s*[:=]/i', (string) $note->body);
         $this->assertStringContainsString('never email you a password', strtolower((string) $note->body));
     }

@@ -53,9 +53,11 @@ export default function ResetPasswordPage() {
         if (storedUser) {
           writeStoredUser({ ...storedUser, must_reset_password: false });
         }
-        if (storedUser?.setup_completed) {
+        if (storedUser?.setup_completed || (storedUser?.roles ?? []).some((role) => ["Supplier", "Supplier Finance User"].includes(role))) {
           setSetupCompleteCookie();
-          window.location.href = "/dashboard";
+          window.location.href = (storedUser?.roles ?? []).some((role) => ["Supplier", "Supplier Finance User"].includes(role))
+            ? "/supplier"
+            : "/dashboard";
         } else {
           clearSetupCompleteCookie();
           window.location.href = "/setup";

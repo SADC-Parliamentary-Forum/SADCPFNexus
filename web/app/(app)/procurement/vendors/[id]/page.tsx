@@ -485,6 +485,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
   const [rejectError, setRejectError]         = useState<string | null>(null);
   const [activeTab, setActiveTab]               = useState<"details" | "ratings" | "contracts" | "documents" | "compliance">("details");
   const [attachments, setAttachments]           = useState<ProcurementAttachment[]>([]);
+  const [attachmentsError, setAttachmentsError] = useState<string | null>(null);
   const [uploading, setUploading]               = useState(false);
   const [myRating, setMyRating]                 = useState(0);
   const [myReview, setMyReview]                 = useState("");
@@ -506,7 +507,11 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
   const [portalPwError, setPortalPwError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (vendorId) vendorAttachmentsApi.list(vendorId).then((r) => setAttachments(r.data.data ?? [])).catch(() => {});
+    if (!vendorId) return;
+    setAttachmentsError(null);
+    vendorAttachmentsApi.list(vendorId)
+      .then((r) => setAttachments(r.data.data ?? []))
+      .catch(() => setAttachmentsError("Could not load vendor documents."));
   }, [vendorId]);
 
   const approveMutation = useMutation({
@@ -720,12 +725,18 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
         {activeTab === "documents" && (
           <div className="card p-6">
             <h2 className="text-sm font-semibold text-neutral-800 mb-5">Vendor Documents</h2>
+            {attachmentsError && (
+              <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {attachmentsError}
+              </div>
+            )}
             <GenericDocumentsPanel
               documents={attachments}
               documentTypes={VENDOR_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
               defaultType="company_profile"
               loading={false}
               uploading={uploading}
+              readOnly={!canManageVendors()}
               onUpload={async (file, type) => {
                 setUploading(true);
                 try { const r = await vendorAttachmentsApi.upload(vendorId, file, type); setAttachments((p) => [r.data.data, ...p]); }
@@ -1178,6 +1189,47 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <p className="text-xs text-red-400 mt-0.5">Blacklisted on {formatDateShort(vendor.blacklisted_at)}</p>
               )}
             </div>
+          </div>
+        )}
+
+        {/* Registration documents — visible on the landing tab so reviewers do not miss uploads */}
+        {attachments.length > 0 && (
+          <div className="card overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-neutral-50">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px] text-neutral-400">folder_open</span>
+                <span className="text-sm font-semibold text-neutral-700">Registration documents</span>
+                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                  {attachments.length} on file
+                </span>
+              </div>
+              <button type="button" onClick={() => setActiveTab("documents")} className="btn-secondary text-xs py-1 px-2">
+                {canManageVendors() ? "Manage all documents" : "View all documents"}
+              </button>
+            </div>
+            <ul className="divide-y divide-neutral-50">
+              {attachments.map((doc) => (
+                <li key={doc.id} className="flex items-center gap-3 px-5 py-3.5">
+                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-primary text-[18px]">description</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-neutral-800 truncate">{doc.original_filename}</p>
+                    <p className="text-[11px] text-neutral-400 capitalize">
+                      {doc.document_type?.replace(/_/g, " ") ?? "Document"}
+                    </p>
+                  </div>
+                  <a href={vendorAttachmentsApi.downloadUrl(vendorId, doc.id)} className="text-neutral-400 hover:text-primary">
+                    <span className="material-symbols-outlined text-[20px]">download</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {attachmentsError && (
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {attachmentsError}
           </div>
         )}
 

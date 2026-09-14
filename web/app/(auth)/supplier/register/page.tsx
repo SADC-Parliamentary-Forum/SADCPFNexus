@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supplierCategoriesApi, supplierRegistrationApi, type SupplierCategory } from "@/lib/api";
 import { LocaleSwitcher, useI18n } from "@/lib/i18n/LocaleProvider";
+import { CaptchaGate, EMPTY_CAPTCHA, type CaptchaValue } from "@/components/auth/CaptchaGate";
+import { SupplierDocumentsField, type PendingSupplierDocument } from "@/components/auth/SupplierDocumentsField";
 
 const SADC_COUNTRIES = [
   "Angola", "Botswana", "Comoros", "Democratic Republic of the Congo",
@@ -111,7 +113,9 @@ export default function SupplierRegisterPage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [categories, setCategories] = useState<SupplierCategory[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const [documents, setDocuments] = useState<File[]>([]);
+  const [documents, setDocuments] = useState<PendingSupplierDocument[]>([]);
+  const [submittedDocuments, setSubmittedDocuments] = useState<Array<{ original_filename: string; document_type: string | null }>>([]);
+  const [captcha, setCaptcha] = useState<CaptchaValue>(EMPTY_CAPTCHA);
   const [loading, setLoading] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [error, setError] = useState("");
@@ -127,8 +131,8 @@ export default function SupplierRegisterPage() {
   }, []);
 
   const canSubmit = useMemo(() => {
-    return selectedCategories.length >= 1 && selectedCategories.length <= 3 && documents.length > 0;
-  }, [documents.length, selectedCategories.length]);
+    return selectedCategories.length >= 1 && selectedCategories.length <= 3 && documents.length > 0 && captcha.verified;
+  }, [captcha.verified, documents.length, selectedCategories.length]);
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -157,13 +161,23 @@ export default function SupplierRegisterPage() {
       const payload = new FormData();
       Object.entries(form).forEach(([key, value]) => payload.append(key, value));
       selectedCategories.forEach((id) => payload.append("category_ids[]", String(id)));
-      documents.forEach((file) => payload.append("documents[]", file));
+      documents.forEach((item) => {
+        payload.append("documents[]", item.file);
+        payload.append("document_types[]", item.documentType);
+      });
+      if (captcha.token) payload.append("captcha_token", captcha.token);
+      if (captcha.honeypot) payload.append("website_confirm", captcha.honeypot);
 
       const response = await supplierRegistrationApi.register(payload);
       setSuccess(response.data.message);
+      setSubmittedDocuments(response.data.data.documents ?? documents.map((item) => ({
+        original_filename: item.file.name,
+        document_type: item.documentType,
+      })));
       setForm(initialForm);
       setSelectedCategories([]);
       setDocuments([]);
+      setCaptcha(EMPTY_CAPTCHA);
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data?.message
@@ -187,7 +201,7 @@ export default function SupplierRegisterPage() {
           </div>
           <div className="flex items-center gap-2">
             <LocaleSwitcher />
-            <Link href="/login" className="btn-secondary text-sm">{t("auth.backLogin")}</Link>
+            <Link href="/supplier/login" className="btn-secondary text-sm">{t("auth.backSupplierLogin")}</Link>
           </div>
         </div>
 
@@ -211,7 +225,17 @@ export default function SupplierRegisterPage() {
           )}
           {success && (
             <div className="rounded-xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 px-4 py-3 text-sm text-green-700 dark:text-green-400">
-              {success}
+              <p>{success}</p>
+              {submittedDocuments.length > 0 && (
+                <div className="mt-3">
+                  <p className="font-semibold">{t("auth.docsReceived")}</p>
+                  <ul className="mt-1 list-disc pl-5">
+                    {submittedDocuments.map((doc) => (
+                      <li key={doc.original_filename}>{doc.original_filename}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           )}
 
@@ -374,29 +398,12 @@ export default function SupplierRegisterPage() {
             <p className="text-xs text-neutral-500">Select at least one category and no more than three.</p>
           </section>
 
-          <section className="space-y-3">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Supporting Documents</h2>
-            <input
-              type="file"
-              multiple
-              onChange={(e) => setDocuments(Array.from(e.target.files ?? []))}
-              className="form-input"
-              required
-            />
-            <p className="text-xs text-neutral-500">
-              Upload company profile, registration certificate, tax clearance, or bank confirmation documents.
-            </p>
-            {documents.length > 0 && (
-              <ul className="space-y-1 text-sm text-neutral-600">
-                {documents.map((file) => (
-                  <li key={`${file.name}-${file.size}`}>{file.name}</li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <SupplierDocumentsField documents={documents} onChange={setDocuments} />
+
+          <CaptchaGate value={captcha} onChange={setCaptcha} />
 
           <div className="flex items-center justify-end gap-3 border-t border-neutral-100 pt-4">
-            <Link href="/login" className="btn-secondary text-sm">
+            <Link href="/supplier/login" className="btn-secondary text-sm">
               Cancel
             </Link>
             <button type="submit" disabled={loading || !canSubmit} className="btn-primary text-sm disabled:opacity-60">
