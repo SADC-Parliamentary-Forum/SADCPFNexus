@@ -112,6 +112,14 @@ class AssetLifecycleController extends Controller
             ->when($assetVerificationCampaign->id, fn ($q) => $q->where('campaign_id', $assetVerificationCampaign->id))
             ->count();
 
+        $mismatchCounts = [];
+        foreach ($results as $row) {
+            foreach ($row->mismatch_types ?? [] as $type) {
+                $key = is_string($type) ? $type : json_encode($type);
+                $mismatchCounts[$key] = ($mismatchCounts[$key] ?? 0) + 1;
+            }
+        }
+
         return response()->json([
             'data' => [
                 'campaign' => $assetVerificationCampaign,
@@ -120,10 +128,14 @@ class AssetLifecycleController extends Controller
                     'verified' => $results->where('result', 'verified')->count(),
                     'missing' => $results->where('result', 'missing')->count(),
                     'damaged' => $results->where('result', 'damaged')->count(),
-                    'relocated' => $results->where('result', 'relocated')->count(),
+                    'relocated' => $results->whereIn('result', ['relocated', 'wrong_location'])->count(),
+                    'wrong_location' => $results->where('result', 'wrong_location')->count(),
+                    'wrong_custodian' => $results->where('result', 'wrong_custodian')->count(),
+                    'condition_changed' => $results->where('result', 'condition_changed')->count(),
                     'unregistered_finds' => $unregistered,
                     'exceptions' => $results->whereNotIn('result', ['verified'])->count(),
                     'unverified' => max(0, $listed - $results->unique('asset_id')->count()),
+                    'mismatch_types' => $mismatchCounts,
                 ],
             ],
         ]);
@@ -135,6 +147,12 @@ class AssetLifecycleController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'starts_on' => ['required', 'date'],
             'ends_on' => ['nullable', 'date', 'after_or_equal:starts_on'],
+            'scope' => ['nullable', 'array'],
+            'scope.organisation' => ['nullable', 'boolean'],
+            'scope.department_id' => ['nullable', 'integer'],
+            'scope.location_id' => ['nullable', 'integer'],
+            'scope.category' => ['nullable', 'string', 'max:32'],
+            'scope.funding_source_id' => ['nullable', 'integer'],
         ]);
         $campaign = $this->verification->createCampaign($validated, $request->user());
 
@@ -145,7 +163,7 @@ class AssetLifecycleController extends Controller
     {
         $validated = $request->validate([
             'asset_id' => ['required', 'integer', 'exists:assets,id'],
-            'result' => ['required', 'string', 'in:verified,missing,damaged,unregistered,relocated'],
+            'result' => ['required', 'string', 'in:verified,missing,damaged,unregistered,relocated,wrong_location,wrong_custodian,condition_changed'],
             'condition' => ['nullable', 'string', 'max:32'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'verification_method' => ['nullable', 'string', 'in:qr,manual,photo'],
@@ -187,7 +205,14 @@ class AssetLifecycleController extends Controller
             'cost' => ['nullable', 'numeric', 'min:0'],
             'vendor' => ['nullable', 'string', 'max:128'],
             'under_warranty' => ['nullable', 'boolean'],
-            'status' => ['nullable', 'string', 'in:open,in_progress,completed,cancelled'],
+            'status' => ['nullable', 'string', 'in:open,reported,in_progress,awaiting_parts,awaiting_approval,completed,cancelled,beyond_economic_repair'],
+            'severity' => ['nullable', 'string', 'max:32'],
+            'quotation_amount' => ['nullable', 'numeric', 'min:0'],
+            'parts' => ['nullable', 'string'],
+            'warranty_claim' => ['nullable', 'boolean'],
+            'outcome' => ['nullable', 'string', 'max:255'],
+            'sent_on' => ['nullable', 'date'],
+            'returned_on' => ['nullable', 'date'],
         ]);
         $asset = Asset::where('tenant_id', $request->user()->tenant_id)->findOrFail($validated['asset_id']);
         $record = $this->maintenance->create($asset, $validated, $request->user());

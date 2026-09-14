@@ -92,6 +92,7 @@ import '../../features/risk/presentation/screens/risk_detail_screen.dart';
 import '../../features/correspondence/presentation/screens/correspondence_register_screen.dart';
 import '../../features/correspondence/presentation/screens/correspondence_detail_screen.dart';
 import '../../features/stock/presentation/screens/stock_scan_screen.dart';
+import '../../features/assets/presentation/screens/asset_scan_screen.dart';
 import '../../features/weekly_summaries/presentation/screens/weekly_summaries_screen.dart';
 import '../../features/weekly_summaries/presentation/screens/weekly_summary_detail_screen.dart';
 import '../../features/finance/presentation/screens/budget_cashflow_screen.dart';
@@ -254,8 +255,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         return session.isAuthenticated ? '/dashboard' : '/login';
       }
 
+      final isPublicAsset = loc.startsWith('/a/') || loc.startsWith('/assets/public/');
       if (!session.isAuthenticated) {
-        return isLogin || isBiometricEntry ? null : '/login';
+        return isLogin || isBiometricEntry || isPublicAsset ? null : '/login';
       }
 
       if (isLogin || isBiometricEntry) {
@@ -724,6 +726,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/assets/inventory',
         name: 'assets-inventory',
         builder: (context, state) => const AssetInventoryScreen(),
+      ),
+      GoRoute(
+        path: '/assets/scan',
+        name: 'assets-scan',
+        builder: (context, state) => AssetScanScreen(
+          initialToken: state.uri.queryParameters['token'],
+        ),
+      ),
+      GoRoute(
+        path: '/a/:token',
+        name: 'assets-public-qr',
+        builder: (context, state) => AssetScanScreen(
+          initialToken: state.pathParameters['token'],
+        ),
       ),
       GoRoute(
         path: '/assets/request',

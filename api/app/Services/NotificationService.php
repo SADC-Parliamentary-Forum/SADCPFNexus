@@ -300,6 +300,18 @@ class NotificationService
                 'subject' => 'Asset return confirmed — {{tag}}',
                 'body'    => "Dear {{name}},\n\nReturn of {{asset}} ({{tag}}) has been confirmed. You are no longer the custodian.\n\nRegards,\nSADC-PF Administration",
             ],
+            'assets.checkout_overdue' => [
+                'subject' => 'Overdue asset checkout — {{tag}}',
+                'body'    => "Dear {{name}},\n\n{{asset}} ({{tag}}) is overdue for return. Please return it to Administration or extend the checkout.\n\nRegards,\nSADC-PF Administration",
+            ],
+            'assets.warranty_expiring' => [
+                'subject' => 'Warranty expiring — {{tag}}',
+                'body'    => "Dear {{name}},\n\nWarranty for {{asset}} ({{tag}}) expires on {{date}}. Please review cover and replacement planning.\n\nRegards,\nSADC-PF Administration",
+            ],
+            'assets.cannot_complete_separation' => [
+                'subject' => 'ICT clearance blocked — outstanding assets',
+                'body'    => "Dear {{name}},\n\nSeparation cannot complete while assets remain assigned. Return or transfer them, or request an authorised exception.\n\nRegards,\nSADC-PF Administration",
+            ],
             'procurement.submitted' => [
                 'subject' => 'Procurement request submitted — Action required',
                 'body'    => "Dear {{name}},\n\nA procurement request ({{reference}}) has been submitted by {{requester}} for approval.\n\nDescription: {{description}}\nEstimated value: {{amount}}\n\nPlease review and action this request.\n\nRegards,\nSADC-PF Nexus",

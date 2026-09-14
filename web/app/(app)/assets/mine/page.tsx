@@ -83,6 +83,55 @@ export default function MyAssetsPage() {
     }
   }
 
+  async function reportLost(asset: Asset) {
+    setActing(asset.id);
+    setError("");
+    try {
+      await assetsApi.reportLost(asset.id, { circumstances: "Reported from My Assets" });
+      setNotice(t("assets.mine.reportLost"));
+      await load();
+    } catch {
+      setError(t("assets.mine.actionFailed"));
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function reportStolen(asset: Asset) {
+    setActing(asset.id);
+    setError("");
+    try {
+      await assetsApi.reportStolen(asset.id, { circumstances: "Reported from My Assets" });
+      setNotice(t("assets.mine.reportStolen"));
+      await load();
+    } catch {
+      setError(t("assets.mine.actionFailed"));
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function requestTransfer(asset: Asset) {
+    const raw = window.prompt(t("assets.mine.transferUser"));
+    const toUserId = Number(raw);
+    if (!toUserId) return;
+    setActing(asset.id);
+    setError("");
+    try {
+      await assetsApi.initiateTransfer(asset.id, { to_user_id: toUserId, reason: "Requested from My Assets" });
+      setNotice(t("assets.mine.requestTransfer"));
+      await load();
+    } catch {
+      setError(t("assets.mine.actionFailed"));
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function reportFault(asset: Asset) {
+    window.location.href = `/assets/maintenance?asset=${asset.id}`;
+  }
+
   function isPendingAcceptance(asset: Asset): boolean {
     return asset.custody_state === "pending_acceptance"
       || (!asset.custody_state && !asset.acknowledgement_at);
@@ -198,14 +247,23 @@ export default function MyAssetsPage() {
                   )}
                   {(asset.custody_state === "accepted"
                     || (!!asset.acknowledgement_at && asset.custody_state !== "pending_return" && !isPendingAcceptance(asset))) && (
-                    <button
-                      type="button"
-                      disabled={acting === asset.id}
-                      onClick={() => void requestReturn(asset)}
-                      className="btn-secondary text-xs"
-                    >
-                      {acting === asset.id ? t("common.loading") : t("assets.mine.requestReturn")}
-                    </button>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button type="button" disabled={acting === asset.id} onClick={() => void requestReturn(asset)} className="btn-secondary text-xs">
+                        {acting === asset.id ? t("common.loading") : t("assets.mine.requestReturn")}
+                      </button>
+                      <button type="button" disabled={acting === asset.id} onClick={() => void reportFault(asset)} className="btn-secondary text-xs">
+                        {t("assets.mine.reportFault")}
+                      </button>
+                      <button type="button" disabled={acting === asset.id} onClick={() => void requestTransfer(asset)} className="btn-secondary text-xs">
+                        {t("assets.mine.requestTransfer")}
+                      </button>
+                      <button type="button" disabled={acting === asset.id} onClick={() => void reportLost(asset)} className="btn-secondary text-xs">
+                        {t("assets.mine.reportLost")}
+                      </button>
+                      <button type="button" disabled={acting === asset.id} onClick={() => void reportStolen(asset)} className="btn-secondary text-xs">
+                        {t("assets.mine.reportStolen")}
+                      </button>
+                    </div>
                   )}
                   {asset.custody_state === "pending_return" && (
                     <span className="text-xs text-amber-800">{t("assets.mine.awaitingReturnConfirm")}</span>

@@ -131,6 +131,8 @@ final _routeAccess = <String, List<String>>{
     'timesheet.create.self',
   ],
   '/reports': ['reports.view', 'reports.view.authorised'],
+  '/assets/scan': ['assets.scan', 'assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
+  '/a': [],
   '/assets/request': ['assets.view', 'assets.create'],
   '/assets/inventory': ['assets.view'],
   '/assets/assigned': ['assets.view'],

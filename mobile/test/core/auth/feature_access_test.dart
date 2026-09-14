@@ -114,5 +114,20 @@ void main() {
         isTrue,
       );
     });
+
+    test('scan-only users can open Scan Asset but not the register', () {
+      expect(
+        canAccessFeature(['assets.scan'], ['Staff'], '/assets/scan'),
+        isTrue,
+      );
+      expect(
+        canAccessFeature(['assets.scan'], ['Staff'], '/assets/inventory'),
+        isFalse,
+      );
+      expect(
+        canAccessFeature(['assets.view'], ['Staff'], '/a/AbCdEfGhIjKlMnOpQrStUvWx'),
+        isTrue,
+      );
+    });
   });
 }

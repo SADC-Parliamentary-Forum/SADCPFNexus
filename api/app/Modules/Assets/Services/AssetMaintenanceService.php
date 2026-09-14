@@ -30,7 +30,7 @@ class AssetMaintenanceService
                 'tenant_id' => $asset->tenant_id,
                 'asset_id' => $asset->id,
                 'maintenance_type' => $data['maintenance_type'] ?? ($underWarranty ? 'warranty' : 'corrective'),
-                'status' => $data['status'] ?? 'open',
+                'status' => $data['status'] ?? 'reported',
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
                 'scheduled_on' => $data['scheduled_on'] ?? null,
@@ -39,7 +39,22 @@ class AssetMaintenanceService
                 'vendor' => $data['vendor'] ?? null,
                 'under_warranty' => $underWarranty,
                 'recorded_by' => $user->id,
+                'severity' => $data['severity'] ?? null,
+                'quotation_amount' => $data['quotation_amount'] ?? null,
+                'parts' => $data['parts'] ?? null,
+                'warranty_claim' => (bool) ($data['warranty_claim'] ?? false),
+                'outcome' => $data['outcome'] ?? null,
+                'sent_on' => $data['sent_on'] ?? null,
+                'returned_on' => $data['returned_on'] ?? null,
             ]);
+
+            app(\App\Modules\Assets\Services\AssetTimelineService::class)->record(
+                $asset,
+                'MAINTENANCE_REPORTED',
+                $record->title,
+                $user,
+                ['maintenance_id' => $record->id, 'status' => $record->status]
+            );
 
             if (($data['status'] ?? 'open') === 'in_progress') {
                 $asset->status = $underWarranty ? 'under_warranty_repair' : 'service_due';

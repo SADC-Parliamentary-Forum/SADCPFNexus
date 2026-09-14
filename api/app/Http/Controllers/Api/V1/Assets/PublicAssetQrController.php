@@ -5,13 +5,18 @@ namespace App\Http\Controllers\Api\V1\Assets;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetQrToken;
+use App\Modules\Assets\Services\AssetIncidentService;
 use App\Modules\Assets\Services\AssetQrService;
+use App\Modules\Assets\Support\AssetAccess;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PublicAssetQrController extends Controller
 {
-    public function __construct(private readonly AssetQrService $qr) {}
+    public function __construct(
+        private readonly AssetQrService $qr,
+        private readonly AssetIncidentService $incidents,
+    ) {}
 
     public function show(string $token): JsonResponse
     {
@@ -39,12 +44,11 @@ class PublicAssetQrController extends Controller
         }
 
         $user = $request->user();
+        if (! AssetAccess::canScan($user)) {
+            abort(403);
+        }
         // Staff hold finance.view for self-service advances; asset book values stay admin/finance-control.
-        $canFinance = $user->isSystemAdmin()
-            || $user->hasPermissionTo('assets.admin')
-            || $user->hasPermissionTo('finance.admin')
-            || $user->hasPermissionTo('finance.approve')
-            || $user->hasPermissionTo('finance.export');
+        $canFinance = AssetAccess::canViewFinancials($user);
 
         return response()->json([
             'data' => [
@@ -56,7 +60,7 @@ class PublicAssetQrController extends Controller
                 'model' => $asset->model,
                 'serial_number' => $asset->serial_number,
                 'location' => $asset->location,
-                'custodian' => $asset->assignedUser?->only(['id', 'name', 'email']),
+                'custodian' => $asset->assignedUser?->only(['id', 'name']),
                 'status' => $asset->status,
                 'condition' => $asset->condition,
                 'verification_status' => $asset->verification_status,
@@ -64,5 +68,23 @@ class PublicAssetQrController extends Controller
                 'book_value' => $canFinance ? $asset->book_value : null,
             ],
         ]);
+    }
+
+    public function found(Request $request, string $token): JsonResponse
+    {
+        $record = $this->qr->findByToken($token);
+        if (! $record?->asset) {
+            return response()->json(['message' => 'Asset not found.'], 404);
+        }
+        $data = $request->validate([
+            'name' => ['nullable', 'string', 'max:128'],
+            'phone' => ['nullable', 'string', 'max:64'],
+            'email' => ['nullable', 'email', 'max:255'],
+            'message' => ['nullable', 'string', 'max:2000'],
+            'location' => ['nullable', 'string', 'max:255'],
+        ]);
+        $incident = $this->incidents->reportFound($record->asset, null, $data, true);
+
+        return response()->json(['data' => ['id' => $incident->id]], 201);
     }
 }

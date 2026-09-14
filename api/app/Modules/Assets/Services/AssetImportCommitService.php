@@ -157,6 +157,11 @@ class AssetImportCommitService
             'custodian_type' => $row->custodian_type,
             'custodian_department_id' => $row->custodian_department_id,
             'assigned_to' => $row->custodian_user_id,
+            'ownership_type' => is_array($row->source_refs) ? ($row->source_refs['ownership_type'] ?? 'sadc_pf_owned') : 'sadc_pf_owned',
+            'home_location_id' => $row->location_id,
+            'imei' => is_array($row->source_refs) ? ($row->source_refs['imei'] ?? null) : null,
+            'vehicle_registration' => is_array($row->source_refs) ? ($row->source_refs['vehicle_registration'] ?? null) : null,
+            'chassis_vin' => is_array($row->source_refs) ? ($row->source_refs['chassis_vin'] ?? $row->source_refs['vin'] ?? null) : null,
             'status' => $row->status ?: 'active',
             'label_status' => 'never_printed',
         ];

@@ -42,7 +42,13 @@ String? _routeForNotification(AppNotification item) {
     case 'budget':
     case 'bcre':
       return '/finance/command-center';
+    case 'assets':
+    case 'asset':
+      return recordId != null ? '/assets/inventory' : '/assets/scan';
     default:
+      if ((item.triggerKey ?? '').startsWith('assets.')) {
+        return '/assets/scan';
+      }
       return null;
   }
 }

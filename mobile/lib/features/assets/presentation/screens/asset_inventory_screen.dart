@@ -139,6 +139,11 @@ class _AssetInventoryScreenState extends ConsumerState<AssetInventoryScreen> {
       fallbackRoute: '/dashboard',
       actions: [
         StitchIconAction(
+          tooltip: 'Scan Asset',
+          icon: Icons.qr_code_scanner,
+          onPressed: () => context.push('/assets/scan'),
+        ),
+        StitchIconAction(
           tooltip: 'Request asset',
           icon: Icons.add_circle_outline,
           onPressed: () => context.push('/assets/request'),

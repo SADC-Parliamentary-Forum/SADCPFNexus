@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { assetsApi, type Asset } from "@/lib/api";
+import { assetsApi, type Asset, type AssetTimelineEvent, type GenericAssetAttachment } from "@/lib/api";
+import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { apiErrorMessage } from "@/lib/apiError";
 import { canManageAssets, getStoredUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
@@ -42,6 +43,10 @@ export default function AssetViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
+  const [timeline, setTimeline] = useState<AssetTimelineEvent[]>([]);
+  const [docs, setDocs] = useState<GenericAssetAttachment[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     setCanEdit(canManageAssets(getStoredUser()));
@@ -60,6 +65,9 @@ export default function AssetViewPage() {
       .get(numericId)
       .then((res) => {
         if (!cancelled) setAsset(res.data);
+        void assetsApi.timeline(numericId).then((r) => { if (!cancelled) setTimeline(r.data.data ?? []); }).catch(() => undefined);
+        setDocsLoading(true);
+        void assetsApi.documents(numericId).then((r) => { if (!cancelled) setDocs(r.data.data ?? []); }).catch(() => undefined).finally(() => { if (!cancelled) setDocsLoading(false); });
       })
       .catch((err) => {
         if (cancelled) return;
@@ -121,8 +129,8 @@ export default function AssetViewPage() {
             <Field label={t("assets.view.fieldSerial")} value={asset.serial_number ?? "—"} />
             <Field label={t("assets.view.fieldTag")} value={asset.tag_number ?? "—"} />
             <Field label={t("assets.view.fieldPurchaseDate")} value={formatDateShort(asset.purchase_date)} />
-            <Field label={t("assets.view.fieldPurchaseValue")} value={money(asset.purchase_value)} />
-            <Field label={t("assets.view.fieldBookValue")} value={money(bookValue)} />
+            <Field label={t("assets.view.fieldPurchaseValue")} value={asset.purchase_value == null ? "—" : money(asset.purchase_value)} />
+            <Field label={t("assets.view.fieldBookValue")} value={bookValue == null ? "—" : money(bookValue)} />
             <Field label={t("assets.view.fieldIssued")} value={formatDateShort(asset.issued_at)} />
             <Field label={t("assets.view.fieldCustody")} value={asset.custody_state ?? "—"} />
             <Field label={t("assets.view.fieldAge")} value={asset.age_display ?? "—"} />
@@ -133,6 +141,52 @@ export default function AssetViewPage() {
               <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-800">{asset.notes}</p>
             </div>
           )}
+          <section className="card p-4">
+            <h2 className="mb-3 text-sm font-semibold">{t("assets.timeline.title")}</h2>
+            {timeline.length === 0 ? (
+              <p className="text-sm text-neutral-500">{t("assets.timeline.empty")}</p>
+            ) : (
+              <ol className="space-y-2 text-sm">
+                {timeline.map((ev) => (
+                  <li key={ev.id} className="flex justify-between gap-3 border-b border-neutral-100 py-2">
+                    <span>{ev.summary || ev.event_type}</span>
+                    <span className="text-xs text-neutral-500">{ev.occurred_at || ev.created_at}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+          <GenericDocumentsPanel
+            documents={docs}
+            documentTypes={[
+              { value: "invoice", label: "Invoice" },
+              { value: "warranty", label: "Warranty" },
+              { value: "police_report", label: "Police report" },
+              { value: "photo_primary", label: "Primary photo" },
+              { value: "photo_serial", label: "Serial plate" },
+              { value: "photo_damage", label: "Damage" },
+              { value: "other", label: "Other" },
+            ]}
+            defaultType="invoice"
+            loading={docsLoading}
+            uploading={uploading}
+            readOnly={!canEdit}
+            onUpload={async (file, type) => {
+              setUploading(true);
+              try {
+                const res = await assetsApi.uploadDocument(numericId, file, type);
+                if (res.data.data) setDocs((prev) => [res.data.data, ...prev]);
+              } finally {
+                setUploading(false);
+              }
+            }}
+            onDelete={async (id) => {
+              await assetsApi.deleteDocument(numericId, id);
+              setDocs((prev) => prev.filter((d) => d.id !== id));
+            }}
+            downloadUrl={(id) => assetsApi.documentDownloadUrl(numericId, id)}
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+          />
         </>
       )}
     </div>

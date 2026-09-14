@@ -280,7 +280,7 @@ class AssetImportService
             'asset_name', 'make', 'model', 'serial_number', 'legacy_location', 'location_id',
             'custodian_type', 'custodian_user_id', 'custodian_department_id', 'category_code',
             'admin_notes', 'acquisition_date', 'original_cost', 'current_book_value', 'currency',
-            'funding_source', 'status',
+            'funding_source', 'status', 'ownership_type',
         ];
         foreach ($allowed as $key) {
             if (array_key_exists($key, $data)) {

@@ -26,10 +26,9 @@ class AssetCategory extends Model
     /**
      * Assets that use this category (Asset.category = code, same tenant).
      */
-    public function assets(): HasMany
+    public function subcategories(): HasMany
     {
-        return $this->hasMany(Asset::class, 'category', 'code')
-            ->where('assets.tenant_id', $this->tenant_id);
+        return $this->hasMany(AssetSubcategory::class, 'asset_category_id');
     }
 
     /**

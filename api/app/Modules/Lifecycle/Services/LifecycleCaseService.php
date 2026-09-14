@@ -2,6 +2,7 @@
 
 namespace App\Modules\Lifecycle\Services;
 
+use App\Models\Asset;
 use App\Models\HrPersonalFile;
 use App\Models\Lifecycle\LifecycleCase;
 use App\Models\Lifecycle\LifecycleTaskInstance;
@@ -247,6 +248,19 @@ class LifecycleCaseService
                 'medical_details' => null,
                 'exit_interview_notes' => null,
             ],
+            'outstanding_assets' => Asset::query()
+                ->where('tenant_id', $case->tenant_id)
+                ->where('assigned_to', $case->employee_id)
+                ->whereNotIn('status', array_merge(Asset::DISPOSED_STATUSES, ['retired']))
+                ->get(['id', 'tag_number', 'asset_code', 'name', 'status'])
+                ->map(fn (Asset $asset) => [
+                    'id' => $asset->id,
+                    'tag_number' => $asset->tag_number ?: $asset->asset_code,
+                    'name' => $asset->name,
+                    'status' => $asset->status,
+                ])
+                ->values()
+                ->all(),
         ];
 
         return $this->rbac->filterCasePayload($payload, $viewer);

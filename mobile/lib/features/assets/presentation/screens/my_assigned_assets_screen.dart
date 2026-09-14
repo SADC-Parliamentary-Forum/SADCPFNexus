@@ -75,6 +75,13 @@ class _MyAssignedAssetsScreenState
     return StitchScreen(
       title: 'My Assigned Assets',
       fallbackRoute: '/assets',
+      actions: [
+        StitchIconAction(
+          tooltip: 'Scan Asset',
+          icon: Icons.qr_code_scanner,
+          onPressed: () => context.push('/assets/scan'),
+        ),
+      ],
       body: Column(
         children: [
           // Summary banner

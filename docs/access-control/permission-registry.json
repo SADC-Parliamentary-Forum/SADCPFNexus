@@ -1,10 +1,11 @@
 {
-  "generated": "2026-07-30",
-  "permission_count": 154,
+  "generated": "2026-09-14",
+  "permission_count": 163,
   "modules": [
     "admin",
     "approvals",
     "assignments",
+    "assets",
     "audit",
     "correspondence",
     "dashboard",
@@ -380,6 +381,153 @@
       "mfa_required": false,
       "linked_routes": [],
       "linked_endpoints": []
+    },
+    {
+      "key": "assets.checkout.manage",
+      "display_name": "Check out assets",
+      "description": "Issue short-term checkouts and record returns",
+      "module": "assets",
+      "feature": "checkout",
+      "action": "manage",
+      "supported_scopes": ["organisation"],
+      "risk_level": "medium",
+      "data_classification": "Internal",
+      "mfa_required": false,
+      "linked_routes": ["/assets/checkouts"],
+      "linked_endpoints": [
+        "POST /api/v1/assets/{asset}/checkout",
+        "POST /api/v1/assets/{asset}/return-checkout"
+      ]
+    },
+    {
+      "key": "assets.financials.view",
+      "display_name": "View asset financials",
+      "description": "See acquisition cost, depreciation and book value",
+      "module": "assets",
+      "feature": "financials",
+      "action": "view",
+      "supported_scopes": ["organisation"],
+      "risk_level": "high",
+      "data_classification": "Confidential",
+      "mfa_required": false,
+      "linked_routes": ["/assets"],
+      "linked_endpoints": [
+        "GET /api/v1/assets/{asset}",
+        "GET /api/v1/assets/dashboard"
+      ]
+    },
+    {
+      "key": "assets.import",
+      "display_name": "Import assets",
+      "description": "Upload, review, and commit asset register import batches",
+      "module": "assets",
+      "feature": "import",
+      "action": "manage",
+      "supported_scopes": ["organisation"],
+      "risk_level": "high",
+      "data_classification": "Internal",
+      "mfa_required": false,
+      "linked_routes": ["/assets/import"],
+      "linked_endpoints": [
+        "GET /api/v1/assets/import",
+        "POST /api/v1/assets/import"
+      ]
+    },
+    {
+      "key": "assets.print",
+      "display_name": "Print asset labels",
+      "description": "Print and reprint asset QR labels",
+      "module": "assets",
+      "feature": "labels",
+      "action": "manage",
+      "supported_scopes": ["organisation"],
+      "risk_level": "medium",
+      "data_classification": "Internal",
+      "mfa_required": false,
+      "linked_routes": ["/assets/labels"],
+      "linked_endpoints": ["POST /api/v1/assets/labels/print"]
+    },
+    {
+      "key": "assets.scan",
+      "display_name": "Scan assets",
+      "description": "Look up an asset from a QR token without opening the full register",
+      "module": "assets",
+      "feature": "scan",
+      "action": "view",
+      "supported_scopes": ["organisation"],
+      "risk_level": "low",
+      "data_classification": "Internal",
+      "mfa_required": false,
+      "linked_routes": ["/assets/scan"],
+      "linked_endpoints": ["GET /api/v1/assets/qr/{token}"]
+    },
+    {
+      "key": "assets.settings.recovery_contact.manage",
+      "display_name": "Manage asset recovery contact",
+      "description": "Create and version the public Asset Recovery Contact printed on labels",
+      "module": "assets",
+      "feature": "settings",
+      "action": "manage",
+      "supported_scopes": ["organisation"],
+      "risk_level": "high",
+      "data_classification": "Internal",
+      "mfa_required": false,
+      "linked_routes": ["/assets/settings"],
+      "linked_endpoints": [
+        "GET /api/v1/asset-settings/recovery-contact",
+        "PUT /api/v1/asset-settings/recovery-contact",
+        "GET /api/v1/asset-settings/recovery-contact/history"
+      ]
+    },
+    {
+      "key": "assets.transfer.manage",
+      "display_name": "Transfer asset custody",
+      "description": "Initiate two-step custody transfers",
+      "module": "assets",
+      "feature": "transfer",
+      "action": "manage",
+      "supported_scopes": ["organisation"],
+      "risk_level": "medium",
+      "data_classification": "Internal",
+      "mfa_required": false,
+      "linked_routes": ["/assets/transfers"],
+      "linked_endpoints": [
+        "POST /api/v1/assets/{asset}/transfers",
+        "POST /api/v1/asset-transfers/{transfer}/accept"
+      ]
+    },
+    {
+      "key": "assets.verify",
+      "display_name": "Verify assets",
+      "description": "Run physical verification campaigns and record unregistered finds",
+      "module": "assets",
+      "feature": "verification",
+      "action": "manage",
+      "supported_scopes": ["organisation"],
+      "risk_level": "medium",
+      "data_classification": "Internal",
+      "mfa_required": false,
+      "linked_routes": ["/assets/verification"],
+      "linked_endpoints": [
+        "POST /api/v1/assets-meta/verification-campaigns/{assetVerificationCampaign}/results"
+      ]
+    },
+    {
+      "key": "assets.view",
+      "display_name": "View assets",
+      "description": "View the asset register and authenticated QR scan payload",
+      "module": "assets",
+      "feature": "register",
+      "action": "view",
+      "supported_scopes": ["organisation"],
+      "risk_level": "medium",
+      "data_classification": "Internal",
+      "mfa_required": false,
+      "linked_routes": ["/assets"],
+      "linked_endpoints": [
+        "GET /api/v1/assets",
+        "GET /api/v1/assets/{asset}"
+      ]
     },
     {
       "key": "audit.event.read.organisation",

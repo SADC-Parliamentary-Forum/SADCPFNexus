@@ -114,13 +114,61 @@ class AssetQrService
      */
     public function publicPayload(Asset $asset): array
     {
+        $tag = $asset->tag_number ?: $asset->asset_code;
+        $contact = app(AssetRecoveryContactService::class)->current(
+            (int) $asset->tenant_id,
+            $this->categoryId($asset)
+        );
+        $recovery = $contact?->publicPayload() ?? [];
+        $status = $this->publicStatus($asset);
+        $notice = match ($status) {
+            'LOST' => 'THIS SADC PF ASSET HAS BEEN REPORTED LOST. Please contact SADC Parliamentary Forum.',
+            'STOLEN' => 'THIS SADC PF ASSET HAS BEEN REPORTED STOLEN. Please contact SADC Parliamentary Forum.',
+            'DISPOSED' => 'This asset is no longer an active SADC PF asset.',
+            default => 'This equipment is the property of the SADC Parliamentary Forum.',
+        };
+
         return [
-            'organisation' => 'SADC Parliamentary Forum',
-            'notice' => 'Property of SADC PF',
-            'asset_tag' => $asset->tag_number ?: $asset->asset_code,
+            'organisation' => $asset->owner_name ?: 'SADC Parliamentary Forum',
+            'notice' => $notice,
+            'asset_tag' => $tag,
+            'assetNumber' => $tag,
             'asset_name' => $asset->name,
-            'contact' => 'If found, please return to SADC Parliamentary Forum, Windhoek.',
+            'description' => $asset->name,
+            'publicStatus' => $status,
+            'recoveryContact' => $recovery,
+            'contact' => $recovery['telephone']
+                ?? $recovery['email']
+                ?? ($contact?->instructions ?: 'If found, please contact SADC Parliamentary Forum Administration.'),
         ];
+    }
+
+    public function publicStatus(Asset $asset): string
+    {
+        if (in_array($asset->status, ['lost', 'missing'], true)) {
+            return 'LOST';
+        }
+        if ($asset->status === 'stolen') {
+            return 'STOLEN';
+        }
+        if ($asset->isDisposed() || $asset->status === 'retired') {
+            return 'DISPOSED';
+        }
+
+        return 'REGISTERED';
+    }
+
+    private function categoryId(Asset $asset): ?int
+    {
+        if (! $asset->category) {
+            return null;
+        }
+        $id = \App\Models\AssetCategory::query()
+            ->where('tenant_id', $asset->tenant_id)
+            ->where('code', $asset->category)
+            ->value('id');
+
+        return $id ? (int) $id : null;
     }
 
     private function randomToken(): string

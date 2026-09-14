@@ -11,6 +11,7 @@ class AssetMaintenanceRecord extends Model
         'tenant_id', 'asset_id', 'maintenance_type', 'status', 'title',
         'description', 'scheduled_on', 'completed_on', 'cost', 'vendor',
         'under_warranty', 'recorded_by',
+        'severity', 'quotation_amount', 'parts', 'warranty_claim', 'outcome', 'sent_on', 'returned_on',
     ];
 
     protected function casts(): array
@@ -18,8 +19,12 @@ class AssetMaintenanceRecord extends Model
         return [
             'scheduled_on' => 'date',
             'completed_on' => 'date',
+            'sent_on' => 'date',
+            'returned_on' => 'date',
             'cost' => 'decimal:2',
+            'quotation_amount' => 'decimal:2',
             'under_warranty' => 'boolean',
+            'warranty_claim' => 'boolean',
         ];
     }
 

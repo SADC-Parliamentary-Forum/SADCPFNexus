@@ -20,6 +20,7 @@ return [
         'api/v1/setup/*',
         'api/v1/email-action/*',
         'api/v1/public/assets/*',
+        'api/v1/asset-transfers/*',
     ],
     'endpoint_fallback_permission_rules' => [
         ['pattern' => 'api/v1/admin/access-requests*', 'permissions' => [
@@ -660,6 +661,53 @@ return [
         ]],
         ['pattern' => 'api/v1/public/assets*', 'permissions' => [
             'READ' => [],
+            'WRITE' => [],
+        ]],
+        ['pattern' => 'api/v1/asset-settings*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin', 'assets.manage', 'assets.settings.recovery_contact.manage'],
+            'WRITE' => ['assets.admin', 'assets.manage', 'assets.settings.recovery_contact.manage'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/move', 'permissions' => [
+            'WRITE' => ['assets.manage', 'assets.admin'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/checkout', 'permissions' => [
+            'WRITE' => ['assets.checkout.manage', 'assets.manage', 'assets.admin'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/return-checkout', 'permissions' => [
+            'WRITE' => ['assets.checkout.manage', 'assets.manage', 'assets.admin'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/transfers', 'permissions' => [
+            'WRITE' => ['assets.transfer.manage', 'assets.manage', 'assets.admin'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/report-lost', 'permissions' => [
+            'WRITE' => ['assets.view', 'assets.manage', 'assets.admin', 'profile.read.self'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/report-stolen', 'permissions' => [
+            'WRITE' => ['assets.view', 'assets.manage', 'assets.admin', 'profile.read.self'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/report-found', 'permissions' => [
+            'WRITE' => ['assets.view', 'assets.manage', 'assets.admin', 'profile.read.self'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/timeline', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin', 'assets.manage', 'assets.scan'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/documents', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.manage', 'assets.admin', 'assets.edit'],
+        ]],
+        ['pattern' => 'api/v1/assets/checkouts*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.checkout.manage', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.checkout.manage', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/assets/incidents*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.manage', 'assets.admin'],
+        ]],
+        ['pattern' => 'api/v1/assets/reports*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin', 'assets.manage', 'assets.financials.view'],
+        ]],
+        ['pattern' => 'api/v1/assets/qr*', 'permissions' => [
+            'READ' => ['assets.scan', 'assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
         ]],
         ['pattern' => 'api/v1/assets/import*', 'permissions' => [
             'READ' => ['assets.import', 'assets.admin', 'assets.manage'],
@@ -689,7 +737,7 @@ return [
             'WRITE' => ['assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
         ]],
         ['pattern' => 'api/v1/assets/qr*', 'permissions' => [
-            'READ' => ['assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
+            'READ' => ['assets.scan', 'assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
         ]],
         ['pattern' => 'api/v1/assets/{asset}/acknowledge', 'permissions' => [
             'WRITE' => [
