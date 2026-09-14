@@ -48,8 +48,10 @@ export async function completeLoginCaptcha(
     .catch(() => undefined);
   const checkbox = page.getByRole("checkbox", { name: /i am not a robot|je ne suis pas un robot|não sou um robô/i });
   if (await checkbox.isVisible().catch(() => false)) {
-    await checkbox.check();
-    await expect(checkbox).toBeChecked();
+    // Controlled checkbox: check() fails while the token request is in flight
+    // because React has not yet set `verified`. Click, then wait for checked.
+    await checkbox.click();
+    await expect(checkbox).toBeChecked({ timeout: 10_000 });
     await expect(checkbox).toBeEnabled({ timeout: 10_000 });
   }
 }
