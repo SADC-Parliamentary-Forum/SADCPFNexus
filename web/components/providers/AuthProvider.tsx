@@ -18,6 +18,7 @@ const SKIP_REFRESH_PATHS = [
   "/approval",
   "/supplier/login",
   "/supplier/register",
+  "/supplier/verify-email",
 ];
 
 export function AuthProvider({ children }: { children: ReactNode }) {

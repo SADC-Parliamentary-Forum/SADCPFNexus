@@ -23,6 +23,7 @@ const PUBLIC_PATHS = [
   "/activate-account",
   "/supplier/login",
   "/supplier/register",
+  "/supplier/verify-email",
   "/tender-notices",
   "/parliament-connect",
 ];
@@ -88,7 +89,7 @@ function buildLoginRedirect(request: NextRequest, from: string): NextResponse {
 }
 
 function isSupplierAppPath(path: string): boolean {
-  if (path === "/supplier/login" || path === "/supplier/register") return false;
+  if (path === "/supplier/login" || path === "/supplier/register" || path === "/supplier/verify-email") return false;
   return path === "/supplier" || path.startsWith("/supplier/");
 }
 

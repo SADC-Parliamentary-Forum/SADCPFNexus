@@ -133,7 +133,8 @@ api.interceptors.response.use(
           path.startsWith("/setup") ||
           path.startsWith("/approval") ||
           path === "/supplier/login" ||
-          path === "/supplier/register";
+          path === "/supplier/register" ||
+          path === "/supplier/verify-email";
 
         if (!isPublicAuthPath && !_redirecting401) {
           _redirecting401 = true;

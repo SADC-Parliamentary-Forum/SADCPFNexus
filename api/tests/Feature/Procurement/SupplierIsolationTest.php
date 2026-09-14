@@ -20,9 +20,8 @@ class SupplierIsolationTest extends TestCase
     public function test_supplier_cannot_read_another_suppliers_documents_quotes_pos_or_invoices(): void
     {
         $tenant = Tenant::factory()->create();
-        [$httpA, $userA] = $this->asSupplier($tenant);
-        $vendorA = Vendor::find($userA->vendor_id);
-        [$httpB, $userB] = $this->asSupplier($tenant);
+        [, $userA] = $this->asSupplier($tenant);
+        [, $userB] = $this->asSupplier($tenant);
         $vendorB = Vendor::find($userB->vendor_id);
 
         $officer = $this->makeProcurementOfficer($tenant);
@@ -85,15 +84,15 @@ class SupplierIsolationTest extends TestCase
             'storage_path' => 'attachments/vendors/missing.pdf',
         ]);
 
-        $httpA->getJson("/api/v1/procurement/supplier/rfqs/{$rfq->id}")->assertNotFound();
-        $httpA->getJson('/api/v1/procurement/supplier/purchase-orders')
+        $this->asUser($userA)->getJson("/api/v1/procurement/supplier/rfqs/{$rfq->id}")->assertNotFound();
+        $this->asUser($userA)->getJson('/api/v1/procurement/supplier/purchase-orders')
             ->assertOk()
             ->assertJsonMissing(['id' => $po->id]);
-        $httpA->getJson('/api/v1/procurement/supplier/invoices')
+        $this->asUser($userA)->getJson('/api/v1/procurement/supplier/invoices')
             ->assertOk()
             ->assertJsonMissing(['vendor_invoice_number' => 'INV-B']);
-        $httpA->getJson("/api/v1/procurement/supplier/documents/{$doc->id}/download")->assertNotFound();
-        $httpA->getJson('/api/v1/procurement/supplier/documents')
+        $this->asUser($userA)->getJson("/api/v1/procurement/supplier/documents/{$doc->id}/download")->assertNotFound();
+        $this->asUser($userA)->getJson('/api/v1/procurement/supplier/documents')
             ->assertOk()
             ->assertJsonMissing(['id' => $doc->id]);
     }

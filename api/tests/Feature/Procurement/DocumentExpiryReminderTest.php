@@ -2,13 +2,10 @@
 
 namespace Tests\Feature\Procurement;
 
-use App\Models\Attachment;
+use App\Models\SupplierDocument;
 use App\Models\Tenant;
-use App\Models\User;
 use App\Models\Vendor;
-use App\Services\NotificationService;
 use Illuminate\Support\Facades\Artisan;
-use Mockery;
 use Tests\TestCase;
 
 class DocumentExpiryReminderTest extends TestCase
@@ -17,30 +14,30 @@ class DocumentExpiryReminderTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         $officer = $this->makeProcurementOfficer($tenant);
-        $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'Expiring Docs Ltd', 'is_approved' => true, 'is_active' => true]);
-
-        Attachment::create([
-            'tenant_id'         => $tenant->id,
-            'uploaded_by'       => $officer->id,
-            'attachable_type'   => Vendor::class,
-            'attachable_id'     => $vendor->id,
-            'document_type'     => Attachment::DOCUMENT_TYPE_TAX_CLEARANCE,
-            'original_filename' => 'tax.pdf',
-            'storage_path'      => 'attachments/vendors/1/tax.pdf',
-            'mime_type'         => 'application/pdf',
-            'size_bytes'        => 100,
-            'expires_at'        => now()->addDays(10)->toDateString(),
+        $vendor = Vendor::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Expiring Docs Ltd',
+            'status' => Vendor::STATUS_APPROVED,
+            'is_approved' => true,
+            'is_active' => true,
         ]);
 
-        $mock = Mockery::mock(NotificationService::class);
-        $mock->shouldReceive('dispatch')
-            ->once()
-            ->withArgs(function (User $recipient, string $key) use ($officer) {
-                return $recipient->id === $officer->id && $key === 'procurement.vendor_document.expiring';
-            });
-        $this->app->instance(NotificationService::class, $mock);
+        SupplierDocument::create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'type_code' => 'tax_clearance',
+            'name' => 'Tax clearance',
+            'expiry_date' => now()->addDays(10)->toDateString(),
+            'status' => SupplierDocument::STATUS_VERIFIED,
+            'is_current' => true,
+            'version' => 1,
+        ]);
 
         $exit = Artisan::call('procurement:send-document-expiry-reminders');
         $this->assertSame(0, $exit);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $officer->id,
+            'trigger' => 'procurement.vendor_document.expiring',
+        ]);
     }
 }
