@@ -4,6 +4,7 @@ namespace Tests\Feature\Procurement;
 
 use App\Models\Attachment;
 use App\Models\Tenant;
+use App\Models\Vendor;
 use Tests\TestCase;
 
 class SupplierRegistrationTest extends TestCase
@@ -33,12 +34,12 @@ class SupplierRegistrationTest extends TestCase
         ], ['Accept' => 'application/json']);
 
         $response->assertCreated()
-            ->assertJsonPath('data.status', 'pending_approval');
+            ->assertJsonPath('data.status', 'draft');
 
         $this->assertDatabaseHas('vendors', [
             'tenant_id' => $tenant->id,
             'name' => 'Laptop World',
-            'status' => 'pending_approval',
+            'status' => 'draft',
             'contact_email' => 'alex@laptopworld.test',
         ]);
 
@@ -50,7 +51,7 @@ class SupplierRegistrationTest extends TestCase
         ]);
     }
 
-    public function test_supplier_registration_rejects_more_than_three_categories(): void
+    public function test_supplier_registration_allows_more_than_three_categories(): void
     {
         $tenant = Tenant::factory()->create(['is_active' => true]);
         $categories = collect(range(1, 4))->map(
@@ -74,7 +75,8 @@ class SupplierRegistrationTest extends TestCase
             'password_confirmation' => 'Secret123!',
             'category_ids'          => $categories->pluck('id')->all(),
             'documents'             => [$this->fakePdf('tax-clearance.pdf')],
-        ], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors(['category_ids']);
+        ], ['Accept' => 'application/json'])->assertCreated()
+            ->assertJsonPath('data.status', 'draft');
     }
 
     public function test_registered_supplier_appears_in_procurement_vendor_register(): void
@@ -107,7 +109,7 @@ class SupplierRegistrationTest extends TestCase
             ->assertOk()
             ->assertJsonFragment([
                 'name'   => 'Stationery Hub',
-                'status' => 'pending_approval',
+                'status' => 'draft',
             ]);
     }
 
@@ -145,7 +147,7 @@ class SupplierRegistrationTest extends TestCase
         ], ['Accept' => 'application/json']);
 
         $response->assertCreated()
-            ->assertJsonPath('data.status', 'pending_approval')
+            ->assertJsonPath('data.status', 'draft')
             ->assertJsonCount(3, 'data.documents');
 
         $this->assertSame('company-profile.pdf', $response->json('data.documents.0.original_filename'));
@@ -330,5 +332,76 @@ class SupplierRegistrationTest extends TestCase
             'channel'               => 'email',
             'destination_snapshot'  => 'gita@ackmail.test',
         ]);
+    }
+
+    public function test_email_verification_link_does_not_reactivate_a_deactivated_account(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeSupplierUser($tenant);
+        $user->forceFill([
+            'email_verified_at' => now()->subDay(),
+            'is_active' => false,
+        ])->save();
+
+        $url = app(\App\Modules\Procurement\Services\SupplierEmailVerificationService::class)->signedFrontendUrl($user);
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->postJson('/api/v1/procurement/suppliers/verify-email', [
+            'user' => $query['user'],
+            'expires' => $query['expires'],
+            'signature' => $query['signature'],
+        ])->assertOk();
+
+        $this->assertFalse((bool) $user->fresh()->is_active);
+        $this->assertNotNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_email_verification_does_not_reactivate_an_unverified_rejected_supplier(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeSupplierUser($tenant, [
+            'email_verified_at' => null,
+            'is_active' => false,
+        ]);
+        Vendor::query()->whereKey($user->vendor_id)->update([
+            'status' => Vendor::STATUS_REJECTED,
+            'is_active' => false,
+        ]);
+
+        $url = app(\App\Modules\Procurement\Services\SupplierEmailVerificationService::class)->signedFrontendUrl($user);
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->postJson('/api/v1/procurement/suppliers/verify-email', [
+            'user' => $query['user'],
+            'expires' => $query['expires'],
+            'signature' => $query['signature'],
+        ])->assertOk();
+
+        $fresh = $user->fresh();
+        $this->assertFalse((bool) $fresh->is_active);
+        $this->assertNotNull($fresh->email_verified_at);
+    }
+
+    public function test_email_verification_activates_an_unverified_draft_applicant(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeSupplierUser($tenant, [
+            'email_verified_at' => null,
+            'is_active' => false,
+        ]);
+        Vendor::query()->whereKey($user->vendor_id)->update(['status' => Vendor::STATUS_DRAFT]);
+
+        $url = app(\App\Modules\Procurement\Services\SupplierEmailVerificationService::class)->signedFrontendUrl($user);
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->postJson('/api/v1/procurement/suppliers/verify-email', [
+            'user' => $query['user'],
+            'expires' => $query['expires'],
+            'signature' => $query['signature'],
+        ])->assertOk();
+
+        $fresh = $user->fresh();
+        $this->assertTrue((bool) $fresh->is_active);
+        $this->assertNotNull($fresh->email_verified_at);
     }
 }

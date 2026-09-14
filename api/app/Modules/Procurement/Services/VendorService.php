@@ -13,14 +13,16 @@ class VendorService
 {
     public function __construct(protected NotificationService $notificationService) {}
 
-    public function approveVendor(Vendor $vendor, User $approver): Vendor
+    public function approveVendor(Vendor $vendor, User $approver, bool $conditional = false): Vendor
     {
         if ((int) $vendor->tenant_id !== (int) $approver->tenant_id) {
             abort(404);
         }
 
+        $status = $conditional ? Vendor::STATUS_CONDITIONALLY_APPROVED : Vendor::STATUS_APPROVED;
+
         $vendor->fill([
-            'status'                   => 'approved',
+            'status'                   => $status,
             'risk_level'               => $vendor->risk_level,
             'rejection_reason'         => null,
             'approved_by'              => $approver->id,
@@ -30,24 +32,26 @@ class VendorService
             'suspended_at'             => null,
             'suspension_reason'        => null,
             'last_info_request_reason' => null,
+            'critical_fields_locked_at' => $vendor->critical_fields_locked_at ?? now(),
         ]);
         $vendor->syncLegacyFlagsFromStatus();
         $vendor->save();
 
         $vendor->portalUsers()->update(['is_active' => true]);
-        $this->logAction($vendor, 'approved', null, $approver);
+        $this->logAction($vendor, $conditional ? 'conditionally_approved' : 'approved', null, $approver);
 
-        AuditLog::record('vendor.approved', [
+        AuditLog::record($conditional ? 'vendor.conditionally_approved' : 'vendor.approved', [
             'auditable_type' => Vendor::class,
             'auditable_id'   => $vendor->id,
-            'new_values'     => ['status' => 'approved'],
+            'new_values'     => ['status' => $status],
             'tags'           => 'procurement',
         ]);
 
+        $event = $conditional ? 'supplier.conditionally_approved' : 'supplier.approved';
         foreach ($vendor->portalUsers()->get() as $portalUser) {
             $this->notificationService->dispatch(
                 $portalUser,
-                'supplier.approved',
+                $event,
                 [
                     'name'      => $portalUser->name,
                     'supplier'  => $vendor->name,
@@ -72,7 +76,7 @@ class VendorService
         }
 
         $vendor->fill([
-            'status'            => 'rejected',
+            'status'            => Vendor::STATUS_REJECTED,
             'rejection_reason'  => $reason,
             'rejected_at'       => now(),
             'rejected_by'       => $approver->id,
@@ -87,7 +91,7 @@ class VendorService
         AuditLog::record('vendor.rejected', [
             'auditable_type' => Vendor::class,
             'auditable_id'   => $vendor->id,
-            'new_values'     => ['reason' => $reason, 'status' => 'rejected'],
+            'new_values'     => ['reason' => $reason, 'status' => Vendor::STATUS_REJECTED],
             'tags'           => 'procurement',
         ]);
 
@@ -110,18 +114,23 @@ class VendorService
 
     public function requestInfo(Vendor $vendor, string $reason, User $actor): Vendor
     {
+        return $this->returnForCorrection($vendor, $reason, $actor);
+    }
+
+    public function returnForCorrection(Vendor $vendor, string $reason, User $actor): Vendor
+    {
         if ((int) $vendor->tenant_id !== (int) $actor->tenant_id) {
             abort(404);
         }
 
-        $vendor->update([
-            'status'                   => $vendor->status === 'approved' ? 'pending_approval' : $vendor->status,
+        $vendor->fill([
+            'status'                   => Vendor::STATUS_CORRECTION_REQUIRED,
             'last_info_request_reason' => $reason,
         ]);
         $vendor->syncLegacyFlagsFromStatus();
         $vendor->save();
 
-        $this->logAction($vendor, 'request_info', $reason, $actor);
+        $this->logAction($vendor, 'correction_required', $reason, $actor);
 
         foreach ($vendor->portalUsers()->get() as $portalUser) {
             $this->notificationService->dispatch(
@@ -140,6 +149,56 @@ class VendorService
         return $vendor->fresh(['categories', 'portalUsers']);
     }
 
+    public function markUnderReview(Vendor $vendor, User $actor): Vendor
+    {
+        if ((int) $vendor->tenant_id !== (int) $actor->tenant_id) {
+            abort(404);
+        }
+
+        if ($vendor->normalizedStatus() === Vendor::STATUS_SUBMITTED) {
+            $vendor->fill(['status' => Vendor::STATUS_UNDER_REVIEW]);
+            $vendor->syncLegacyFlagsFromStatus();
+            $vendor->save();
+            $this->logAction($vendor, 'under_review', null, $actor);
+        }
+
+        return $vendor->fresh(['categories', 'portalUsers']);
+    }
+
+    public function verifyBanking(Vendor $vendor, User $officer): Vendor
+    {
+        if ((int) $vendor->tenant_id !== (int) $officer->tenant_id) {
+            abort(404);
+        }
+
+        $vendor->fill([
+            'finance_verified_at' => now(),
+            'finance_verified_by' => $officer->id,
+        ]);
+        $vendor->save();
+
+        $this->logAction($vendor, 'banking_verified', null, $officer, [
+            'bank_name' => $vendor->bank_name,
+            'bank_account_last4' => substr((string) $vendor->bank_account, -4),
+        ]);
+
+        foreach ($vendor->portalUsers()->get() as $portalUser) {
+            $this->notificationService->dispatch(
+                $portalUser,
+                'supplier.banking_verified',
+                ['name' => $portalUser->name, 'supplier' => $vendor->name],
+                [
+                    'module' => 'procurement',
+                    'record_id' => $vendor->id,
+                    'url' => '/supplier/profile',
+                    'allow_inactive' => true,
+                ]
+            );
+        }
+
+        return $vendor->fresh(['categories', 'portalUsers']);
+    }
+
     public function suspendVendor(Vendor $vendor, string $reason, User $actor): Vendor
     {
         if ((int) $vendor->tenant_id !== (int) $actor->tenant_id) {
@@ -147,7 +206,7 @@ class VendorService
         }
 
         $vendor->fill([
-            'status'            => 'suspended',
+            'status'            => Vendor::STATUS_SUSPENDED,
             'suspended_at'      => now(),
             'suspension_reason' => $reason,
         ]);
@@ -180,7 +239,7 @@ class VendorService
         }
 
         $vendor->fill([
-            'status'              => 'blacklisted',
+            'status'              => Vendor::STATUS_DEBARRED,
             'blacklisted_at'      => now(),
             'blacklisted_by'      => $actor->id,
             'blacklist_reason'    => $reason,
@@ -190,7 +249,7 @@ class VendorService
         $vendor->save();
 
         $vendor->portalUsers()->update(['is_active' => false]);
-        $this->logAction($vendor, 'blacklisted', $reason, $actor, ['reference' => $reference]);
+        $this->logAction($vendor, 'debarred', $reason, $actor, ['reference' => $reference]);
 
         return $vendor->fresh(['categories', 'portalUsers']);
     }
@@ -202,7 +261,7 @@ class VendorService
         }
 
         $vendor->fill([
-            'status'              => $vendor->approved_at ? 'approved' : 'pending_approval',
+            'status'              => $vendor->approved_at ? Vendor::STATUS_APPROVED : Vendor::STATUS_SUBMITTED,
             'blacklisted_at'      => null,
             'blacklisted_by'      => null,
             'blacklist_reason'    => null,
@@ -211,13 +270,13 @@ class VendorService
         $vendor->syncLegacyFlagsFromStatus();
         $vendor->save();
 
-        $vendor->portalUsers()->update(['is_active' => $vendor->status === 'approved']);
-        $this->logAction($vendor, 'unblacklisted', null, $actor);
+        $vendor->portalUsers()->update(['is_active' => in_array($vendor->normalizedStatus(), Vendor::PORTAL_LOGIN_STATUSES, true)]);
+        $this->logAction($vendor, 'reinstated', null, $actor);
 
         return $vendor->fresh(['categories', 'portalUsers']);
     }
 
-    private function logAction(Vendor $vendor, string $action, ?string $reason, User $actor, array $metadata = []): void
+    public function logAction(Vendor $vendor, string $action, ?string $reason, User $actor, array $metadata = []): void
     {
         SupplierApprovalLog::create([
             'tenant_id'    => $vendor->tenant_id,

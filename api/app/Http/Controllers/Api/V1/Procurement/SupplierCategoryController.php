@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class SupplierCategoryController extends Controller
 {
@@ -40,7 +41,9 @@ class SupplierCategoryController extends Controller
     {
         $this->ensureCanManage($request);
 
+        $tenantId = (int) $request->user()->tenant_id;
         $data = $request->validate([
+            'parent_id'   => ['nullable', 'integer', Rule::exists('supplier_categories', 'id')->where('tenant_id', $tenantId)],
             'name'        => ['required', 'string', 'max:150'],
             'code'        => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -49,6 +52,7 @@ class SupplierCategoryController extends Controller
 
         $category = SupplierCategory::create([
             'tenant_id'    => $request->user()->tenant_id,
+            'parent_id'    => $data['parent_id'] ?? null,
             'name'         => $data['name'],
             'code'         => $data['code'] ?? Str::slug($data['name'], '_'),
             'description'  => $data['description'] ?? null,
@@ -65,7 +69,15 @@ class SupplierCategoryController extends Controller
             abort(404);
         }
 
+        $tenantId = (int) $request->user()->tenant_id;
         $data = $request->validate([
+            'parent_id'   => [
+                'nullable',
+                'integer',
+                'different:id',
+                Rule::exists('supplier_categories', 'id')->where('tenant_id', $tenantId),
+                Rule::notIn([$supplierCategory->id]),
+            ],
             'name'        => ['sometimes', 'required', 'string', 'max:150'],
             'code'        => ['sometimes', 'required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -73,6 +85,7 @@ class SupplierCategoryController extends Controller
         ]);
 
         $supplierCategory->update([
+            'parent_id'   => array_key_exists('parent_id', $data) ? $data['parent_id'] : $supplierCategory->parent_id,
             'name'        => $data['name'] ?? $supplierCategory->name,
             'code'        => $data['code'] ?? $supplierCategory->code,
             'description' => array_key_exists('description', $data) ? $data['description'] : $supplierCategory->description,

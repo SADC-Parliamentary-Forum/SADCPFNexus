@@ -9,11 +9,13 @@ use App\Models\SupplierCategory;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Models\VendorOwner;
+use App\Modules\Procurement\Services\SupplierCatalogueSeeder;
+use App\Modules\Procurement\Services\SupplierDocumentService;
+use App\Modules\Procurement\Services\SupplierEmailVerificationService;
 use App\Services\CaptchaService;
 use App\Services\NotificationService;
-use App\Services\WorkflowService;
 use App\Support\FrontendUrl;
-use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -23,8 +25,10 @@ class SupplierRegistrationController extends Controller
 {
     public function __construct(
         private readonly NotificationService $notifications,
-        private readonly WorkflowService $workflowService,
         private readonly CaptchaService $captcha,
+        private readonly SupplierEmailVerificationService $emailVerification,
+        private readonly SupplierCatalogueSeeder $catalogue,
+        private readonly SupplierDocumentService $documents,
     ) {}
 
     public function register(Request $request): JsonResponse
@@ -52,12 +56,20 @@ class SupplierRegistrationController extends Controller
             'payment_terms'        => ['nullable', 'string', 'max:50'],
             'password'             => ['required', 'string', 'min:8', 'confirmed'],
             'password_confirmation'=> ['required', 'string'],
-            'category_ids'         => ['required', 'array', 'min:1', 'max:3'],
+            'category_ids'         => ['required', 'array', 'min:1'],
             'category_ids.*'       => ['integer', 'exists:supplier_categories,id'],
             'documents'            => ['required', 'array', 'min:1', 'max:15'],
             'documents.*'          => ['file', 'max:25600'],
             'document_types'       => ['nullable', 'array', 'max:15'],
-            'document_types.*'     => ['nullable', 'string', 'in:' . implode(',', Attachment::VENDOR_DOCUMENT_TYPES)],
+            'document_types.*'     => ['nullable', 'string', 'max:80'],
+            'trading_name'         => ['nullable', 'string', 'max:300'],
+            'incorporation_date'   => ['nullable', 'date'],
+            'business_type'        => ['nullable', 'string', 'max:80'],
+            'postal_address'       => ['nullable', 'string', 'max:500'],
+            'owners'               => ['nullable', 'array', 'max:50'],
+            'owners.*.full_name'   => ['required_with:owners', 'string', 'max:255'],
+            'owners.*.role'        => ['nullable', 'string', 'max:80'],
+            'owners.*.ownership_percent' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'captcha_token'        => ['nullable', 'string'],
             CaptchaService::HONEYPOT_FIELD => ['nullable', 'string'],
         ]);
@@ -72,24 +84,29 @@ class SupplierRegistrationController extends Controller
             return response()->json(['message' => 'One or more selected categories are invalid for this tenant.'], 422);
         }
 
+        $this->catalogue->ensureForTenant((int) $tenant->id);
+
         $vendor = Vendor::create([
             'tenant_id'           => $tenant->id,
             'supplier_type'       => $data['supplier_type'] ?? 'company',
             'name'                => $data['company_name'],
+            'trading_name'        => $data['trading_name'] ?? null,
+            'incorporation_date'  => $data['incorporation_date'] ?? null,
+            'business_type'       => $data['business_type'] ?? null,
             'contact_name'        => $data['contact_name'],
-            'registration_number' => $data['registration_number'],
-            'tax_number'          => $data['tax_number'],
+            'registration_number' => $data['registration_number'] ?? null,
+            'tax_number'          => $data['tax_number'] ?? null,
             'contact_email'       => $data['contact_email'],
             'contact_phone'       => $data['contact_phone'],
             'website'             => $data['website'] ?? null,
             'address'             => $data['address'],
+            'postal_address'      => $data['postal_address'] ?? null,
             'country'             => $data['country'],
             'payment_terms'       => $data['payment_terms'] ?? null,
             'bank_name'           => $data['bank_name'],
             'bank_account'        => $data['bank_account'],
             'bank_branch'         => $data['bank_branch'],
-            'status'              => 'pending_approval',
-            'submitted_at'        => now(),
+            'status'              => Vendor::STATUS_DRAFT,
             'is_approved'         => false,
             'is_active'           => true,
         ]);
@@ -111,6 +128,7 @@ class SupplierRegistrationController extends Controller
             'is_active'       => false,
             'account_status'  => User::STATUS_ACTIVE,
             'setup_completed' => true,
+            'email_verified_at' => null,
         ]);
         $user->assignRole(Role::findByName('Supplier', 'sanctum'));
 
@@ -118,30 +136,31 @@ class SupplierRegistrationController extends Controller
             $documentTypes = $request->input('document_types', []);
             $documentType = $documentTypes[$index] ?? Attachment::DOCUMENT_TYPE_COMPANY_PROFILE;
             try {
-                $mime = UploadContentSniffer::assertAllowed($file);
-            } catch (\Illuminate\Validation\ValidationException) {
+                $this->documents->storeForVendor($vendor, $file, $documentType, $user);
+            } catch (\Illuminate\Validation\ValidationException $e) {
                 throw \Illuminate\Validation\ValidationException::withMessages([
-                    "documents.{$index}" => ['The uploaded file type is not allowed.'],
+                    "documents.{$index}" => $e->errors()['file'] ?? $e->errors()['type_code'] ?? ['The uploaded file type is not allowed.'],
                 ]);
             }
-            $path = $file->store('attachments/vendors/' . $vendor->id, ['disk' => 'local']);
-            $vendor->attachments()->create([
-                'tenant_id'         => $tenant->id,
-                'uploaded_by'       => $user->id,
-                'document_type'     => $documentType,
-                'original_filename' => $file->getClientOriginalName(),
-                'storage_path'      => $path,
-                'mime_type'         => $mime,
-                'size_bytes'        => $file->getSize(),
+        }
+
+        foreach ($data['owners'] ?? [] as $index => $owner) {
+            VendorOwner::create([
+                'tenant_id' => $tenant->id,
+                'vendor_id' => $vendor->id,
+                'full_name' => $owner['full_name'],
+                'role' => $owner['role'] ?? null,
+                'ownership_percent' => $owner['ownership_percent'] ?? null,
+                'sort_order' => $index,
             ]);
         }
 
-        $this->workflowService->initiate($vendor->fresh(), 'supplier', $user);
+        $this->emailVerification->send($user);
 
         SupplierApprovalLog::create([
             'tenant_id'    => $tenant->id,
             'vendor_id'    => $vendor->id,
-            'action'       => 'submitted',
+            'action'       => 'draft_created',
             'reason'       => null,
             'metadata'     => ['portal_user_id' => $user->id],
             'performed_by' => $user->id,
@@ -167,21 +186,6 @@ class SupplierRegistrationController extends Controller
             ]
         );
 
-        $procurementUsers = $this->procurementRecipients($tenant->id);
-
-        foreach ($procurementUsers as $procurementUser) {
-            $this->notifications->dispatch(
-                $procurementUser,
-                'supplier.application_submitted',
-                [
-                    'name'     => $procurementUser->name,
-                    'supplier' => $vendor->name,
-                    'contact'  => $vendor->contact_name,
-                ],
-                ['module' => 'procurement', 'record_id' => $vendor->id, 'url' => '/procurement/vendors/' . $vendor->id]
-            );
-        }
-
         $documents = $vendor->attachments()
             ->get(['id', 'original_filename', 'document_type', 'mime_type', 'size_bytes', 'created_at'])
             ->values();
@@ -189,12 +193,13 @@ class SupplierRegistrationController extends Controller
         $this->captcha->consumeBrowserChallenge($request);
 
         return response()->json([
-            'message' => 'Supplier registration submitted. Your account will be activated after procurement approval.',
+            'message' => 'Supplier account created. Verify your email, then log in to complete declarations and submit the application.',
             'data'    => [
                 'vendor_id' => $vendor->id,
                 'user_id'   => $user->id,
                 'status'    => $vendor->status,
                 'documents' => $documents,
+                'email_verification_required' => true,
             ],
         ], 201);
     }
@@ -209,16 +214,5 @@ class SupplierRegistrationController extends Controller
         abort_if(!$tenant, 422, 'Unable to resolve a tenant for supplier registration.');
 
         return $tenant;
-    }
-
-    private function procurementRecipients(int $tenantId): \Illuminate\Support\Collection
-    {
-        return User::query()
-            ->with(['roles.permissions', 'permissions'])
-            ->where('tenant_id', $tenantId)
-            ->where('is_active', true)
-            ->get()
-            ->filter(fn (User $user) => $user->isSystemAdmin() || $user->hasAnyPermission(['procurement.manage_vendors', 'procurement.admin']))
-            ->values();
     }
 }

@@ -359,8 +359,12 @@ class NotificationService
                 'body'    => "Dear {{name}},\n\nA new supplier application has been submitted.\n\nSupplier: {{supplier}}\nPrimary contact: {{contact}}\n\nPlease log in to procurement and review the application.\n\nRegards,\nSADC-PF Procurement",
             ],
             'supplier.application_received' => [
-                'subject' => 'We received your SADC-PF supplier application',
-                'body'    => "Dear {{name}},\n\nThank you for registering {{supplier}} on the SADC-PF Nexus supplier portal.\n\nProcurement will review your application. You will receive another email when a decision is made. You cannot sign in until the application is approved.\n\nAfter approval, sign in at {{login_url}}\n\nIf you did not submit this application, contact Procurement immediately. Nexus will never email you a password.\n\nRegards,\nSADC-PF Procurement",
+                'subject' => 'Verify your email to continue your SADC-PF supplier application',
+                'body'    => "Dear {{name}},\n\nThank you for starting a supplier registration for {{supplier}} on the SADC-PF Nexus supplier portal.\n\nVerify your email using the separate verification message, then sign in at {{login_url}} to complete declarations and submit your application. You cannot bid until Procurement has reviewed the application and eligibility is met.\n\nIf you did not start this application, contact Procurement immediately. Nexus will never email you a password.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.email_verification' => [
+                'subject' => 'Verify your SADC-PF supplier email address',
+                'body'    => "Dear {{name}},\n\nPlease verify your email address to continue your supplier application:\n{{verify_url}}\n\nThis link expires in 3 days. Nexus will never email you a password.\n\nRegards,\nSADC-PF Procurement",
             ],
             'supplier.approved' => [
                 'subject' => 'Your supplier account has been approved',
@@ -377,6 +381,34 @@ class NotificationService
             'supplier.suspended' => [
                 'subject' => 'Your supplier account has been suspended',
                 'body'    => "Dear {{name}},\n\nYour supplier account for {{supplier}} has been suspended.\n\nReason:\n{{comment}}\n\nPlease contact Procurement for clarification.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.conditionally_approved' => [
+                'subject' => 'Your supplier account is conditionally approved',
+                'body'    => "Dear {{name}},\n\nYour supplier registration for {{supplier}} has been conditionally approved. You may participate where eligibility allows. Procurement may still request additional documents.\n\nSign in: {{login_url}}\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.compliance_warning' => [
+                'subject' => 'Supplier compliance warning — action required',
+                'body'    => "Dear {{name}},\n\nOne or more mandatory compliance documents for {{supplier}} have expired or are invalid. Quote submission is paused until the register is updated and reviewed.\n\nPlease log in to the supplier portal and upload replacements.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.document_expiring' => [
+                'subject' => 'Supplier document expiring — {{document_type}}',
+                'body'    => "Dear {{name}},\n\nA compliance document for {{supplier}} is expiring.\n\nDocument: {{document_name}} ({{document_type}})\nExpiry: {{expires_at}}\nWindow: {{window}} days\n\nPlease upload a replacement before it expires.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.document_expired' => [
+                'subject' => 'Supplier document expired — {{document_type}}',
+                'body'    => "Dear {{name}},\n\nA compliance document for {{supplier}} has expired.\n\nDocument: {{document_name}} ({{document_type}})\nExpiry: {{expires_at}}\n\nQuote submission is paused until a valid replacement is verified.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.change_request_submitted' => [
+                'subject' => 'Supplier change request awaiting review',
+                'body'    => "Dear {{name}},\n\n{{supplier}} submitted a change request for {{field_group}}.\n\nPlease review it in the Supplier 360 record.\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.change_request_resolved' => [
+                'subject' => 'Supplier change request {{status}}',
+                'body'    => "Dear {{name}},\n\nYour change request for {{field_group}} on {{supplier}} was {{status}}.\n\n{{comment}}\n\nRegards,\nSADC-PF Procurement",
+            ],
+            'supplier.banking_verified' => [
+                'subject' => 'Supplier banking details verified',
+                'body'    => "Dear {{name}},\n\nFinance has verified the banking details for {{supplier}}.\n\nRegards,\nSADC-PF Finance",
             ],
             'supplier.quote_submitted' => [
                 'subject' => 'Supplier quote submitted â€” {{reference}}',

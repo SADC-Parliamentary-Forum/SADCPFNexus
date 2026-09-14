@@ -22,6 +22,9 @@ class RfqInvitation extends Model
         'last_notified_at',
         'notes',
         'created_by',
+        'eligibility_override',
+        'eligibility_override_by',
+        'eligibility_override_at',
     ];
 
     protected $casts = [
@@ -30,6 +33,8 @@ class RfqInvitation extends Model
         'viewed_at'           => 'datetime',
         'responded_at'        => 'datetime',
         'last_notified_at'    => 'datetime',
+        'eligibility_override' => 'boolean',
+        'eligibility_override_at' => 'datetime',
     ];
 
     public function procurementRequest()

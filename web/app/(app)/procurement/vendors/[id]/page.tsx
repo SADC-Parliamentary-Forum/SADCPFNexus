@@ -9,6 +9,7 @@ import { canManageProcurementVendors, getStoredUser } from "@/lib/auth";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { formatDateShort, formatCurrency } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { SupplierActivityPanel, SupplierChangeRequestsPanel, SupplierRegisterPanel } from "@/components/procurement/Supplier360Panels";
 
 function canManageVendors(): boolean {
   return canManageProcurementVendors(getStoredUser());
@@ -195,7 +196,6 @@ function EditModal({ vendor, onClose }: EditModalProps) {
   const toggleCategory = (id: number) => {
     setForm((f) => {
       if (f.category_ids.includes(id)) return { ...f, category_ids: f.category_ids.filter((x) => x !== id) };
-      if (f.category_ids.length >= 3) return f;
       return { ...f, category_ids: [...f.category_ids, id] };
     });
   };
@@ -283,8 +283,8 @@ function EditModal({ vendor, onClose }: EditModalProps) {
                   <p className="block text-xs font-semibold text-neutral-600">
                     Categories <span className="text-red-500">*</span>
                   </p>
-                  <span className={`text-xs font-medium tabular-nums ${form.category_ids.length === 3 ? "text-amber-600" : "text-neutral-400"}`}>
-                    {form.category_ids.length} / 3 selected
+                  <span className="text-xs font-medium tabular-nums text-neutral-400">
+                    {form.category_ids.length} selected
                   </span>
                 </div>
                 {catsLoading ? (
@@ -297,19 +297,15 @@ function EditModal({ vendor, onClose }: EditModalProps) {
                   <div className="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto pr-1">
                     {availableCategories.map((cat) => {
                       const selected = form.category_ids.includes(cat.id);
-                      const disabled = !selected && form.category_ids.length >= 3;
                       return (
                         <button
                           key={cat.id}
                           type="button"
-                          disabled={disabled}
                           onClick={() => toggleCategory(cat.id)}
                           className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs text-left transition-all
                             ${selected
                               ? "border-primary bg-primary/8 text-primary font-semibold"
-                              : disabled
-                                ? "border-neutral-100 bg-neutral-50 text-neutral-300 cursor-not-allowed"
-                                : "border-neutral-200 text-neutral-600 hover:border-primary/50 hover:bg-primary/5"
+                              : "border-neutral-200 text-neutral-600 hover:border-primary/50 hover:bg-primary/5"
                             }`}
                         >
                           <span className={`material-symbols-outlined flex-shrink-0 text-[16px] ${selected ? "text-primary" : "text-neutral-300"}`}
@@ -483,7 +479,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
   const [showReject, setShowReject]           = useState(false);
   const [rejectReason, setRejectReason]       = useState("");
   const [rejectError, setRejectError]         = useState<string | null>(null);
-  const [activeTab, setActiveTab]               = useState<"details" | "ratings" | "contracts" | "documents" | "compliance">("details");
+  const [activeTab, setActiveTab]               = useState<"details" | "profile" | "ratings" | "contracts" | "documents" | "compliance" | "categories" | "contacts" | "banking" | "rfqs" | "quotes" | "pos" | "invoices" | "audit">("profile");
   const [attachments, setAttachments]           = useState<ProcurementAttachment[]>([]);
   const [attachmentsError, setAttachmentsError] = useState<string | null>(null);
   const [uploading, setUploading]               = useState(false);
@@ -601,11 +597,20 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
         {/* Tab Bar */}
         <div className="flex gap-1 border-b border-neutral-200">
           {([
-            { key: "details",   label: "Details"  },
-            { key: "ratings",   label: `Ratings${ratings.length > 0 ? ` (${ratings.length})` : ""}` },
-            { key: "contracts", label: `Contracts${contractsData && contractsData.length > 0 ? ` (${contractsData.length})` : ""}` },
-            { key: "documents",  label: `Documents${attachments.length > 0 ? ` (${attachments.length})` : ""}` },
+            { key: "profile", label: "Profile" },
+            { key: "documents", label: "Documents" },
             { key: "compliance", label: "Compliance" },
+            { key: "categories", label: "Categories" },
+            { key: "contacts", label: "Contacts" },
+            { key: "banking", label: "Banking" },
+            { key: "rfqs", label: "RFQs" },
+            { key: "quotes", label: "Quotes" },
+            { key: "pos", label: "POs" },
+            { key: "invoices", label: "Invoices" },
+            { key: "audit", label: "Audit" },
+            { key: "ratings", label: `Ratings${ratings.length > 0 ? ` (${ratings.length})` : ""}` },
+            { key: "contracts", label: `Contracts${contractsData && contractsData.length > 0 ? ` (${contractsData.length})` : ""}` },
+            { key: "details", label: "Overview" },
           ] as const).map(({ key, label }) => (
             <button
               key={key}
@@ -723,29 +728,85 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
         )}
 
         {activeTab === "documents" && (
-          <div className="card p-6">
-            <h2 className="text-sm font-semibold text-neutral-800 mb-5">Vendor Documents</h2>
-            {attachmentsError && (
-              <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {attachmentsError}
-              </div>
-            )}
-            <GenericDocumentsPanel
-              documents={attachments}
-              documentTypes={VENDOR_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
-              defaultType="company_profile"
-              loading={false}
-              uploading={uploading}
-              readOnly={!canManageVendors()}
-              onUpload={async (file, type) => {
-                setUploading(true);
-                try { const r = await vendorAttachmentsApi.upload(vendorId, file, type); setAttachments((p) => [r.data.data, ...p]); }
-                finally { setUploading(false); }
-              }}
-              onDelete={async (id) => { await vendorAttachmentsApi.delete(vendorId, id); setAttachments((p) => p.filter((a) => a.id !== id)); }}
-              downloadUrl={(id) => vendorAttachmentsApi.downloadUrl(vendorId, id)}
-            />
+          <div className="space-y-6">
+            <SupplierRegisterPanel vendorId={vendorId} canManage={canManageVendors()} />
+            <div className="card p-6">
+              <h2 className="text-sm font-semibold text-neutral-800 mb-5">Legacy attachments</h2>
+              {attachmentsError && (
+                <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {attachmentsError}
+                </div>
+              )}
+              <GenericDocumentsPanel
+                documents={attachments}
+                documentTypes={VENDOR_DOC_TYPES as unknown as { value: string; label: string; icon: string }[]}
+                defaultType="company_profile"
+                loading={false}
+                uploading={uploading}
+                readOnly={!canManageVendors()}
+                onUpload={async (file, type) => {
+                  setUploading(true);
+                  try { const r = await vendorAttachmentsApi.upload(vendorId, file, type); setAttachments((p) => [r.data.data, ...p]); }
+                  finally { setUploading(false); }
+                }}
+                onDelete={async (id) => { await vendorAttachmentsApi.delete(vendorId, id); setAttachments((p) => p.filter((a) => a.id !== id)); }}
+                downloadUrl={(id) => vendorAttachmentsApi.downloadUrl(vendorId, id)}
+              />
+            </div>
           </div>
+        )}
+
+        {activeTab === "categories" && (
+          <div className="card p-6" data-testid="supplier-360-categories">
+            <h2 className="text-sm font-semibold mb-3">Categories</h2>
+            <div className="flex flex-wrap gap-2">
+              {(vendor.categories ?? []).map((c) => (
+                <span key={c.id} className="badge badge-primary">{c.name}</span>
+              ))}
+              {(vendor.categories ?? []).length === 0 && <p className="text-sm text-neutral-500">No categories assigned.</p>}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "contacts" && (
+          <div className="card p-6" data-testid="supplier-360-contacts">
+            <h2 className="text-sm font-semibold mb-3">Contacts</h2>
+            <p className="text-sm">Primary: {vendor.contact_name} · {vendor.contact_email} · {vendor.contact_phone}</p>
+          </div>
+        )}
+
+        {activeTab === "banking" && (
+          <div className="card p-6 space-y-3" data-testid="supplier-360-banking">
+            <h2 className="text-sm font-semibold">Banking</h2>
+            <p className="text-sm">Bank: {vendor.bank_name || "—"}</p>
+            <p className="text-sm font-mono">Account: {vendor.bank_account || "—"}{vendor.bank_account_masked ? " (masked)" : ""}</p>
+            <p className="text-sm">Branch: {vendor.bank_branch || "—"}</p>
+            <p className="text-xs text-neutral-500">Finance verified: {vendor.finance_verified_at ? formatDateShort(vendor.finance_verified_at) : "Not verified"}</p>
+            {canManageVendors() && !vendor.finance_verified_at && (
+              <button type="button" className="btn-secondary text-sm" onClick={() => vendorsApi.verifyBanking(vendorId).then(() => queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] }))}>
+                Verify banking
+              </button>
+            )}
+          </div>
+        )}
+
+        {["rfqs", "quotes", "pos", "invoices"].includes(activeTab) && (
+          <SupplierActivityPanel vendorId={vendorId} tab={activeTab} />
+        )}
+
+        {activeTab === "audit" && (
+          <>
+            <div className="card p-6" data-testid="supplier-360-audit">
+              <h2 className="text-sm font-semibold mb-3">Audit</h2>
+              <ul className="space-y-2 text-sm">
+                {(vendor.approval_logs ?? []).map((log) => (
+                  <li key={log.id}>{log.action} — {log.reason || "—"} — {log.performer?.name}</li>
+                ))}
+                {(vendor.approval_logs ?? []).length === 0 && <li className="text-neutral-500">No approval log entries.</li>}
+              </ul>
+            </div>
+            <SupplierChangeRequestsPanel vendorId={vendorId} canManage={canManageVendors()} />
+          </>
         )}
 
         {/* ── Compliance Tab ────────────────────────────────────────────────── */}
@@ -768,6 +829,20 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
 
           return (
             <div className="space-y-5">
+              {vendor.eligibility && (
+                <div className="card p-5" data-testid="supplier-360-eligibility">
+                  <h3 className="text-sm font-semibold text-neutral-800">Computed eligibility</h3>
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Status {vendor.eligibility.registration_status.replace(/_/g, " ")} · compliance {vendor.eligibility.compliance_status.replace(/_/g, " ")}
+                  </p>
+                  <p className="mt-2 text-sm">
+                    Quotes: {vendor.eligibility.can_submit_quotes ? "allowed" : "blocked"} · POs: {vendor.eligibility.can_receive_pos ? "allowed" : "blocked"}
+                  </p>
+                  {vendor.eligibility.reasons.length > 0 && (
+                    <p className="mt-1 text-xs text-amber-700">{vendor.eligibility.reasons.join(", ")}</p>
+                  )}
+                </div>
+              )}
               {/* Blacklist / debarment banner */}
               {vendor.is_blacklisted && (
                 <div className="rounded-xl bg-red-50 border border-red-200 px-5 py-4 flex items-start gap-3">
@@ -1165,7 +1240,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
           </div>
         )}
 
-        {activeTab === "details" && <>
+        {(activeTab === "details" || activeTab === "profile") && <>
         <ProcurementPageHeader
           title={vendor.name}
           subtitle={vendor.registration_number ?? undefined}
@@ -1617,7 +1692,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
             </div>
           </div>
         )}
-      </> /* end details tab */}
+        </>}
       </div>
 
       {/* Modals */}

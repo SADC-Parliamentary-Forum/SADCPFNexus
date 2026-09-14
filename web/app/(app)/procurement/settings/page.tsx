@@ -11,6 +11,8 @@ import {
   type ProcurementSettings,
 } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { SupplierDocumentRequirementTypesCard } from "@/components/procurement/SupplierDocumentRequirementTypesCard";
+import { SupplierCategoriesHierarchyCard } from "@/components/procurement/SupplierCategoriesHierarchyCard";
 
 const emptyProfile = {
   key: "",
@@ -333,6 +335,9 @@ export default function ProcurementSettingsPage() {
               {activateSequenceMut.isPending ? "Activating…" : "Confirm sequence"}
             </button>
           </div>
+
+          <SupplierDocumentRequirementTypesCard />
+          <SupplierCategoriesHierarchyCard />
         </>
       )}
     </div>
