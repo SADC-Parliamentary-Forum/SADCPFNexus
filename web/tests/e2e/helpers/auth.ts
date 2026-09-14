@@ -41,19 +41,27 @@ export async function completeLoginCaptcha(
   page: import("@playwright/test").Page
 ): Promise<void> {
   const gate = page.getByTestId("captcha-gate");
-  await gate.waitFor({ state: "attached", timeout: 10_000 }).catch(() => undefined);
-  await page
-    .locator('[data-testid="captcha-gate"][data-ready="true"]')
-    .waitFor({ state: "attached", timeout: 10_000 })
-    .catch(() => undefined);
-  const checkbox = page.getByRole("checkbox", { name: /i am not a robot|je ne suis pas un robot|não sou um robô/i });
-  if (await checkbox.isVisible().catch(() => false)) {
-    // Controlled checkbox: check() fails while the token request is in flight
-    // because React has not yet set `verified`. Click, then wait for checked.
-    await checkbox.click();
-    await expect(checkbox).toBeChecked({ timeout: 10_000 });
-    await expect(checkbox).toBeEnabled({ timeout: 10_000 });
+  await expect(gate).toBeAttached({ timeout: 15_000 });
+  await expect(gate).toHaveAttribute("data-ready", "true", { timeout: 15_000 });
+
+  // Captcha is off in Playwright CI (`CAPTCHA_ENABLED=false`); the gate is ready
+  // and verified with no checkbox. Production/local still show the challenge.
+  if ((await gate.getAttribute("data-enabled")) === "false") {
+    return;
   }
+  if ((await gate.getAttribute("data-verified")) === "true") {
+    return;
+  }
+
+  const checkbox = gate.getByTestId("captcha-checkbox");
+  if (!(await checkbox.isVisible().catch(() => false))) {
+    return;
+  }
+
+  // Accessible name becomes "Loading…" while the token issues, so do not locate
+  // by label. Wait for data-verified — `checked` is true during `issuing` too.
+  await checkbox.click();
+  await expect(gate).toHaveAttribute("data-verified", "true", { timeout: 15_000 });
 }
 
 /** True when the page shows a login form (session expired / unauthorized redirect). */
