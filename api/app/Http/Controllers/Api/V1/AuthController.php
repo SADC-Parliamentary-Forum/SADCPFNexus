@@ -34,7 +34,7 @@ class AuthController extends Controller
 
     public function captchaChallenge(): JsonResponse
     {
-        if (! $this->captcha->enabled() || $this->captcha->driver() === 'turnstile') {
+        if (! $this->captcha->enabled() || $this->captcha->usesExternalWidget()) {
             return response()->json($this->captcha->publicConfig() + ['token' => null]);
         }
 

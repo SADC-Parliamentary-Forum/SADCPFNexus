@@ -21,25 +21,33 @@ export const EMPTY_CAPTCHA: CaptchaValue = {
   verified: false,
 };
 
+type CaptchaDriver = "challenge" | "turnstile" | "hcaptcha";
+
 declare global {
   interface Window {
     turnstile?: {
       render: (el: HTMLElement, options: Record<string, unknown>) => string;
       remove: (id: string) => void;
     };
+    hcaptcha?: {
+      render: (el: HTMLElement, options: Record<string, unknown>) => string;
+      reset: (id?: string) => void;
+      remove: (id: string) => void;
+    };
   }
 }
 
 export function CaptchaGate({ value, onChange }: Props) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const checkboxId = useId();
   const honeypotId = useId();
-  const turnstileRef = useRef<HTMLDivElement>(null);
+  const widgetHostRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | undefined>(undefined);
   const honeypotRef = useRef(value.honeypot);
   const [loading, setLoading] = useState(true);
   const [issuing, setIssuing] = useState(false);
   const [enabled, setEnabled] = useState(true);
-  const [driver, setDriver] = useState<"challenge" | "turnstile">("challenge");
+  const [driver, setDriver] = useState<CaptchaDriver>("challenge");
   const [siteKey, setSiteKey] = useState<string | null>(null);
   const [error, setError] = useState("");
 
@@ -57,7 +65,10 @@ export function CaptchaGate({ value, onChange }: Props) {
           return;
         }
         setEnabled(true);
-        setDriver(response.data.driver === "turnstile" ? "turnstile" : "challenge");
+        const nextDriver = response.data.driver;
+        setDriver(
+          nextDriver === "hcaptcha" || nextDriver === "turnstile" ? nextDriver : "challenge",
+        );
         setSiteKey(response.data.site_key);
       } catch {
         if (!cancelled) {
@@ -75,16 +86,41 @@ export function CaptchaGate({ value, onChange }: Props) {
   }, []);
 
   useEffect(() => {
-    if (loading || !enabled || driver !== "turnstile" || !siteKey) return;
-    const host = turnstileRef.current;
+    if (loading || !enabled || !siteKey) return;
+    if (driver !== "hcaptcha" && driver !== "turnstile") return;
+    const host = widgetHostRef.current;
     if (!host) return;
 
-    let widgetId: string | undefined;
-    const scriptId = "cf-turnstile-script";
+    const isHcaptcha = driver === "hcaptcha";
+    const scriptId = isHcaptcha ? "hcaptcha-script" : "cf-turnstile-script";
+    const scriptSrc = isHcaptcha
+      ? "https://js.hcaptcha.com/1/api.js?render=explicit"
+      : "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
 
     const renderWidget = () => {
-      if (!host || !window.turnstile) return;
-      widgetId = window.turnstile.render(host, {
+      if (!host) return;
+      if (isHcaptcha) {
+        if (!window.hcaptcha) return;
+        widgetIdRef.current = window.hcaptcha.render(host, {
+          sitekey: siteKey,
+          hl: locale,
+          callback: (token: string) => {
+            onChange({ token, honeypot: honeypotRef.current, verified: true });
+          },
+          "expired-callback": () => {
+            onChange({ token: "", honeypot: honeypotRef.current, verified: false });
+          },
+          "error-callback": () => {
+            onChange({ token: "", honeypot: honeypotRef.current, verified: false });
+          },
+          "chalexpired-callback": () => {
+            onChange({ token: "", honeypot: honeypotRef.current, verified: false });
+          },
+        });
+        return;
+      }
+      if (!window.turnstile) return;
+      widgetIdRef.current = window.turnstile.render(host, {
         sitekey: siteKey,
         callback: (token: string) => {
           onChange({ token, honeypot: honeypotRef.current, verified: true });
@@ -99,13 +135,14 @@ export function CaptchaGate({ value, onChange }: Props) {
     };
 
     let script = document.getElementById(scriptId) as HTMLScriptElement | null;
-    if (window.turnstile) {
+    const apiReady = isHcaptcha ? Boolean(window.hcaptcha) : Boolean(window.turnstile);
+    if (apiReady) {
       renderWidget();
     } else {
       if (!script) {
         script = document.createElement("script");
         script.id = scriptId;
-        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        script.src = scriptSrc;
         script.async = true;
         document.head.appendChild(script);
       }
@@ -114,11 +151,28 @@ export function CaptchaGate({ value, onChange }: Props) {
 
     return () => {
       script?.removeEventListener("load", renderWidget);
-      if (widgetId && window.turnstile) {
+      const widgetId = widgetIdRef.current;
+      if (widgetId && isHcaptcha && window.hcaptcha) {
+        window.hcaptcha.remove(widgetId);
+      }
+      if (widgetId && !isHcaptcha && window.turnstile) {
         window.turnstile.remove(widgetId);
       }
+      widgetIdRef.current = undefined;
     };
-  }, [driver, enabled, loading, onChange, siteKey]);
+  }, [driver, enabled, loading, locale, onChange, siteKey]);
+
+  const wasVerifiedRef = useRef(false);
+  useEffect(() => {
+    if (driver !== "hcaptcha") {
+      wasVerifiedRef.current = value.verified;
+      return;
+    }
+    if (wasVerifiedRef.current && !value.verified && widgetIdRef.current && window.hcaptcha) {
+      window.hcaptcha.reset(widgetIdRef.current);
+    }
+    wasVerifiedRef.current = value.verified;
+  }, [driver, value.verified]);
 
   const issueToken = useCallback(async () => {
     setIssuing(true);
@@ -144,6 +198,7 @@ export function CaptchaGate({ value, onChange }: Props) {
         data-testid="captcha-gate"
         data-ready="false"
         data-enabled="true"
+        data-driver={driver}
         data-verified={value.verified ? "true" : "false"}
         className="sr-only"
       >
@@ -158,11 +213,14 @@ export function CaptchaGate({ value, onChange }: Props) {
         data-testid="captcha-gate"
         data-ready="true"
         data-enabled="false"
+        data-driver={driver}
         data-verified="true"
         className="sr-only"
       />
     );
   }
+
+  const showWidget = (driver === "hcaptcha" || driver === "turnstile") && Boolean(siteKey);
 
   return (
     <div
@@ -170,10 +228,11 @@ export function CaptchaGate({ value, onChange }: Props) {
       data-testid="captcha-gate"
       data-ready="true"
       data-enabled="true"
+      data-driver={driver}
       data-verified={value.verified ? "true" : "false"}
     >
-      {driver === "turnstile" && siteKey ? (
-        <div ref={turnstileRef} className="min-h-[65px]" />
+      {showWidget ? (
+        <div ref={widgetHostRef} className="min-h-[78px]" />
       ) : (
         <div className="rounded-xl border border-neutral-200 bg-white px-4 py-3">
           <label htmlFor={checkboxId} className="flex items-center gap-3 text-sm text-neutral-800">

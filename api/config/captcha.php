@@ -13,13 +13,18 @@ return [
     | challenge so the Flutter app is unchanged. Public registration never
     | honours that bypass.
     |
-    | Driver `challenge` is a signed, one-time token issued after the user
-    | confirms they are not a robot. When both TURNSTILE_SITE_KEY and
-    | TURNSTILE_SECRET_KEY are set, the driver is `turnstile`.
+    | Driver selection (first match):
+    |   hcaptcha  — both HCAPTCHA_SITE_KEY and HCAPTCHA_SECRET_KEY
+    |   turnstile — both TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY
+    |   challenge — signed one-time checkbox token (local / no keys)
     |
     */
 
     'enabled' => filter_var(env('CAPTCHA_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+
+    'hcaptcha_site_key' => env('HCAPTCHA_SITE_KEY'),
+
+    'hcaptcha_secret' => env('HCAPTCHA_SECRET_KEY'),
 
     'turnstile_site_key' => env('TURNSTILE_SITE_KEY'),
 
