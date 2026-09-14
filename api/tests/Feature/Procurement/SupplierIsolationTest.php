@@ -85,6 +85,9 @@ class SupplierIsolationTest extends TestCase
             'storage_path' => 'attachments/vendors/missing.pdf',
         ]);
 
+        // asSupplier() uses Sanctum::actingAs on this test case, so the second
+        // supplier overwrites the first. Re-bind A before asserting isolation.
+        $this->asUser($userA);
         $httpA->getJson("/api/v1/procurement/supplier/rfqs/{$rfq->id}")->assertNotFound();
         $httpA->getJson('/api/v1/procurement/supplier/purchase-orders')
             ->assertOk()

@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Procurement;
 
-use App\Models\Attachment;
+use App\Models\SupplierDocument;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vendor;
@@ -19,17 +19,15 @@ class DocumentExpiryReminderTest extends TestCase
         $officer = $this->makeProcurementOfficer($tenant);
         $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'Expiring Docs Ltd', 'is_approved' => true, 'is_active' => true]);
 
-        Attachment::create([
-            'tenant_id'         => $tenant->id,
-            'uploaded_by'       => $officer->id,
-            'attachable_type'   => Vendor::class,
-            'attachable_id'     => $vendor->id,
-            'document_type'     => Attachment::DOCUMENT_TYPE_TAX_CLEARANCE,
-            'original_filename' => 'tax.pdf',
-            'storage_path'      => 'attachments/vendors/1/tax.pdf',
-            'mime_type'         => 'application/pdf',
-            'size_bytes'        => 100,
-            'expires_at'        => now()->addDays(10)->toDateString(),
+        SupplierDocument::create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'type_code' => 'tax_clearance',
+            'name' => 'Tax clearance',
+            'expiry_date' => now()->addDays(10)->toDateString(),
+            'status' => SupplierDocument::STATUS_VERIFIED,
+            'is_current' => true,
+            'version' => 1,
         ]);
 
         $mock = Mockery::mock(NotificationService::class);

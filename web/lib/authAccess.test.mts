@@ -124,3 +124,9 @@ test("Supplier can open portal, profile, and help", () => {
   assert.equal(canAccessRoute(supplier, "/profile/support"), true);
   assert.equal(canAccessRoute(supplier, "/procurement/vendors"), false);
 });
+
+test("staff cannot open the supplier portal", () => {
+  const staff = { roles: ["staff"], permissions: ["procurement.view", "procurement.manage_vendors"] };
+  assert.equal(canAccessRoute(staff, "/supplier"), false);
+  assert.equal(canAccessRoute(staff, "/supplier/rfqs"), false);
+});
