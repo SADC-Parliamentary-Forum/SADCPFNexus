@@ -129,25 +129,49 @@ export function CaptchaGate({ value, onChange }: Props) {
       if (!token) {
         throw new Error("missing token");
       }
-      onChange({ ...value, token, verified: true });
+      onChange({ token, honeypot: honeypotRef.current, verified: true });
     } catch {
       setError(t("login.captchaFailed"));
-      onChange({ ...value, token: "", verified: false });
+      onChange({ token: "", honeypot: honeypotRef.current, verified: false });
     } finally {
       setIssuing(false);
     }
-  }, [onChange, t, value]);
+  }, [onChange, t]);
 
   if (loading) {
-    return <div data-testid="captcha-gate" data-ready="false" className="sr-only">{t("common.loading")}</div>;
+    return (
+      <div
+        data-testid="captcha-gate"
+        data-ready="false"
+        data-enabled="true"
+        data-verified={value.verified ? "true" : "false"}
+        className="sr-only"
+      >
+        {t("common.loading")}
+      </div>
+    );
   }
 
   if (!enabled) {
-    return <div data-testid="captcha-gate" data-ready="true" className="sr-only" />;
+    return (
+      <div
+        data-testid="captcha-gate"
+        data-ready="true"
+        data-enabled="false"
+        data-verified="true"
+        className="sr-only"
+      />
+    );
   }
 
   return (
-    <div className="space-y-2" data-testid="captcha-gate" data-ready="true">
+    <div
+      className="space-y-2"
+      data-testid="captcha-gate"
+      data-ready="true"
+      data-enabled="true"
+      data-verified={value.verified ? "true" : "false"}
+    >
       {driver === "turnstile" && siteKey ? (
         <div ref={turnstileRef} className="min-h-[65px]" />
       ) : (
@@ -155,6 +179,7 @@ export function CaptchaGate({ value, onChange }: Props) {
           <label htmlFor={checkboxId} className="flex items-center gap-3 text-sm text-neutral-800">
             <input
               id={checkboxId}
+              data-testid="captcha-checkbox"
               type="checkbox"
               className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
               checked={value.verified || issuing}

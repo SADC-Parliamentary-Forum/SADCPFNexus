@@ -114,9 +114,15 @@ jobs:
           SESSION_DRIVER: database
           MAIL_MAILER: array
           BCRYPT_ROUNDS: '4'
+          # One-time captcha tokens live in cache; Playwright CI uses array cache
+          # and artisan serve may reload. Keep production CAPTCHA_ENABLED=true.
+          CAPTCHA_ENABLED: 'false'
         run: |
           cp .env.example .env
           sed -i "s|^APP_KEY=.*|APP_KEY=${APP_KEY}|" .env
+          grep -q '^CAPTCHA_ENABLED=' .env \
+            && sed -i 's/^CAPTCHA_ENABLED=.*/CAPTCHA_ENABLED=false/' .env \
+            || echo 'CAPTCHA_ENABLED=false' >> .env
           php artisan migrate:fresh --seed --force
 
       - name: Start API server
@@ -137,6 +143,7 @@ jobs:
           SESSION_DRIVER: database
           MAIL_MAILER: array
           BCRYPT_ROUNDS: '4'
+          CAPTCHA_ENABLED: 'false'
         run: php artisan serve --port=8000 &
 
       # ── Web setup ────────────────────────────────────────────────────────────
