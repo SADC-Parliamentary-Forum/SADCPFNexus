@@ -332,7 +332,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
                             ...current,
                             category_ids: current.category_ids.includes(category.id)
                               ? current.category_ids.filter((id) => id !== category.id)
-                              : current.category_ids.length >= 3 ? current.category_ids : [...current.category_ids, category.id],
+                              : [...current.category_ids, category.id],
                           }))
                         }
                       />

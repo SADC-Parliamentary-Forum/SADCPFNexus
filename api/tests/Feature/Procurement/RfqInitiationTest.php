@@ -207,7 +207,7 @@ class RfqInitiationTest extends TestCase
 
         $this->assertDatabaseHas('vendors', [
             'id'     => $vendor->id,
-            'status' => 'pending_approval',
+            'status' => 'approved',
         ]);
         $this->assertDatabaseHas('notifications', [
             'user_id' => $officer->id,

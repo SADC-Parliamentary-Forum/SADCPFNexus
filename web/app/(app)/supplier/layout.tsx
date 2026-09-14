@@ -21,7 +21,7 @@ export default function SupplierLayout({ children }: { children: ReactNode }) {
 
   if (!canAccessSupplierPortal) {
     return (
-      <div className="card p-8 text-center space-y-3">
+      <div className="card p-8 text-center space-y-3" data-testid="supplier-portal-denied">
         <span className="material-symbols-outlined text-4xl text-neutral-300">storefront</span>
         <div>
           <h1 className="text-lg font-semibold text-neutral-900">Supplier Portal Access Required</h1>

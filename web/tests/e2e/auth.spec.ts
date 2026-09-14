@@ -188,4 +188,22 @@ test.describe("Supplier portal login", () => {
     await expect(page.getByRole("heading", { name: /staff sign in/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /go to the supplier portal/i })).toBeVisible();
   });
+
+  test("registration wizard shows eight steps and blocks create without documents", async ({ page }) => {
+    await page.goto("/supplier/register");
+    await page.waitForLoadState("domcontentloaded");
+    await expect(page.getByTestId("supplier-wizard")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId("supplier-wizard-steps")).toContainText(/Company Profile/i);
+    await expect(page.getByTestId("supplier-wizard-steps")).toContainText(/Review/i);
+
+    await page.getByRole("button", { name: /8\.\s*Review/i }).click();
+    const create = page.getByTestId("create-supplier-account");
+    await expect(create).toBeVisible();
+    await expect(create).toBeDisabled();
+  });
+
+  test("email verification page reports missing link parameters", async ({ page }) => {
+    await page.goto("/supplier/verify-email");
+    await expect(page.getByTestId("verify-email-message")).toContainText(/missing required parameters/i);
+  });
 });

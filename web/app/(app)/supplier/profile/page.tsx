@@ -4,12 +4,10 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supplierCategoriesApi, supplierPortalApi, supplierPortalAttachmentsApi, VENDOR_DOC_TYPES } from "@/lib/api";
-import { useToast } from "@/components/ui/Toast";
 import { SupplierDocumentsField, type PendingSupplierDocument } from "@/components/auth/SupplierDocumentsField";
 
 export default function SupplierProfilePage() {
   const queryClient = useQueryClient();
-  const { info: showInfoToast } = useToast();
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [website, setWebsite] = useState("");
@@ -147,10 +145,6 @@ export default function SupplierProfilePage() {
                       if (current.includes(category.id)) {
                         return current.filter((id) => id !== category.id);
                       }
-                      if (current.length >= 3) {
-                        showInfoToast("Category limit reached", "You can select up to 3 categories.");
-                        return current;
-                      }
                       return [...current, category.id];
                     })
                   }
@@ -159,7 +153,7 @@ export default function SupplierProfilePage() {
               </label>
             ))}
           </div>
-          <p className="text-xs text-neutral-500">Changing categories triggers procurement review and may temporarily suspend portal access.</p>
+          <p className="text-xs text-neutral-500">Select every applicable category, including child categories.</p>
         </div>
 
         <div className="space-y-2">
@@ -199,6 +193,82 @@ export default function SupplierProfilePage() {
           {mutation.isPending ? "Saving..." : "Update Profile"}
         </button>
       </div>
+
+      <WizardDeclarations vendorStatus={profileQuery.data.status} />
+    </div>
+  );
+}
+
+function WizardDeclarations({ vendorStatus }: { vendorStatus?: string }) {
+  const queryClient = useQueryClient();
+  const declarationsQuery = useQuery({
+    queryKey: ["supplier-declarations"],
+    queryFn: () => supplierPortalApi.declarations().then((r) => r.data.data),
+  });
+  const completenessQuery = useQuery({
+    queryKey: ["supplier-completeness"],
+    queryFn: () => supplierPortalApi.completeness().then((r) => r.data.data),
+  });
+  const acceptMutation = useMutation({
+    mutationFn: (ids: number[]) => supplierPortalApi.acceptDeclarations(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-declarations"] });
+      queryClient.invalidateQueries({ queryKey: ["supplier-completeness"] });
+      queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
+    },
+  });
+  const submitMutation = useMutation({
+    mutationFn: () => supplierPortalApi.submitApplication(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-profile"] });
+      queryClient.invalidateQueries({ queryKey: ["supplier-completeness"] });
+      queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
+    },
+  });
+  const resendMutation = useMutation({
+    mutationFn: () => supplierPortalApi.resendVerification(),
+  });
+
+  const pending = (declarationsQuery.data ?? []).filter((row) => !row.accepted).map((row) => row.id);
+  const canSubmit = completenessQuery.data?.completeness.can_submit === true;
+
+  return (
+    <div className="card p-5 space-y-4" data-testid="supplier-wizard-review">
+      <h2 className="text-sm font-bold text-neutral-800">Declarations and submit</h2>
+      <p className="text-sm text-neutral-500">
+        Completeness: {completenessQuery.data?.completeness.percent ?? 0}%. Status: {(vendorStatus ?? "draft").replace(/_/g, " ")}.
+      </p>
+      {!completenessQuery.data?.completeness.email_verified && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          Verify your email before you can submit.
+          <button type="button" className="ml-2 underline" onClick={() => resendMutation.mutate()}>
+            Resend verification
+          </button>
+        </div>
+      )}
+      <ul className="space-y-3">
+        {(declarationsQuery.data ?? []).map((row) => (
+          <li key={row.id} className="rounded-xl border border-neutral-200 p-3">
+            <p className="text-sm font-semibold">{row.title}</p>
+            <p className="mt-1 text-xs text-neutral-600">{row.body}</p>
+            <p className="mt-2 text-xs">{row.accepted ? "Accepted" : "Not yet accepted"}</p>
+          </li>
+        ))}
+      </ul>
+      {pending.length > 0 && (
+        <button type="button" className="btn-secondary text-sm" onClick={() => acceptMutation.mutate(pending)} disabled={acceptMutation.isPending}>
+          Accept required declarations
+        </button>
+      )}
+      <button
+        type="button"
+        data-testid="submit-application"
+        className="btn-primary text-sm disabled:opacity-50"
+        disabled={!canSubmit || submitMutation.isPending}
+        onClick={() => submitMutation.mutate()}
+      >
+        {canSubmit ? "Submit application" : "Submit application (complete mandatory items first)"}
+      </button>
     </div>
   );
 }

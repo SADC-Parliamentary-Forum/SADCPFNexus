@@ -50,6 +50,7 @@ Route::prefix('v1')->group(function () {
         Route::get('supplier-categories/public', [\App\Http\Controllers\Api\V1\Procurement\SupplierCategoryController::class, 'publicIndex'])
             ->middleware('throttle:60,1');
         Route::post('suppliers/register', [\App\Http\Controllers\Api\V1\Procurement\SupplierRegistrationController::class, 'register'])->middleware('throttle:10,1');
+        Route::post('suppliers/verify-email', [\App\Http\Controllers\Api\V1\Procurement\SupplierEmailVerificationController::class, 'verify'])->middleware('throttle:20,1');
         Route::get('external-rfq/{token}', [\App\Http\Controllers\Api\V1\Procurement\ExternalRfqController::class, 'show'])->middleware('throttle:20,1');
         Route::post('external-rfq/{token}/quote', [\App\Http\Controllers\Api\V1\Procurement\ExternalRfqController::class, 'submit'])->middleware('throttle:20,1');
         Route::get('notices', [\App\Http\Controllers\Api\V1\Procurement\PublicNoticeController::class, 'publicIndex'])
@@ -750,6 +751,24 @@ Route::prefix('v1')->group(function () {
             Route::get('vendors/{vendor}/contracts', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'listContracts']);
             Route::post('vendors/{vendor}/blacklist', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'blacklist']);
             Route::post('vendors/{vendor}/unblacklist', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'unblacklist']);
+            Route::post('vendors/{vendor}/approve-conditional', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'approveConditional']);
+            Route::post('vendors/{vendor}/under-review', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'markUnderReview']);
+            Route::post('vendors/{vendor}/verify-banking', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'verifyBanking']);
+            Route::get('vendors/{vendor}/eligibility', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'eligibility']);
+            Route::get('vendors/{vendor}/360', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'show']);
+            Route::get('vendors/{vendor}/activity', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'activity']);
+            Route::get('vendors/{vendor}/register-documents', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'documents']);
+            Route::post('vendors/{vendor}/register-documents/{supplierDocument}/verify', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'verifyDocument']);
+            Route::post('vendors/{vendor}/register-documents/{supplierDocument}/reject', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'rejectDocument']);
+            Route::get('vendors/{vendor}/register-documents/{supplierDocument}/download', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'downloadDocument']);
+            Route::get('vendors/{vendor}/change-requests', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'changeRequests']);
+            Route::post('vendors/{vendor}/change-requests/{changeRequest}/approve', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'approveChangeRequest']);
+            Route::post('vendors/{vendor}/change-requests/{changeRequest}/reject', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'rejectChangeRequest']);
+            Route::post('vendors/{vendor}/invitations/{invitation}/eligibility-override', [\App\Http\Controllers\Api\V1\Procurement\SupplierStaff360Controller::class, 'overrideInvitation']);
+            Route::get('supplier-document-requirement-types', [\App\Http\Controllers\Api\V1\Procurement\SupplierDocumentRequirementTypeController::class, 'index']);
+            Route::post('supplier-document-requirement-types', [\App\Http\Controllers\Api\V1\Procurement\SupplierDocumentRequirementTypeController::class, 'store']);
+            Route::put('supplier-document-requirement-types/{requirementType}', [\App\Http\Controllers\Api\V1\Procurement\SupplierDocumentRequirementTypeController::class, 'update']);
+            Route::delete('supplier-document-requirement-types/{requirementType}', [\App\Http\Controllers\Api\V1\Procurement\SupplierDocumentRequirementTypeController::class, 'destroy']);
             Route::post('vendors/{vendor}/portal-users/{portalUser}/change-password', [\App\Http\Controllers\Api\V1\Procurement\VendorController::class, 'changePortalUserPassword']);
             Route::get('vendors/{vendor}/evaluations', [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'index']);
             Route::post('vendors/{vendor}/evaluations', [\App\Http\Controllers\Api\V1\Procurement\VendorPerformanceController::class, 'store']);
@@ -759,6 +778,16 @@ Route::prefix('v1')->group(function () {
                 Route::get('attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'downloadAttachment']);
                 Route::put('profile', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'updateProfile']);
                 Route::get('dashboard', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'dashboard']);
+                Route::get('completeness', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalApplicationController::class, 'completeness']);
+                Route::post('submit-application', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalApplicationController::class, 'submitApplication']);
+                Route::put('wizard', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalApplicationController::class, 'updateWizard']);
+                Route::get('declarations', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalApplicationController::class, 'declarations']);
+                Route::post('declarations', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalApplicationController::class, 'acceptDeclarations']);
+                Route::get('documents', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalApplicationController::class, 'documents']);
+                Route::post('documents', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalApplicationController::class, 'uploadDocument']);
+                Route::get('documents/{supplierDocument}/download', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalApplicationController::class, 'downloadDocument']);
+                Route::get('change-requests', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalApplicationController::class, 'changeRequests']);
+                Route::post('verify-email/resend', [\App\Http\Controllers\Api\V1\Procurement\SupplierEmailVerificationController::class, 'resend']);
                 Route::get('rfqs', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'rfqs']);
                 Route::get('rfqs/{procurementRequest}', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'showRfq']);
                 Route::post('rfqs/{procurementRequest}/quote', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'submitQuote']);

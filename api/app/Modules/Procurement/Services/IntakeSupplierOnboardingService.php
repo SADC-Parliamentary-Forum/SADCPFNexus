@@ -59,8 +59,8 @@ class IntakeSupplierOnboardingService
                     throw ValidationException::withMessages(['name' => 'Supplier name is required.']);
                 }
                 $categoryIds = array_values(array_unique(array_map('intval', $payload['category_ids'] ?? [])));
-                if (count($categoryIds) < 1 || count($categoryIds) > 3) {
-                    throw ValidationException::withMessages(['category_ids' => 'Select between 1 and 3 supplier categories.']);
+                if (count($categoryIds) < 1) {
+                    throw ValidationException::withMessages(['category_ids' => 'Select at least one supplier category.']);
                 }
 
                 $vendor = Vendor::create([
@@ -78,7 +78,7 @@ class IntakeSupplierOnboardingService
                     'bank_account' => $payload['bank_account'] ?? null,
                     'bank_branch' => $payload['bank_branch'] ?? null,
                     'is_approved' => false,
-                    'status' => 'pending_approval',
+                    'status' => Vendor::STATUS_SUBMITTED,
                     'submitted_at' => now(),
                     'notes' => 'Created from procurement document intake #'.$intake->id,
                 ]);

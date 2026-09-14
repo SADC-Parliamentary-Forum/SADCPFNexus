@@ -136,7 +136,7 @@ class DocumentIntakeController extends Controller
             'bank_name' => ['nullable', 'string', 'max:255'],
             'bank_account' => ['nullable', 'string', 'max:100'],
             'bank_branch' => ['nullable', 'string', 'max:255'],
-            'category_ids' => ['required_without:vendor_id', 'nullable', 'array', 'min:1', 'max:3'],
+            'category_ids' => ['required_without:vendor_id', 'nullable', 'array', 'min:1'],
             'category_ids.*' => ['integer'],
             'send_invitation' => ['sometimes', 'boolean'],
         ]);

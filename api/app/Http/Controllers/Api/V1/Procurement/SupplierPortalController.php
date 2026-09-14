@@ -10,9 +10,16 @@ use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\RfqInvitation;
 use App\Models\SupplierCategory;
+use App\Models\SupplierChangeRequest;
+use App\Models\SupplierDocument;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Modules\Procurement\Services\InvoiceService;
+use App\Modules\Procurement\Services\SupplierChangeRequestService;
+use App\Modules\Procurement\Services\SupplierCompletenessService;
+use App\Modules\Procurement\Services\SupplierDocumentService;
+use App\Modules\Procurement\Services\SupplierEligibilityService;
+use App\Modules\Procurement\Support\VendorPresenter;
 use App\Services\NotificationService;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
@@ -27,14 +34,16 @@ class SupplierPortalController extends Controller
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly InvoiceService $invoiceService,
+        private readonly SupplierEligibilityService $eligibility,
+        private readonly SupplierCompletenessService $completeness,
+        private readonly SupplierDocumentService $documents,
+        private readonly SupplierChangeRequestService $changeRequests,
     ) {}
 
     public function me(Request $request): JsonResponse
     {
         $vendor = $this->currentVendor($request);
-        $vendor->load(['categories', 'attachments', 'portalUsers:id,vendor_id,name,email,is_active']);
-
-        return response()->json(['data' => $vendor]);
+        return response()->json(['data' => VendorPresenter::forSupplier($vendor, $request->user())]);
     }
 
     public function downloadAttachment(Request $request, Attachment $attachment): StreamedResponse|JsonResponse
@@ -63,6 +72,8 @@ class SupplierPortalController extends Controller
     public function dashboard(Request $request): JsonResponse
     {
         $vendor = $this->currentVendor($request);
+        $eligibility = $this->eligibility->evaluate($vendor);
+        $completeness = $this->completeness->summarize($vendor, $request->user());
 
         $openRfqCount = RfqInvitation::query()
             ->where('tenant_id', $request->user()->tenant_id)
@@ -75,21 +86,64 @@ class SupplierPortalController extends Controller
             })
             ->count();
 
+        $expiring = $vendor->currentDocuments()
+            ->whereNotNull('expiry_date')
+            ->whereDate('expiry_date', '<=', now()->addDays(90)->toDateString())
+            ->orderBy('expiry_date')
+            ->get(['id', 'type_code', 'name', 'expiry_date', 'status']);
+
+        $actions = [];
+        if (! $request->user()->email_verified_at) {
+            $actions[] = ['code' => 'verify_email', 'label' => 'Verify your email before submitting the application', 'href' => '/supplier/profile'];
+        }
+        if ($completeness['can_submit']) {
+            $actions[] = ['code' => 'submit_application', 'label' => 'Submit your supplier application for review', 'href' => '/supplier/profile'];
+        }
+        foreach ($completeness['blockers'] as $blocker) {
+            if ($blocker === 'email_unverified') {
+                continue;
+            }
+            $actions[] = ['code' => $blocker, 'label' => 'Complete: '.str_replace('_', ' ', $blocker), 'href' => '/supplier/profile'];
+        }
+        foreach ($expiring as $doc) {
+            $actions[] = [
+                'code' => 'expiring_document',
+                'label' => ($doc->name ?: $doc->type_code).' expires '.$doc->expiry_date?->toDateString(),
+                'href' => '/supplier/profile',
+            ];
+        }
+        if ($openRfqCount > 0) {
+            $actions[] = ['code' => 'open_rfqs', 'label' => $openRfqCount.' open RFQ invitation(s)', 'href' => '/supplier/rfqs'];
+        }
+        $issuedPos = PurchaseOrder::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->where('vendor_id', $vendor->id)
+            ->whereIn('status', ['issued', 'sent'])
+            ->count();
+        if ($issuedPos > 0) {
+            $actions[] = ['code' => 'po_ack', 'label' => $issuedPos.' purchase order(s) awaiting acknowledgement (Phase 3)', 'href' => '/supplier/purchase-orders'];
+        }
+
         return response()->json([
             'data' => [
-                'vendor'                => $vendor->load('categories'),
+                'vendor'                => VendorPresenter::forSupplier($vendor, $request->user()),
+                'status'                => $vendor->normalizedStatus(),
+                'completeness_percent'  => $completeness['percent'],
+                'compliance_status'     => $eligibility['compliance_status'],
+                'eligibility'           => $eligibility,
+                'actions'               => $actions,
                 'open_rfq_count'        => $openRfqCount,
                 'quote_count'           => ProcurementQuote::where('vendor_id', $vendor->id)->count(),
                 'purchase_order_count'  => PurchaseOrder::where('tenant_id', $request->user()->tenant_id)->where('vendor_id', $vendor->id)->count(),
                 'invoice_count'         => Invoice::where('tenant_id', $request->user()->tenant_id)->where('vendor_id', $vendor->id)->count(),
-                'pending_compliance'    => $vendor->status === 'approved' ? 0 : 1,
+                'pending_compliance'    => $eligibility['compliance_status'] === 'valid' ? 0 : 1,
             ],
         ]);
     }
 
     public function rfqs(Request $request): JsonResponse
     {
-        $vendor = $this->currentVendor($request, true);
+        $vendor = $this->currentVendor($request);
 
         $invitations = RfqInvitation::query()
             ->where('tenant_id', $request->user()->tenant_id)
@@ -107,7 +161,7 @@ class SupplierPortalController extends Controller
 
     public function showRfq(Request $request, ProcurementRequest $procurementRequest): JsonResponse
     {
-        $vendor = $this->currentVendor($request, true);
+        $vendor = $this->currentVendor($request);
 
         $invitation = RfqInvitation::query()
             ->where('tenant_id', $request->user()->tenant_id)
@@ -120,10 +174,24 @@ class SupplierPortalController extends Controller
             $invitation->update(['viewed_at' => now(), 'status' => 'viewed']);
         }
 
+        $procurementRequest->load(['supplierCategories', 'items']);
+
         return response()->json([
             'data' => [
                 'invitation' => $invitation->fresh(['quote']),
-                'request'    => $procurementRequest->load(['supplierCategories', 'items']),
+                'request'    => [
+                    'id' => $procurementRequest->id,
+                    'reference_number' => $procurementRequest->reference_number,
+                    'title' => $procurementRequest->title,
+                    'description' => $procurementRequest->description,
+                    'currency' => $procurementRequest->currency,
+                    'rfq_deadline' => $procurementRequest->rfq_deadline,
+                    'rfq_notes' => $procurementRequest->rfq_notes,
+                    'status' => $procurementRequest->status,
+                    'supplier_categories' => $procurementRequest->supplierCategories,
+                    'items' => $procurementRequest->items,
+                ],
+                'eligibility' => $this->eligibility->evaluate($vendor, $procurementRequest, $invitation),
             ],
         ]);
     }
@@ -137,6 +205,11 @@ class SupplierPortalController extends Controller
             ->where('procurement_request_id', $procurementRequest->id)
             ->where('vendor_id', $vendor->id)
             ->firstOrFail();
+
+        $eligibility = $this->eligibility->evaluate($vendor, $procurementRequest, $invitation);
+        if (! $eligibility['can_submit_quotes']) {
+            abort(403, 'Your supplier account is not eligible to submit quotes for this RFQ.');
+        }
 
         if ($procurementRequest->status === 'awarded') {
             abort(422, 'This RFQ has already been awarded.');
@@ -267,13 +340,33 @@ class SupplierPortalController extends Controller
             'bank_account'   => ['nullable', 'string', 'max:100'],
             'bank_branch'    => ['nullable', 'string', 'max:255'],
             'payment_terms'  => ['nullable', 'string', 'max:50'],
-            'category_ids'   => ['nullable', 'array', 'min:1', 'max:3'],
+            'category_ids'   => ['nullable', 'array', 'min:1'],
             'category_ids.*' => ['integer', 'exists:supplier_categories,id'],
             'documents'      => ['nullable', 'array', 'max:15'],
             'documents.*'    => ['file', 'max:25600'],
             'document_types' => ['nullable', 'array'],
-            'document_types.*' => ['nullable', 'string', 'in:' . implode(',', Attachment::VENDOR_DOCUMENT_TYPES)],
+            'document_types.*' => ['nullable', 'string', 'max:80'],
+            'name' => ['nullable', 'string', 'max:300'],
+            'registration_number' => ['nullable', 'string', 'max:100'],
+            'tax_number' => ['nullable', 'string', 'max:100'],
         ]);
+
+        $actor = $request->user();
+        if (array_key_exists('bank_name', $data) || array_key_exists('bank_account', $data) || array_key_exists('bank_branch', $data)) {
+            $banking = [
+                'bank_name' => $data['bank_name'] ?? $vendor->bank_name,
+                'bank_account' => $data['bank_account'] ?? $vendor->bank_account,
+                'bank_branch' => $data['bank_branch'] ?? $vendor->bank_branch,
+            ];
+            $this->changeRequests->queueOrApply($vendor, SupplierChangeRequest::GROUP_BANKING, $banking, $actor);
+            unset($data['bank_name'], $data['bank_account'], $data['bank_branch']);
+        }
+        foreach (['name' => SupplierChangeRequest::GROUP_LEGAL_NAME, 'registration_number' => SupplierChangeRequest::GROUP_REGISTRATION, 'tax_number' => SupplierChangeRequest::GROUP_TAX] as $field => $group) {
+            if (array_key_exists($field, $data) && $data[$field] !== $vendor->{$field}) {
+                $this->changeRequests->queueOrApply($vendor, $group, [$field => $data[$field]], $actor);
+                unset($data[$field]);
+            }
+        }
 
         $vendor->update([
             'contact_name'  => array_key_exists('contact_name', $data) ? $data['contact_name'] : $vendor->contact_name,
@@ -281,9 +374,6 @@ class SupplierPortalController extends Controller
             'website'       => array_key_exists('website', $data) ? $data['website'] : $vendor->website,
             'address'       => array_key_exists('address', $data) ? $data['address'] : $vendor->address,
             'country'       => array_key_exists('country', $data) ? $data['country'] : $vendor->country,
-            'bank_name'     => array_key_exists('bank_name', $data) ? $data['bank_name'] : $vendor->bank_name,
-            'bank_account'  => array_key_exists('bank_account', $data) ? $data['bank_account'] : $vendor->bank_account,
-            'bank_branch'   => array_key_exists('bank_branch', $data) ? $data['bank_branch'] : $vendor->bank_branch,
             'payment_terms' => array_key_exists('payment_terms', $data) ? $data['payment_terms'] : $vendor->payment_terms,
         ]);
 
@@ -296,12 +386,7 @@ class SupplierPortalController extends Controller
             $vendor->categories()->sync($categoryIds);
             $vendor->update([
                 'category'                  => SupplierCategory::whereIn('id', $categoryIds)->orderBy('name')->pluck('name')->join(', '),
-                'status'                    => 'pending_approval',
-                'last_info_request_reason'  => 'Category change submitted for procurement review.',
             ]);
-            $vendor->syncLegacyFlagsFromStatus();
-            $vendor->save();
-            $vendor->portalUsers()->update(['is_active' => false]);
 
             $this->notifyProcurementOfProfileUpdate(
                 tenantId: $request->user()->tenant_id,
@@ -315,20 +400,10 @@ class SupplierPortalController extends Controller
         foreach ($request->file('documents', []) as $index => $file) {
             $documentTypes = $request->input('document_types', []);
             $documentType = $documentTypes[$index] ?? Attachment::DOCUMENT_TYPE_COMPANY_PROFILE;
-            $mime = UploadContentSniffer::assertAllowed($file);
-            $path = $file->store('attachments/vendors/' . $vendor->id, ['disk' => 'local']);
-            $vendor->attachments()->create([
-                'tenant_id'         => $vendor->tenant_id,
-                'uploaded_by'       => $request->user()->id,
-                'document_type'     => $documentType,
-                'original_filename' => $file->getClientOriginalName(),
-                'storage_path'      => $path,
-                'mime_type'         => $mime,
-                'size_bytes'        => $file->getSize(),
-            ]);
+            $this->documents->storeForVendor($vendor, $file, $documentType, $request->user());
         }
 
-        return response()->json(['message' => 'Supplier profile updated.', 'data' => $vendor->fresh(['categories', 'attachments'])]);
+        return response()->json(['message' => 'Supplier profile updated.', 'data' => VendorPresenter::forSupplier($vendor->fresh(['categories']), $request->user())]);
     }
 
     private function currentVendor(Request $request, bool $approvedOnly = false): Vendor
@@ -341,8 +416,11 @@ class SupplierPortalController extends Controller
             ->where('id', $user->vendor_id)
             ->firstOrFail();
 
-        if ($approvedOnly && $vendor->status !== 'approved') {
-            abort(403, 'Your supplier account has not been approved for transactions.');
+        if ($approvedOnly) {
+            $evaluation = $this->eligibility->evaluate($vendor);
+            if (! $evaluation['can_submit_quotes'] && ! $evaluation['can_receive_pos']) {
+                abort(403, 'Your supplier account is not eligible for this transaction.');
+            }
         }
 
         return $vendor;

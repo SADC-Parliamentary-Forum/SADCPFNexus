@@ -30,6 +30,9 @@ class PolicyService
         'supplier.rejected',
         'supplier.info_requested',
         'supplier.suspended',
+        'supplier.email_verification',
+        'supplier.compliance_warning',
+        'supplier.document_expired',
     ];
 
     public function resolvePolicy(int $tenantId, string $eventKey): array

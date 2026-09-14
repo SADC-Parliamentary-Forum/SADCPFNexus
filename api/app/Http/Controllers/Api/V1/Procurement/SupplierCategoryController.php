@@ -41,6 +41,7 @@ class SupplierCategoryController extends Controller
         $this->ensureCanManage($request);
 
         $data = $request->validate([
+            'parent_id'   => ['nullable', 'integer', 'exists:supplier_categories,id'],
             'name'        => ['required', 'string', 'max:150'],
             'code'        => ['nullable', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -49,6 +50,7 @@ class SupplierCategoryController extends Controller
 
         $category = SupplierCategory::create([
             'tenant_id'    => $request->user()->tenant_id,
+            'parent_id'    => $data['parent_id'] ?? null,
             'name'         => $data['name'],
             'code'         => $data['code'] ?? Str::slug($data['name'], '_'),
             'description'  => $data['description'] ?? null,
@@ -66,6 +68,7 @@ class SupplierCategoryController extends Controller
         }
 
         $data = $request->validate([
+            'parent_id'   => ['nullable', 'integer', 'exists:supplier_categories,id'],
             'name'        => ['sometimes', 'required', 'string', 'max:150'],
             'code'        => ['sometimes', 'required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -73,6 +76,7 @@ class SupplierCategoryController extends Controller
         ]);
 
         $supplierCategory->update([
+            'parent_id'   => array_key_exists('parent_id', $data) ? $data['parent_id'] : $supplierCategory->parent_id,
             'name'        => $data['name'] ?? $supplierCategory->name,
             'code'        => $data['code'] ?? $supplierCategory->code,
             'description' => array_key_exists('description', $data) ? $data['description'] : $supplierCategory->description,

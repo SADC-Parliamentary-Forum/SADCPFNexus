@@ -491,7 +491,7 @@ export default function RfqListPage() {
                         setCategoryIds((current) =>
                           current.includes(category.id)
                             ? current.filter((id) => id !== category.id)
-                            : current.length >= 3 ? current : [...current, category.id]
+                            : [...current, category.id]
                         )
                       }
                     />

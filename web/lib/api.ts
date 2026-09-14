@@ -3168,6 +3168,7 @@ export interface ProcurementQuote {
 export interface SupplierCategory {
   id: number;
   tenant_id: number;
+  parent_id?: number | null;
   name: string;
   code: string;
   description: string | null;
@@ -3903,19 +3904,29 @@ export interface BudgetChangeRequest {
 export interface Vendor {
   id: number;
   name: string;
+  trading_name?: string | null;
+  incorporation_date?: string | null;
+  business_type?: string | null;
   contact_name: string | null;
   registration_number: string | null;
   tax_number: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+  contacts?: Record<string, unknown> | null;
   website: string | null;
   address: string | null;
+  postal_address?: string | null;
   country: string | null;
+  geographic_coverage?: string[] | null;
+  years_experience?: number | null;
+  experience_summary?: string | null;
   category: string | null;
   payment_terms: string | null;
   bank_name: string | null;
   bank_account: string | null;
+  bank_account_masked?: boolean;
   bank_branch: string | null;
+  finance_verified_at?: string | null;
   is_sme: boolean;
   notes: string | null;
   is_approved: boolean;
@@ -3930,6 +3941,11 @@ export interface Vendor {
   blacklist_reason: string | null;
   blacklist_reference: string | null;
   categories?: SupplierCategory[];
+  owners?: VendorOwner[];
+  eligibility?: SupplierEligibility;
+  completeness?: SupplierCompleteness;
+  critical_fields_locked?: boolean;
+  email_verified?: boolean;
   approval_logs?: SupplierApprovalLog[];
   portal_users?: Pick<User, "id" | "name" | "email" | "is_active">[];
   quotes_count?: number;
@@ -3941,6 +3957,69 @@ export interface Vendor {
   ratings?: VendorRating[];
   my_rating?: VendorRating | null;
   attachments?: ProcurementAttachment[];
+}
+
+export interface VendorOwner {
+  id: number;
+  full_name: string;
+  role: string | null;
+  ownership_percent: number | null;
+  nationality: string | null;
+  is_beneficial_owner: boolean;
+  is_pep: boolean;
+}
+
+export interface SupplierEligibility {
+  registration_status: string;
+  compliance_status: string;
+  document_validity: Array<Record<string, unknown>>;
+  category_match: boolean | null;
+  can_submit_quotes: boolean;
+  can_receive_pos: boolean;
+  reasons: string[];
+  override_applied: boolean;
+}
+
+export interface SupplierCompleteness {
+  percent: number;
+  can_submit: boolean;
+  blockers: string[];
+  email_verified: boolean;
+  sections: Record<string, { complete: boolean; missing: string[] }>;
+}
+
+export interface SupplierDocumentRecord {
+  id: number;
+  type_code: string;
+  name: string;
+  document_number: string | null;
+  issuing_authority: string | null;
+  issue_date: string | null;
+  expiry_date: string | null;
+  version: number;
+  status: string;
+  remarks: string | null;
+  is_current: boolean;
+  verified_at: string | null;
+  verified_by?: { id: number; name: string } | null;
+}
+
+export interface SupplierDocumentRequirementType {
+  id: number;
+  code: string;
+  label: string;
+  description: string | null;
+  mandatory: boolean;
+  country: string | null;
+  supplier_category_id?: number | null;
+  has_expiry: boolean;
+  warning_days: number;
+  required_at_registration: boolean;
+  required_for_rfq: boolean;
+  funding_source: string | null;
+  requires_verification: boolean;
+  is_active: boolean;
+  sort_order: number;
 }
 
 export interface VendorContract {
@@ -4023,8 +4102,8 @@ export const vendorsApi = {
     api.put<{ data: Vendor; message: string }>(`/procurement/vendors/${id}`, data),
   destroy: (id: number) =>
     api.delete<{ message: string }>(`/procurement/vendors/${id}`),
-  approve: (id: number) =>
-    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/approve`),
+  approve: (id: number, options?: { conditional?: boolean }) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/approve`, options?.conditional ? { conditional: true } : {}),
   reject: (id: number, reason: string) =>
     api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/reject`, { reason }),
   requestInfo: (id: number, reason: string) =>
@@ -4077,6 +4156,34 @@ export const vendorsApi = {
       `/procurement/vendors/${id}/evaluations`,
       data
     ),
+  registerDocuments: (id: number) =>
+    api.get<{ data: SupplierDocumentRecord[] }>(`/procurement/vendors/${id}/register-documents`),
+  verifyDocument: (vendorId: number, documentId: number, remarks?: string) =>
+    api.post<{ data: SupplierDocumentRecord; message: string }>(
+      `/procurement/vendors/${vendorId}/register-documents/${documentId}/verify`,
+      { remarks }
+    ),
+  rejectDocument: (vendorId: number, documentId: number, remarks: string) =>
+    api.post<{ data: SupplierDocumentRecord; message: string }>(
+      `/procurement/vendors/${vendorId}/register-documents/${documentId}/reject`,
+      { remarks }
+    ),
+  downloadRegisterDocumentUrl: (vendorId: number, documentId: number) =>
+    `/api/procurement/vendors/${vendorId}/register-documents/${documentId}/download`,
+  changeRequests: (id: number) =>
+    api.get<{ data: Array<Record<string, unknown>> }>(`/procurement/vendors/${id}/change-requests`),
+  approveChangeRequest: (vendorId: number, requestId: number, remarks?: string) =>
+    api.post(`/procurement/vendors/${vendorId}/change-requests/${requestId}/approve`, { remarks }),
+  rejectChangeRequest: (vendorId: number, requestId: number, remarks: string) =>
+    api.post(`/procurement/vendors/${vendorId}/change-requests/${requestId}/reject`, { remarks }),
+  verifyBanking: (id: number) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/verify-banking`),
+  activity: (id: number) =>
+    api.get<{ data: { rfqs: unknown[]; quotes: unknown[]; purchase_orders: unknown[]; invoices: unknown[] } }>(
+      `/procurement/vendors/${id}/activity`
+    ),
+  approveConditional: (id: number) =>
+    api.post<{ data: Vendor; message: string }>(`/procurement/vendors/${id}/approve-conditional`),
 };
 
 export const supplierCategoriesApi = {
@@ -4090,6 +4197,24 @@ export const supplierCategoriesApi = {
     api.put<{ data: SupplierCategory; message: string }>(`/procurement/supplier-categories/${id}`, data),
   destroy: (id: number) =>
     api.delete<{ message: string }>(`/procurement/supplier-categories/${id}`),
+};
+
+export const supplierDocumentRequirementTypesApi = {
+  list: () => api.get<{ data: SupplierDocumentRequirementType[] }>("/procurement/supplier-document-requirement-types"),
+  create: (data: Partial<SupplierDocumentRequirementType>) =>
+    api.post<{ data: SupplierDocumentRequirementType; message: string }>("/procurement/supplier-document-requirement-types", data),
+  update: (id: number, data: Partial<SupplierDocumentRequirementType>) =>
+    api.put<{ data: SupplierDocumentRequirementType; message: string }>(`/procurement/supplier-document-requirement-types/${id}`, data),
+  destroy: (id: number) =>
+    api.delete<{ message: string }>(`/procurement/supplier-document-requirement-types/${id}`),
+};
+
+export const supplierEmailVerificationApi = {
+  verify: (params: { user: number; expires: number; signature: string }) =>
+    api.post<{ message: string; data: { user_id: number; vendor_id: number; email_verified: boolean } }>(
+      "/procurement/suppliers/verify-email",
+      params
+    ),
 };
 
 export const supplierRegistrationApi = {
@@ -4117,6 +4242,11 @@ export const supplierRegistrationApi = {
 
 export interface SupplierDashboard {
   vendor: Vendor;
+  status?: string;
+  completeness_percent?: number;
+  compliance_status?: string;
+  eligibility?: SupplierEligibility;
+  actions?: Array<{ code: string; label: string; href: string }>;
   open_rfq_count: number;
   quote_count: number;
   purchase_order_count: number;
@@ -4131,6 +4261,21 @@ export const supplierPortalApi = {
       headers: { "Content-Type": "multipart/form-data" },
     }),
   dashboard: () => api.get<{ data: SupplierDashboard }>("/procurement/supplier/dashboard"),
+  completeness: () => api.get<{ data: { vendor: Vendor; completeness: SupplierCompleteness; eligibility: SupplierEligibility } }>("/procurement/supplier/completeness"),
+  submitApplication: () =>
+    api.post<{ data: Vendor; message: string }>("/procurement/supplier/submit-application"),
+  updateWizard: (data: Record<string, unknown>) =>
+    api.put<{ data: Vendor; message: string }>("/procurement/supplier/wizard", data),
+  declarations: () =>
+    api.get<{ data: Array<{ id: number; code: string; title: string; body: string; accepted: boolean }> }>("/procurement/supplier/declarations"),
+  acceptDeclarations: (templateIds: number[]) =>
+    api.post("/procurement/supplier/declarations", { template_ids: templateIds }),
+  documents: () => api.get<{ data: SupplierDocumentRecord[] }>("/procurement/supplier/documents"),
+  uploadDocument: (formData: FormData) =>
+    api.post<{ data: SupplierDocumentRecord; message: string }>("/procurement/supplier/documents", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+  resendVerification: () => api.post<{ message: string }>("/procurement/supplier/verify-email/resend"),
   rfqs: () => api.get<{ data: RfqInvitation[] }>("/procurement/supplier/rfqs"),
   rfq: (requestId: number) =>
     api.get<{ data: { invitation: RfqInvitation; request: ProcurementRequest } }>(`/procurement/supplier/rfqs/${requestId}`),

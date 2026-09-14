@@ -68,7 +68,7 @@ class VendorPaginationTest extends TestCase
             'name'        => 'Pending Co',
             'is_approved' => false,
             'is_active'   => true,
-            'status'      => 'pending_approval',
+            'status'      => 'submitted',
         ]);
         Vendor::create([
             'tenant_id'      => $tenant->id,

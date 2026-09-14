@@ -33,12 +33,12 @@ class SupplierRegistrationTest extends TestCase
         ], ['Accept' => 'application/json']);
 
         $response->assertCreated()
-            ->assertJsonPath('data.status', 'pending_approval');
+            ->assertJsonPath('data.status', 'draft');
 
         $this->assertDatabaseHas('vendors', [
             'tenant_id' => $tenant->id,
             'name' => 'Laptop World',
-            'status' => 'pending_approval',
+            'status' => 'draft',
             'contact_email' => 'alex@laptopworld.test',
         ]);
 
@@ -50,7 +50,7 @@ class SupplierRegistrationTest extends TestCase
         ]);
     }
 
-    public function test_supplier_registration_rejects_more_than_three_categories(): void
+    public function test_supplier_registration_allows_more_than_three_categories(): void
     {
         $tenant = Tenant::factory()->create(['is_active' => true]);
         $categories = collect(range(1, 4))->map(
@@ -74,7 +74,8 @@ class SupplierRegistrationTest extends TestCase
             'password_confirmation' => 'Secret123!',
             'category_ids'          => $categories->pluck('id')->all(),
             'documents'             => [$this->fakePdf('tax-clearance.pdf')],
-        ], ['Accept' => 'application/json'])->assertUnprocessable()->assertJsonValidationErrors(['category_ids']);
+        ], ['Accept' => 'application/json'])->assertCreated()
+            ->assertJsonPath('data.status', 'draft');
     }
 
     public function test_registered_supplier_appears_in_procurement_vendor_register(): void
@@ -107,7 +108,7 @@ class SupplierRegistrationTest extends TestCase
             ->assertOk()
             ->assertJsonFragment([
                 'name'   => 'Stationery Hub',
-                'status' => 'pending_approval',
+                'status' => 'draft',
             ]);
     }
 
@@ -145,7 +146,7 @@ class SupplierRegistrationTest extends TestCase
         ], ['Accept' => 'application/json']);
 
         $response->assertCreated()
-            ->assertJsonPath('data.status', 'pending_approval')
+            ->assertJsonPath('data.status', 'draft')
             ->assertJsonCount(3, 'data.documents');
 
         $this->assertSame('company-profile.pdf', $response->json('data.documents.0.original_filename'));

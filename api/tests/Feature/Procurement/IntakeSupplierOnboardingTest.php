@@ -69,7 +69,7 @@ class IntakeSupplierOnboardingTest extends TestCase
 
         $vendor = Vendor::find($res->json('data.vendor_id'));
         $this->assertNotNull($vendor);
-        $this->assertSame('pending_approval', $vendor->status);
+        $this->assertSame('submitted', $vendor->status);
         $this->assertFalse((bool) $vendor->is_approved);
 
         $portalUser = User::where('email', $email)->first();

@@ -46,16 +46,16 @@ class VendorController extends Controller
         $status = (string) $request->input('status', '');
         if ($status !== '' && $status !== 'all') {
             if ($status === 'approved') {
-                $query->where('status', 'approved');
+                $query->whereIn('status', [Vendor::STATUS_APPROVED, Vendor::STATUS_CONDITIONALLY_APPROVED, Vendor::STATUS_COMPLIANCE_WARNING]);
             } elseif ($status === 'pending') {
-                $query->whereIn('status', ['draft', 'pending_approval']);
+                $query->whereIn('status', Vendor::PENDING_REVIEW_STATUSES);
             } elseif ($status === 'inactive') {
-                $query->whereIn('status', ['rejected', 'suspended']);
+                $query->whereIn('status', [Vendor::STATUS_REJECTED, Vendor::STATUS_SUSPENDED, Vendor::STATUS_EXPIRED, Vendor::STATUS_ARCHIVED]);
             } elseif ($status === 'blacklisted') {
-                $query->where('status', 'blacklisted');
+                $query->whereIn('status', [Vendor::STATUS_DEBARRED, 'blacklisted']);
             }
         } else {
-            $query->where('status', '!=', 'blacklisted');
+            $query->whereNotIn('status', [Vendor::STATUS_DEBARRED, 'blacklisted']);
         }
 
         $perPage = min(max((int) $request->input('per_page', 50), 1), 100);
@@ -65,9 +65,9 @@ class VendorController extends Controller
         $summaryBase = Vendor::query()->where('tenant_id', $tenantId);
         $payload = $vendors->toArray();
         $payload['summary'] = [
-            'approved'    => (clone $summaryBase)->where('status', 'approved')->count(),
-            'pending'     => (clone $summaryBase)->whereIn('status', ['draft', 'pending_approval'])->count(),
-            'blacklisted' => (clone $summaryBase)->where('status', 'blacklisted')->count(),
+            'approved'    => (clone $summaryBase)->where('status', Vendor::STATUS_APPROVED)->count(),
+            'pending'     => (clone $summaryBase)->whereIn('status', Vendor::PENDING_REVIEW_STATUSES)->count(),
+            'blacklisted' => (clone $summaryBase)->whereIn('status', [Vendor::STATUS_DEBARRED, 'blacklisted'])->count(),
         ];
 
         return response()->json($payload);
@@ -98,7 +98,7 @@ class VendorController extends Controller
             'notes'               => ['nullable', 'string', 'max:2000'],
             'is_approved'         => ['sometimes', 'boolean'],
             'risk_level'          => ['nullable', 'string', 'max:40'],
-            'category_ids'        => ['required', 'array', 'min:1', 'max:3'],
+            'category_ids'        => ['required', 'array', 'min:1'],
             'category_ids.*'      => ['integer', 'exists:supplier_categories,id'],
         ]);
 
@@ -121,7 +121,7 @@ class VendorController extends Controller
             'is_sme'              => $data['is_sme'] ?? false,
             'notes'               => $data['notes'] ?? null,
             'is_approved'         => $data['is_approved'] ?? false,
-            'status'              => ($data['is_approved'] ?? false) ? 'approved' : 'pending_approval',
+            'status'              => ($data['is_approved'] ?? false) ? Vendor::STATUS_APPROVED : Vendor::STATUS_SUBMITTED,
             'risk_level'          => $data['risk_level'] ?? null,
             'submitted_at'        => now(),
         ]);
@@ -147,7 +147,7 @@ class VendorController extends Controller
             ->load(['categories', 'approvalLogs.performer:id,name', 'portalUsers:id,vendor_id,name,email,is_active']);
 
         $quotes = $vendor->quotes()
-            ->with(['procurementRequest:id,reference_number,title,status,category,estimated_value,currency'])
+            ->with(['procurementRequest:id,reference_number,title,status,category,currency'])
             ->orderByDesc('created_at')
             ->limit(20)
             ->get();
@@ -159,13 +159,15 @@ class VendorController extends Controller
 
         $myRating = $vendor->ratings()->where('rated_by', $user->id)->first();
 
-        $payload = array_merge($vendor->toArray(), [
-            'recent_quotes' => $quotes,
-            'ratings'       => $ratings,
-            'my_rating'     => $myRating,
-            'ratings_count' => $ratings->count(),
-        ]);
-        $payload['email'] = $vendor->contact_email;
+        $payload = array_merge(
+            \App\Modules\Procurement\Support\VendorPresenter::forStaff($vendor, $user),
+            [
+                'recent_quotes' => $quotes,
+                'ratings'       => $ratings,
+                'my_rating'     => $myRating,
+                'ratings_count' => $ratings->count(),
+            ]
+        );
 
         return response()->json(['data' => $payload]);
     }
@@ -199,7 +201,7 @@ class VendorController extends Controller
             'is_approved'         => ['sometimes', 'boolean'],
             'is_active'           => ['sometimes', 'boolean'],
             'risk_level'          => ['nullable', 'string', 'max:40'],
-            'category_ids'        => ['sometimes', 'array', 'min:1', 'max:3'],
+            'category_ids'        => ['sometimes', 'array', 'min:1'],
             'category_ids.*'      => ['integer', 'exists:supplier_categories,id'],
         ]);
 
@@ -227,8 +229,8 @@ class VendorController extends Controller
 
         if (array_key_exists('is_approved', $data) || array_key_exists('is_active', $data)) {
             $vendor->status = $vendor->is_blacklisted
-                ? 'blacklisted'
-                : ($vendor->is_approved ? 'approved' : ($vendor->is_active ? 'pending_approval' : 'suspended'));
+                ? Vendor::STATUS_DEBARRED
+                : ($vendor->is_approved ? Vendor::STATUS_APPROVED : ($vendor->is_active ? Vendor::STATUS_SUBMITTED : Vendor::STATUS_SUSPENDED));
         }
         $vendor->syncLegacyFlagsFromStatus();
         $vendor->save();
@@ -270,9 +272,13 @@ class VendorController extends Controller
         }
 
         abort_unless($this->canManageVendors($request), 403);
-        $vendor = $this->vendorService->approveVendor($vendor, $request->user());
+        $conditional = $request->boolean('conditional');
+        $vendor = $this->vendorService->approveVendor($vendor, $request->user(), $conditional);
 
-        return response()->json(['message' => 'Vendor approved.', 'data' => $vendor]);
+        return response()->json([
+            'message' => $conditional ? 'Vendor conditionally approved.' : 'Vendor approved.',
+            'data' => $vendor,
+        ]);
     }
 
     public function reject(Request $request, Vendor $vendor): JsonResponse
@@ -471,8 +477,8 @@ class VendorController extends Controller
     private function syncCategories(Vendor $vendor, array $categoryIds, int $tenantId): void
     {
         $uniqueIds = array_values(array_unique($categoryIds));
-        if (count($uniqueIds) < 1 || count($uniqueIds) > 3) {
-            abort(422, 'Suppliers must be assigned between 1 and 3 categories.');
+        if (count($uniqueIds) < 1) {
+            abort(422, 'Suppliers must be assigned at least one category.');
         }
 
         $validIds = SupplierCategory::query()

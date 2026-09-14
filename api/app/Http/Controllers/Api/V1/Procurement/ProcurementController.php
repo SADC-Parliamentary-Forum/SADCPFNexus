@@ -298,7 +298,7 @@ class ProcurementController extends Controller
         $data = $request->validate([
             'rfq_deadline' => ['nullable', 'date'],
             'rfq_notes'    => ['nullable', 'string', 'max:2000'],
-            'category_ids' => ['required', 'array', 'min:1', 'max:3'],
+            'category_ids' => ['required', 'array', 'min:1'],
             'category_ids.*' => ['integer', 'exists:supplier_categories,id'],
             'external_invites' => ['nullable', 'array'],
             'external_invites.*.name' => ['nullable', 'string', 'max:255'],

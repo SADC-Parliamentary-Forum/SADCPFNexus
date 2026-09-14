@@ -561,7 +561,7 @@ export default function CreateFromDocumentPage() {
               </div>
             </div>
             <fieldset>
-              <legend className="text-sm font-medium text-neutral-800">Supplier categories (1–3)</legend>
+              <legend className="text-sm font-medium text-neutral-800">Supplier categories</legend>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 {(categories.data ?? []).map((category) => {
                   const id = `intake-supplier-cat-${category.id}`;
@@ -579,9 +579,7 @@ export default function CreateFromDocumentPage() {
                               ...current,
                               category_ids: checked
                                 ? current.category_ids.filter((item) => item !== category.id)
-                                : current.category_ids.length >= 3
-                                  ? current.category_ids
-                                  : [...current.category_ids, category.id],
+                                : [...current.category_ids, category.id],
                             }))
                           }
                         />
