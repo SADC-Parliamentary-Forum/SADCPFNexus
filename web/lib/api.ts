@@ -7057,6 +7057,16 @@ export const supportTicketsApi = {
   get: (id: number) => api.get<SupportTicket>(`/support/tickets/${id}`),
   create: (data: { subject: string; description?: string; priority?: string }) =>
     api.post<{ data: SupportTicket; message: string }>("/support/tickets", data),
+  update: (
+    id: number,
+    data: {
+      subject?: string;
+      description?: string | null;
+      priority?: SupportTicket["priority"];
+      status?: SupportTicket["status"];
+    },
+  ) => api.put<{ data: SupportTicket; message: string }>(`/support/tickets/${id}`, data),
+  delete: (id: number) => api.delete<{ message: string }>(`/support/tickets/${id}`),
 };
 
 // ─── Assignments, Oversight & Accountability ──────────────────────────────────

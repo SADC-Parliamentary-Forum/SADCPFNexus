@@ -64,13 +64,14 @@ class SupplierEmailVerificationService
         }
 
         $updates = [];
-        if (! $user->email_verified_at) {
+        $firstVerification = $user->email_verified_at === null;
+        if ($firstVerification) {
             $updates['email_verified_at'] = now();
         }
 
         // Confirm the address, but never re-enable a staff-disabled portal user.
         // First-time draft applicants are still activated because draft is a login status.
-        if (! $user->is_active) {
+        if ($firstVerification && ! $user->is_active) {
             $user->loadMissing('vendor');
             $vendor = $user->vendor;
             if ($vendor && in_array($vendor->normalizedStatus(), Vendor::PORTAL_LOGIN_STATUSES, true)) {
