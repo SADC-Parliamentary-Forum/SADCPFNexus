@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { clearAuthCookie } from "@/lib/api";
+import { clearAuthCookie, clearPortalCookie } from "@/lib/api";
 import { clearStoredUser } from "@/lib/session";
 import { LocaleSwitcher, useI18n } from "@/lib/i18n/LocaleProvider";
 import { PortalSignInForm } from "@/components/auth/PortalSignInForm";
@@ -18,6 +18,7 @@ export default function SupplierLoginPage() {
 
   useEffect(() => {
     clearAuthCookie();
+    clearPortalCookie();
     clearStoredUser();
   }, []);
 

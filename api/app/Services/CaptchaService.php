@@ -19,8 +19,9 @@ class CaptchaService
     public function driver(): string
     {
         $secret = trim((string) config('captcha.turnstile_secret'));
+        $siteKey = trim((string) config('captcha.turnstile_site_key'));
 
-        return $secret !== '' ? 'turnstile' : 'challenge';
+        return ($secret !== '' && $siteKey !== '') ? 'turnstile' : 'challenge';
     }
 
     /**

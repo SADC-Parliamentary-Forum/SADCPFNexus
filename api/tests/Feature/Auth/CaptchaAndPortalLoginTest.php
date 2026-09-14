@@ -147,6 +147,20 @@ class CaptchaAndPortalLoginTest extends TestCase
             ->assertJsonPath('driver', 'challenge');
     }
 
+    public function test_turnstile_driver_requires_both_site_and_secret_keys(): void
+    {
+        config([
+            'captcha.enabled' => true,
+            'captcha.turnstile_secret' => 'secret-only',
+            'captcha.turnstile_site_key' => '',
+        ]);
+
+        $this->getJson('/api/v1/auth/captcha')
+            ->assertOk()
+            ->assertJsonPath('driver', 'challenge')
+            ->assertJsonPath('site_key', null);
+    }
+
     private function issueCaptchaToken(): string
     {
         $response = $this->postJson('/api/v1/auth/captcha-challenge');

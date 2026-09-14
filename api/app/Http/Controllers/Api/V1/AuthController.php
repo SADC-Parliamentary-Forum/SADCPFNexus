@@ -510,10 +510,13 @@ class AuthController extends Controller
             return response()->json(['message' => 'This invitation link is invalid or has expired.'], 404);
         }
 
+        $invitation->loadMissing('user.roles');
+
         return response()->json([
             'data' => [
                 'email' => $invitation->email,
                 'name' => $invitation->user?->name,
+                'is_supplier' => (bool) $invitation->user?->isSupplier(),
                 'expires_at' => $invitation->expires_at?->toIso8601String(),
             ],
         ]);
@@ -551,12 +554,13 @@ class AuthController extends Controller
             $user = User::whereKey($lockedInvitation->user_id)
                 ->lockForUpdate()
                 ->firstOrFail();
+            $user->load('roles');
 
             PasswordPolicy::applyNewPassword($user, $data['password'], [
                 'is_active' => true,
                 'account_status' => User::STATUS_ACTIVE,
                 'email_verified_at' => now(),
-                'setup_completed' => false,
+                'setup_completed' => $user->isSupplier(),
                 'activated_at' => now(),
                 'status_changed_at' => now(),
                 'status_reason' => null,

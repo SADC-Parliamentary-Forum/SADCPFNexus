@@ -196,6 +196,37 @@ class SupplierRegistrationTest extends TestCase
             ->assertJsonValidationErrors(['captcha_token']);
     }
 
+    public function test_supplier_registration_succeeds_with_issued_captcha_token(): void
+    {
+        config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null]);
+
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_captcha_ok']);
+        $token = $this->postJson('/api/v1/auth/captcha-challenge')->json('token');
+
+        $this->post('/api/v1/procurement/suppliers/register', [
+            'tenant_id'             => $tenant->id,
+            'company_name'          => 'Captcha Ok Supplies',
+            'registration_number'   => 'REG-502',
+            'tax_number'            => 'TAX-502',
+            'contact_name'          => 'Gina Vendor',
+            'contact_email'         => 'gina@captchaok.test',
+            'contact_phone'         => '+264000016',
+            'address'               => 'Windhoek',
+            'country'               => 'Namibia',
+            'bank_name'             => 'FNB',
+            'bank_account'          => '502502502',
+            'bank_branch'           => 'Windhoek',
+            'password'              => 'Secret123!',
+            'password_confirmation' => 'Secret123!',
+            'category_ids'          => [$category->id],
+            'documents'             => [$this->fakePdf('company-profile.pdf')],
+            'captcha_token'         => $token,
+        ], ['Accept' => 'application/json'])
+            ->assertCreated()
+            ->assertJsonCount(1, 'data.documents');
+    }
+
     public function test_supplier_registration_does_not_skip_captcha_for_mobile_client_type(): void
     {
         config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null]);

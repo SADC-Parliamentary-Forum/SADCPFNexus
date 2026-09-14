@@ -3,7 +3,7 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supplierCategoriesApi, supplierPortalApi, vendorAttachmentsApi, VENDOR_DOC_TYPES } from "@/lib/api";
+import { supplierCategoriesApi, supplierPortalApi, supplierPortalAttachmentsApi, VENDOR_DOC_TYPES } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { SupplierDocumentsField, type PendingSupplierDocument } from "@/components/auth/SupplierDocumentsField";
 
@@ -179,7 +179,7 @@ export default function SupplierProfilePage() {
                     </p>
                   </div>
                   <a
-                    href={vendorAttachmentsApi.downloadUrl(profileQuery.data.id, doc.id)}
+                    href={supplierPortalAttachmentsApi.downloadUrl(doc.id)}
                     className="text-sm font-medium text-primary-800 hover:underline"
                   >
                     Download

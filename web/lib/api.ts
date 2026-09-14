@@ -41,6 +41,18 @@ export function clearAuthCookie(): void {
   document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0`;
 }
 
+const PORTAL_COOKIE = "sadcpf_portal";
+
+export function setPortalCookie(portal: "staff" | "supplier"): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${PORTAL_COOKIE}=${portal}; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
+}
+
+export function clearPortalCookie(): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${PORTAL_COOKIE}=; path=/; max-age=0`;
+}
+
 const api = axios.create({
   baseURL: "/api",
   withCredentials: true,
@@ -120,12 +132,14 @@ api.interceptors.response.use(
           path.startsWith("/reset-password") ||
           path.startsWith("/setup") ||
           path.startsWith("/approval") ||
-          path.startsWith("/supplier");
+          path === "/supplier/login" ||
+          path === "/supplier/register";
 
         if (!isPublicAuthPath && !_redirecting401) {
           _redirecting401 = true;
           clearStoredUser();
           clearAuthCookie();
+          clearPortalCookie();
 
           // Best-effort: invalidate the server-side session so Laravel emits a
           // Set-Cookie that wipes the httpOnly session cookie. Without this the
@@ -139,9 +153,10 @@ api.interceptors.response.use(
               .catch(() => { /* ignore — session is already invalid */ });
           }
 
+          const supplierArea = path === "/supplier" || path.startsWith("/supplier/");
           window.location.href = data?.code === "session_idle_timeout"
-            ? "/login?reason=idle"
-            : "/login";
+            ? (supplierArea ? "/supplier/login?reason=idle" : "/login?reason=idle")
+            : (supplierArea ? "/supplier/login" : "/login");
         }
       } else if (status && status >= 500) {
         captureClientException(error, { status, url: error.config?.url });
@@ -207,7 +222,7 @@ export const authApi = {
     });
   },
   getInvitation: async (token: string) =>
-    api.get<{ data: { email: string; name?: string | null; expires_at?: string | null } }>(
+    api.get<{ data: { email: string; name?: string | null; is_supplier?: boolean; expires_at?: string | null } }>(
       `/auth/invitations/${encodeURIComponent(token)}`
     ),
   activateInvitation: async (token: string, password: string, passwordConfirmation: string) => {
@@ -8617,6 +8632,11 @@ export const invoiceAttachmentsApi             = makeAttachmentApi("invoices",  
 export const contractAttachmentsApi            = makeAttachmentApi("contracts",      "signed_contract");
 export const goodsReceiptAttachmentsApi        = makeAttachmentApi("receipts",       "delivery_note");
 export const vendorAttachmentsApi              = makeAttachmentApi("vendors",        "company_profile");
+
+export const supplierPortalAttachmentsApi = {
+  downloadUrl: (attachmentId: number): string =>
+    `${api.defaults.baseURL}/procurement/supplier/attachments/${attachmentId}/download`,
+};
 
 export const quoteAttachmentsApi = {
   list: (requestId: number, quoteId: number) =>

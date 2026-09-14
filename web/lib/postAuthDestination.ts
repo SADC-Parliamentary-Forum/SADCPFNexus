@@ -1,6 +1,6 @@
-import { MFA_SETUP_PATH, requiresPrivilegedMfaSetup } from "@/lib/privilegedMfa";
-import { safeInternalPath } from "@/lib/safeInternalPath";
-import type { AuthUser } from "@/lib/api";
+import { MFA_SETUP_PATH, requiresPrivilegedMfaSetup } from "./privilegedMfa.ts";
+import { safeInternalPath } from "./safeInternalPath.ts";
+import type { AuthUser } from "./api.ts";
 
 export function isSupplierUser(user: Pick<AuthUser, "roles"> | null | undefined): boolean {
   return (user?.roles ?? []).some((role) => ["Supplier", "Supplier Finance User"].includes(role));

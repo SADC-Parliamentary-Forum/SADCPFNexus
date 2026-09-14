@@ -6,6 +6,7 @@ import {
   setAuthCookie,
   setMustResetCookie,
   setSetupCompleteCookie,
+  setPortalCookie,
   clearMustResetCookie,
   clearSetupCompleteCookie,
 } from "@/lib/api";
@@ -69,6 +70,7 @@ export function PortalSignInForm({ portal, emailPlaceholder, prefillEmail }: Pro
 
       writeStoredUser(user);
       setAuthCookie();
+      setPortalCookie(portal);
 
       if (user.must_reset_password) {
         setMustResetCookie();

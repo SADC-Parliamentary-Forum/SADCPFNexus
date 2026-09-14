@@ -7,6 +7,7 @@ import {
   clearAuthCookie,
   clearMustResetCookie,
   clearSetupCompleteCookie,
+  clearPortalCookie,
   ensureCsrfCookie,
 } from "@/lib/api";
 import { clearStoredUser } from "@/lib/session";
@@ -55,12 +56,14 @@ export default function LoginPage() {
         clearStoredUser();
         clearMustResetCookie();
         clearSetupCompleteCookie();
+        clearPortalCookie();
         window.history.replaceState({}, "", sp.get("reason") === "idle" ? "/login?reason=idle" : "/login");
       })();
       return;
     }
     clearAuthCookie();
     clearStoredUser();
+    clearPortalCookie();
   }, []);
 
   return (

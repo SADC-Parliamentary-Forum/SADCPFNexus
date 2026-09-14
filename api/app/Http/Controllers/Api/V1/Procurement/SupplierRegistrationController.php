@@ -28,7 +28,7 @@ class SupplierRegistrationController extends Controller
 
     public function register(Request $request): JsonResponse
     {
-        $this->captcha->assertBrowserSubmission($request, allowMobileBypass: false);
+        $this->captcha->assertBrowserSubmission($request, consume: false, allowMobileBypass: false);
         $tenant = $this->resolveTenant($request);
 
         $isIndividual = $request->input('supplier_type', 'company') === 'individual';
@@ -165,6 +165,8 @@ class SupplierRegistrationController extends Controller
         $documents = $vendor->attachments()
             ->get(['id', 'original_filename', 'document_type', 'mime_type', 'size_bytes', 'created_at'])
             ->values();
+
+        $this->captcha->consumeBrowserChallenge($request);
 
         return response()->json([
             'message' => 'Supplier registration submitted. Your account will be activated after procurement approval.',

@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 
 const MUST_RESET_COOKIE = "sadcpf_must_reset";
 const SETUP_COMPLETE_COOKIE = "sadcpf_setup_complete";
+const PORTAL_COOKIE = "sadcpf_portal";
 const LOGIN_PATH = "/login";
 const RESET_PATH = "/reset-password";
 const SETUP_PATH = "/setup";
@@ -86,10 +87,16 @@ function buildLoginRedirect(request: NextRequest, from: string): NextResponse {
   return NextResponse.redirect(loginUrl);
 }
 
+function isSupplierAppPath(path: string): boolean {
+  if (path === "/supplier/login" || path === "/supplier/register") return false;
+  return path === "/supplier" || path.startsWith("/supplier/");
+}
+
 export function proxy(request: NextRequest) {
   const isAuth = Boolean(request.cookies.get("sadcpf_authenticated")?.value);
   const mustReset = Boolean(request.cookies.get(MUST_RESET_COOKIE)?.value);
   const setupComplete = Boolean(request.cookies.get(SETUP_COMPLETE_COOKIE)?.value);
+  const supplierPortal = request.cookies.get(PORTAL_COOKIE)?.value === "supplier";
   const path = request.nextUrl.pathname;
   const pathWithSearch = `${path}${request.nextUrl.search}`;
 
@@ -100,9 +107,11 @@ export function proxy(request: NextRequest) {
           ? LOGIN_PATH
           : mustReset
             ? RESET_PATH
-            : !setupComplete
-              ? SETUP_PATH
-              : "/dashboard",
+            : supplierPortal || isSupplierAppPath(path)
+              ? "/supplier"
+              : !setupComplete
+                ? SETUP_PATH
+                : "/dashboard",
         request.url
       )
     );
@@ -115,10 +124,10 @@ export function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL(
           mustReset
             ? RESET_PATH
-            : !setupComplete
-              ? SETUP_PATH
-              : path === "/supplier/login"
-                ? "/supplier"
+            : path === "/supplier/login" || supplierPortal
+              ? "/supplier"
+              : !setupComplete
+                ? SETUP_PATH
                 : "/dashboard",
           request.url
         ));
@@ -152,6 +161,9 @@ export function proxy(request: NextRequest) {
     if (mustReset) {
       return NextResponse.redirect(new URL(RESET_PATH, request.url));
     }
+    if (supplierPortal) {
+      return NextResponse.redirect(new URL("/supplier", request.url));
+    }
     if (setupComplete) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
@@ -164,7 +176,7 @@ export function proxy(request: NextRequest) {
 
   const isProtected = PROTECTED_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
   if (isProtected) {
-    if (!setupComplete && !allowDuringSetup) {
+    if (!setupComplete && !allowDuringSetup && !supplierPortal && !isSupplierAppPath(path)) {
       return NextResponse.redirect(new URL(SETUP_PATH, request.url));
     }
     return NextResponse.next();

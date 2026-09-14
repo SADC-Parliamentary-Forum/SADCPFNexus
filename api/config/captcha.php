@@ -14,8 +14,8 @@ return [
     | honours that bypass.
     |
     | Driver `challenge` is a signed, one-time token issued after the user
-    | confirms they are not a robot. When TURNSTILE_SECRET_KEY is set, the
-    | driver is `turnstile` and tokens are verified with Cloudflare.
+    | confirms they are not a robot. When both TURNSTILE_SITE_KEY and
+    | TURNSTILE_SECRET_KEY are set, the driver is `turnstile`.
     |
     */
 
