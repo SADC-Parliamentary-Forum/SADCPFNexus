@@ -112,3 +112,15 @@ test("asset import and labels stay gated to import/print permissions", () => {
   assert.equal(canAccessRoute(creator, "/assets/categories"), true);
   assert.equal(canAccessRoute(creator, "/assets/add"), true);
 });
+
+test("Supplier can open portal, profile, and help", () => {
+  const supplier = {
+    roles: ["Supplier"],
+    permissions: ["supplier.portal", "support.view", "support.create"],
+  };
+  assert.equal(canAccessRoute(supplier, "/supplier"), true);
+  assert.equal(canAccessRoute(supplier, "/supplier/profile"), true);
+  assert.equal(canAccessRoute(supplier, "/profile"), true);
+  assert.equal(canAccessRoute(supplier, "/profile/support"), true);
+  assert.equal(canAccessRoute(supplier, "/procurement/vendors"), false);
+});

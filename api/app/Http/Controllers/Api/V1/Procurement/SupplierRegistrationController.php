@@ -12,6 +12,7 @@ use App\Models\Vendor;
 use App\Services\CaptchaService;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
+use App\Support\FrontendUrl;
 use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -146,6 +147,25 @@ class SupplierRegistrationController extends Controller
             'performed_by' => $user->id,
             'performed_at' => now(),
         ]);
+
+        $this->notifications->dispatch(
+            $user,
+            'supplier.application_received',
+            [
+                'name'      => $user->name,
+                'supplier'  => $vendor->name,
+                'login_url' => FrontendUrl::to('supplier/login'),
+            ],
+            [
+                'module'          => 'procurement',
+                'record_id'       => $vendor->id,
+                'url'             => '/supplier',
+                'allow_inactive'  => true,
+                'include_acting'  => false,
+                'include_delegates' => false,
+                'idempotency_key' => 'supplier.application_received:'.$vendor->id.':'.$user->id,
+            ]
+        );
 
         $procurementUsers = $this->procurementRecipients($tenant->id);
 

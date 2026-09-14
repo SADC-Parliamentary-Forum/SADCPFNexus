@@ -5,6 +5,7 @@ namespace App\Modules\Notifications\Services;
 use App\Mail\ModuleNotificationMail;
 use App\Models\Notifications\NotificationChannelDelivery;
 use App\Models\User;
+use App\Modules\Admin\Services\TenantMailRuntime;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -16,9 +17,16 @@ class FailoverMailService
 {
     public function primaryMailer(): string
     {
-        $configured = config('notifications.email_primary_mailer');
+        $liveDefault = (string) config('mail.default', 'log');
+        $configured = (string) (config('notifications.email_primary_mailer') ?: $liveDefault);
 
-        return (string) ($configured ?: config('mail.default', 'log'));
+        // Admin SMTP rewrites mail.default to smtp at request/queue time. Do not
+        // keep sending through a boot-time MAIL_MAILER=log/array driver.
+        if ($liveDefault === 'smtp' && in_array($configured, ['log', 'array', ''], true)) {
+            return 'smtp';
+        }
+
+        return $configured !== '' ? $configured : $liveDefault;
     }
 
     public function secondaryMailer(): ?string
@@ -61,6 +69,7 @@ class FailoverMailService
         ?string $secureUrl,
         NotificationChannelDelivery $delivery,
     ): array {
+        $this->applyTenantMailer($delivery);
         $started = microtime(true);
         $primary = $this->primaryMailer();
         $mailable = new ModuleNotificationMail(
@@ -70,6 +79,7 @@ class FailoverMailService
             null,
             null,
             $secureUrl,
+            (int) ($delivery->tenant_id ?: 0) ?: null,
         );
 
         return $this->queueWithFailover($email, $mailable, $delivery, $primary, $started);
@@ -82,10 +92,19 @@ class FailoverMailService
      */
     public function queueMailable(string $email, \Illuminate\Mail\Mailable $mailable, NotificationChannelDelivery $delivery): array
     {
+        $this->applyTenantMailer($delivery);
         $started = microtime(true);
         $primary = $this->primaryMailer();
 
         return $this->queueWithFailover($email, $mailable, $delivery, $primary, $started);
+    }
+
+    private function applyTenantMailer(NotificationChannelDelivery $delivery): void
+    {
+        $tenantId = (int) ($delivery->tenant_id ?: 0);
+        if ($tenantId > 0) {
+            app(TenantMailRuntime::class)->apply($tenantId);
+        }
     }
 
     /**
@@ -111,6 +130,9 @@ class FailoverMailService
         }
 
         try {
+            if (app()->environment('production') && $primary === 'log') {
+                Log::warning('Notification email using log mailer; configure Admin → Email SMTP or MAIL_MAILER=smtp');
+            }
             Mail::mailer($primary)->to($email)->queue($mailable);
 
             return [

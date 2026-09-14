@@ -7,6 +7,7 @@ use App\Models\SupplierApprovalLog;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Services\NotificationService;
+use App\Support\FrontendUrl;
 
 class VendorService
 {
@@ -47,8 +48,17 @@ class VendorService
             $this->notificationService->dispatch(
                 $portalUser,
                 'supplier.approved',
-                ['name' => $portalUser->name, 'supplier' => $vendor->name],
-                ['module' => 'procurement', 'record_id' => $vendor->id, 'url' => '/supplier']
+                [
+                    'name'      => $portalUser->name,
+                    'supplier'  => $vendor->name,
+                    'login_url' => FrontendUrl::to('supplier/login'),
+                ],
+                [
+                    'module'         => 'procurement',
+                    'record_id'      => $vendor->id,
+                    'url'            => '/supplier',
+                    'allow_inactive' => true,
+                ]
             );
         }
 
@@ -86,7 +96,12 @@ class VendorService
                 $portalUser,
                 'supplier.rejected',
                 ['name' => $portalUser->name, 'supplier' => $vendor->name, 'comment' => $reason],
-                ['module' => 'procurement', 'record_id' => $vendor->id, 'url' => '/supplier/profile']
+                [
+                    'module'         => 'procurement',
+                    'record_id'      => $vendor->id,
+                    'url'            => '/supplier/profile',
+                    'allow_inactive' => true,
+                ]
             );
         }
 
@@ -113,7 +128,12 @@ class VendorService
                 $portalUser,
                 'supplier.info_requested',
                 ['name' => $portalUser->name, 'supplier' => $vendor->name, 'comment' => $reason],
-                ['module' => 'procurement', 'record_id' => $vendor->id, 'url' => '/supplier/profile']
+                [
+                    'module'         => 'procurement',
+                    'record_id'      => $vendor->id,
+                    'url'            => '/supplier/profile',
+                    'allow_inactive' => true,
+                ]
             );
         }
 
@@ -142,7 +162,11 @@ class VendorService
                 $portalUser,
                 'supplier.suspended',
                 ['name' => $portalUser->name, 'supplier' => $vendor->name, 'comment' => $reason],
-                ['module' => 'procurement', 'record_id' => $vendor->id]
+                [
+                    'module'         => 'procurement',
+                    'record_id'      => $vendor->id,
+                    'allow_inactive' => true,
+                ]
             );
         }
 

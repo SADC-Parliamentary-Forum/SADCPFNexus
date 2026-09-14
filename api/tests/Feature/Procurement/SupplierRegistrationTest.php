@@ -288,4 +288,47 @@ class SupplierRegistrationTest extends TestCase
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['documents']);
     }
+
+    public function test_supplier_registration_emails_the_inactive_applicant(): void
+    {
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_ack']);
+
+        $response = $this->post('/api/v1/procurement/suppliers/register', [
+            'tenant_id'             => $tenant->id,
+            'company_name'          => 'Ack Mail Supplies',
+            'registration_number'   => 'REG-700',
+            'tax_number'            => 'TAX-700',
+            'contact_name'          => 'Gita Vendor',
+            'contact_email'         => 'gita@ackmail.test',
+            'contact_phone'         => '+264000007',
+            'address'               => 'Windhoek',
+            'country'               => 'Namibia',
+            'bank_name'             => 'FNB',
+            'bank_account'          => '700700700',
+            'bank_branch'           => 'Windhoek',
+            'password'              => 'Secret123!',
+            'password_confirmation' => 'Secret123!',
+            'category_ids'          => [$category->id],
+            'documents'             => [$this->fakePdf('company-profile.pdf')],
+        ], ['Accept' => 'application/json']);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('users', [
+            'email'     => 'gita@ackmail.test',
+            'is_active' => false,
+        ]);
+        $this->assertDatabaseHas('notification_outbox', [
+            'event_type' => 'supplier.application_received',
+            'status'     => 'published',
+        ]);
+        $this->assertDatabaseHas('notification_recipients', [
+            'user_id' => $response->json('data.user_id'),
+        ]);
+        $this->assertDatabaseHas('notification_channel_deliveries', [
+            'channel'               => 'email',
+            'destination_snapshot'  => 'gita@ackmail.test',
+        ]);
+    }
 }

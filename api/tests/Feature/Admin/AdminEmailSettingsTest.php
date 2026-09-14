@@ -67,9 +67,39 @@ class AdminEmailSettingsTest extends TestCase
 
         app(\App\Modules\Admin\Services\TenantMailRuntime::class)->apply((int) $tenant->id);
         $this->assertSame('smtp', config('mail.default'));
+        $this->assertSame('smtp', config('notifications.email_primary_mailer'));
         $this->assertSame('smtp.example.test', config('mail.mailers.smtp.host'));
         $this->assertSame('smtp-secret', config('mail.mailers.smtp.password'));
         $this->assertSame('alerts@sadcpf.org', config('mail.from.address'));
+        $this->assertSame('smtp', app(\App\Modules\Notifications\Services\FailoverMailService::class)->primaryMailer());
+    }
+
+    public function test_admin_smtp_overrides_boot_time_log_mailer_for_notifications(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $row = TenantMailSetting::forTenant((int) $tenant->id);
+        $row->smtp_enabled = true;
+        $row->smtp_host = 'smtp.override.test';
+        $row->smtp_port = 587;
+        $row->smtp_encryption = 'tls';
+        $row->smtp_username = 'alerts@sadcpf.org';
+        $row->smtp_from_address = 'alerts@sadcpf.org';
+        $row->setSmtpPassword('override-secret');
+        $row->save();
+
+        config([
+            'mail.default' => 'log',
+            'notifications.email_primary_mailer' => 'log',
+        ]);
+
+        $this->assertSame('log', app(\App\Modules\Notifications\Services\FailoverMailService::class)->primaryMailer());
+
+        app(\App\Modules\Admin\Services\TenantMailRuntime::class)->apply((int) $tenant->id);
+
+        $this->assertSame('smtp', config('mail.default'));
+        $this->assertSame('smtp', config('notifications.email_primary_mailer'));
+        $this->assertSame('smtp', app(\App\Modules\Notifications\Services\FailoverMailService::class)->primaryMailer());
+        $this->assertSame('smtp.override.test', config('mail.mailers.smtp.host'));
     }
 
     public function test_admin_can_save_incoming_procurement_and_correspondence_mailboxes(): void

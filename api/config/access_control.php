@@ -792,8 +792,8 @@ return [
             'WRITE' => ['calendar.create', 'calendar.admin'],
         ]],
         ['pattern' => 'api/v1/support*', 'permissions' => [
-            'READ' => ['support.view'],
-            'WRITE' => ['support.create', 'support.admin'],
+            'READ' => ['support.view', 'supplier.portal'],
+            'WRITE' => ['support.create', 'support.admin', 'supplier.portal'],
         ]],
         ['pattern' => 'api/v1/dashboard*', 'permissions' => [
             'READ' => ['dashboard.view', 'reports.view'],

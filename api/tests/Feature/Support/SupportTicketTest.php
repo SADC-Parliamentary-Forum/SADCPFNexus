@@ -161,4 +161,43 @@ class SupportTicketTest extends TestCase
         ])->assertUnprocessable()
           ->assertJsonValidationErrors(['subject']);
     }
+
+    public function test_supplier_can_list_and_create_own_tickets(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asSupplier($tenant);
+
+        $http->getJson('/api/v1/support/tickets')->assertOk();
+
+        $http->postJson('/api/v1/support/tickets', [
+            'subject'     => 'Cannot see my RFQs',
+            'description' => 'Portal shows an empty list after approval.',
+            'priority'    => 'medium',
+        ])->assertCreated()
+          ->assertJsonPath('data.user_id', $user->id);
+
+        $this->assertDatabaseHas('support_tickets', [
+            'user_id' => $user->id,
+            'subject' => 'Cannot see my RFQs',
+            'status'  => 'open',
+        ]);
+    }
+
+    public function test_supplier_cannot_view_another_users_ticket(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asSupplier($tenant);
+        $other = $this->makeSupplierUser($tenant, ['email' => 'other-supplier@example.test']);
+
+        $ticket = SupportTicket::create([
+            'tenant_id'        => $tenant->id,
+            'user_id'          => $other->id,
+            'reference_number' => 'TKT-TEST-SUP-001',
+            'subject'          => 'Not yours',
+            'status'           => 'open',
+            'priority'         => 'medium',
+        ]);
+
+        $http->getJson("/api/v1/support/tickets/{$ticket->id}")->assertForbidden();
+    }
 }

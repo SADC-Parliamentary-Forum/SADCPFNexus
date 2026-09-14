@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supportTicketsApi, type SupportTicket } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -62,11 +63,7 @@ export default function SupportTicketsPage() {
       setFormError(null);
     },
     onError: (err: unknown) => {
-      const msg =
-        err && typeof err === "object" && "message" in err
-          ? String((err as { message: string }).message)
-          : "Failed to submit ticket.";
-      setFormError(msg);
+      setFormError(apiErrorMessage(err, "Failed to submit ticket."));
     },
   });
 

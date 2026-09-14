@@ -22,6 +22,10 @@ final class TenantMailRuntime
         $encryption = strtolower((string) ($row->smtp_encryption ?: 'tls'));
         config([
             'mail.default' => 'smtp',
+            // Notifications resolve a dedicated mailer name at boot from MAIL_MAILER
+            // (often "log"). Keep it aligned with the live SMTP profile or the
+            // outbox will keep writing to laravel.log after Admin SMTP is saved.
+            'notifications.email_primary_mailer' => 'smtp',
             'mail.mailers.smtp.transport' => 'smtp',
             'mail.mailers.smtp.host' => $row->smtp_host,
             'mail.mailers.smtp.port' => (int) ($row->smtp_port ?: 587),

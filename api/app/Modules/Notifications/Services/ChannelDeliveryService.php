@@ -446,7 +446,16 @@ class ChannelDeliveryService
             $body .= "Sign in to Nexus for details.\n\nRegards,\nSADC-PF Nexus";
 
             if (filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
-                Mail::to($user->email)->queue(new ModuleNotificationMail($subject, $body, $user->name));
+                app(\App\Modules\Admin\Services\TenantMailRuntime::class)->apply((int) $user->tenant_id);
+                Mail::to($user->email)->queue(new ModuleNotificationMail(
+                    $subject,
+                    $body,
+                    $user->name,
+                    null,
+                    null,
+                    null,
+                    (int) $user->tenant_id,
+                ));
             }
 
             $digest->update(['status' => 'sent', 'sent_at' => now()]);
