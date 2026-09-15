@@ -176,8 +176,12 @@ test.describe("Asset scan and recovery settings (admin)", () => {
     await waitForApp(page);
     await skipIfAccessDenied(page, "assets scan");
     await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator("input").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: /Look up|Rechercher|Procurar/i })).toBeVisible();
+    await expect(page.getByTestId("scan-token-input")).toBeVisible();
+    await expect(page.getByTestId("scan-lookup")).toBeVisible();
+    await expect(page.getByTestId("scan-start-camera")).toBeVisible();
+    await page.getByTestId("scan-token-input").fill("short");
+    await page.getByTestId("scan-lookup").click();
+    await expect(page.getByText(/Could not read that QR token|Impossible de lire ce jeton QR|Não foi possível ler esse token QR/i)).toBeVisible();
   });
 
   test("settings recovery contact can be saved", async ({ page }) => {
