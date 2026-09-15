@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use App\Models\Concerns\PreparedOnBehalf;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProcurementRequest extends Model
 {
-    use HasFactory, SoftDeletes, PreparedOnBehalf;
+    use HasFactory, PreparedOnBehalf, SoftDeletes;
 
     protected $fillable = [
         'tenant_id', 'requester_id', 'approved_by', 'reference_number',
@@ -29,45 +30,134 @@ class ProcurementRequest extends Model
     ];
 
     protected $casts = [
-        'required_by_date'    => 'date',
-        'submitted_at'        => 'datetime',
-        'approved_at'         => 'datetime',
-        'awarded_at'          => 'datetime',
-        'hod_reviewed_at'     => 'datetime',
-        'rfq_issued_at'       => 'datetime',
-        'rfq_deadline'        => 'date',
-        'method_override_at'  => 'datetime',
+        'required_by_date' => 'date',
+        'submitted_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'awarded_at' => 'datetime',
+        'hod_reviewed_at' => 'datetime',
+        'rfq_issued_at' => 'datetime',
+        'rfq_deadline' => 'date',
+        'method_override_at' => 'datetime',
         'split_authorised_at' => 'datetime',
-        'estimated_value'     => 'float',
-        'policy_snapshot'     => 'array',
-        'budget_confirmed'    => 'boolean',
+        'estimated_value' => 'float',
+        'policy_snapshot' => 'array',
+        'budget_confirmed' => 'boolean',
     ];
 
     protected static function booted(): void
     {
         static::creating(function (self $request): void {
             if (empty($request->reference_number)) {
-                $request->reference_number = 'PRQ-' . strtoupper(\Illuminate\Support\Str::random(8));
+                $request->reference_number = 'PRQ-'.strtoupper(\Illuminate\Support\Str::random(8));
             }
         });
     }
 
-    public function requester()         { return $this->belongsTo(User::class, 'requester_id'); }
-    public function approver()          { return $this->belongsTo(User::class, 'approved_by'); }
-    public function hod()               { return $this->belongsTo(User::class, 'hod_id'); }
-    public function items()             { return $this->hasMany(ProcurementItem::class); }
-    public function quotes()            { return $this->hasMany(ProcurementQuote::class); }
-    public function awardedQuote()      { return $this->belongsTo(ProcurementQuote::class, 'awarded_quote_id'); }
-    public function purchaseOrder()     { return $this->hasOne(PurchaseOrder::class); }
-    public function budgetReservation() { return $this->hasOne(BudgetReservation::class); }
-    public function budgetReservations(){ return $this->hasMany(BudgetReservation::class); }
-    public function programme()         { return $this->belongsTo(Programme::class); }
-    public function methodOverrideBy()  { return $this->belongsTo(User::class, 'method_override_by'); }
-    public function splitAuthorisedBy() { return $this->belongsTo(User::class, 'split_authorised_by'); }
-    public function rfqIssuer()         { return $this->belongsTo(User::class, 'rfq_issued_by'); }
-    public function tender()            { return $this->hasOne(Tender::class); }
-    public function supplierCategories(){ return $this->belongsToMany(SupplierCategory::class, 'procurement_request_supplier_category')->withTimestamps(); }
-    public function rfqInvitations()    { return $this->hasMany(RfqInvitation::class); }
+    public function requester()
+    {
+        return $this->belongsTo(User::class, 'requester_id');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function hod()
+    {
+        return $this->belongsTo(User::class, 'hod_id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(ProcurementItem::class);
+    }
+
+    public function quotes()
+    {
+        return $this->hasMany(ProcurementQuote::class);
+    }
+
+    public function awardedQuote()
+    {
+        return $this->belongsTo(ProcurementQuote::class, 'awarded_quote_id');
+    }
+
+    public function purchaseOrder()
+    {
+        return $this->hasOne(PurchaseOrder::class);
+    }
+
+    protected $appends = ['po_link', 'converted_to_po'];
+
+    public function getPoLinkAttribute(): ?array
+    {
+        if (! $this->relationLoaded('purchaseOrder')) {
+            return null;
+        }
+        $po = $this->purchaseOrder;
+        if (! $po) {
+            return null;
+        }
+
+        return [
+            'id' => $po->id,
+            'display_reference' => $po->lpo_number ?: $po->reference_number,
+            'status' => $po->status,
+        ];
+    }
+
+    public function getConvertedToPoAttribute(): bool
+    {
+        $link = $this->po_link;
+
+        return is_array($link) && filled($link['display_reference'] ?? null) && ! str_starts_with((string) $link['display_reference'], 'PROC-DRAFT-');
+    }
+
+    public function budgetReservation()
+    {
+        return $this->hasOne(BudgetReservation::class);
+    }
+
+    public function budgetReservations()
+    {
+        return $this->hasMany(BudgetReservation::class);
+    }
+
+    public function programme()
+    {
+        return $this->belongsTo(Programme::class);
+    }
+
+    public function methodOverrideBy()
+    {
+        return $this->belongsTo(User::class, 'method_override_by');
+    }
+
+    public function splitAuthorisedBy()
+    {
+        return $this->belongsTo(User::class, 'split_authorised_by');
+    }
+
+    public function rfqIssuer()
+    {
+        return $this->belongsTo(User::class, 'rfq_issued_by');
+    }
+
+    public function tender()
+    {
+        return $this->hasOne(Tender::class);
+    }
+
+    public function supplierCategories()
+    {
+        return $this->belongsToMany(SupplierCategory::class, 'procurement_request_supplier_category')->withTimestamps();
+    }
+
+    public function rfqInvitations()
+    {
+        return $this->hasMany(RfqInvitation::class);
+    }
 
     public function attachments(): MorphMany
     {
@@ -79,13 +169,40 @@ class ProcurementRequest extends Model
         return $this->morphOne(ApprovalRequest::class, 'approvable');
     }
 
-    public function isDraft(): bool          { return $this->status === 'draft'; }
-    public function isSubmitted(): bool      { return $this->status === 'submitted'; }
-    public function isHodApproved(): bool    { return $this->status === 'hod_approved'; }
-    public function isHodRejected(): bool    { return $this->status === 'hod_rejected'; }
-    public function isBudgetReserved(): bool { return $this->status === 'budget_reserved'; }
-    public function isApproved(): bool       { return $this->status === 'approved'; }
-    public function isAwarded(): bool        { return $this->status === 'awarded'; }
+    public function isDraft(): bool
+    {
+        return $this->status === 'draft';
+    }
+
+    public function isSubmitted(): bool
+    {
+        return $this->status === 'submitted';
+    }
+
+    public function isHodApproved(): bool
+    {
+        return $this->status === 'hod_approved';
+    }
+
+    public function isHodRejected(): bool
+    {
+        return $this->status === 'hod_rejected';
+    }
+
+    public function isBudgetReserved(): bool
+    {
+        return $this->status === 'budget_reserved';
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    public function isAwarded(): bool
+    {
+        return $this->status === 'awarded';
+    }
 
     public function hasActiveBudgetConfirmation(): bool
     {
@@ -101,7 +218,7 @@ class ProcurementRequest extends Model
     public function onWorkflowApproved(User $approver): void
     {
         $this->update([
-            'status'      => 'approved',
+            'status' => 'approved',
             'approved_by' => $approver->id,
             'approved_at' => now(),
         ]);
@@ -113,7 +230,7 @@ class ProcurementRequest extends Model
                 $this->requester,
                 'procurement.approved',
                 ['name' => $this->requester->name, 'reference' => $this->reference_number],
-                ['module' => 'procurement', 'record_id' => $this->id, 'url' => '/procurement/' . $this->id]
+                ['module' => 'procurement', 'record_id' => $this->id, 'url' => '/procurement/'.$this->id]
             );
         }
     }
@@ -121,8 +238,8 @@ class ProcurementRequest extends Model
     public function onWorkflowRejected(User $approver, ?string $reason): void
     {
         $this->update([
-            'status'           => 'rejected',
-            'approved_by'      => $approver->id,
+            'status' => 'rejected',
+            'approved_by' => $approver->id,
             'rejection_reason' => $reason,
         ]);
 
@@ -133,7 +250,7 @@ class ProcurementRequest extends Model
                 $this->requester,
                 'procurement.rejected',
                 ['name' => $this->requester->name, 'reference' => $this->reference_number, 'comment' => $reason ?? ''],
-                ['module' => 'procurement', 'record_id' => $this->id, 'url' => '/procurement/' . $this->id]
+                ['module' => 'procurement', 'record_id' => $this->id, 'url' => '/procurement/'.$this->id]
             );
         }
     }

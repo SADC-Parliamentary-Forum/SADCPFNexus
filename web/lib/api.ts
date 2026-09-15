@@ -3462,6 +3462,9 @@ export interface ProcurementRequest {
   supplierCategories?: SupplierCategory[];
   rfqInvitations?: RfqInvitation[];
   purchaseOrder?: PurchaseOrder | null;
+  purchase_order?: PurchaseOrder | null;
+  po_link?: { id: number; display_reference: string; status: string } | null;
+  converted_to_po?: boolean;
   budgetReservations?: BudgetReservation[];
   budget_confirmed?: boolean | number;
 }
@@ -3470,6 +3473,65 @@ export const procurementSettingsApi = {
   get: () => api.get<{ data: ProcurementSettings }>("/procurement/settings"),
   update: (data: Partial<ProcurementSettings>) =>
     api.put<{ data: ProcurementSettings; message: string }>("/procurement/settings", data),
+};
+
+export type PoDocumentTemplate = {
+  id: number;
+  name: string;
+  description?: string | null;
+  status: string;
+  is_default: boolean;
+  orientation?: string;
+  draft_version?: { id: number; version: number; layout_json: unknown; status: string } | null;
+  published_version?: { id: number; version: number; layout_json: unknown; status: string } | null;
+  draftVersion?: { id: number; version: number; layout_json: unknown; status: string } | null;
+  publishedVersion?: { id: number; version: number; layout_json: unknown; status: string } | null;
+};
+
+export const poTemplatesApi = {
+  list: () => api.get<{ data: PoDocumentTemplate[] }>("/procurement/po-templates"),
+  get: (id: number) => api.get<{ data: PoDocumentTemplate }>(`/procurement/po-templates/${id}`),
+  create: (data: { name: string; description?: string; layout_json?: unknown }) =>
+    api.post<{ data: PoDocumentTemplate; message: string }>("/procurement/po-templates", data),
+  saveDraft: (id: number, data: { name?: string; description?: string | null; layout_json?: unknown }) =>
+    api.put<{ data: PoDocumentTemplate; message: string }>(`/procurement/po-templates/${id}`, data),
+  publish: (id: number) =>
+    api.post<{ data: PoDocumentTemplate; message: string }>(`/procurement/po-templates/${id}/publish`),
+  retire: (id: number) =>
+    api.post<{ data: PoDocumentTemplate; message: string }>(`/procurement/po-templates/${id}/retire`),
+  setDefault: (id: number) =>
+    api.post<{ data: PoDocumentTemplate; message: string }>(`/procurement/po-templates/${id}/default`),
+  preview: (id: number, data: { mode?: string; layout_json?: unknown; purchase_order_id?: number }) =>
+    api.post<Blob>(`/procurement/po-templates/${id}/preview`, data, { responseType: "blob" }),
+  catalog: () => api.get<{ data: Record<string, unknown> }>("/procurement/po-templates/catalog"),
+};
+
+export type NumberingProfile = {
+  configured: boolean;
+  status: string;
+  prefix: string;
+  padding: number;
+  separator: string;
+  pattern: string;
+  current_value: number;
+  next_example: string;
+  last_legacy_number?: number | null;
+  scheme_key?: string;
+  document_type?: string;
+  name?: string;
+};
+
+export const numberingProfilesApi = {
+  show: () => api.get<{ data: NumberingProfile }>("/procurement/numbering-profiles"),
+  parse: (last_existing_reference: string) =>
+    api.post<{ data: { prefix: string; separator: string; sequence: number; padding: number; pattern: string; next_example: string } }>(
+      "/procurement/numbering-profiles/parse",
+      { last_existing_reference }
+    ),
+  activate: (data: { last_existing_reference?: string; last_legacy_number?: number; reason: string; pattern?: string }) =>
+    api.post<{ data: NumberingProfile; message: string }>("/procurement/numbering-profiles/activate", data),
+  setNext: (next_sequence: number, reason: string) =>
+    api.post<{ data: NumberingProfile; message: string }>("/procurement/numbering-profiles/set-next", { next_sequence, reason }),
 };
 
 export const procurementApi = {
@@ -4521,6 +4583,8 @@ export interface PurchaseOrder {
   reference_number: string;
   lpo_number?: string | null;
   lpo_date?: string | null;
+  display_reference?: string;
+  source_requisition?: { id: number; reference: string; status: string } | null;
   title: string;
   description: string | null;
   delivery_address: string | null;
@@ -4582,8 +4646,8 @@ export const purchaseOrdersApi = {
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/issue`),
   cancel: (id: number, reason: string) =>
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/cancel`, { reason }),
-  submit: (id: number, idempotency_key?: string) =>
-    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/submit`, { idempotency_key }),
+  submit: (id: number, payload?: { idempotency_key?: string; reference_mode?: "auto" | "custom"; custom_reference?: string; custom_reason?: string; continue_sequence?: boolean; template_id?: number }) =>
+    api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/submit`, payload ?? {}),
   approve: (id: number, comment?: string, confirmPassword?: string) =>
     api.post<{ data: PurchaseOrder; message: string }>(`/procurement/purchase-orders/${id}/approve`, {
       comment,

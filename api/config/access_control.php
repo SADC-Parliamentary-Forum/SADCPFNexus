@@ -21,6 +21,7 @@ return [
         'api/v1/email-action/*',
         'api/v1/public/assets/*',
         'api/v1/asset-transfers/*',
+        'api/v1/public/purchase-orders/*',
     ],
     'endpoint_fallback_permission_rules' => [
         ['pattern' => 'api/v1/admin/access-requests*', 'permissions' => [
@@ -215,6 +216,14 @@ return [
         ['pattern' => 'api/v1/procurement/lpo-sequence*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.admin', 'procurement.sequence.manage'],
             'WRITE' => ['procurement.admin', 'procurement.sequence.manage'],
+        ]],
+        ['pattern' => 'api/v1/procurement/numbering-profiles*', 'permissions' => [
+            'READ' => ['procurement.view', 'procurement.admin', 'procurement.sequence.manage'],
+            'WRITE' => ['procurement.admin', 'procurement.sequence.manage'],
+        ]],
+        ['pattern' => 'api/v1/procurement/po-templates*', 'permissions' => [
+            'READ' => ['procurement.admin', 'procurement.template.publish'],
+            'WRITE' => ['procurement.admin', 'procurement.template.publish'],
         ]],
         ['pattern' => 'api/v1/procurement/projects*', 'permissions' => [
             'READ' => ['procurement.view', 'procurement.create', 'procurement.admin'],

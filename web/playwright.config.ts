@@ -60,6 +60,7 @@ export default defineConfig({
         "**/timesheets-travel-followups.spec.ts",
         "**/organogram.spec.ts",
         "**/pif-sections.spec.ts",
+        "**/po-template-designer.spec.ts",
       ],
     },
 
@@ -79,6 +80,7 @@ export default defineConfig({
         "**/timesheets-travel-followups.spec.ts",
         "**/organogram.spec.ts",
         "**/pif-sections.spec.ts",
+        "**/po-template-designer.spec.ts",
       ],
     },
 

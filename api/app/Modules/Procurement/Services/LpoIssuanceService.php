@@ -3,12 +3,15 @@
 namespace App\Modules\Procurement\Services;
 
 use App\Models\AuditLog;
+use App\Models\DocumentTemplate;
 use App\Models\ProcurementDocumentIntake;
 use App\Models\ProcurementException;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\User;
+use App\Modules\Documents\Services\DocumentNumberingService;
 use App\Modules\Documents\Services\ModuleDocumentBridge;
+use App\Modules\Documents\Services\PurchaseOrderDocumentService;
 use App\Modules\Procurement\Support\ArithmeticValidator;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
@@ -20,6 +23,8 @@ class LpoIssuanceService
 {
     public function __construct(
         private readonly LpoSequenceAllocator $sequence,
+        private readonly DocumentNumberingService $numbers,
+        private readonly PurchaseOrderDocumentService $documents,
         private readonly LpoPdfService $pdf,
         private readonly WorkflowService $workflow,
         private readonly NotificationService $notifications,
@@ -123,7 +128,7 @@ class LpoIssuanceService
         return $po->load(['vendor', 'items', 'project', 'procurementRequest']);
     }
 
-    public function submit(PurchaseOrder $po, User $user, ?string $idempotencyKey = null): PurchaseOrder
+    public function submit(PurchaseOrder $po, User $user, ?string $idempotencyKey = null, array $reference = []): PurchaseOrder
     {
         if ($idempotencyKey && $po->status === 'awaiting_approval') {
             return $po;
@@ -134,13 +139,15 @@ class LpoIssuanceService
         if ($po->isIssued() || in_array($po->status, ['issued', 'void', 'cancelled'], true)) {
             throw ValidationException::withMessages(['status' => 'This LPO cannot be submitted.']);
         }
-        if (! $po->isIntakeLpo()) {
-            throw ValidationException::withMessages([
-                'reference_number' => 'Award-path purchase orders keep PO- references. Use Issue PO, not LPO submit.',
-            ]);
-        }
-        if (! $po->procurement_project_id) {
+        $isIntake = (bool) $po->source_intake_id;
+        if ($isIntake && ! $po->procurement_project_id) {
             throw ValidationException::withMessages(['procurement_project_id' => 'Project is mandatory before submission.']);
+        }
+        if (! $po->vendor_id) {
+            throw ValidationException::withMessages(['vendor_id' => 'A supplier is required before submission.']);
+        }
+        if ($po->items()->count() === 0) {
+            throw ValidationException::withMessages(['items' => 'At least one line item is required.']);
         }
         if ($po->retrospective) {
             $approved = ProcurementException::query()
@@ -160,16 +167,39 @@ class LpoIssuanceService
             }
         }
 
+        if (array_key_exists('template_id', $reference)) {
+            $po->document_template_id = $this->resolvedTemplateId($po, $reference['template_id'] ?? null);
+        }
+
         if (! $po->lpo_number) {
-            $allocated = $this->sequence->allocate((int) $po->tenant_id, $user);
-            $po->lpo_number = $allocated['formatted'];
-            $po->lpo_sequence_number = $allocated['sequence'];
-            $po->reference_number = $allocated['formatted'];
-            $po->lpo_date = now()->toDateString();
+            $mode = $reference['reference_mode'] ?? 'auto';
+            if ($mode === 'custom') {
+                if (! $user->hasAnyPermission(['procurement.reference.custom', 'procurement.admin']) && ! $user->hasRole('System Admin')) {
+                    abort(403);
+                }
+                $allocated = $this->numbers->allocateCustom(
+                    (int) $po->tenant_id,
+                    DocumentNumberingService::DOCUMENT_TYPE_PURCHASE_ORDER,
+                    LpoSequenceAllocator::SCHEME_KEY,
+                    (string) ($reference['custom_reference'] ?? ''),
+                    (string) ($reference['custom_reason'] ?? ''),
+                    $user,
+                    $po,
+                    (bool) ($reference['continue_sequence'] ?? false),
+                );
+                $this->numbers->applyToPurchaseOrder($po, $allocated, 'custom');
+            } else {
+                $allocated = $this->sequence->allocate((int) $po->tenant_id, $user, $po);
+                $this->numbers->applyToPurchaseOrder($po, $allocated, 'auto');
+            }
             AuditLog::record('procurement.lpo_number_allocated', [
                 'auditable_type' => PurchaseOrder::class,
                 'auditable_id' => $po->id,
-                'new_values' => ['lpo_number' => $po->lpo_number, 'lpo_date' => $po->lpo_date],
+                'new_values' => [
+                    'lpo_number' => $po->lpo_number,
+                    'lpo_date' => $po->lpo_date,
+                    'allocation_type' => $po->reference_allocation_type,
+                ],
                 'tags' => 'procurement',
             ]);
         }
@@ -238,8 +268,9 @@ class LpoIssuanceService
 
     public function generateFinalPdf(PurchaseOrder $po, User $user): PurchaseOrder
     {
+        $verifyToken = Str::lower(Str::random(40));
         try {
-            $binary = $this->pdf->output($po);
+            $binary = $this->documents->renderPdf($po, null, 'real', null, $verifyToken)->output();
         } catch (\Throwable $e) {
             throw ValidationException::withMessages([
                 'pdf' => 'PDF failed. LPO remains approved and is not issued.',
@@ -265,6 +296,7 @@ class LpoIssuanceService
             'issued_by' => $user->id,
             'lpo_date' => $po->lpo_date ?: now()->toDateString(),
         ]);
+        $this->documents->freezeIssued($po->fresh(['vendor', 'items']), $user, $binary, $attachment->id, $hash, $verifyToken);
         AuditLog::record('procurement.lpo_issued', [
             'auditable_type' => PurchaseOrder::class,
             'auditable_id' => $po->id,
@@ -329,6 +361,7 @@ class LpoIssuanceService
         if ($po->lpo_number) {
             $this->sequence->recordVoid((int) $po->tenant_id, $po->lpo_number);
         }
+        $this->documents->markVoid($po);
         $po->update([
             'status' => 'void',
             'void_reason' => $reason,
@@ -371,11 +404,14 @@ class LpoIssuanceService
             'snapshot' => $snapshot,
             'changes' => $data,
         ]);
+        $this->documents->markVoid($po);
         $po->update([
             'revision' => $po->revision + 1,
             'status' => 'draft',
             'final_pdf_attachment_id' => null,
             'final_document_hash' => null,
+            'issued_document_output_id' => null,
+            'issued_template_version_id' => null,
         ]);
         AuditLog::record('procurement.lpo_amended', [
             'auditable_type' => PurchaseOrder::class,
@@ -416,5 +452,26 @@ class LpoIssuanceService
             'file_hash' => $intake->file_hash,
             'document_type' => $intake->document_type,
         ]);
+    }
+
+    private function resolvedTemplateId(PurchaseOrder $po, mixed $templateId): ?int
+    {
+        if ($templateId === null || $templateId === '' || (int) $templateId === 0) {
+            return null;
+        }
+        $template = DocumentTemplate::query()
+            ->where('id', (int) $templateId)
+            ->where('tenant_id', $po->tenant_id)
+            ->where('document_type', DocumentNumberingService::DOCUMENT_TYPE_PURCHASE_ORDER)
+            ->where('status', 'published')
+            ->whereHas('publishedVersion')
+            ->first();
+        if (! $template) {
+            throw ValidationException::withMessages([
+                'template_id' => 'Purchase order template was not found for this organisation.',
+            ]);
+        }
+
+        return (int) $template->id;
     }
 }

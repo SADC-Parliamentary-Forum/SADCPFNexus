@@ -1449,6 +1449,44 @@
       "linked_endpoints": []
     },
     {
+      "key": "procurement.template.publish",
+      "display_name": "Publish PO templates",
+      "description": "Publish and retire purchase order document templates",
+      "module": "procurement",
+      "feature": "template",
+      "action": "publish",
+      "supported_scopes": [
+        "organisation"
+      ],
+      "risk_level": "high",
+      "data_classification": "Internal",
+      "mfa_required": true,
+      "linked_routes": [
+        "/procurement/settings/po-templates"
+      ],
+      "linked_endpoints": [
+        "POST /api/v1/procurement/po-templates/{id}/publish"
+      ]
+    },
+    {
+      "key": "procurement.reference.custom",
+      "display_name": "Enter custom PO reference",
+      "description": "Assign a one-off custom purchase order reference",
+      "module": "procurement",
+      "feature": "po",
+      "action": "create",
+      "supported_scopes": [
+        "organisation"
+      ],
+      "risk_level": "high",
+      "data_classification": "Internal",
+      "mfa_required": true,
+      "linked_routes": [
+        "/procurement/purchase-orders"
+      ],
+      "linked_endpoints": []
+    },
+    {
       "key": "procurement.evaluation.read.assigned",
       "display_name": "Read evaluation",
       "description": "Read assigned evaluations",

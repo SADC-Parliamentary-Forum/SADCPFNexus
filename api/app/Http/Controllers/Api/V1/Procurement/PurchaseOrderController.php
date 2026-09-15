@@ -30,6 +30,7 @@ class PurchaseOrderController extends Controller
             abort(403);
         }
         $filters = $request->only(['status', 'search', 'per_page']);
+
         return response()->json($this->service->list($filters, $request->user()));
     }
 
@@ -41,6 +42,7 @@ class PurchaseOrderController extends Controller
         if (request()->user()->isSupplier() && (int) request()->user()->vendor_id !== (int) $purchaseOrder->vendor_id) {
             abort(404);
         }
+
         return response()->json([
             'data' => $purchaseOrder->load([
                 'vendor', 'items', 'procurementRequest.requester', 'goodsReceiptNotes',
@@ -52,26 +54,26 @@ class PurchaseOrderController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General'])) {
+        if (! $request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General'])) {
             abort(403);
         }
 
         $data = $request->validate([
             'procurement_request_id' => ['required', 'integer', 'exists:procurement_requests,id'],
-            'vendor_id'              => ['required', 'integer', 'exists:vendors,id'],
-            'title'                  => ['required', 'string', 'max:300'],
-            'description'            => ['nullable', 'string'],
-            'delivery_address'       => ['nullable', 'string', 'max:500'],
-            'payment_terms'          => ['nullable', 'string', 'in:net_30,net_60,on_delivery'],
-            'total_amount'           => ['nullable', 'numeric', 'min:0'],
-            'currency'               => ['nullable', 'string', 'size:3'],
+            'vendor_id' => ['required', 'integer', 'exists:vendors,id'],
+            'title' => ['required', 'string', 'max:300'],
+            'description' => ['nullable', 'string'],
+            'delivery_address' => ['nullable', 'string', 'max:500'],
+            'payment_terms' => ['nullable', 'string', 'in:net_30,net_60,on_delivery'],
+            'total_amount' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'string', 'size:3'],
             'expected_delivery_date' => ['nullable', 'date'],
-            'items'                  => ['nullable', 'array'],
-            'items.*.description'    => ['required_with:items', 'string'],
-            'items.*.quantity'       => ['required_with:items', 'integer', 'min:1'],
-            'items.*.unit'           => ['nullable', 'string'],
-            'items.*.unit_price'     => ['required_with:items', 'numeric', 'min:0'],
-            'items.*.total_price'    => ['nullable', 'numeric', 'min:0'],
+            'items' => ['nullable', 'array'],
+            'items.*.description' => ['required_with:items', 'string'],
+            'items.*.quantity' => ['required_with:items', 'integer', 'min:1'],
+            'items.*.unit' => ['nullable', 'string'],
+            'items.*.unit_price' => ['required_with:items', 'numeric', 'min:0'],
+            'items.*.total_price' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $req = ProcurementRequest::where('id', $data['procurement_request_id'])
@@ -79,40 +81,43 @@ class PurchaseOrderController extends Controller
             ->firstOrFail();
 
         $po = $this->service->create($req, $data, $request->user());
+
         return response()->json(['message' => 'Purchase order created.', 'data' => $po], 201);
     }
 
     public function update(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General'])) {
+        if (! $request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General'])) {
             abort(403);
         }
 
         $data = $request->validate([
-            'title'                  => ['sometimes', 'string', 'max:300'],
-            'description'            => ['nullable', 'string'],
-            'delivery_address'       => ['nullable', 'string'],
-            'payment_terms'          => ['nullable', 'in:net_30,net_60,on_delivery'],
+            'title' => ['sometimes', 'string', 'max:300'],
+            'description' => ['nullable', 'string'],
+            'delivery_address' => ['nullable', 'string'],
+            'payment_terms' => ['nullable', 'in:net_30,net_60,on_delivery'],
             'expected_delivery_date' => ['nullable', 'date'],
         ]);
 
         $po = $this->service->update($purchaseOrder, $data, $request->user());
+
         return response()->json(['message' => 'Purchase order updated.', 'data' => $po]);
     }
 
     public function issue(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General'])) {
+        if (! $request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General'])) {
             abort(403);
         }
 
         $po = $this->service->issue($purchaseOrder, $request->user());
+
         return response()->json(['message' => 'Purchase order issued.', 'data' => $po]);
     }
 
     public function cancel(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General'])) {
+        if (! $request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'Secretary General'])) {
             abort(403);
         }
 
@@ -121,6 +126,7 @@ class PurchaseOrderController extends Controller
         ]);
 
         $po = $this->service->cancel($purchaseOrder, $data['reason'], $request->user());
+
         return response()->json(['message' => 'Purchase order cancelled.', 'data' => $po]);
     }
 
@@ -145,7 +151,15 @@ class PurchaseOrderController extends Controller
     {
         $this->assertCanManage($request);
         $this->assertTenant($request, $purchaseOrder);
-        $po = $this->lpo->submit($purchaseOrder, $request->user(), $request->input('idempotency_key'));
+        $data = $request->validate([
+            'idempotency_key' => ['nullable', 'string', 'max:80'],
+            'reference_mode' => ['nullable', 'in:auto,custom'],
+            'custom_reference' => ['nullable', 'string', 'max:80'],
+            'custom_reason' => ['nullable', 'string', 'max:500'],
+            'continue_sequence' => ['nullable', 'boolean'],
+            'template_id' => ['nullable', 'integer'],
+        ]);
+        $po = $this->lpo->submit($purchaseOrder, $request->user(), $data['idempotency_key'] ?? null, $data);
 
         return response()->json(['message' => 'LPO sent for approval.', 'data' => $po]);
     }

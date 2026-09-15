@@ -1,6 +1,7 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,6 +12,7 @@ import {
   type ProcurementSettings,
 } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { SupplierDocumentRequirementTypesCard } from "@/components/procurement/SupplierDocumentRequirementTypesCard";
 import { SupplierCategoriesHierarchyCard } from "@/components/procurement/SupplierCategoriesHierarchyCard";
 
@@ -28,6 +30,7 @@ const emptyProfile = {
 };
 
 export default function ProcurementSettingsPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "procurement.admin");
@@ -128,8 +131,19 @@ export default function ProcurementSettingsPage() {
       <ModulePageHeader
         title="Procurement Settings"
         subtitle="Thresholds, multi-donor policy profiles, and optional AI comparison assist (never auto-awards)."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement Settings" }]} />}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "po.settings.hub" }]} />}
       />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link href="/procurement/settings/po-templates" className="card p-4 hover:border-primary/40 transition-colors" data-testid="settings-po-templates">
+          <p className="text-sm font-semibold text-neutral-900">{t("po.settings.templatesCard")}</p>
+          <p className="text-xs text-neutral-500 mt-1">{t("po.settings.templatesHelp")}</p>
+        </Link>
+        <Link href="/procurement/settings/numbering" className="card p-4 hover:border-primary/40 transition-colors" data-testid="settings-numbering">
+          <p className="text-sm font-semibold text-neutral-900">{t("po.settings.numberingCard")}</p>
+          <p className="text-xs text-neutral-500 mt-1">{t("po.settings.numberingHelp")}</p>
+        </Link>
+      </div>
 
       {isError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
@@ -298,8 +312,8 @@ export default function ProcurementSettingsPage() {
               <h2 className="text-base font-semibold text-neutral-900">LPO Sequence Setup</h2>
               <p className="text-xs text-neutral-500 mt-1">
                 Before production issuance, activate the live LPO sequence with the <strong>real last legacy number</strong>.
-                Consecutive <code className="font-mono">S #####</code> numbers are allocated on submit (intake path). Award-path POs keep existing <code className="font-mono">PO-</code> references.
-                Do not infer the next number from the sample invoice S 04015.
+                Consecutive <code className="font-mono">S #####</code> numbers are allocated on submit for both intake LPOs and award-path POs.
+                Drafts use a temporary <code className="font-mono">PROC-DRAFT-*</code> reference until submit. Do not infer the next number from the sample invoice S 04015.
               </p>
             </div>
             {sequenceQuery.data && (

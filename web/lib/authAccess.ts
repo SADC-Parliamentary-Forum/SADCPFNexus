@@ -356,6 +356,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/procurement/invoices", permission: ["procurement.approve_invoice", "procurement.admin"] },
   { path: "/procurement/contracts", permission: ["procurement.manage_po", "procurement.admin"] },
   { path: "/procurement/analytics", permission: ["procurement.view", "procurement.admin"] },
+  { path: "/procurement/settings/po-templates", permission: ["procurement.admin"] },
+  { path: "/procurement/settings/numbering", permission: ["procurement.admin", "procurement.sequence.manage"] },
   { path: "/procurement/settings", permission: ["procurement.admin"] },
   { path: "/procurement/register", permission: ["procurement.view", "procurement.admin"] },
   { path: "/procurement/budget", permission: ["finance.approve", "finance.admin", "procurement.admin"] },

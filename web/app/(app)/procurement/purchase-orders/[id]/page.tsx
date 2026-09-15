@@ -9,13 +9,20 @@ import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { hasPermission, isSystemAdmin } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:              { label: "Draft",          cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note"   },
+  returned:           { label: "Returned",       cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "undo"        },
+  awaiting_approval:  { label: "Awaiting approval", cls: "text-amber-700 bg-amber-50 border-amber-200",    icon: "hourglass"   },
+  approved:           { label: "Approved",       cls: "text-green-700 bg-green-50 border-green-200",        icon: "check"       },
   issued:             { label: "Issued",         cls: "text-blue-700 bg-blue-50 border-blue-200",           icon: "send"        },
   partially_received: { label: "Part. Received", cls: "text-amber-700 bg-amber-50 border-amber-200",        icon: "inventory"   },
   received:           { label: "Received",       cls: "text-green-700 bg-green-50 border-green-200",        icon: "inventory_2" },
   cancelled:          { label: "Cancelled",      cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"      },
+  void:               { label: "Void",           cls: "text-red-700 bg-red-50 border-red-200",              icon: "block"       },
+  rejected:           { label: "Rejected",       cls: "text-red-700 bg-red-50 border-red-200",              icon: "cancel"      },
   closed:             { label: "Closed",         cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "check_circle"},
 };
 
@@ -26,8 +33,17 @@ function canManagePO() {
   const u = getStoredUser();
   return (u?.roles ?? []).some((r: string) => ["Procurement Officer","Finance Controller","System Admin","Secretary General","super-admin"].includes(r));
 }
+function canCustomReference() {
+  const u = getStoredUser();
+  return isSystemAdmin(u) || hasPermission(u, ["procurement.reference.custom", "procurement.admin"]);
+}
+function canManageSequence() {
+  const u = getStoredUser();
+  return isSystemAdmin(u) || hasPermission(u, ["procurement.sequence.manage", "procurement.admin"]);
+}
 
 export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { t } = useI18n();
   const { id } = use(params);
   const poId = Number(id);
   const queryClient = useQueryClient();
@@ -38,6 +54,10 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
   const [activeTab, setActiveTab]             = useState<"details" | "documents">("details");
   const [attachments, setAttachments]         = useState<ProcurementAttachment[]>([]);
   const [uploading, setUploading]             = useState(false);
+  const [customMode, setCustomMode]           = useState(false);
+  const [customReference, setCustomReference] = useState("");
+  const [customReason, setCustomReason]       = useState("");
+  const [continueSequence, setContinueSequence] = useState(false);
 
   const { data: po, isLoading, isError } = useQuery({
     queryKey: ["purchase-order", poId],
@@ -60,7 +80,12 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
   });
   const submitMutation = useMutation({
-    mutationFn: () => purchaseOrdersApi.submit(poId),
+    mutationFn: () => purchaseOrdersApi.submit(poId, customMode ? {
+      reference_mode: "custom",
+      custom_reference: customReference,
+      custom_reason: customReason,
+      continue_sequence: continueSequence,
+    } : { reference_mode: "auto" }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["purchase-order", poId] }),
   });
   const emailMutation = useMutation({
@@ -139,7 +164,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
       {activeTab === "details" && <>
       <ProcurementPageHeader
         title={po.title}
-        subtitle={po.lpo_number ?? po.reference_number}
+        subtitle={po.lpo_number ?? po.display_reference ?? po.reference_number}
         crumbs={[
           { label: "nav.procurement", href: "/procurement" },
           { label: "Purchase Orders", href: "/procurement/purchase-orders" },
@@ -158,16 +183,17 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
               {s.label}
             </span>
-            {po.status === "draft" && canManagePO() && po.lpo_number == null && po.reference_number?.startsWith("PROC-DRAFT") && (
+            {["draft", "returned"].includes(po.status) && canManagePO() && !po.lpo_number && (
               <button
                 onClick={() => submitMutation.mutate()}
-                disabled={submitMutation.isPending}
+                disabled={submitMutation.isPending || (customMode && (!customReference.trim() || customReason.trim().length < 3))}
                 className="btn-primary inline-flex items-center gap-1.5 text-xs px-3 py-1.5"
+                data-testid="po-submit"
               >
-                {submitMutation.isPending ? "Submitting…" : "Send for Approval"}
+                {submitMutation.isPending ? "Submitting…" : t("po.detail.submit")}
               </button>
             )}
-            {po.status === "draft" && canManagePO() && !po.reference_number?.startsWith("PROC-DRAFT") && (
+            {po.status === "approved" && canManagePO() && (
               <button
                 onClick={() => issueMutation.mutate()}
                 disabled={issueMutation.isPending}
@@ -226,7 +252,42 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
               <p className="font-medium text-neutral-900">{row.value}</p>
             </div>
           ))}
+          {(po.source_requisition || po.procurement_request) && (
+            <div>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="material-symbols-outlined text-[13px] text-neutral-300">description</span>
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("po.detail.sourcePr")}</p>
+              </div>
+              <Link
+                href={`/procurement/${po.source_requisition?.id ?? po.procurement_request?.id}`}
+                className="font-mono text-sm text-primary hover:underline"
+              >
+                {po.source_requisition?.reference ?? po.procurement_request?.reference_number}
+              </Link>
+            </div>
+          )}
         </div>
+
+        {["draft", "returned"].includes(po.status) && canManagePO() && canCustomReference() && !po.lpo_number && (
+          <div className="mt-4 pt-4 border-t border-neutral-50 space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={customMode} onChange={(e) => setCustomMode(e.target.checked)} />
+              {t("po.detail.customRef")}
+            </label>
+            {customMode && (
+              <>
+                <input className="form-input" value={customReference} onChange={(e) => setCustomReference(e.target.value)} placeholder="GIZ/PO/2026/017" />
+                <input className="form-input" value={customReason} onChange={(e) => setCustomReason(e.target.value)} placeholder={t("po.detail.customReason")} />
+                {canManageSequence() && (
+                  <label className="flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={continueSequence} onChange={(e) => setContinueSequence(e.target.checked)} />
+                    {t("po.detail.continueSequence")}
+                  </label>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
         {po.delivery_address && (
           <div className="mt-4 pt-4 border-t border-neutral-50">
