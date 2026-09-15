@@ -25,16 +25,16 @@ class PurchaseOrderService
             $query->where('vendor_id', $user->vendor_id);
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $q = "%{$filters['search']}%";
             $query->where(function ($qb) use ($q) {
                 $qb->where('reference_number', 'ilike', $q)
-                   ->orWhere('lpo_number', 'ilike', $q)
-                   ->orWhere('title', 'ilike', $q);
+                    ->orWhere('lpo_number', 'ilike', $q)
+                    ->orWhere('title', 'ilike', $q);
             });
         }
 
@@ -47,38 +47,38 @@ class PurchaseOrderService
             abort(404);
         }
 
-        if (!$req->isAwarded()) {
+        if (! $req->isAwarded()) {
             throw ValidationException::withMessages([
                 'procurement_request_id' => 'Only awarded procurement requests can have a Purchase Order created.',
             ]);
         }
 
         $po = PurchaseOrder::create([
-            'tenant_id'              => $user->tenant_id,
+            'tenant_id' => $user->tenant_id,
             'procurement_request_id' => $req->id,
-            'vendor_id'              => $data['vendor_id'],
-            'title'                  => $data['title'],
-            'description'            => $data['description'] ?? null,
-            'delivery_address'       => $data['delivery_address'] ?? null,
-            'payment_terms'          => $data['payment_terms'] ?? 'net_30',
-            'total_amount'           => $data['total_amount'] ?? 0,
-            'currency'               => $data['currency'] ?? ($req->currency ?? 'USD'),
-            'status'                 => 'draft',
+            'vendor_id' => $data['vendor_id'],
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'delivery_address' => $data['delivery_address'] ?? null,
+            'payment_terms' => $data['payment_terms'] ?? 'net_30',
+            'total_amount' => $data['total_amount'] ?? 0,
+            'currency' => $data['currency'] ?? ($req->currency ?? 'USD'),
+            'status' => 'draft',
             'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
-            'created_by'             => $user->id,
-            'source_type'            => 'award',
+            'created_by' => $user->id,
+            'source_type' => 'award',
         ]);
 
-        if (!empty($data['items'])) {
+        if (! empty($data['items'])) {
             $total = 0;
             foreach ($data['items'] as $item) {
                 $lineTotal = ($item['quantity'] ?? 1) * ($item['unit_price'] ?? 0);
                 $po->items()->create([
-                    'description'         => $item['description'],
-                    'quantity'            => $item['quantity'] ?? 1,
-                    'unit'                => $item['unit'] ?? 'unit',
-                    'unit_price'          => $item['unit_price'] ?? 0,
-                    'total_price'         => $item['total_price'] ?? $lineTotal,
+                    'description' => $item['description'],
+                    'quantity' => $item['quantity'] ?? 1,
+                    'unit' => $item['unit'] ?? 'unit',
+                    'unit_price' => $item['unit_price'] ?? 0,
+                    'total_price' => $item['total_price'] ?? $lineTotal,
                     'procurement_item_id' => $item['procurement_item_id'] ?? null,
                 ]);
                 $total += $item['total_price'] ?? $lineTotal;
@@ -90,9 +90,9 @@ class PurchaseOrderService
 
         AuditLog::record('procurement.po_created', [
             'auditable_type' => PurchaseOrder::class,
-            'auditable_id'   => $po->id,
-            'new_values'     => ['reference' => $po->reference_number],
-            'tags'           => 'procurement',
+            'auditable_id' => $po->id,
+            'new_values' => ['reference' => $po->reference_number],
+            'tags' => 'procurement',
         ]);
 
         return $po->load(['vendor', 'items', 'procurementRequest']);
@@ -104,17 +104,17 @@ class PurchaseOrderService
             abort(404);
         }
 
-        if (!$po->isDraft()) {
+        if (! $po->isDraft()) {
             throw ValidationException::withMessages(['status' => 'Only draft purchase orders can be edited.']);
         }
 
         $po->update(array_filter([
-            'title'                  => $data['title'] ?? null,
-            'description'            => $data['description'] ?? null,
-            'delivery_address'       => $data['delivery_address'] ?? null,
-            'payment_terms'          => $data['payment_terms'] ?? null,
+            'title' => $data['title'] ?? null,
+            'description' => $data['description'] ?? null,
+            'delivery_address' => $data['delivery_address'] ?? null,
+            'payment_terms' => $data['payment_terms'] ?? null,
             'expected_delivery_date' => $data['expected_delivery_date'] ?? null,
-        ], fn($v) => $v !== null));
+        ], fn ($v) => $v !== null));
 
         return $po->fresh(['vendor', 'items']);
     }
@@ -125,22 +125,22 @@ class PurchaseOrderService
             abort(404);
         }
 
-        if (!$po->canBeIssued()) {
+        if (! $po->canBeIssued()) {
             throw ValidationException::withMessages([
                 'status' => 'Submit the purchase order for numbering and approval before issuing.',
             ]);
         }
 
         $po->update([
-            'status'    => 'issued',
+            'status' => 'issued',
             'issued_at' => now(),
             'issued_by' => $user->id,
         ]);
 
         AuditLog::record('procurement.po_issued', [
             'auditable_type' => PurchaseOrder::class,
-            'auditable_id'   => $po->id,
-            'tags'           => 'procurement',
+            'auditable_id' => $po->id,
+            'tags' => 'procurement',
         ]);
 
         $po->loadMissing(['vendor.portalUsers']);
@@ -160,15 +160,15 @@ class PurchaseOrderService
         }
 
         $po->update([
-            'status'              => 'cancelled',
+            'status' => 'cancelled',
             'cancellation_reason' => $reason,
         ]);
 
         AuditLog::record('procurement.po_cancelled', [
             'auditable_type' => PurchaseOrder::class,
-            'auditable_id'   => $po->id,
-            'new_values'     => ['reason' => $reason],
-            'tags'           => 'procurement',
+            'auditable_id' => $po->id,
+            'new_values' => ['reason' => $reason],
+            'tags' => 'procurement',
         ]);
 
         return $po->fresh();
@@ -178,7 +178,7 @@ class PurchaseOrderService
     {
         $portalUrl = FrontendUrl::to('supplier/invoices');
         $deliveryDate = $po->expected_delivery_date?->toDateString() ?? 'Not specified';
-        $amount = number_format((float) $po->total_amount, 2) . ' ' . $po->currency;
+        $amount = number_format((float) $po->total_amount, 2).' '.$po->currency;
 
         foreach ($po->vendor?->portalUsers ?? [] as $portalUser) {
             if (! $portalUser->is_active) {
@@ -189,10 +189,10 @@ class PurchaseOrderService
                 $portalUser,
                 'supplier.proforma_invoice_requested',
                 [
-                    'name'          => $portalUser->name,
-                    'reference'     => $po->reference_number,
-                    'vendor'        => $po->vendor?->name ?? 'Supplier',
-                    'amount'        => $amount,
+                    'name' => $portalUser->name,
+                    'reference' => $po->reference_number,
+                    'vendor' => $po->vendor?->name ?? 'Supplier',
+                    'amount' => $amount,
                     'delivery_date' => $deliveryDate,
                 ],
                 ['module' => 'procurement', 'record_id' => $po->id, 'url' => '/supplier/invoices']

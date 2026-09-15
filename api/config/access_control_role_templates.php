@@ -310,6 +310,7 @@ return [
             'procurement.purchase_order.create.assigned', 'procurement.report.view',
             'procurement.view', 'procurement.create', 'procurement.approve', 'procurement.admin',
             'procurement.award', 'procurement.manage_vendors', 'procurement.manage_po', 'procurement.receive_goods',
+            'procurement.sequence.manage', 'procurement.template.publish', 'procurement.reference.custom',
             'assets.view', 'assets.create', 'assets.import', 'assets.verify', 'assets.print', 'finance.view', 'governance.view',
             'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage', 'stock.approve', 'stock.transfer',
             'risk.view',

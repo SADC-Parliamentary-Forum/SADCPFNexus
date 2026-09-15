@@ -2,8 +2,6 @@
 
 namespace App\Modules\Documents\Services;
 
-use App\Modules\Documents\Support\PurchaseOrderLayoutSanitizer;
-
 final class PurchaseOrderDocumentRenderer
 {
     /**
@@ -28,6 +26,7 @@ final class PurchaseOrderDocumentRenderer
             }
             if (($el['type'] ?? '') === 'table' && $table === null) {
                 $table = $el;
+
                 continue;
             }
             if ($table === null) {
@@ -74,8 +73,7 @@ final class PurchaseOrderDocumentRenderer
 
         return match ($type) {
             'logo', 'image' => $this->imageBox($style, is_string($value) ? $value : null, (string) ($el['align'] ?? 'left')),
-            'org_name', 'org_address', 'heading', 'field', 'text', 'footer', 'page_number' =>
-                '<div class="el" style="'.$style.'">'.$this->escapePreserve((string) $value).'</div>',
+            'org_name', 'org_address', 'heading', 'field', 'text', 'footer', 'page_number' => '<div class="el" style="'.$style.'">'.$this->escapePreserve((string) $value).'</div>',
             'line' => '<div class="el" style="'.$style.'border-top:1px solid #111;height:0;"></div>',
             'rectangle' => '<div class="el" style="'.$style.'"></div>',
             'qr' => $this->imageBox($style, is_string($context['qr'] ?? null) ? $context['qr'] : null, 'center'),

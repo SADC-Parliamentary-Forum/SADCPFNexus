@@ -35,21 +35,21 @@ class PurchaseOrder extends Model
     ];
 
     protected $casts = [
-        'total_amount'           => 'float',
-        'issued_at'              => 'datetime',
+        'total_amount' => 'float',
+        'issued_at' => 'datetime',
         'expected_delivery_date' => 'date',
-        'lpo_date'               => 'date',
-        'retrospective'          => 'boolean',
-        'vat_identified'         => 'boolean',
-        'subtotal'               => 'decimal:2',
-        'tax_amount'             => 'decimal:2',
-        'discount_amount'        => 'decimal:2',
-        'submitted_at'           => 'datetime',
-        'approved_at'            => 'datetime',
-        'sent_to_supplier_at'    => 'datetime',
-        'closed_at'              => 'datetime',
-        'sent_to_finance_at'     => 'datetime',
-        'voided_at'              => 'datetime',
+        'lpo_date' => 'date',
+        'retrospective' => 'boolean',
+        'vat_identified' => 'boolean',
+        'subtotal' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'submitted_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'sent_to_supplier_at' => 'datetime',
+        'closed_at' => 'datetime',
+        'sent_to_finance_at' => 'datetime',
+        'voided_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -78,21 +78,80 @@ class PurchaseOrder extends Model
         });
     }
 
-    public function procurementRequest() { return $this->belongsTo(ProcurementRequest::class); }
-    public function vendor()             { return $this->belongsTo(Vendor::class); }
-    public function items()              { return $this->hasMany(PurchaseOrderItem::class); }
-    public function goodsReceiptNotes()  { return $this->hasMany(GoodsReceiptNote::class); }
-    public function createdBy()          { return $this->belongsTo(User::class, 'created_by'); }
-    public function issuedBy()           { return $this->belongsTo(User::class, 'issued_by'); }
-    public function project()            { return $this->belongsTo(ProcurementProject::class, 'procurement_project_id'); }
-    public function sourceIntake()       { return $this->belongsTo(ProcurementDocumentIntake::class, 'source_intake_id'); }
-    public function serviceConfirmations() { return $this->hasMany(ServiceConfirmation::class); }
-    public function purchaseOrderRevisions() { return $this->hasMany(PurchaseOrderRevision::class); }
-    public function invoices()           { return $this->hasMany(Invoice::class); }
-    public function numberingAllocation() { return $this->belongsTo(NumberingAllocation::class, 'allocation_id'); }
-    public function documentTemplate()   { return $this->belongsTo(DocumentTemplate::class); }
-    public function issuedTemplateVersion() { return $this->belongsTo(DocumentTemplateVersion::class, 'issued_template_version_id'); }
-    public function issuedDocumentOutput() { return $this->belongsTo(DocumentOutput::class, 'issued_document_output_id'); }
+    public function procurementRequest()
+    {
+        return $this->belongsTo(ProcurementRequest::class);
+    }
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
+    }
+
+    public function goodsReceiptNotes()
+    {
+        return $this->hasMany(GoodsReceiptNote::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function issuedBy()
+    {
+        return $this->belongsTo(User::class, 'issued_by');
+    }
+
+    public function project()
+    {
+        return $this->belongsTo(ProcurementProject::class, 'procurement_project_id');
+    }
+
+    public function sourceIntake()
+    {
+        return $this->belongsTo(ProcurementDocumentIntake::class, 'source_intake_id');
+    }
+
+    public function serviceConfirmations()
+    {
+        return $this->hasMany(ServiceConfirmation::class);
+    }
+
+    public function purchaseOrderRevisions()
+    {
+        return $this->hasMany(PurchaseOrderRevision::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    public function numberingAllocation()
+    {
+        return $this->belongsTo(NumberingAllocation::class, 'allocation_id');
+    }
+
+    public function documentTemplate()
+    {
+        return $this->belongsTo(DocumentTemplate::class);
+    }
+
+    public function issuedTemplateVersion()
+    {
+        return $this->belongsTo(DocumentTemplateVersion::class, 'issued_template_version_id');
+    }
+
+    public function issuedDocumentOutput()
+    {
+        return $this->belongsTo(DocumentOutput::class, 'issued_document_output_id');
+    }
 
     protected $appends = ['display_reference', 'source_requisition'];
 
@@ -123,10 +182,25 @@ class PurchaseOrder extends Model
         return $this->morphOne(ApprovalRequest::class, 'approvable');
     }
 
-    public function isDraft(): bool    { return in_array($this->status, ['draft', 'returned'], true); }
-    public function isIssued(): bool   { return in_array($this->status, ['issued', 'partially_received']); }
-    public function isReceived(): bool { return $this->status === 'received'; }
-    public function isClosed(): bool   { return in_array($this->status, ['closed'], true); }
+    public function isDraft(): bool
+    {
+        return in_array($this->status, ['draft', 'returned'], true);
+    }
+
+    public function isIssued(): bool
+    {
+        return in_array($this->status, ['issued', 'partially_received']);
+    }
+
+    public function isReceived(): bool
+    {
+        return $this->status === 'received';
+    }
+
+    public function isClosed(): bool
+    {
+        return in_array($this->status, ['closed'], true);
+    }
 
     /**
      * Drafts use PROC-DRAFT-* until submit allocates an official consecutive number.
@@ -147,8 +221,15 @@ class PurchaseOrder extends Model
         return filled($this->lpo_number) || $this->reference_allocation_type === 'auto' || $this->reference_allocation_type === 'custom';
     }
 
-    public function canBeIssued(): bool   { return $this->status === 'approved'; }
-    public function canReceiveGoods(): bool { return in_array($this->status, ['issued', 'partially_received']); }
+    public function canBeIssued(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    public function canReceiveGoods(): bool
+    {
+        return in_array($this->status, ['issued', 'partially_received']);
+    }
 
     public function attachments(): MorphMany
     {

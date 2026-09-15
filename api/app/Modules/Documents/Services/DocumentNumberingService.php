@@ -82,6 +82,7 @@ final class DocumentNumberingService
         $formatted = preg_replace_callback('/\{([A-Z]+)(?::(\d+))?\}/', function (array $m) use ($sequence, $at, $fy) {
             $token = $m[1];
             $pad = isset($m[2]) && $m[2] !== '' ? (int) $m[2] : 0;
+
             return match ($token) {
                 'SEQ' => $pad > 0 ? str_pad((string) $sequence, $pad, '0', STR_PAD_LEFT) : (string) $sequence,
                 'YYYY' => $at->format('Y'),

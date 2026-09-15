@@ -4,7 +4,6 @@ namespace Tests\Feature\Procurement;
 
 use App\Models\ApprovalWorkflow;
 use App\Models\DocumentOutput;
-use App\Models\DocumentTemplate;
 use App\Models\NumberingAllocation;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
@@ -58,8 +57,9 @@ class PoDocumentEngineTest extends TestCase
     public function test_draft_uses_proc_draft_and_submit_allocates_official_number(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $officer] = $this->asProcurementOfficer($tenant);
-        [$finHttp, $finance] = $this->asFinanceController($tenant);
+        $officer = $this->makeProcurementOfficer($tenant);
+        $finance = $this->makeFinanceController($tenant);
+        $http = $this->asUser($officer);
         $this->seedWorkflow($tenant, $finance);
         app(LpoSequenceAllocator::class)->activate($tenant->id, $officer, 4015, 'Legacy paper register');
         [$req, $vendor] = $this->awardedPayload($tenant);
@@ -88,8 +88,9 @@ class PoDocumentEngineTest extends TestCase
     public function test_custom_reference_does_not_bump_sequence(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http, $officer] = $this->asProcurementOfficer($tenant);
-        [$finHttp, $finance] = $this->asFinanceController($tenant);
+        $officer = $this->makeProcurementOfficer($tenant);
+        $finance = $this->makeFinanceController($tenant);
+        $http = $this->asUser($officer);
         $this->seedWorkflow($tenant, $finance);
         app(LpoSequenceAllocator::class)->activate($tenant->id, $officer, 4015, 'Legacy');
         [$req, $vendor] = $this->awardedPayload($tenant);
@@ -109,6 +110,30 @@ class PoDocumentEngineTest extends TestCase
 
         $status = app(DocumentNumberingService::class)->status($tenant->id);
         $this->assertSame('S 04016', $status['next_example']);
+    }
+
+    public function test_custom_reference_is_forbidden_without_permission(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $officer = $this->makeProcurementOfficer($tenant);
+        $finance = $this->makeFinanceController($tenant);
+        $http = $this->asUser($officer);
+        $this->seedWorkflow($tenant, $finance);
+        app(LpoSequenceAllocator::class)->activate($tenant->id, $officer, 4015, 'Legacy');
+        [$req, $vendor] = $this->awardedPayload($tenant);
+
+        $id = $http->postJson('/api/v1/procurement/purchase-orders', [
+            'procurement_request_id' => $req->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Donor PO',
+            'items' => [['description' => 'Item', 'quantity' => 1, 'unit' => 'unit', 'unit_price' => 10, 'total_price' => 10]],
+        ])->json('data.id');
+
+        $this->asUser($finance)->postJson("/api/v1/procurement/purchase-orders/{$id}/submit", [
+            'reference_mode' => 'custom',
+            'custom_reference' => 'GIZ/PO/2026/017',
+            'custom_reason' => 'Donor-mandated numbering',
+        ])->assertForbidden();
     }
 
     public function test_duplicate_normalised_custom_reference_is_rejected(): void

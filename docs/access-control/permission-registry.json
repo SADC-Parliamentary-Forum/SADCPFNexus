@@ -1484,9 +1484,7 @@
       "linked_routes": [
         "/procurement/purchase-orders"
       ],
-      "linked_endpoints": [
-        "POST /api/v1/procurement/purchase-orders/{id}/submit"
-      ]
+      "linked_endpoints": []
     },
     {
       "key": "procurement.evaluation.read.assigned",
