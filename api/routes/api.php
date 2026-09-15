@@ -778,6 +778,7 @@ Route::prefix('v1')->group(function () {
 
             Route::prefix('supplier')->group(function () {
                 Route::get('me', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'me']);
+                Route::get('categories', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'categories']);
                 Route::get('attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'downloadAttachment']);
                 Route::put('profile', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'updateProfile']);
                 Route::get('dashboard', [\App\Http\Controllers\Api\V1\Procurement\SupplierPortalController::class, 'dashboard']);

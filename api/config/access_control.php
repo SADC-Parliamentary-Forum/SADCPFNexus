@@ -616,8 +616,8 @@ return [
             'WRITE' => ['workflows.submit', 'workflows.act', 'workflows.manage-definitions', 'workflows.admin'],
         ]],
         ['pattern' => 'api/v1/notifications*', 'permissions' => [
-            'READ' => ['notifications.view-own', 'notifications.view.own', 'notifications.admin'],
-            'WRITE' => ['notifications.manage-own-preferences', 'notifications.manage.preferences', 'notifications.acknowledge', 'notifications.admin'],
+            'READ' => ['notifications.view-own', 'notifications.view.own', 'notifications.admin', 'supplier.portal'],
+            'WRITE' => ['notifications.manage-own-preferences', 'notifications.manage.preferences', 'notifications.acknowledge', 'notifications.admin', 'supplier.portal'],
         ]],
         ['pattern' => 'api/v1/notification-admin*', 'permissions' => [
             '*' => ['notifications.admin', 'notifications.manage-policies'],
