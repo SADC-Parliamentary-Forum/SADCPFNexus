@@ -4452,6 +4452,7 @@ export interface SupplierDashboard {
 
 export const supplierPortalApi = {
   me: () => api.get<{ data: Vendor }>("/procurement/supplier/me"),
+  categories: () => api.get<{ data: SupplierCategory[] }>("/procurement/supplier/categories"),
   updateProfile: (formData: FormData) =>
     api.put<{ data: Vendor; message: string }>("/procurement/supplier/profile", formData, {
       headers: { "Content-Type": "multipart/form-data" },

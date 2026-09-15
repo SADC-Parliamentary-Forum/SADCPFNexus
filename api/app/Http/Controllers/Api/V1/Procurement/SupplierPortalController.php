@@ -9,6 +9,7 @@ use App\Models\ProcurementQuote;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\RfqInvitation;
+use App\Models\SupplierCategory;
 use App\Models\SupplierChangeRequest;
 use App\Models\SupplierDocument;
 use App\Models\User;
@@ -44,6 +45,17 @@ class SupplierPortalController extends Controller
     {
         $vendor = $this->currentVendor($request);
         return response()->json(['data' => VendorPresenter::forSupplier($vendor, $request->user())]);
+    }
+
+    public function categories(Request $request): JsonResponse
+    {
+        $categories = SupplierCategory::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get();
+
+        return response()->json(['data' => $categories]);
     }
 
     public function downloadAttachment(Request $request, Attachment $attachment): StreamedResponse|JsonResponse

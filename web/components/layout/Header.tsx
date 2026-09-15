@@ -66,6 +66,11 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
     enabled: !mfaSetupBlocking,
+    retry: (failureCount, error) => {
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 403 || status === 401) return false;
+      return failureCount < 2;
+    },
   });
 
   // Recent notifications for dropdown — fetched when panel opens
@@ -74,6 +79,11 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
     queryFn: () => userNotificationsApi.list({ per_page: 10 }).then((r) => r.data),
     enabled: showNotifications && !mfaSetupBlocking,
     staleTime: 20_000,
+    retry: (failureCount, error) => {
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 403 || status === 401) return false;
+      return failureCount < 2;
+    },
   });
 
   const unreadCount = countData ?? 0;

@@ -3,7 +3,8 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supplierCategoriesApi, supplierPortalApi, supplierPortalAttachmentsApi, VENDOR_DOC_TYPES } from "@/lib/api";
+import { supplierPortalApi, supplierPortalAttachmentsApi, VENDOR_DOC_TYPES } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
 import { SupplierDocumentsField, type PendingSupplierDocument } from "@/components/auth/SupplierDocumentsField";
 
 export default function SupplierProfilePage() {
@@ -27,7 +28,7 @@ export default function SupplierProfilePage() {
   });
   const categoriesQuery = useQuery({
     queryKey: ["supplier-categories"],
-    queryFn: () => supplierCategoriesApi.list().then((response) => response.data.data),
+    queryFn: () => supplierPortalApi.categories().then((response) => response.data.data),
   });
 
   useEffect(() => {
@@ -74,8 +75,14 @@ export default function SupplierProfilePage() {
       setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to update supplier profile."),
   });
 
-  if (profileQuery.isLoading || categoriesQuery.isLoading) return <div className="card p-6">Loading supplier profile...</div>;
-  if (profileQuery.isError || categoriesQuery.isError || !profileQuery.data) return <div className="card p-6">Failed to load supplier profile.</div>;
+  if (profileQuery.isLoading) return <div className="card p-6">Loading supplier profile...</div>;
+  if (profileQuery.isError || !profileQuery.data) {
+    return (
+      <div className="card p-6" data-testid="supplier-profile-error">
+        {apiErrorMessage(profileQuery.error, "Failed to load supplier profile.")}
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-w-0 space-y-5">
@@ -86,6 +93,11 @@ export default function SupplierProfilePage() {
 
       <div className="card p-5 space-y-4">
         {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+        {categoriesQuery.isError && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            {apiErrorMessage(categoriesQuery.error, "Could not load supplier categories.")}
+          </div>
+        )}
         {profileQuery.data.last_info_request_reason && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
             {profileQuery.data.last_info_request_reason}

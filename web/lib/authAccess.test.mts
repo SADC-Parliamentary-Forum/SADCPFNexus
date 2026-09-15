@@ -122,6 +122,8 @@ test("Supplier can open portal, profile, and help", () => {
   assert.equal(canAccessRoute(supplier, "/supplier/profile"), true);
   assert.equal(canAccessRoute(supplier, "/profile"), true);
   assert.equal(canAccessRoute(supplier, "/profile/support"), true);
+  assert.equal(canAccessRoute(supplier, "/notifications"), false);
+  assert.equal(canAccessRoute(supplier, "/alerts"), false);
   assert.equal(canAccessRoute(supplier, "/procurement/vendors"), false);
 });
 
