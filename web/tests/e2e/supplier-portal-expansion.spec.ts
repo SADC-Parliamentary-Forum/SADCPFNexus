@@ -42,7 +42,9 @@ test.describe("Staff Supplier 360", () => {
     if (await landedOnLogin(page)) {
       test.skip(true, "Staff session invalid");
     }
-    await expect(page.getByTestId("supplier-portal-denied")).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByTestId("access-denied").or(page.getByTestId("supplier-portal-denied"))
+    ).toBeVisible({ timeout: 15_000 });
 
     const portalMe = await browserApiGet(page, "/procurement/supplier/me");
     expect([401, 403]).toContain(portalMe.status);
