@@ -130,3 +130,14 @@ test("staff cannot open the supplier portal", () => {
   assert.equal(canAccessRoute(staff, "/supplier"), false);
   assert.equal(canAccessRoute(staff, "/supplier/rfqs"), false);
 });
+
+test("scan and handover routes are reachable without opening the full register", () => {
+  const scanOnly = { roles: ["staff"], permissions: ["assets.scan"] };
+  assert.equal(canAccessRoute(scanOnly, "/assets/scan"), true);
+  assert.equal(canAccessRoute(scanOnly, "/assets"), false);
+  const recipient = { roles: ["staff"], permissions: ["assets.handover.accept"] };
+  assert.equal(canAccessRoute(recipient, "/assets/handovers"), true);
+  assert.equal(canAccessRoute(recipient, "/assets/handovers/12"), true);
+  assert.equal(canAccessRoute(recipient, "/assets"), false);
+  assert.equal(canAccessRoute(recipient, "/assets/batches"), false);
+});

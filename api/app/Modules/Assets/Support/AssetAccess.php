@@ -32,6 +32,30 @@ final class AssetAccess
         ]);
     }
 
+    public static function canManageHandover(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+        if ($user->isSystemAdmin()) {
+            return true;
+        }
+
+        return $user->hasAnyPermission([
+            'assets.handover.manage', 'assets.admin', 'assets.manage',
+        ]);
+    }
+
+    public static function canAcceptHandover(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        return self::canManageHandover($user)
+            || $user->hasAnyPermission(['assets.handover.accept', 'assets.view', 'profile.read.self']);
+    }
+
     public static function canScan(?User $user): bool
     {
         if (! $user) {

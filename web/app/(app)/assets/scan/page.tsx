@@ -14,6 +14,8 @@ export default function AssetScanPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [publicHit, setPublicHit] = useState<{ tag: string; name: string; notice: string } | null>(null);
+  const [actions, setActions] = useState<Array<{ key: string; label: string; href: string }>>([]);
+  const [assetId, setAssetId] = useState<number | null>(null);
 
   async function lookup(e: FormEvent) {
     e.preventDefault();
@@ -25,11 +27,14 @@ export default function AssetScanPage() {
     setBusy(true);
     setError("");
     setPublicHit(null);
+    setActions([]);
+    setAssetId(null);
     try {
       const auth = await assetQrApi.lookup(token);
       const id = auth.data.data?.id;
       if (id) {
-        router.push(`/assets/${id}`);
+        setAssetId(id);
+        setActions(auth.data.data.allowed_actions ?? []);
         return;
       }
       throw new Error("missing id");
@@ -72,6 +77,23 @@ export default function AssetScanPage() {
           {busy ? t("common.loading") : t("assets.scan.lookup")}
         </button>
       </form>
+      {assetId && (
+        <div className="card space-y-3 p-4" data-testid="scan-actions">
+          <button type="button" className="btn-primary" onClick={() => router.push(`/assets/${assetId}`)}>
+            {t("assets.scan.openProfile")}
+          </button>
+          {actions.length > 0 && (
+            <div>
+              <p className="text-sm font-medium">{t("assets.scan.actions")}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {actions.map((action) => (
+                  <a key={action.key} href={action.href} className="btn-secondary text-xs">{action.label}</a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
       {publicHit && (
         <div className="card p-4 text-sm">
           <p className="font-mono font-semibold">{publicHit.tag}</p>

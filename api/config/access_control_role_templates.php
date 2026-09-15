@@ -184,6 +184,7 @@ return [
             // Administration Officer alias: asset register import, labels, and verification.
             'assets.view', 'assets.import', 'assets.verify', 'assets.print', 'assets.manage', 'assets.admin',
             'assets.scan', 'assets.settings.recovery_contact.manage', 'assets.checkout.manage', 'assets.transfer.manage',
+            'assets.handover.manage', 'assets.handover.accept',
         ],
         'inherits' => [],
         'legacy_roles' => ['HR Manager', 'HR Administrator', 'Administration Officer'],

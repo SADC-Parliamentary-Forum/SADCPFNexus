@@ -38,6 +38,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'assets.import', 'assets.verify', 'assets.print',
             'assets.scan', 'assets.settings.recovery_contact.manage', 'assets.financials.view',
             'assets.checkout.manage', 'assets.transfer.manage',
+            'assets.handover.manage', 'assets.handover.accept',
             // Consumables / Stock Register (separate from Fixed Assets)
             'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage', 'stock.admin',
             'stock.approve', 'stock.transfer',
@@ -322,7 +323,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'salary_advance.view', 'salary_advance.create',
                     'procurement.view', 'procurement.create',
                     'hr.view', 'hr.create',
-                    'governance.view', 'reports.view', 'assets.view',
+                    'governance.view', 'reports.view', 'assets.view', 'assets.handover.accept',
                     'decisions.view', 'decisions.create',
                     'stock.view',
                     'saam.view', 'saam.delegate',
@@ -563,6 +564,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'leave.view', 'imprest.view', 'hr.view', 'reports.view',
                     'assets.view', 'assets.import', 'assets.verify', 'assets.print', 'assets.manage', 'assets.admin',
                     'assets.scan', 'assets.settings.recovery_contact.manage', 'assets.checkout.manage', 'assets.transfer.manage',
+                    'assets.handover.manage', 'assets.handover.accept',
                 ])->where('guard_name', $guard)->get()
             );
 

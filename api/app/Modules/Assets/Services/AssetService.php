@@ -683,7 +683,7 @@ class AssetService
     {
         AssetAssignmentHistory::where('asset_id', $asset->id)
             ->whereNull('returned_at')
-            ->update(['returned_at' => now()]);
+            ->update(['returned_at' => now(), 'ended_at' => now()]);
     }
 
     private function assertAssignable(Asset $asset): void

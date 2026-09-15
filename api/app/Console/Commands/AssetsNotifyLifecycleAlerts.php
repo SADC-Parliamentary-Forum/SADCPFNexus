@@ -17,6 +17,7 @@ class AssetsNotifyLifecycleAlerts extends Command
     public function handle(AssetCheckoutService $checkouts, NotificationService $notifications): int
     {
         $overdue = $checkouts->notifyOverdue();
+        $handovers = app(\App\Modules\Assets\Services\AssetHandoverService::class)->sendReminders();
 
         $warranty = 0;
         $assets = Asset::query()
@@ -46,7 +47,7 @@ class AssetsNotifyLifecycleAlerts extends Command
             }
         }
 
-        $this->info("Overdue checkouts notified: {$overdue}. Warranty notices: {$warranty}.");
+        $this->info("Overdue checkouts notified: {$overdue}. Warranty notices: {$warranty}. Handover reminders: {$handovers}.");
 
         return self::SUCCESS;
     }

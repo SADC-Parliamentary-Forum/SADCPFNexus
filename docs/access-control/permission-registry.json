@@ -497,6 +497,50 @@
       ]
     },
     {
+      "key": "assets.handover.manage",
+      "display_name": "Manage asset handovers",
+      "description": "Create, send and verify asset issuance, transfer and return handovers and acquisition lots",
+      "module": "assets",
+      "feature": "handover",
+      "action": "manage",
+      "supported_scopes": ["organisation"],
+      "risk_level": "medium",
+      "data_classification": "Internal",
+      "mfa_required": false,
+      "linked_routes": ["/assets/handovers", "/assets/batches"],
+      "linked_endpoints": [
+        "GET /api/v1/asset-batches",
+        "POST /api/v1/asset-batches",
+        "POST /api/v1/asset-batches/{batch}/create-assets",
+        "POST /api/v1/asset-batches/{batch}/print-labels",
+        "GET /api/v1/asset-handovers",
+        "GET /api/v1/asset-handovers/{id}",
+        "POST /api/v1/asset-handovers",
+        "POST /api/v1/asset-handovers/{id}/send",
+        "GET /api/v1/assets/handovers/register"
+      ]
+    },
+    {
+      "key": "assets.handover.accept",
+      "display_name": "Accept asset handovers",
+      "description": "Respond per item and SAAM-sign handovers addressed to you",
+      "module": "assets",
+      "feature": "handover",
+      "action": "accept",
+      "supported_scopes": ["self"],
+      "risk_level": "medium",
+      "data_classification": "Internal",
+      "mfa_required": false,
+      "linked_routes": ["/assets/handovers", "/assets/mine"],
+      "linked_endpoints": [
+        "GET /api/v1/asset-handovers",
+        "GET /api/v1/asset-handovers/{id}",
+        "POST /api/v1/asset-handovers/{id}/lines/{line}/respond",
+        "POST /api/v1/asset-handovers/{id}/sign",
+        "GET /api/v1/asset-handovers/{id}/certificate"
+      ]
+    },
+    {
       "key": "assets.verify",
       "display_name": "Verify assets",
       "description": "Run physical verification campaigns and record unregistered finds",

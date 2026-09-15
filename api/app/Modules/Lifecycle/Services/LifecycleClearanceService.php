@@ -42,8 +42,14 @@ class LifecycleClearanceService
             $employeeId = (int) $task->lifecycleCase->employee_id;
             $outstanding = Asset::query()
                 ->where('tenant_id', $task->tenant_id)
-                ->where('assigned_to', $employeeId)
                 ->whereNotIn('status', array_merge(Asset::DISPOSED_STATUSES, ['retired']))
+                ->where(function ($q) use ($employeeId) {
+                    $q->where('assigned_to', $employeeId)
+                        ->orWhereHas('reservedHandover', function ($h) use ($employeeId) {
+                            $h->where('to_user_id', $employeeId)
+                                ->whereIn('status', ['awaiting_acceptance', 'partially_accepted', 'return_initiated']);
+                        });
+                })
                 ->exists();
             if ($outstanding) {
                 throw ValidationException::withMessages([

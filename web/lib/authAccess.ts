@@ -328,6 +328,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
   { path: "/assets/scan", permission: ["assets.scan", "assets.view", "assets.verify", "assets.admin", "assets.manage"] },
+  { path: "/assets/handovers", permission: ["assets.handover.manage", "assets.handover.accept", "assets.view", "assets.admin", "assets.manage"] },
+  { path: "/assets/batches", permission: ["assets.handover.manage", "assets.admin", "assets.manage"] },
   { path: "/assets/checkouts", permission: ["assets.checkout.manage", "assets.view", "assets.admin", "assets.manage"] },
   { path: "/assets/incidents", permission: ["assets.view", "assets.admin", "assets.manage"] },
   { path: "/assets/import", permission: ["assets.import", "assets.admin", "assets.manage"] },

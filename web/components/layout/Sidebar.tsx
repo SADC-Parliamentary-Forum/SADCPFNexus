@@ -259,6 +259,8 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Scan Asset", href: "/assets/scan", icon: "qr_code_scanner" },
       { label: "Dashboard", href: "/assets/dashboard", icon: "dashboard" },
       { label: "Register", href: "/assets", icon: "inventory_2" },
+      { label: "Handovers", href: "/assets/handovers", icon: "handshake" },
+      { label: "Acquisition lots", href: "/assets/batches", icon: "inventory" },
       { label: "Checkouts", href: "/assets/checkouts", icon: "logout" },
       { label: "Lost / Stolen", href: "/assets/incidents", icon: "report" },
       { label: "Fleet", href: "/fleet", icon: "directions_car" },

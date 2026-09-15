@@ -14,7 +14,7 @@ class Asset extends Model
     use SoftDeletes;
 
     /** @var list<string> */
-    public const LIVE_STATUSES = ['pending', 'active', 'service_due', 'loan_out', 'pending_disposal'];
+    public const LIVE_STATUSES = ['pending', 'available', 'active', 'assigned', 'service_due', 'loan_out', 'pending_disposal'];
 
     /** @var list<string> */
     public const DISPOSED_STATUSES = ['disposed', 'sold', 'written_off', 'scrapped', 'donated_out'];
@@ -42,6 +42,7 @@ class Asset extends Model
         'subcategory_id', 'ownership_type', 'funding_source_id', 'home_location_id',
         'received_date', 'supplier_name', 'vat_amount', 'budget_line', 'capitalisation_date',
         'imei', 'vehicle_registration', 'chassis_vin', 'barcode', 'owner_name', 'replacement_due_on',
+        'acquisition_batch_id', 'reserved_handover_id',
     ];
 
     protected $appends = ['age_years', 'age_display', 'current_value', 'qr_url'];
@@ -239,6 +240,16 @@ class Asset extends Model
     public function assignmentHistories(): HasMany
     {
         return $this->hasMany(AssetAssignmentHistory::class);
+    }
+
+    public function acquisitionBatch(): BelongsTo
+    {
+        return $this->belongsTo(AssetAcquisitionBatch::class, 'acquisition_batch_id');
+    }
+
+    public function reservedHandover(): BelongsTo
+    {
+        return $this->belongsTo(AssetHandover::class, 'reserved_handover_id');
     }
 
     public function locationHistories(): HasMany

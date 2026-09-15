@@ -313,6 +313,22 @@ class NotificationService
                 'subject' => 'ICT clearance blocked — outstanding assets',
                 'body' => "Dear {{name}},\n\nSeparation cannot complete while assets remain assigned. Return or transfer them, or request an authorised exception.\n\nRegards,\nSADC-PF Administration",
             ],
+            'assets.handover.awaiting_acceptance' => [
+                'subject' => 'Asset handover {{reference}} awaiting acceptance',
+                'body' => "Dear {{name}},\n\nHandover {{reference}} ({{count}} asset(s)) is waiting for your per-item response and signature in My Assets.\n\nRegards,\nSADC-PF Administration",
+            ],
+            'assets.handover.reminder' => [
+                'subject' => 'Reminder: asset handover {{reference}}',
+                'body' => "Dear {{name}},\n\nHandover {{reference}} is still awaiting your acceptance. Please respond to each item in Nexus.\n\nRegards,\nSADC-PF Administration",
+            ],
+            'assets.handover.supervisor_reminder' => [
+                'subject' => 'Overdue asset handover {{reference}}',
+                'body' => "Dear {{name}},\n\nHandover {{reference}} has not been accepted. Please follow up with the intended custodian.\n\nRegards,\nSADC-PF Administration",
+            ],
+            'assets.handover.disputed' => [
+                'subject' => 'Asset handover {{reference}} has exceptions',
+                'body' => "Dear {{name}},\n\nHandover {{reference}} was signed with one or more disputed items. Review the Handover Register.\n\nRegards,\nSADC-PF Administration",
+            ],
             'procurement.submitted' => [
                 'subject' => 'Procurement request submitted — Action required',
                 'body' => "Dear {{name}},\n\nA procurement request ({{reference}}) has been submitted by {{requester}} for approval.\n\nDescription: {{description}}\nEstimated value: {{amount}}\n\nPlease review and action this request.\n\nRegards,\nSADC-PF Nexus",

@@ -56,6 +56,7 @@ export default defineConfig({
         "**/auth.spec.ts",
         "**/admin.spec.ts",
         "**/assets-import.spec.ts",
+        "**/assets-handover.spec.ts",
         "**/timesheets-travel-followups.spec.ts",
         "**/organogram.spec.ts",
         "**/pif-sections.spec.ts",
@@ -73,6 +74,7 @@ export default defineConfig({
       testMatch: [
         "**/admin.spec.ts",
         "**/assets-import.spec.ts",
+        "**/assets-handover.spec.ts",
         "**/readiness-routes.spec.ts",
         "**/timesheets-travel-followups.spec.ts",
         "**/organogram.spec.ts",

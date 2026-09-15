@@ -4,6 +4,8 @@ export const ASSETS_SIDEBAR_CHILDREN = [
   { label: "Scan Asset", href: "/assets/scan", icon: "qr_code_scanner" },
   { label: "Dashboard", href: "/assets/dashboard", icon: "dashboard" },
   { label: "Register", href: "/assets", icon: "inventory_2" },
+  { label: "Handovers", href: "/assets/handovers", icon: "handshake" },
+  { label: "Acquisition lots", href: "/assets/batches", icon: "inventory" },
   { label: "Checkouts", href: "/assets/checkouts", icon: "logout" },
   { label: "Lost / Stolen", href: "/assets/incidents", icon: "report" },
   { label: "Fleet", href: "/fleet", icon: "directions_car" },
@@ -15,6 +17,8 @@ export const ASSETS_SIDEBAR_CHILDREN = [
 
 export const ASSETS_HUB_CARDS: HubCard[] = [
   { href: "/assets/scan", title: "Scan Asset", purpose: "Look up a QR token or public label URL.", icon: "qr_code_scanner", section: "queues", permission: ["assets.scan", "assets.view", "assets.verify", "assets.admin", "assets.manage"] },
+  { href: "/assets/handovers", title: "Handovers", purpose: "Issue, transfer and return with per-item acceptance.", icon: "handshake", section: "queues", permission: ["assets.handover.manage", "assets.handover.accept", "assets.view", "assets.admin", "assets.manage"] },
+  { href: "/assets/batches", title: "Acquisition lots", purpose: "Create numbered available stock and print labels.", icon: "inventory", section: "queues", permission: ["assets.handover.manage", "assets.admin", "assets.manage"] },
   { href: "/assets/intake", title: "Intake / pending", purpose: "GRN drafts waiting to be capitalised.", icon: "pending_actions", section: "queues" },
   { href: "/assets/verification", title: "Verification", purpose: "Physical verification exercises.", icon: "fact_check", section: "queues", permission: ["assets.verify", "assets.admin", "assets.manage"] },
   { href: "/assets/import", title: "Import", purpose: "Download the Excel template, stage rows, then commit to the register.", icon: "upload_file", section: "queues", permission: ["assets.import", "assets.admin", "assets.manage"] },

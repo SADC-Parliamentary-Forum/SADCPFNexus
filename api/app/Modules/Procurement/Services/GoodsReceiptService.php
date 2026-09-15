@@ -188,10 +188,11 @@ class GoodsReceiptService
                 }
 
                 $assetCategory = $line['category'] ?? ($type === 'controlled' ? 'controlled' : 'equipment');
+                $created = [];
 
                 for ($i = 1; $i <= $qty; $i++) {
                     $suffix = $qty > 1 ? ' #'.$i : '';
-                    Asset::create($this->pendingAssetAttributes(
+                    $created[] = Asset::create($this->pendingAssetAttributes(
                         $grn,
                         $po,
                         $line,
@@ -201,6 +202,7 @@ class GoodsReceiptService
                         $line['name'].$suffix,
                     ));
                 }
+                $this->attachAcquisitionBatch($grn, $po, $user, $line, $assetCategory, $qty, $unitCost, $created);
                 $this->inventoryRegister->linkSplit(
                     (int) $grn->tenant_id,
                     $grn->id,
@@ -252,6 +254,56 @@ class GoodsReceiptService
         ]);
 
         return $grn->fresh();
+    }
+
+    /**
+     * @param  list<Asset>  $assets
+     * @param  array<string, mixed>  $line
+     */
+    private function attachAcquisitionBatch(
+        GoodsReceiptNote $grn,
+        ?PurchaseOrder $po,
+        User $user,
+        array $line,
+        string $category,
+        int $qty,
+        ?float $unitCost,
+        array $assets,
+    ): void {
+        if ($assets === []) {
+            return;
+        }
+        $year = now()->year;
+        $count = \App\Models\AssetAcquisitionBatch::query()
+            ->where('tenant_id', $grn->tenant_id)
+            ->where('reference', 'like', 'BATCH-'.$year.'-%')
+            ->count();
+        $batch = \App\Models\AssetAcquisitionBatch::create([
+            'tenant_id' => $grn->tenant_id,
+            'reference' => sprintf('BATCH-%d-%05d', $year, $count + 1),
+            'description' => $line['name'] ?? 'GRN '.$grn->reference_number,
+            'qty' => $qty,
+            'unit_cost' => $unitCost,
+            'currency' => $po?->currency,
+            'supplier_name' => $po?->vendor?->name,
+            'purchase_order_id' => $grn->purchase_order_id,
+            'goods_receipt_note_id' => $grn->id,
+            'category' => $category,
+            'received_date' => $grn->received_date?->toDateString(),
+            'status' => 'received',
+            'created_by' => $user->id,
+        ]);
+        foreach ($assets as $asset) {
+            $asset->acquisition_batch_id = $batch->id;
+            $asset->save();
+            \App\Models\AssetAcquisitionBatchItem::create([
+                'tenant_id' => $grn->tenant_id,
+                'batch_id' => $batch->id,
+                'asset_id' => $asset->id,
+                'name' => $asset->name,
+                'serial_number' => $asset->serial_number,
+            ]);
+        }
     }
 
     private function updatePoStatus(PurchaseOrder $po): void

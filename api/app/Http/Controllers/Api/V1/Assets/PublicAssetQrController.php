@@ -66,6 +66,8 @@ class PublicAssetQrController extends Controller
                 'verification_status' => $asset->verification_status,
                 'purchase_value' => $canFinance ? $asset->purchase_value : null,
                 'book_value' => $canFinance ? $asset->book_value : null,
+                'reserved_handover_id' => $asset->reserved_handover_id,
+                'allowed_actions' => $this->allowedActions($asset, $user),
             ],
         ]);
     }
@@ -86,5 +88,35 @@ class PublicAssetQrController extends Controller
         $incident = $this->incidents->reportFound($record->asset, null, $data, true);
 
         return response()->json(['data' => ['id' => $incident->id]], 201);
+    }
+
+    /**
+     * @return list<array{key: string, label: string, href: string}>
+     */
+    private function allowedActions(Asset $asset, $user): array
+    {
+        $manage = AssetAccess::canManageHandover($user) || AssetAccess::canManage($user);
+        $actions = [];
+        if ($manage && ! $asset->reserved_handover_id && in_array($asset->status, ['available', 'active', 'assigned'], true)) {
+            $actions[] = ['key' => 'start_handover', 'label' => 'Start handover', 'href' => '/assets/handovers/new?assetId='.$asset->id];
+        }
+        if ($manage && $asset->assigned_to) {
+            $actions[] = ['key' => 'transfer', 'label' => 'Transfer', 'href' => '/assets/handovers/new?type=transfer&assetId='.$asset->id];
+            $actions[] = ['key' => 'return', 'label' => 'Return', 'href' => '/assets/handovers/new?type=return&assetId='.$asset->id];
+        }
+        if ($asset->reserved_handover_id) {
+            $actions[] = ['key' => 'view_handover', 'label' => 'Open handover', 'href' => '/assets/handovers/'.$asset->reserved_handover_id];
+        }
+        if (AssetAccess::canManage($user) || $user->hasPermissionTo('assets.checkout.manage')) {
+            $actions[] = ['key' => 'checkout', 'label' => 'Checkout', 'href' => '/assets/checkouts?asset='.$asset->id];
+        }
+        if ($user->hasAnyPermission(['assets.verify', 'assets.admin', 'assets.manage']) || $user->isSystemAdmin()) {
+            $actions[] = ['key' => 'verify', 'label' => 'Verify', 'href' => '/assets/verification?asset='.$asset->id];
+        }
+        if ($user->hasAnyPermission(['assets.print', 'assets.admin', 'assets.manage']) || $user->isSystemAdmin()) {
+            $actions[] = ['key' => 'print', 'label' => 'Print label', 'href' => '/assets/labels?asset='.$asset->id];
+        }
+
+        return $actions;
     }
 }

@@ -1457,6 +1457,24 @@ Route::prefix('v1')->group(function () {
         Route::get('asset-settings/numbering', [\App\Http\Controllers\Api\V1\Assets\AssetSettingsController::class, 'numbering']);
         Route::put('asset-settings/numbering', [\App\Http\Controllers\Api\V1\Assets\AssetSettingsController::class, 'updateNumbering']);
 
+        Route::get('asset-batches', [\App\Http\Controllers\Api\V1\Assets\AssetBatchController::class, 'index']);
+        Route::post('asset-batches', [\App\Http\Controllers\Api\V1\Assets\AssetBatchController::class, 'store']);
+        Route::get('asset-batches/{assetAcquisitionBatch}', [\App\Http\Controllers\Api\V1\Assets\AssetBatchController::class, 'show']);
+        Route::post('asset-batches/{assetAcquisitionBatch}/create-assets', [\App\Http\Controllers\Api\V1\Assets\AssetBatchController::class, 'createAssets']);
+        Route::post('asset-batches/{assetAcquisitionBatch}/print-labels', [\App\Http\Controllers\Api\V1\Assets\AssetBatchController::class, 'printLabels']);
+        Route::post('asset-batches/{assetAcquisitionBatch}/attach-grn', [\App\Http\Controllers\Api\V1\Assets\AssetBatchController::class, 'attachGrn']);
+
+        Route::get('assets/handovers/register', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'register']);
+        Route::get('asset-handovers', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'index']);
+        Route::post('asset-handovers', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'store']);
+        Route::get('asset-handovers/{assetHandover}', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'show']);
+        Route::post('asset-handovers/{assetHandover}/lines', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'addLines']);
+        Route::post('asset-handovers/{assetHandover}/send', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'send']);
+        Route::post('asset-handovers/{assetHandover}/cancel', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'cancel']);
+        Route::post('asset-handovers/{assetHandover}/sign', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'sign']);
+        Route::get('asset-handovers/{assetHandover}/certificate', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'certificate']);
+        Route::post('asset-handovers/{assetHandover}/lines/{assetHandoverLine}/respond', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'respond']);
+
         Route::get('assets/checkouts', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'checkoutsIndex']);
         Route::get('assets/transfers', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'transfersIndex']);
         Route::get('assets/incidents', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'incidentsIndex']);
@@ -1517,6 +1535,7 @@ Route::prefix('v1')->group(function () {
         Route::get('assets/{asset}/documents/{attachment}', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'downloadDocument']);
         Route::delete('assets/{asset}/documents/{attachment}', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'destroyDocument']);
         Route::get('assets/{asset}/assignment-history', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'assignmentHistory']);
+        Route::get('assets/{asset}/custody-history', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'custodyHistory']);
         Route::get('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'show']);
         Route::put('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'update']);
         Route::delete('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'destroy']);

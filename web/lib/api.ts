@@ -1870,6 +1870,8 @@ export interface Asset {
   custody_state?: "pending_acceptance" | "accepted" | "pending_return" | null;
   funding_source?: string | null;
   book_value?: number | null;
+  owner_name?: string | null;
+  custodian_type?: string | null;
 }
 
 export interface AssetRequest {
@@ -2005,7 +2007,88 @@ export const assetsApi = {
   move: (id: number, data: { location_id: number; reason?: string }) =>
     api.post<{ data: Asset }>(`/assets/${id}/move`, data),
   reportPack: (type: string) => api.get<{ data: unknown[] }>(`/assets/reports/${type}`),
+  batches: (params?: Record<string, string | number>) =>
+    api.get<{ data: AssetAcquisitionBatch[] } & { data?: AssetAcquisitionBatch[] }>("/asset-batches", { params }),
+  createBatch: (data: Record<string, unknown>) =>
+    api.post<{ data: AssetAcquisitionBatch }>("/asset-batches", data),
+  getBatch: (id: number) => api.get<{ data: AssetAcquisitionBatch }>(`/asset-batches/${id}`),
+  createBatchAssets: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ data: AssetAcquisitionBatch }>(`/asset-batches/${id}/create-assets`, data ?? {}),
+  printBatchLabels: (id: number, data: { template_id: number; json?: boolean }) =>
+    api.post<{ data: { batch_number: string; number_of_labels: number } }>(`/asset-batches/${id}/print-labels`, { ...data, json: true }),
+  handovers: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ data: AssetHandover[] } & PaginatedResponse<AssetHandover>>("/asset-handovers", { params }),
+  handoverRegister: (params?: Record<string, string | number>) =>
+    api.get<{ data: AssetHandover[] }>("/assets/handovers/register", { params }),
+  createHandover: (data: Record<string, unknown>) =>
+    api.post<{ data: AssetHandover }>("/asset-handovers", data),
+  getHandover: (id: number) => api.get<{ data: AssetHandover }>(`/asset-handovers/${id}`),
+  addHandoverLines: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: AssetHandover }>(`/asset-handovers/${id}/lines`, data),
+  sendHandover: (id: number) => api.post<{ data: AssetHandover }>(`/asset-handovers/${id}/send`, {}),
+  cancelHandover: (id: number) => api.post<{ data: AssetHandover }>(`/asset-handovers/${id}/cancel`, {}),
+  respondHandoverLine: (id: number, lineId: number, data: Record<string, unknown>) =>
+    api.post<{ data: AssetHandoverLine; handover: AssetHandover }>(`/asset-handovers/${id}/lines/${lineId}/respond`, data),
+  signHandover: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ data: AssetHandover }>(`/asset-handovers/${id}/sign`, data ?? {}),
+  handoverCertificateUrl: (id: number) => `/api/asset-handovers/${id}/certificate`,
+  custodyHistory: (id: number) =>
+    api.get<{ data: { owner: string; history: AssetCustodyPeriod[] } }>(`/assets/${id}/custody-history`),
 };
+
+export interface AssetAcquisitionBatch {
+  id: number;
+  reference: string;
+  description?: string | null;
+  qty: number;
+  status: string;
+  category?: string | null;
+  progress?: {
+    received: number;
+    created: number;
+    labels_printed: number;
+    assigned: number;
+    still_available: number;
+  };
+  items?: Array<{ asset_id: number; name?: string | null; asset?: Asset | null }>;
+}
+
+export interface AssetHandoverLine {
+  id: number;
+  asset_id: number;
+  snapshot_tag?: string | null;
+  snapshot_name?: string | null;
+  condition_out?: string | null;
+  line_status: string;
+  recipient_response?: string | null;
+  dispute_notes?: string | null;
+}
+
+export interface AssetHandover {
+  id: number;
+  reference: string;
+  type: string;
+  custody_target_type: string;
+  status: string;
+  to_user_id?: number | null;
+  to_user?: { id: number; name: string; email?: string } | null;
+  lines?: AssetHandoverLine[];
+  declaration?: { version_key: string; statement: string };
+  owner?: string;
+}
+
+export interface AssetCustodyPeriod {
+  id: number;
+  custodian_type?: string | null;
+  custodian_name?: string | null;
+  handover_id?: number | null;
+  handover_reference?: string | null;
+  certificate_available?: boolean;
+  assigned_at?: string | null;
+  ended_at?: string | null;
+  duration_seconds?: number | null;
+  open?: boolean;
+}
 
 export interface AssetTimelineEvent {
   id: number;
@@ -2301,6 +2384,8 @@ export const assetQrApi = {
     status?: string | null;
     purchase_value?: string | number | null;
     book_value?: string | number | null;
+    allowed_actions?: Array<{ key: string; label: string; href: string }>;
+    reserved_handover_id?: number | null;
   } }>(`/assets/qr/${encodeURIComponent(token)}`),
 };
 

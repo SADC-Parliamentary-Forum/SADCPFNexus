@@ -667,6 +667,29 @@ return [
             'READ' => ['assets.view', 'assets.admin', 'assets.manage', 'assets.settings.recovery_contact.manage'],
             'WRITE' => ['assets.admin', 'assets.manage', 'assets.settings.recovery_contact.manage'],
         ]],
+        ['pattern' => 'api/v1/asset-batches*', 'permissions' => [
+            'READ' => ['assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.handover.manage', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/asset-handovers/{assetHandover}/lines/{assetHandoverLine}/respond', 'permissions' => [
+            'WRITE' => ['assets.handover.accept', 'assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage', 'profile.read.self'],
+        ]],
+        ['pattern' => 'api/v1/asset-handovers/{assetHandover}/sign', 'permissions' => [
+            'WRITE' => ['assets.handover.accept', 'assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage', 'profile.read.self'],
+        ]],
+        ['pattern' => 'api/v1/asset-handovers/{assetHandover}/certificate', 'permissions' => [
+            'READ' => ['assets.handover.accept', 'assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage', 'profile.read.self'],
+        ]],
+        ['pattern' => 'api/v1/asset-handovers*', 'permissions' => [
+            'READ' => ['assets.handover.manage', 'assets.handover.accept', 'assets.view', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.handover.manage', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/assets/handovers*', 'permissions' => [
+            'READ' => ['assets.handover.manage', 'assets.handover.accept', 'assets.view', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/custody-history', 'permissions' => [
+            'READ' => ['assets.view', 'assets.scan', 'assets.admin', 'assets.manage', 'assets.handover.manage', 'profile.read.self'],
+        ]],
         ['pattern' => 'api/v1/assets/{asset}/move', 'permissions' => [
             'WRITE' => ['assets.manage', 'assets.admin'],
         ]],

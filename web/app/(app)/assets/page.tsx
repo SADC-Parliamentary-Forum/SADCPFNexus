@@ -1318,13 +1318,12 @@ export default function AssetsPage() {
                           ) : (
                             <>
                               {showAddAssetButton && canAssignAsset(asset.status) && asset.custody_state !== "pending_return" && (
-                                <button
-                                  type="button"
-                                  onClick={() => setAssignAsset(asset)}
+                                <Link
+                                  href={`/assets/handovers/new?assetId=${asset.id}`}
                                   className="px-2.5 py-1.5 rounded-lg text-xs font-medium text-primary hover:bg-primary/10"
                                 >
-                                  {t("assets.assign")}
-                                </button>
+                                  {t("assets.handover.create")}
+                                </Link>
                               )}
                               {showAddAssetButton && (
                                 <Link

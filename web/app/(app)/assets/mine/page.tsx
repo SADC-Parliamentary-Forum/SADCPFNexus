@@ -3,12 +3,13 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCallback, useEffect, useState } from "react";
-import { assetsApi, type Asset } from "@/lib/api";
+import { assetsApi, type Asset, type AssetHandover } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function MyAssetsPage() {
   const { t } = useI18n();
   const [items, setItems] = useState<Asset[]>([]);
+  const [handovers, setHandovers] = useState<AssetHandover[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -21,6 +22,9 @@ export default function MyAssetsPage() {
     try {
       const r = await assetsApi.list({ assigned_to: "me", per_page: 100 });
       setItems(r.data.data ?? []);
+      const ho = await assetsApi.handovers({ mine: true, per_page: 50 });
+      const payload = ho.data as { data?: AssetHandover[] };
+      setHandovers(Array.isArray(payload.data) ? payload.data.filter((h) => ["awaiting_acceptance", "partially_accepted", "return_initiated"].includes(h.status)) : []);
     } catch {
       setError(t("assets.mine.loadFailed"));
     } finally {
@@ -169,6 +173,18 @@ export default function MyAssetsPage() {
           {error}
         </div>
       ) : null}
+
+      {handovers.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2" data-testid="pending-handovers">
+          <h2 className="text-sm font-semibold">{t("assets.mine.pendingHandovers")}</h2>
+          <p className="text-xs text-neutral-600">{t("assets.handover.partialHint")}</p>
+          {handovers.map((h) => (
+            <a key={h.id} href={`/assets/handovers/${h.id}`} className="block text-sm text-primary underline">
+              {h.reference} · {h.status}
+            </a>
+          ))}
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
         <table className="data-table">

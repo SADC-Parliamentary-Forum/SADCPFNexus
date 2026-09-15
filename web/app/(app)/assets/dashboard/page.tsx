@@ -36,6 +36,10 @@ type Dash = {
   replacement_due?: number;
   total_acquisition_cost?: number;
   total_book_value?: number;
+  pending_handovers?: number;
+  disputed_handovers?: number;
+  unlabeled?: number;
+  unassigned_from_batch?: number;
 };
 
 export default function AssetsDashboardPage() {
@@ -61,7 +65,11 @@ export default function AssetsDashboardPage() {
     { label: t("assets.dash.lost"), key: "lost", href: "/assets/incidents" },
     { label: t("assets.dash.notVerified"), key: "not_verified", href: "/assets/verification" },
     { label: t("assets.dash.reprint"), key: "labels_reprint_required", href: "/assets/labels" },
-    { label: t("assets.dash.unassigned"), key: "unassigned", href: "/assets?status=unassigned" },
+    { label: t("assets.dash.pendingHandovers"), key: "pending_handovers", href: "/assets/handovers" },
+    { label: t("assets.dash.disputed"), key: "disputed_handovers", href: "/assets/handovers" },
+    { label: t("assets.dash.unlabeled"), key: "unlabeled", href: "/assets/labels" },
+    { label: t("assets.dash.unassignedFromBatch"), key: "unassigned_from_batch", href: "/assets/batches" },
+    { label: t("assets.dash.unassigned"), key: "unassigned", href: "/assets?status=available" },
     { label: t("assets.dash.noLocation"), key: "no_location", href: "/assets" },
     { label: t("assets.dash.noLabel"), key: "no_label", href: "/assets/labels" },
     { label: t("assets.dash.replacementDue"), key: "replacement_due", href: "/assets/reports" },

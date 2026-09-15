@@ -596,6 +596,22 @@ class AssetController extends Controller
             'assigned' => (clone $base)->whereNotNull('assigned_to')->whereNotIn('status', ['pending'])->count(),
             'warranty_expiring_30d' => (clone $base)->whereNotNull('warranty_expiry')
                 ->whereBetween('warranty_expiry', [now()->toDateString(), now()->addDays(30)->toDateString()])->count(),
+            'pending_handovers' => \App\Models\AssetHandover::query()
+                ->where('tenant_id', $tenantId)
+                ->whereIn('status', ['awaiting_acceptance', 'partially_accepted', 'return_initiated'])
+                ->count(),
+            'disputed_handovers' => \App\Models\AssetHandover::query()
+                ->where('tenant_id', $tenantId)
+                ->whereIn('status', ['disputed', 'partially_accepted'])
+                ->count(),
+            'unlabeled' => (clone $base)->where(function ($q) {
+                $q->whereNull('label_status')->orWhere('label_status', 'never_printed');
+            })->count(),
+            'unassigned_from_batch' => (clone $base)
+                ->whereNotNull('acquisition_batch_id')
+                ->whereNull('assigned_to')
+                ->whereIn('status', ['available', 'active'])
+                ->count(),
         ];
 
         if ($canFinance) {
