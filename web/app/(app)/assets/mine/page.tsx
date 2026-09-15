@@ -3,12 +3,13 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useCallback, useEffect, useState } from "react";
-import { assetsApi, type Asset } from "@/lib/api";
+import { assetsApi, type Asset, type AssetHandover } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function MyAssetsPage() {
   const { t } = useI18n();
   const [items, setItems] = useState<Asset[]>([]);
+  const [handovers, setHandovers] = useState<AssetHandover[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -18,11 +19,26 @@ export default function MyAssetsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
-      const r = await assetsApi.list({ assigned_to: "me", per_page: 100 });
-      setItems(r.data.data ?? []);
-    } catch {
-      setError(t("assets.mine.loadFailed"));
+      const [assigned, ho] = await Promise.allSettled([
+        assetsApi.assignedToMe({ per_page: 100 }),
+        assetsApi.handovers({ mine: true, per_page: 50 }),
+      ]);
+      if (assigned.status === "fulfilled") {
+        setItems(assigned.value.data.data ?? []);
+      } else {
+        setItems([]);
+      }
+      if (ho.status === "fulfilled") {
+        const payload = ho.value.data as { data?: AssetHandover[] };
+        setHandovers(Array.isArray(payload.data) ? payload.data.filter((h) => ["awaiting_acceptance", "partially_accepted", "return_initiated"].includes(h.status)) : []);
+      } else {
+        setHandovers([]);
+      }
+      if (assigned.status === "rejected" && ho.status === "rejected") {
+        setError(t("assets.mine.loadFailed"));
+      }
     } finally {
       setLoading(false);
     }
@@ -83,6 +99,55 @@ export default function MyAssetsPage() {
     }
   }
 
+  async function reportLost(asset: Asset) {
+    setActing(asset.id);
+    setError("");
+    try {
+      await assetsApi.reportLost(asset.id, { circumstances: "Reported from My Assets" });
+      setNotice(t("assets.mine.reportLost"));
+      await load();
+    } catch {
+      setError(t("assets.mine.actionFailed"));
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function reportStolen(asset: Asset) {
+    setActing(asset.id);
+    setError("");
+    try {
+      await assetsApi.reportStolen(asset.id, { circumstances: "Reported from My Assets" });
+      setNotice(t("assets.mine.reportStolen"));
+      await load();
+    } catch {
+      setError(t("assets.mine.actionFailed"));
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function requestTransfer(asset: Asset) {
+    const raw = window.prompt(t("assets.mine.transferUser"));
+    const toUserId = Number(raw);
+    if (!toUserId) return;
+    setActing(asset.id);
+    setError("");
+    try {
+      await assetsApi.initiateTransfer(asset.id, { to_user_id: toUserId, reason: "Requested from My Assets" });
+      setNotice(t("assets.mine.requestTransfer"));
+      await load();
+    } catch {
+      setError(t("assets.mine.actionFailed"));
+    } finally {
+      setActing(null);
+    }
+  }
+
+  async function reportFault(asset: Asset) {
+    window.location.href = `/assets/maintenance?asset=${asset.id}`;
+  }
+
   function isPendingAcceptance(asset: Asset): boolean {
     return asset.custody_state === "pending_acceptance"
       || (!asset.custody_state && !asset.acknowledgement_at);
@@ -120,6 +185,18 @@ export default function MyAssetsPage() {
           {error}
         </div>
       ) : null}
+
+      {handovers.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2" data-testid="pending-handovers">
+          <h2 className="text-sm font-semibold">{t("assets.mine.pendingHandovers")}</h2>
+          <p className="text-xs text-neutral-600">{t("assets.handover.partialHint")}</p>
+          {handovers.map((h) => (
+            <a key={h.id} href={`/assets/handovers/${h.id}`} className="block text-sm text-primary underline">
+              {h.reference} · {h.status}
+            </a>
+          ))}
+        </div>
+      )}
 
       <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
         <table className="data-table">
@@ -198,14 +275,23 @@ export default function MyAssetsPage() {
                   )}
                   {(asset.custody_state === "accepted"
                     || (!!asset.acknowledgement_at && asset.custody_state !== "pending_return" && !isPendingAcceptance(asset))) && (
-                    <button
-                      type="button"
-                      disabled={acting === asset.id}
-                      onClick={() => void requestReturn(asset)}
-                      className="btn-secondary text-xs"
-                    >
-                      {acting === asset.id ? t("common.loading") : t("assets.mine.requestReturn")}
-                    </button>
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button type="button" disabled={acting === asset.id} onClick={() => void requestReturn(asset)} className="btn-secondary text-xs">
+                        {acting === asset.id ? t("common.loading") : t("assets.mine.requestReturn")}
+                      </button>
+                      <button type="button" disabled={acting === asset.id} onClick={() => void reportFault(asset)} className="btn-secondary text-xs">
+                        {t("assets.mine.reportFault")}
+                      </button>
+                      <button type="button" disabled={acting === asset.id} onClick={() => void requestTransfer(asset)} className="btn-secondary text-xs">
+                        {t("assets.mine.requestTransfer")}
+                      </button>
+                      <button type="button" disabled={acting === asset.id} onClick={() => void reportLost(asset)} className="btn-secondary text-xs">
+                        {t("assets.mine.reportLost")}
+                      </button>
+                      <button type="button" disabled={acting === asset.id} onClick={() => void reportStolen(asset)} className="btn-secondary text-xs">
+                        {t("assets.mine.reportStolen")}
+                      </button>
+                    </div>
                   )}
                   {asset.custody_state === "pending_return" && (
                     <span className="text-xs text-amber-800">{t("assets.mine.awaitingReturnConfirm")}</span>

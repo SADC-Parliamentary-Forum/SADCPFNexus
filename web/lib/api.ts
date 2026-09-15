@@ -1843,6 +1843,12 @@ export interface Asset {
   status: string;
   assigned_to: number | null;
   assigned_user?: { id: number; name: string; email: string } | null;
+  location_id?: number | null;
+  location?: { id: number; name: string; code?: string } | null;
+  home_location_id?: number | null;
+  ownership_type?: string | null;
+  condition?: string | null;
+  publicStatus?: string | null;
   issued_at: string | null;
   value: number | null;
   notes: string | null;
@@ -1865,6 +1871,8 @@ export interface Asset {
   custody_state?: "pending_acceptance" | "accepted" | "pending_return" | null;
   funding_source?: string | null;
   book_value?: number | null;
+  owner_name?: string | null;
+  custodian_type?: string | null;
 }
 
 export interface AssetRequest {
@@ -1882,6 +1890,8 @@ export interface AssetRequest {
 export const assetsApi = {
   list: (params?: { assigned_to?: string; category?: string; status?: string; search?: string; per_page?: number; page?: number }) =>
     api.get<AssetListResponse>("/assets", { params }),
+  assignedToMe: (params?: { per_page?: number; page?: number }) =>
+    api.get<AssetListResponse>("/assets/assigned-to-me", { params }),
   get: (id: number) => api.get<Asset>(`/assets/${id}`),
   update: (id: number, data: {
     asset_code: string;
@@ -1971,6 +1981,155 @@ export const assetsApi = {
     api.post<{ success: boolean; data: AssetInsuranceClaim }>("/assets-meta/insurance/claims", data),
   updateInsuranceClaim: (id: number, data: Record<string, unknown>) =>
     api.put<{ success: boolean; data: AssetInsuranceClaim }>(`/assets-meta/insurance/claims/${id}`, data),
+  dashboard: () => api.get<{ data: Record<string, number> }>("/assets/dashboard"),
+  checkout: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: unknown }>(`/assets/${id}/checkout`, data),
+  returnCheckout: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ data: unknown }>(`/assets/${id}/return-checkout`, data ?? {}),
+  initiateTransfer: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: unknown }>(`/assets/${id}/transfers`, data),
+  reportLost: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ data: unknown }>(`/assets/${id}/report-lost`, data ?? {}),
+  reportStolen: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ data: unknown }>(`/assets/${id}/report-stolen`, data ?? {}),
+  reportFound: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ data: unknown }>(`/assets/${id}/report-found`, data ?? {}),
+  timeline: (id: number, params?: { type?: string }) =>
+    api.get<{ data: AssetTimelineEvent[] }>(`/assets/${id}/timeline`, { params }),
+  documents: (id: number) => api.get<{ data: GenericAssetAttachment[] }>(`/assets/${id}/documents`),
+  uploadDocument: (id: number, file: File, documentType: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("document_type", documentType);
+    return api.post<{ data: GenericAssetAttachment }>(`/assets/${id}/documents`, form);
+  },
+  deleteDocument: (id: number, attachmentId: number) =>
+    api.delete(`/assets/${id}/documents/${attachmentId}`),
+  documentDownloadUrl: (id: number, attachmentId: number) =>
+    `/api/assets/${id}/documents/${attachmentId}`,
+  move: (id: number, data: { location_id: number; reason?: string }) =>
+    api.post<{ data: Asset }>(`/assets/${id}/move`, data),
+  reportPack: (type: string) => api.get<{ data: unknown[] }>(`/assets/reports/${type}`),
+  batches: (params?: Record<string, string | number>) =>
+    api.get<{ data: AssetAcquisitionBatch[] } & { data?: AssetAcquisitionBatch[] }>("/asset-batches", { params }),
+  createBatch: (data: Record<string, unknown>) =>
+    api.post<{ data: AssetAcquisitionBatch }>("/asset-batches", data),
+  getBatch: (id: number) => api.get<{ data: AssetAcquisitionBatch }>(`/asset-batches/${id}`),
+  createBatchAssets: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ data: AssetAcquisitionBatch }>(`/asset-batches/${id}/create-assets`, data ?? {}),
+  printBatchLabels: (id: number, data: { template_id: number; json?: boolean }) =>
+    api.post<{ data: { batch_number: string; number_of_labels: number } }>(`/asset-batches/${id}/print-labels`, { ...data, json: true }),
+  handovers: (params?: Record<string, string | number | boolean>) =>
+    api.get<{ data: AssetHandover[] } & PaginatedResponse<AssetHandover>>("/asset-handovers", { params }),
+  handoverRegister: (params?: Record<string, string | number>) =>
+    api.get<{ data: AssetHandover[] }>("/assets/handovers/register", { params }),
+  createHandover: (data: Record<string, unknown>) =>
+    api.post<{ data: AssetHandover }>("/asset-handovers", data),
+  getHandover: (id: number) => api.get<{ data: AssetHandover }>(`/asset-handovers/${id}`),
+  addHandoverLines: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: AssetHandover }>(`/asset-handovers/${id}/lines`, data),
+  sendHandover: (id: number) => api.post<{ data: AssetHandover }>(`/asset-handovers/${id}/send`, {}),
+  cancelHandover: (id: number) => api.post<{ data: AssetHandover }>(`/asset-handovers/${id}/cancel`, {}),
+  respondHandoverLine: (id: number, lineId: number, data: Record<string, unknown>) =>
+    api.post<{ data: AssetHandoverLine; handover: AssetHandover }>(`/asset-handovers/${id}/lines/${lineId}/respond`, data),
+  signHandover: (id: number, data?: Record<string, unknown>) =>
+    api.post<{ data: AssetHandover }>(`/asset-handovers/${id}/sign`, data ?? {}),
+  handoverCertificateUrl: (id: number) => `/api/asset-handovers/${id}/certificate`,
+  custodyHistory: (id: number) =>
+    api.get<{ data: { owner: string; history: AssetCustodyPeriod[] } }>(`/assets/${id}/custody-history`),
+};
+
+export interface AssetAcquisitionBatch {
+  id: number;
+  reference: string;
+  description?: string | null;
+  qty: number;
+  status: string;
+  category?: string | null;
+  progress?: {
+    received: number;
+    created: number;
+    labels_printed: number;
+    assigned: number;
+    still_available: number;
+  };
+  items?: Array<{ asset_id: number; name?: string | null; asset?: Asset | null }>;
+}
+
+export interface AssetHandoverLine {
+  id: number;
+  asset_id: number;
+  snapshot_tag?: string | null;
+  snapshot_name?: string | null;
+  condition_out?: string | null;
+  line_status: string;
+  recipient_response?: string | null;
+  dispute_notes?: string | null;
+}
+
+export interface AssetHandover {
+  id: number;
+  reference: string;
+  type: string;
+  custody_target_type: string;
+  status: string;
+  to_user_id?: number | null;
+  to_user?: { id: number; name: string; email?: string } | null;
+  lines?: AssetHandoverLine[];
+  declaration?: { version_key: string; statement: string };
+  owner?: string;
+}
+
+export interface AssetCustodyPeriod {
+  id: number;
+  custodian_type?: string | null;
+  custodian_name?: string | null;
+  handover_id?: number | null;
+  handover_reference?: string | null;
+  certificate_available?: boolean;
+  assigned_at?: string | null;
+  ended_at?: string | null;
+  duration_seconds?: number | null;
+  open?: boolean;
+}
+
+export interface AssetTimelineEvent {
+  id: number;
+  event_type: string;
+  summary?: string | null;
+  occurred_at?: string | null;
+  created_at?: string;
+}
+
+export interface GenericAssetAttachment {
+  id: number;
+  document_type: string | null;
+  original_filename: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+  uploader?: { id: number; name: string };
+}
+
+export const assetLifecycleApi = {
+  recoveryContact: () => api.get<{ data: Record<string, unknown> | null }>("/asset-settings/recovery-contact"),
+  updateRecoveryContact: (data: Record<string, unknown>) =>
+    api.put<{ data: Record<string, unknown> }>("/asset-settings/recovery-contact", data),
+  recoveryContactHistory: () =>
+    api.get<{ data: Array<Record<string, unknown>> }>("/asset-settings/recovery-contact/history"),
+  numbering: () => api.get<{ data: Record<string, unknown> }>("/asset-settings/numbering"),
+  updateNumbering: (data: Record<string, unknown>) =>
+    api.put<{ data: Record<string, unknown> }>("/asset-settings/numbering", data),
+  checkouts: (params?: { open?: boolean; per_page?: number }) =>
+    api.get<{ data: Array<Record<string, unknown>> }>("/assets/checkouts", { params }),
+  transfers: (params?: { per_page?: number }) =>
+    api.get<{ data: Array<Record<string, unknown>> }>("/assets/transfers", { params }),
+  confirmOutgoing: (id: number) =>
+    api.post<{ data: unknown }>(`/asset-transfers/${id}/confirm-outgoing`),
+  acceptTransfer: (id: number) =>
+    api.post<{ data: unknown }>(`/asset-transfers/${id}/accept`),
+  incidents: (params?: { type?: string }) =>
+    api.get<{ data: Array<Record<string, unknown>> }>("/assets/incidents", { params }),
 };
 
 export interface AssetInsurancePolicy {
@@ -2217,7 +2376,20 @@ export const assetImportApi = {
 };
 
 export const assetQrApi = {
-  lookup: (token: string) => api.get<{ data: { id: number; asset_tag: string; name: string; serial_number?: string | null } }>(`/assets/qr/${encodeURIComponent(token)}`),
+  lookup: (token: string) => api.get<{ data: {
+    id: number;
+    asset_tag: string;
+    name: string;
+    serial_number?: string | null;
+    location?: { id: number; name: string } | null;
+    custodian?: { id: number; name: string } | null;
+    condition?: string | null;
+    status?: string | null;
+    purchase_value?: string | number | null;
+    book_value?: string | number | null;
+    allowed_actions?: Array<{ key: string; label: string; href: string }>;
+    reserved_handover_id?: number | null;
+  } }>(`/assets/qr/${encodeURIComponent(token)}`),
 };
 
 export const assetVerificationApi = {
@@ -2228,9 +2400,11 @@ export const assetVerificationApi = {
 };
 
 export const assetMetaApi = {
-  locations: () => api.get<{ data: { id: number; name: string; code: string; legacy_name?: string | null }[] }>("/assets-meta/locations"),
+  locations: () => api.get<{ data: { id: number; name: string; code: string; legacy_name?: string | null; building?: string | null }[] }>("/assets-meta/locations"),
   createLocation: (data: Record<string, unknown>) =>
     api.post<{ data: { id: number; name: string; code: string } }>("/assets-meta/locations", data),
+  updateLocation: (id: number, data: Record<string, unknown>) =>
+    api.put<{ data: { id: number; name: string; code: string } }>(`/assets-meta/locations/${id}`, data),
 };
 
 export interface AssetLabelTemplate {
@@ -2286,10 +2460,31 @@ export const assetUnregisteredFindsApi = {
 
 export const publicAssetQrApi = {
   show: (token: string) =>
-    api.get<{ data: { organisation: string; notice: string; asset_tag: string; asset_name: string; contact: string } }>(
-      `/public/assets/${token}`
-    ),
+    api.get<{ data: PublicAssetPayload }>(`/public/assets/${token}`),
+  reportFound: (token: string, data: Record<string, unknown>) =>
+    api.post<{ data: { id: number } }>(`/public/assets/${token}/found`, data),
 };
+
+export interface PublicAssetPayload {
+  organisation: string;
+  notice: string;
+  asset_tag: string;
+  assetNumber?: string;
+  asset_name: string;
+  description?: string;
+  contact: string;
+  publicStatus?: "REGISTERED" | "LOST" | "STOLEN" | "DISPOSED";
+  recoveryContact?: {
+    telephone?: string;
+    alternateTelephone?: string;
+    whatsapp?: string;
+    email?: string;
+    address?: string;
+    instructions?: string;
+    name?: string;
+    department?: string;
+  };
+}
 
 // ─── Consumables / Stock Register (separate from Fixed Assets) ────────────────
 

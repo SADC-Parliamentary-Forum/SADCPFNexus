@@ -62,15 +62,61 @@ class AssetLabelService
                 'source_import_batch_id' => $importBatchId,
             ]);
 
+            $recovery = app(AssetRecoveryContactService::class)->current((int) $user->tenant_id);
             foreach ($assets->values() as $i => $asset) {
+                $previous = \App\Models\AssetLabel::query()
+                    ->where('asset_id', $asset->id)
+                    ->where('status', 'current')
+                    ->latest('id')
+                    ->first();
+                $version = $previous ? ((int) $previous->label_version) + 1 : 1;
+                $qrToken = \App\Models\AssetQrToken::query()
+                    ->where('asset_id', $asset->id)
+                    ->where('token', $asset->qr_token)
+                    ->whereNull('revoked_at')
+                    ->first();
+                $label = \App\Models\AssetLabel::create([
+                    'tenant_id' => $asset->tenant_id,
+                    'asset_id' => $asset->id,
+                    'template_id' => $template->id,
+                    'label_version' => $version,
+                    'qr_token_id' => $qrToken?->id,
+                    'recovery_contact_version' => $recovery?->version,
+                    'printed_custodian_id' => $asset->assigned_to,
+                    'printed_location_id' => $asset->location_id,
+                    'printed_description' => $asset->name,
+                    'printed_phone' => $recovery?->primary_phone,
+                    'printed_email' => $recovery?->email,
+                    'printed_at' => now(),
+                    'printed_by' => $user->id,
+                    'status' => 'current',
+                    'label_batch_id' => $batch->id,
+                ]);
+                if ($previous) {
+                    $previous->status = 'replaced';
+                    $previous->replaced_by_label_id = $label->id;
+                    $previous->save();
+                }
                 AssetLabelBatchItem::create([
                     'label_batch_id' => $batch->id,
                     'asset_id' => $asset->id,
                     'position' => $i + 1,
+                    'recovery_contact_version' => $recovery?->version,
+                    'printed_custodian_id' => $asset->assigned_to,
+                    'printed_location_id' => $asset->location_id,
+                    'printed_description' => $asset->name,
+                    'asset_label_id' => $label->id,
                 ]);
                 $asset->label_status = 'printed';
                 $asset->label_reprint_reason = null;
                 $asset->save();
+                app(AssetTimelineService::class)->record(
+                    $asset,
+                    'LABEL_PRINTED',
+                    'Label version '.$version.' printed',
+                    $user,
+                    ['batch' => $batch->batch_number]
+                );
             }
 
             $labels = $assets->map(fn (Asset $asset) => $this->labelData($asset, $template))->all();
@@ -115,13 +161,20 @@ class AssetLabelService
     {
         $qrPng = $this->qr->png($asset);
 
+        $recovery = app(AssetRecoveryContactService::class)->current((int) $asset->tenant_id);
+
         return [
             'asset_tag' => $asset->tag_number ?: $asset->asset_code,
             'name' => $asset->name,
             'model' => $asset->model,
             'serial' => $asset->serial_number,
-            'location' => $template->kind === 'custody' ? ($asset->location?->name ?: $asset->legacy_location) : null,
-            'custodian' => $template->kind === 'custody' ? ($asset->assignedUser?->name) : null,
+            'location' => $asset->location?->name ?: $asset->legacy_location,
+            'custodian' => $asset->assignedUser?->name,
+            'owner' => $asset->owner_name ?: 'SADC Parliamentary Forum',
+            'recovery_phone' => $recovery?->primary_phone,
+            'recovery_email' => $recovery?->email,
+            'recovery_whatsapp' => $recovery?->whatsapp,
+            'scan_hint' => 'Scan for current information',
             'qr_base64' => base64_encode($qrPng),
         ];
     }
@@ -139,6 +192,10 @@ class AssetLabelService
         $asset->label_status = 'reprint_required';
         $asset->label_reprint_reason = $reason;
         $asset->save();
+        \App\Models\AssetLabel::query()
+            ->where('asset_id', $asset->id)
+            ->where('status', 'current')
+            ->update(['status' => 'reprint_required', 'reprint_reason' => $reason]);
     }
 
     public function ensureDefaultTemplates(int $tenantId): void

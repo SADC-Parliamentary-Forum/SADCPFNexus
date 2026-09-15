@@ -1568,7 +1568,7 @@ const OVERCROWDED_SIDEBARS: {
   {
     label: "Fixed Assets",
     next: "Consumables / Stock",
-    max: 6,
+    max: 12,
     hubFile: "lib/hubs/assets.ts",
     page: "app/(app)/assets/dashboard/page.tsx",
     mustInclude: ["/assets/dashboard", "/assets", "/assets/settings"],

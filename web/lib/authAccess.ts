@@ -78,6 +78,11 @@ export function canRetireAssets(user: AuthAccessUser | null | undefined): boolea
   return hasPermission(user, ["assets.admin", "assets.manage"]);
 }
 
+export function canViewAssetFinancials(user: AuthAccessUser | null | undefined): boolean {
+  if (!user) return false;
+  return hasPermission(user, ["assets.financials.view", "finance.admin", "finance.approve", "finance.export"]);
+}
+
 const ASSET_LABEL_PRINT_PERMISSIONS = ["assets.print", "assets.admin", "assets.manage"];
 
 /** True if the user can print Avery/thermal labels from the register. */
@@ -322,6 +327,12 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr/leave/import", permission: ["hr.admin", "hr.edit", "leave.admin", "leave.balance.import"] },
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
+  { path: "/assets/scan", permission: ["assets.scan", "assets.view", "assets.verify", "assets.admin", "assets.manage"] },
+  { path: "/assets/mine", permission: ["assets.handover.accept", "assets.view", "assets.admin", "assets.manage", "profile.read.self"] },
+  { path: "/assets/handovers", permission: ["assets.handover.manage", "assets.handover.accept", "assets.view", "assets.admin", "assets.manage"] },
+  { path: "/assets/batches", permission: ["assets.handover.manage", "assets.admin", "assets.manage"] },
+  { path: "/assets/checkouts", permission: ["assets.checkout.manage", "assets.view", "assets.admin", "assets.manage"] },
+  { path: "/assets/incidents", permission: ["assets.view", "assets.admin", "assets.manage"] },
   { path: "/assets/import", permission: ["assets.import", "assets.admin", "assets.manage"] },
   { path: "/assets/disposal", permission: ["assets.dispose", "assets.admin", "assets.manage"] },
   { path: "/assets/depreciation", permission: ["assets.admin", "assets.manage"] },
@@ -440,6 +451,16 @@ export function canAccessRoute(user: AuthAccessUser | null | undefined, pathOrId
   }
   if (entry.path === "/procurement" && /^\/procurement\/\d+(\/|$)/.test(path)) {
     return hasPermission(user, ["procurement.view", "procurement.create", "procurement.request.read.created"]);
+  }
+  if (entry.path === "/assets/handovers" && /^\/assets\/handovers\/\d+(\/|$)/.test(path)) {
+    return hasPermission(user, [
+      "assets.handover.accept",
+      "assets.handover.manage",
+      "assets.view",
+      "assets.admin",
+      "assets.manage",
+      "profile.read.self",
+    ]);
   }
 
   if (!entry.permission) return true;

@@ -107,3 +107,5 @@ Schedule::command('notifications:process-deliveries --retries --scheduled --coal
 Schedule::command('notifications:process-deliveries --digest=daily')->dailyAt('07:10');
 Schedule::command('notifications:process-deliveries --digest=weekly')->weeklyOn(1, '07:15');
 Schedule::command('notifications:process-deliveries --maintenance')->hourly()->withoutOverlapping();
+
+Schedule::command('assets:notify-lifecycle-alerts')->dailyAt('07:40')->withoutOverlapping();

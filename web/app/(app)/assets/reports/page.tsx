@@ -68,6 +68,14 @@ export default function AssetReportsPage() {
       hint: t("assets.reports.packVerificationHint"),
       icon: "fact_check",
     },
+    { href: "/assets?status=unassigned", title: t("assets.reports.packUnassigned"), hint: t("assets.reports.packUnassigned"), icon: "person_off" },
+    { href: "/assets/labels", title: t("assets.reports.packReprint"), hint: t("assets.reports.packReprint"), icon: "print" },
+    { href: "/assets/labels", title: t("assets.reports.packMissingLabels"), hint: t("assets.reports.packMissingLabels"), icon: "qr_code_2" },
+    { href: "/assets/verification", title: t("assets.reports.packUnverified"), hint: t("assets.reports.packUnverified"), icon: "unpublished" },
+    { href: "/assets/incidents", title: t("assets.reports.packStolen"), hint: t("assets.reports.packStolen"), icon: "report" },
+    { href: "/assets/maintenance", title: t("assets.reports.packWarranty"), hint: t("assets.reports.packWarranty"), icon: "verified_user" },
+    { href: "/assets/reports", title: t("assets.reports.packReplacement"), hint: t("assets.reports.packReplacement"), icon: "swap_horiz" },
+    { href: "/assets/depreciation", title: t("assets.reports.packValuation"), hint: t("assets.reports.packValuation"), icon: "payments" },
   ];
 
   return (

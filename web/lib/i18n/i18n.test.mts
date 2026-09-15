@@ -91,6 +91,12 @@ test("shared chrome components translate user-facing copy", () => {
     "components/assets/LabelTemplateVisualEditor.tsx",
     "app/(app)/assets/verification/page.tsx",
     "app/(app)/assets/mine/page.tsx",
+    "app/(app)/assets/batches/page.tsx",
+    "app/(app)/assets/handovers/page.tsx",
+    "app/(app)/assets/handovers/[id]/page.tsx",
+    "app/(app)/assets/handovers/new/page.tsx",
+    "app/(app)/assets/dashboard/page.tsx",
+    "app/(app)/assets/scan/page.tsx",
     "app/(app)/audit/engagements/page.tsx",
     "components/audit/AuditChrome.tsx",
     "app/(app)/risk/create/page.tsx",
@@ -196,6 +202,28 @@ test("risk create catalog covers form copy in EN, FR and PT", () => {
     "hr.hub",
     "hr.subtitle",
     "hr.timesheets.recent",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
+test("asset issuance handover catalog covers owner and lot copy in EN, FR and PT", () => {
+  const keys = [
+    "assets.handover.title",
+    "assets.handover.owner",
+    "assets.handover.ownerValue",
+    "assets.handover.custodyHistory",
+    "assets.handover.inCustodyOf",
+    "assets.handover.partialHint",
+    "assets.batches.title",
+    "assets.dash.pendingHandovers",
+    "assets.dash.unlabeled",
   ];
   for (const key of keys) {
     const en = translate("en", key);

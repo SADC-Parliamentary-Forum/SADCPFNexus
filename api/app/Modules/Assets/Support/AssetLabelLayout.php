@@ -7,7 +7,7 @@ use App\Models\AssetLabelTemplate;
 final class AssetLabelLayout
 {
     /** @var list<string> */
-    public const IDS = ['org', 'notice', 'tag', 'name', 'model', 'serial', 'location', 'custodian', 'qr'];
+    public const IDS = ['org', 'notice', 'tag', 'name', 'model', 'serial', 'location', 'custodian', 'owner', 'recovery', 'scan_hint', 'qr'];
 
     /**
      * @return list<array{id: string, x_mm: float, y_mm: float, w_mm: float, h_mm: float, visible: bool}>
@@ -25,10 +25,13 @@ final class AssetLabelLayout
             ['id' => 'notice', 'x_mm' => 1.5, 'y_mm' => 4.6, 'w_mm' => max(10.0, $labelW - 3), 'h_mm' => 3.0, 'visible' => true],
             ['id' => 'tag', 'x_mm' => 1.5, 'y_mm' => 8.0, 'w_mm' => $textW, 'h_mm' => 4.8, 'visible' => true],
             ['id' => 'name', 'x_mm' => 1.5, 'y_mm' => 12.8, 'w_mm' => $textW, 'h_mm' => 5.4, 'visible' => true],
-            ['id' => 'model', 'x_mm' => 1.5, 'y_mm' => 18.4, 'w_mm' => $textW, 'h_mm' => 3.6, 'visible' => true],
-            ['id' => 'serial', 'x_mm' => 1.5, 'y_mm' => 22.2, 'w_mm' => $textW, 'h_mm' => 3.6, 'visible' => true],
-            ['id' => 'location', 'x_mm' => 1.5, 'y_mm' => 26.0, 'w_mm' => $textW, 'h_mm' => 3.6, 'visible' => true],
-            ['id' => 'custodian', 'x_mm' => 1.5, 'y_mm' => 29.8, 'w_mm' => $textW, 'h_mm' => 3.6, 'visible' => true],
+            ['id' => 'owner', 'x_mm' => 1.5, 'y_mm' => 18.2, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => true],
+            ['id' => 'recovery', 'x_mm' => 1.5, 'y_mm' => 21.4, 'w_mm' => $textW, 'h_mm' => 4.8, 'visible' => true],
+            ['id' => 'scan_hint', 'x_mm' => 1.5, 'y_mm' => 26.4, 'w_mm' => $textW, 'h_mm' => 3.0, 'visible' => true],
+            ['id' => 'model', 'x_mm' => 1.5, 'y_mm' => 29.4, 'w_mm' => $textW, 'h_mm' => 0, 'visible' => false],
+            ['id' => 'serial', 'x_mm' => 1.5, 'y_mm' => 29.4, 'w_mm' => $textW, 'h_mm' => 0, 'visible' => false],
+            ['id' => 'location', 'x_mm' => 1.5, 'y_mm' => 29.4, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => $labelH >= 40],
+            ['id' => 'custodian', 'x_mm' => 1.5, 'y_mm' => 32.6, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => $labelH >= 44],
             ['id' => 'qr', 'x_mm' => $qrX, 'y_mm' => $qrY, 'w_mm' => $qr, 'h_mm' => $qr, 'visible' => true],
         ];
 

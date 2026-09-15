@@ -108,6 +108,7 @@ class AccessControlModuleVisibilityTest extends TestCase
         $this->assertNotContains('reports.view', $perms);
         $this->assertContains('travel.create', $perms);
         $this->assertContains('leave.view', $perms);
+        $this->assertContains('assets.handover.accept', $perms);
     }
 
     public function test_staff_cannot_list_other_employees_hr_incidents(): void

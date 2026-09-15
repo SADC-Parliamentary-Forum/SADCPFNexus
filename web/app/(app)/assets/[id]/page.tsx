@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { assetsApi, type Asset } from "@/lib/api";
+import { assetsApi, type Asset, type AssetCustodyPeriod, type AssetTimelineEvent, type GenericAssetAttachment } from "@/lib/api";
+import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { apiErrorMessage } from "@/lib/apiError";
 import { canManageAssets, getStoredUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
@@ -34,6 +35,23 @@ function money(value: number | string | null | undefined): string {
   return Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function custodyOf(asset: Asset, t: (key: string) => string): string {
+  if (asset.assigned_user?.name) return asset.assigned_user.name;
+  if (asset.location?.name) return asset.location.name;
+  if (asset.status === "available" || !asset.assigned_to) return t("assets.dash.available");
+  return t("assets.notAssigned");
+}
+
+function formatDuration(seconds: number | null | undefined): string {
+  if (seconds == null) return "—";
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h`;
+  const minutes = Math.max(1, Math.floor(seconds / 60));
+  return `${minutes}m`;
+}
+
 export default function AssetViewPage() {
   const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
@@ -42,6 +60,14 @@ export default function AssetViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
+  const [timeline, setTimeline] = useState<AssetTimelineEvent[]>([]);
+  const [custody, setCustody] = useState<{ owner: string; history: AssetCustodyPeriod[] }>({
+    owner: "SADC Parliamentary Forum",
+    history: [],
+  });
+  const [docs, setDocs] = useState<GenericAssetAttachment[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     setCanEdit(canManageAssets(getStoredUser()));
@@ -60,6 +86,17 @@ export default function AssetViewPage() {
       .get(numericId)
       .then((res) => {
         if (!cancelled) setAsset(res.data);
+        void assetsApi.timeline(numericId).then((r) => { if (!cancelled) setTimeline(r.data.data ?? []); }).catch(() => undefined);
+        void assetsApi.custodyHistory(numericId).then((r) => {
+          if (!cancelled) {
+            setCustody({
+              owner: r.data.data.owner || "SADC Parliamentary Forum",
+              history: r.data.data.history ?? [],
+            });
+          }
+        }).catch(() => undefined);
+        setDocsLoading(true);
+        void assetsApi.documents(numericId).then((r) => { if (!cancelled) setDocs(r.data.data ?? []); }).catch(() => undefined).finally(() => { if (!cancelled) setDocsLoading(false); });
       })
       .catch((err) => {
         if (cancelled) return;
@@ -117,12 +154,13 @@ export default function AssetViewPage() {
             <Field label={t("assets.view.fieldCode")} value={asset.asset_code} />
             <Field label={t("assets.view.fieldStatus")} value={STATUS_LABELS[asset.status] ?? asset.status} />
             <Field label={t("assets.view.fieldCategory")} value={asset.category} />
-            <Field label={t("assets.assignedTo")} value={asset.assigned_user?.name ?? t("assets.notAssigned")} />
+            <Field label={t("assets.handover.owner")} value={asset.owner_name || custody.owner || t("assets.handover.ownerValue")} />
+            <Field label={t("assets.handover.inCustodyOf")} value={custodyOf(asset, t)} />
             <Field label={t("assets.view.fieldSerial")} value={asset.serial_number ?? "—"} />
             <Field label={t("assets.view.fieldTag")} value={asset.tag_number ?? "—"} />
             <Field label={t("assets.view.fieldPurchaseDate")} value={formatDateShort(asset.purchase_date)} />
-            <Field label={t("assets.view.fieldPurchaseValue")} value={money(asset.purchase_value)} />
-            <Field label={t("assets.view.fieldBookValue")} value={money(bookValue)} />
+            <Field label={t("assets.view.fieldPurchaseValue")} value={asset.purchase_value == null ? "—" : money(asset.purchase_value)} />
+            <Field label={t("assets.view.fieldBookValue")} value={bookValue == null ? "—" : money(bookValue)} />
             <Field label={t("assets.view.fieldIssued")} value={formatDateShort(asset.issued_at)} />
             <Field label={t("assets.view.fieldCustody")} value={asset.custody_state ?? "—"} />
             <Field label={t("assets.view.fieldAge")} value={asset.age_display ?? "—"} />
@@ -133,6 +171,87 @@ export default function AssetViewPage() {
               <p className="mt-1 whitespace-pre-wrap text-sm text-neutral-800">{asset.notes}</p>
             </div>
           )}
+          <section className="card p-4" data-testid="custody-history">
+            <h2 className="mb-3 text-sm font-semibold">{t("assets.handover.custodyHistory")}</h2>
+            {custody.history.length === 0 ? (
+              <p className="text-sm text-neutral-500">{t("assets.timeline.empty")}</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>{t("assets.handover.inCustodyOf")}</th>
+                      <th>{t("assets.handover.type")}</th>
+                      <th>{t("assets.handover.duration")}</th>
+                      <th>{t("assets.handover.certificate")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {custody.history.map((row) => (
+                      <tr key={row.id}>
+                        <td>{row.custodian_name || row.custodian_type || "—"}</td>
+                        <td>{row.custodian_type || "—"}{row.open ? ` · ${t("assets.handover.needsAttention")}` : ""}</td>
+                        <td>{formatDuration(row.duration_seconds)}</td>
+                        <td>
+                          {row.certificate_available && row.handover_id ? (
+                            <a className="text-xs font-semibold text-primary underline" href={assetsApi.handoverCertificateUrl(row.handover_id)}>
+                              {row.handover_reference || t("assets.handover.certificate")}
+                            </a>
+                          ) : (row.handover_reference || "—")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+          <section className="card p-4">
+            <h2 className="mb-3 text-sm font-semibold">{t("assets.timeline.title")}</h2>
+            {timeline.length === 0 ? (
+              <p className="text-sm text-neutral-500">{t("assets.timeline.empty")}</p>
+            ) : (
+              <ol className="space-y-2 text-sm">
+                {timeline.map((ev) => (
+                  <li key={ev.id} className="flex justify-between gap-3 border-b border-neutral-100 py-2">
+                    <span>{ev.summary || ev.event_type}</span>
+                    <span className="text-xs text-neutral-500">{ev.occurred_at || ev.created_at}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+          <GenericDocumentsPanel
+            documents={docs}
+            documentTypes={[
+              { value: "invoice", label: "Invoice" },
+              { value: "warranty", label: "Warranty" },
+              { value: "police_report", label: "Police report" },
+              { value: "photo_primary", label: "Primary photo" },
+              { value: "photo_serial", label: "Serial plate" },
+              { value: "photo_damage", label: "Damage" },
+              { value: "other", label: "Other" },
+            ]}
+            defaultType="invoice"
+            loading={docsLoading}
+            uploading={uploading}
+            readOnly={!canEdit}
+            onUpload={async (file, type) => {
+              setUploading(true);
+              try {
+                const res = await assetsApi.uploadDocument(numericId, file, type);
+                if (res.data.data) setDocs((prev) => [res.data.data, ...prev]);
+              } finally {
+                setUploading(false);
+              }
+            }}
+            onDelete={async (id) => {
+              await assetsApi.deleteDocument(numericId, id);
+              setDocs((prev) => prev.filter((d) => d.id !== id));
+            }}
+            downloadUrl={(id) => assetsApi.documentDownloadUrl(numericId, id)}
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+          />
         </>
       )}
     </div>

@@ -87,6 +87,11 @@ class _FleetTransportScreenState extends ConsumerState<FleetTransportScreen>
       fallbackRoute: '/assets',
       actions: [
         StitchIconAction(
+          tooltip: 'Scan Asset',
+          icon: Icons.qr_code_scanner,
+          onPressed: () => context.push('/assets/scan'),
+        ),
+        StitchIconAction(
           tooltip: 'Refresh',
           icon: Icons.refresh_rounded,
           onPressed: _load,

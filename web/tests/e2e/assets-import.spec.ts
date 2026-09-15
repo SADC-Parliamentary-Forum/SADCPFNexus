@@ -67,6 +67,7 @@ test.describe("Assets import (admin)", () => {
 
     await page.goto(`/a/${token}`);
     await expect(page.getByText("CE-8811")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("link", { name: /Sign in|Se connecter|Inicie sessão/i })).toBeVisible();
     await expect(page.getByText(/SN-E2E-HIDDEN|book value|custodian/i)).toHaveCount(0);
 
     await page.goto("/assets/labels");
@@ -165,5 +166,27 @@ test.describe("Public QR page", () => {
     await page.goto("/a/not-a-real-token");
     await expect(page.locator("body")).toBeVisible();
     await expect(page.getByText(/serial|book value|NAD|custodian/i)).toHaveCount(0);
+  });
+});
+
+test.describe("Asset scan and recovery settings (admin)", () => {
+  test("scan page accepts a pasted token", async ({ page }) => {
+    skipWithoutAuth("admin");
+    await page.goto("/assets/scan");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "assets scan");
+    await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator("input").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Look up|Rechercher|Procurar/i })).toBeVisible();
+  });
+
+  test("settings recovery contact can be saved", async ({ page }) => {
+    skipWithoutAuth("admin");
+    await page.goto("/assets/settings");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "assets settings");
+    await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
+    const phone = page.locator('input[name="primary_phone"], input').nth(0);
+    await expect(phone).toBeVisible();
   });
 });

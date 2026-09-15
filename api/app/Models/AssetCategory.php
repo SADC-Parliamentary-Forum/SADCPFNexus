@@ -32,6 +32,11 @@ class AssetCategory extends Model
             ->where('assets.tenant_id', $this->tenant_id);
     }
 
+    public function subcategories(): HasMany
+    {
+        return $this->hasMany(AssetSubcategory::class, 'asset_category_id');
+    }
+
     /**
      * Scope to current tenant (by tenant_id).
      */

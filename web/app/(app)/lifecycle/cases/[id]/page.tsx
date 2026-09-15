@@ -65,9 +65,29 @@ export default function LifecycleCaseDetailPage() {
                 notice_end: data.notice_end_date ? formatDateShort(String(data.notice_end_date)) : "—",
                 terminal_payment: data.terminal_payment_blocked ? "Blocked pending clearance" : "Allowed",
                 readiness: (data.readiness as { ready?: boolean })?.ready ? "Ready" : "Not ready",
+                outstanding_assets: Array.isArray(data.outstanding_assets)
+                  ? String((data.outstanding_assets as unknown[]).length)
+                  : "0",
               }}
             />
           </FormSection>
+
+          {Array.isArray(data.outstanding_assets) && data.outstanding_assets.length > 0 ? (
+            <FormSection title="Outstanding assets">
+              <p className="mb-3 text-sm text-amber-800">
+                ICT clearance cannot complete while these assets remain assigned. Return, transfer, or request an authorised exception.
+              </p>
+              <ul className="space-y-2 text-sm">
+                {(data.outstanding_assets as Array<{ id: number; tag_number?: string; name?: string; status?: string }>).map((asset) => (
+                  <li key={asset.id} className="flex justify-between gap-3 border-b border-neutral-100 py-2">
+                    <span className="font-mono">{asset.tag_number}</span>
+                    <span>{asset.name}</span>
+                    <span className="capitalize text-neutral-500">{asset.status}</span>
+                  </li>
+                ))}
+              </ul>
+            </FormSection>
+          ) : null}
 
           {stages.map((stage) => (
             <FormSection key={stage.name} title={stage.name}>

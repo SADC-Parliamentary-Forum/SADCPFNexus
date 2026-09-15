@@ -140,19 +140,15 @@ class GoodsReceiptService
             }
 
             if ($normalized === 'split') {
-                $asset = Asset::create([
-                    'tenant_id' => $grn->tenant_id,
-                    'asset_code' => 'AST-'.strtoupper(Str::random(8)),
-                    'name' => $line['name'],
-                    'category' => $line['category'] ?? 'equipment',
-                    'status' => 'pending',
-                    'purchase_order_id' => $grn->purchase_order_id,
-                    'procurement_request_id' => $procurementRequestId,
-                    'goods_receipt_note_id' => $grn->id,
-                    'purchase_value' => isset($line['unit_cost']) ? (float) $line['unit_cost'] : null,
-                    'currency' => $po?->currency,
-                    'notes' => $line['notes'] ?? null,
-                ]);
+                $asset = Asset::create($this->pendingAssetAttributes(
+                    $grn,
+                    $po,
+                    $line,
+                    $line['category'] ?? 'equipment',
+                    isset($line['unit_cost']) ? (float) $line['unit_cost'] : null,
+                    $procurementRequestId,
+                    $line['name'],
+                ));
                 $stockLine = $line;
                 if (! isset($stockLine['quantity']) || (int) $stockLine['quantity'] < 1) {
                     $stockLine['quantity'] = 1;
@@ -192,23 +188,21 @@ class GoodsReceiptService
                 }
 
                 $assetCategory = $line['category'] ?? ($type === 'controlled' ? 'controlled' : 'equipment');
+                $created = [];
 
                 for ($i = 1; $i <= $qty; $i++) {
                     $suffix = $qty > 1 ? ' #'.$i : '';
-                    Asset::create([
-                        'tenant_id' => $grn->tenant_id,
-                        'asset_code' => 'AST-'.strtoupper(Str::random(8)),
-                        'name' => $line['name'].$suffix,
-                        'category' => $assetCategory,
-                        'status' => 'pending',
-                        'purchase_order_id' => $grn->purchase_order_id,
-                        'procurement_request_id' => $procurementRequestId,
-                        'goods_receipt_note_id' => $grn->id,
-                        'purchase_value' => $unitCost,
-                        'currency' => $po?->currency,
-                        'notes' => $line['notes'] ?? null,
-                    ]);
+                    $created[] = Asset::create($this->pendingAssetAttributes(
+                        $grn,
+                        $po,
+                        $line,
+                        $assetCategory,
+                        $unitCost,
+                        $procurementRequestId,
+                        $line['name'].$suffix,
+                    ));
                 }
+                $this->attachAcquisitionBatch($grn, $po, $user, $line, $assetCategory, $qty, $unitCost, $created);
                 $this->inventoryRegister->linkSplit(
                     (int) $grn->tenant_id,
                     $grn->id,
@@ -262,6 +256,56 @@ class GoodsReceiptService
         return $grn->fresh();
     }
 
+    /**
+     * @param  list<Asset>  $assets
+     * @param  array<string, mixed>  $line
+     */
+    private function attachAcquisitionBatch(
+        GoodsReceiptNote $grn,
+        ?PurchaseOrder $po,
+        User $user,
+        array $line,
+        string $category,
+        int $qty,
+        ?float $unitCost,
+        array $assets,
+    ): void {
+        if ($assets === []) {
+            return;
+        }
+        $year = now()->year;
+        $count = \App\Models\AssetAcquisitionBatch::query()
+            ->where('tenant_id', $grn->tenant_id)
+            ->where('reference', 'like', 'BATCH-'.$year.'-%')
+            ->count();
+        $batch = \App\Models\AssetAcquisitionBatch::create([
+            'tenant_id' => $grn->tenant_id,
+            'reference' => sprintf('BATCH-%d-%05d', $year, $count + 1),
+            'description' => $line['name'] ?? 'GRN '.$grn->reference_number,
+            'qty' => $qty,
+            'unit_cost' => $unitCost,
+            'currency' => $po?->currency,
+            'supplier_name' => $po?->vendor?->name,
+            'purchase_order_id' => $grn->purchase_order_id,
+            'goods_receipt_note_id' => $grn->id,
+            'category' => $category,
+            'received_date' => $grn->received_date?->toDateString(),
+            'status' => 'received',
+            'created_by' => $user->id,
+        ]);
+        foreach ($assets as $asset) {
+            $asset->acquisition_batch_id = $batch->id;
+            $asset->save();
+            \App\Models\AssetAcquisitionBatchItem::create([
+                'tenant_id' => $grn->tenant_id,
+                'batch_id' => $batch->id,
+                'asset_id' => $asset->id,
+                'name' => $asset->name,
+                'serial_number' => $asset->serial_number,
+            ]);
+        }
+    }
+
     private function updatePoStatus(PurchaseOrder $po): void
     {
         $po->loadMissing('items.receiptItems');
@@ -269,5 +313,42 @@ class GoodsReceiptService
         $allFulfilled = $po->items->every(fn ($item) => $item->outstanding() === 0);
 
         $po->update(['status' => $allFulfilled ? 'received' : 'partially_received']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $line
+     * @return array<string, mixed>
+     */
+    private function pendingAssetAttributes(
+        GoodsReceiptNote $grn,
+        ?PurchaseOrder $po,
+        array $line,
+        string $category,
+        ?float $unitCost,
+        ?int $procurementRequestId,
+        string $name,
+    ): array {
+        $po?->loadMissing(['vendor', 'invoices', 'project']);
+        $invoice = $po?->invoices?->sortByDesc('id')->first();
+
+        return [
+            'tenant_id' => $grn->tenant_id,
+            'asset_code' => 'AST-'.strtoupper(Str::random(8)),
+            'name' => $name,
+            'category' => $category,
+            'status' => 'pending',
+            'purchase_order_id' => $grn->purchase_order_id,
+            'procurement_request_id' => $procurementRequestId,
+            'goods_receipt_note_id' => $grn->id,
+            'purchase_value' => $unitCost,
+            'currency' => $po?->currency,
+            'notes' => $line['notes'] ?? null,
+            'supplier_name' => $po?->vendor?->name,
+            'invoice_number' => $invoice?->vendor_invoice_number ?? $invoice?->reference_number ?? $po?->lpo_number,
+            'received_date' => $grn->received_date?->toDateString() ?? $grn->created_at?->toDateString(),
+            'vat_amount' => $po?->tax_amount,
+            'funding_source' => $po?->project?->funding_source ?? $line['funding_source'] ?? null,
+            'ownership_type' => $line['ownership_type'] ?? 'sadc_pf_owned',
+        ];
     }
 }

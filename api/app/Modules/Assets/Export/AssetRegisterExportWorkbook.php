@@ -39,7 +39,8 @@ final class AssetRegisterExportWorkbook
         $headers = [
             'asset_code', 'tag_number', 'name', 'category', 'asset_class', 'status',
             'serial_number', 'purchase_date', 'purchase_value', 'funding_source',
-            'useful_life_years', 'book_value', 'location', 'assigned_to',
+            'ownership_type', 'useful_life_years', 'book_value', 'location', 'home_location',
+            'assigned_to', 'warranty_expiry', 'replacement_due_on',
         ];
         $sheet->fromArray($headers, null, 'A1');
         $sheet->getStyle('A1:'.$sheet->getHighestColumn().'1')->applyFromArray([
@@ -68,10 +69,14 @@ final class AssetRegisterExportWorkbook
                     : (is_string($purchaseDate) ? substr($purchaseDate, 0, 10) : null),
                 $r->purchase_value,
                 $r->funding_source,
+                $r->ownership_type,
                 $r->useful_life_years,
                 $r->book_value ?? $r->current_value,
                 $r->location?->name,
+                $r->homeLocation?->name,
                 $r->assignedUser?->name,
+                optional($r->warranty_expiry)?->toDateString(),
+                optional($r->replacement_due_on)?->toDateString(),
             ];
         }
         if ($data !== []) {
