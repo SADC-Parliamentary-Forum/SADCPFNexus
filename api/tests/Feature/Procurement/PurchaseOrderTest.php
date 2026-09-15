@@ -103,12 +103,12 @@ class PurchaseOrderTest extends TestCase
         $response = $http->postJson('/api/v1/procurement/purchase-orders', $this->poPayload($vendor, $req));
         $response->assertCreated();
         $ref = $response->json('data.reference_number');
-        $this->assertStringStartsWith('PO-', $ref);
+        $this->assertStringStartsWith('PROC-DRAFT-', $ref);
         $this->assertNull($response->json('data.lpo_number'));
         $this->assertSame('award', $response->json('data.source_type'));
     }
 
-    public function test_award_path_po_cannot_allocate_s_number_via_lpo_submit(): void
+    public function test_award_path_po_submit_allocates_official_number(): void
     {
         $tenant = Tenant::factory()->create();
         $staff  = $this->makeUser('staff', $tenant);
@@ -119,17 +119,29 @@ class PurchaseOrderTest extends TestCase
         [$vendor, $quote] = $this->makeVendorAndQuote($tenant, $req);
         $req->update(['awarded_quote_id' => $quote->id]);
 
-        [$http] = $this->asProcurementOfficer($tenant);
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $workflow = \App\Models\ApprovalWorkflow::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'PO',
+            'module_type' => 'purchase_order',
+            'is_active' => true,
+        ]);
+        $workflow->steps()->create([
+            'step_order' => 0,
+            'step_name' => 'Finance Certification',
+            'approver_type' => 'specific_user',
+            'user_id' => $officer->id,
+            'stage_type' => 'certify',
+        ]);
+        app(\App\Modules\Procurement\Services\LpoSequenceAllocator::class)->activate($tenant->id, $officer, 4015, 'Test');
+
         $id = $http->postJson('/api/v1/procurement/purchase-orders', $this->poPayload($vendor, $req))
             ->assertCreated()
             ->json('data.id');
 
         $http->postJson("/api/v1/procurement/purchase-orders/{$id}/submit")
-            ->assertUnprocessable()
-            ->assertJsonValidationErrors(['reference_number']);
-
-        $this->assertStringStartsWith('PO-', PurchaseOrder::find($id)->reference_number);
-        $this->assertNull(PurchaseOrder::find($id)->lpo_number);
+            ->assertOk()
+            ->assertJsonPath('data.lpo_number', 'S 04016');
     }
 
     public function test_po_cannot_be_created_from_non_awarded_request(): void
@@ -175,8 +187,7 @@ class PurchaseOrderTest extends TestCase
         $poId   = $create->json('data.id');
 
         $http->postJson("/api/v1/procurement/purchase-orders/{$poId}/issue")
-             ->assertOk()
-             ->assertJsonPath('data.status', 'issued');
+             ->assertUnprocessable();
     }
 
     public function test_only_finance_or_procurement_can_issue_po(): void

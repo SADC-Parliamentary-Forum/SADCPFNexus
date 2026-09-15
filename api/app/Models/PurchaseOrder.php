@@ -21,6 +21,7 @@ class PurchaseOrder extends Model
         'issued_at', 'expected_delivery_date', 'cancellation_reason',
         'created_by', 'issued_by',
         'lpo_number', 'lpo_sequence_number', 'lpo_date',
+        'normalised_reference', 'numbering_scheme_id', 'allocation_id', 'reference_allocation_type',
         'procurement_project_id', 'programme_id', 'source_intake_id', 'exception_id',
         'requested_by_user_id', 'prepared_by_user_id', 'source_type',
         'procurement_method', 'retrospective', 'revision',
@@ -28,6 +29,7 @@ class PurchaseOrder extends Model
         'submitted_at', 'approved_at', 'sent_to_supplier_at',
         'supplier_email_status', 'supplier_email_recipient', 'closed_at',
         'final_pdf_attachment_id', 'final_document_hash',
+        'document_template_id', 'issued_template_version_id', 'issued_document_output_id',
         'finance_handover_status', 'sent_to_finance_at',
         'void_reason', 'voided_by', 'voided_at', 'idempotency_key',
     ];
@@ -54,7 +56,10 @@ class PurchaseOrder extends Model
     {
         static::creating(function (self $po): void {
             if (empty($po->reference_number)) {
-                $po->reference_number = 'PO-' . strtoupper(Str::random(8));
+                $po->reference_number = 'PROC-DRAFT-'.now()->year.'-'.strtoupper(Str::random(6));
+            }
+            if (empty($po->reference_allocation_type)) {
+                $po->reference_allocation_type = 'pending';
             }
         });
         static::updating(function (self $po): void {
@@ -84,6 +89,34 @@ class PurchaseOrder extends Model
     public function serviceConfirmations() { return $this->hasMany(ServiceConfirmation::class); }
     public function purchaseOrderRevisions() { return $this->hasMany(PurchaseOrderRevision::class); }
     public function invoices()           { return $this->hasMany(Invoice::class); }
+    public function numberingAllocation() { return $this->belongsTo(NumberingAllocation::class, 'allocation_id'); }
+    public function documentTemplate()   { return $this->belongsTo(DocumentTemplate::class); }
+    public function issuedTemplateVersion() { return $this->belongsTo(DocumentTemplateVersion::class, 'issued_template_version_id'); }
+    public function issuedDocumentOutput() { return $this->belongsTo(DocumentOutput::class, 'issued_document_output_id'); }
+
+    protected $appends = ['display_reference', 'source_requisition'];
+
+    public function getDisplayReferenceAttribute(): string
+    {
+        return (string) ($this->lpo_number ?: $this->reference_number);
+    }
+
+    public function getSourceRequisitionAttribute(): ?array
+    {
+        if (! $this->relationLoaded('procurementRequest')) {
+            return null;
+        }
+        $pr = $this->procurementRequest;
+        if (! $pr) {
+            return null;
+        }
+
+        return [
+            'id' => $pr->id,
+            'reference' => $pr->reference_number,
+            'status' => $pr->status,
+        ];
+    }
 
     public function approvalRequest(): MorphOne
     {
@@ -96,8 +129,7 @@ class PurchaseOrder extends Model
     public function isClosed(): bool   { return in_array($this->status, ['closed'], true); }
 
     /**
-     * Intake LPOs use PROC-DRAFT-* then official S ##### on submit.
-     * Award-path POs keep PO- references via Issue PO.
+     * Drafts use PROC-DRAFT-* until submit allocates an official consecutive number.
      */
     public function isIntakeLpo(): bool
     {
@@ -107,10 +139,15 @@ class PurchaseOrder extends Model
         $ref = (string) $this->reference_number;
 
         return str_starts_with($ref, 'PROC-DRAFT-')
-            || (is_string($this->lpo_number) && str_starts_with($this->lpo_number, 'S '));
+            || (is_string($this->lpo_number) && str_starts_with((string) $this->lpo_number, 'S'));
     }
 
-    public function canBeIssued(): bool   { return $this->isDraft() || $this->status === 'approved'; }
+    public function hasOfficialNumber(): bool
+    {
+        return filled($this->lpo_number) || $this->reference_allocation_type === 'auto' || $this->reference_allocation_type === 'custom';
+    }
+
+    public function canBeIssued(): bool   { return $this->status === 'approved'; }
     public function canReceiveGoods(): bool { return in_array($this->status, ['issued', 'partially_received']); }
 
     public function attachments(): MorphMany

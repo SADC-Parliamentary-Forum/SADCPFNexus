@@ -97,6 +97,9 @@ Route::prefix('v1')->group(function () {
     Route::post('public/assets/{token}/found', [\App\Http\Controllers\Api\V1\Assets\PublicAssetQrController::class, 'found'])
         ->where('token', '[A-Za-z0-9_-]+')
         ->middleware('throttle:60,1');
+    Route::get('public/purchase-orders/verify/{token}', [\App\Http\Controllers\Api\V1\Procurement\PublicPurchaseOrderVerifyController::class, 'show'])
+        ->where('token', '[A-Za-z0-9._-]+')
+        ->middleware('throttle:60,1');
 
     // Authenticated routes
     Route::middleware([
@@ -804,6 +807,19 @@ Route::prefix('v1')->group(function () {
             Route::get('workbench', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'workbench']);
             Route::get('lpo-sequence', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'sequence']);
             Route::post('lpo-sequence/activate', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'activateSequence']);
+            Route::get('numbering-profiles', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderNumberingController::class, 'show']);
+            Route::post('numbering-profiles/parse', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderNumberingController::class, 'parse']);
+            Route::post('numbering-profiles/activate', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderNumberingController::class, 'activate']);
+            Route::post('numbering-profiles/set-next', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderNumberingController::class, 'setNext']);
+            Route::get('po-templates/catalog', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderTemplateController::class, 'catalog']);
+            Route::get('po-templates', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderTemplateController::class, 'index']);
+            Route::post('po-templates', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderTemplateController::class, 'store']);
+            Route::get('po-templates/{template}', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderTemplateController::class, 'show']);
+            Route::put('po-templates/{template}', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderTemplateController::class, 'update']);
+            Route::post('po-templates/{template}/publish', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderTemplateController::class, 'publish']);
+            Route::post('po-templates/{template}/retire', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderTemplateController::class, 'retire']);
+            Route::post('po-templates/{template}/default', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderTemplateController::class, 'setDefault']);
+            Route::post('po-templates/{template}/preview', [\App\Http\Controllers\Api\V1\Procurement\PurchaseOrderTemplateController::class, 'preview']);
             Route::get('projects', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'projects']);
             Route::post('projects', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'storeProject']);
             Route::get('exceptions', [\App\Http\Controllers\Api\V1\Procurement\ProcurementAutomationController::class, 'exceptions']);

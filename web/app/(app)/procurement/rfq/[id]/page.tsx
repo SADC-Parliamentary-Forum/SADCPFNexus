@@ -503,15 +503,16 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
         )}
       </div>
 
-      {req.purchaseOrder && (
+      {(req.purchaseOrder || req.purchase_order || req.po_link) && (
         <div className="card p-5 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-bold text-neutral-800">Purchase Order</h2>
-            <p className="text-xs text-neutral-400">
-              The purchase order for the awarded supplier has been created automatically.
+            <p className="text-xs text-neutral-400 font-mono">
+              {req.po_link?.display_reference ?? req.purchaseOrder?.lpo_number ?? req.purchase_order?.lpo_number ?? req.purchaseOrder?.reference_number ?? req.purchase_order?.reference_number}
+              {req.converted_to_po ? " · Converted to PO" : ""}
             </p>
           </div>
-          <Link href={`/procurement/purchase-orders/${req.purchaseOrder.id}`} className="btn-primary text-xs px-3 py-1.5">
+          <Link href={`/procurement/purchase-orders/${req.po_link?.id ?? req.purchaseOrder?.id ?? req.purchase_order?.id}`} className="btn-primary text-xs px-3 py-1.5">
             Open PO
           </Link>
         </div>

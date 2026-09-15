@@ -126,7 +126,9 @@ class PurchaseOrderService
         }
 
         if (!$po->canBeIssued()) {
-            throw ValidationException::withMessages(['status' => 'Only draft purchase orders can be issued.']);
+            throw ValidationException::withMessages([
+                'status' => 'Submit the purchase order for numbering and approval before issuing.',
+            ]);
         }
 
         $po->update([

@@ -31,5 +31,7 @@ export const PROCUREMENT_HUB_CARDS: HubCard[] = [
   { href: "/procurement/invoices", title: "Invoices", purpose: "Supplier invoices against POs.", icon: "request_quote", section: "views" },
   { href: "/procurement/contracts", title: "Contracts", purpose: "Awarded contracts and milestones.", icon: "description", section: "views" },
   { href: "/procurement/register", title: "Register", purpose: "Institutional procurement register.", icon: "menu_book", section: "views" },
-  { href: "/procurement/settings", title: "Settings", purpose: "Thresholds and policy profiles.", icon: "settings", section: "tools" },
+  { href: "/procurement/settings", title: "Settings", purpose: "Thresholds, PO templates, and numbering.", icon: "settings", section: "tools" },
+  { href: "/procurement/settings/po-templates", title: "PO templates", purpose: "Millimetre purchase order layouts.", icon: "design_services", section: "tools" },
+  { href: "/procurement/settings/numbering", title: "PO numbering", purpose: "Consecutive S ##### references.", icon: "pin", section: "tools" },
 ];

@@ -892,6 +892,15 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            {(request.converted_to_po || request.po_link) && request.po_link && (
+              <Link
+                href={`/procurement/purchase-orders/${request.po_link.id}`}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-700 text-white hover:bg-green-800 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">receipt_long</span>
+                {request.converted_to_po ? "Converted to PO" : "Purchase order"} {request.po_link.display_reference}
+              </Link>
+            )}
             <Link
               href={`/procurement/purchase-orders?request=${request.id}`}
               className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"

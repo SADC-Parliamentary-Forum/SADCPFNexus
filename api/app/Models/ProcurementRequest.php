@@ -59,6 +59,32 @@ class ProcurementRequest extends Model
     public function quotes()            { return $this->hasMany(ProcurementQuote::class); }
     public function awardedQuote()      { return $this->belongsTo(ProcurementQuote::class, 'awarded_quote_id'); }
     public function purchaseOrder()     { return $this->hasOne(PurchaseOrder::class); }
+
+    protected $appends = ['po_link', 'converted_to_po'];
+
+    public function getPoLinkAttribute(): ?array
+    {
+        if (! $this->relationLoaded('purchaseOrder')) {
+            return null;
+        }
+        $po = $this->purchaseOrder;
+        if (! $po) {
+            return null;
+        }
+
+        return [
+            'id' => $po->id,
+            'display_reference' => $po->lpo_number ?: $po->reference_number,
+            'status' => $po->status,
+        ];
+    }
+
+    public function getConvertedToPoAttribute(): bool
+    {
+        $link = $this->po_link;
+
+        return is_array($link) && filled($link['display_reference'] ?? null) && ! str_starts_with((string) $link['display_reference'], 'PROC-DRAFT-');
+    }
     public function budgetReservation() { return $this->hasOne(BudgetReservation::class); }
     public function budgetReservations(){ return $this->hasMany(BudgetReservation::class); }
     public function programme()         { return $this->belongsTo(Programme::class); }

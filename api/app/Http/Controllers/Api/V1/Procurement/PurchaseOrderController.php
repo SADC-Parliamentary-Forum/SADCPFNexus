@@ -145,7 +145,15 @@ class PurchaseOrderController extends Controller
     {
         $this->assertCanManage($request);
         $this->assertTenant($request, $purchaseOrder);
-        $po = $this->lpo->submit($purchaseOrder, $request->user(), $request->input('idempotency_key'));
+        $data = $request->validate([
+            'idempotency_key' => ['nullable', 'string', 'max:80'],
+            'reference_mode' => ['nullable', 'in:auto,custom'],
+            'custom_reference' => ['nullable', 'string', 'max:80'],
+            'custom_reason' => ['nullable', 'string', 'max:500'],
+            'continue_sequence' => ['nullable', 'boolean'],
+            'template_id' => ['nullable', 'integer'],
+        ]);
+        $po = $this->lpo->submit($purchaseOrder, $request->user(), $data['idempotency_key'] ?? null, $data);
 
         return response()->json(['message' => 'LPO sent for approval.', 'data' => $po]);
     }
