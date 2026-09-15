@@ -81,6 +81,16 @@ class AssetController extends Controller
     }
 
     /**
+     * Own-custody list for My Assets. Does not require the organisation register (assets.view).
+     */
+    public function assignedToMe(Request $request): JsonResponse
+    {
+        $request->merge(['assigned_to' => 'me']);
+
+        return $this->index($request);
+    }
+
+    /**
      * Create an asset. Only system admin or users with assets.admin / assets.manage may add.
      * Accepts invoice and financial fields; computes and stores current (depreciated) value when possible.
      */

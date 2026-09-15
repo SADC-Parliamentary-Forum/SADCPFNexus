@@ -1889,6 +1889,8 @@ export interface AssetRequest {
 export const assetsApi = {
   list: (params?: { assigned_to?: string; category?: string; status?: string; search?: string; per_page?: number; page?: number }) =>
     api.get<AssetListResponse>("/assets", { params }),
+  assignedToMe: (params?: { per_page?: number; page?: number }) =>
+    api.get<AssetListResponse>("/assets/assigned-to-me", { params }),
   get: (id: number) => api.get<Asset>(`/assets/${id}`),
   update: (id: number, data: {
     asset_code: string;

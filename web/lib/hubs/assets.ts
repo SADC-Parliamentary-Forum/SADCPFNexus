@@ -29,7 +29,7 @@ export const ASSETS_HUB_CARDS: HubCard[] = [
   { href: "/assets", title: "Register", purpose: "Fixed asset register.", icon: "inventory_2", section: "views" },
   { href: "/fleet", title: "Fleet", purpose: "Vehicles on the register.", icon: "directions_car", section: "views" },
   { href: "/fleet/utilisation", title: "Fleet utilisation", purpose: "Vehicle use and readiness.", icon: "speed", section: "views" },
-  { href: "/assets/mine", title: "My assets", purpose: "Assets in your custody.", icon: "person", section: "views" },
+  { href: "/assets/mine", title: "My assets", purpose: "Assets in your custody.", icon: "person", section: "views", permission: ["assets.handover.accept", "assets.view", "assets.admin", "assets.manage", "profile.read.self"] },
   { href: "/assets/transfers", title: "Transfers", purpose: "Custody transfers.", icon: "swap_horiz", section: "views" },
   { href: "/assets/maintenance", title: "Maintenance", purpose: "Service due and warranty.", icon: "build", section: "views" },
   { href: "/assets/depreciation", title: "Depreciation", purpose: "Depreciation runs and values.", icon: "trending_down", section: "views", permission: ["assets.admin", "assets.manage", "assets.financials.view"] },

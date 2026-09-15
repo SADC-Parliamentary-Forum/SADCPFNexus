@@ -2,7 +2,7 @@
  * Acquisition lot → print labels → issue handover → staff partial accept/dispute.
  */
 import { test, expect } from "@playwright/test";
-import { authFixtureExists, skipIfAccessDenied, skipWithoutAuth, waitForApp } from "./helpers/auth";
+import { authFixtureExists, skipWithoutAuth, waitForApp } from "./helpers/auth";
 
 test.describe("Asset issuance handover (admin + staff)", () => {
   test("create a lot of 2, print labels, issue to staff, accept one and dispute one", async ({ page, browser }) => {
@@ -12,7 +12,7 @@ test.describe("Asset issuance handover (admin + staff)", () => {
     const lotName = `E2E lot ${Date.now()}`;
     await page.goto("/assets/batches");
     await waitForApp(page);
-    await skipIfAccessDenied(page, "asset batches");
+    await expect(page.getByTestId("batch-create-form")).toBeVisible({ timeout: 20_000 });
 
     await page.getByTestId("batch-qty").fill("2");
     await page.getByTestId("batch-description").fill(lotName);
@@ -43,17 +43,23 @@ test.describe("Asset issuance handover (admin + staff)", () => {
     expect(staffValue).toBeTruthy();
     await userSelect.selectOption(staffValue!);
 
-    const checkboxes = page.locator("[data-testid^='handover-asset-'] input[type='checkbox']");
-    await expect(checkboxes.first()).toBeVisible({ timeout: 15_000 });
-    const count = await checkboxes.count();
-    expect(count).toBeGreaterThanOrEqual(2);
-    for (let i = 0; i < Math.min(count, 2); i++) {
-      if (!(await checkboxes.nth(i).isChecked())) {
-        await checkboxes.nth(i).check();
+    await expect(page.locator("[data-testid^='handover-asset-']", { hasText: lotName })).toHaveCount(2, { timeout: 15_000 });
+    const lotBoxes = page.locator("[data-testid^='handover-asset-']", { hasText: lotName }).locator("input[type='checkbox']");
+    const count = await lotBoxes.count();
+    expect(count).toBe(2);
+    for (let i = 0; i < count; i++) {
+      if (!(await lotBoxes.nth(i).isChecked())) {
+        await lotBoxes.nth(i).check();
       }
     }
 
+    const sent = page.waitForResponse(
+      (r) => /\/asset-handovers\/\d+\/send/.test(r.url()) && r.request().method() === "POST",
+      { timeout: 20_000 },
+    );
     await page.getByTestId("handover-send").click();
+    const posted = await sent;
+    expect(posted.ok(), await posted.text()).toBeTruthy();
     await expect(page).toHaveURL(/\/assets\/handovers\/\d+/, { timeout: 20_000 });
     const handoverUrl = page.url();
 
@@ -61,14 +67,33 @@ test.describe("Asset issuance handover (admin + staff)", () => {
     const staffPage = await staffContext.newPage();
     await staffPage.goto(handoverUrl);
     await waitForApp(staffPage);
-    await skipIfAccessDenied(staffPage, "staff handover accept");
+    await expect(staffPage.locator("[data-testid^='handover-line-']").first()).toBeVisible({ timeout: 20_000 });
 
     const lines = staffPage.locator("[data-testid^='handover-line-']");
     await expect(lines).toHaveCount(2, { timeout: 15_000 });
+
+    const received = staffPage.waitForResponse(
+      (r) => /\/asset-handovers\/\d+\/lines\/\d+\/respond/.test(r.url()) && r.request().method() === "POST",
+      { timeout: 20_000 },
+    );
     await lines.nth(0).getByTestId("handover-respond-received").click();
+    expect((await received).ok()).toBeTruthy();
+
     await lines.nth(1).locator("input.form-input").fill("Crack on lid");
+    const disputed = staffPage.waitForResponse(
+      (r) => /\/asset-handovers\/\d+\/lines\/\d+\/respond/.test(r.url()) && r.request().method() === "POST",
+      { timeout: 20_000 },
+    );
     await lines.nth(1).getByTestId("handover-respond-condition_different").click();
+    expect((await disputed).ok()).toBeTruthy();
+
+    const signed = staffPage.waitForResponse(
+      (r) => /\/asset-handovers\/\d+\/sign/.test(r.url()) && r.request().method() === "POST",
+      { timeout: 20_000 },
+    );
     await staffPage.getByTestId("handover-sign").click();
+    const signedResp = await signed;
+    expect(signedResp.ok(), await signedResp.text()).toBeTruthy();
     await expect(staffPage.getByText(/partially_accepted/i)).toBeVisible({ timeout: 20_000 });
 
     await staffContext.close();

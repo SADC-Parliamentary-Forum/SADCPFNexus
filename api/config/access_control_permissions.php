@@ -2875,6 +2875,7 @@ return [
             'POST /api/v1/asset-handovers/{id}/lines/{line}/respond',
             'POST /api/v1/asset-handovers/{id}/sign',
             'GET /api/v1/asset-handovers/{id}/certificate',
+            'GET /api/v1/assets/assigned-to-me',
         ],
     ],
 ];

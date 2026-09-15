@@ -807,6 +807,9 @@ return [
             'PATCH' => ['assets.edit', 'assets.manage', 'assets.admin'],
             'DELETE' => ['assets.admin'],
         ]],
+        ['pattern' => 'api/v1/assets/assigned-to-me', 'permissions' => [
+            'READ' => ['assets.view', 'assets.handover.accept', 'profile.read.self', 'assets.admin', 'assets.manage'],
+        ]],
         ['pattern' => 'api/v1/assets*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin'],
             'POST' => ['assets.create', 'assets.manage', 'assets.admin'],

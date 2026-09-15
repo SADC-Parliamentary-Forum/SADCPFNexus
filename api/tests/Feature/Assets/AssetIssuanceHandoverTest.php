@@ -192,7 +192,7 @@ class AssetIssuanceHandoverTest extends TestCase
     public function test_person_transfer_and_return_close_custody_periods_with_durations(): void
     {
         $tenant = Tenant::factory()->create();
-        [$http] = $this->asAdmin($tenant);
+        [$http, $admin] = $this->asAdmin($tenant);
         $first = $this->makeUser('staff', $tenant);
         $second = $this->makeUser('staff', $tenant);
         $this->seedCategory($tenant);
@@ -211,23 +211,25 @@ class AssetIssuanceHandoverTest extends TestCase
         $this->actingAs($first, 'sanctum')->postJson("/api/v1/asset-handovers/{$issueId}/lines/{$line->id}/respond", ['response' => 'received'])->assertOk();
         $this->actingAs($first, 'sanctum')->postJson("/api/v1/asset-handovers/{$issueId}/sign")->assertOk();
 
-        $this->travel(2)->days();
+        $this->travel(45)->minutes();
 
+        $this->asUser($admin);
         $transferId = $http->postJson('/api/v1/asset-handovers', [
             'type' => 'transfer', 'custody_target_type' => 'person',
             'from_user_id' => $first->id, 'to_user_id' => $second->id, 'asset_ids' => [$asset->id],
-        ])->json('data.id');
+        ])->assertCreated()->json('data.id');
         $http->postJson("/api/v1/asset-handovers/{$transferId}/send")->assertOk();
         $tLine = AssetHandoverLine::query()->where('handover_id', $transferId)->first();
         $this->actingAs($second, 'sanctum')->postJson("/api/v1/asset-handovers/{$transferId}/lines/{$tLine->id}/respond", ['response' => 'received'])->assertOk();
         $this->actingAs($second, 'sanctum')->postJson("/api/v1/asset-handovers/{$transferId}/sign")->assertOk();
 
-        $this->travel(1)->days();
+        $this->travel(30)->minutes();
 
+        $this->asUser($admin);
         $returnId = $http->postJson('/api/v1/asset-handovers', [
             'type' => 'return', 'custody_target_type' => 'location',
             'from_user_id' => $second->id, 'asset_ids' => [$asset->id],
-        ])->json('data.id');
+        ])->assertCreated()->json('data.id');
         $http->postJson("/api/v1/asset-handovers/{$returnId}/send")->assertOk()
             ->assertJsonPath('data.status', 'return_initiated');
         $http->postJson("/api/v1/asset-handovers/{$returnId}/sign")->assertOk();
@@ -361,5 +363,39 @@ class AssetIssuanceHandoverTest extends TestCase
 
         $http->getJson('/api/v1/assets/handovers/register')->assertOk();
         $this->assertGreaterThan(0, AssetAssignmentHistory::query()->count() + AssetHandover::query()->count());
+    }
+
+    public function test_staff_can_list_own_assigned_assets_without_opening_the_register(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $this->seedCategory($tenant);
+        $batchId = $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Lot', 'qty' => 1, 'category' => 'ICT', 'subcategory_code' => 'LT',
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-batches/{$batchId}/create-assets", ['name' => 'Laptop'])->assertOk();
+        $asset = Asset::query()->where('acquisition_batch_id', $batchId)->firstOrFail();
+
+        $handoverId = $http->postJson('/api/v1/asset-handovers', [
+            'type' => 'issue',
+            'custody_target_type' => 'person',
+            'to_user_id' => $staff->id,
+            'asset_ids' => [$asset->id],
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-handovers/{$handoverId}/send")->assertOk();
+        $line = AssetHandoverLine::query()->where('handover_id', $handoverId)->firstOrFail();
+        $this->actingAs($staff, 'sanctum')
+            ->postJson("/api/v1/asset-handovers/{$handoverId}/lines/{$line->id}/respond", ['response' => 'received'])
+            ->assertOk();
+        $this->actingAs($staff, 'sanctum')
+            ->postJson("/api/v1/asset-handovers/{$handoverId}/sign")
+            ->assertOk();
+
+        $this->actingAs($staff, 'sanctum')->getJson('/api/v1/assets')->assertForbidden();
+        $this->actingAs($staff, 'sanctum')
+            ->getJson('/api/v1/assets/assigned-to-me')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $asset->id);
     }
 }

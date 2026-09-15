@@ -138,6 +138,11 @@ test("scan and handover routes are reachable without opening the full register",
   const recipient = { roles: ["staff"], permissions: ["assets.handover.accept"] };
   assert.equal(canAccessRoute(recipient, "/assets/handovers"), true);
   assert.equal(canAccessRoute(recipient, "/assets/handovers/12"), true);
+  assert.equal(canAccessRoute(recipient, "/assets/mine"), true);
   assert.equal(canAccessRoute(recipient, "/assets"), false);
   assert.equal(canAccessRoute(recipient, "/assets/batches"), false);
+  const selfService = { roles: ["staff"], permissions: ["profile.read.self"] };
+  assert.equal(canAccessRoute(selfService, "/assets/handovers/12"), true);
+  assert.equal(canAccessRoute(selfService, "/assets/handovers"), false);
+  assert.equal(canAccessRoute(selfService, "/assets/mine"), true);
 });

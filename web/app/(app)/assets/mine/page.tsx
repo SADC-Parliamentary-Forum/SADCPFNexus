@@ -19,14 +19,26 @@ export default function MyAssetsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
-      const r = await assetsApi.list({ assigned_to: "me", per_page: 100 });
-      setItems(r.data.data ?? []);
-      const ho = await assetsApi.handovers({ mine: true, per_page: 50 });
-      const payload = ho.data as { data?: AssetHandover[] };
-      setHandovers(Array.isArray(payload.data) ? payload.data.filter((h) => ["awaiting_acceptance", "partially_accepted", "return_initiated"].includes(h.status)) : []);
-    } catch {
-      setError(t("assets.mine.loadFailed"));
+      const [assigned, ho] = await Promise.allSettled([
+        assetsApi.assignedToMe({ per_page: 100 }),
+        assetsApi.handovers({ mine: true, per_page: 50 }),
+      ]);
+      if (assigned.status === "fulfilled") {
+        setItems(assigned.value.data.data ?? []);
+      } else {
+        setItems([]);
+      }
+      if (ho.status === "fulfilled") {
+        const payload = ho.value.data as { data?: AssetHandover[] };
+        setHandovers(Array.isArray(payload.data) ? payload.data.filter((h) => ["awaiting_acceptance", "partially_accepted", "return_initiated"].includes(h.status)) : []);
+      } else {
+        setHandovers([]);
+      }
+      if (assigned.status === "rejected" && ho.status === "rejected") {
+        setError(t("assets.mine.loadFailed"));
+      }
     } finally {
       setLoading(false);
     }

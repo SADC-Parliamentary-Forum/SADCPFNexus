@@ -629,26 +629,34 @@ class AssetHandoverService
 
     private function notifyRecipient(AssetHandover $handover, User $user, string $trigger): void
     {
-        $this->notifications->dispatch($user, $trigger, [
-            'name' => $user->name,
-            'reference' => $handover->reference,
-            'count' => $handover->lines()->count(),
-        ], ['module' => 'assets', 'record_id' => $handover->id, 'url' => '/assets/handovers/'.$handover->id]);
+        try {
+            $this->notifications->dispatch($user, $trigger, [
+                'name' => $user->name,
+                'reference' => $handover->reference,
+                'count' => $handover->lines()->count(),
+            ], ['module' => 'assets', 'record_id' => $handover->id, 'url' => '/assets/handovers/'.$handover->id, 'tenant_id' => $handover->tenant_id]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     private function notifyManagers(AssetHandover $handover, string $trigger): void
     {
-        $admins = User::query()
-            ->where('tenant_id', $handover->tenant_id)
-            ->where('is_active', true)
-            ->permission(['assets.handover.manage', 'assets.manage', 'assets.admin'])
-            ->get();
-        foreach ($admins as $admin) {
-            $this->notifications->dispatch($admin, $trigger, [
-                'name' => $admin->name,
-                'reference' => $handover->reference,
-                'count' => $handover->lines()->count(),
-            ], ['module' => 'assets', 'record_id' => $handover->id, 'url' => '/assets/handovers/'.$handover->id]);
+        try {
+            $admins = User::query()
+                ->where('tenant_id', $handover->tenant_id)
+                ->where('is_active', true)
+                ->permission(['assets.handover.manage', 'assets.manage', 'assets.admin'])
+                ->get();
+            foreach ($admins as $admin) {
+                $this->notifications->dispatch($admin, $trigger, [
+                    'name' => $admin->name,
+                    'reference' => $handover->reference,
+                    'count' => $handover->lines()->count(),
+                ], ['module' => 'assets', 'record_id' => $handover->id, 'url' => '/assets/handovers/'.$handover->id, 'tenant_id' => $handover->tenant_id]);
+            }
+        } catch (\Throwable $e) {
+            report($e);
         }
     }
 

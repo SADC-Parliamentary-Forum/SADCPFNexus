@@ -10,6 +10,7 @@ test("my assets page lets the custodian accept, decline, or request return", () 
   assert.match(page, /useI18n/);
   assert.match(page, /assetsApi\.acknowledge/);
   assert.match(page, /assetsApi\.declineAssignment/);
+  assert.match(page, /assetsApi\.assignedToMe/);
   assert.match(page, /assetsApi\.requestReturn/);
   assert.match(page, /assets\.mine\.accept/);
   assert.match(page, /assets\.mine\.decline/);

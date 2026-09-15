@@ -3,6 +3,7 @@
 import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { assetsApi, tenantUsersApi, type Asset, type TenantUserOption } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
@@ -32,11 +33,13 @@ function NewHandoverForm() {
     async function loadAssets() {
       const collected = new Map<number, Asset>();
       const status = type === "issue" ? "available" : undefined;
-      try {
-        const listed = await assetsApi.list({ status, per_page: 100 });
-        for (const row of listed.data.data ?? []) collected.set(row.id, row);
-      } catch {
-        /* ignore */
+      if (!batchId) {
+        try {
+          const listed = await assetsApi.list({ status, per_page: 100 });
+          for (const row of listed.data.data ?? []) collected.set(row.id, row);
+        } catch {
+          /* ignore */
+        }
       }
       if (batchId) {
         try {
@@ -105,8 +108,8 @@ function NewHandoverForm() {
       const id = created.data.data.id;
       await assetsApi.sendHandover(id);
       router.push(`/assets/handovers/${id}`);
-    } catch {
-      setError(t("assets.assignFailed"));
+    } catch (err) {
+      setError(apiErrorMessage(err, t("assets.assignFailed")));
     } finally {
       setBusy(false);
     }

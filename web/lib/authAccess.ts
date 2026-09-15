@@ -328,6 +328,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
   { path: "/assets/scan", permission: ["assets.scan", "assets.view", "assets.verify", "assets.admin", "assets.manage"] },
+  { path: "/assets/mine", permission: ["assets.handover.accept", "assets.view", "assets.admin", "assets.manage", "profile.read.self"] },
   { path: "/assets/handovers", permission: ["assets.handover.manage", "assets.handover.accept", "assets.view", "assets.admin", "assets.manage"] },
   { path: "/assets/batches", permission: ["assets.handover.manage", "assets.admin", "assets.manage"] },
   { path: "/assets/checkouts", permission: ["assets.checkout.manage", "assets.view", "assets.admin", "assets.manage"] },
@@ -450,6 +451,16 @@ export function canAccessRoute(user: AuthAccessUser | null | undefined, pathOrId
   }
   if (entry.path === "/procurement" && /^\/procurement\/\d+(\/|$)/.test(path)) {
     return hasPermission(user, ["procurement.view", "procurement.create", "procurement.request.read.created"]);
+  }
+  if (entry.path === "/assets/handovers" && /^\/assets\/handovers\/\d+(\/|$)/.test(path)) {
+    return hasPermission(user, [
+      "assets.handover.accept",
+      "assets.handover.manage",
+      "assets.view",
+      "assets.admin",
+      "assets.manage",
+      "profile.read.self",
+    ]);
   }
 
   if (!entry.permission) return true;
