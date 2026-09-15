@@ -10,6 +10,8 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { accountProfilePath } from "@/lib/postAuthDestination";
+import { readStoredUser } from "@/lib/session";
 
 const PRIORITY_BADGE: Record<SupportTicket["priority"], string> = {
   low: "badge badge-muted",
@@ -56,6 +58,11 @@ export default function SupportTicketsPage() {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [formError, setFormError] = useState<string | null>(null);
+  const [profileHref, setProfileHref] = useState("/profile");
+
+  useEffect(() => {
+    setProfileHref(accountProfilePath(readStoredUser()));
+  }, []);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["support-tickets"],
@@ -183,7 +190,7 @@ export default function SupportTicketsPage() {
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Profile", href: "/profile" },
+              { label: "Profile", href: profileHref },
               { label: "Support" },
             ]}
           />
