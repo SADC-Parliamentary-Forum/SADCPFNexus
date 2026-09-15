@@ -91,4 +91,45 @@ class ClearAssetRegisterCommandTest extends TestCase
         $this->assertNotSame(0, Artisan::call('assets:clear-register'));
         $this->assertStringContainsString('--force', Artisan::output());
     }
+
+    public function test_invalid_tenant_option_does_not_wipe_any_register(): void
+    {
+        $tenant = Tenant::factory()->create();
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'KEEP-INVALID-'.$tenant->id,
+            'name' => 'Must remain',
+            'category' => 'ICT',
+            'status' => 'available',
+        ]);
+
+        foreach ([0, '0', 'abc'] as $tenantOption) {
+            $exit = Artisan::call('assets:clear-register', [
+                '--force' => true,
+                '--tenant' => $tenantOption,
+            ]);
+            $this->assertNotSame(0, $exit, 'Expected failure for --tenant='.var_export($tenantOption, true));
+            $this->assertSame(1, Asset::query()->where('tenant_id', $tenant->id)->count());
+        }
+    }
+
+    public function test_unknown_tenant_id_does_not_wipe_any_register(): void
+    {
+        $tenant = Tenant::factory()->create();
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'KEEP-UNKNOWN-'.$tenant->id,
+            'name' => 'Must remain',
+            'category' => 'ICT',
+            'status' => 'available',
+        ]);
+
+        $missingId = $tenant->id + 99999;
+        $exit = Artisan::call('assets:clear-register', [
+            '--force' => true,
+            '--tenant' => $missingId,
+        ]);
+        $this->assertNotSame(0, $exit);
+        $this->assertSame(1, Asset::query()->where('tenant_id', $tenant->id)->count());
+    }
 }

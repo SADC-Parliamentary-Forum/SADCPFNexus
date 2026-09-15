@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Asset;
 use App\Models\AuditLog;
+use App\Models\Tenant;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -70,17 +71,18 @@ class ClearAssetRegisterCommand extends Command
             return self::FAILURE;
         }
 
-        $tenantId = $this->option('tenant') !== null && $this->option('tenant') !== ''
-            ? (int) $this->option('tenant')
-            : null;
+        $tenantId = $this->resolvedTenantId();
+        if ($tenantId === false) {
+            return self::FAILURE;
+        }
 
         $before = Asset::query()
-            ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
+            ->when($tenantId !== null, fn ($q) => $q->where('tenant_id', $tenantId))
             ->count();
 
         DB::transaction(function () use ($tenantId): void {
             $assetIds = Asset::query()
-                ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
+                ->when($tenantId !== null, fn ($q) => $q->where('tenant_id', $tenantId))
                 ->pluck('id');
 
             $this->nullKeptForeignKeys($tenantId, $assetIds);
@@ -91,7 +93,7 @@ class ClearAssetRegisterCommand extends Command
 
             if (Schema::hasTable('attachments')) {
                 $attachmentQuery = DB::table('attachments')->where('attachable_type', Asset::class);
-                if ($tenantId) {
+                if ($tenantId !== null) {
                     if (Schema::hasColumn('attachments', 'tenant_id')) {
                         $attachmentQuery->where('tenant_id', $tenantId);
                     } else {
@@ -117,7 +119,7 @@ class ClearAssetRegisterCommand extends Command
         });
 
         $after = Asset::query()
-            ->when($tenantId, fn ($q) => $q->where('tenant_id', $tenantId))
+            ->when($tenantId !== null, fn ($q) => $q->where('tenant_id', $tenantId))
             ->count();
 
         AuditLog::record('assets.register_cleared', [
@@ -132,6 +134,33 @@ class ClearAssetRegisterCommand extends Command
         $this->info("Asset register cleared. Assets remaining: {$after} (was {$before}). Categories and locations were kept.");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @return int|null|false Null = all tenants; false = abort
+     */
+    private function resolvedTenantId(): int|false|null
+    {
+        $raw = $this->option('tenant');
+        if ($raw === null || $raw === false || $raw === '') {
+            return null;
+        }
+
+        $normalized = trim((string) $raw);
+        if (! preg_match('/^[1-9][0-9]*$/', $normalized)) {
+            $this->error('Invalid --tenant. Provide a positive integer tenant id, or omit --tenant to clear all tenants.');
+
+            return false;
+        }
+
+        $tenantId = (int) $normalized;
+        if (! Tenant::query()->whereKey($tenantId)->exists()) {
+            $this->error("Tenant {$tenantId} was not found.");
+
+            return false;
+        }
+
+        return $tenantId;
     }
 
     /**
@@ -153,9 +182,9 @@ class ClearAssetRegisterCommand extends Command
 
         if (Schema::hasTable('inventory_register_entries') && Schema::hasColumn('inventory_register_entries', 'asset_id')) {
             $inventory = DB::table('inventory_register_entries');
-            if ($tenantId && Schema::hasColumn('inventory_register_entries', 'tenant_id')) {
+            if ($tenantId !== null && Schema::hasColumn('inventory_register_entries', 'tenant_id')) {
                 $inventory->where('tenant_id', $tenantId);
-            } elseif ($tenantId) {
+            } elseif ($tenantId !== null) {
                 $inventory->whereIn('asset_id', $assetIds);
             }
             $inventory->update(['asset_id' => null]);
@@ -163,9 +192,9 @@ class ClearAssetRegisterCommand extends Command
 
         if (Schema::hasTable('travel_requests') && Schema::hasColumn('travel_requests', 'vehicle_asset_id')) {
             $travel = DB::table('travel_requests');
-            if ($tenantId && Schema::hasColumn('travel_requests', 'tenant_id')) {
+            if ($tenantId !== null && Schema::hasColumn('travel_requests', 'tenant_id')) {
                 $travel->where('tenant_id', $tenantId);
-            } elseif ($tenantId) {
+            } elseif ($tenantId !== null) {
                 $travel->whereIn('vehicle_asset_id', $assetIds);
             }
             $travel->update(['vehicle_asset_id' => null]);
@@ -178,7 +207,7 @@ class ClearAssetRegisterCommand extends Command
     private function scoped(string $table, ?int $tenantId, $assetIds)
     {
         $query = DB::table($table);
-        if (! $tenantId) {
+        if ($tenantId === null) {
             return $query;
         }
 
