@@ -14,7 +14,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { useRowSelection } from "@/lib/useRowSelection";
-import { chunkWorkplanEventIds, normalizeWorkplanEventIds } from "@/lib/workplanBulkDelete";
+import { chunkWorkplanEventIds, dropSelectedIds, normalizeWorkplanEventIds, summarizeWorkplanBulkDelete } from "@/lib/workplanBulkDelete";
 import {
   BulkSelectionBar,
   RowCheckbox,
@@ -854,7 +854,7 @@ function GanttView({
 export default function WorkplanListPage() {
   const { fmt: formatDate } = useFormatDate();
   const { confirm } = useConfirm();
-  const { success, error: showErrorToast, info } = useToast();
+  const { success, error: showErrorToast, warning, info } = useToast();
   const { t } = useI18n();
   const router = useRouter();
   const now = new Date();
@@ -917,6 +917,7 @@ export default function WorkplanListPage() {
     if (!ok) return;
     try {
       await workplanApi.delete(id);
+      selection.setSelected((prev) => dropSelectedIds(prev, [id]));
       success(t("workplan.delete.success"));
       loadList();
     } catch (err: unknown) {
@@ -924,7 +925,7 @@ export default function WorkplanListPage() {
       setError(message);
       showErrorToast(apiErrorMessage(err, t("workplan.delete.failed")));
     }
-  }, [confirm, loadList, showErrorToast, success, t]);
+  }, [confirm, loadList, selection, showErrorToast, success, t]);
 
   const handleBulkDelete = useCallback(async () => {
     const ids = normalizeWorkplanEventIds(selection.selectedIds);
@@ -938,26 +939,41 @@ export default function WorkplanListPage() {
     if (!ok) return;
     setBulkLoading(true);
     setError(null);
+    let deleted = 0;
+    const removed = new Set<number>();
     try {
-      let deleted = 0;
       for (const chunk of chunkWorkplanEventIds(ids)) {
         const res = await workplanApi.bulkDelete(chunk);
         deleted += Number(res.data.data.deleted_count ?? chunk.length);
+        chunk.forEach((id) => removed.add(id));
       }
+      const outcome = summarizeWorkplanBulkDelete(deleted, false);
       selection.clear();
-      success(t("workplan.bulkDelete.success", { count: deleted }));
+      success(t("workplan.bulkDelete.success", { count: outcome.deleted }));
       loadList();
     } catch (err: unknown) {
-      showErrorToast(apiErrorMessage(err, t("workplan.bulkDelete.failed")));
+      const outcome = summarizeWorkplanBulkDelete(deleted, true);
+      if (removed.size > 0) {
+        selection.setSelected((prev) => dropSelectedIds(prev, removed));
+      }
+      if (outcome.kind === "partial") {
+        warning(t("workplan.bulkDelete.partial", { count: outcome.deleted }));
+      } else {
+        showErrorToast(apiErrorMessage(err, t("workplan.bulkDelete.failed")));
+      }
       loadList();
     } finally {
       setBulkLoading(false);
     }
-  }, [confirm, loadList, selection, showErrorToast, success, t]);
+  }, [confirm, loadList, selection, showErrorToast, success, t, warning]);
 
   useEffect(() => {
     loadList();
   }, [loadList]);
+
+  useEffect(() => {
+    selection.pruneToSelectable();
+  }, [selection.pruneToSelectable]);
 
   const currentYear = new Date().getFullYear();
   const years = [currentYear - 1, currentYear, currentYear + 1];

@@ -35,6 +35,15 @@ test("workplan delete shows a success or error toast", () => {
   assert.match(source, /showErrorToast\(.*workplan\.bulkDelete\.failed/);
 });
 
+test("workplan selection drops deleted ids and reports partial bulk deletes", () => {
+  const source = readPage("app/(app)/workplan/page.tsx");
+
+  assert.match(source, /dropSelectedIds/);
+  assert.match(source, /pruneToSelectable/);
+  assert.match(source, /summarizeWorkplanBulkDelete/);
+  assert.match(source, /workplan\.bulkDelete\.partial/);
+});
+
 test("workplan API client exposes bulk delete", () => {
   const source = readPage("lib/api.ts");
 
@@ -56,6 +65,7 @@ test("workplan bulk-delete catalog covers EN, FR and PT", () => {
     "workplan.bulkDelete.confirmMessage",
     "workplan.bulkDelete.success",
     "workplan.bulkDelete.failed",
+    "workplan.bulkDelete.partial",
   ];
   const enTitle = catalogFor("en")["workplan.delete.success"];
   for (const locale of LOCALES) {
