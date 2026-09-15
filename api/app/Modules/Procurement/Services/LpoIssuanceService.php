@@ -463,7 +463,8 @@ class LpoIssuanceService
             ->where('id', (int) $templateId)
             ->where('tenant_id', $po->tenant_id)
             ->where('document_type', DocumentNumberingService::DOCUMENT_TYPE_PURCHASE_ORDER)
-            ->whereIn('status', ['draft', 'published'])
+            ->where('status', 'published')
+            ->whereHas('publishedVersion')
             ->first();
         if (! $template) {
             throw ValidationException::withMessages([

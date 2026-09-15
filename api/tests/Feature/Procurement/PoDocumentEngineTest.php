@@ -552,6 +552,31 @@ class PoDocumentEngineTest extends TestCase
         $this->assertNull(PurchaseOrder::find($id)?->lpo_number);
     }
 
+    public function test_submit_rejects_unpublished_template(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $this->seedWorkflow($tenant, $officer);
+        app(LpoSequenceAllocator::class)->activate($tenant->id, $officer, 4015, 'Legacy');
+        $draftId = $http->postJson('/api/v1/procurement/po-templates', [
+            'name' => 'Unpublished draft layout',
+        ])->assertCreated()->json('data.id');
+        $this->assertSame('draft', DocumentTemplate::find($draftId)?->status);
+
+        [$req, $vendor] = $this->awardedPayload($tenant);
+        $id = $http->postJson('/api/v1/procurement/purchase-orders', [
+            'procurement_request_id' => $req->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Draft template',
+            'items' => [['description' => 'Item', 'quantity' => 1, 'unit' => 'unit', 'unit_price' => 10, 'total_price' => 10]],
+        ])->assertCreated()->json('data.id');
+
+        $http->postJson("/api/v1/procurement/purchase-orders/{$id}/submit", [
+            'template_id' => $draftId,
+        ])->assertUnprocessable();
+        $this->assertNull(PurchaseOrder::find($id)?->lpo_number);
+    }
+
     public function test_issue_from_approved_without_frozen_output_creates_document(): void
     {
         $tenant = Tenant::factory()->create();

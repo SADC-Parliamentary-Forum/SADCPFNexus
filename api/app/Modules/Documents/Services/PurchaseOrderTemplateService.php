@@ -93,7 +93,7 @@ final class PurchaseOrderTemplateService
                 'description' => $data['description'] ?? null,
                 'page_size' => 'a4',
                 'orientation' => in_array($data['orientation'] ?? 'portrait', ['portrait', 'landscape'], true)
-                    ? $data['orientation']
+                    ? ($data['orientation'] ?? 'portrait')
                     : 'portrait',
                 'status' => 'draft',
                 'is_default' => false,
@@ -213,7 +213,13 @@ final class PurchaseOrderTemplateService
     public function publishedLayoutFor(?DocumentTemplate $template, int $tenantId): array
     {
         $template ??= $this->defaultTemplate($tenantId);
-        $version = $template->publishedVersion ?: $template->draftVersion;
+        $template->loadMissing('publishedVersion');
+        $version = $template->publishedVersion;
+        if (! $version) {
+            $template = $this->defaultTemplate($tenantId);
+            $template->loadMissing('publishedVersion');
+            $version = $template->publishedVersion;
+        }
         $layout = $version?->layout_json ?? LegacyPurchaseOrderLayout::layout();
 
         return [$template, $version, PurchaseOrderLayoutSanitizer::sanitize($layout)];
