@@ -43,3 +43,28 @@ test("help support e2e asserts the portaled kebab menu, not a card-clipped locat
   assert.match(source, /support-ticket-action-delete/);
   assert.doesNotMatch(source, /card\.getByRole\(["']menuitem["']/);
 });
+
+test("kebab actions wait until the portaled menu unmounts before opening confirm", () => {
+  const source = readPage("app/(app)/profile/support/page.tsx");
+
+  assert.match(source, /runAfterOverlayClose/);
+  assert.match(source, /status:\s*["']closed["']/);
+});
+
+test("confirm dialog portals above the ticket kebab so Close ticket can be confirmed", () => {
+  const confirm = readPage("components/ui/ConfirmDialog.tsx");
+
+  assert.match(confirm, /createPortal/);
+  assert.match(confirm, /document\.body/);
+  assert.match(confirm, /z-\[400\]/);
+  assert.match(confirm, /data-testid=["']confirm-dialog["']/);
+  assert.match(confirm, /confirmButtonRef/);
+});
+
+test("help support e2e closes a ticket from the kebab and asserts the Closed badge", () => {
+  const source = readPage("tests/e2e/help-support.spec.ts");
+
+  assert.match(source, /support-ticket-action-close/);
+  assert.match(source, /confirm-dialog/);
+  assert.match(source, /closed/i);
+});
