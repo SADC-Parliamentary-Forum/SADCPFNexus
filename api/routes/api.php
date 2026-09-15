@@ -1393,6 +1393,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('event-types/{eventType}', [\App\Http\Controllers\Api\V1\Workplan\WorkplanEventTypeController::class, 'destroy']);
             Route::get('events/import/template', [\App\Http\Controllers\Api\V1\Workplan\WorkplanController::class, 'importTemplate']);
             Route::post('events/import', [\App\Http\Controllers\Api\V1\Workplan\WorkplanController::class, 'import']);
+            Route::post('events/bulk-delete', [\App\Http\Controllers\Api\V1\Workplan\WorkplanController::class, 'bulkDestroy']);
             Route::get('events/{event}/attachments', [\App\Http\Controllers\Api\V1\Workplan\WorkplanAttachmentController::class, 'index']);
             Route::post('events/{event}/attachments', [\App\Http\Controllers\Api\V1\Workplan\WorkplanAttachmentController::class, 'store']);
             Route::delete('events/{event}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Workplan\WorkplanAttachmentController::class, 'destroy']);

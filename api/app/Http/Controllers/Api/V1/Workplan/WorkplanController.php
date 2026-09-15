@@ -116,6 +116,21 @@ class WorkplanController extends Controller
         return response()->json(['message' => 'Event deleted.']);
     }
 
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'ids' => ['required', 'array', 'min:1', 'max:500'],
+            'ids.*' => ['integer'],
+        ]);
+
+        $deleted = $this->service->deleteMany($data['ids'], $request->user());
+
+        return response()->json([
+            'message' => $deleted === 1 ? 'Event deleted.' : "{$deleted} events deleted.",
+            'data' => ['deleted_count' => $deleted],
+        ]);
+    }
+
     public function show(Request $request, WorkplanEvent $event): JsonResponse
     {
         if ((int) $event->tenant_id !== (int) $request->user()->tenant_id) {

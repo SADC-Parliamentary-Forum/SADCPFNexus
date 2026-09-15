@@ -155,6 +155,96 @@ class WorkplanTest extends TestCase
         $this->assertSoftDeleted('workplan_events', ['id' => $event->id]);
     }
 
+    public function test_guest_cannot_bulk_delete_workplan_events(): void
+    {
+        $this->postJson('/api/v1/workplan/events/bulk-delete', [
+            'ids' => [1],
+        ])->assertUnauthorized();
+    }
+
+    public function test_admin_can_bulk_delete_own_tenant_events(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asAdmin($tenant);
+
+        $keep = WorkplanEvent::create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
+            'title' => 'Keep me',
+            'type' => 'meeting',
+            'date' => now()->addDays(2)->toDateString(),
+        ]);
+        $first = WorkplanEvent::create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
+            'title' => 'Delete first',
+            'type' => 'deadline',
+            'date' => now()->addDays(3)->toDateString(),
+        ]);
+        $second = WorkplanEvent::create([
+            'tenant_id' => $tenant->id,
+            'created_by' => $user->id,
+            'title' => 'Delete second',
+            'type' => 'travel',
+            'date' => now()->addDays(4)->toDateString(),
+        ]);
+
+        $http->postJson('/api/v1/workplan/events/bulk-delete', [
+            'ids' => [$first->id, $second->id, $second->id],
+        ])->assertOk()
+            ->assertJsonPath('data.deleted_count', 2);
+
+        $this->assertSoftDeleted('workplan_events', ['id' => $first->id]);
+        $this->assertSoftDeleted('workplan_events', ['id' => $second->id]);
+        $this->assertDatabaseHas('workplan_events', ['id' => $keep->id, 'deleted_at' => null]);
+    }
+
+    public function test_bulk_delete_ignores_other_tenant_event_ids(): void
+    {
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        [$http, $userA] = $this->asAdmin($tenantA);
+        $userB = $this->makeAdmin($tenantB);
+
+        $own = WorkplanEvent::create([
+            'tenant_id' => $tenantA->id,
+            'created_by' => $userA->id,
+            'title' => 'Own event',
+            'type' => 'meeting',
+            'date' => now()->addDays(2)->toDateString(),
+        ]);
+        $foreign = WorkplanEvent::create([
+            'tenant_id' => $tenantB->id,
+            'created_by' => $userB->id,
+            'title' => 'Foreign event',
+            'type' => 'meeting',
+            'date' => now()->addDays(2)->toDateString(),
+        ]);
+
+        $http->postJson('/api/v1/workplan/events/bulk-delete', [
+            'ids' => [$own->id, $foreign->id],
+        ])->assertOk()
+            ->assertJsonPath('data.deleted_count', 1);
+
+        $this->assertSoftDeleted('workplan_events', ['id' => $own->id]);
+        $this->assertDatabaseHas('workplan_events', ['id' => $foreign->id, 'deleted_at' => null]);
+    }
+
+    public function test_bulk_delete_rejects_empty_and_oversized_id_lists(): void
+    {
+        [$http] = $this->asAdmin();
+
+        $http->postJson('/api/v1/workplan/events/bulk-delete', [
+            'ids' => [],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['ids']);
+
+        $http->postJson('/api/v1/workplan/events/bulk-delete', [
+            'ids' => range(1, 501),
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['ids']);
+    }
+
     public function test_external_endpoint_rejects_unauthenticated_caller(): void
     {
         $this->getJson('/api/v1/external/workplan')->assertUnauthorized();
