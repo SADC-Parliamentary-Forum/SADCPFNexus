@@ -3,6 +3,7 @@
 namespace App\Modules\Procurement\Services;
 
 use App\Models\AuditLog;
+use App\Models\DocumentTemplate;
 use App\Models\ProcurementDocumentIntake;
 use App\Models\ProcurementException;
 use App\Models\ProcurementRequest;
@@ -166,8 +167,8 @@ class LpoIssuanceService
             }
         }
 
-        if (isset($reference['template_id'])) {
-            $po->document_template_id = (int) $reference['template_id'] ?: null;
+        if (array_key_exists('template_id', $reference)) {
+            $po->document_template_id = $this->resolvedTemplateId($po, $reference['template_id'] ?? null);
         }
 
         if (! $po->lpo_number) {
@@ -267,8 +268,9 @@ class LpoIssuanceService
 
     public function generateFinalPdf(PurchaseOrder $po, User $user): PurchaseOrder
     {
+        $verifyToken = Str::lower(Str::random(40));
         try {
-            $binary = $this->pdf->output($po);
+            $binary = $this->documents->renderPdf($po, null, 'real', null, $verifyToken)->output();
         } catch (\Throwable $e) {
             throw ValidationException::withMessages([
                 'pdf' => 'PDF failed. LPO remains approved and is not issued.',
@@ -294,7 +296,7 @@ class LpoIssuanceService
             'issued_by' => $user->id,
             'lpo_date' => $po->lpo_date ?: now()->toDateString(),
         ]);
-        $this->documents->freezeIssued($po->fresh(['vendor', 'items']), $user, $binary, $attachment->id, $hash);
+        $this->documents->freezeIssued($po->fresh(['vendor', 'items']), $user, $binary, $attachment->id, $hash, $verifyToken);
         AuditLog::record('procurement.lpo_issued', [
             'auditable_type' => PurchaseOrder::class,
             'auditable_id' => $po->id,
@@ -447,5 +449,25 @@ class LpoIssuanceService
             'file_hash' => $intake->file_hash,
             'document_type' => $intake->document_type,
         ]);
+    }
+
+    private function resolvedTemplateId(PurchaseOrder $po, mixed $templateId): ?int
+    {
+        if ($templateId === null || $templateId === '' || (int) $templateId === 0) {
+            return null;
+        }
+        $template = DocumentTemplate::query()
+            ->where('id', (int) $templateId)
+            ->where('tenant_id', $po->tenant_id)
+            ->where('document_type', DocumentNumberingService::DOCUMENT_TYPE_PURCHASE_ORDER)
+            ->whereIn('status', ['draft', 'published'])
+            ->first();
+        if (! $template) {
+            throw ValidationException::withMessages([
+                'template_id' => 'Purchase order template was not found for this organisation.',
+            ]);
+        }
+
+        return (int) $template->id;
     }
 }

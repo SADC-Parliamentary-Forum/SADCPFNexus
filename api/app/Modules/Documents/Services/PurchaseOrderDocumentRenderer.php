@@ -76,7 +76,7 @@ final class PurchaseOrderDocumentRenderer
             'org_name', 'org_address', 'heading', 'field', 'text', 'footer', 'page_number' => '<div class="el" style="'.$style.'">'.$this->escapePreserve((string) $value).'</div>',
             'line' => '<div class="el" style="'.$style.'border-top:1px solid #111;height:0;"></div>',
             'rectangle' => '<div class="el" style="'.$style.'"></div>',
-            'qr' => $this->imageBox($style, is_string($context['qr'] ?? null) ? $context['qr'] : null, 'center'),
+            'qr' => $this->imageBox($style, is_string($context['qr'] ?? null) ? $context['qr'] : null, 'center', is_string($context['verify_url'] ?? null) ? $context['verify_url'] : null),
             'approval_block' => $this->approvalHtml($el, $context['approvals'] ?? [], $style),
             default => '',
         };
@@ -193,13 +193,14 @@ final class PurchaseOrderDocumentRenderer
         return implode(';', $parts);
     }
 
-    private function imageBox(string $style, ?string $src, string $align): string
+    private function imageBox(string $style, ?string $src, string $align, ?string $title = null): string
     {
         if (! $src) {
             return '<div class="el" style="'.$style.'text-align:'.$align.';"></div>';
         }
+        $titleAttr = $title ? ' title="'.e($title).'"' : '';
 
-        return '<div class="el" style="'.$style.'text-align:'.$align.';"><img src="'.e($src).'" style="max-width:100%;max-height:100%;"></div>';
+        return '<div class="el" style="'.$style.'text-align:'.$align.';"><img src="'.e($src).'" alt="Verify purchase order"'.$titleAttr.' style="max-width:100%;max-height:100%;"></div>';
     }
 
     /**
@@ -213,6 +214,11 @@ final class PurchaseOrderDocumentRenderer
         $parts = explode('.', $binding, 2);
         $root = $parts[0];
         $rest = $parts[1] ?? null;
+        if ($root === 'cost_centre') {
+            $val = $context['cost_centre'] ?? '';
+
+            return is_scalar($val) ? (string) $val : '';
+        }
         if ($root === 'org' || $root === 'po' || $root === 'supplier' || $root === 'project' || $root === 'programme' || $root === 'funding' || $root === 'budget' || $root === 'requisition' || $root === 'procurement' || $root === 'requester') {
             $bucket = $context[$root] ?? [];
             if ($rest === null) {
@@ -260,7 +266,7 @@ body { font-family: DejaVu Sans, sans-serif; font-size: 10px; color: #111; margi
 .items th, .items td { border: 1px solid #333; padding: 3px 5px; font-size: 9px; }
 .items th { background: #f3f3f3; }
 .items thead tr.cont { display: none; }
-.items thead:not(:first-child) tr.cont, .items thead tr.cont { display: table-row; }
+.items thead:not(:first-child) tr.cont { display: table-row; }
 .items tbody tr { page-break-inside: avoid; }
 .pending { font-style: italic; color: #666; padding: 8px 0; }
 .sig-line { border-bottom: 1px solid #333; height: 22px; margin: 4px 0; }

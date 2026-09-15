@@ -24,12 +24,14 @@ final class PurchaseOrderDocumentService
         private readonly PurchaseOrderDocumentRenderer $renderer,
     ) {}
 
-    public function renderPdf(PurchaseOrder $po, ?DocumentTemplate $template = null, string $mode = 'real', ?array $layoutOverride = null): \Barryvdh\DomPDF\PDF
+    public function renderPdf(PurchaseOrder $po, ?DocumentTemplate $template = null, string $mode = 'real', ?array $layoutOverride = null, ?string $verifyToken = null): \Barryvdh\DomPDF\PDF
     {
         $tenantId = (int) ($po->tenant_id ?: 0);
         $chosen = $template;
         if (! $chosen && $po->document_template_id) {
-            $chosen = DocumentTemplate::query()->find($po->document_template_id);
+            $chosen = DocumentTemplate::query()
+                ->where('tenant_id', $tenantId)
+                ->find($po->document_template_id);
         }
         if ($mode !== 'real') {
             $chosen ??= $this->templates->defaultTemplate($tenantId);
@@ -48,7 +50,7 @@ final class PurchaseOrderDocumentService
             }
             unset($version);
         }
-        $verifyUrl = $this->verifyUrl($po);
+        $verifyUrl = $verifyToken ? $this->verifyUrlForToken($verifyToken) : $this->verifyUrl($po);
         $qr = $this->qrDataUri($verifyUrl);
         $ctx = $mode === 'sample'
             ? $this->context->sample()
@@ -73,7 +75,7 @@ final class PurchaseOrderDocumentService
         return $this->renderPdf($po)->output();
     }
 
-    public function freezeIssued(PurchaseOrder $po, User $actor, string $binary, ?int $attachmentId, string $hash): DocumentOutput
+    public function freezeIssued(PurchaseOrder $po, User $actor, string $binary, ?int $attachmentId, string $hash, ?string $verifyToken = null): DocumentOutput
     {
         if ($po->issued_document_output_id) {
             $existing = DocumentOutput::query()->find($po->issued_document_output_id);
@@ -83,10 +85,12 @@ final class PurchaseOrderDocumentService
         }
         $template = null;
         if ($po->document_template_id) {
-            $template = DocumentTemplate::query()->find($po->document_template_id);
+            $template = DocumentTemplate::query()
+                ->where('tenant_id', $po->tenant_id)
+                ->find($po->document_template_id);
         }
         [, $version] = $this->templates->publishedLayoutFor($template, (int) $po->tenant_id);
-        $token = $po->issuedDocumentOutput?->verify_token ?: Str::lower(Str::random(40));
+        $token = $verifyToken ?: $po->issuedDocumentOutput?->verify_token ?: Str::lower(Str::random(40));
         $ctx = $this->context->build($po, 'real', $this->verifyUrlForToken($token));
         $output = DocumentOutput::query()->create([
             'tenant_id' => $po->tenant_id,

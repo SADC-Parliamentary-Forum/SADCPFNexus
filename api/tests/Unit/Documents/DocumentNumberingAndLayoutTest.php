@@ -3,6 +3,7 @@
 namespace Tests\Unit\Documents;
 
 use App\Modules\Documents\Services\DocumentNumberingService;
+use App\Modules\Documents\Services\PurchaseOrderDocumentRenderer;
 use App\Modules\Documents\Support\PurchaseOrderLayoutSanitizer;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -61,5 +62,58 @@ class DocumentNumberingAndLayoutTest extends TestCase
         ]);
         $this->assertCount(1, $clean['elements']);
         $this->assertSame('po.reference', $clean['elements'][0]['binding']);
+    }
+
+    public function test_cost_centre_binding_renders(): void
+    {
+        $html = app(PurchaseOrderDocumentRenderer::class)->toHtml(
+            PurchaseOrderLayoutSanitizer::sanitize([
+                'page' => ['size' => 'A4', 'orientation' => 'portrait', 'margin_mm' => ['top' => 12, 'right' => 12, 'bottom' => 12, 'left' => 12]],
+                'elements' => [
+                    ['type' => 'field', 'binding' => 'cost_centre', 'x_mm' => 12, 'y_mm' => 20, 'w_mm' => 40, 'h_mm' => 8],
+                ],
+            ]),
+            [
+                'po' => ['reference' => 'S 04016'],
+                'cost_centre' => 'CC-FORUM',
+            ],
+            'real',
+        );
+        $this->assertStringContainsString('CC-FORUM', $html);
+    }
+
+    public function test_qr_title_uses_issued_verify_url_not_preview(): void
+    {
+        $html = app(PurchaseOrderDocumentRenderer::class)->toHtml(
+            PurchaseOrderLayoutSanitizer::sanitize([
+                'page' => ['size' => 'A4', 'orientation' => 'portrait', 'margin_mm' => ['top' => 12, 'right' => 12, 'bottom' => 12, 'left' => 12]],
+                'elements' => [
+                    ['type' => 'qr', 'x_mm' => 178, 'y_mm' => 268, 'w_mm' => 18, 'h_mm' => 18],
+                ],
+            ]),
+            [
+                'po' => ['reference' => 'S 04016'],
+                'qr' => 'data:image/png;base64,AAAA',
+                'verify_url' => 'https://portal.test/verify/po/issuedtokenabc',
+            ],
+            'real',
+        );
+        $this->assertStringContainsString('/verify/po/issuedtokenabc', $html);
+        $this->assertStringNotContainsString('/verify/po/preview', $html);
+    }
+
+    public function test_continued_header_css_is_not_forced_on_first_page(): void
+    {
+        $html = app(PurchaseOrderDocumentRenderer::class)->toHtml(
+            PurchaseOrderLayoutSanitizer::sanitize([
+                'page' => ['size' => 'A4', 'orientation' => 'portrait', 'margin_mm' => ['top' => 12, 'right' => 12, 'bottom' => 12, 'left' => 12]],
+                'elements' => [],
+            ]),
+            ['po' => ['reference' => 'S 04016']],
+            'design',
+        );
+        $this->assertStringContainsString('.items thead tr.cont { display: none; }', $html);
+        $this->assertStringContainsString('.items thead:not(:first-child) tr.cont { display: table-row; }', $html);
+        $this->assertDoesNotMatchRegularExpression('/\.items thead tr\.cont \{ display: table-row; \}/', $html);
     }
 }

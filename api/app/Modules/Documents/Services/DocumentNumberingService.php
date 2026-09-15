@@ -395,34 +395,49 @@ final class DocumentNumberingService
             throw ValidationException::withMessages(['next_sequence' => 'Next sequence must be at least 1.']);
         }
 
-        $scheme = DB::table('numbering_schemes')
-            ->where('tenant_id', $tenantId)
-            ->where('scheme_key', $schemeKey)
-            ->first();
-        if (! $scheme || $scheme->status !== 'active') {
-            throw ValidationException::withMessages(['sequence' => 'Activate numbering before changing the next sequence.']);
-        }
+        return DB::transaction(function () use ($tenantId, $actor, $nextSequence, $reason, $schemeKey) {
+            $scheme = DB::table('numbering_schemes')
+                ->where('tenant_id', $tenantId)
+                ->where('scheme_key', $schemeKey)
+                ->lockForUpdate()
+                ->first();
+            if (! $scheme || $scheme->status !== 'active') {
+                throw ValidationException::withMessages(['sequence' => 'Activate numbering before changing the next sequence.']);
+            }
 
-        $seq = $this->lockSequence((int) $scheme->id);
-        $previous = (int) $seq->current_value;
-        $newCurrent = $nextSequence - 1;
-        DB::table('numbering_sequences')->where('id', $seq->id)->update([
-            'current_value' => $newCurrent,
-            'updated_at' => now(),
-        ]);
+            $maxAllocated = NumberingAllocation::query()
+                ->where('tenant_id', $tenantId)
+                ->where('numbering_scheme_id', $scheme->id)
+                ->whereNotNull('sequence_number')
+                ->max('sequence_number');
+            if ($maxAllocated !== null && $nextSequence <= (int) $maxAllocated) {
+                throw ValidationException::withMessages([
+                    'next_sequence' => 'Next sequence cannot rewind into an already allocated number.',
+                ]);
+            }
 
-        AuditLog::record('procurement.sequence.next_changed', [
-            'auditable_type' => Tenant::class,
-            'auditable_id' => $tenantId,
-            'new_values' => [
-                'previous_next' => $previous + 1,
-                'new_next' => $nextSequence,
-                'reason' => $reason,
-            ],
-            'tags' => 'procurement',
-        ]);
+            $seq = $this->lockSequence((int) $scheme->id);
+            $previous = (int) $seq->current_value;
+            $newCurrent = $nextSequence - 1;
+            DB::table('numbering_sequences')->where('id', $seq->id)->update([
+                'current_value' => $newCurrent,
+                'updated_at' => now(),
+            ]);
 
-        return $this->status($tenantId, $schemeKey);
+            AuditLog::record('procurement.sequence.next_changed', [
+                'auditable_type' => Tenant::class,
+                'auditable_id' => $tenantId,
+                'new_values' => [
+                    'previous_next' => $previous + 1,
+                    'new_next' => $nextSequence,
+                    'reason' => $reason,
+                    'changed_by' => $actor->id,
+                ],
+                'tags' => 'procurement',
+            ]);
+
+            return $this->status($tenantId, $schemeKey);
+        });
     }
 
     public function status(int $tenantId, string $schemeKey = self::SCHEME_KEY_LPO): array
@@ -575,19 +590,75 @@ final class DocumentNumberingService
             ->where('document_type', $documentType)
             ->where('normalised_reference', $normalised)
             ->exists();
-        if ($exists) {
+        if ($exists || $this->purchaseOrderHoldsNormalised($tenantId, $normalised)) {
             throw ValidationException::withMessages([
                 'reference' => 'Purchase Order reference already exists.',
             ]);
         }
-        $poExists = PurchaseOrder::query()
+    }
+
+    private function purchaseOrderHoldsNormalised(int $tenantId, string $normalised): bool
+    {
+        $query = PurchaseOrder::query()
             ->where('tenant_id', $tenantId)
-            ->where('normalised_reference', $normalised)
-            ->exists();
-        if ($poExists) {
-            throw ValidationException::withMessages([
-                'reference' => 'Purchase Order reference already exists.',
-            ]);
+            ->where(function ($q) use ($normalised) {
+                $q->where('normalised_reference', $normalised);
+                if ($this->supportsNormalisedSql()) {
+                    $q->orWhere(function ($inner) use ($normalised) {
+                        $inner->whereNotNull('lpo_number')
+                            ->where('lpo_number', 'not like', 'PROC-DRAFT-%')
+                            ->whereRaw($this->normalisedEqualsSql('lpo_number'), [$normalised]);
+                    })->orWhere(function ($inner) use ($normalised) {
+                        $inner->whereNotNull('reference_number')
+                            ->where('reference_number', 'not like', 'PROC-DRAFT-%')
+                            ->whereRaw($this->normalisedEqualsSql('reference_number'), [$normalised]);
+                    });
+                }
+            });
+
+        if ($query->exists()) {
+            return true;
         }
+
+        if ($this->supportsNormalisedSql()) {
+            return false;
+        }
+
+        return PurchaseOrder::query()
+            ->where('tenant_id', $tenantId)
+            ->where(function ($q) {
+                $q->whereNotNull('lpo_number')->orWhereNotNull('reference_number');
+            })
+            ->get(['lpo_number', 'reference_number', 'normalised_reference'])
+            ->contains(function (PurchaseOrder $order) use ($normalised): bool {
+                if ($order->normalised_reference === $normalised) {
+                    return true;
+                }
+                foreach ([$order->lpo_number, $order->reference_number] as $raw) {
+                    if (! is_string($raw) || $raw === '' || str_starts_with($raw, 'PROC-DRAFT-')) {
+                        continue;
+                    }
+                    if ($this->normalize($raw) === $normalised) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+    }
+
+    private function supportsNormalisedSql(): bool
+    {
+        return DB::connection()->getDriverName() === 'pgsql';
+    }
+
+    private function normalisedEqualsSql(string $column): string
+    {
+        $allowed = ['lpo_number', 'reference_number'];
+        if (! in_array($column, $allowed, true)) {
+            throw new \InvalidArgumentException('Unsupported numbering column.');
+        }
+
+        return "upper(regexp_replace(btrim({$column}), '[\\s\\-_\\/]+', '', 'g')) = ?";
     }
 }

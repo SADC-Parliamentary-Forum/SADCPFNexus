@@ -131,17 +131,21 @@ class PurchaseOrderService
             ]);
         }
 
-        $po->update([
-            'status' => 'issued',
-            'issued_at' => now(),
-            'issued_by' => $user->id,
-        ]);
+        if (! $po->issued_document_output_id || ! $po->final_pdf_attachment_id) {
+            $po = app(LpoIssuanceService::class)->generateFinalPdf($po, $user);
+        } else {
+            $po->update([
+                'status' => 'issued',
+                'issued_at' => now(),
+                'issued_by' => $user->id,
+            ]);
 
-        AuditLog::record('procurement.po_issued', [
-            'auditable_type' => PurchaseOrder::class,
-            'auditable_id' => $po->id,
-            'tags' => 'procurement',
-        ]);
+            AuditLog::record('procurement.po_issued', [
+                'auditable_type' => PurchaseOrder::class,
+                'auditable_id' => $po->id,
+                'tags' => 'procurement',
+            ]);
+        }
 
         $po->loadMissing(['vendor.portalUsers']);
         $this->notifySupplierToSubmitProformaInvoice($po);

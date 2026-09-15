@@ -4,12 +4,14 @@ namespace Tests\Feature\Procurement;
 
 use App\Models\ApprovalWorkflow;
 use App\Models\DocumentOutput;
+use App\Models\DocumentTemplate;
 use App\Models\NumberingAllocation;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\Tenant;
 use App\Models\Vendor;
 use App\Modules\Documents\Services\DocumentNumberingService;
+use App\Modules\Procurement\Services\LpoIssuanceService;
 use App\Modules\Procurement\Services\LpoSequenceAllocator;
 use Tests\TestCase;
 
@@ -289,7 +291,13 @@ class PoDocumentEngineTest extends TestCase
         ])->assertCreated();
 
         $shown = $http->getJson("/api/v1/procurement/requests/{$req->id}")->assertOk();
-        $this->assertNotNull($shown->json('po_link') ?? $shown->json('purchase_order'));
+        $this->assertNotNull($shown->json('po_link'));
+        $this->assertNotEmpty($shown->json('po_link.display_reference'));
+
+        $listed = $http->getJson('/api/v1/procurement/requests')->assertOk();
+        $row = collect($listed->json('data'))->firstWhere('id', $req->id);
+        $this->assertNotNull($row['po_link'] ?? null);
+        $this->assertNotEmpty($row['po_link']['display_reference'] ?? null);
     }
 
     public function test_two_submits_receive_unique_consecutive_numbers(): void
@@ -449,5 +457,188 @@ class PoDocumentEngineTest extends TestCase
         $pdf = $http->post("/api/v1/procurement/po-templates/{$id}/preview", ['mode' => 'sample']);
         $pdf->assertOk();
         $this->assertStringContainsString('%PDF', $pdf->getContent());
+    }
+
+    public function test_submit_rejects_custom_ref_colliding_with_legacy_lpo_number(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $this->seedWorkflow($tenant, $officer);
+        app(LpoSequenceAllocator::class)->activate($tenant->id, $officer, 4015, 'Legacy');
+        $this->seedLegacyIssuedPo($tenant, $officer, 'S 04015');
+        [$req, $vendor] = $this->awardedPayload($tenant);
+        $id = $http->postJson('/api/v1/procurement/purchase-orders', [
+            'procurement_request_id' => $req->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Collision',
+            'items' => [['description' => 'Item', 'quantity' => 1, 'unit' => 'unit', 'unit_price' => 10, 'total_price' => 10]],
+        ])->json('data.id');
+
+        $http->postJson("/api/v1/procurement/purchase-orders/{$id}/submit", [
+            'reference_mode' => 'custom',
+            'custom_reference' => 'S04015',
+            'custom_reason' => 'Match paper register',
+        ])->assertUnprocessable();
+    }
+
+    public function test_auto_submit_rejects_when_next_number_is_a_live_legacy_lpo(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $this->seedWorkflow($tenant, $officer);
+        app(LpoSequenceAllocator::class)->activate($tenant->id, $officer, 4014, 'Legacy');
+        $this->seedLegacyIssuedPo($tenant, $officer, 'S 04015');
+        [$req, $vendor] = $this->awardedPayload($tenant);
+        $id = $http->postJson('/api/v1/procurement/purchase-orders', [
+            'procurement_request_id' => $req->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Auto collision',
+            'items' => [['description' => 'Item', 'quantity' => 1, 'unit' => 'unit', 'unit_price' => 10, 'total_price' => 10]],
+        ])->json('data.id');
+
+        $http->postJson("/api/v1/procurement/purchase-orders/{$id}/submit")->assertUnprocessable();
+        $this->assertSame('S 04015', app(DocumentNumberingService::class)->status($tenant->id)['next_example']);
+    }
+
+    public function test_set_next_cannot_rewind_into_allocated_sequence(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $this->seedWorkflow($tenant, $officer);
+        app(LpoSequenceAllocator::class)->activate($tenant->id, $officer, 4015, 'Legacy');
+        [$req, $vendor] = $this->awardedPayload($tenant);
+        $id = $http->postJson('/api/v1/procurement/purchase-orders', [
+            'procurement_request_id' => $req->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Allocated',
+            'items' => [['description' => 'Item', 'quantity' => 1, 'unit' => 'unit', 'unit_price' => 10, 'total_price' => 10]],
+        ])->json('data.id');
+        $http->postJson("/api/v1/procurement/purchase-orders/{$id}/submit")->assertOk();
+
+        $http->postJson('/api/v1/procurement/numbering-profiles/set-next', [
+            'next_sequence' => 4016,
+            'reason' => 'Rewind into used number',
+        ])->assertUnprocessable();
+
+        $http->postJson('/api/v1/procurement/numbering-profiles/set-next', [
+            'next_sequence' => 4018,
+            'reason' => 'Skip damaged stock',
+        ])->assertOk()->assertJsonPath('data.next_example', 'S 04018');
+    }
+
+    public function test_submit_rejects_cross_tenant_template(): void
+    {
+        $tenantA = Tenant::factory()->create();
+        $tenantB = Tenant::factory()->create();
+        [$httpA, $officerA] = $this->asProcurementOfficer($tenantA);
+        [$httpB] = $this->asProcurementOfficer($tenantB);
+        $this->seedWorkflow($tenantA, $officerA);
+        app(LpoSequenceAllocator::class)->activate($tenantA->id, $officerA, 4015, 'Legacy');
+        $foreignId = $httpB->getJson('/api/v1/procurement/po-templates')->assertOk()->json('data.0.id');
+        $this->assertNotNull(DocumentTemplate::query()->where('id', $foreignId)->where('tenant_id', $tenantB->id)->first());
+
+        [$req, $vendor] = $this->awardedPayload($tenantA);
+        $id = $httpA->postJson('/api/v1/procurement/purchase-orders', [
+            'procurement_request_id' => $req->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Foreign template',
+            'items' => [['description' => 'Item', 'quantity' => 1, 'unit' => 'unit', 'unit_price' => 10, 'total_price' => 10]],
+        ])->json('data.id');
+
+        $httpA->postJson("/api/v1/procurement/purchase-orders/{$id}/submit", [
+            'template_id' => $foreignId,
+        ])->assertUnprocessable();
+        $this->assertNull(PurchaseOrder::find($id)?->lpo_number);
+    }
+
+    public function test_issue_from_approved_without_frozen_output_creates_document(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'JVJ Plumbing Services', 'is_approved' => true, 'is_active' => true]);
+        $po = PurchaseOrder::create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Approved plumbing',
+            'total_amount' => 4499.69,
+            'subtotal' => 4499.69,
+            'currency' => 'NAD',
+            'status' => 'approved',
+            'created_by' => $officer->id,
+            'lpo_number' => 'S 04016',
+            'reference_number' => 'S 04016',
+            'normalised_reference' => 'S04016',
+        ]);
+        $po->items()->create([
+            'description' => 'Unblock drain',
+            'quantity' => 1,
+            'unit' => 'job',
+            'unit_price' => 4499.69,
+            'total_price' => 4499.69,
+        ]);
+
+        $http->postJson("/api/v1/procurement/purchase-orders/{$po->id}/issue")->assertOk();
+        $po->refresh();
+        $this->assertSame('issued', $po->status);
+        $this->assertNotNull($po->issued_document_output_id);
+        $this->assertNotNull($po->final_pdf_attachment_id);
+        $output = DocumentOutput::query()->find($po->issued_document_output_id);
+        $this->assertNotNull($output);
+        $this->assertNotSame('preview', $output->verify_token);
+        $this->getJson('/api/v1/public/purchase-orders/verify/'.$output->verify_token)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'VALID')
+            ->assertJsonPath('data.po', 'S 04016');
+    }
+
+    public function test_generate_final_pdf_embeds_public_verify_token(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $officer = $this->makeProcurementOfficer($tenant);
+        $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'JVJ Plumbing Services', 'is_approved' => true, 'is_active' => true]);
+        $po = PurchaseOrder::create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Approved plumbing',
+            'total_amount' => 100,
+            'currency' => 'NAD',
+            'status' => 'approved',
+            'created_by' => $officer->id,
+            'lpo_number' => 'S 04019',
+            'reference_number' => 'S 04019',
+            'normalised_reference' => 'S04019',
+        ]);
+        $issued = app(LpoIssuanceService::class)->generateFinalPdf($po, $officer);
+        $output = DocumentOutput::query()->find($issued->issued_document_output_id);
+        $this->assertNotNull($output?->verify_token);
+        $this->assertStringNotContainsString('preview', (string) $output->verify_token);
+        $this->getJson('/api/v1/public/purchase-orders/verify/'.$output->verify_token)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'VALID');
+    }
+
+    public function test_public_asset_qr_route_remains_registered(): void
+    {
+        $this->getJson('/api/v1/public/assets/not-a-real-token')->assertNotFound();
+        $this->getJson('/api/v1/public/purchase-orders/verify/not-a-real-token')->assertNotFound();
+    }
+
+    private function seedLegacyIssuedPo(Tenant $tenant, $officer, string $lpoNumber): PurchaseOrder
+    {
+        $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'Paper Register Ltd', 'is_approved' => true, 'is_active' => true]);
+
+        return PurchaseOrder::create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Historical LPO',
+            'total_amount' => 250,
+            'currency' => 'NAD',
+            'status' => 'issued',
+            'created_by' => $officer->id,
+            'lpo_number' => $lpoNumber,
+            'reference_number' => $lpoNumber,
+            'normalised_reference' => null,
+            'issued_at' => now(),
+        ]);
     }
 }
