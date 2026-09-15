@@ -321,6 +321,14 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr/timesheets/templates", permission: ["hr.admin", "timesheets.admin"] },
   { path: "/hr/timesheets/team", permission: ["hr.admin", "hr.approve", "hr.edit"] },
   { path: "/hr/timesheets/capacity", permission: ["hr.admin", "hr.approve", "hr.edit"] },
+  {
+    path: "/hr/timesheets/admin/import",
+    permission: ["timesheets.import-single", "timesheets.import-multi", "timesheets.import-view-batches", "timesheets.admin", "hr.admin"],
+  },
+  {
+    path: "/hr/timesheets/import",
+    permission: ["timesheets.import-own", "timesheets.import-single", "timesheets.import-multi", "timesheets.admin", "hr.admin"],
+  },
   // Own timesheets — must beat the /hr prefix (hr.view is org-HR admin, not self-service).
   { path: "/hr/timesheets", permission: ["timesheets.view", "timesheets.create", "timesheets.view-own", "timesheet.module.view", "hr.view", "hr.admin"] },
   { path: "/hr/payslips", permission: ["hr.admin", "hr.edit"], roles: ["HR Manager", "HR Administrator"] },

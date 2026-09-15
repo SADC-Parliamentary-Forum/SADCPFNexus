@@ -280,6 +280,26 @@ test("supplier dashboard catalog covers status copy in EN, FR and PT", () => {
   }
 });
 
+test("timesheet historical import catalog covers wizard copy in EN, FR and PT", () => {
+  const keys = [
+    "timesheet.import.title",
+    "timesheet.import.subtitle",
+    "timesheet.import.template",
+    "timesheet.import.confirm",
+    "timesheet.import.origin.verified",
+    "timesheet.import.origin.approved",
+    "timesheet.import.adminTitle",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
 test("language switcher remains available without logout", () => {
   const header = readFileSync(join(webRoot, "components/layout/Header.tsx"), "utf8");
   const login = readFileSync(join(webRoot, "app/(auth)/login/page.tsx"), "utf8");

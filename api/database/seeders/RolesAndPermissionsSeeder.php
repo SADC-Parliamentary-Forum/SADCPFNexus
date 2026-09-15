@@ -65,6 +65,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'overtime.request', 'overtime.recommend', 'overtime.approve',
             'overtime.verify-actual', 'overtime.hr-validate', 'overtime.send-payroll', 'overtime.send-toil',
             'timesheets.export', 'timesheets.audit', 'timesheets.admin',
+            'timesheets.import-own', 'timesheets.import-single', 'timesheets.import-multi',
+            'timesheets.import-view-batches', 'timesheets.import-verify', 'timesheets.import-rollback',
+            'timesheets.manage-mappings', 'timesheets.manage-import-templates',
             // Performance Appraisals
             'appraisals.view', 'appraisals.create', 'appraisals.review', 'appraisals.admin',
             // Conduct, Discipline & Recognition
@@ -338,6 +341,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'assignments.view', 'assignments.create',
                     'timesheets.view', 'timesheets.create', 'timesheets.view-own',
                     'timesheets.create-own', 'timesheets.edit-own-draft', 'timesheets.submit',
+                    'timesheets.import-own',
                     'overtime.request',
                     'weekly-reports.view-own', 'weekly-reports.create-own', 'weekly-reports.edit-own-draft',
                     'weekly-reports.submit', 'weekly-reports.export',
@@ -402,6 +406,9 @@ class RolesAndPermissionsSeeder extends Seeder
                     'timesheets.view-team', 'timesheets.review-team', 'timesheets.return',
                     'timesheets.manage-schedules', 'timesheets.manage-periods',
                     'timesheets.export', 'timesheets.audit', 'timesheets.admin',
+                    'timesheets.import-own', 'timesheets.import-single', 'timesheets.import-multi',
+                    'timesheets.import-view-batches', 'timesheets.import-verify', 'timesheets.import-rollback',
+                    'timesheets.manage-mappings', 'timesheets.manage-import-templates',
                     'overtime.request', 'overtime.recommend', 'overtime.approve',
                     'overtime.verify-actual', 'overtime.hr-validate', 'overtime.send-toil',
                     'appraisals.view', 'appraisals.create', 'appraisals.review', 'appraisals.admin',

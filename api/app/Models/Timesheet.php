@@ -12,18 +12,18 @@ class Timesheet extends Model
     protected $fillable = [
         'tenant_id', 'period_id', 'user_id', 'week_start', 'week_end', 'week_number',
         'total_hours', 'overtime_hours', 'expected_hours', 'accounted_hours',
-        'reconciliation_status', 'status', 'version', 'rejection_reason',
+        'reconciliation_status', 'status', 'origin', 'version', 'rejection_reason',
         'returned_at', 'return_reason', 'submitted_at', 'declaration_accepted_at',
         'approved_at', 'approved_by', 'hr_validated_at', 'hr_validated_by',
         'payroll_export_batch_id',
     ];
 
     protected $casts = [
-        'week_start'   => 'date',
-        'week_end'     => 'date',
+        'week_start' => 'date',
+        'week_end' => 'date',
         'submitted_at' => 'datetime',
         'declaration_accepted_at' => 'datetime',
-        'approved_at'  => 'datetime',
+        'approved_at' => 'datetime',
         'hr_validated_at' => 'datetime',
         'returned_at' => 'datetime',
         'expected_hours' => 'decimal:2',
@@ -63,7 +63,7 @@ class Timesheet extends Model
     public function onWorkflowApproved(User $approver): void
     {
         $this->update([
-            'status'      => 'approved',
+            'status' => 'approved',
             'approved_at' => now(),
             'approved_by' => $approver->id,
         ]);
@@ -76,7 +76,7 @@ class Timesheet extends Model
     public function onWorkflowRejected(User $approver, ?string $reason = null): void
     {
         $this->update([
-            'status'           => 'rejected',
+            'status' => 'rejected',
             'rejection_reason' => $reason,
         ]);
 
@@ -93,5 +93,11 @@ class Timesheet extends Model
     public function isSubmitted(): bool
     {
         return $this->status === 'submitted';
+    }
+
+    public function isHistoricalImport(): bool
+    {
+        return $this->origin === 'historical_import'
+            || in_array($this->status, ['imported', 'verified_historical'], true);
     }
 }

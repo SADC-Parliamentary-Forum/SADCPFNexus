@@ -15,8 +15,11 @@ import { EmptyState } from "@/components/ui/EmptyState";
 const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }> = {
   draft:     { label: "Draft",            cls: "text-neutral-700 bg-neutral-100 border-neutral-200",  icon: "edit_note" },
   submitted: { label: "Pending Approval", cls: "text-amber-700 bg-amber-50 border-amber-200",         icon: "pending" },
-  approved:  { label: "Approved",         cls: "text-green-700 bg-green-50 border-green-200",         icon: "check_circle" },
+  approved:  { label: "Nexus Approved",   cls: "text-green-700 bg-green-50 border-green-200",         icon: "check_circle" },
   rejected:  { label: "Rejected",         cls: "text-red-700 bg-red-50 border-red-200",               icon: "cancel" },
+  imported:  { label: "Imported (historical)", cls: "text-indigo-700 bg-indigo-50 border-indigo-200", icon: "history" },
+  verified_historical: { label: "Verified Historical", cls: "text-violet-700 bg-violet-50 border-violet-200", icon: "verified" },
+  returned: { label: "Returned", cls: "text-amber-700 bg-amber-50 border-amber-200", icon: "undo" },
 };
 
 const BUCKET_ICONS: Record<string, string> = {
@@ -156,6 +159,9 @@ export default function TimesheetDetailPage() {
     );
   }
 
+  const isHistorical = timesheet.origin === "historical_import"
+    || timesheet.status === "imported"
+    || timesheet.status === "verified_historical";
   const sc = STATUS_CONFIG[timesheet.status] ?? STATUS_CONFIG.draft;
   const entries: TimesheetEntry[] = timesheet.entries ?? [];
   const totalHours = entries.reduce((s, e) => s + e.hours, 0);
@@ -182,21 +188,31 @@ export default function TimesheetDetailPage() {
 
   // Timeline steps
   type TimelineStatus = "done" | "current" | "pending";
-  const steps: { label: string; done: boolean; current: boolean; date?: string | null }[] = [
-    { label: "Draft", done: true, current: timesheet.status === "draft" },
-    {
-      label:   "Submitted",
-      done:    ["submitted", "approved", "rejected"].includes(timesheet.status),
-      current: timesheet.status === "submitted",
-      date:    timesheet.submitted_at,
-    },
-    {
-      label:   timesheet.status === "rejected" ? "Rejected" : "Approved",
-      done:    ["approved", "rejected"].includes(timesheet.status),
-      current: ["approved", "rejected"].includes(timesheet.status),
-      date:    timesheet.approved_at,
-    },
-  ];
+  const steps: { label: string; done: boolean; current: boolean; date?: string | null }[] = isHistorical
+    ? [
+        { label: "Imported (historical)", done: true, current: timesheet.status === "imported" },
+        {
+          label: "Verified Historical",
+          done: timesheet.status === "verified_historical",
+          current: timesheet.status === "verified_historical",
+          date: timesheet.approved_at,
+        },
+      ]
+    : [
+        { label: "Draft", done: true, current: timesheet.status === "draft" },
+        {
+          label:   "Submitted",
+          done:    ["submitted", "approved", "rejected"].includes(timesheet.status),
+          current: timesheet.status === "submitted",
+          date:    timesheet.submitted_at,
+        },
+        {
+          label:   timesheet.status === "rejected" ? "Rejected" : "Nexus Approved",
+          done:    ["approved", "rejected"].includes(timesheet.status),
+          current: ["approved", "rejected"].includes(timesheet.status),
+          date:    timesheet.approved_at,
+        },
+      ];
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -243,7 +259,7 @@ export default function TimesheetDetailPage() {
           >
             CSV
           </a>
-          {timesheet.status === "draft" && (
+          {timesheet.status === "draft" && timesheet.origin !== "historical_import" && (
             <Link href="/hr/timesheets" className="btn-secondary">Edit</Link>
           )}
           {isAdmin && timesheet.status === "submitted" && (
@@ -267,6 +283,11 @@ export default function TimesheetDetailPage() {
 
       {error && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>
+      )}
+      {isHistorical && (
+        <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
+          This historical week is read-only.
+        </div>
       )}
 
       {/* Main 2-col layout */}

@@ -262,6 +262,17 @@ return [
         ['pattern' => 'api/v1/hr/timesheets/attendance/clock', 'permissions' => [
             'WRITE' => ['timesheet.create.self', 'timesheet.module.view', 'timesheets.create', 'hr.create', 'hr.admin'],
         ]],
+        ['pattern' => 'api/v1/hr/timesheets/imports*', 'permissions' => [
+            'READ' => [
+                'timesheets.import-own', 'timesheets.import-view-batches', 'timesheets.import-single',
+                'timesheets.import-multi', 'timesheets.admin', 'timesheets.audit', 'hr.admin',
+            ],
+            'WRITE' => [
+                'timesheets.import-own', 'timesheets.import-single', 'timesheets.import-multi',
+                'timesheets.import-verify', 'timesheets.import-rollback', 'timesheets.manage-mappings',
+                'timesheets.manage-import-templates', 'timesheets.admin', 'hr.admin',
+            ],
+        ]],
         ['pattern' => 'api/v1/hr/timesheets*', 'permissions' => [
             'READ' => [
                 'hr.view', 'hr.admin', 'timesheets.view', 'timesheets.view-own',

@@ -158,6 +158,9 @@ class TimesheetController extends Controller
         if ($timesheet->user_id !== $request->user()->id) {
             abort(403);
         }
+        if ($timesheet->isHistoricalImport()) {
+            throw ValidationException::withMessages(['status' => 'Historical imported timesheets cannot be edited.']);
+        }
         if (! in_array($timesheet->status, ['draft', 'returned'], true)) {
             throw ValidationException::withMessages(['status' => 'Only draft or returned timesheets can be edited. Silent edits of submitted timesheets are not allowed.']);
         }
@@ -192,16 +195,16 @@ class TimesheetController extends Controller
             $this->timesheetService->assertPeriodEditable($timesheet->period);
         }
 
-        $total = 0;
-        $overtime = 0;
+        $timesheet->entries()
+            ->whereNull('import_batch_id')
+            ->where(function ($q) {
+                $q->where('is_locked', false)->orWhereNull('is_locked');
+            })
+            ->delete();
         foreach ($data['entries'] as $e) {
-            $total += (float) $e['hours'];
-            $overtime += (float) ($e['overtime_hours'] ?? 0);
-        }
-
-        $timesheet->update(['total_hours' => $total, 'overtime_hours' => $overtime, 'status' => 'draft']);
-        $timesheet->entries()->delete();
-        foreach ($data['entries'] as $e) {
+            if (in_array($e['source_type'] ?? 'manual', ['leave', 'travel', 'holiday'], true)) {
+                continue;
+            }
             TimesheetEntry::create([
                 'timesheet_id' => $timesheet->id,
                 'work_date' => $e['work_date'],
@@ -224,6 +227,12 @@ class TimesheetController extends Controller
             ]);
         }
 
+        $timesheet->update([
+            'total_hours' => (float) $timesheet->fresh()->entries()->whereNull('reversed_at')->sum('hours'),
+            'overtime_hours' => (float) $timesheet->fresh()->entries()->whereNull('reversed_at')->sum('overtime_hours'),
+            'status' => 'draft',
+        ]);
+
         $this->timesheetService->syncTimesheetDays($timesheet->fresh(), $request->user());
         $this->timesheetService->audit($timesheet, $request->user(), 'timesheet.updated');
 
@@ -234,6 +243,9 @@ class TimesheetController extends Controller
     {
         if ($timesheet->user_id !== $request->user()->id) {
             abort(403);
+        }
+        if ($timesheet->isHistoricalImport()) {
+            throw ValidationException::withMessages(['status' => 'Historical imported timesheets cannot be submitted through the live workflow.']);
         }
 
         $data = $request->validate([
@@ -399,6 +411,7 @@ class TimesheetController extends Controller
             'week_start' => ['required', 'date'],
             'week_end' => ['required', 'date', 'after_or_equal:week_start'],
             'department_id' => ['nullable', 'integer'],
+            'origin' => ['nullable', 'string', 'in:nexus,historical_import,all'],
         ]);
 
         return response()->json([
@@ -406,7 +419,8 @@ class TimesheetController extends Controller
                 $request->user(),
                 $data['week_start'],
                 $data['week_end'],
-                isset($data['department_id']) ? (int) $data['department_id'] : null
+                isset($data['department_id']) ? (int) $data['department_id'] : null,
+                $data['origin'] ?? 'nexus',
             ),
         ]);
     }
@@ -424,144 +438,6 @@ class TimesheetController extends Controller
             ->clock($request->user(), $data);
 
         return response()->json(['data' => $event], 201);
-    }
-
-    /**
-     * Import timesheet entries from CSV.
-     */
-    public function import(Request $request): JsonResponse
-    {
-        $request->validate([
-            'file' => ['required', 'file', 'mimes:csv,txt', 'max:1024'],
-        ]);
-
-        $file = $request->file('file');
-        $path = $file->getRealPath();
-        $rows = array_map('str_getcsv', file($path));
-        if (empty($rows)) {
-            return response()->json([
-                'message' => 'File is empty or invalid.',
-                'imported' => 0,
-                'errors' => ['No rows found.'],
-            ], 422);
-        }
-
-        $header = array_map('strtolower', array_map('trim', $rows[0]));
-        $dateIdx = array_search('date', $header);
-        $hoursIdx = array_search('hours', $header);
-        $taskIdx = array_search('task', $header);
-        $projectIdx = array_search('project_code', $header);
-        $notesIdx = array_search('notes', $header);
-
-        if ($dateIdx === false || $hoursIdx === false) {
-            return response()->json([
-                'message' => 'CSV must have "date" and "hours" columns.',
-                'imported' => 0,
-                'errors' => ['Missing required columns: date, hours'],
-            ], 422);
-        }
-
-        $user = $request->user();
-        $errors = [];
-        $imported = 0;
-        $timesheetIds = [];
-
-        for ($i = 1; $i < count($rows); $i++) {
-            $row = $rows[$i];
-            if (count($row) < max($dateIdx, $hoursIdx) + 1) {
-                $errors[] = 'Row '.($i + 1).': not enough columns.';
-
-                continue;
-            }
-            $dateStr = trim($row[$dateIdx] ?? '');
-            $hoursStr = trim($row[$hoursIdx] ?? '');
-            $description = trim($row[$taskIdx] ?? $row[$projectIdx] ?? '') ?: 'Work';
-            if ($notesIdx !== false && isset($row[$notesIdx]) && trim($row[$notesIdx]) !== '') {
-                $description .= ' – '.trim($row[$notesIdx]);
-            }
-
-            $date = null;
-            if ($dateStr !== '') {
-                try {
-                    $date = Carbon::parse($dateStr)->format('Y-m-d');
-                } catch (\Throwable $e) {
-                    $errors[] = 'Row '.($i + 1).": invalid date '{$dateStr}'.";
-
-                    continue;
-                }
-            } else {
-                $errors[] = 'Row '.($i + 1).': date is required.';
-
-                continue;
-            }
-
-            $hours = null;
-            if ($hoursStr !== '' && is_numeric($hoursStr)) {
-                $hours = (float) $hoursStr;
-                if ($hours < 0 || $hours > 24) {
-                    $errors[] = 'Row '.($i + 1).': hours must be between 0 and 24.';
-
-                    continue;
-                }
-            } else {
-                $errors[] = 'Row '.($i + 1).': hours must be a number.';
-
-                continue;
-            }
-
-            $weekStart = Carbon::parse($date)->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
-            $weekEnd = Carbon::parse($weekStart)->addDays(6)->format('Y-m-d');
-
-            $timesheet = Timesheet::where('user_id', $user->id)
-                ->where('week_start', $weekStart)
-                ->first();
-
-            if (! $timesheet) {
-                $timesheet = Timesheet::create([
-                    'tenant_id' => $user->tenant_id,
-                    'user_id' => $user->id,
-                    'week_start' => $weekStart,
-                    'week_end' => $weekEnd,
-                    'week_number' => Carbon::parse($weekStart)->isoWeek(),
-                    'total_hours' => 0,
-                    'overtime_hours' => 0,
-                    'status' => 'draft',
-                ]);
-                $timesheetIds[] = $timesheet->id;
-            } elseif ($timesheet->status !== 'draft') {
-                $errors[] = 'Row '.($i + 1).": week of {$date} is already submitted/approved; skipped.";
-
-                continue;
-            }
-
-            TimesheetEntry::create([
-                'timesheet_id' => $timesheet->id,
-                'work_date' => $date,
-                'hours' => $hours,
-                'overtime_hours' => max(0, $hours - 8),
-                'description' => $description,
-                'source_type' => 'manual',
-            ]);
-            $imported++;
-            if (! in_array($timesheet->id, $timesheetIds)) {
-                $timesheetIds[] = $timesheet->id;
-            }
-        }
-
-        foreach (array_unique($timesheetIds) as $tid) {
-            $ts = Timesheet::find($tid);
-            if ($ts) {
-                $total = $ts->entries()->sum('hours');
-                $overtime = $ts->entries()->sum('overtime_hours');
-                $ts->update(['total_hours' => $total, 'overtime_hours' => $overtime]);
-            }
-        }
-
-        return response()->json([
-            'message' => $imported > 0 ? 'Import completed.' : 'No rows imported.',
-            'imported' => $imported,
-            'errors' => array_slice($errors, 0, 20),
-        ]);
     }
 
     public function templates(Request $request): JsonResponse
