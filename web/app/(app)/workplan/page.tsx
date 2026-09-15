@@ -855,7 +855,7 @@ function GanttView({
 export default function WorkplanListPage() {
   const { fmt: formatDate } = useFormatDate();
   const { confirm } = useConfirm();
-  const { success, error: showErrorToast, warning, info } = useToast();
+  const { success, error: showErrorToast, warning } = useToast();
   const { t } = useI18n();
   const router = useRouter();
   const now = new Date();
@@ -1106,8 +1106,8 @@ export default function WorkplanListPage() {
         const missingSummary = missingTypes.length
           ? t("workplan.import.missingTypes", { names: formatQuotedList(missingTypes) })
           : "";
-        const detail = [missingSummary, formatWorkplanImportErrorLines(rowErrors)].filter(Boolean).join(" ");
-        info(summary, detail);
+        const detail = [summary, formatWorkplanImportErrorLines(rowErrors)].filter(Boolean).join(" ");
+        showErrorToast(missingSummary || summary, detail);
       } else {
         success(summary);
       }

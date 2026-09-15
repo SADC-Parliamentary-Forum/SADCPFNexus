@@ -5,6 +5,7 @@ namespace App\Modules\Workplan\Services;
 use App\Models\MeetingType;
 use App\Models\User;
 use App\Models\WorkplanEvent;
+use App\Modules\Workplan\WorkplanMeetingTypeCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -13,54 +14,9 @@ use Throwable;
 
 class WorkplanEventImportService
 {
-    public const TEMPLATE_CSV = "title,type,date,end_date,description,meeting_type,responsible,responsible_emails\nPlenary Session,meeting,2026-10-01,2026-10-03,Annual plenary meeting,Plenary Session,Secretariat,\nBudget submission deadline,deadline,2026-11-30,,,Finance close-out,,\n";
+    public const TEMPLATE_CSV = "title,type,date,end_date,description,meeting_type,responsible,responsible_emails\nPlenary Assembly,meeting,2026-10-01,2026-10-03,Annual plenary meeting,Plenary Assembly,Secretariat,\nBudget submission deadline,deadline,2026-11-30,,,Finance close-out,,\n";
 
     public const MAX_ROWS = 500;
-
-    /**
-     * Short CSV labels that map onto seeded meeting-type names
-     * (`MissingModulesSeeder`). The downloadable template used to say
-     * `Plenary` while the database stores `Plenary Session`.
-     *
-     * @var array<string, string>
-     */
-    private const MEETING_TYPE_ALIASES = [
-        'plenary' => 'Plenary Session',
-        'plenary session' => 'Plenary Session',
-        'plenary_session' => 'Plenary Session',
-        'exco' => 'Executive Committee',
-        'executive' => 'Executive Committee',
-        'executive committee' => 'Executive Committee',
-        'executive_committee' => 'Executive Committee',
-        'finance' => 'Finance Sub-Committee',
-        'finance sub-committee' => 'Finance Sub-Committee',
-        'finance sub committee' => 'Finance Sub-Committee',
-        'finance_sub_committee' => 'Finance Sub-Committee',
-        'finance_subcommittee' => 'Finance Sub-Committee',
-        'sc' => 'Standing Committee',
-        'standing' => 'Standing Committee',
-        'standing committee' => 'Standing Committee',
-        'standing_committee' => 'Standing Committee',
-        'management' => 'Management Meeting',
-        'management meeting' => 'Management Meeting',
-        'management_meeting' => 'Management Meeting',
-        'departmental' => 'Departmental Meeting',
-        'departmental meeting' => 'Departmental Meeting',
-        'departmental_meeting' => 'Departmental Meeting',
-        'stakeholder' => 'Stakeholder Engagement',
-        'stakeholder engagement' => 'Stakeholder Engagement',
-        'stakeholder_engagement' => 'Stakeholder Engagement',
-        'workshop' => 'Capacity Building Workshop',
-        'capacity building' => 'Capacity Building Workshop',
-        'capacity building workshop' => 'Capacity Building Workshop',
-        'capacity_building_workshop' => 'Capacity Building Workshop',
-        'procurement' => 'Procurement Evaluation',
-        'procurement evaluation' => 'Procurement Evaluation',
-        'procurement_evaluation' => 'Procurement Evaluation',
-        'board' => 'Board Meeting',
-        'board meeting' => 'Board Meeting',
-        'board_meeting' => 'Board Meeting',
-    ];
 
     /** @var array<string, int> */
     private array $meetingTypeIdsByKey = [];
@@ -173,19 +129,31 @@ class WorkplanEventImportService
 
         $this->ensureMeetingTypesLoaded($actor);
 
-        $matchedId = $this->findMeetingTypeId($original);
+        $matchedId = $this->findExactMeetingTypeId($original);
         if ($matchedId !== null) {
             return $matchedId;
         }
 
-        $canonical = $this->canonicalMeetingTypeName($original);
-        $matchedId = $this->findMeetingTypeId($canonical);
+        $canonical = WorkplanMeetingTypeCatalog::canonicalName($original) ?? $original;
+        $matchedId = $this->findExactMeetingTypeId($canonical);
         if ($matchedId !== null) {
             return $matchedId;
         }
 
-        if ($this->isOfficialMeetingType($canonical)) {
-            return $this->createMeetingType($actor, $canonical);
+        if (WorkplanMeetingTypeCatalog::isOfficial($canonical)) {
+            $definition = WorkplanMeetingTypeCatalog::definitionByName($canonical);
+
+            return $this->createMeetingType(
+                $actor,
+                $definition['name'] ?? $canonical,
+                $definition['description'] ?? null,
+                $definition['sort_order'] ?? 0,
+            );
+        }
+
+        $matchedId = $this->findPrefixMeetingTypeId($original);
+        if ($matchedId !== null) {
+            return $matchedId;
         }
 
         throw ValidationException::withMessages([
@@ -193,13 +161,20 @@ class WorkplanEventImportService
         ]);
     }
 
-    private function findMeetingTypeId(string $name): ?int
+    private function findExactMeetingTypeId(string $name): ?int
     {
-        $key = mb_strtolower($name);
-        if (isset($this->meetingTypeIdsByKey[$key])) {
-            return $this->meetingTypeIdsByKey[$key];
+        foreach (WorkplanMeetingTypeCatalog::keysFor($name) as $key) {
+            if (isset($this->meetingTypeIdsByKey[$key])) {
+                return $this->meetingTypeIdsByKey[$key];
+            }
         }
 
+        return null;
+    }
+
+    private function findPrefixMeetingTypeId(string $name): ?int
+    {
+        $key = mb_strtolower($name);
         $matches = [];
         foreach ($this->meetingTypeIdsByKey as $existingKey => $id) {
             if ($this->isWordPrefixMatch($key, $existingKey)) {
@@ -229,41 +204,15 @@ class WorkplanEventImportService
         return str_starts_with($long, $short.' ');
     }
 
-    private function canonicalMeetingTypeName(string $name): string
-    {
-        $key = mb_strtolower($name);
-        $underscore = str_replace([' ', '-'], '_', $key);
-
-        return self::MEETING_TYPE_ALIASES[$key]
-            ?? self::MEETING_TYPE_ALIASES[$underscore]
-            ?? $name;
-    }
-
-    private function isOfficialMeetingType(string $name): bool
-    {
-        $key = mb_strtolower($name);
-        if (isset(self::MEETING_TYPE_ALIASES[$key])) {
-            return true;
-        }
-
-        foreach (self::MEETING_TYPE_ALIASES as $canonical) {
-            if (mb_strtolower($canonical) === $key) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private function createMeetingType(User $actor, string $name): int
+    private function createMeetingType(User $actor, string $name, ?string $description, int $sortOrder): int
     {
         $created = MeetingType::query()->create([
             'tenant_id' => $actor->tenant_id,
             'name' => $name,
-            'sort_order' => 0,
+            'description' => $description,
+            'sort_order' => $sortOrder,
         ]);
-        $key = mb_strtolower($this->normalizeLabel($name));
-        $this->meetingTypeIdsByKey[$key] = (int) $created->id;
+        $this->rememberMeetingType((int) $created->id, $name);
 
         return (int) $created->id;
     }
@@ -287,11 +236,14 @@ class WorkplanEventImportService
             ->get(['id', 'name']);
 
         foreach ($types as $type) {
-            $key = mb_strtolower($this->normalizeLabel((string) $type->name));
-            if ($key === '') {
-                continue;
-            }
-            $this->meetingTypeIdsByKey[$key] ??= (int) $type->id;
+            $this->rememberMeetingType((int) $type->id, (string) $type->name);
+        }
+    }
+
+    private function rememberMeetingType(int $id, string $name): void
+    {
+        foreach (WorkplanMeetingTypeCatalog::keysFor($name) as $key) {
+            $this->meetingTypeIdsByKey[$key] ??= $id;
         }
     }
 

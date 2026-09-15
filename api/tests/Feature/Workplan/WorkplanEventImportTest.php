@@ -26,9 +26,9 @@ class WorkplanEventImportTest extends TestCase
 
         $csv = (string) $res->getContent();
         $this->assertStringContainsString('title,type,date,end_date,description,meeting_type,responsible,responsible_emails', $csv);
-        $this->assertStringContainsString('Plenary Session', $csv);
+        $this->assertStringContainsString('Plenary Assembly', $csv);
         $res->assertHeader('content-disposition', 'attachment; filename="workplan-events-template.csv"');
-        $this->assertStringContainsString(',Plenary Session,Secretariat,', $csv);
+        $this->assertStringContainsString(',Plenary Assembly,Secretariat,', $csv);
     }
 
     public function test_staff_can_import_csv_and_creates_events(): void
@@ -243,6 +243,59 @@ class WorkplanEventImportTest extends TestCase
         $event = WorkplanEvent::query()->where('title', 'Opening sitting')->first();
         $this->assertNotNull($event);
         $this->assertSame('Plenary Session', $event->meetingType?->name);
+    }
+
+    public function test_import_accepts_workplan_spreadsheet_meeting_types(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+
+        $csv = implode("\n", [
+            'title,type,date,end_date,description,meeting_type,responsible,responsible_emails',
+            'Opening,meeting,2026-10-01,,,Plenary Assembly,,',
+            'Training week,meeting,2026-10-02,,,Training / Capacity Building,,',
+            'Slash training,meeting,2026-10-03,,,Training/Capacity Building,,',
+            'SC sitting,meeting,2026-10-04,,,Committee Meeting,,',
+            'Skills workshop,meeting,2026-10-05,,,Workshop,,',
+            'Partner consult,meeting,2026-10-06,,,Consultation,,',
+            'In-country,meeting,2026-10-07,,,National Engagement,,',
+            'Mid-year review,meeting,2026-10-08,,,Review Meeting,,',
+            'Staff meeting,meeting,2026-10-09,,,Meeting,,',
+            'Paper,meeting,2026-10-10,,,Research,,',
+            'Regional conference,meeting,2026-10-11,,,Conference,,',
+            'Public talk,meeting,2026-10-12,,,Public Lecture,,',
+            'Online briefing,meeting,2026-10-13,,,Webinar,,',
+            'Round table,meeting,2026-10-14,,,Roundtable,,',
+            'Advocacy,meeting,2026-10-15,,,Advocacy Mission,,',
+            'Policy dialogue,meeting,2026-10-16,,,Dialogue,,',
+            'Consultant review,meeting,2026-10-17,,,Consultancy / Review,,',
+            'Assembly sitting,meeting,2026-10-18,,,Assembly,,',
+            'Light review,meeting,2026-10-19,,,Review,,',
+        ]);
+        $file = UploadedFile::fake()->createWithContent('workplan-events.csv', $csv);
+
+        $http->post('/api/v1/workplan/events/import', [
+            'file' => $file,
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('data.created_count', 19)
+            ->assertJsonPath('data.error_count', 0);
+
+        $this->assertSame(
+            1,
+            MeetingType::query()->where('tenant_id', $tenant->id)->where('name', 'Training / Capacity Building')->count()
+        );
+        $this->assertNotEquals(
+            MeetingType::query()->where('tenant_id', $tenant->id)->where('name', 'Review')->value('id'),
+            MeetingType::query()->where('tenant_id', $tenant->id)->where('name', 'Review Meeting')->value('id')
+        );
+        $this->assertSame(
+            2,
+            WorkplanEvent::query()->where('tenant_id', $tenant->id)->whereHas(
+                'meetingType',
+                fn ($query) => $query->where('name', 'Training / Capacity Building')
+            )->count()
+        );
     }
 
     public function test_import_rejects_empty_csv(): void

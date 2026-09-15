@@ -91,7 +91,11 @@ function ToastItem({ toast, dismiss }: { toast: Toast; dismiss: (id: string) => 
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{t(toast.title)}</p>
-        {toast.message && <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">{t(toast.message)}</p>}
+        {toast.message && (
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 break-words whitespace-pre-wrap">
+            {t(toast.message)}
+          </p>
+        )}
       </div>
       <button
         type="button"

@@ -22,6 +22,7 @@ test("workplan page offers a labelled CSV template download and event list uploa
   assert.match(source, /workplan\.import\.upload/);
   assert.match(source, /workplan\.import\.missingTypes/);
   assert.match(source, /uniqueMissingMeetingTypes/);
+  assert.match(source, /showErrorToast\(missingSummary \|\| summary, detail\)/);
   assert.match(source, /formatWorkplanImportErrorLines/);
   assert.match(source, /workplan-events-template\.csv/);
   assert.match(source, /<label htmlFor="workplan-events-import"/);

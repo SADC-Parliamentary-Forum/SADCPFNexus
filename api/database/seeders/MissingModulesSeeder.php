@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\Vendor;
 use App\Models\WorkAssignment;
 use App\Models\WorkplanEvent;
+use App\Modules\Workplan\WorkplanMeetingTypeCatalog;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -59,18 +60,7 @@ class MissingModulesSeeder extends Seeder
 
     private function seedMeetingTypes(Tenant $tenant): void
     {
-        $types = [
-            ['name' => 'Plenary Session',           'description' => 'Full plenary assembly of all member parliaments.',                       'sort_order' => 1],
-            ['name' => 'Executive Committee',        'description' => 'ExCo governance and oversight meetings.',                                'sort_order' => 2],
-            ['name' => 'Finance Sub-Committee',      'description' => 'Budget review and financial oversight sessions.',                        'sort_order' => 3],
-            ['name' => 'Standing Committee',         'description' => 'Thematic standing committee sittings.',                                  'sort_order' => 4],
-            ['name' => 'Management Meeting',         'description' => 'Internal management coordination meeting.',                              'sort_order' => 5],
-            ['name' => 'Departmental Meeting',       'description' => 'Intra-department coordination and planning.',                            'sort_order' => 6],
-            ['name' => 'Stakeholder Engagement',     'description' => 'External stakeholder and partner engagement sessions.',                  'sort_order' => 7],
-            ['name' => 'Capacity Building Workshop', 'description' => 'Training and capacity development sessions.',                            'sort_order' => 8],
-            ['name' => 'Procurement Evaluation',     'description' => 'Bid evaluation and procurement committee meetings.',                     'sort_order' => 9],
-            ['name' => 'Board Meeting',              'description' => 'Governance board and advisory committee sessions.',                      'sort_order' => 10],
-        ];
+        $types = WorkplanMeetingTypeCatalog::definitions();
 
         foreach ($types as $type) {
             MeetingType::firstOrCreate(
