@@ -18,10 +18,20 @@ class CaptchaService
 
     public function driver(): string
     {
-        $secret = trim((string) config('captcha.turnstile_secret'));
-        $siteKey = trim((string) config('captcha.turnstile_site_key'));
+        if ($this->hasHcaptchaKeys()) {
+            return 'hcaptcha';
+        }
 
-        return ($secret !== '' && $siteKey !== '') ? 'turnstile' : 'challenge';
+        if ($this->hasTurnstileKeys()) {
+            return 'turnstile';
+        }
+
+        return 'challenge';
+    }
+
+    public function usesExternalWidget(): bool
+    {
+        return in_array($this->driver(), ['hcaptcha', 'turnstile'], true);
     }
 
     /**
@@ -29,12 +39,16 @@ class CaptchaService
      */
     public function publicConfig(): array
     {
+        $driver = $this->driver();
+
         return [
             'enabled'  => $this->enabled(),
-            'driver'   => $this->driver(),
-            'site_key' => $this->driver() === 'turnstile'
-                ? (string) config('captcha.turnstile_site_key')
-                : null,
+            'driver'   => $driver,
+            'site_key' => match ($driver) {
+                'hcaptcha'  => (string) config('captcha.hcaptcha_site_key'),
+                'turnstile' => (string) config('captcha.turnstile_site_key'),
+                default     => null,
+            },
         ];
     }
 
@@ -76,6 +90,12 @@ class CaptchaService
             $this->reject();
         }
 
+        if ($this->driver() === 'hcaptcha') {
+            $this->assertHcaptcha($token, $request->ip());
+
+            return;
+        }
+
         if ($this->driver() === 'turnstile') {
             $this->assertTurnstile($token, $request->ip());
 
@@ -87,7 +107,7 @@ class CaptchaService
 
     public function consumeBrowserChallenge(Request $request): void
     {
-        if (! $this->enabled() || $this->isMobileClient($request) || $this->driver() === 'turnstile') {
+        if (! $this->enabled() || $this->isMobileClient($request) || $this->usesExternalWidget()) {
             return;
         }
 
@@ -107,6 +127,18 @@ class CaptchaService
     public function isMobileClient(Request $request): bool
     {
         return $request->input('client_type') === 'mobile';
+    }
+
+    private function hasHcaptchaKeys(): bool
+    {
+        return trim((string) config('captcha.hcaptcha_secret')) !== ''
+            && trim((string) config('captcha.hcaptcha_site_key')) !== '';
+    }
+
+    private function hasTurnstileKeys(): bool
+    {
+        return trim((string) config('captcha.turnstile_secret')) !== ''
+            && trim((string) config('captcha.turnstile_site_key')) !== '';
     }
 
     private function isFilledHoneypot(Request $request): bool
@@ -144,6 +176,22 @@ class CaptchaService
         }
 
         if (! Cache::has($key)) {
+            $this->reject();
+        }
+    }
+
+    private function assertHcaptcha(string $token, ?string $ip): void
+    {
+        $response = Http::asForm()
+            ->timeout(8)
+            ->post('https://api.hcaptcha.com/siteverify', [
+                'secret'   => (string) config('captcha.hcaptcha_secret'),
+                'response' => $token,
+                'remoteip' => $ip,
+                'sitekey'  => (string) config('captcha.hcaptcha_site_key'),
+            ]);
+
+        if (! $response->ok() || ! ($response->json('success') === true)) {
             $this->reject();
         }
     }

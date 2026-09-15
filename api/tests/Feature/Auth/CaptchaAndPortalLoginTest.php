@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class CaptchaAndPortalLoginTest extends TestCase
@@ -17,7 +18,13 @@ class CaptchaAndPortalLoginTest extends TestCase
         parent::setUp();
 
         $this->tenant = Tenant::factory()->create();
-        config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null]);
+        config([
+            'captcha.enabled' => true,
+            'captcha.turnstile_secret' => null,
+            'captcha.turnstile_site_key' => null,
+            'captcha.hcaptcha_secret' => null,
+            'captcha.hcaptcha_site_key' => null,
+        ]);
     }
 
     public function test_browser_login_requires_captcha_when_enabled(): void
@@ -159,6 +166,93 @@ class CaptchaAndPortalLoginTest extends TestCase
             ->assertOk()
             ->assertJsonPath('driver', 'challenge')
             ->assertJsonPath('site_key', null);
+    }
+
+    public function test_hcaptcha_driver_requires_both_site_and_secret_keys(): void
+    {
+        config([
+            'captcha.enabled' => true,
+            'captcha.hcaptcha_secret' => '0xsecret-only',
+            'captcha.hcaptcha_site_key' => '',
+        ]);
+
+        $this->getJson('/api/v1/auth/captcha')
+            ->assertOk()
+            ->assertJsonPath('driver', 'challenge')
+            ->assertJsonPath('site_key', null);
+    }
+
+    public function test_hcaptcha_keys_select_hcaptcha_driver_over_turnstile(): void
+    {
+        config([
+            'captcha.enabled' => true,
+            'captcha.hcaptcha_site_key' => '10000000-ffff-ffff-ffff-000000000001',
+            'captcha.hcaptcha_secret' => '0x0000000000000000000000000000000000000000',
+            'captcha.turnstile_site_key' => 'turnstile-site',
+            'captcha.turnstile_secret' => 'turnstile-secret',
+        ]);
+
+        $this->getJson('/api/v1/auth/captcha')
+            ->assertOk()
+            ->assertJsonPath('enabled', true)
+            ->assertJsonPath('driver', 'hcaptcha')
+            ->assertJsonPath('site_key', '10000000-ffff-ffff-ffff-000000000001');
+
+        $this->postJson('/api/v1/auth/captcha-challenge')
+            ->assertOk()
+            ->assertJsonPath('token', null);
+    }
+
+    public function test_browser_login_succeeds_when_hcaptcha_siteverify_passes(): void
+    {
+        $this->makeStaff('staff@portal.test');
+        config([
+            'captcha.enabled' => true,
+            'captcha.hcaptcha_site_key' => '10000000-ffff-ffff-ffff-000000000001',
+            'captcha.hcaptcha_secret' => '0x0000000000000000000000000000000000000000',
+        ]);
+
+        Http::fake([
+            'api.hcaptcha.com/siteverify' => Http::response(['success' => true], 200),
+        ]);
+
+        $this->withHeader('Origin', 'http://localhost')
+            ->postJson('/api/v1/auth/login', [
+                'email'         => 'staff@portal.test',
+                'password'      => 'Password@123',
+                'portal'        => 'staff',
+                'captcha_token' => 'hcaptcha-response-token',
+            ])->assertOk()
+            ->assertJsonPath('user.email', 'staff@portal.test');
+
+        Http::assertSent(function ($request) {
+            return $request->url() === 'https://api.hcaptcha.com/siteverify'
+                && $request['response'] === 'hcaptcha-response-token'
+                && $request['secret'] === '0x0000000000000000000000000000000000000000'
+                && $request['sitekey'] === '10000000-ffff-ffff-ffff-000000000001';
+        });
+    }
+
+    public function test_browser_login_rejects_when_hcaptcha_siteverify_fails(): void
+    {
+        $this->makeStaff('staff@portal.test');
+        config([
+            'captcha.enabled' => true,
+            'captcha.hcaptcha_site_key' => '10000000-ffff-ffff-ffff-000000000001',
+            'captcha.hcaptcha_secret' => '0x0000000000000000000000000000000000000000',
+        ]);
+
+        Http::fake([
+            'api.hcaptcha.com/siteverify' => Http::response(['success' => false], 200),
+        ]);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email'         => 'staff@portal.test',
+            'password'      => 'Password@123',
+            'portal'        => 'staff',
+            'captcha_token' => 'bad-hcaptcha-token',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['captcha_token']);
     }
 
     private function issueCaptchaToken(): string

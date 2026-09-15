@@ -190,10 +190,17 @@ export default function LoginPage() {
             </p>
             <p className="text-neutral-700">{t("login.mailboxHelp")}</p>
           </div>
-          <div className="mt-4 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-center text-sm text-neutral-700">
-            <p className="font-semibold text-neutral-900">{t("login.supplierPortalHeading")}</p>
-            <p className="mt-1 text-xs text-neutral-600">{t("login.supplierPortalHint")}</p>
-            <Link href="/supplier/login" className="mt-2 inline-flex font-medium text-primary-800 hover:underline">
+          <div className="mt-6 border-t border-neutral-200 pt-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-primary-800 mb-1">
+              {t("auth.supplierPortalName")}
+            </p>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("login.supplierPortalHeading")}</h3>
+            <p className="mt-1 text-sm text-neutral-700">{t("login.supplierPortalHint")}</p>
+            <Link
+              href="/supplier/login"
+              className="btn-secondary mt-3 w-full justify-center"
+            >
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">storefront</span>
               {t("login.supplierPortalLink")}
             </Link>
           </div>

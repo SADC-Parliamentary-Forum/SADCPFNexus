@@ -16,11 +16,11 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://hcaptcha.com https://*.hcaptcha.com https://js.hcaptcha.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
-  "frame-src https://challenges.cloudflare.com",
+  "frame-src https://challenges.cloudflare.com https://hcaptcha.com https://*.hcaptcha.com https://newassets.hcaptcha.com",
   `connect-src 'self' ${apiOrigin} https:`,
 ].join("; ");
 

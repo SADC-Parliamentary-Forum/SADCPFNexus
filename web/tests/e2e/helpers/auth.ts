@@ -53,6 +53,12 @@ export async function completeLoginCaptcha(
     return;
   }
 
+  const driver = await gate.getAttribute("data-driver");
+  if (driver === "hcaptcha" || driver === "turnstile") {
+    await expect(gate).toHaveAttribute("data-verified", "true", { timeout: 15_000 });
+    return;
+  }
+
   const checkbox = gate.getByTestId("captcha-checkbox");
   if (!(await checkbox.isVisible().catch(() => false))) {
     return;

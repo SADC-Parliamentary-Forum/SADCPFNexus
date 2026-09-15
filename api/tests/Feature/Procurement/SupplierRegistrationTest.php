@@ -171,7 +171,7 @@ class SupplierRegistrationTest extends TestCase
 
     public function test_supplier_registration_requires_captcha_when_enabled(): void
     {
-        config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null]);
+        config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null, 'captcha.hcaptcha_secret' => null]);
 
         $tenant = Tenant::factory()->create(['is_active' => true]);
         $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_captcha']);
@@ -200,7 +200,7 @@ class SupplierRegistrationTest extends TestCase
 
     public function test_supplier_registration_succeeds_with_issued_captcha_token(): void
     {
-        config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null]);
+        config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null, 'captcha.hcaptcha_secret' => null]);
 
         $tenant = Tenant::factory()->create(['is_active' => true]);
         $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_captcha_ok']);
@@ -231,7 +231,7 @@ class SupplierRegistrationTest extends TestCase
 
     public function test_supplier_registration_does_not_skip_captcha_for_mobile_client_type(): void
     {
-        config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null]);
+        config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null, 'captcha.hcaptcha_secret' => null]);
 
         $tenant = Tenant::factory()->create(['is_active' => true]);
         $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_mobile_captcha']);
