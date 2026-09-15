@@ -85,4 +85,26 @@ class WorkplanService
     {
         $event->delete();
     }
+
+    /**
+     * Soft-delete events that belong to the user's tenant.
+     * Unknown or cross-tenant IDs are ignored so callers cannot probe other tenants.
+     *
+     * @param  array<int|string>  $ids
+     */
+    public function deleteMany(array $ids, User $user): int
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $ids),
+            fn (int $id) => $id > 0
+        )));
+        if ($ids === []) {
+            return 0;
+        }
+
+        return (int) WorkplanEvent::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->whereIn('id', $ids)
+            ->delete();
+    }
 }

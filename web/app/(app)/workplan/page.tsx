@@ -13,6 +13,14 @@ import { loadPdfLibs } from "@/lib/pdf-libs";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useRowSelection } from "@/lib/useRowSelection";
+import { chunkWorkplanEventIds, normalizeWorkplanEventIds } from "@/lib/workplanBulkDelete";
+import {
+  BulkSelectionBar,
+  RowCheckbox,
+  SelectAllCheckbox,
+  selectionColumnClass,
+} from "@/components/ui/BulkSelectionBar";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -863,6 +871,9 @@ export default function WorkplanListPage() {
   const [monthFilter, setMonthFilter] = useState<string>("");
   const [exportPdfOpen, setExportPdfOpen] = useState(false);
   const [importBusy, setImportBusy] = useState<"template" | "upload" | null>(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const getEventId = useCallback((ev: WorkplanEvent) => ev.id, []);
+  const selection = useRowSelection({ rows: list, getId: getEventId });
 
   const handleOpenEvent = useCallback((id: number) => {
     router.push(`/workplan/${id}`);
@@ -898,19 +909,51 @@ export default function WorkplanListPage() {
 
   const handleDeleteEvent = useCallback(async (id: number) => {
     const ok = await confirm({
-      title: "Delete this event?",
-      message: "This cannot be undone.",
-      confirmText: "Delete",
+      title: t("workplan.delete.confirmTitle"),
+      message: t("workplan.delete.confirmMessage"),
+      confirmText: t("common.delete"),
       variant: "danger",
     });
     if (!ok) return;
     try {
       await workplanApi.delete(id);
+      success(t("workplan.delete.success"));
       loadList();
-    } catch {
-      setError("Failed to delete event.");
+    } catch (err: unknown) {
+      const message = apiErrorMessage(err, t("workplan.delete.failed"));
+      setError(message);
+      showErrorToast(apiErrorMessage(err, t("workplan.delete.failed")));
     }
-  }, [confirm, loadList]);
+  }, [confirm, loadList, showErrorToast, success, t]);
+
+  const handleBulkDelete = useCallback(async () => {
+    const ids = normalizeWorkplanEventIds(selection.selectedIds);
+    if (ids.length === 0) return;
+    const ok = await confirm({
+      title: t("workplan.bulkDelete.confirmTitle"),
+      message: t("workplan.bulkDelete.confirmMessage", { count: ids.length }),
+      confirmText: t("common.delete"),
+      variant: "danger",
+    });
+    if (!ok) return;
+    setBulkLoading(true);
+    setError(null);
+    try {
+      let deleted = 0;
+      for (const chunk of chunkWorkplanEventIds(ids)) {
+        const res = await workplanApi.bulkDelete(chunk);
+        deleted += Number(res.data.data.deleted_count ?? chunk.length);
+      }
+      selection.clear();
+      success(t("workplan.bulkDelete.success", { count: deleted }));
+      loadList();
+    } catch (err: unknown) {
+      showErrorToast(apiErrorMessage(err, t("workplan.bulkDelete.failed")));
+      loadList();
+    } finally {
+      setBulkLoading(false);
+    }
+  }, [confirm, loadList, selection, showErrorToast, success, t]);
 
   useEffect(() => {
     loadList();
@@ -1184,21 +1227,36 @@ export default function WorkplanListPage() {
       {viewMode === "list" && (
         <div className="flex flex-wrap items-center gap-3">
           <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Event type</span>
-          <select className="form-input max-w-[160px] py-2 text-sm" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+          <select className="form-input max-w-[160px] py-2 text-sm" value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); selection.clear(); }}>
             <option value="">All</option>
             {Object.entries(TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
           <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Year</span>
-          <select className="form-input max-w-[100px] py-2 text-sm" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)}>
+          <select className="form-input max-w-[100px] py-2 text-sm" value={yearFilter} onChange={(e) => { setYearFilter(e.target.value); selection.clear(); }}>
             <option value="">All</option>
             {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
           </select>
           <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Month</span>
-          <select className="form-input max-w-[140px] py-2 text-sm" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)}>
+          <select className="form-input max-w-[140px] py-2 text-sm" value={monthFilter} onChange={(e) => { setMonthFilter(e.target.value); selection.clear(); }}>
             <option value="">All</option>
             {MONTHS.map((m, i) => <option key={i} value={String(i + 1)}>{m}</option>)}
           </select>
         </div>
+      )}
+
+      {viewMode === "list" && (
+        <BulkSelectionBar count={selection.selectedCount} onClear={selection.clear} disabled={bulkLoading}>
+          <button
+            type="button"
+            data-testid="workplan-bulk-delete"
+            disabled={bulkLoading || selection.selectedCount === 0}
+            onClick={() => void handleBulkDelete()}
+            className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[14px]" aria-hidden="true">delete</span>
+            {bulkLoading ? t("workplan.deleting") : t("workplan.deleteSelected")}
+          </button>
+        </BulkSelectionBar>
       )}
 
       {/* Content */}
@@ -1248,6 +1306,18 @@ export default function WorkplanListPage() {
               <table className="data-table">
                 <thead>
                   <tr>
+                    <th className={selectionColumnClass.th}>
+                      <SelectAllCheckbox
+                        checked={selection.allSelectableSelected}
+                        indeterminate={
+                          selection.someSelectableSelected && !selection.allSelectableSelected
+                        }
+                        onChange={selection.toggleAllSelectable}
+                        disabled={selection.selectableIds.length === 0 || bulkLoading}
+                        label={t("workplan.selectAll")}
+                      />
+                      <span data-testid="workplan-select-all" className="sr-only">{t("workplan.selectAll")}</span>
+                    </th>
                     <th>Title</th>
                     <th>Event type</th>
                     <th>Kind of meeting</th>
@@ -1265,7 +1335,7 @@ export default function WorkplanListPage() {
                         key={ev.id}
                         role="button"
                         tabIndex={0}
-                        className="cursor-pointer hover:bg-neutral-50"
+                        className={`cursor-pointer hover:bg-neutral-50 ${selection.isSelected(ev.id) ? "bg-primary/5" : ""}`}
                         onClick={() => handleOpenEvent(ev.id)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
@@ -1275,6 +1345,18 @@ export default function WorkplanListPage() {
                         }}
                         title="Open event"
                       >
+                        <td
+                          className={selectionColumnClass.td}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                        >
+                          <RowCheckbox
+                            checked={selection.isSelected(ev.id)}
+                            onChange={() => selection.toggle(ev.id)}
+                            disabled={bulkLoading}
+                            label={t("workplan.selectEvent", { title: ev.title })}
+                          />
+                        </td>
                         <td className="font-medium text-neutral-900">{ev.title}</td>
                         <td>
                           <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text} ${c.border}`}>

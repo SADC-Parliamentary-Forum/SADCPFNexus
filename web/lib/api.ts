@@ -6343,6 +6343,8 @@ export const workplanApi = {
   update: (id: number, data: Partial<WorkplanEvent> & { meeting_type_id?: number | null; responsible_user_ids?: number[] }) =>
     api.put<{ data: WorkplanEvent; message: string }>(`/workplan/events/${id}`, data),
   delete: (id: number) => api.delete(`/workplan/events/${id}`),
+  bulkDelete: (ids: number[]) =>
+    api.post<{ message: string; data: { deleted_count: number } }>("/workplan/events/bulk-delete", { ids }),
   importTemplate: () =>
     api.get<Blob>("/workplan/events/import/template", { responseType: "blob" }),
   importEvents: (file: File) => {
