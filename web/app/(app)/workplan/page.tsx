@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { useRowSelection } from "@/lib/useRowSelection";
 import { chunkWorkplanEventIds, dropSelectedIds, normalizeWorkplanEventIds, summarizeWorkplanBulkDelete } from "@/lib/workplanBulkDelete";
+import { formatQuotedList, formatWorkplanImportErrorLines, uniqueMissingMeetingTypes } from "@/lib/workplanImportErrors";
 import {
   BulkSelectionBar,
   RowCheckbox,
@@ -854,7 +855,7 @@ function GanttView({
 export default function WorkplanListPage() {
   const { fmt: formatDate } = useFormatDate();
   const { confirm } = useConfirm();
-  const { success, error: showErrorToast, warning, info } = useToast();
+  const { success, error: showErrorToast, warning } = useToast();
   const { t } = useI18n();
   const router = useRouter();
   const now = new Date();
@@ -1100,7 +1101,13 @@ export default function WorkplanListPage() {
       const errors = res.data.data.error_count;
       const summary = t("workplan.import.success", { created, errors });
       if (errors > 0) {
-        info(summary, res.data.data.errors.map((row) => `Line ${row.row}: ${row.message}`).slice(0, 5).join(" "));
+        const rowErrors = res.data.data.errors;
+        const missingTypes = uniqueMissingMeetingTypes(rowErrors);
+        const missingSummary = missingTypes.length
+          ? t("workplan.import.missingTypes", { names: formatQuotedList(missingTypes) })
+          : "";
+        const detail = [summary, formatWorkplanImportErrorLines(rowErrors)].filter(Boolean).join(" ");
+        showErrorToast(missingSummary || summary, detail);
       } else {
         success(summary);
       }

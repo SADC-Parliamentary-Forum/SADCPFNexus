@@ -5,6 +5,7 @@ namespace App\Modules\Workplan\Services;
 use App\Models\MeetingType;
 use App\Models\User;
 use App\Models\WorkplanEvent;
+use App\Modules\Workplan\WorkplanMeetingTypeCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
@@ -13,9 +14,14 @@ use Throwable;
 
 class WorkplanEventImportService
 {
-    public const TEMPLATE_CSV = "title,type,date,end_date,description,meeting_type,responsible,responsible_emails\nPlenary Session,meeting,2026-10-01,2026-10-03,Annual plenary meeting,Plenary,Secretariat,\nBudget submission deadline,deadline,2026-11-30,,,Finance close-out,,\n";
+    public const TEMPLATE_CSV = "title,type,date,end_date,description,meeting_type,responsible,responsible_emails\nPlenary Assembly,meeting,2026-10-01,2026-10-03,Annual plenary meeting,Plenary Assembly,Secretariat,\nBudget submission deadline,deadline,2026-11-30,,,Finance close-out,,\n";
 
     public const MAX_ROWS = 500;
+
+    /** @var array<string, int> */
+    private array $meetingTypeIdsByKey = [];
+
+    private bool $meetingTypesLoaded = false;
 
     public function __construct(private readonly WorkplanService $workplan) {}
 
@@ -24,6 +30,9 @@ class WorkplanEventImportService
      */
     public function importCsv(User $actor, UploadedFile $file): array
     {
+        $this->meetingTypeIdsByKey = [];
+        $this->meetingTypesLoaded = false;
+
         $parsed = $this->parseCsv($file);
         $created = [];
         $errors = [];
@@ -90,18 +99,7 @@ class WorkplanEventImportService
             throw ValidationException::withMessages(['title' => 'An event with this title and date already exists.']);
         }
 
-        $meetingTypeId = null;
-        $meetingTypeName = $this->cell($row, ['meeting_type']);
-        if ($meetingTypeName !== '') {
-            $meetingType = MeetingType::query()
-                ->where('tenant_id', $actor->tenant_id)
-                ->whereRaw('LOWER(name) = ?', [mb_strtolower($meetingTypeName)])
-                ->first();
-            if (! $meetingType) {
-                throw ValidationException::withMessages(['meeting_type' => 'Meeting type not found.']);
-            }
-            $meetingTypeId = $meetingType->id;
-        }
+        $meetingTypeId = $this->resolveMeetingTypeId($actor, $this->cell($row, ['meeting_type', 'kind_of_meeting']));
 
         $responsibleIds = $this->resolveResponsibleEmails($actor, $this->cell($row, ['responsible_emails', 'emails', 'email']));
 
@@ -115,6 +113,146 @@ class WorkplanEventImportService
             'meeting_type_id' => $meetingTypeId,
             'responsible_user_ids' => $responsibleIds,
         ], $actor);
+    }
+
+    private function resolveMeetingTypeId(User $actor, string $name): ?int
+    {
+        $original = $this->normalizeLabel($name);
+        if ($original === '') {
+            return null;
+        }
+        if (mb_strlen($original) > 255) {
+            throw ValidationException::withMessages([
+                'meeting_type' => 'Meeting type '.$this->quoteMeetingType($original).' is too long.',
+            ]);
+        }
+
+        $this->ensureMeetingTypesLoaded($actor);
+
+        $matchedId = $this->findExactMeetingTypeId($original);
+        if ($matchedId !== null) {
+            return $matchedId;
+        }
+
+        $canonical = WorkplanMeetingTypeCatalog::canonicalName($original) ?? $original;
+        $matchedId = $this->findExactMeetingTypeId($canonical);
+        if ($matchedId !== null) {
+            return $matchedId;
+        }
+
+        if (WorkplanMeetingTypeCatalog::isOfficial($canonical)) {
+            $definition = WorkplanMeetingTypeCatalog::definitionByName($canonical);
+
+            return $this->createMeetingType(
+                $actor,
+                $definition['name'] ?? $canonical,
+                $definition['description'] ?? null,
+                $definition['sort_order'] ?? 0,
+            );
+        }
+
+        $matchedId = $this->findPrefixMeetingTypeId($original);
+        if ($matchedId !== null) {
+            return $matchedId;
+        }
+
+        throw ValidationException::withMessages([
+            'meeting_type' => 'Meeting type '.$this->quoteMeetingType($original).' not found.',
+        ]);
+    }
+
+    private function findExactMeetingTypeId(string $name): ?int
+    {
+        foreach (WorkplanMeetingTypeCatalog::keysFor($name) as $key) {
+            if (isset($this->meetingTypeIdsByKey[$key])) {
+                return $this->meetingTypeIdsByKey[$key];
+            }
+        }
+
+        return null;
+    }
+
+    private function findPrefixMeetingTypeId(string $name): ?int
+    {
+        $key = mb_strtolower($name);
+        $matches = [];
+        foreach ($this->meetingTypeIdsByKey as $existingKey => $id) {
+            if ($this->isWordPrefixMatch($key, $existingKey)) {
+                $matches[$id] = true;
+            }
+        }
+
+        if (count($matches) === 1) {
+            return (int) array_key_first($matches);
+        }
+
+        return null;
+    }
+
+    private function isWordPrefixMatch(string $left, string $right): bool
+    {
+        if ($left === $right) {
+            return true;
+        }
+
+        $short = mb_strlen($left) <= mb_strlen($right) ? $left : $right;
+        $long = $short === $left ? $right : $left;
+        if (mb_strlen($short) < 3) {
+            return false;
+        }
+
+        return str_starts_with($long, $short.' ');
+    }
+
+    private function createMeetingType(User $actor, string $name, ?string $description, int $sortOrder): int
+    {
+        $created = MeetingType::query()->create([
+            'tenant_id' => $actor->tenant_id,
+            'name' => $name,
+            'description' => $description,
+            'sort_order' => $sortOrder,
+        ]);
+        $this->rememberMeetingType((int) $created->id, $name);
+
+        return (int) $created->id;
+    }
+
+    private function quoteMeetingType(string $name): string
+    {
+        $safe = str_replace(['"', "\n", "\r"], ["'", ' ', ' '], $name);
+
+        return '"'.$safe.'"';
+    }
+
+    private function ensureMeetingTypesLoaded(User $actor): void
+    {
+        if ($this->meetingTypesLoaded) {
+            return;
+        }
+
+        $this->meetingTypesLoaded = true;
+        $types = MeetingType::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->get(['id', 'name']);
+
+        foreach ($types as $type) {
+            $this->rememberMeetingType((int) $type->id, (string) $type->name);
+        }
+    }
+
+    private function rememberMeetingType(int $id, string $name): void
+    {
+        foreach (WorkplanMeetingTypeCatalog::keysFor($name) as $key) {
+            $this->meetingTypeIdsByKey[$key] ??= $id;
+        }
+    }
+
+    private function normalizeLabel(string $value): string
+    {
+        $value = str_replace("\u{00A0}", ' ', $value);
+        $value = preg_replace('/\s+/u', ' ', $value) ?? $value;
+
+        return trim($value);
     }
 
     /**
