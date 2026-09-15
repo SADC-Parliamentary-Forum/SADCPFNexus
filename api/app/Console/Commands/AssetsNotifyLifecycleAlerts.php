@@ -27,8 +27,8 @@ class AssetsNotifyLifecycleAlerts extends Command
             ->get();
 
         foreach ($assets as $asset) {
-            $days = now()->startOfDay()->diffInDays($asset->warranty_expiry, false);
-            if (! in_array($days, [90, 30, 7], true) && $days > 7) {
+            $days = (int) round(now()->startOfDay()->diffInDays($asset->warranty_expiry, false));
+            if (! in_array($days, [90, 30, 7], true)) {
                 continue;
             }
             $admins = User::query()

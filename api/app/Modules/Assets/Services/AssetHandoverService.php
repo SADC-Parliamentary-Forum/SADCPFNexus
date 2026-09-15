@@ -178,7 +178,7 @@ class AssetHandoverService
     {
         $this->assertManage($actor);
         $this->assertTenant($handover, $actor);
-        if (in_array($handover->status, ['accepted', 'returned', 'return_verified', 'cancelled'], true)) {
+        if ($handover->signature_event_id || $handover->accepted_at || in_array($handover->status, ['accepted', 'returned', 'return_verified', 'cancelled', 'partially_accepted', 'disputed'], true)) {
             throw ValidationException::withMessages(['status' => 'This handover cannot be cancelled.']);
         }
 
@@ -205,9 +205,7 @@ class AssetHandoverService
             abort(404);
         }
         $this->assertCanRespond($handover, $actor);
-        if (! in_array($handover->status, ['awaiting_acceptance', 'partially_accepted', 'return_initiated', 'disputed'], true)) {
-            throw ValidationException::withMessages(['status' => 'This handover is not awaiting a response.']);
-        }
+        $this->assertUnsignedOpen($handover, 'This handover is not awaiting a response.');
 
         $response = (string) ($data['response'] ?? '');
         if (! in_array($response, AssetHandoverLine::RESPONSES, true)) {
@@ -248,9 +246,7 @@ class AssetHandoverService
     {
         $this->assertTenant($handover, $actor);
         $this->assertCanRespond($handover, $actor);
-        if (! in_array($handover->status, ['awaiting_acceptance', 'partially_accepted', 'return_initiated', 'disputed'], true)) {
-            throw ValidationException::withMessages(['status' => 'This handover cannot be signed.']);
-        }
+        $this->assertUnsignedOpen($handover, 'This handover cannot be signed.');
 
         $declaration = AssetHandoverDeclarationVersion::currentForTenant((int) $actor->tenant_id);
         $handover->load('lines.asset');
@@ -395,6 +391,12 @@ class AssetHandoverService
             'statement' => $declaration->statement,
         ];
         $payload['owner'] = 'SADC Parliamentary Forum';
+        foreach ($payload['lines'] ?? [] as $i => $line) {
+            if (! is_array($line['asset'] ?? null)) {
+                continue;
+            }
+            $payload['lines'][$i]['asset'] = $this->redactNestedAsset($line['asset'], $viewer);
+        }
 
         return $payload;
     }
@@ -417,7 +419,7 @@ class AssetHandoverService
             ->get();
 
         foreach ($open as $handover) {
-            $days = (int) $handover->sent_at->startOfDay()->diffInDays(now()->startOfDay());
+            $days = (int) $handover->sent_at->copy()->startOfDay()->diffInDays(now()->copy()->startOfDay());
             $schedule = $this->reminderDays(null, (int) $handover->tenant_id);
             if (! in_array($days, $schedule, true)) {
                 continue;
@@ -569,6 +571,11 @@ class AssetHandoverService
     private function returnExceptionLineToStore(AssetHandover $handover, AssetHandoverLine $line, User $actor): void
     {
         $asset = $line->asset()->first() ?? Asset::find($line->asset_id);
+        $this->unreserve($asset, $handover->id);
+        if ($handover->type !== 'issue') {
+            return;
+        }
+        $asset->refresh();
         $storeId = $asset->home_location_id ?: $this->batches->defaultStoreId((int) $asset->tenant_id);
         $asset->reserved_handover_id = null;
         $asset->assigned_to = null;
@@ -672,6 +679,35 @@ class AssetHandoverService
         if (! $target->accountAllowsAuthentication() || ! $target->is_active) {
             throw ValidationException::withMessages(['to_user_id' => 'Deactivated or separated staff cannot be a new custodian.']);
         }
+    }
+
+    private function assertUnsignedOpen(AssetHandover $handover, string $message): void
+    {
+        if ($handover->signature_event_id || $handover->accepted_at) {
+            throw ValidationException::withMessages(['status' => $message]);
+        }
+        if (! in_array($handover->status, ['awaiting_acceptance', 'return_initiated'], true)) {
+            throw ValidationException::withMessages(['status' => $message]);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $asset
+     * @return array<string, mixed>
+     */
+    private function redactNestedAsset(array $asset, ?User $viewer): array
+    {
+        if (AssetAccess::canViewFinancials($viewer)) {
+            return $asset;
+        }
+        foreach (AssetAccess::financialHidden() as $field) {
+            if (array_key_exists($field, $asset)) {
+                $asset[$field] = null;
+            }
+        }
+        $asset['current_value'] = null;
+
+        return $asset;
     }
 
     private function assertCanRespond(AssetHandover $handover, User $actor): void
