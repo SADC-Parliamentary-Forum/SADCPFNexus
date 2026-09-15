@@ -2,8 +2,13 @@ import { MFA_SETUP_PATH, requiresPrivilegedMfaSetup } from "./privilegedMfa.ts";
 import { safeInternalPath } from "./safeInternalPath.ts";
 import type { AuthUser } from "./api.ts";
 
-export function isSupplierUser(user: Pick<AuthUser, "roles"> | null | undefined): boolean {
+export function isSupplierUser(user: { roles?: string[] } | null | undefined): boolean {
   return (user?.roles ?? []).some((role) => ["Supplier", "Supplier Finance User"].includes(role));
+}
+
+/** Staff HR profile vs supplier company profile. */
+export function accountProfilePath(user: { roles?: string[] } | null | undefined): string {
+  return isSupplierUser(user) ? "/supplier/profile" : "/profile";
 }
 
 /**

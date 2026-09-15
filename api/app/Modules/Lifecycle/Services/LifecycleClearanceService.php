@@ -2,13 +2,11 @@
 
 namespace App\Modules\Lifecycle\Services;
 
-use App\Models\HrPersonalFile;
+use App\Models\Asset;
 use App\Models\Lifecycle\LifecycleCase;
 use App\Models\Lifecycle\LifecycleTaskInstance;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LifecycleClearanceService
@@ -38,6 +36,26 @@ class LifecycleClearanceService
             throw ValidationException::withMessages([
                 'clearance_status' => 'Not Cleared cannot be changed to Cleared without an authorised exception.',
             ]);
+        }
+
+        if ($clearanceStatus === 'cleared' && $task->task_key === 'ict_clearance') {
+            $employeeId = (int) $task->lifecycleCase->employee_id;
+            $outstanding = Asset::query()
+                ->where('tenant_id', $task->tenant_id)
+                ->whereNotIn('status', array_merge(Asset::DISPOSED_STATUSES, ['retired']))
+                ->where(function ($q) use ($employeeId) {
+                    $q->where('assigned_to', $employeeId)
+                        ->orWhereHas('reservedHandover', function ($h) use ($employeeId) {
+                            $h->where('to_user_id', $employeeId)
+                                ->whereIn('status', ['awaiting_acceptance', 'partially_accepted', 'return_initiated']);
+                        });
+                })
+                ->exists();
+            if ($outstanding) {
+                throw ValidationException::withMessages([
+                    'clearance_status' => 'Cannot complete ICT clearance while assets remain assigned. Return, transfer, or request an authorised exception.',
+                ]);
+            }
         }
 
         return DB::transaction(function () use ($task, $actor, $clearanceStatus) {

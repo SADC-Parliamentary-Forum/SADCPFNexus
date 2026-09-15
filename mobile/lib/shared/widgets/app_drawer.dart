@@ -106,6 +106,10 @@ const _moduleEntries = [
   _DrawerEntry(
       path: '/assets/inventory', label: 'Assets', icon: Icons.devices_outlined),
   _DrawerEntry(
+      path: '/assets/scan',
+      label: 'Scan Asset',
+      icon: Icons.qr_code_scanner),
+  _DrawerEntry(
       path: '/assets/fleet',
       label: 'Fleet',
       icon: Icons.directions_car_outlined),

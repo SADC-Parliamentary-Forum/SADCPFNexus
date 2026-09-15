@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
+import { useRouter } from "next/navigation";
 import { profileApi, profileChangeRequestApi, profileDocumentsApi, type User, type UserDocument, type ProfileDocumentType, type ProfileChangeRequest } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import DocumentsPanel from "@/components/ui/DocumentsPanel";
 import { cn } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { readStoredUser } from "@/lib/session";
+import { isSupplierUser } from "@/lib/postAuthDestination";
 
 type Section = "info" | "documents" | "password";
 
@@ -20,6 +23,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 export default function MyProfilePage() {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,6 +32,7 @@ export default function MyProfilePage() {
   const [requestNotes, setRequestNotes] = useState("");
   const [cancelling, setCancelling] = useState(false);
   const { success, error: toastError } = useToast();
+  const [supplierRedirect, setSupplierRedirect] = useState(false);
 
   // Documents state
   const [documents, setDocuments] = useState<UserDocument[]>([]);
@@ -38,7 +43,14 @@ export default function MyProfilePage() {
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [pwSaving, setPwSaving] = useState(false);
 
+  useLayoutEffect(() => {
+    if (!isSupplierUser(readStoredUser())) return;
+    setSupplierRedirect(true);
+    router.replace("/supplier/profile");
+  }, [router]);
+
   useEffect(() => {
+    if (isSupplierUser(readStoredUser())) return;
     Promise.all([
       profileApi.get(),
       profileChangeRequestApi.get(),
@@ -48,7 +60,7 @@ export default function MyProfilePage() {
       if (cr && cr.status === "pending") setPendingRequest(cr);
     }).catch(() => toastError("Error", "Failed to load profile"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [toastError]);
 
   // Load documents when the documents section is first opened
   useEffect(() => {
@@ -125,6 +137,15 @@ export default function MyProfilePage() {
   };
 
   const inputCls = "w-full px-4 py-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50/50 dark:bg-white/5 text-neutral-900 dark:text-neutral-100 focus:bg-white dark:focus:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm";
+
+  if (supplierRedirect) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <span className="material-symbols-outlined animate-spin text-primary text-4xl mb-4">progress_activity</span>
+        <p className="text-neutral-500 dark:text-neutral-400 font-medium">Opening supplier profile...</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

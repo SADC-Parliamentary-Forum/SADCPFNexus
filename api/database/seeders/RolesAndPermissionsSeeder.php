@@ -36,6 +36,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'supplier.portal',
             'assets.view', 'assets.create', 'assets.edit', 'assets.dispose', 'assets.admin', 'assets.manage',
             'assets.import', 'assets.verify', 'assets.print',
+            'assets.scan', 'assets.settings.recovery_contact.manage', 'assets.financials.view',
+            'assets.checkout.manage', 'assets.transfer.manage',
+            'assets.handover.manage', 'assets.handover.accept',
             // Consumables / Stock Register (separate from Fixed Assets)
             'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage', 'stock.admin',
             'stock.approve', 'stock.transfer',
@@ -257,6 +260,7 @@ class RolesAndPermissionsSeeder extends Seeder
             $financeController->syncPermissions(
                 Permission::whereIn('name', [
                     'finance.view', 'finance.create', 'finance.approve', 'finance.export',
+                    'assets.financials.view',
                     'salary_advance.view', 'salary_advance.certify', 'salary_advance.pay',
                     'salary_advance.recover', 'salary_advance.export', 'salary_advance.admin',
                     'travel.view', 'travel.finance-review', 'travel.export', 'travel.health-view',
@@ -319,7 +323,7 @@ class RolesAndPermissionsSeeder extends Seeder
                     'salary_advance.view', 'salary_advance.create',
                     'procurement.view', 'procurement.create',
                     'hr.view', 'hr.create',
-                    'governance.view', 'reports.view', 'assets.view',
+                    'governance.view', 'reports.view', 'assets.view', 'assets.handover.accept',
                     'decisions.view', 'decisions.create',
                     'stock.view',
                     'saam.view', 'saam.delegate',
@@ -559,6 +563,8 @@ class RolesAndPermissionsSeeder extends Seeder
                     'travel.view', 'travel.admin-review', 'travel.admin', 'travel.health-view',
                     'leave.view', 'imprest.view', 'hr.view', 'reports.view',
                     'assets.view', 'assets.import', 'assets.verify', 'assets.print', 'assets.manage', 'assets.admin',
+                    'assets.scan', 'assets.settings.recovery_contact.manage', 'assets.checkout.manage', 'assets.transfer.manage',
+                    'assets.handover.manage', 'assets.handover.accept',
                 ])->where('guard_name', $guard)->get()
             );
 

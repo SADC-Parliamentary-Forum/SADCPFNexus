@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { isSupplierUser, postAuthDestination } from "./postAuthDestination.ts";
+import { accountProfilePath, isSupplierUser, postAuthDestination } from "./postAuthDestination.ts";
 import type { AuthUser } from "./api.ts";
 
 function user(overrides: Partial<AuthUser> = {}): AuthUser {
@@ -49,4 +49,11 @@ test("suppliers ignore staff deep links", () => {
 test("isSupplierUser recognises supplier roles", () => {
   assert.equal(isSupplierUser(user({ roles: ["Supplier"] })), true);
   assert.equal(isSupplierUser(user({ roles: ["staff"] })), false);
+});
+
+test("accountProfilePath sends suppliers to the supplier profile, not staff HR profile", () => {
+  assert.equal(accountProfilePath(user({ roles: ["Supplier"] })), "/supplier/profile");
+  assert.equal(accountProfilePath(user({ roles: ["Supplier Finance User"] })), "/supplier/profile");
+  assert.equal(accountProfilePath(user({ roles: ["staff"] })), "/profile");
+  assert.equal(accountProfilePath(null), "/profile");
 });

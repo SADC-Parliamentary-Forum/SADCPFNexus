@@ -18,6 +18,7 @@ export default function AssetVerificationPage() {
   const [activeId, setActiveId] = useState<number | null>(null);
   const [name, setName] = useState("");
   const [startsOn, setStartsOn] = useState(new Date().toISOString().slice(0, 10));
+  const [scope, setScope] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -25,7 +26,14 @@ export default function AssetVerificationPage() {
   const [finds, setFinds] = useState<Find[]>([]);
   const [findDesc, setFindDesc] = useState("");
   const [scanToken, setScanToken] = useState("");
-  const [scanned, setScanned] = useState<{ id: number; asset_tag: string; name: string } | null>(null);
+  const [scanned, setScanned] = useState<{
+    id: number;
+    asset_tag: string;
+    name: string;
+    location?: string | null;
+    custodian?: string | null;
+    condition?: string | null;
+  } | null>(null);
 
   async function load(campaignId?: number) {
     const r = await api.get<{ data: Campaign[] }>("/assets-meta/verification-campaigns");
@@ -50,7 +58,11 @@ export default function AssetVerificationPage() {
     setMsg(null);
     setErrorMsg(null);
     try {
-      await api.post("/assets-meta/verification-campaigns", { name, starts_on: startsOn });
+      await api.post("/assets-meta/verification-campaigns", {
+        name,
+        starts_on: startsOn,
+        scope: scope.trim() ? { note: scope.trim() } : null,
+      });
       setName("");
       setMsg(t("common.create"));
       await load();
@@ -85,19 +97,28 @@ export default function AssetVerificationPage() {
         if (match) token = decodeURIComponent(match[1]);
       }
       const r = await assetQrApi.lookup(token);
-      setScanned({ id: r.data.data.id, asset_tag: r.data.data.asset_tag, name: r.data.data.name });
+      const row = r.data.data;
+      setScanned({
+        id: row.id,
+        asset_tag: row.asset_tag,
+        name: row.name,
+        location: row.location?.name ?? null,
+        custodian: row.custodian?.name ?? null,
+        condition: row.condition ?? null,
+      });
     } catch {
       setScanned(null);
       setErrorMsg(t("assets.public.notFound"));
     }
   }
 
-  async function recordScanResult(result: "verified" | "missing" | "relocated") {
+  async function recordScanResult(result: "verified" | "missing" | "wrong_location" | "wrong_custodian" | "condition_changed") {
     if (!activeId || !scanned) return;
     await assetVerificationApi.record(activeId, {
       asset_id: scanned.id,
       result,
       verification_method: "qr",
+      mismatch_types: result === "verified" ? null : [result],
     });
     setMsg(t("assets.verify.recordResult"));
     setScanToken("");
@@ -140,6 +161,7 @@ export default function AssetVerificationPage() {
       <form onSubmit={createCampaign} className="card" style={{ padding: "1rem", marginBottom: "1.5rem", display: "flex", gap: 12, flexWrap: "wrap" }}>
         <input className="input" placeholder={t("assets.verify.title")} value={name} onChange={(e) => setName(e.target.value)} required />
         <input className="input" type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} required />
+        <input className="input" placeholder={t("assets.verify.scopeHint")} value={scope} onChange={(e) => setScope(e.target.value)} />
         <Button type="submit" disabled={creating}>{creating ? t("common.loading") : t("common.create")}</Button>
       </form>
       <div className="overflow-x-auto rounded-xl border border-neutral-200 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900">
@@ -175,10 +197,21 @@ export default function AssetVerificationPage() {
         <Button type="submit">{t("assets.verify.scan")}</Button>
       </form>
       {scanned && (
-        <div className="card flex flex-wrap items-center gap-3 p-4 text-sm">
-          <span className="font-mono">{scanned.asset_tag}</span>
-          <span>{scanned.name}</span>
-          <Button type="button" size="sm" onClick={() => recordScanResult("verified")}>{t("assets.verify.recordResult")}</Button>
+        <div className="card space-y-3 p-4 text-sm">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-mono">{scanned.asset_tag}</span>
+            <span>{scanned.name}</span>
+          </div>
+          <p>{t("assets.verify.expectedLocation")}: {scanned.location ?? "—"}</p>
+          <p>{t("assets.verify.expectedCustodian")}: {scanned.custodian ?? "—"}</p>
+          <p>{t("assets.verify.expectedCondition")}: {scanned.condition ?? "—"}</p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" onClick={() => recordScanResult("verified")}>{t("assets.verify.action.verified")}</Button>
+            <Button type="button" size="sm" variant="secondary" onClick={() => recordScanResult("wrong_location")}>{t("assets.verify.action.wrongLocation")}</Button>
+            <Button type="button" size="sm" variant="secondary" onClick={() => recordScanResult("wrong_custodian")}>{t("assets.verify.action.wrongCustodian")}</Button>
+            <Button type="button" size="sm" variant="secondary" onClick={() => recordScanResult("condition_changed")}>{t("assets.verify.action.conditionChanged")}</Button>
+            <Button type="button" size="sm" variant="secondary" onClick={() => recordScanResult("missing")}>{t("assets.verify.action.missing")}</Button>
+          </div>
         </div>
       )}
 

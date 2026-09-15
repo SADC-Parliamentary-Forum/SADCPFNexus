@@ -29,5 +29,6 @@ class CanonicalRoleManagerTest extends TestCase
         $this->assertTrue($names->contains('travel.create'));
         $this->assertTrue($names->contains('leave.view'));
         $this->assertTrue($names->contains('imprest.view'));
+        $this->assertTrue($names->contains('assets.handover.accept'));
     }
 }

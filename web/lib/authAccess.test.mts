@@ -124,3 +124,25 @@ test("Supplier can open portal, profile, and help", () => {
   assert.equal(canAccessRoute(supplier, "/profile/support"), true);
   assert.equal(canAccessRoute(supplier, "/procurement/vendors"), false);
 });
+
+test("staff cannot open the supplier portal", () => {
+  const staff = { roles: ["staff"], permissions: ["procurement.view", "procurement.manage_vendors"] };
+  assert.equal(canAccessRoute(staff, "/supplier"), false);
+  assert.equal(canAccessRoute(staff, "/supplier/rfqs"), false);
+});
+
+test("scan and handover routes are reachable without opening the full register", () => {
+  const scanOnly = { roles: ["staff"], permissions: ["assets.scan"] };
+  assert.equal(canAccessRoute(scanOnly, "/assets/scan"), true);
+  assert.equal(canAccessRoute(scanOnly, "/assets"), false);
+  const recipient = { roles: ["staff"], permissions: ["assets.handover.accept"] };
+  assert.equal(canAccessRoute(recipient, "/assets/handovers"), true);
+  assert.equal(canAccessRoute(recipient, "/assets/handovers/12"), true);
+  assert.equal(canAccessRoute(recipient, "/assets/mine"), true);
+  assert.equal(canAccessRoute(recipient, "/assets"), false);
+  assert.equal(canAccessRoute(recipient, "/assets/batches"), false);
+  const selfService = { roles: ["staff"], permissions: ["profile.read.self"] };
+  assert.equal(canAccessRoute(selfService, "/assets/handovers/12"), true);
+  assert.equal(canAccessRoute(selfService, "/assets/handovers"), false);
+  assert.equal(canAccessRoute(selfService, "/assets/mine"), true);
+});

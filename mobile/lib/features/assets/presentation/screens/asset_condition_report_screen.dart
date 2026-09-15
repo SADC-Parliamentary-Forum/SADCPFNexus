@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
 import '../../../../core/offline/draft_database.dart';
@@ -173,6 +174,13 @@ class _AssetConditionReportScreenState
             fontWeight: FontWeight.w700,
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: 'Scan Asset',
+            icon: const Icon(Icons.qr_code_scanner, color: AppColors.textPrimary),
+            onPressed: () => context.push('/assets/scan'),
+          ),
+        ],
       ),
       body: _loading
           ? const Center(

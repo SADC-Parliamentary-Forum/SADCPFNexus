@@ -15,14 +15,18 @@ import {
 } from "@/lib/api";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { EmptyState } from "@/components/ui/EmptyState";
-
-const NAV = [
-  { label: "Profile",       href: "/profile",           icon: "person" },
-  { label: "Preferences",   href: "/profile/settings",  icon: "tune"   },
-  { label: "Security",      href: "/profile/security",  icon: "lock"   },
-];
+import { accountProfilePath } from "@/lib/postAuthDestination";
+import { readStoredUser } from "@/lib/session";
 
 const SETTINGS_KEY = PREFS_KEY;
+
+function accountNav(profileHref: string) {
+  return [
+    { label: "Profile", href: profileHref, icon: "person" },
+    { label: "Preferences", href: "/profile/settings", icon: "tune" },
+    { label: "Security", href: "/profile/security", icon: "lock" },
+  ];
+}
 
 interface Prefs {
   // Notifications
@@ -83,6 +87,11 @@ export default function ProfileSettingsPage() {
   const [inboxPrefs, setInboxPrefs] = useState<NotificationPreference[]>([]);
   const [inboxBusy, setInboxBusy] = useState(false);
   const [suggestion, setSuggestion] = useState<unknown>(null);
+  const [profileHref, setProfileHref] = useState("/profile");
+
+  useEffect(() => {
+    setProfileHref(accountProfilePath(readStoredUser()));
+  }, []);
 
   useEffect(() => {
     try {
@@ -175,7 +184,7 @@ export default function ProfileSettingsPage() {
 
       {/* Sub nav */}
       <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-700">
-        {NAV.map((n) => (
+        {accountNav(profileHref).map((n) => (
           <Link key={n.href} href={n.href}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${n.href === "/profile/settings" ? "border-primary text-primary" : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"}`}>
             <span className="material-symbols-outlined text-[16px]">{n.icon}</span>

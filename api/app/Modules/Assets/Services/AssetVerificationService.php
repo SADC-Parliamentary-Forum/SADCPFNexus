@@ -21,6 +21,7 @@ class AssetVerificationService
             'starts_on' => $data['starts_on'],
             'ends_on' => $data['ends_on'] ?? null,
             'created_by' => $user->id,
+            'scope' => $data['scope'] ?? null,
         ]);
 
         AuditLog::record('assets.verification_campaign_created', [
@@ -72,15 +73,33 @@ class AssetVerificationService
                 $asset->status = 'missing';
                 $asset->verification_status = 'exception';
                 $asset->save();
-            } elseif ($data['result'] === 'damaged') {
-                $asset->status = 'damaged';
-                $asset->condition = 'damaged';
+            } elseif ($data['result'] === 'damaged' || $data['result'] === 'condition_changed') {
+                if ($data['result'] === 'damaged') {
+                    $asset->status = 'damaged';
+                    $asset->condition = $data['condition'] ?? 'damaged';
+                } elseif (! empty($data['condition'])) {
+                    $asset->condition = $data['condition'];
+                }
+                $asset->verification_status = 'exception';
+                $asset->save();
+            } elseif (in_array($data['result'], ['wrong_location', 'relocated'], true)) {
+                $asset->verification_status = 'exception';
+                $asset->save();
+            } elseif ($data['result'] === 'wrong_custodian') {
                 $asset->verification_status = 'exception';
                 $asset->save();
             } else {
                 $asset->verification_status = 'exception';
                 $asset->save();
             }
+
+            app(\App\Modules\Assets\Services\AssetTimelineService::class)->record(
+                $asset,
+                'VERIFICATION_RECORDED',
+                'Verification result: '.$data['result'],
+                $user,
+                ['campaign_id' => $campaign->id, 'result' => $data['result'], 'mismatch_types' => $data['mismatch_types'] ?? null]
+            );
 
             AuditLog::record('assets.verification_recorded', [
                 'auditable_type' => AssetVerificationResult::class,

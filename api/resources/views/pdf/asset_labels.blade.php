@@ -59,6 +59,15 @@
                                         elseif ($id === 'serial') { $text = $label['serial'] ? 'S/N: '.$label['serial'] : null; }
                                         elseif ($id === 'location') { $text = $label['location'] ? 'Location: '.$label['location'] : null; }
                                         elseif ($id === 'custodian') { $text = $label['custodian'] ? 'Custodian: '.$label['custodian'] : null; }
+                                        elseif ($id === 'owner') { $text = !empty($label['owner']) ? 'Owner: '.$label['owner'] : 'Owner: SADC Parliamentary Forum'; }
+                                        elseif ($id === 'recovery') {
+                                            $bits = array_filter([
+                                                !empty($label['recovery_phone']) ? 'Tel: '.$label['recovery_phone'] : null,
+                                                !empty($label['recovery_email']) ? $label['recovery_email'] : null,
+                                            ]);
+                                            $text = $bits ? implode(' · ', $bits) : null;
+                                        }
+                                        elseif ($id === 'scan_hint') { $text = $label['scan_hint'] ?? 'Scan for current information'; }
                                     @endphp
                                     @if($id === 'qr')
                                         <div class="field qr" style="left: {{ $item['x_mm'] }}mm; top: {{ $item['y_mm'] }}mm; width: {{ $item['w_mm'] }}mm; height: {{ $item['h_mm'] }}mm;">

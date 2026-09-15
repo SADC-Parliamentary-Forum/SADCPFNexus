@@ -192,7 +192,9 @@ class AssetService
     public function assign(Asset $asset, User $assignee, User $actor, array $data = []): Asset
     {
         $this->assertTenant($asset, $actor);
-        $this->assertCanManage($actor);
+        if (! ($data['skip_manage'] ?? false)) {
+            $this->assertCanManage($actor);
+        }
         $this->assertAssignable($asset);
 
         if ((int) $assignee->tenant_id !== (int) $actor->tenant_id) {
@@ -457,8 +459,9 @@ class AssetService
             throw ValidationException::withMessages(['status' => 'Invalid exception status.']);
         }
 
-        return DB::transaction(function () use ($asset, $status, $notes) {
+        return DB::transaction(function () use ($asset, $status, $notes, $actor) {
             $old = $asset->status;
+            $previousCondition = $asset->condition;
             $asset->status = $status;
             if ($status === 'damaged') {
                 $asset->condition = 'damaged';
@@ -468,6 +471,24 @@ class AssetService
                 $asset->notes = $note === '' ? $notes : $note."\n".$notes;
             }
             $asset->save();
+            if ($asset->condition !== $previousCondition) {
+                \App\Models\AssetConditionAssessment::create([
+                    'tenant_id' => $asset->tenant_id,
+                    'asset_id' => $asset->id,
+                    'previous_condition' => $previousCondition,
+                    'new_condition' => $asset->condition,
+                    'assessor_id' => $actor->id,
+                    'reason' => $notes,
+                    'assessed_at' => now(),
+                ]);
+            }
+            app(\App\Modules\Assets\Services\AssetTimelineService::class)->record(
+                $asset,
+                'CONDITION_CHANGED',
+                'Status marked '.$status,
+                $actor,
+                ['status' => $status]
+            );
 
             AuditLog::record('assets.condition_marked', [
                 'auditable_type' => Asset::class,
@@ -662,7 +683,7 @@ class AssetService
     {
         AssetAssignmentHistory::where('asset_id', $asset->id)
             ->whereNull('returned_at')
-            ->update(['returned_at' => now()]);
+            ->update(['returned_at' => now(), 'ended_at' => now()]);
     }
 
     private function assertAssignable(Asset $asset): void

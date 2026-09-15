@@ -22,6 +22,8 @@ return [
             'weekly_report.module.view', 'weekly_report.create.self',
             'weekly-reports.view-own', 'weekly-reports.create-own', 'weekly-reports.edit-own-draft', 'weekly-reports.submit',
             'profile.read.self', 'profile.edit.self',
+            // Recipients accept/dispute issuance without opening the org register.
+            'assets.handover.accept',
             'notifications.view.own', 'notifications.manage.preferences',
             'notifications.view-own', 'notifications.manage-own-preferences', 'notifications.acknowledge',
             'approvals.inbox.view',
@@ -183,6 +185,8 @@ return [
             'people.ai.suggest', 'people.ai.apply', 'people.privilege-alerts.manage',
             // Administration Officer alias: asset register import, labels, and verification.
             'assets.view', 'assets.import', 'assets.verify', 'assets.print', 'assets.manage', 'assets.admin',
+            'assets.scan', 'assets.settings.recovery_contact.manage', 'assets.checkout.manage', 'assets.transfer.manage',
+            'assets.handover.manage', 'assets.handover.accept',
         ],
         'inherits' => [],
         'legacy_roles' => ['HR Manager', 'HR Administrator', 'Administration Officer'],

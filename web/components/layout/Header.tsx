@@ -18,6 +18,7 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 import { GlobalSearch } from "./GlobalSearch";
 import { LocaleIconSwitcher, useI18n } from "@/lib/i18n/LocaleProvider";
 import { requiresPrivilegedMfaSetup } from "@/lib/privilegedMfa";
+import { accountProfilePath } from "@/lib/postAuthDestination";
 
 interface StoredUser {
   name: string;
@@ -111,6 +112,7 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
   const roleLabel = user?.roles?.[0]
     ? user.roles[0].replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
     : user?.classification ?? "Staff";
+  const profileHref = accountProfilePath(user);
 
   const handleLogout = async () => {
     try { await authApi.logout(); } catch { /* ignore */ }
@@ -318,7 +320,8 @@ export function Header({ onMenuClick, sidebarOpen }: HeaderProps = {}) {
                 {/* Menu items */}
                 <div className="py-1.5">
                   <Link
-                    href="/profile"
+                    href={profileHref}
+                    data-testid="header-my-profile"
                     onClick={() => setShowUserMenu(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 dark:text-neutral-200 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
                   >

@@ -150,6 +150,28 @@ class NavigationManifestService
             ]);
         }
 
+        if ($has('assets.scan', 'assets.view', 'assets.admin', 'assets.manage', 'assets.verify')) {
+            $children = [];
+            if ($has('assets.scan', 'assets.view', 'assets.verify', 'assets.admin', 'assets.manage')) {
+                $children[] = $this->item('Scan Asset', '/assets/scan', 'qr_code_scanner');
+            }
+            if ($holds('assets.view', 'assets.admin', 'assets.manage')) {
+                $children[] = $this->item('Dashboard', '/assets/dashboard', 'dashboard');
+                $children[] = $this->item('Register', '/assets', 'inventory_2');
+                $children[] = $this->item('Checkouts', '/assets/checkouts', 'logout');
+                $children[] = $this->item('Lost / Stolen', '/assets/incidents', 'report');
+                $children[] = $this->item('Imports', '/assets/import', 'upload_file');
+                $children[] = $this->item('Settings', '/assets/settings', 'settings');
+            }
+            $items[] = $this->item(
+                'Fixed Assets',
+                $holds('assets.view', 'assets.admin', 'assets.manage') ? '/assets' : '/assets/scan',
+                'inventory_2',
+                children: $children,
+                linkable: true,
+            );
+        }
+
         return [
             'items' => array_values(array_filter($items)),
             'effective_permission_count' => count($effective),

@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Api\V1\Assets;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetCategory;
+use App\Models\AssetSubcategory;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Modules\Assets\Export\AssetRegisterExportWorkbook;
+use App\Modules\Assets\Services\AssetNumberingService;
 use App\Modules\Assets\Services\AssetQrService;
 use App\Modules\Assets\Services\AssetService;
+use App\Modules\Assets\Services\AssetTimelineService;
+use App\Modules\Assets\Support\AssetAccess;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +28,8 @@ class AssetController extends Controller
     public function __construct(
         private readonly AssetService $assetService,
         private readonly AssetQrService $qr,
+        private readonly AssetNumberingService $numbering,
+        private readonly AssetTimelineService $timeline,
     ) {}
 
     /**
@@ -65,7 +71,23 @@ class AssetController extends Controller
         $perPage = min(max((int) $request->input('per_page', 50), 1), 100);
         $assets = $query->orderBy('name')->paginate($perPage);
         $payload = $assets->toArray();
+        $payload['data'] = array_map(
+            fn (array $row) => $this->redactFinancialArray($row, $user),
+            $payload['data'] ?? []
+        );
         $payload['summary'] = $this->registerListSummary((int) $user->tenant_id);
+
+        return response()->json($payload);
+    }
+
+    /**
+     * Own-custody list for My Assets. Does not require the organisation register (assets.view).
+     */
+    public function assignedToMe(Request $request): JsonResponse
+    {
+        $request->merge(['assigned_to' => 'me']);
+        $payload = $this->index($request)->getData(true);
+        unset($payload['summary']);
 
         return response()->json($payload);
     }
@@ -86,10 +108,12 @@ class AssetController extends Controller
             abort(422, 'No asset categories defined. Create asset categories first.');
         }
         $validated = $request->validate([
-            'asset_code' => ['required', 'string', 'max:64', 'unique:assets,asset_code'],
+            'asset_code' => ['nullable', 'string', 'max:64', 'unique:assets,asset_code'],
+            'tag_number' => ['nullable', 'string', 'max:64'],
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:32', Rule::in($allowedCategories)],
-            'status' => ['nullable', 'string', 'in:active,service_due,loan_out,retired'],
+            'subcategory_code' => ['nullable', 'string', 'max:32'],
+            'status' => ['nullable', 'string', 'in:active,service_due,loan_out,retired,available,assigned'],
             'assigned_to' => ['nullable', 'integer', $this->tenantActiveUserRule((int) $user->tenant_id)],
             'issued_at' => ['nullable', 'date'],
             'value' => ['nullable', 'numeric', 'min:0'],
@@ -101,6 +125,20 @@ class AssetController extends Controller
             'useful_life_years' => ['nullable', 'integer', 'min:1', 'max:100'],
             'salvage_value' => ['nullable', 'numeric', 'min:0'],
             'depreciation_method' => ['nullable', 'string', 'in:straight_line,declining_balance'],
+            'ownership_type' => ['nullable', 'string', 'max:64'],
+            'funding_source' => ['nullable', 'string', 'max:128'],
+            'funding_source_id' => ['nullable', 'integer'],
+            'home_location_id' => ['nullable', 'integer'],
+            'location_id' => ['nullable', 'integer'],
+            'imei' => ['nullable', 'string', 'max:32'],
+            'vehicle_registration' => ['nullable', 'string', 'max:32'],
+            'chassis_vin' => ['nullable', 'string', 'max:64'],
+            'barcode' => ['nullable', 'string', 'max:64'],
+            'received_date' => ['nullable', 'date'],
+            'supplier_name' => ['nullable', 'string', 'max:255'],
+            'vat_amount' => ['nullable', 'numeric', 'min:0'],
+            'budget_line' => ['nullable', 'string', 'max:128'],
+            'condition' => ['nullable', 'string', 'max:64'],
         ]);
 
         $purchaseValue = isset($validated['purchase_value']) ? (float) $validated['purchase_value'] : null;
@@ -117,11 +155,40 @@ class AssetController extends Controller
         $storedValue = $computedValue ?? (isset($validated['value']) ? (float) $validated['value'] : null);
         $assigneeId = $validated['assigned_to'] ?? null;
 
+        $subcategory = null;
+        if (! empty($validated['subcategory_code'])) {
+            $categoryRow = AssetCategory::forTenant($user->tenant_id)->where('code', $validated['category'])->first();
+            if ($categoryRow) {
+                $subcategory = AssetSubcategory::query()
+                    ->where('asset_category_id', $categoryRow->id)
+                    ->whereRaw('upper(code) = ?', [strtoupper($validated['subcategory_code'])])
+                    ->first();
+            }
+        }
+
+        $policy = $this->numbering->policy((int) $user->tenant_id);
+        $tag = $validated['tag_number'] ?? null;
+        if (! $tag && $policy->auto_assign) {
+            $tag = $this->numbering->issue(
+                (int) $user->tenant_id,
+                $validated['category'],
+                $subcategory?->code ?? ($validated['subcategory_code'] ?? null)
+            );
+        }
+        $code = $validated['asset_code'] ?? $tag;
+        if (! $code) {
+            return response()->json(['message' => 'Asset number is required when automatic numbering is disabled.'], 422);
+        }
+
+        $homeLocation = $validated['home_location_id'] ?? $validated['location_id'] ?? null;
+
         $asset = Asset::create([
             'tenant_id' => $user->tenant_id,
-            'asset_code' => $validated['asset_code'],
+            'asset_code' => $code,
+            'tag_number' => $tag ?: $code,
             'name' => $validated['name'],
             'category' => $validated['category'],
+            'subcategory_id' => $subcategory?->id,
             'status' => $validated['status'] ?? 'active',
             'assigned_to' => null,
             'issued_at' => $validated['issued_at'] ?? null,
@@ -134,15 +201,31 @@ class AssetController extends Controller
             'useful_life_years' => $usefulLife,
             'salvage_value' => isset($validated['salvage_value']) ? (float) $validated['salvage_value'] : null,
             'depreciation_method' => $method,
+            'ownership_type' => $validated['ownership_type'] ?? 'sadc_pf_owned',
+            'funding_source' => $validated['funding_source'] ?? null,
+            'funding_source_id' => $validated['funding_source_id'] ?? null,
+            'home_location_id' => $homeLocation,
+            'location_id' => $validated['location_id'] ?? $homeLocation,
+            'imei' => $validated['imei'] ?? null,
+            'vehicle_registration' => $validated['vehicle_registration'] ?? null,
+            'chassis_vin' => $validated['chassis_vin'] ?? null,
+            'barcode' => $validated['barcode'] ?? null,
+            'received_date' => $validated['received_date'] ?? null,
+            'supplier_name' => $validated['supplier_name'] ?? null,
+            'vat_amount' => $validated['vat_amount'] ?? null,
+            'budget_line' => $validated['budget_line'] ?? null,
+            'condition' => $validated['condition'] ?? 'good',
+            'owner_name' => 'SADC Parliamentary Forum',
         ]);
 
         $this->generateAndSaveQr($asset);
+        $this->timeline->record($asset, 'ASSET_CREATED', 'Asset record created', $user);
 
         if ($assigneeId) {
             $asset = $this->assetService->assign($asset, User::findOrFail($assigneeId), $user);
         }
 
-        return response()->json($this->presentAsset($asset), 201);
+        return response()->json($this->presentAsset($asset, $user), 201);
     }
 
     /**
@@ -155,7 +238,7 @@ class AssetController extends Controller
             abort(404);
         }
 
-        return response()->json($this->presentAsset($asset));
+        return response()->json($this->presentAsset($asset, $user));
     }
 
     /**
@@ -202,14 +285,14 @@ class AssetController extends Controller
         $assignee = User::findOrFail($validated['assigned_to']);
         $updated = $this->assetService->assign($asset, $assignee, $request->user(), $validated);
 
-        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Asset assigned.']);
+        return response()->json(['data' => $this->presentAsset($updated, $request->user()), 'message' => 'Asset assigned.']);
     }
 
     public function acknowledge(Request $request, Asset $asset): JsonResponse
     {
         $updated = $this->assetService->acknowledge($asset, $request->user());
 
-        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Custody acknowledged.']);
+        return response()->json(['data' => $this->presentAsset($updated, $request->user()), 'message' => 'Custody acknowledged.']);
     }
 
     public function decline(Request $request, Asset $asset): JsonResponse
@@ -219,14 +302,14 @@ class AssetController extends Controller
         ]);
         $updated = $this->assetService->declineAssignment($asset, $request->user(), $validated['reason']);
 
-        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Assignment declined.']);
+        return response()->json(['data' => $this->presentAsset($updated, $request->user()), 'message' => 'Assignment declined.']);
     }
 
     public function requestReturn(Request $request, Asset $asset): JsonResponse
     {
         $updated = $this->assetService->requestReturn($asset, $request->user());
 
-        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Return requested.']);
+        return response()->json(['data' => $this->presentAsset($updated, $request->user()), 'message' => 'Return requested.']);
     }
 
     public function transfer(Request $request, Asset $asset): JsonResponse
@@ -252,7 +335,7 @@ class AssetController extends Controller
         ]);
         $updated = $this->assetService->returnAsset($asset, $request->user(), $validated);
 
-        return response()->json(['data' => $this->presentAsset($updated), 'message' => 'Asset returned.']);
+        return response()->json(['data' => $this->presentAsset($updated, $request->user()), 'message' => 'Asset returned.']);
     }
 
     public function markCondition(Request $request, Asset $asset): JsonResponse
@@ -290,7 +373,7 @@ class AssetController extends Controller
         );
 
         $query = Asset::where('tenant_id', $user->tenant_id)
-            ->with(['assignedUser:id,name,email', 'location:id,name,code']);
+            ->with(['assignedUser:id,name,email', 'location:id,name,code', 'homeLocation:id,name,code']);
 
         $ids = $this->parseExportIds($request);
         if ($ids !== []) {
@@ -485,18 +568,71 @@ class AssetController extends Controller
 
     public function dashboard(Request $request): JsonResponse
     {
-        $tenantId = (int) $request->user()->tenant_id;
-        $base = Asset::where('tenant_id', $tenantId);
+        $user = $request->user();
+        $tenantId = (int) $user->tenant_id;
+        $base = Asset::where('tenant_id', $tenantId)->whereNotIn('status', Asset::DISPOSED_STATUSES);
+        $all = Asset::where('tenant_id', $tenantId);
         $summary = $this->registerStatusSummary($tenantId);
+        $canFinance = AssetAccess::canViewFinancials($user);
+
+        $metrics = [
+            'in_service' => (clone $base)->whereIn('status', ['active', 'assigned', 'service_due'])->count(),
+            'available' => (clone $base)->whereIn('status', ['available', 'active'])->whereNull('assigned_to')->count(),
+            'storage' => (clone $base)->whereHas('location', fn ($q) => $q->where('location_type', 'store'))->count(),
+            'under_repair' => (clone $base)->whereIn('status', ['under_repair', 'service_due'])->count(),
+            'checked_out' => (clone $base)->where('status', 'loan_out')->count(),
+            'stolen' => (clone $all)->where('status', 'stolen')->count(),
+            'lost' => (clone $all)->whereIn('status', ['lost', 'missing'])->count(),
+            'not_verified' => (clone $base)->where(function ($q) {
+                $q->whereNull('last_verified_at')->orWhere('verification_status', '!=', 'verified');
+            })->count(),
+            'labels_reprint_required' => (clone $all)->where('label_status', 'reprint_required')->count(),
+            'unassigned' => (clone $base)->whereNull('assigned_to')->count(),
+            'no_location' => (clone $base)->whereNull('location_id')->count(),
+            'no_label' => (clone $base)->where(function ($q) {
+                $q->whereNull('label_status')->orWhere('label_status', 'never_printed');
+            })->count(),
+            'replacement_due' => (clone $base)->where(function ($q) {
+                $q->whereIn('condition', ['poor', 'damaged', 'beyond_economic_repair'])
+                    ->orWhere(function ($q2) {
+                        $q2->whereNotNull('replacement_due_on')->whereDate('replacement_due_on', '<=', now());
+                    })
+                    ->orWhere(function ($q2) {
+                        $q2->whereNotNull('useful_life_years')
+                            ->whereNotNull('purchase_date')
+                            ->whereRaw('purchase_date <= CURRENT_DATE - (useful_life_years * INTERVAL \'1 year\')');
+                    });
+            })->count(),
+            'capital' => (clone $base)->where('asset_class', 'capital')->count(),
+            'controlled' => (clone $base)->where('asset_class', 'controlled')->count(),
+            'assigned' => (clone $base)->whereNotNull('assigned_to')->whereNotIn('status', ['pending'])->count(),
+            'warranty_expiring_30d' => (clone $base)->whereNotNull('warranty_expiry')
+                ->whereBetween('warranty_expiry', [now()->toDateString(), now()->addDays(30)->toDateString()])->count(),
+            'pending_handovers' => \App\Models\AssetHandover::query()
+                ->where('tenant_id', $tenantId)
+                ->whereIn('status', ['awaiting_acceptance', 'partially_accepted', 'return_initiated'])
+                ->count(),
+            'disputed_handovers' => \App\Models\AssetHandover::query()
+                ->where('tenant_id', $tenantId)
+                ->whereIn('status', ['disputed', 'partially_accepted'])
+                ->count(),
+            'unlabeled' => (clone $base)->where(function ($q) {
+                $q->whereNull('label_status')->orWhere('label_status', 'never_printed');
+            })->count(),
+            'unassigned_from_batch' => (clone $base)
+                ->whereNotNull('acquisition_batch_id')
+                ->whereNull('assigned_to')
+                ->whereIn('status', ['available', 'active'])
+                ->count(),
+        ];
+
+        if ($canFinance) {
+            $metrics['total_acquisition_cost'] = (clone $base)->sum('purchase_value');
+            $metrics['total_book_value'] = (clone $base)->sum('book_value');
+        }
 
         return response()->json([
-            'data' => array_merge($summary, [
-                'capital' => (clone $base)->where('asset_class', 'capital')->count(),
-                'controlled' => (clone $base)->where('asset_class', 'controlled')->count(),
-                'assigned' => (clone $base)->whereNotNull('assigned_to')->whereNotIn('status', ['disposed', 'retired', 'pending'])->count(),
-                'warranty_expiring_30d' => (clone $base)->whereNotNull('warranty_expiry')
-                    ->whereBetween('warranty_expiry', [now()->toDateString(), now()->addDays(30)->toDateString()])->count(),
-            ]),
+            'data' => array_merge($summary, $metrics),
         ]);
     }
 
@@ -594,7 +730,7 @@ class AssetController extends Controller
             $fresh = $this->assetService->assign($fresh, User::findOrFail($nextAssignee), $user);
         }
 
-        return response()->json($this->presentAsset($fresh));
+        return response()->json($this->presentAsset($fresh, $user));
     }
 
     /**
@@ -694,12 +830,38 @@ class AssetController extends Controller
         );
     }
 
-    private function presentAsset(Asset $asset): Asset
+    private function presentAsset(Asset $asset, ?User $user = null): Asset
     {
         $fresh = $asset->fresh() ?? $asset;
-        $fresh->load(['assignedUser:id,name,email']);
+        $fresh->load(['assignedUser:id,name,email', 'location', 'homeLocation', 'subcategory']);
+        if ($user && ! AssetAccess::canViewFinancials($user)) {
+            foreach (AssetAccess::financialHidden() as $field) {
+                $fresh->setAttribute($field, null);
+            }
+            $fresh->setAppends(array_values(array_diff($fresh->getAppends(), ['current_value'])));
+            $fresh->setAttribute('current_value', null);
+        }
 
         return $fresh;
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function redactFinancialArray(array $row, User $user): array
+    {
+        if (AssetAccess::canViewFinancials($user)) {
+            return $row;
+        }
+        foreach (AssetAccess::financialHidden() as $field) {
+            if (array_key_exists($field, $row)) {
+                $row[$field] = null;
+            }
+        }
+        $row['current_value'] = null;
+
+        return $row;
     }
 
     /**

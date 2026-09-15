@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supportTicketsApi, type SupportTicket } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
@@ -9,6 +10,8 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
+import { accountProfilePath } from "@/lib/postAuthDestination";
+import { readStoredUser } from "@/lib/session";
 
 const PRIORITY_BADGE: Record<SupportTicket["priority"], string> = {
   low: "badge badge-muted",
@@ -40,6 +43,9 @@ function ticketIsEditable(ticket: SupportTicket): boolean {
   return ticket.status === "open" || ticket.status === "in_progress";
 }
 
+const TICKET_MENU_WIDTH = 192;
+const TICKET_MENU_HEIGHT = 184;
+
 export default function SupportTicketsPage() {
   const queryClient = useQueryClient();
   const { confirm } = useConfirm();
@@ -52,6 +58,11 @@ export default function SupportTicketsPage() {
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [formError, setFormError] = useState<string | null>(null);
+  const [profileHref, setProfileHref] = useState("/profile");
+
+  useEffect(() => {
+    setProfileHref(accountProfilePath(readStoredUser()));
+  }, []);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["support-tickets"],
@@ -179,7 +190,7 @@ export default function SupportTicketsPage() {
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Profile", href: "/profile" },
+              { label: "Profile", href: profileHref },
               { label: "Support" },
             ]}
           />
@@ -374,6 +385,8 @@ function TicketActionsMenu({
   onDelete: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const editable = ticketIsEditable(ticket);
 
   const run = (action: () => void) => {
@@ -381,9 +394,42 @@ function TicketActionsMenu({
     action();
   };
 
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) {
+      setMenuPos(null);
+      return;
+    }
+    const rect = buttonRef.current.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const openUp = spaceBelow < TICKET_MENU_HEIGHT + 8 && rect.top > TICKET_MENU_HEIGHT + 8;
+    const top = openUp ? Math.max(8, rect.top - TICKET_MENU_HEIGHT - 4) : rect.bottom + 4;
+    const left = Math.min(
+      Math.max(8, rect.right - TICKET_MENU_WIDTH),
+      window.innerWidth - TICKET_MENU_WIDTH - 8,
+    );
+    setMenuPos({ top, left });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    const close = () => setOpen(false);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+    };
+  }, [open]);
+
   return (
     <div className="relative shrink-0">
       <button
+        ref={buttonRef}
         type="button"
         className="inline-flex items-center justify-center w-9 h-9 rounded-full text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800 disabled:opacity-50"
         aria-label={`Actions for ${ticket.reference_number}`}
@@ -395,20 +441,28 @@ function TicketActionsMenu({
       >
         <span className="material-symbols-outlined text-[20px]" aria-hidden="true">more_vert</span>
       </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div
-            role="menu"
-            className="absolute right-0 top-full mt-1 w-48 rounded-xl border border-neutral-200 bg-white shadow-xl z-50 overflow-hidden py-1"
-          >
-            <MenuItem testId="support-ticket-action-view" icon="visibility" label="View" onClick={() => run(onView)} />
-            <MenuItem testId="support-ticket-action-edit" icon="edit" label="Edit" disabled={!editable} onClick={() => run(onEdit)} />
-            <MenuItem testId="support-ticket-action-close" icon="check_circle" label="Close ticket" disabled={!editable} onClick={() => run(onCloseTicket)} />
-            <MenuItem testId="support-ticket-action-delete" icon="delete" label="Delete" danger onClick={() => run(onDelete)} />
-          </div>
-        </>
-      )}
+      {open &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[200]"
+              data-testid="support-ticket-actions-backdrop"
+              onClick={() => setOpen(false)}
+            />
+            <div
+              role="menu"
+              data-testid="support-ticket-actions-menu"
+              className="fixed z-[210] w-48 rounded-xl border border-neutral-200 bg-white shadow-xl overflow-hidden py-1"
+              style={menuPos ? { top: menuPos.top, left: menuPos.left } : { top: 0, left: 0, visibility: "hidden" }}
+            >
+              <MenuItem testId="support-ticket-action-view" icon="visibility" label="View" onClick={() => run(onView)} />
+              <MenuItem testId="support-ticket-action-edit" icon="edit" label="Edit" disabled={!editable} onClick={() => run(onEdit)} />
+              <MenuItem testId="support-ticket-action-close" icon="check_circle" label="Close ticket" disabled={!editable} onClick={() => run(onCloseTicket)} />
+              <MenuItem testId="support-ticket-action-delete" icon="delete" label="Delete" danger onClick={() => run(onDelete)} />
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }

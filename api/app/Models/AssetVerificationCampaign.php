@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class AssetVerificationCampaign extends Model
 {
     protected $fillable = [
-        'tenant_id', 'name', 'status', 'starts_on', 'ends_on', 'created_by',
+        'tenant_id', 'name', 'status', 'starts_on', 'ends_on', 'created_by', 'scope',
     ];
 
     protected function casts(): array
@@ -17,6 +17,7 @@ class AssetVerificationCampaign extends Model
         return [
             'starts_on' => 'date',
             'ends_on' => 'date',
+            'scope' => 'array',
         ];
     }
 

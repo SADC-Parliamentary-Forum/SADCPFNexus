@@ -12,7 +12,7 @@ class AssetLabelLayoutTest extends TestCase
         $items = AssetLabelLayout::defaultItems(63.5, 46.6, 22);
         $ids = array_column($items, 'id');
         $this->assertSame(
-            ['org', 'notice', 'tag', 'name', 'model', 'serial', 'location', 'custodian', 'qr'],
+            ['org', 'notice', 'tag', 'name', 'owner', 'recovery', 'scan_hint', 'model', 'serial', 'location', 'custodian', 'qr'],
             $ids
         );
         $qr = null;
@@ -58,9 +58,9 @@ class AssetLabelLayoutTest extends TestCase
     {
         $fromNull = AssetLabelLayout::sanitize(null, 63.5, 46.6, 22);
         $fromEmpty = AssetLabelLayout::sanitize([], 70, 40, 18);
-        $this->assertCount(9, $fromNull);
-        $this->assertCount(9, $fromEmpty);
-        $this->assertSame('qr', $fromEmpty[8]['id']);
+        $this->assertCount(12, $fromNull);
+        $this->assertCount(12, $fromEmpty);
+        $this->assertSame('qr', $fromEmpty[11]['id']);
     }
 
     public function test_wrapped_items_key_is_accepted(): void
