@@ -28,3 +28,29 @@ export function chunkWorkplanEventIds(
   }
   return chunks;
 }
+
+export function dropSelectedIds(
+  selected: Iterable<number | string>,
+  idsToDrop: Iterable<number | string>,
+): Set<number | string> {
+  const drop = new Set<number | string>([...idsToDrop]);
+  const next = new Set<number | string>();
+  for (const id of selected) {
+    if (!drop.has(id)) next.add(id);
+  }
+  return next;
+}
+
+export type WorkplanBulkDeleteSummary =
+  | { kind: "success"; deleted: number }
+  | { kind: "partial"; deleted: number }
+  | { kind: "failure"; deleted: 0 };
+
+export function summarizeWorkplanBulkDelete(
+  deleted: number,
+  failed: boolean,
+): WorkplanBulkDeleteSummary {
+  if (!failed) return { kind: "success", deleted };
+  if (deleted > 0) return { kind: "partial", deleted };
+  return { kind: "failure", deleted: 0 };
+}
