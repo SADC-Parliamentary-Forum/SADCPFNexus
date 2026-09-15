@@ -79,6 +79,7 @@ class TimesheetImportCommitService
             foreach ($importable as $row) {
                 if ($row->timesheet_entry_id) {
                     $imported++;
+
                     continue;
                 }
                 if (! $row->mapped_user_id) {
@@ -91,6 +92,7 @@ class TimesheetImportCommitService
                 }
                 if (TimesheetEntry::query()->where('row_fingerprint', $row->row_fingerprint)->whereNull('reversed_at')->exists()) {
                     $row->update(['row_status' => TimesheetImportRow::STATUS_DUPLICATE]);
+
                     continue;
                 }
 
@@ -111,6 +113,7 @@ class TimesheetImportCommitService
                             'message' => 'A Nexus timesheet already exists for this week.',
                         ]]),
                     ]);
+
                     continue;
                 }
 

@@ -14,7 +14,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class ProcessTimesheetImportJob implements ShouldQueue, ShouldBeUnique
+class ProcessTimesheetImportJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -44,6 +44,7 @@ class ProcessTimesheetImportJob implements ShouldQueue, ShouldBeUnique
         try {
             if ($this->phase === 'ingest') {
                 $imports->processStaging($batch);
+
                 return;
             }
             $actor = User::query()->find($this->actorId ?: $batch->uploaded_by);

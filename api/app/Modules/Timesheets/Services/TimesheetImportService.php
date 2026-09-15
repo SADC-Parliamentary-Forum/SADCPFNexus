@@ -617,6 +617,7 @@ class TimesheetImportService
                 if ($targetEmail !== '' && $email !== $targetEmail) {
                     if ($batch->mode === TimesheetImportBatch::MODE_SELF) {
                         $messages[] = $this->msg('error', 'identity', 'This file contains another employee\'s identity. Rows were not assigned to them.');
+
                         return ['user_id' => null, 'error' => true];
                     }
                 }
@@ -624,6 +625,7 @@ class TimesheetImportService
             $idField = trim((string) ($normalised['employee_id'] ?? ''));
             if ($idField !== '' && ctype_digit($idField) && (int) $idField !== $targetId && $batch->mode === TimesheetImportBatch::MODE_SELF) {
                 $messages[] = $this->msg('error', 'identity', 'This file contains another employee\'s identity. Rows were not assigned to them.');
+
                 return ['user_id' => null, 'error' => true];
             }
 
@@ -645,6 +647,7 @@ class TimesheetImportService
                 return ['user_id' => (int) $mapped->mapped_user_id, 'error' => false];
             }
             $messages[] = $this->msg('error', 'unmatched', 'Employee email could not be matched. Mapping is required.');
+
             return ['user_id' => null, 'error' => true];
         }
 

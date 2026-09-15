@@ -19,11 +19,11 @@ class Timesheet extends Model
     ];
 
     protected $casts = [
-        'week_start'   => 'date',
-        'week_end'     => 'date',
+        'week_start' => 'date',
+        'week_end' => 'date',
         'submitted_at' => 'datetime',
         'declaration_accepted_at' => 'datetime',
-        'approved_at'  => 'datetime',
+        'approved_at' => 'datetime',
         'hr_validated_at' => 'datetime',
         'returned_at' => 'datetime',
         'expected_hours' => 'decimal:2',
@@ -63,7 +63,7 @@ class Timesheet extends Model
     public function onWorkflowApproved(User $approver): void
     {
         $this->update([
-            'status'      => 'approved',
+            'status' => 'approved',
             'approved_at' => now(),
             'approved_by' => $approver->id,
         ]);
@@ -76,7 +76,7 @@ class Timesheet extends Model
     public function onWorkflowRejected(User $approver, ?string $reason = null): void
     {
         $this->update([
-            'status'           => 'rejected',
+            'status' => 'rejected',
             'rejection_reason' => $reason,
         ]);
 

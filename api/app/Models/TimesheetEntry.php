@@ -62,8 +62,8 @@ class TimesheetEntry extends Model
     public const SOURCE_LEGACY_IMPORT = 'legacy_import';
 
     protected $casts = [
-        'work_date'  => 'date',
-        'is_locked'  => 'bool',
+        'work_date' => 'date',
+        'is_locked' => 'bool',
         'clockify_metadata' => 'array',
         'reversed_at' => 'datetime',
     ];

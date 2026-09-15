@@ -29,6 +29,7 @@ test.describe("Timesheet historical import (staff)", () => {
     const download = await downloadPromise;
     if (!download) {
       test.skip(true, "Template download did not start — API may be offline");
+      return;
     }
     expect(download.suggestedFilename()).toMatch(/\.xlsx$/i);
   });
