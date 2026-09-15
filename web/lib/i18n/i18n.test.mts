@@ -105,6 +105,7 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/hr/leave/balances/page.tsx",
     "app/(app)/hr/leave/import/page.tsx",
     "app/(app)/risk/dashboard/page.tsx",
+    "app/(app)/supplier/page.tsx",
     "app/(app)/admin/documents/page.tsx",
     "app/(app)/admin/documents/retention/page.tsx",
     "app/(app)/admin/documents/governance/page.tsx",
@@ -245,6 +246,29 @@ test("asset custody handshake catalog covers mine and register copy in EN, FR an
     "assets.mine.pendingAcceptance",
     "assets.register.confirmReturn",
     "assets.register.pendingReturn",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
+test("supplier dashboard catalog covers status copy in EN, FR and PT", () => {
+  const keys = [
+    "supplier.dashboard.subtitle",
+    "supplier.dashboard.registration",
+    "supplier.dashboard.completeness",
+    "supplier.dashboard.compliance",
+    "supplier.dashboard.actions",
+    "supplier.dashboard.totalCount",
+    "supplier.compliance.non_compliant",
+    "supplier.compliance.valid",
+    "supplier.compliance.expiring",
+    "supplier.status.under_review",
   ];
   for (const key of keys) {
     const en = translate("en", key);
