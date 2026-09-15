@@ -36,7 +36,7 @@ final class TimesheetSpreadsheetLoader
         }
         try {
             $rows = [];
-            while (($row = fgetcsv($handle)) !== false) {
+            while (($row = fgetcsv($handle, 0, ',', '"', '')) !== false) {
                 if ($row === [null] || $row === false) {
                     continue;
                 }

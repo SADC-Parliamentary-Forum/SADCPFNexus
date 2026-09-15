@@ -244,7 +244,7 @@ class TimesheetImportCommitService
 
     public function verify(TimesheetImportBatch $batch, User $actor, string $justification, ?int $userId = null, ?string $periodStart = null, ?string $periodEnd = null): TimesheetImportBatch
     {
-        abort_unless($actor->can('timesheets.import-verify'), 403);
+        abort_unless($actor->can('timesheets.import-verify') || $actor->can('timesheets.admin'), 403);
         abort_unless((int) $batch->tenant_id === (int) $actor->tenant_id, 404);
         if (! in_array($batch->status, [TimesheetImportBatch::STATUS_IMPORTED, TimesheetImportBatch::STATUS_PARTIAL], true)) {
             throw ValidationException::withMessages(['status' => 'Only imported batches can be verified.']);

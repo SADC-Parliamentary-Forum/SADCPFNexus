@@ -96,7 +96,11 @@ class TimesheetImportService
         $this->assertCanImport($actor, $mode);
 
         if ($importAsVerified) {
-            abort_unless($actor->can('timesheets.import-verify'), 403, 'You cannot import as verified historical records.');
+            abort_unless(
+                $actor->can('timesheets.import-verify') || $actor->can('timesheets.admin'),
+                403,
+                'You cannot import as verified historical records.',
+            );
             abort_unless($mode !== TimesheetImportBatch::MODE_SELF, 403, 'Self-import cannot mark records as verified.');
             if (! is_string($justification) || trim($justification) === '') {
                 throw ValidationException::withMessages(['justification' => 'A justification is required to import as verified historical records.']);
@@ -777,13 +781,20 @@ class TimesheetImportService
     private function nextReference(int $tenantId): string
     {
         $year = now()->year;
-        $count = TimesheetImportBatch::query()
+        $prefix = 'TS-IMP-'.$year.'-';
+        $latest = TimesheetImportBatch::query()
             ->where('tenant_id', $tenantId)
-            ->where('reference', 'like', 'TS-IMP-'.$year.'-%')
+            ->where('reference', 'like', $prefix.'%')
+            ->orderByDesc('id')
             ->lockForUpdate()
-            ->count();
+            ->value('reference');
 
-        return sprintf('TS-IMP-%d-%06d', $year, $count + 1);
+        $seq = 1;
+        if (is_string($latest) && preg_match('/-(\d+)$/', $latest, $matches) === 1) {
+            $seq = ((int) $matches[1]) + 1;
+        }
+
+        return sprintf('TS-IMP-%d-%06d', $year, $seq);
     }
 
     /**

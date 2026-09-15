@@ -124,6 +124,58 @@ class TimesheetHistoricalImportTest extends TestCase
         $this->assertSame(0, $batch->error_rows);
     }
 
+    public function test_admin_multi_does_not_match_by_employee_name_alone(): void
+    {
+        $hr = $this->makeHrAdmin();
+        $alice = $this->makeUser('staff', $hr->tenant);
+        $alice->update(['name' => 'Ada Staff']);
+        $bob = $this->makeUser('staff', $hr->tenant);
+        $bob->update(['name' => 'Ada Staff']);
+
+        $this->actingAs($hr, 'sanctum')
+            ->post('/api/v1/hr/timesheets/imports', [
+                'file' => $this->csvFile($this->clockifyCsv('ghost.name-collision@none.invalid', false)),
+                'mode' => 'multi',
+            ])
+            ->assertCreated();
+
+        $batch = TimesheetImportBatch::query()->where('uploaded_by', $hr->id)->latest('id')->first();
+        $this->assertGreaterThan(0, $batch->error_rows);
+        $this->assertFalse(
+            \App\Models\TimesheetImportRow::query()
+                ->where('import_batch_id', $batch->id)
+                ->whereIn('mapped_user_id', [$alice->id, $bob->id])
+                ->exists()
+        );
+    }
+
+    public function test_historical_weeks_are_excluded_from_approved_payroll_selection(): void
+    {
+        $employee = $this->makeUser('staff');
+        $id = $this->actingAs($employee, 'sanctum')
+            ->post('/api/v1/hr/timesheets/imports', [
+                'file' => $this->csvFile($this->clockifyCsv($employee->email, false)),
+                'mode' => 'self',
+            ])
+            ->json('data.id');
+        $this->actingAs($employee, 'sanctum')->postJson("/api/v1/hr/timesheets/imports/{$id}/confirm")->assertOk();
+
+        $sheet = Timesheet::query()->where('user_id', $employee->id)->where('origin', 'historical_import')->first();
+        $this->assertNotNull($sheet);
+        $sheet->update([
+            'status' => 'verified_historical',
+            'hr_validated_at' => now(),
+            'approved_at' => now(),
+        ]);
+
+        $this->assertSame(0, Timesheet::query()
+            ->where('id', $sheet->id)
+            ->where('status', 'approved')
+            ->whereNotNull('hr_validated_at')
+            ->count());
+        $this->assertNotSame('approved', $sheet->fresh()->status);
+    }
+
     public function test_duplicate_file_does_not_clone_production_rows(): void
     {
         $employee = $this->makeUser('staff');
@@ -233,6 +285,7 @@ class TimesheetHistoricalImportTest extends TestCase
             ])
             ->json('data.id');
         $this->actingAs($hr, 'sanctum')->postJson("/api/v1/hr/timesheets/imports/{$id}/confirm")->assertOk();
+        $this->assertTrue($hr->fresh()->can('timesheets.import-verify'));
         $this->actingAs($hr, 'sanctum')
             ->postJson("/api/v1/hr/timesheets/imports/{$id}/verify", ['justification' => 'Clockify 2025 archive accepted'])
             ->assertOk();
