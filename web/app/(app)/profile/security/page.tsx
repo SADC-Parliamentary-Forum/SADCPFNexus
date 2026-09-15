@@ -12,12 +12,15 @@ import { formatDateRelative } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { accountProfilePath } from "@/lib/postAuthDestination";
 
-const NAV = [
-  { label: "Profile",     href: "/profile",           icon: "person" },
-  { label: "Preferences", href: "/profile/settings",  icon: "tune"   },
-  { label: "Security",    href: "/profile/security",  icon: "lock"   },
-];
+function accountNav(profileHref: string) {
+  return [
+    { label: "Profile", href: profileHref, icon: "person" },
+    { label: "Preferences", href: "/profile/settings", icon: "tune" },
+    { label: "Security", href: "/profile/security", icon: "lock" },
+  ];
+}
 
 export default function ProfileSecurityPage() {
   const { success, error, info } = useToast();
@@ -38,6 +41,7 @@ export default function ProfileSecurityPage() {
   const [totpCode, setTotpCode] = useState("");
   const [disablePassword, setDisablePassword] = useState("");
   const [mfaActionLoading, setMfaActionLoading] = useState(false);
+  const [profileHref, setProfileHref] = useState("/profile");
 
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
 
@@ -64,6 +68,10 @@ export default function ProfileSecurityPage() {
   };
 
   useEffect(() => { loadSessions(); }, []);
+
+  useEffect(() => {
+    setProfileHref(accountProfilePath(readStoredUser()));
+  }, []);
 
   // Load weekly summary preference after MFA status is known (avoid 403 noise while gated).
   useEffect(() => {
@@ -300,7 +308,7 @@ export default function ProfileSecurityPage() {
 
       {/* Sub nav */}
       <div className="flex items-center gap-1 border-b border-neutral-200 dark:border-neutral-700">
-        {NAV.map((n) => (
+        {accountNav(profileHref).map((n) => (
           <Link key={n.href} href={n.href}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${n.href === "/profile/security" ? "border-primary text-primary" : "border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"}`}>
             <span className="material-symbols-outlined text-[16px]">{n.icon}</span>

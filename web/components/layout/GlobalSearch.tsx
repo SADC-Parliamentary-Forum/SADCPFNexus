@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { accessApi, type AccessEffectivePayload, type AuthUser } from "@/lib/api";
 import { canAccessRouteWithEffective, getStoredUser } from "@/lib/auth";
+import { accountProfilePath } from "@/lib/postAuthDestination";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 // ─── Search index: all navigable areas + record types ────────────────────────
@@ -111,9 +112,12 @@ export function GlobalSearch() {
   }, []);
 
   const accessibleIndex = useMemo(
-    () => accessReady
-      ? SEARCH_INDEX.filter((result) => canAccessRouteWithEffective(user, result.href, effectiveAccess))
-      : [],
+    () => {
+      if (!accessReady) return [];
+      return SEARCH_INDEX
+        .map((result) => result.id === "p-profile" ? { ...result, href: accountProfilePath(user) } : result)
+        .filter((result) => canAccessRouteWithEffective(user, result.href, effectiveAccess));
+    },
     [accessReady, effectiveAccess, user]
   );
 
