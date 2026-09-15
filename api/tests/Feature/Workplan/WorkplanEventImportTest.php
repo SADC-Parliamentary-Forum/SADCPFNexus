@@ -28,6 +28,7 @@ class WorkplanEventImportTest extends TestCase
         $this->assertStringContainsString('title,type,date,end_date,description,meeting_type,responsible,responsible_emails', $csv);
         $this->assertStringContainsString('Plenary Session', $csv);
         $res->assertHeader('content-disposition', 'attachment; filename="workplan-events-template.csv"');
+        $this->assertStringContainsString(',Plenary Session,Secretariat,', $csv);
     }
 
     public function test_staff_can_import_csv_and_creates_events(): void
@@ -154,6 +155,94 @@ class WorkplanEventImportTest extends TestCase
         $event = WorkplanEvent::query()->where('title', 'Field visit')->first();
         $this->assertNotNull($event);
         $this->assertTrue($event->responsibleUsers()->where('users.id', $owner->id)->exists());
+    }
+
+    public function test_import_maps_plenary_alias_to_plenary_session(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+
+        $csv = implode("\n", [
+            'title,type,date,end_date,description,meeting_type,responsible,responsible_emails',
+            'Plenary Session,meeting,2026-10-01,2026-10-03,Annual plenary,Plenary,Secretariat,',
+            'ExCo briefing,meeting,2026-10-08,,,Plenary,,',
+        ]);
+        $file = UploadedFile::fake()->createWithContent('workplan-events.csv', $csv);
+
+        $http->post('/api/v1/workplan/events/import', [
+            'file' => $file,
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('data.created_count', 2)
+            ->assertJsonPath('data.error_count', 0);
+
+        $this->assertSame(1, MeetingType::query()->where('tenant_id', $tenant->id)->where('name', 'Plenary Session')->count());
+        $this->assertSame(0, MeetingType::query()->where('tenant_id', $tenant->id)->where('name', 'Plenary')->count());
+        $plenaryId = MeetingType::query()->where('tenant_id', $tenant->id)->where('name', 'Plenary Session')->value('id');
+        $this->assertNotNull($plenaryId);
+        $this->assertSame(2, WorkplanEvent::query()->where('tenant_id', $tenant->id)->where('meeting_type_id', $plenaryId)->count());
+    }
+
+    public function test_import_reports_which_meeting_type_is_missing(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+
+        $csv = implode("\n", [
+            'title,type,date,end_date,description,meeting_type,responsible,responsible_emails',
+            'Moon summit,meeting,2026-10-01,,,Moon Summit,,',
+            'Valid workshop,meeting,2026-09-15,,Team planning,,,',
+        ]);
+        $file = UploadedFile::fake()->createWithContent('workplan-events.csv', $csv);
+
+        $http->post('/api/v1/workplan/events/import', [
+            'file' => $file,
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('data.created_count', 1)
+            ->assertJsonPath('data.error_count', 1)
+            ->assertJsonPath('data.errors.0.row', 2)
+            ->assertJsonPath('data.errors.0.message', 'Meeting type "Moon Summit" not found.');
+
+        $this->assertDatabaseHas('workplan_events', [
+            'tenant_id' => $tenant->id,
+            'title' => 'Valid workshop',
+        ]);
+        $this->assertDatabaseMissing('workplan_events', [
+            'tenant_id' => $tenant->id,
+            'title' => 'Moon summit',
+        ]);
+    }
+
+    public function test_import_matches_existing_meeting_type_without_regard_to_spacing_or_case(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+
+        MeetingType::query()->create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Plenary Session',
+            'sort_order' => 1,
+        ]);
+
+        $csv = implode("\n", [
+            'title,type,date,end_date,description,meeting_type,responsible,responsible_emails',
+            'Opening sitting,meeting,2026-10-01,,,Plenary,,',
+            'Closing sitting,meeting,2026-10-02,,, plenary   session ,,',
+        ]);
+        $file = UploadedFile::fake()->createWithContent('workplan-events.csv', $csv);
+
+        $http->post('/api/v1/workplan/events/import', [
+            'file' => $file,
+        ], ['Accept' => 'application/json'])
+            ->assertOk()
+            ->assertJsonPath('data.created_count', 2)
+            ->assertJsonPath('data.error_count', 0);
+
+        $this->assertSame(1, MeetingType::query()->where('tenant_id', $tenant->id)->count());
+        $event = WorkplanEvent::query()->where('title', 'Opening sitting')->first();
+        $this->assertNotNull($event);
+        $this->assertSame('Plenary Session', $event->meetingType?->name);
     }
 
     public function test_import_rejects_empty_csv(): void

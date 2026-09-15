@@ -20,6 +20,9 @@ test("workplan page offers a labelled CSV template download and event list uploa
   assert.match(source, /accept="\.csv,text\/csv"/);
   assert.match(source, /workplan\.import\.template/);
   assert.match(source, /workplan\.import\.upload/);
+  assert.match(source, /workplan\.import\.missingTypes/);
+  assert.match(source, /uniqueMissingMeetingTypes/);
+  assert.match(source, /formatWorkplanImportErrorLines/);
   assert.match(source, /workplan-events-template\.csv/);
   assert.match(source, /<label htmlFor="workplan-events-import"/);
   assert.doesNotMatch(source, /<label className=/);
@@ -44,6 +47,7 @@ test("workplan import catalog covers EN, FR and PT", () => {
     "workplan.import.hint",
     "workplan.import.success",
     "workplan.import.failed",
+    "workplan.import.missingTypes",
   ];
   const enTitle = catalogFor("en")["workplan.import.template"];
   for (const locale of LOCALES) {
