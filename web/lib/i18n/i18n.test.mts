@@ -264,6 +264,7 @@ test("supplier dashboard catalog covers status copy in EN, FR and PT", () => {
     "supplier.dashboard.completeness",
     "supplier.dashboard.compliance",
     "supplier.dashboard.actions",
+    "supplier.dashboard.totalCount",
     "supplier.compliance.non_compliant",
     "supplier.compliance.valid",
     "supplier.compliance.expiring",

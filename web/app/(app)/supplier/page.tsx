@@ -99,18 +99,21 @@ export default function SupplierDashboardPage() {
       icon: "request_quote",
       label: t("supplier.dashboard.rfqs"),
       count: data.open_rfq_count,
+      countKey: "supplier.dashboard.openCount",
     },
     {
       href: "/supplier/purchase-orders",
       icon: "receipt_long",
       label: t("supplier.dashboard.purchaseOrders"),
       count: data.purchase_order_count,
+      countKey: "supplier.dashboard.totalCount",
     },
     {
       href: "/supplier/invoices",
       icon: "receipt",
       label: t("supplier.dashboard.invoices"),
       count: data.invoice_count,
+      countKey: "supplier.dashboard.totalCount",
     },
     {
       href: "/supplier/profile",
@@ -180,8 +183,8 @@ export default function SupplierDashboardPage() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-neutral-900">{item.label}</p>
-              {item.count !== undefined ? (
-                <p className="text-xs text-neutral-500">{t("supplier.dashboard.openCount", { count: item.count })}</p>
+              {item.count !== undefined && item.countKey ? (
+                <p className="text-xs text-neutral-500">{t(item.countKey, { count: item.count })}</p>
               ) : (
                 <p className="text-xs text-neutral-500">{t("supplier.dashboard.profileHint")}</p>
               )}

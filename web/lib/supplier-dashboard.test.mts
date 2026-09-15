@@ -50,6 +50,18 @@ test("completenessTone and action icons are assigned", () => {
   assert.equal(actionIcon("unknown_code"), "task_alt");
 });
 
+test("supplier dashboard labels RFQs as open and PO/invoice totals as totals", () => {
+  const source = readFileSync(join(process.cwd(), "app/(app)/supplier/page.tsx"), "utf8");
+  assert.match(source, /open_rfq_count/);
+  assert.match(source, /countKey: "supplier.dashboard.openCount"/);
+  assert.match(source, /purchase_order_count/);
+  assert.match(source, /invoice_count/);
+  assert.match(source, /countKey: "supplier.dashboard.totalCount"/);
+  assert.equal(translate("en", "supplier.dashboard.totalCount", { count: 3 }), "3 total");
+  assert.notEqual(translate("fr", "supplier.dashboard.totalCount"), translate("en", "supplier.dashboard.totalCount"));
+  assert.notEqual(translate("pt", "supplier.dashboard.totalCount"), translate("en", "supplier.dashboard.totalCount"));
+});
+
 test("supplier dashboard renders status icons and never prints raw non_compliant", () => {
   const source = readFileSync(join(process.cwd(), "app/(app)/supplier/page.tsx"), "utf8");
   assert.match(source, /compliancePresentation/);
