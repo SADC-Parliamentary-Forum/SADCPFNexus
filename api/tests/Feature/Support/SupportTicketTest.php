@@ -115,6 +115,50 @@ class SupportTicketTest extends TestCase
         ]);
     }
 
+    public function test_staff_can_close_own_ticket_as_closed(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asStaff($tenant);
+
+        $ticket = SupportTicket::create([
+            'tenant_id'        => $tenant->id,
+            'user_id'          => $user->id,
+            'reference_number' => 'TKT-TEST-004B',
+            'subject'          => 'Please close me',
+            'status'           => 'open',
+            'priority'         => 'medium',
+        ]);
+
+        $http->putJson("/api/v1/support/tickets/{$ticket->id}", [
+            'status' => 'closed',
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'closed');
+
+        $fresh = $ticket->fresh();
+        $this->assertSame('closed', $fresh?->status);
+        $this->assertNotNull($fresh?->resolved_at);
+    }
+
+    public function test_supplier_can_close_own_ticket(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asSupplier($tenant);
+
+        $ticket = SupportTicket::create([
+            'tenant_id'        => $tenant->id,
+            'user_id'          => $user->id,
+            'reference_number' => 'TKT-TEST-SUP-CLOSE',
+            'subject'          => 'Supplier close',
+            'status'           => 'open',
+            'priority'         => 'medium',
+        ]);
+
+        $http->putJson("/api/v1/support/tickets/{$ticket->id}", [
+            'status' => 'closed',
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'closed');
+    }
+
     public function test_staff_cannot_edit_resolved_ticket(): void
     {
         $tenant = Tenant::factory()->create();

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface ConfirmOptions {
@@ -48,7 +49,9 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     const [resolveConfirm, setResolveConfirm] = useState<(value: boolean) => void>(() => () => { });
     const [resolvePrompt, setResolvePrompt] = useState<(value: string | null) => void>(() => () => { });
     const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+    const confirmButtonRef = useRef<HTMLButtonElement | null>(null);
     const inputRef = useRef<HTMLInputElement | null>(null);
+    const [mounted, setMounted] = useState(false);
     const previousFocusRef = useRef<HTMLElement | null>(null);
     const titleId = useId();
     const descriptionId = useId();
@@ -104,9 +107,14 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     }, [closeConfirm, closePrompt, inputValue, mode, options?.required]);
 
     useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    useEffect(() => {
         if (!isOpen) return;
         if (mode === "prompt") inputRef.current?.focus();
-        else cancelButtonRef.current?.focus();
+        else if (options?.variant === "danger") cancelButtonRef.current?.focus();
+        else confirmButtonRef.current?.focus();
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Escape") handleCancel();
             if (event.key === "Enter" && mode === "prompt" && event.target === inputRef.current) {
@@ -116,17 +124,15 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
         };
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
-    }, [handleCancel, handleConfirm, isOpen, mode]);
+    }, [handleCancel, handleConfirm, isOpen, mode, options?.variant]);
 
     const promptReady = !options?.required || inputValue.trim().length > 0;
     const inputLabel = options?.label || "common.reason";
 
-    return (
-        <ConfirmContext.Provider value={{ confirm, prompt }}>
-            {children}
-            {isOpen && options && (
+    const dialog = isOpen && options ? (
                 <div
-                    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 transition-opacity animate-[fadeIn_0.2s_ease-out]"
+                    className="fixed inset-0 z-[400] flex items-center justify-center bg-black/50 p-4 transition-opacity animate-[fadeIn_0.2s_ease-out]"
+                    data-testid="confirm-dialog-overlay"
                     onMouseDown={(event) => {
                         if (event.target === event.currentTarget) handleCancel();
                     }}
@@ -136,6 +142,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                         aria-modal="true"
                         aria-labelledby={titleId}
                         aria-describedby={options.message ? descriptionId : undefined}
+                        data-testid="confirm-dialog"
                         className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-[slideUp_0.2s_ease-out] dark:border dark:border-neutral-700 dark:bg-neutral-800"
                     >
                         <div className="p-6">
@@ -184,6 +191,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                             </button>
                             <button
                                 type="button"
+                                ref={confirmButtonRef}
                                 className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-50 ${options.variant === "danger"
                                         ? "bg-red-600 hover:bg-red-700 shadow-sm shadow-red-200"
                                         : "bg-primary hover:bg-primary-hover shadow-sm shadow-blue-200"
@@ -196,7 +204,12 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                         </div>
                     </div>
                 </div>
-            )}
+    ) : null;
+
+    return (
+        <ConfirmContext.Provider value={{ confirm, prompt }}>
+            {children}
+            {mounted && dialog ? createPortal(dialog, document.body) : null}
         </ConfirmContext.Provider>
     );
 }

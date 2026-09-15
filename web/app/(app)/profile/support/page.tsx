@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/Toast";
 import { accountProfilePath } from "@/lib/postAuthDestination";
+import { runAfterOverlayClose } from "@/lib/run-after-overlay-close";
 import { readStoredUser } from "@/lib/session";
 
 const PRIORITY_BADGE: Record<SupportTicket["priority"], string> = {
@@ -293,9 +294,21 @@ export default function SupportTicketsPage() {
               <p className="font-mono text-xs text-neutral-400">{viewing.reference_number}</p>
               <h2 className="text-base font-semibold text-neutral-900 mt-1">{viewing.subject}</h2>
             </div>
-            <button type="button" className="btn-secondary py-1 px-2 text-xs" onClick={() => setViewing(null)}>
-              Close
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {ticketIsEditable(viewing) && (
+                <button
+                  type="button"
+                  className="btn-primary py-1 px-2 text-xs"
+                  data-testid="support-ticket-detail-close"
+                  onClick={() => void handleCloseTicket(viewing)}
+                >
+                  Close ticket
+                </button>
+              )}
+              <button type="button" className="btn-secondary py-1 px-2 text-xs" onClick={() => setViewing(null)}>
+                Dismiss
+              </button>
+            </div>
           </div>
           <div className="flex items-center gap-2 mt-2">
             <span className={PRIORITY_BADGE[viewing.priority]}>{PRIORITY_LABEL[viewing.priority]}</span>
@@ -390,8 +403,7 @@ function TicketActionsMenu({
   const editable = ticketIsEditable(ticket);
 
   const run = (action: () => void) => {
-    setOpen(false);
-    action();
+    runAfterOverlayClose(() => setOpen(false), action);
   };
 
   useLayoutEffect(() => {

@@ -47,7 +47,36 @@ test.describe("Help & Support", () => {
     await updatedCard.getByTestId("support-ticket-actions").click();
     await expect(page.getByTestId("support-ticket-actions-menu")).toBeVisible();
     await page.getByTestId("support-ticket-action-delete").click();
-    await page.getByRole("button", { name: /^delete$/i }).click();
+    const deleteDialog = page.getByTestId("confirm-dialog");
+    await expect(deleteDialog).toBeVisible();
+    await deleteDialog.getByRole("button", { name: /^delete$/i }).click();
     await expect(page.getByTestId("support-ticket-card").filter({ hasText: updated })).toHaveCount(0, { timeout: 15_000 });
+  });
+
+  test("staff can close a ticket from the three-dot menu", async ({ page }) => {
+    const stamp = Date.now();
+    const subject = `E2E close ticket ${stamp}`;
+
+    await expect(page.getByRole("heading", { name: /help & support/i })).toBeVisible({ timeout: 15_000 });
+    await page.getByRole("button", { name: /new ticket/i }).click();
+    await page.getByLabel(/subject/i).fill(subject);
+    await page.getByLabel(/description/i).fill("Created by Playwright to close a ticket.");
+    await page.getByRole("button", { name: /submit ticket/i }).click();
+
+    const card = page.getByTestId("support-ticket-card").filter({ hasText: subject });
+    await expect(card).toBeVisible({ timeout: 15_000 });
+    await expect(card.getByText(/^open$/i)).toBeVisible();
+
+    await card.getByTestId("support-ticket-actions").click();
+    await expect(page.getByTestId("support-ticket-actions-menu")).toBeVisible();
+    await page.getByTestId("support-ticket-action-close").click();
+
+    const dialog = page.getByTestId("confirm-dialog");
+    await expect(dialog).toBeVisible();
+    await expect(page.getByTestId("support-ticket-actions-menu")).toHaveCount(0);
+    await dialog.getByRole("button", { name: /^close ticket$/i }).click();
+
+    await expect(card.getByText(/^closed$/i)).toBeVisible({ timeout: 15_000 });
+    await expect(card.getByText(/^open$/i)).toHaveCount(0);
   });
 });
