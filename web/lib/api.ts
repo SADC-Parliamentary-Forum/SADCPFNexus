@@ -5849,8 +5849,12 @@ export const timesheetImportApi = {
       const a = document.createElement("a");
       a.href = url;
       a.download = "sadcpf-timesheet-import-template.xlsx";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      window.setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 1000);
     }),
   list: (params?: { page?: number; per_page?: number }) =>
     api.get<{ data: TimesheetImportBatch[]; meta?: { current_page: number; last_page: number; total: number } }>(

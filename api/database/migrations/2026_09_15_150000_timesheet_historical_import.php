@@ -157,6 +157,19 @@ return new class extends Migration
 
         DB::statement('CREATE UNIQUE INDEX IF NOT EXISTS timesheet_entries_row_fingerprint_unique ON timesheet_entries (row_fingerprint) WHERE row_fingerprint IS NOT NULL AND reversed_at IS NULL');
         DB::statement("CREATE UNIQUE INDEX IF NOT EXISTS timesheet_import_batches_file_unique ON timesheet_import_batches (tenant_id, file_hash, mode, COALESCE(target_user_id, 0)) WHERE status NOT IN ('rolled_back', 'reversed')");
+
+        if (DB::getDriverName() === 'pgsql') {
+            foreach ([
+                'timesheet_import_batches',
+                'timesheet_import_rows',
+                'timesheet_import_mappings',
+                'timesheet_import_templates',
+                'timesheet_historical_verifications',
+            ] as $table) {
+                DB::statement("GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE {$table} TO app_user");
+                DB::statement("GRANT USAGE, SELECT ON SEQUENCE {$table}_id_seq TO app_user");
+            }
+        }
     }
 
     public function down(): void
