@@ -16,7 +16,7 @@ export const ASSETS_SIDEBAR_CHILDREN = [
 ] as const;
 
 export const ASSETS_HUB_CARDS: HubCard[] = [
-  { href: "/assets/scan", title: "Scan Asset", purpose: "Look up a QR token or public label URL.", icon: "qr_code_scanner", section: "queues", permission: ["assets.scan", "assets.view", "assets.verify", "assets.admin", "assets.manage"] },
+  { href: "/assets/scan", title: "Scan Asset", purpose: "Read a label with the camera, or enter the QR token or public URL.", icon: "qr_code_scanner", section: "queues", permission: ["assets.scan", "assets.view", "assets.verify", "assets.admin", "assets.manage"] },
   { href: "/assets/handovers", title: "Handovers", purpose: "Issue, transfer and return with per-item acceptance.", icon: "handshake", section: "queues", permission: ["assets.handover.manage", "assets.handover.accept", "assets.view", "assets.admin", "assets.manage"] },
   { href: "/assets/batches", title: "Acquisition lots", purpose: "Create numbered available stock and print labels.", icon: "inventory", section: "queues", permission: ["assets.handover.manage", "assets.admin", "assets.manage"] },
   { href: "/assets/intake", title: "Intake / pending", purpose: "GRN drafts waiting to be capitalised.", icon: "pending_actions", section: "queues" },
