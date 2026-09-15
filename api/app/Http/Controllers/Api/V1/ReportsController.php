@@ -664,6 +664,15 @@ class ReportsController extends Controller
         if ($status = $request->input('status')) {
             $query->where('status', $status);
         }
+        if ($origin = $request->input('origin')) {
+            if ($origin !== 'all') {
+                $query->where('origin', $origin);
+            }
+        } else {
+            $query->where(function ($q) {
+                $q->whereNull('origin')->orWhere('origin', 'nexus');
+            });
+        }
 
         if (! app(PolicyDecisionPoint::class)->can($user, 'reports.export')) {
             $query->where('user_id', $user->id);
@@ -683,6 +692,7 @@ class ReportsController extends Controller
                 'total_hours' => $t->total_hours,
                 'overtime_hours' => $t->overtime_hours,
                 'status' => $t->status,
+                'origin' => $t->origin,
                 'submitted_at' => $t->submitted_at?->toDateString(),
                 'approved_at' => $t->approved_at?->toDateString(),
             ])->toArray();

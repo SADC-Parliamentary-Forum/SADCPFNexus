@@ -66,8 +66,11 @@ const BUCKET_ICONS: Record<string, string> = {
 const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }> = {
   draft: { label: "Draft", cls: "badge-muted", icon: "edit_note" },
   submitted: { label: "Pending Approval", cls: "badge-warning", icon: "pending" },
-  approved: { label: "Approved", cls: "badge-success", icon: "check_circle" },
+  approved: { label: "Nexus Approved", cls: "badge-success", icon: "check_circle" },
   rejected: { label: "Rejected", cls: "badge-danger", icon: "cancel" },
+  imported: { label: "Imported (historical)", cls: "text-indigo-700 bg-indigo-50 border-indigo-200", icon: "history" },
+  verified_historical: { label: "Verified Historical", cls: "text-violet-700 bg-violet-50 border-violet-200", icon: "verified" },
+  returned: { label: "Returned", cls: "badge-warning", icon: "undo" },
 };
 
 function applyEntryDefaults(entry: TimesheetEntry, projects: TimesheetProject[]): TimesheetEntry {
@@ -411,7 +414,10 @@ export default function TimesheetsPage() {
     }
   };
 
-  const isDraft = !timesheet || timesheet.status === "draft" || timesheet.status === "returned";
+  const isHistorical = timesheet?.origin === "historical_import"
+    || timesheet?.status === "imported"
+    || timesheet?.status === "verified_historical";
+  const isDraft = !isHistorical && (!timesheet || timesheet.status === "draft" || timesheet.status === "returned");
 
   // Compute daily totals + validation
   const dailyTotals: Record<string, number> = {};
@@ -506,7 +512,9 @@ export default function TimesheetsPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         {timesheet ? (
           <span className={cn("rounded-full px-2.5 py-1 text-xs font-semibold", STATUS_CONFIG[timesheet.status]?.cls ?? "badge-muted")}>
-            {STATUS_CONFIG[timesheet.status]?.label ?? timesheet.status}
+            {timesheet.status === "approved" && timesheet.origin !== "historical_import"
+              ? "Nexus Approved"
+              : STATUS_CONFIG[timesheet.status]?.label ?? timesheet.status}
           </span>
         ) : (
           <span className="badge-muted rounded-full px-2.5 py-1 text-xs font-semibold">Draft</span>
@@ -563,6 +571,11 @@ export default function TimesheetsPage() {
       </div>
 
       {error && <ErrorBanner message={error} />}
+      {isHistorical ? (
+        <p className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-800">
+          This historical week is read-only.
+        </p>
+      ) : null}
 
       {loading ? (
         <div className="space-y-4 animate-pulse">

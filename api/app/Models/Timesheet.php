@@ -12,7 +12,7 @@ class Timesheet extends Model
     protected $fillable = [
         'tenant_id', 'period_id', 'user_id', 'week_start', 'week_end', 'week_number',
         'total_hours', 'overtime_hours', 'expected_hours', 'accounted_hours',
-        'reconciliation_status', 'status', 'version', 'rejection_reason',
+        'reconciliation_status', 'status', 'origin', 'version', 'rejection_reason',
         'returned_at', 'return_reason', 'submitted_at', 'declaration_accepted_at',
         'approved_at', 'approved_by', 'hr_validated_at', 'hr_validated_by',
         'payroll_export_batch_id',
@@ -93,5 +93,11 @@ class Timesheet extends Model
     public function isSubmitted(): bool
     {
         return $this->status === 'submitted';
+    }
+
+    public function isHistoricalImport(): bool
+    {
+        return $this->origin === 'historical_import'
+            || in_array($this->status, ['imported', 'verified_historical'], true);
     }
 }

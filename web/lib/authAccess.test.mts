@@ -35,6 +35,8 @@ test("General Employee still cannot open org-HR or module-admin prefixes", () =>
   assert.equal(canAccessRoute(ge, "/hr"), false);
   assert.equal(canAccessRoute(ge, "/hr/leave/balances"), false);
   assert.equal(canAccessRoute(ge, "/hr/leave/import"), false);
+  assert.equal(canAccessRoute(ge, "/hr/timesheets/import"), false);
+  assert.equal(canAccessRoute(ge, "/hr/timesheets/admin/import"), false);
   assert.equal(canAccessRoute(ge, "/hr/files"), false);
   assert.equal(canAccessRoute(ge, "/travel"), false);
   assert.equal(canAccessRoute(ge, "/travel/register"), false);
@@ -90,6 +92,15 @@ test("leave bulk import stays gated to HR administrators", () => {
   assert.equal(canAccessRoute(ge, "/hr/leave/import"), false);
   assert.equal(canAccessRoute(staff, "/hr/leave/import"), false);
   assert.equal(canAccessRoute(hr, "/hr/leave/import"), true);
+});
+
+test("timesheet historical import is gated to import permissions", () => {
+  const importer = { roles: ["staff"], permissions: ["timesheets.view", "timesheets.import-own"] };
+  const hr = { roles: ["HR Administrator"], permissions: ["timesheets.import-single", "timesheets.import-multi", "hr.admin"] };
+  assert.equal(canAccessRoute(ge, "/hr/timesheets/import"), false);
+  assert.equal(canAccessRoute(importer, "/hr/timesheets/import"), true);
+  assert.equal(canAccessRoute(importer, "/hr/timesheets/admin/import"), false);
+  assert.equal(canAccessRoute(hr, "/hr/timesheets/admin/import"), true);
 });
 
 test("asset import and labels stay gated to import/print permissions", () => {

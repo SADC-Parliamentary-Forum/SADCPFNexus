@@ -5658,7 +5658,7 @@ export interface TimesheetEntry {
   work_bucket?: 'delivery' | 'meeting' | 'communication' | 'administration' | 'other' | null;
   activity_type?: string | null;
   work_assignment_id?: number | null;
-  source_type?: "manual" | "leave" | "travel" | "holiday" | null;
+  source_type?: "manual" | "leave" | "travel" | "holiday" | "nexus_template_import" | "clockify_import" | "admin_import" | "legacy_import" | null;
   is_locked?: boolean;
   project?: TimesheetProject;
   work_assignment?: { id: number; title: string; estimated_hours: number | null };
@@ -5670,13 +5670,52 @@ export interface Timesheet {
   week_end: string;
   total_hours: number;
   overtime_hours: number;
-  status: "draft" | "submitted" | "approved" | "rejected" | "returned";
+  status: "draft" | "submitted" | "approved" | "rejected" | "returned" | "imported" | "verified_historical";
+  origin?: "nexus" | "historical_import" | null;
   rejection_reason: string | null;
   submitted_at: string | null;
   approved_at: string | null;
   user?: User;
   approver?: User;
   entries?: TimesheetEntry[];
+}
+
+export interface TimesheetImportBatch {
+  id: number;
+  reference: string;
+  filename: string;
+  format: string | null;
+  source_type: string | null;
+  mode: "self" | "single" | "multi";
+  target_user_id: number | null;
+  status: string;
+  progress_step: string | null;
+  total_rows: number;
+  valid_rows: number;
+  warning_rows: number;
+  error_rows: number;
+  duplicate_rows: number;
+  excluded_rows: number;
+  imported_rows: number;
+  detected_headers?: string[];
+  column_map?: Record<string, string>;
+  failure_reason?: string | null;
+  uploaded_at?: string | null;
+  confirmed_at?: string | null;
+  verified_at?: string | null;
+  import_as_verified?: boolean;
+  unmatched_employees?: Array<{ email: string; name?: string | null }>;
+}
+
+export interface TimesheetImportRow {
+  id: number;
+  source_row_number: number;
+  row_status: string;
+  messages?: Array<{ severity: string; code: string; message: string }>;
+  source_employee_email?: string | null;
+  source_employee_name?: string | null;
+  mapped_user_id?: number | null;
+  normalised?: Record<string, unknown>;
 }
 
 export interface HrSummary {
@@ -5705,10 +5744,14 @@ export const hrApi = {
     api.post<{ data: Timesheet; message: string }>(`/hr/timesheets/${id}/approve`),
   rejectTimesheet: (id: number, reason: string) =>
     api.post<{ data: Timesheet; message: string }>(`/hr/timesheets/${id}/reject`, { reason }),
-  importTimesheets: (file: File) => {
+  importTimesheets: (file: File, extra?: { mode?: string; target_user_id?: number; import_as_verified?: boolean; justification?: string }) => {
     const form = new FormData();
     form.append("file", file);
-    return api.post<{ message: string; imported: number; errors?: string[] }>("/hr/timesheets/import", form);
+    form.append("mode", extra?.mode ?? "self");
+    if (extra?.target_user_id) form.append("target_user_id", String(extra.target_user_id));
+    if (extra?.import_as_verified) form.append("import_as_verified", "1");
+    if (extra?.justification) form.append("justification", extra.justification);
+    return api.post<{ message: string; data: TimesheetImportBatch }>("/hr/timesheets/imports", form);
   },
   listTeamTimesheets: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<Timesheet>>("/hr/timesheets/team", { params }),
@@ -5797,6 +5840,57 @@ export const hrApi = {
     `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"}/hr/timesheets/${id}/export?format=${format}`,
   confirmPayslip: (id: number, data: { confirmation_status: "confirmed" | "rejected"; confirmation_notes?: string }) =>
     api.post<{ message: string; payslip: Payslip }>(`/hr/payslips/${id}/confirm`, data),
+};
+
+export const timesheetImportApi = {
+  downloadTemplate: () =>
+    api.get<Blob>("/hr/timesheets/import/template", { responseType: "blob" }).then((res) => {
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "sadcpf-timesheet-import-template.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    }),
+  list: (params?: { page?: number; per_page?: number }) =>
+    api.get<{ data: TimesheetImportBatch[]; meta?: { current_page: number; last_page: number; total: number } }>(
+      "/hr/timesheets/imports",
+      { params },
+    ),
+  upload: (file: File, extra?: { mode?: string; target_user_id?: number; import_as_verified?: boolean; justification?: string }) =>
+    hrApi.importTimesheets(file, extra),
+  show: (id: number, params?: { filter?: string; page?: number; per_page?: number }) =>
+    api.get<{
+      data: {
+        batch: TimesheetImportBatch;
+        counts: Record<string, number>;
+        unmatched_employees?: Array<{ email: string; name?: string | null }>;
+        rows: { data: TimesheetImportRow[]; current_page: number; last_page: number; total: number };
+      };
+    }>(`/hr/timesheets/imports/${id}`, { params }),
+  map: (id: number, data: { column_map?: Record<string, string>; employee_maps?: Array<{ email: string; user_id: number }>; apply_to_all?: boolean }) =>
+    api.post<{ message: string; data: TimesheetImportBatch }>(`/hr/timesheets/imports/${id}/map`, data),
+  validate: (id: number) =>
+    api.post<{ message: string; data: TimesheetImportBatch }>(`/hr/timesheets/imports/${id}/validate`),
+  confirm: (id: number, importValidOnly = true) =>
+    api.post<{ message: string; data: TimesheetImportBatch }>(`/hr/timesheets/imports/${id}/confirm`, {
+      import_valid_only: importValidOnly,
+    }),
+  downloadFailures: (id: number) =>
+    api.get<Blob>(`/hr/timesheets/imports/${id}/failures`, { responseType: "blob" }).then((res) => {
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `timesheet-import-${id}-failures.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }),
+  verify: (id: number, justification: string) =>
+    api.post<{ message: string; data: TimesheetImportBatch }>(`/hr/timesheets/imports/${id}/verify`, { justification }),
+  rollback: (id: number, reason: string) =>
+    api.post<{ message: string; data: TimesheetImportBatch }>(`/hr/timesheets/imports/${id}/rollback`, { reason }),
+  reverse: (id: number, reason: string) =>
+    api.post<{ message: string; data: TimesheetImportBatch }>(`/hr/timesheets/imports/${id}/reverse`, { reason }),
 };
 
 export interface TimesheetTemplate {

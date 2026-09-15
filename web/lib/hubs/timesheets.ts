@@ -3,6 +3,7 @@ import type { HubCard } from "@/components/ui/ModuleHubCards";
 export const TIMESHEET_SIDEBAR_CHILDREN = [
   { label: "My timesheet", href: "/hr/timesheets", icon: "edit_note" },
   { label: "Monthly view", href: "/hr/timesheets/monthly", icon: "calendar_month" },
+  { label: "Import previous timesheets", href: "/hr/timesheets/import", icon: "upload_file" },
 ] as const;
 
 const HR_TIMESHEET_ADMIN = ["hr.admin", "timesheets.admin"] as const;
@@ -37,6 +38,22 @@ export const TIMESHEET_HUB_CARDS: HubCard[] = [
     permission: [...TIMESHEET_APPROVER],
   },
   { href: "/hr/timesheets/history", title: "History", purpose: "Previous weeks you submitted.", icon: "history", section: "views" },
+  {
+    href: "/hr/timesheets/import",
+    title: "timesheet.import.hubTitle",
+    purpose: "timesheet.import.hubPurpose",
+    icon: "upload_file",
+    section: "tools",
+    permission: ["timesheets.import-own", "timesheets.import-single", "timesheets.import-multi", "timesheets.admin"],
+  },
+  {
+    href: "/hr/timesheets/admin/import",
+    title: "timesheet.import.adminHubTitle",
+    purpose: "timesheet.import.adminHubPurpose",
+    icon: "group",
+    section: "tools",
+    permission: ["timesheets.import-single", "timesheets.import-multi", "timesheets.admin", "hr.admin"],
+  },
   {
     href: "/hr/timesheets/schedules",
     title: "Work schedules",

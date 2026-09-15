@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
  */
 class TimesheetCapacityAnalyticsService
 {
-    public function analytics(User $viewer, string $weekStart, string $weekEnd, ?int $departmentId = null): array
+    public function analytics(User $viewer, string $weekStart, string $weekEnd, ?int $departmentId = null, string $origin = 'nexus'): array
     {
         $start = Carbon::parse($weekStart)->toDateString();
         $end = Carbon::parse($weekEnd)->toDateString();
@@ -22,6 +22,14 @@ class TimesheetCapacityAnalyticsService
             ->where('tenant_id', $viewer->tenant_id)
             ->whereDate('week_start', '>=', $start)
             ->whereDate('week_end', '<=', $end);
+
+        if ($origin === 'historical_import') {
+            $query->where('origin', 'historical_import');
+        } elseif ($origin !== 'all') {
+            $query->where(function ($q) {
+                $q->whereNull('origin')->orWhere('origin', 'nexus');
+            });
+        }
 
         if ($deptId && ! $viewer->hasAnyRole(['System Admin', 'Secretary General', 'HR Manager', 'HR Administrator'])) {
             $query->whereHas('user', fn ($q) => $q->where('department_id', $deptId));

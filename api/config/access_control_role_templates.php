@@ -18,6 +18,7 @@ return [
             'timesheet.module.view', 'timesheet.create.self', 'timesheet.read.self',
             'timesheets.view', 'timesheets.create', 'timesheets.view-own', 'timesheets.create-own',
             'timesheets.edit-own-draft', 'timesheets.submit',
+            'timesheets.import-own',
             'assignment.module.view', 'assignment.read.assigned', 'assignments.view', 'assignments.create',
             'weekly_report.module.view', 'weekly_report.create.self',
             'weekly-reports.view-own', 'weekly-reports.create-own', 'weekly-reports.edit-own-draft', 'weekly-reports.submit',

@@ -18,15 +18,20 @@ function weekLabel(weekStart: string, weekEnd: string): string {
 const STATUS_CONFIG: Record<string, { label: string; cls: string; icon: string }> = {
   draft:     { label: "Draft",    cls: "badge-muted",    icon: "edit_note"    },
   submitted: { label: "Pending",  cls: "badge-warning",  icon: "pending"      },
-  approved:  { label: "Approved", cls: "badge-success",  icon: "check_circle" },
+  approved:  { label: "Nexus Approved", cls: "badge-success",  icon: "check_circle" },
   rejected:  { label: "Rejected", cls: "badge-danger",   icon: "cancel"       },
+  imported:  { label: "Imported (historical)", cls: "badge-muted", icon: "history" },
+  verified_historical: { label: "Verified Historical", cls: "badge-success", icon: "verified" },
+  returned: { label: "Returned", cls: "badge-warning", icon: "undo" },
 };
 
 const FILTER_TABS = [
   { value: "",          label: "All"      },
   { value: "draft",     label: "Draft"    },
   { value: "submitted", label: "Pending"  },
-  { value: "approved",  label: "Approved" },
+  { value: "approved",  label: "Nexus Approved" },
+  { value: "imported",  label: "Imported" },
+  { value: "verified_historical", label: "Verified Historical" },
   { value: "rejected",  label: "Rejected" },
 ];
 

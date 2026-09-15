@@ -164,6 +164,7 @@ const NAV_ITEMS: NavItem[] = [
     children: [
       { label: "My Timesheet", href: "/hr/timesheets", icon: "edit_note" },
       { label: "Monthly View", href: "/hr/timesheets/monthly", icon: "calendar_month" },
+      { label: "Import previous timesheets", href: "/hr/timesheets/import", icon: "upload_file", i18nKey: "timesheet.import.nav" },
     ],
   },
   {
