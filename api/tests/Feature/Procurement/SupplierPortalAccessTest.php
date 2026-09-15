@@ -48,5 +48,6 @@ class SupplierPortalAccessTest extends TestCase
             ->assertJsonPath('count', 1);
 
         $http->getJson('/api/v1/notifications')->assertOk();
+        $http->getJson('/api/v1/alerts/summary')->assertForbidden();
     }
 }

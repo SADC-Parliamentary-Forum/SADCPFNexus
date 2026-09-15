@@ -367,7 +367,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   // Risk Register
   { path: "/risk", permission: ["risk.view", "risk.admin", "risk.manage", "governance.view"] },
   // Notifications
-  { path: "/notifications", permission: ["notifications.view", "notifications.view-own", "notifications.view.own", "notifications.inbox", "alerts.view", "supplier.portal"] },
+  { path: "/notifications", permission: ["notifications.view", "notifications.view-own", "notifications.view.own", "notifications.inbox", "alerts.view"] },
   { path: "/alerts", permission: ["alerts.view", "notifications.view"] },
   // Documents
   { path: "/documents", permission: ["documents.view", "documents.manage", "documents.admin"] },

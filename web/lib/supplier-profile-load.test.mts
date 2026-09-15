@@ -24,3 +24,10 @@ test("header unread-count polling does not retry forbidden responses", () => {
   assert.match(source, /unreadCount/);
   assert.match(source, /status === 403/);
 });
+
+test("supplier portal permission does not unlock the staff alerts page", () => {
+  const access = readPage("lib/authAccess.ts");
+  const notificationsLine = access.split("\n").find((line) => line.includes('path: "/notifications"'));
+  assert.ok(notificationsLine);
+  assert.doesNotMatch(notificationsLine, /supplier\.portal/);
+});
