@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useState } from "react";
+import { FormEvent, useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AssetQrCamera } from "@/components/assets/AssetQrCamera";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
@@ -10,28 +10,36 @@ import { useI18n } from "@/lib/i18n/LocaleProvider";
 export default function AssetScanPage() {
   const { t } = useI18n();
   const router = useRouter();
+  const lookupSeq = useRef(0);
+  const busyRef = useRef(false);
   const [raw, setRaw] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [hit, setHit] = useState<AssetScanHit | null>(null);
   const [cameraActive, setCameraActive] = useState(true);
+  const [restartKey, setRestartKey] = useState(0);
 
   const runLookup = useCallback(async (value: string) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    const seq = ++lookupSeq.current;
     setBusy(true);
     setError("");
-    setHit(null);
     try {
       const result = await lookupAssetFromQrRaw(value);
+      if (seq !== lookupSeq.current) return;
       if (!result.ok) {
         setError(t(result.reason === "invalid" ? "assets.scan.invalid" : "assets.scan.notFound"));
-        setCameraActive(true);
         return;
       }
       setRaw(result.token);
       setHit(result.hit);
       setCameraActive(false);
     } finally {
-      setBusy(false);
+      if (seq === lookupSeq.current) {
+        busyRef.current = false;
+        setBusy(false);
+      }
     }
   }, [t]);
 
@@ -41,10 +49,14 @@ export default function AssetScanPage() {
   }
 
   function scanAnother() {
+    lookupSeq.current += 1;
+    busyRef.current = false;
     setHit(null);
     setError("");
     setRaw("");
+    setBusy(false);
     setCameraActive(true);
+    setRestartKey((key) => key + 1);
   }
 
   return (
@@ -75,7 +87,12 @@ export default function AssetScanPage() {
               <span className="text-xs font-medium uppercase tracking-wide text-primary-700">{t("assets.scan.decoding")}</span>
             )}
           </div>
-          <AssetQrCamera active={cameraActive && !busy} onDetect={(value) => void runLookup(value)} />
+          <AssetQrCamera
+            active={cameraActive}
+            scanning={cameraActive && !busy}
+            restartKey={restartKey}
+            onDetect={runLookup}
+          />
         </section>
 
         <section className="card space-y-4 p-5 lg:col-span-2" aria-labelledby="scan-manual-heading">

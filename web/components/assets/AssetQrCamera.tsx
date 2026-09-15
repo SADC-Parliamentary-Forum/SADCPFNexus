@@ -7,31 +7,48 @@ import { useI18n } from "@/lib/i18n/LocaleProvider";
 type CameraError = "denied" | "missing" | "unsupported" | "insecure" | "photo";
 
 type Props = {
+  /** When false, the live stream is torn down (successful match). */
   active: boolean;
+  /** When false, keep the preview but stop decoding (lookup in flight). */
+  scanning: boolean;
+  /** Increment after Scan another to reopen the camera from a user gesture. */
+  restartKey?: number;
   onDetect: (raw: string) => void;
 };
 
-export function AssetQrCamera({ active, onDetect }: Props) {
+export function AssetQrCamera({ active, scanning, restartKey = 0, onDetect }: Props) {
   const { t } = useI18n();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number>(0);
   const decodingRef = useRef(false);
-  const lastValueRef = useRef("");
-  const lastAtRef = useRef(0);
+  const lockedRef = useRef(false);
+  const startGenRef = useRef(0);
+  const activeRef = useRef(active);
+  const scanningRef = useRef(scanning);
   const devicesRef = useRef<string[]>([]);
   const deviceIndexRef = useRef(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const [live, setLive] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
   const [torchAvailable, setTorchAvailable] = useState(false);
   const [canSwitch, setCanSwitch] = useState(false);
   const [error, setError] = useState<CameraError | null>(null);
 
-  const stopStream = useCallback(() => {
+  activeRef.current = active;
+  scanningRef.current = scanning;
+
+  const stopLoop = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
+    rafRef.current = 0;
+    decodingRef.current = false;
+  }, []);
+
+  const stopStream = useCallback(() => {
+    startGenRef.current += 1;
+    stopLoop();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     const video = videoRef.current;
@@ -39,23 +56,20 @@ export function AssetQrCamera({ active, onDetect }: Props) {
     setLive(false);
     setTorchOn(false);
     setTorchAvailable(false);
-  }, []);
+  }, [stopLoop]);
 
   const emit = useCallback((raw: string) => {
     const value = raw.trim();
-    if (!value) return;
-    const now = Date.now();
-    if (value === lastValueRef.current && now - lastAtRef.current < 2500) return;
-    lastValueRef.current = value;
-    lastAtRef.current = now;
+    if (!value || lockedRef.current || !scanningRef.current) return;
+    lockedRef.current = true;
     onDetect(value);
   }, [onDetect]);
 
   const scanLoop = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || !streamRef.current) return;
-    if (!decodingRef.current) {
+    if (!video || !canvas || !streamRef.current || !scanningRef.current) return;
+    if (!decodingRef.current && !lockedRef.current) {
       decodingRef.current = true;
       void decodeQrFromVideo(video, canvas)
         .then((value) => {
@@ -77,9 +91,13 @@ export function AssetQrCamera({ active, onDetect }: Props) {
       setError("insecure");
       return;
     }
-    setBusy(true);
+    const gen = ++startGenRef.current;
+    setStarting(true);
     setError(null);
-    stopStream();
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    stopLoop();
+    const stale = () => gen !== startGenRef.current || !activeRef.current;
     const requestStream = (video: boolean | MediaTrackConstraints) =>
       navigator.mediaDevices.getUserMedia({ audio: false, video });
     try {
@@ -97,6 +115,10 @@ export function AssetQrCamera({ active, onDetect }: Props) {
         }
         stream = await requestStream(true);
       }
+      if (stale()) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       streamRef.current = stream;
       const video = videoRef.current;
       if (!video) {
@@ -105,10 +127,17 @@ export function AssetQrCamera({ active, onDetect }: Props) {
       }
       video.srcObject = stream;
       await video.play();
+      if (stale()) {
+        stream.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        video.srcObject = null;
+        return;
+      }
       const track = stream.getVideoTracks()[0];
       const capabilities = (track.getCapabilities?.() ?? {}) as MediaTrackCapabilities & { torch?: boolean };
       setTorchAvailable(Boolean(capabilities.torch));
       const devices = await navigator.mediaDevices.enumerateDevices();
+      if (stale()) return;
       const cameras = devices.filter((item) => item.kind === "videoinput").map((item) => item.deviceId);
       devicesRef.current = cameras;
       setCanSwitch(cameras.length > 1);
@@ -116,10 +145,17 @@ export function AssetQrCamera({ active, onDetect }: Props) {
         const idx = cameras.indexOf(deviceId);
         deviceIndexRef.current = idx >= 0 ? idx : 0;
       }
+      lockedRef.current = false;
       setLive(true);
-      rafRef.current = requestAnimationFrame(scanLoop);
+      if (scanningRef.current) {
+        rafRef.current = requestAnimationFrame(scanLoop);
+      }
     } catch (err) {
+      if (stale()) return;
       const name = err instanceof DOMException ? err.name : "";
+      if (name === "AbortError") {
+        return;
+      }
       if (name === "NotAllowedError" || name === "PermissionDeniedError") {
         setError("denied");
       } else if (name === "NotFoundError" || name === "OverconstrainedError") {
@@ -129,14 +165,38 @@ export function AssetQrCamera({ active, onDetect }: Props) {
       }
       stopStream();
     } finally {
-      setBusy(false);
+      if (gen === startGenRef.current) {
+        setStarting(false);
+      }
     }
-  }, [scanLoop, stopStream]);
+  }, [scanLoop, stopLoop, stopStream]);
 
   useEffect(() => {
-    if (!active) stopStream();
-    return () => stopStream();
+    if (!active) {
+      stopStream();
+    }
   }, [active, stopStream]);
+
+  useEffect(() => {
+    if (!active) return;
+    if (scanning && streamRef.current && rafRef.current === 0) {
+      lockedRef.current = false;
+      rafRef.current = requestAnimationFrame(scanLoop);
+    }
+    if (!scanning) {
+      stopLoop();
+    }
+  }, [active, scanning, scanLoop, stopLoop]);
+
+  useEffect(() => {
+    if (!active || restartKey < 1) return;
+    lockedRef.current = false;
+    void startStream();
+    // Restart is keyed; startStream identity must not retrigger getUserMedia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restartKey is the session token
+  }, [active, restartKey]);
+
+  useEffect(() => () => stopStream(), [stopStream]);
 
   async function toggleTorch() {
     const track = streamRef.current?.getVideoTracks()[0];
@@ -158,7 +218,7 @@ export function AssetQrCamera({ active, onDetect }: Props) {
   }
 
   async function onPhoto(file: File | undefined) {
-    if (!file) return;
+    if (!file || !scanning || lockedRef.current) return;
     setError(null);
     const value = await decodeQrFromImageFile(file);
     if (value) {
@@ -175,6 +235,8 @@ export function AssetQrCamera({ active, onDetect }: Props) {
     insecure: t("assets.scan.insecureContext"),
     photo: t("assets.scan.photoInvalid"),
   }[error];
+
+  const photoDisabled = !scanning || starting;
 
   return (
     <div className="flex h-full flex-col">
@@ -203,7 +265,7 @@ export function AssetQrCamera({ active, onDetect }: Props) {
             <span className="absolute bottom-0 left-0 h-8 w-8 rounded-bl-sm border-b-2 border-l-2 border-[#7db2ee]" />
             <span className="absolute bottom-0 right-0 h-8 w-8 rounded-br-sm border-b-2 border-r-2 border-[#7db2ee]" />
           </div>
-          {live && (
+          {live && scanning && (
             <div className="pointer-events-none absolute inset-x-[18%] top-1/2 h-px bg-[#7db2ee]/90 shadow-[0_0_12px_#1a65bb]" />
           )}
         </div>
@@ -224,11 +286,11 @@ export function AssetQrCamera({ active, onDetect }: Props) {
             type="button"
             className="btn-primary"
             onClick={() => void startStream()}
-            disabled={busy || !active}
+            disabled={starting || !active}
             data-testid="scan-start-camera"
           >
             <span className="material-symbols-outlined text-[18px]" aria-hidden>photo_camera</span>
-            {busy ? t("common.loading") : t("assets.scan.startCamera")}
+            {starting ? t("common.loading") : t("assets.scan.startCamera")}
           </button>
         )}
         {live && canSwitch && (
@@ -249,6 +311,7 @@ export function AssetQrCamera({ active, onDetect }: Props) {
           type="button"
           className="btn-secondary"
           onClick={() => fileRef.current?.click()}
+          disabled={photoDisabled}
           data-testid="scan-use-photo"
         >
           <span className="material-symbols-outlined text-[18px]" aria-hidden>image</span>
@@ -261,6 +324,7 @@ export function AssetQrCamera({ active, onDetect }: Props) {
           capture="environment"
           className="sr-only"
           data-testid="scan-qr-file"
+          disabled={photoDisabled}
           aria-label={t("assets.scan.photoHint")}
           onChange={(e) => {
             const file = e.target.files?.[0];
