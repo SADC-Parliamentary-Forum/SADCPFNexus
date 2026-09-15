@@ -393,9 +393,176 @@ class AssetIssuanceHandoverTest extends TestCase
             ->assertOk();
 
         $this->actingAs($staff, 'sanctum')->getJson('/api/v1/assets')->assertForbidden();
-        $this->actingAs($staff, 'sanctum')
+        $mine = $this->actingAs($staff, 'sanctum')
             ->getJson('/api/v1/assets/assigned-to-me')
             ->assertOk()
-            ->assertJsonPath('data.0.id', $asset->id);
+            ->assertJsonPath('data.0.id', $asset->id)
+            ->json();
+        $this->assertArrayNotHasKey('summary', $mine);
+    }
+
+    public function test_signed_handover_cannot_be_resigned_responded_or_cancelled(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $admin] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $this->seedCategory($tenant);
+        $batchId = $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Lot', 'qty' => 2, 'category' => 'ICT', 'subcategory_code' => 'LT',
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-batches/{$batchId}/create-assets", ['name' => 'Laptop'])->assertOk();
+        $assets = Asset::query()->where('acquisition_batch_id', $batchId)->orderBy('id')->get();
+
+        $handoverId = $http->postJson('/api/v1/asset-handovers', [
+            'type' => 'issue',
+            'custody_target_type' => 'person',
+            'to_user_id' => $staff->id,
+            'asset_ids' => $assets->pluck('id')->all(),
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-handovers/{$handoverId}/send")->assertOk();
+        $ok = AssetHandoverLine::query()->where('handover_id', $handoverId)->where('asset_id', $assets[0]->id)->firstOrFail();
+        $bad = AssetHandoverLine::query()->where('handover_id', $handoverId)->where('asset_id', $assets[1]->id)->firstOrFail();
+        $this->actingAs($staff, 'sanctum')->postJson("/api/v1/asset-handovers/{$handoverId}/lines/{$ok->id}/respond", ['response' => 'received'])->assertOk();
+        $this->actingAs($staff, 'sanctum')->postJson("/api/v1/asset-handovers/{$handoverId}/lines/{$bad->id}/respond", [
+            'response' => 'condition_different',
+            'dispute_notes' => 'Crack',
+            'condition_in' => 'poor',
+        ])->assertOk();
+        $this->actingAs($staff, 'sanctum')->postJson("/api/v1/asset-handovers/{$handoverId}/sign")->assertOk()
+            ->assertJsonPath('data.status', 'partially_accepted');
+
+        $this->actingAs($staff, 'sanctum')->postJson("/api/v1/asset-handovers/{$handoverId}/sign")->assertStatus(422);
+        $this->actingAs($staff, 'sanctum')
+            ->postJson("/api/v1/asset-handovers/{$handoverId}/lines/{$ok->id}/respond", ['response' => 'not_received'])
+            ->assertStatus(422);
+        $this->actingAs($admin, 'sanctum')
+            ->postJson("/api/v1/asset-handovers/{$handoverId}/cancel")
+            ->assertStatus(422);
+        $this->assertSame($staff->id, $assets[0]->fresh()->assigned_to);
+    }
+
+    public function test_handover_payload_redacts_financials_for_recipients(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $this->seedCategory($tenant);
+        $batchId = $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Lot', 'qty' => 1, 'category' => 'ICT', 'subcategory_code' => 'LT', 'unit_cost' => 12500,
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-batches/{$batchId}/create-assets", ['name' => 'Laptop'])->assertOk();
+        $asset = Asset::query()->where('acquisition_batch_id', $batchId)->firstOrFail();
+        $handoverId = $http->postJson('/api/v1/asset-handovers', [
+            'type' => 'issue',
+            'custody_target_type' => 'person',
+            'to_user_id' => $staff->id,
+            'asset_ids' => [$asset->id],
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-handovers/{$handoverId}/send")->assertOk();
+
+        $shown = $this->actingAs($staff, 'sanctum')
+            ->getJson("/api/v1/asset-handovers/{$handoverId}")
+            ->assertOk()
+            ->json('data');
+        $nested = $shown['lines'][0]['asset'] ?? [];
+        $this->assertTrue(! isset($nested['purchase_value']) || $nested['purchase_value'] === null);
+        $this->assertTrue(! isset($nested['book_value']) || $nested['book_value'] === null);
+        $this->assertTrue(! isset($nested['current_value']) || $nested['current_value'] === null);
+    }
+
+    public function test_handover_reminders_do_not_truncate_sent_at(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $this->seedCategory($tenant);
+        $batchId = $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Lot', 'qty' => 1, 'category' => 'ICT', 'subcategory_code' => 'LT',
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-batches/{$batchId}/create-assets", ['name' => 'Laptop'])->assertOk();
+        $asset = Asset::query()->where('acquisition_batch_id', $batchId)->firstOrFail();
+        $handoverId = $http->postJson('/api/v1/asset-handovers', [
+            'type' => 'issue',
+            'custody_target_type' => 'person',
+            'to_user_id' => $staff->id,
+            'asset_ids' => [$asset->id],
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-handovers/{$handoverId}/send")->assertOk();
+        $sentAt = AssetHandover::query()->findOrFail($handoverId)->sent_at->copy();
+
+        app(\App\Modules\Assets\Services\AssetHandoverService::class)->sendReminders();
+
+        $fresh = AssetHandover::query()->findOrFail($handoverId);
+        $this->assertTrue($sentAt->equalTo($fresh->sent_at), 'sent_at must stay the original send timestamp');
+        $this->assertSame($sentAt->hour, $fresh->sent_at->hour);
+    }
+
+    public function test_checkout_is_blocked_while_handover_is_reserved(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $this->seedCategory($tenant);
+        $batchId = $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Lot', 'qty' => 1, 'category' => 'ICT', 'subcategory_code' => 'LT',
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-batches/{$batchId}/create-assets", ['name' => 'Laptop'])->assertOk();
+        $asset = Asset::query()->where('acquisition_batch_id', $batchId)->firstOrFail();
+        $handoverId = $http->postJson('/api/v1/asset-handovers', [
+            'type' => 'issue',
+            'custody_target_type' => 'person',
+            'to_user_id' => $staff->id,
+            'asset_ids' => [$asset->id],
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-handovers/{$handoverId}/send")->assertOk();
+
+        $http->postJson("/api/v1/assets/{$asset->id}/checkout", [
+            'borrower_id' => $staff->id,
+            'purpose' => 'Loan while reserved',
+        ])->assertStatus(422);
+        $this->assertSame($handoverId, $asset->fresh()->reserved_handover_id);
+    }
+
+    public function test_transfer_dispute_keeps_current_custodian(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $admin] = $this->asAdmin($tenant);
+        $first = $this->makeUser('staff', $tenant);
+        $second = $this->makeUser('staff', $tenant);
+        $this->seedCategory($tenant);
+        $batchId = $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Lot', 'qty' => 1, 'category' => 'ICT', 'subcategory_code' => 'LT',
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-batches/{$batchId}/create-assets", ['name' => 'Laptop'])->assertOk();
+        $asset = Asset::query()->where('acquisition_batch_id', $batchId)->firstOrFail();
+
+        $issueId = $http->postJson('/api/v1/asset-handovers', [
+            'type' => 'issue', 'custody_target_type' => 'person',
+            'to_user_id' => $first->id, 'asset_ids' => [$asset->id],
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-handovers/{$issueId}/send")->assertOk();
+        $line = AssetHandoverLine::query()->where('handover_id', $issueId)->firstOrFail();
+        $this->actingAs($first, 'sanctum')->postJson("/api/v1/asset-handovers/{$issueId}/lines/{$line->id}/respond", ['response' => 'received'])->assertOk();
+        $this->actingAs($first, 'sanctum')->postJson("/api/v1/asset-handovers/{$issueId}/sign")->assertOk();
+        $this->assertSame($first->id, $asset->fresh()->assigned_to);
+
+        $this->travel(45)->minutes();
+        $this->asUser($admin);
+        $transferId = $http->postJson('/api/v1/asset-handovers', [
+            'type' => 'transfer', 'custody_target_type' => 'person',
+            'from_user_id' => $first->id, 'to_user_id' => $second->id, 'asset_ids' => [$asset->id],
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-handovers/{$transferId}/send")->assertOk();
+        $tLine = AssetHandoverLine::query()->where('handover_id', $transferId)->firstOrFail();
+        $this->actingAs($second, 'sanctum')->postJson("/api/v1/asset-handovers/{$transferId}/lines/{$tLine->id}/respond", [
+            'response' => 'not_received',
+            'dispute_notes' => 'Never collected',
+        ])->assertOk();
+        $this->actingAs($second, 'sanctum')->postJson("/api/v1/asset-handovers/{$transferId}/sign")->assertOk();
+
+        $fresh = $asset->fresh();
+        $this->assertSame($first->id, $fresh->assigned_to);
+        $this->assertNull($fresh->reserved_handover_id);
+        $this->assertNotSame('available', $fresh->status);
     }
 }

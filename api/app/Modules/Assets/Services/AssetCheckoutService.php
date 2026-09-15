@@ -32,6 +32,9 @@ class AssetCheckoutService
         if (AssetCheckout::query()->where('asset_id', $asset->id)->whereNull('returned_at')->exists()) {
             throw ValidationException::withMessages(['asset' => 'Asset is already checked out.']);
         }
+        if ($asset->reserved_handover_id) {
+            throw ValidationException::withMessages(['asset' => 'Asset is reserved for a handover.']);
+        }
 
         $borrower = User::query()->where('tenant_id', $actor->tenant_id)->findOrFail($data['borrower_id']);
 

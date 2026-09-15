@@ -86,8 +86,10 @@ class AssetController extends Controller
     public function assignedToMe(Request $request): JsonResponse
     {
         $request->merge(['assigned_to' => 'me']);
+        $payload = $this->index($request)->getData(true);
+        unset($payload['summary']);
 
-        return $this->index($request);
+        return response()->json($payload);
     }
 
     /**
