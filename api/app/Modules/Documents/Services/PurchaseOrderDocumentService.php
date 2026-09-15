@@ -138,18 +138,22 @@ final class PurchaseOrderDocumentService
         if (! $po) {
             abort(404);
         }
-        $status = $po->status === 'void' ? 'VOID' : 'VALID';
-        if ($output->status === 'void' || $po->status === 'void') {
-            $status = 'VOID';
-        }
+        $inactive = in_array($po->status, ['void', 'cancelled'], true)
+            || $output->status === 'void';
+        $snapshot = is_array($output->data_snapshot) ? $output->data_snapshot : [];
+        $reference = (string) ($snapshot['reference'] ?? $po->lpo_number ?: $po->reference_number);
+        $supplier = (string) ($snapshot['supplier'] ?? $po->vendor?->name ?? '');
+        $amount = isset($snapshot['amount'])
+            ? $this->context->money($snapshot['amount'], $snapshot['currency'] ?? $po->currency)
+            : $this->context->money($po->total_amount, $po->currency);
 
         return [
-            'po' => (string) ($po->lpo_number ?: $po->reference_number),
-            'supplier' => (string) ($po->vendor?->name ?? ''),
-            'amount' => $this->context->money($po->total_amount, $po->currency),
-            'currency' => (string) ($po->currency ?: 'NAD'),
+            'po' => $reference,
+            'supplier' => $supplier,
+            'amount' => $amount,
+            'currency' => (string) ($snapshot['currency'] ?? $po->currency ?: 'NAD'),
             'issued' => optional($po->issued_at ?? $po->lpo_date)?->format('Y-m-d'),
-            'status' => $status,
+            'status' => $inactive ? 'VOID' : 'VALID',
         ];
     }
 

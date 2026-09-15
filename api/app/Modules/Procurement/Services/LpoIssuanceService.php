@@ -404,11 +404,14 @@ class LpoIssuanceService
             'snapshot' => $snapshot,
             'changes' => $data,
         ]);
+        $this->documents->markVoid($po);
         $po->update([
             'revision' => $po->revision + 1,
             'status' => 'draft',
             'final_pdf_attachment_id' => null,
             'final_document_hash' => null,
+            'issued_document_output_id' => null,
+            'issued_template_version_id' => null,
         ]);
         AuditLog::record('procurement.lpo_amended', [
             'auditable_type' => PurchaseOrder::class,

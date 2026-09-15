@@ -92,6 +92,9 @@ class ProcurementRequest extends Model
 
     public function getPoLinkAttribute(): ?array
     {
+        if (! $this->relationLoaded('purchaseOrder')) {
+            return null;
+        }
         $po = $this->purchaseOrder;
         if (! $po) {
             return null;

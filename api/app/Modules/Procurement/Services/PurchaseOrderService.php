@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\User;
+use App\Modules\Documents\Services\PurchaseOrderDocumentService;
 use App\Services\NotificationService;
 use App\Support\FrontendUrl;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -167,6 +168,7 @@ class PurchaseOrderService
             'status' => 'cancelled',
             'cancellation_reason' => $reason,
         ]);
+        app(PurchaseOrderDocumentService::class)->markVoid($po);
 
         AuditLog::record('procurement.po_cancelled', [
             'auditable_type' => PurchaseOrder::class,

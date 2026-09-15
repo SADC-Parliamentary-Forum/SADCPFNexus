@@ -293,6 +293,10 @@ final class PurchaseOrderDocumentContext
         ];
         $tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
         $words = '';
+        if ($n >= 1_000_000) {
+            $words .= $this->intToWords(intdiv($n, 1_000_000)).' million ';
+            $n %= 1_000_000;
+        }
         if ($n >= 1000) {
             $words .= $this->intToWords(intdiv($n, 1000)).' thousand ';
             $n %= 1000;

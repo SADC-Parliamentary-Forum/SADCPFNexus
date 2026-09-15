@@ -310,6 +310,10 @@ final class DocumentNumberingService
         $pattern = $pattern ?: $this->patternFromParts($prefix, $separator, $padding);
         $this->assertPatternSupported($pattern);
 
+        if ($scheme) {
+            $this->assertSequenceNotRewound($tenantId, (int) $scheme->id, $lastLegacyNumber + 1, 'last_legacy_number');
+        }
+
         if (! $scheme) {
             $id = DB::table('numbering_schemes')->insertGetId([
                 'tenant_id' => $tenantId,
@@ -405,16 +409,7 @@ final class DocumentNumberingService
                 throw ValidationException::withMessages(['sequence' => 'Activate numbering before changing the next sequence.']);
             }
 
-            $maxAllocated = NumberingAllocation::query()
-                ->where('tenant_id', $tenantId)
-                ->where('numbering_scheme_id', $scheme->id)
-                ->whereNotNull('sequence_number')
-                ->max('sequence_number');
-            if ($maxAllocated !== null && $nextSequence <= (int) $maxAllocated) {
-                throw ValidationException::withMessages([
-                    'next_sequence' => 'Next sequence cannot rewind into an already allocated number.',
-                ]);
-            }
+            $this->assertSequenceNotRewound($tenantId, (int) $scheme->id, $nextSequence, 'next_sequence');
 
             $seq = $this->lockSequence((int) $scheme->id);
             $previous = (int) $seq->current_value;
@@ -581,6 +576,20 @@ final class DocumentNumberingService
         }
 
         return $sequence;
+    }
+
+    private function assertSequenceNotRewound(int $tenantId, int $schemeId, int $nextSequence, string $field): void
+    {
+        $maxAllocated = NumberingAllocation::query()
+            ->where('tenant_id', $tenantId)
+            ->where('numbering_scheme_id', $schemeId)
+            ->whereNotNull('sequence_number')
+            ->max('sequence_number');
+        if ($maxAllocated !== null && $nextSequence <= (int) $maxAllocated) {
+            throw ValidationException::withMessages([
+                $field => 'Next sequence cannot rewind into an already allocated number.',
+            ]);
+        }
     }
 
     private function assertUnique(int $tenantId, string $documentType, string $normalised): void

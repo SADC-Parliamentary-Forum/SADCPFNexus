@@ -162,6 +162,9 @@ class PurchaseOrder extends Model
 
     public function getSourceRequisitionAttribute(): ?array
     {
+        if (! $this->relationLoaded('procurementRequest')) {
+            return null;
+        }
         $pr = $this->procurementRequest;
         if (! $pr) {
             return null;

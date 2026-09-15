@@ -116,4 +116,12 @@ class DocumentNumberingAndLayoutTest extends TestCase
         $this->assertStringContainsString('.items thead:not(:first-child) tr.cont { display: table-row; }', $html);
         $this->assertDoesNotMatchRegularExpression('/\.items thead tr\.cont \{ display: table-row; \}/', $html);
     }
+
+    public function test_amount_in_words_includes_millions(): void
+    {
+        $words = app(\App\Modules\Documents\Services\PurchaseOrderDocumentContext::class)
+            ->amountInWords(1_250_000, 'NAD');
+        $this->assertStringContainsString('million', strtolower($words));
+        $this->assertStringNotContainsString('thousand thousand', strtolower($words));
+    }
 }

@@ -537,13 +537,14 @@ class PoDocumentEngineTest extends TestCase
         $foreignId = $httpB->getJson('/api/v1/procurement/po-templates')->assertOk()->json('data.0.id');
         $this->assertNotNull(DocumentTemplate::query()->where('id', $foreignId)->where('tenant_id', $tenantB->id)->first());
 
+        $httpA = $this->asUser($officerA);
         [$req, $vendor] = $this->awardedPayload($tenantA);
         $id = $httpA->postJson('/api/v1/procurement/purchase-orders', [
             'procurement_request_id' => $req->id,
             'vendor_id' => $vendor->id,
             'title' => 'Foreign template',
             'items' => [['description' => 'Item', 'quantity' => 1, 'unit' => 'unit', 'unit_price' => 10, 'total_price' => 10]],
-        ])->json('data.id');
+        ])->assertCreated()->json('data.id');
 
         $httpA->postJson("/api/v1/procurement/purchase-orders/{$id}/submit", [
             'template_id' => $foreignId,
@@ -621,6 +622,105 @@ class PoDocumentEngineTest extends TestCase
     {
         $this->getJson('/api/v1/public/assets/not-a-real-token')->assertNotFound();
         $this->getJson('/api/v1/public/purchase-orders/verify/not-a-real-token')->assertNotFound();
+    }
+
+    public function test_amend_clears_frozen_output_so_reissue_gets_a_new_verify_token(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'JVJ Plumbing Services', 'is_approved' => true, 'is_active' => true]);
+        $po = PurchaseOrder::create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Approved plumbing',
+            'total_amount' => 100,
+            'currency' => 'NAD',
+            'status' => 'approved',
+            'created_by' => $officer->id,
+            'lpo_number' => 'S 04022',
+            'reference_number' => 'S 04022',
+            'normalised_reference' => 'S04022',
+        ]);
+        $po->items()->create([
+            'description' => 'Unblock drain',
+            'quantity' => 1,
+            'unit' => 'job',
+            'unit_price' => 100,
+            'total_price' => 100,
+        ]);
+        $issued = app(LpoIssuanceService::class)->generateFinalPdf($po, $officer);
+        $oldToken = DocumentOutput::query()->find($issued->issued_document_output_id)?->verify_token;
+        $this->assertNotEmpty($oldToken);
+
+        $http->postJson("/api/v1/procurement/purchase-orders/{$po->id}/amend", [
+            'reason' => 'Correct quantity',
+        ])->assertOk();
+        $po->refresh();
+        $this->assertSame('draft', $po->status);
+        $this->assertNull($po->issued_document_output_id);
+        $this->assertNull($po->final_pdf_attachment_id);
+        $this->getJson('/api/v1/public/purchase-orders/verify/'.$oldToken)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'VOID');
+
+        $po->update(['status' => 'approved']);
+        $reissued = app(LpoIssuanceService::class)->generateFinalPdf($po->fresh(), $officer);
+        $newToken = DocumentOutput::query()->find($reissued->issued_document_output_id)?->verify_token;
+        $this->assertNotEmpty($newToken);
+        $this->assertNotSame($oldToken, $newToken);
+        $this->getJson('/api/v1/public/purchase-orders/verify/'.$newToken)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'VALID');
+    }
+
+    public function test_cancelled_issued_po_verifies_as_void(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'JVJ Plumbing Services', 'is_approved' => true, 'is_active' => true]);
+        $po = PurchaseOrder::create([
+            'tenant_id' => $tenant->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Approved plumbing',
+            'total_amount' => 100,
+            'currency' => 'NAD',
+            'status' => 'approved',
+            'created_by' => $officer->id,
+            'lpo_number' => 'S 04023',
+            'reference_number' => 'S 04023',
+            'normalised_reference' => 'S04023',
+        ]);
+        $issued = app(LpoIssuanceService::class)->generateFinalPdf($po, $officer);
+        $token = DocumentOutput::query()->find($issued->issued_document_output_id)?->verify_token;
+        $this->assertNotEmpty($token);
+
+        $http->postJson("/api/v1/procurement/purchase-orders/{$po->id}/cancel", [
+            'reason' => 'Supplier withdrew',
+        ])->assertOk();
+        $this->getJson('/api/v1/public/purchase-orders/verify/'.$token)
+            ->assertOk()
+            ->assertJsonPath('data.status', 'VOID');
+    }
+
+    public function test_activate_cannot_rewind_into_allocated_sequence(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $officer] = $this->asProcurementOfficer($tenant);
+        $this->seedWorkflow($tenant, $officer);
+        app(LpoSequenceAllocator::class)->activate($tenant->id, $officer, 4015, 'Legacy');
+        [$req, $vendor] = $this->awardedPayload($tenant);
+        $id = $http->postJson('/api/v1/procurement/purchase-orders', [
+            'procurement_request_id' => $req->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Allocated',
+            'items' => [['description' => 'Item', 'quantity' => 1, 'unit' => 'unit', 'unit_price' => 10, 'total_price' => 10]],
+        ])->assertCreated()->json('data.id');
+        $http->postJson("/api/v1/procurement/purchase-orders/{$id}/submit")->assertOk();
+
+        $http->postJson('/api/v1/procurement/numbering-profiles/activate', [
+            'last_existing_reference' => 'S 04010',
+            'reason' => 'Rewind activation',
+        ])->assertUnprocessable();
     }
 
     private function seedLegacyIssuedPo(Tenant $tenant, $officer, string $lpoNumber): PurchaseOrder
