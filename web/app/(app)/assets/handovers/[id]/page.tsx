@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { assetsApi, type AssetHandover, type AssetHandoverLine } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { getStoredUser } from "@/lib/auth";
+import { canManageHandovers, getStoredUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const RESPONSES: Array<{ value: string; key: string }> = [
@@ -21,8 +21,9 @@ export default function HandoverDetailPage() {
   const numericId = Number(id);
   const [handover, setHandover] = useState<AssetHandover | null>(null);
   const [notes, setNotes] = useState<Record<number, string>>({});
-  const [busy, setBusy] = useState<number | "sign" | null>(null);
+  const [busy, setBusy] = useState<number | "sign" | "paper" | null>(null);
   const [error, setError] = useState("");
+  const [paperNumber, setPaperNumber] = useState("");
   const me = getStoredUser();
 
   const load = useCallback(async () => {
@@ -64,7 +65,22 @@ export default function HandoverDetailPage() {
     }
   }
 
-  const canRespond = handover && (me?.id === handover.to_user_id || handover.status === "return_initiated");
+  async function paperSign() {
+    if (!paperNumber.trim()) return;
+    setBusy("paper");
+    setError("");
+    try {
+      await assetsApi.paperSignHandover(numericId, { paper_receipt_number: paperNumber.trim() });
+      await load();
+    } catch {
+      setError(t("assets.mine.actionFailed"));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const canRespond = handover && (me?.id === handover.to_user_id || me?.id === handover.delegate_user_id || handover.status === "return_initiated");
+  const canPaper = handover && canManageHandovers(me);
   const awaiting = handover && ["awaiting_acceptance", "partially_accepted", "return_initiated"].includes(handover.status);
 
   return (
@@ -79,6 +95,8 @@ export default function HandoverDetailPage() {
         <>
           <p className="text-sm"><strong>{t("assets.handover.owner")}:</strong> {handover.owner || t("assets.handover.ownerValue")}</p>
           <p className="text-sm">{handover.type} · {handover.status} · {handover.to_user?.name ?? handover.custody_target_type}</p>
+          {handover.delegate_user ? <p className="text-sm">{t("assets.handover.delegate")}: {handover.delegate_user.name}</p> : null}
+          {handover.paper_receipt_number ? <p className="text-sm">{t("assets.handover.paperNumber")}: {handover.paper_receipt_number}</p> : null}
           <p className="text-sm text-neutral-600">{t("assets.handover.partialHint")}</p>
           <div className="space-y-3">
             {(handover.lines ?? []).map((line) => (
@@ -120,6 +138,20 @@ export default function HandoverDetailPage() {
             <button type="button" className="btn-primary" disabled={busy === "sign"} onClick={() => void sign()} data-testid="handover-sign">
               {busy === "sign" ? t("common.loading") : t("assets.handover.sign")}
             </button>
+          )}
+          {canPaper && awaiting && (
+            <div className="flex flex-wrap gap-2">
+              <input
+                className="form-input"
+                value={paperNumber}
+                onChange={(e) => setPaperNumber(e.target.value)}
+                placeholder={t("assets.handover.paperNumber")}
+                data-testid="handover-paper-number"
+              />
+              <button type="button" className="btn-secondary" disabled={busy === "paper" || !paperNumber.trim()} onClick={() => void paperSign()} data-testid="handover-paper-sign">
+                {t("assets.handover.paperSign")}
+              </button>
+            </div>
           )}
           {handover.status === "accepted" || handover.status === "partially_accepted" || handover.status === "return_verified" ? (
             <a className="btn-secondary inline-block" href={assetsApi.handoverCertificateUrl(handover.id)}>{t("assets.handover.certificate")}</a>

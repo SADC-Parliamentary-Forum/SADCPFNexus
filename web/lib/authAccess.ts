@@ -64,6 +64,12 @@ export function canManageAssets(user: AuthAccessUser | null | undefined): boolea
   return hasPermission(user, ASSETS_MANAGE_PERMISSIONS);
 }
 
+export function canManageHandovers(user: AuthAccessUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, ["assets.handover.manage", "assets.admin", "assets.manage"]);
+}
+
 /** True if the user can raise or complete a disposal workflow. */
 export function canDisposeAssets(user: AuthAccessUser | null | undefined): boolean {
   if (!user) return false;
@@ -336,6 +342,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/hr", permission: "hr.view" },
   { path: "/reports", permission: "reports.view" },
   { path: "/assets/scan", permission: ["assets.scan", "assets.view", "assets.verify", "assets.admin", "assets.manage"] },
+  { path: "/assets/kits", permission: ["assets.handover.manage", "assets.admin", "assets.manage"] },
+  { path: "/assets/operations", permission: ["assets.handover.manage", "assets.admin", "assets.manage", "assets.handover.accept", "assets.view"] },
   { path: "/assets/mine", permission: ["assets.handover.accept", "assets.view", "assets.admin", "assets.manage", "profile.read.self"] },
   { path: "/assets/handovers", permission: ["assets.handover.manage", "assets.handover.accept", "assets.view", "assets.admin", "assets.manage"] },
   { path: "/assets/batches", permission: ["assets.handover.manage", "assets.admin", "assets.manage"] },

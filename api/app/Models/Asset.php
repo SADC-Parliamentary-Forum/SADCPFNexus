@@ -43,6 +43,7 @@ class Asset extends Model
         'received_date', 'supplier_name', 'vat_amount', 'budget_line', 'capitalisation_date',
         'imei', 'vehicle_registration', 'chassis_vin', 'barcode', 'owner_name', 'replacement_due_on',
         'acquisition_batch_id', 'reserved_handover_id',
+        'nfc_uid', 'parent_asset_id',
     ];
 
     protected $appends = ['age_years', 'age_display', 'current_value', 'qr_url'];
@@ -250,6 +251,16 @@ class Asset extends Model
     public function reservedHandover(): BelongsTo
     {
         return $this->belongsTo(AssetHandover::class, 'reserved_handover_id');
+    }
+
+    public function parentAsset(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_asset_id');
+    }
+
+    public function childAssets(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_asset_id');
     }
 
     public function locationHistories(): HasMany

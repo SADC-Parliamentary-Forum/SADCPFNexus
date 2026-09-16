@@ -1,11 +1,15 @@
 "use client";
 
-import { FormEvent, useCallback, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AssetQrCamera } from "@/components/assets/AssetQrCamera";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { lookupAssetFromQrRaw, type AssetScanHit } from "@/lib/assetQrLookup";
+import { assetsApi, tenantUsersApi, type AssetScanBasket, type TenantUserOption } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+const BASKET_KEY = "asset_scan_basket_id";
 
 export default function AssetScanPage() {
   const { t } = useI18n();
@@ -13,11 +17,45 @@ export default function AssetScanPage() {
   const lookupSeq = useRef(0);
   const busyRef = useRef(false);
   const [raw, setRaw] = useState("");
+  const [nfc, setNfc] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [hit, setHit] = useState<AssetScanHit | null>(null);
   const [cameraActive, setCameraActive] = useState(true);
   const [restartKey, setRestartKey] = useState(0);
+  const [basket, setBasket] = useState<AssetScanBasket | null>(null);
+  const [users, setUsers] = useState<TenantUserOption[]>([]);
+  const [toUserId, setToUserId] = useState("");
+
+  useEffect(() => {
+    tenantUsersApi.list().then((r) => setUsers(r.data.data ?? [])).catch(() => setUsers([]));
+    const stored = Number(sessionStorage.getItem(BASKET_KEY) || 0);
+    if (stored) {
+      assetsApi.getScanBasket(stored).then((r) => {
+        if (r.data.data.status === "open") setBasket(r.data.data);
+        else sessionStorage.removeItem(BASKET_KEY);
+      }).catch(() => sessionStorage.removeItem(BASKET_KEY));
+    }
+  }, []);
+
+  async function ensureBasket(): Promise<number> {
+    if (basket?.id && basket.status === "open") return basket.id;
+    const created = await assetsApi.createScanBasket();
+    sessionStorage.setItem(BASKET_KEY, String(created.data.data.id));
+    setBasket(created.data.data);
+    return created.data.data.id;
+  }
+
+  async function addToBasket(payload: { token?: string; nfc_uid?: string }) {
+    setError("");
+    try {
+      const id = await ensureBasket();
+      const updated = await assetsApi.addScanBasketItem(id, payload);
+      setBasket(updated.data.data);
+    } catch (err) {
+      setError(apiErrorMessage(err, t("assets.scan.notFound")));
+    }
+  }
 
   const runLookup = useCallback(async (value: string) => {
     if (busyRef.current) return;
@@ -45,6 +83,10 @@ export default function AssetScanPage() {
 
   function onManual(e: FormEvent) {
     e.preventDefault();
+    if (nfc.trim()) {
+      void addToBasket({ nfc_uid: nfc.trim() });
+      return;
+    }
     void runLookup(raw);
   }
 
@@ -54,9 +96,26 @@ export default function AssetScanPage() {
     setHit(null);
     setError("");
     setRaw("");
+    setNfc("");
     setBusy(false);
     setCameraActive(true);
     setRestartKey((key) => key + 1);
+  }
+
+  async function startHandover() {
+    if (!basket?.id || !toUserId) return;
+    setError("");
+    try {
+      const started = await assetsApi.startScanBasketHandover(basket.id, {
+        type: "issue",
+        custody_target_type: "person",
+        to_user_id: Number(toUserId),
+      });
+      sessionStorage.removeItem(BASKET_KEY);
+      router.push(`/assets/handovers/${started.data.data.id}`);
+    } catch (err) {
+      setError(apiErrorMessage(err, t("assets.assignFailed")));
+    }
   }
 
   return (
@@ -117,6 +176,18 @@ export default function AssetScanPage() {
               spellCheck={false}
               inputMode="url"
             />
+            <label htmlFor="scan-nfc-input" className="block text-sm font-medium text-neutral-800 dark:text-neutral-200">
+              {t("assets.scan.nfc")}
+            </label>
+            <input
+              id="scan-nfc-input"
+              data-testid="scan-nfc-input"
+              className="form-input font-mono"
+              value={nfc}
+              onChange={(e) => setNfc(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+            />
             {error && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{error}</p>}
             <button type="submit" className="btn-primary w-full justify-center" disabled={busy} data-testid="scan-lookup">
               {busy ? t("common.loading") : t("assets.scan.lookup")}
@@ -167,6 +238,9 @@ export default function AssetScanPage() {
             <button type="button" className="btn-primary" onClick={() => router.push(`/assets/${hit.id}`)}>
               {t("assets.scan.openProfile")}
             </button>
+            <button type="button" className="btn-secondary" onClick={() => void addToBasket({ token: raw })}>
+              {t("assets.scan.addBasket")}
+            </button>
             {hit.actions.map((action) => (
               <a key={action.key} href={action.href} className="btn-secondary text-sm">{action.label}</a>
             ))}
@@ -189,6 +263,34 @@ export default function AssetScanPage() {
           <p className="text-sm text-neutral-600 dark:text-neutral-400">{hit.notice}</p>
         </section>
       )}
+
+      <section className="card space-y-3 p-5" aria-labelledby="scan-basket-heading">
+        <h2 id="scan-basket-heading" className="text-base font-semibold">{t("assets.scan.basket")}</h2>
+        <p className="text-sm text-neutral-600">{t("assets.scan.basketHint")}</p>
+        {(basket?.items ?? []).length === 0 ? (
+          <p className="text-sm text-neutral-500">{t("assets.kits.empty")}</p>
+        ) : (
+          <ul className="text-sm space-y-1">
+            {basket?.items.map((item) => (
+              <li key={item.id} className="font-mono text-xs">{item.tag_number} — {item.name}</li>
+            ))}
+          </ul>
+        )}
+        <div className="flex flex-wrap gap-2">
+          <select className="form-input" value={toUserId} onChange={(e) => setToUserId(e.target.value)}>
+            <option value="">{t("assets.handover.inCustodyOf")}</option>
+            {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+          </select>
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={!basket?.items?.length || !toUserId}
+            onClick={() => void startHandover()}
+          >
+            {t("assets.scan.startBasket")}
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

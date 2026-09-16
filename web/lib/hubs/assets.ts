@@ -5,6 +5,8 @@ export const ASSETS_SIDEBAR_CHILDREN = [
   { label: "Dashboard", href: "/assets/dashboard", icon: "dashboard" },
   { label: "Register", href: "/assets", icon: "inventory_2" },
   { label: "Handovers", href: "/assets/handovers", icon: "handshake" },
+  { label: "Kits", href: "/assets/kits", icon: "widgets" },
+  { label: "Operations", href: "/assets/operations", icon: "tune" },
   { label: "Acquisition lots", href: "/assets/batches", icon: "inventory" },
   { label: "Checkouts", href: "/assets/checkouts", icon: "logout" },
   { label: "Lost / Stolen", href: "/assets/incidents", icon: "report" },
@@ -18,6 +20,8 @@ export const ASSETS_SIDEBAR_CHILDREN = [
 export const ASSETS_HUB_CARDS: HubCard[] = [
   { href: "/assets/scan", title: "Scan Asset", purpose: "Read a label with the camera, or enter the QR token or public URL.", icon: "qr_code_scanner", section: "queues", permission: ["assets.scan", "assets.view", "assets.verify", "assets.admin", "assets.manage"] },
   { href: "/assets/handovers", title: "Handovers", purpose: "Issue, transfer and return with per-item acceptance.", icon: "handshake", section: "queues", permission: ["assets.handover.manage", "assets.handover.accept", "assets.view", "assets.admin", "assets.manage"] },
+  { href: "/assets/kits", title: "Kits", purpose: "Named kits and parent/child groupings for issue packs.", icon: "widgets", section: "queues", permission: ["assets.handover.manage", "assets.admin", "assets.manage"] },
+  { href: "/assets/operations", title: "Operations", purpose: "Role templates, planner drafts, attestation and room QR.", icon: "tune", section: "queues", permission: ["assets.handover.manage", "assets.admin", "assets.manage", "assets.handover.accept"] },
   { href: "/assets/batches", title: "Acquisition lots", purpose: "Create numbered available stock and print labels.", icon: "inventory", section: "queues", permission: ["assets.handover.manage", "assets.admin", "assets.manage"] },
   { href: "/assets/intake", title: "Intake / pending", purpose: "GRN drafts waiting to be capitalised.", icon: "pending_actions", section: "queues" },
   { href: "/assets/verification", title: "Verification", purpose: "Physical verification exercises.", icon: "fact_check", section: "queues", permission: ["assets.verify", "assets.admin", "assets.manage"] },

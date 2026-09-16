@@ -10,7 +10,7 @@ class AssetLocation extends Model
 {
     protected $fillable = [
         'tenant_id', 'parent_id', 'code', 'name', 'legacy_name', 'building', 'floor', 'room',
-        'location_type', 'hierarchy_level', 'is_active',
+        'location_type', 'hierarchy_level', 'is_active', 'qr_token',
     ];
 
     protected function casts(): array

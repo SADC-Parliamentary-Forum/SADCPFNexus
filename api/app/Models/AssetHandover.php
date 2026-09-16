@@ -17,8 +17,9 @@ class AssetHandover extends Model
     protected $fillable = [
         'tenant_id', 'reference', 'type', 'custody_target_type', 'status',
         'from_user_id', 'from_department_id', 'from_location_id',
-        'to_user_id', 'to_department_id', 'to_location_id', 'to_asset_id',
+        'to_user_id', 'delegate_user_id', 'to_department_id', 'to_location_id', 'to_asset_id',
         'notes', 'declaration_version', 'signature_event_id', 'certificate_path',
+        'paper_receipt_number', 'paper_signed_by', 'paper_signed_at',
         'issued_at', 'sent_at', 'accepted_at', 'expires_at',
         'last_reminded_at', 'reminders_sent', 'created_by',
     ];
@@ -31,6 +32,7 @@ class AssetHandover extends Model
             'accepted_at' => 'datetime',
             'expires_at' => 'datetime',
             'last_reminded_at' => 'datetime',
+            'paper_signed_at' => 'datetime',
         ];
     }
 
@@ -47,6 +49,11 @@ class AssetHandover extends Model
     public function toUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'to_user_id');
+    }
+
+    public function delegateUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'delegate_user_id');
     }
 
     public function fromUser(): BelongsTo
