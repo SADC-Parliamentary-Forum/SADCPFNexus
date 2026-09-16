@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { workflowEngineApi, type ApprovalWorkflow } from "@/lib/api";
+import { adminApi, workflowEngineApi, type ApprovalWorkflow, type Role, type User } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type StageDraft = {
   step_order: number;
@@ -12,6 +13,7 @@ type StageDraft = {
   stage_type: string;
   actor_selector: string;
   role_id?: number | null;
+  user_id?: number | null;
   completion_rule?: string;
   quorum_count?: number | null;
   quorum_percentage?: number | null;
@@ -29,7 +31,7 @@ const ACTOR_SELECTORS = [
   { value: "hod", label: "Head of department (up the chain)" },
   { value: "director_finance", label: "Director of Finance" },
   { value: "sg", label: "Secretary General" },
-  { value: "specific_role", label: "Specific role (set Role ID)" },
+  { value: "specific_role", label: "Specific role" },
   { value: "specific_user", label: "Specific user" },
   { value: "position", label: "Position holder" },
   { value: "queue", label: "Shared queue" },
@@ -37,6 +39,7 @@ const ACTOR_SELECTORS = [
 ];
 
 export default function WorkflowDesignerPage() {
+  const { t } = useI18n();
   const { toast } = useToast();
   const [definitions, setDefinitions] = useState<ApprovalWorkflow[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -46,11 +49,15 @@ export default function WorkflowDesignerPage() {
   const [busy, setBusy] = useState(false);
   const [selfApprovalPolicy, setSelfApprovalPolicy] = useState("denied");
   const [conditionDrafts, setConditionDrafts] = useState<Record<number, string>>({});
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     workflowEngineApi.definitions().then((res) => setDefinitions(res.data.data || [])).catch(() => {
       toast("error", "Load failed", "Could not load workflow definitions.");
     });
+    adminApi.listRoles().then((res) => setRoles(res.data.roles ?? [])).catch(() => setRoles([]));
+    adminApi.listUsers({ per_page: 100 }).then((res) => setUsers(res.data.data ?? [])).catch(() => setUsers([]));
   }, [toast]);
 
   const loadDraft = async (workflowId: number) => {
@@ -232,13 +239,31 @@ export default function WorkflowDesignerPage() {
               {ACTOR_SELECTORS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
             {(stage.actor_selector === "specific_role" || stage.actor_selector === "specific_user") && (
-              <input
-                className="border rounded px-2 py-1 bg-transparent"
-                type="number"
-                placeholder={stage.actor_selector === "specific_role" ? "Role ID" : "User ID"}
-                value={stage.role_id ?? ""}
-                onChange={(e) => updateStage(index, { role_id: e.target.value ? Number(e.target.value) : null })}
-              />
+              stage.actor_selector === "specific_role" ? (
+                <select
+                  className="border rounded px-2 py-1 bg-transparent"
+                  value={stage.role_id ?? ""}
+                  data-testid={`wf-stage-role-${index}`}
+                  onChange={(e) => updateStage(index, { role_id: e.target.value ? Number(e.target.value) : null, user_id: null })}
+                >
+                  <option value="">{t("admin.designer.role")}</option>
+                  {roles.map((role) => (
+                    <option key={role.id} value={role.id}>{role.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  className="border rounded px-2 py-1 bg-transparent"
+                  value={stage.user_id ?? ""}
+                  data-testid={`wf-stage-user-${index}`}
+                  onChange={(e) => updateStage(index, { user_id: e.target.value ? Number(e.target.value) : null, role_id: null })}
+                >
+                  <option value="">{t("admin.designer.user")}</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
+                  ))}
+                </select>
+              )
             )}
             <select className="border rounded px-2 py-1 bg-transparent" value={stage.completion_rule || "any"} onChange={(e) => updateStage(index, { completion_rule: e.target.value })}>
               {["any", "all", "quorum", "percentage", "lead_plus_support"].map((t) => <option key={t} value={t}>{t}</option>)}

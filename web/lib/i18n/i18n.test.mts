@@ -242,6 +242,54 @@ test("asset phase 2 operations catalog covers kits planner and attestation copy 
   }
 });
 
+test("remaining labelled pickers catalog covers simulator designer and leftover id fields in EN, FR and PT", () => {
+  const keys = [
+    "pickers.none",
+    "admin.simulator.user",
+    "admin.designer.role",
+    "admin.designer.user",
+    "travel.proc.select",
+    "budget.journal.line",
+    "correspondence.retention.letter",
+    "salary.exception.employee",
+    "audit.forensics.event",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
+test("remaining labelled pickers replace raw numeric ids", () => {
+  const simulator = readFileSync(join(webRoot, "app/(app)/admin/access/simulator/page.tsx"), "utf8");
+  const designer = readFileSync(join(webRoot, "app/(app)/admin/workflows/designer/page.tsx"), "utf8");
+  const travel = readFileSync(join(webRoot, "app/(app)/travel/[id]/page.tsx"), "utf8");
+  const budget = readFileSync(join(webRoot, "app/(app)/budget/page.tsx"), "utf8");
+  const retention = readFileSync(join(webRoot, "app/(app)/correspondence/retention/page.tsx"), "utf8");
+  const salary = readFileSync(join(webRoot, "app/(app)/salary-advances/settings/page.tsx"), "utf8");
+  const forensics = readFileSync(join(webRoot, "app/(app)/admin/audit-trail/forensics/page.tsx"), "utf8");
+  assert.match(simulator, /data-testid="sim-user-select"/);
+  assert.doesNotMatch(simulator, /label="User ID"/);
+  assert.match(designer, /data-testid=\{`wf-stage-role-\$\{index\}`\}/);
+  assert.match(designer, /data-testid=\{`wf-stage-user-\$\{index\}`\}/);
+  assert.doesNotMatch(designer, /placeholder="Role ID"/);
+  assert.doesNotMatch(designer, /placeholder="User ID"/);
+  assert.match(travel, /data-testid="travel-proc-id"/);
+  assert.doesNotMatch(travel, /placeholder="e\.g\. 42"/);
+  assert.match(budget, /data-testid="budget-journal-line"/);
+  assert.doesNotMatch(budget, /placeholder="Budget line ID"/);
+  assert.match(retention, /data-testid="retention-letter-select"/);
+  assert.doesNotMatch(retention, /placeholder="Correspondence id"/);
+  assert.match(salary, /data-testid="sa-exception-employee"/);
+  assert.doesNotMatch(salary, /inputMode="numeric"/);
+  assert.match(forensics, /data-testid="forensics-event-select"/);
+  assert.doesNotMatch(forensics, /placeholder="Audit event ID"/);
+});
+
 test("asset operations attest and parent link use labelled pickers", () => {
   const operations = readFileSync(join(webRoot, "app/(app)/assets/operations/page.tsx"), "utf8");
   const profile = readFileSync(join(webRoot, "app/(app)/assets/[id]/page.tsx"), "utf8");
