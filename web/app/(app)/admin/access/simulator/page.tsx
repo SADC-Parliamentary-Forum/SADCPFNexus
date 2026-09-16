@@ -1,16 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import api from "@/lib/api";
+import { useEffect, useState } from "react";
+import api, { adminApi, type User } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { ObjectSummary } from "@/components/ui/ObjectSummary";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+function userLabel(user: User): string {
+  const name = user.name?.trim();
+  const email = user.email?.trim();
+  if (name && email) return `${name} (${email})`;
+  return name || email || String(user.id);
+}
 
 export default function AccessSimulatorPage() {
+  const { t } = useI18n();
   const [userId, setUserId] = useState("");
+  const [users, setUsers] = useState<User[]>([]);
   const [result, setResult] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    adminApi
+      .listUsers({ per_page: 100 })
+      .then((res) => setUsers(res.data.data ?? []))
+      .catch(() => setUsers([]));
+  }, []);
 
   const run = async () => {
     setError(null);
@@ -42,15 +59,23 @@ export default function AccessSimulatorPage() {
         }
       />
 
-      <FormSection title="Simulate user" description="Enter a user ID to compute effective navigation and permissions." icon="science" dense>
+      <FormSection title="Simulate user" description="Choose a person to compute effective navigation and permissions." icon="science" dense>
         <div className="flex flex-wrap items-end gap-3">
-          <FormField label="User ID" htmlFor="sim-user" required className="w-40">
-            <input
-              id="sim-user"
+          <FormField label={t("admin.simulator.user")} htmlFor="sim-user-select" required className="min-w-[16rem] flex-1">
+            <select
+              id="sim-user-select"
               className="form-input"
               value={userId}
+              data-testid="sim-user-select"
               onChange={(e) => setUserId(e.target.value)}
-            />
+            >
+              <option value="">{t("pickers.none")}</option>
+              {users.map((user) => (
+                <option key={user.id} value={String(user.id)}>
+                  {userLabel(user)}
+                </option>
+              ))}
+            </select>
           </FormField>
           <button type="button" className="btn-primary text-sm" onClick={run} disabled={!userId || busy}>
             {busy ? "Running…" : "Simulate"}

@@ -9,6 +9,7 @@ import {
   type OrgBudgetLine,
 } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 function unwrapLines(payload: unknown): OrgBudgetLine[] {
   if (!payload || typeof payload !== "object") return [];
@@ -27,6 +28,7 @@ function money(n: number): string {
 }
 
 export default function BudgetControlPage() {
+  const { t } = useI18n();
   const [lines, setLines] = useState<OrgBudgetLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -153,7 +155,20 @@ export default function BudgetControlPage() {
         <h2 className="text-lg font-semibold text-neutral-800">GL journal (budget line)</h2>
         <p className="text-neutral-600">Double-entry posting keyed by the line GL account code. Not bank ownership.</p>
         <div className="flex flex-wrap gap-3">
-          <input className="form-input w-40" placeholder="Budget line ID" value={journalLineId} onChange={(e) => setJournalLineId(e.target.value)} />
+          <select
+            className="form-input min-w-[16rem]"
+            value={journalLineId}
+            data-testid="budget-journal-line"
+            onChange={(e) => setJournalLineId(e.target.value)}
+            required
+          >
+            <option value="">{t("budget.journal.line")}</option>
+            {lines.map((line) => (
+              <option key={line.id} value={String(line.id)}>
+                {line.code ?? `BL-${line.id}`} — {line.name ?? line.category}
+              </option>
+            ))}
+          </select>
           <input className="form-input w-40" placeholder="Amount" value={journalAmount} onChange={(e) => setJournalAmount(e.target.value)} />
           <input className="form-input min-w-[12rem] flex-1" placeholder="Memo" value={journalMemo} onChange={(e) => setJournalMemo(e.target.value)} />
           <button type="submit" className="btn-primary">Post journal</button>

@@ -10,8 +10,10 @@ import {
 import { formatDate } from "@/lib/utils";
 import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function SalaryAdvanceSettingsPage() {
+  const { t } = useI18n();
   const [policies, setPolicies] = useState<SalaryAdvancePolicyVersion[]>([]);
   const [exceptions, setExceptions] = useState<SalaryAdvancePolicyException[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<Array<{ id: number; label: string }>>([]);
@@ -235,15 +237,22 @@ export default function SalaryAdvanceSettingsPage() {
               </p>
             </div>
             <form onSubmit={createException} className="grid sm:grid-cols-2 gap-3">
-              <label htmlFor="salary-advances-settings-employee-setexceptionform" className="text-xs font-medium text-neutral-700">Employee
-                <input id="salary-advances-settings-employee-setexceptionform" required type="text" inputMode="numeric" pattern="[0-9]*" list="salary-advance-employee-options" className="mt-1 input w-full" value={exceptionForm.employee_id} onChange={(e) => setExceptionForm({ ...exceptionForm, employee_id: e.target.value })} />
-                <datalist id="salary-advance-employee-options">
+              <label htmlFor="sa-exception-employee" className="text-xs font-medium text-neutral-700">{t("salary.exception.employee")}
+                <select
+                  id="sa-exception-employee"
+                  required
+                  className="mt-1 input w-full"
+                  value={exceptionForm.employee_id}
+                  data-testid="sa-exception-employee"
+                  onChange={(e) => setExceptionForm({ ...exceptionForm, employee_id: e.target.value })}
+                >
+                  <option value="">{t("pickers.none")}</option>
                   {employeeOptions.map((employee) => (
-                    <option key={employee.id} value={employee.id}>
+                    <option key={employee.id} value={String(employee.id)}>
                       {employee.label}
                     </option>
                   ))}
-                </datalist>
+                </select>
               </label>
               <label htmlFor="salary-advances-settings-exception-type-setexceptionform-outstanding-bala" className="text-xs font-medium text-neutral-700">Exception type
                 <select id="salary-advances-settings-exception-type-setexceptionform-outstanding-bala" className="mt-1 input w-full" value={exceptionForm.exception_type} onChange={(e) => setExceptionForm({ ...exceptionForm, exception_type: e.target.value })}>
