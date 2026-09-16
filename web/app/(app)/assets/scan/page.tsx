@@ -264,7 +264,7 @@ export default function AssetScanPage() {
         </section>
       )}
 
-      <section className="card space-y-3 p-5" aria-labelledby="scan-basket-heading">
+      <section className="card space-y-3 p-5" aria-labelledby="scan-basket-heading" data-testid="scan-basket">
         <h2 id="scan-basket-heading" className="text-base font-semibold">{t("assets.scan.basket")}</h2>
         <p className="text-sm text-neutral-600">{t("assets.scan.basketHint")}</p>
         {(basket?.items ?? []).length === 0 ? (
@@ -272,20 +272,24 @@ export default function AssetScanPage() {
         ) : (
           <ul className="text-sm space-y-1">
             {basket?.items.map((item) => (
-              <li key={item.id} className="font-mono text-xs">{item.tag_number} — {item.name}</li>
+              <li key={item.id} className="font-mono text-xs" data-testid={`scan-basket-item-${item.id}`}>{item.tag_number} — {item.name}</li>
             ))}
           </ul>
         )}
         <div className="flex flex-wrap gap-2">
-          <select className="form-input" value={toUserId} onChange={(e) => setToUserId(e.target.value)}>
-            <option value="">{t("assets.handover.inCustodyOf")}</option>
-            {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-          </select>
+          <label className="text-sm">
+            {t("assets.handover.inCustodyOf")}
+            <select className="form-input mt-1" value={toUserId} onChange={(e) => setToUserId(e.target.value)} data-testid="scan-basket-user">
+              <option value="">{t("assets.notAssigned")}</option>
+              {users.map((u) => <option key={u.id} value={u.id}>{u.name}{u.email ? ` (${u.email})` : ""}</option>)}
+            </select>
+          </label>
           <button
             type="button"
             className="btn-primary"
             disabled={!basket?.items?.length || !toUserId}
             onClick={() => void startHandover()}
+            data-testid="scan-basket-start"
           >
             {t("assets.scan.startBasket")}
           </button>

@@ -70,6 +70,7 @@ export default function AssetViewPage() {
   const [uploading, setUploading] = useState(false);
   const [parentId, setParentId] = useState("");
   const [parentBusy, setParentBusy] = useState(false);
+  const [parentOptions, setParentOptions] = useState<Asset[]>([]);
 
   useEffect(() => {
     setCanEdit(canManageAssets(getStoredUser()));
@@ -100,6 +101,7 @@ export default function AssetViewPage() {
         }).catch(() => undefined);
         setDocsLoading(true);
         void assetsApi.documents(numericId).then((r) => { if (!cancelled) setDocs(r.data.data ?? []); }).catch(() => undefined).finally(() => { if (!cancelled) setDocsLoading(false); });
+        void assetsApi.list({ per_page: 100 }).then((r) => { if (!cancelled) setParentOptions(r.data.data ?? []); }).catch(() => undefined);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -117,6 +119,10 @@ export default function AssetViewPage() {
   }, [numericId, t]);
 
   const bookValue = asset?.current_value ?? asset?.book_value ?? asset?.value ?? null;
+  const parentAsset = parentOptions.find((row) => row.id === asset?.parent_asset_id);
+  const parentLabel = parentAsset
+    ? `${parentAsset.tag_number || parentAsset.asset_code} — ${parentAsset.name}`
+    : (asset?.parent_asset_id ? String(asset.parent_asset_id) : "—");
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -167,11 +173,12 @@ export default function AssetViewPage() {
             <Field label={t("assets.view.fieldIssued")} value={formatDateShort(asset.issued_at)} />
             <Field label={t("assets.view.fieldCustody")} value={asset.custody_state ?? "—"} />
             <Field label={t("assets.view.fieldAge")} value={asset.age_display ?? "—"} />
-            <Field label={t("assets.parent.title")} value={asset.parent_asset_id ? String(asset.parent_asset_id) : "—"} />
+            <Field label={t("assets.parent.title")} value={parentLabel} />
           </div>
           {canManageHandovers(getStoredUser()) && (
             <form
               className="card flex flex-wrap items-end gap-2 p-4"
+              data-testid="asset-parent-form"
               onSubmit={async (e) => {
                 e.preventDefault();
                 setParentBusy(true);
@@ -187,13 +194,24 @@ export default function AssetViewPage() {
             >
               <label className="text-sm">
                 {t("assets.parent.title")}
-                <input className="form-input mt-1" value={parentId} onChange={(e) => setParentId(e.target.value)} inputMode="numeric" />
+                <select
+                  className="form-input mt-1"
+                  value={parentId}
+                  onChange={(e) => setParentId(e.target.value)}
+                  data-testid="asset-parent-select"
+                >
+                  <option value="">{t("assets.parent.none")}</option>
+                  {parentOptions.filter((row) => row.id !== asset.id).map((row) => (
+                    <option key={row.id} value={row.id}>{row.tag_number || row.asset_code} — {row.name}</option>
+                  ))}
+                </select>
               </label>
-              <button type="submit" className="btn-secondary" disabled={parentBusy}>{t("assets.parent.set")}</button>
+              <button type="submit" className="btn-secondary" disabled={parentBusy} data-testid="asset-parent-set">{t("assets.parent.set")}</button>
               <button
                 type="button"
                 className="btn-secondary"
                 disabled={parentBusy}
+                data-testid="asset-parent-clear"
                 onClick={async () => {
                   setParentBusy(true);
                   try {

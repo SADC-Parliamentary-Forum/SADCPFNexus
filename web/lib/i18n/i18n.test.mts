@@ -99,6 +99,7 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/assets/scan/page.tsx",
     "app/(app)/assets/kits/page.tsx",
     "app/(app)/assets/operations/page.tsx",
+    "app/(app)/assets/[id]/page.tsx",
     "app/(app)/audit/engagements/page.tsx",
     "components/audit/AuditChrome.tsx",
     "app/(app)/risk/create/page.tsx",
@@ -226,6 +227,8 @@ test("asset phase 2 operations catalog covers kits planner and attestation copy 
     "assets.handover.delegate",
     "assets.handover.paperSign",
     "assets.scan.basket",
+    "assets.parent.none",
+    "assets.ops.roomToken",
   ];
   for (const key of keys) {
     const en = translate("en", key);
@@ -235,6 +238,20 @@ test("asset phase 2 operations catalog covers kits planner and attestation copy 
     assert.notEqual(fr, en, `French should differ for ${key}`);
     assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
   }
+});
+
+test("asset operations attest and parent link use labelled pickers", () => {
+  const operations = readFileSync(join(webRoot, "app/(app)/assets/operations/page.tsx"), "utf8");
+  const profile = readFileSync(join(webRoot, "app/(app)/assets/[id]/page.tsx"), "utf8");
+  const scan = readFileSync(join(webRoot, "app/(app)/assets/scan/page.tsx"), "utf8");
+  const kits = readFileSync(join(webRoot, "app/(app)/assets/kits/page.tsx"), "utf8");
+  assert.doesNotMatch(operations, /placeholder="asset ids"/);
+  assert.match(operations, /data-testid="ops-attest-assets"/);
+  assert.match(operations, /data-testid="ops-planner-asset"/);
+  assert.match(profile, /data-testid="asset-parent-select"/);
+  assert.doesNotMatch(profile, /inputMode="numeric"/);
+  assert.match(scan, /data-testid="scan-basket"/);
+  assert.match(kits, /data-testid="kit-name"/);
 });
 
 test("asset issuance handover catalog covers owner and lot copy in EN, FR and PT", () => {
