@@ -14,8 +14,10 @@ void main() {
       'Reports',
       'Profile',
       'Language',
-      'Timesheets',
-      'Procurement',
+      'Scan Asset',
+      'Scan basket',
+      'Add to basket',
+      'Start draft handover',
     ];
     for (final key in keys) {
       expect(en.t(key), isNotEmpty);

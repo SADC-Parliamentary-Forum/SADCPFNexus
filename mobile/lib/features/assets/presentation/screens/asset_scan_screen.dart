@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
+import 'package:sadcpf_nexus/features/assets/data/asset_scan_basket_api.dart';
 import 'package:sadcpf_nexus/features/assets/data/asset_verification_draft_queue.dart';
 import 'package:sadcpf_nexus/features/assets/domain/asset_qr_token.dart';
+import 'package:sadcpf_nexus/features/assets/domain/asset_scan_basket.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
 import 'package:sadcpf_nexus/l10n/app_locale.dart';
 import 'package:sadcpf_nexus/l10n/app_strings.dart';
@@ -23,13 +25,21 @@ class AssetScanScreen extends ConsumerStatefulWidget {
 class _AssetScanScreenState extends ConsumerState<AssetScanScreen> {
   final _tokenCtrl = TextEditingController();
   final _campaignCtrl = TextEditingController();
+  final _nfcCtrl = TextEditingController();
   bool _lookingUp = false;
   bool _cameraOn = false;
   bool _syncing = false;
+  bool _basketBusy = false;
   String? _error;
+  String? _handoverMessage;
   Map<String, dynamic>? _asset;
   bool _publicOnly = false;
   List<AssetVerificationDraft> _queue = [];
+  AssetScanBasket? _basket;
+  List<TenantUserOption> _users = [];
+  int? _toUserId;
+
+  AssetScanBasketApi get _basketApi => AssetScanBasketApi(ref.read(apiClientProvider).dio);
 
   @override
   void initState() {
@@ -39,18 +49,96 @@ class _AssetScanScreenState extends ConsumerState<AssetScanScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _lookup());
     }
     _reloadQueue();
+    _loadBasketChrome();
   }
 
   @override
   void dispose() {
     _tokenCtrl.dispose();
     _campaignCtrl.dispose();
+    _nfcCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _reloadQueue() async {
     final q = await AssetVerificationDraftQueue.load();
     if (mounted) setState(() => _queue = q);
+  }
+
+  Future<void> _loadBasketChrome() async {
+    try {
+      final users = await _basketApi.listUsers();
+      if (mounted) setState(() => _users = users);
+    } catch (_) {
+      /* guest / offline */
+    }
+    final stored = await AssetScanBasketApi.loadPersistedId();
+    if (stored == null) return;
+    try {
+      final basket = await _basketApi.show(stored);
+      if (!mounted) return;
+      if (basket.isOpen) {
+        setState(() => _basket = basket);
+      } else {
+        await AssetScanBasketApi.clearPersistedId();
+      }
+    } catch (_) {
+      await AssetScanBasketApi.clearPersistedId();
+    }
+  }
+
+  Future<AssetScanBasket> _ensureBasket() async {
+    final current = _basket;
+    if (current != null && current.isOpen) return current;
+    final created = await _basketApi.create();
+    if (mounted) setState(() => _basket = created);
+    return created;
+  }
+
+  Future<void> _addToBasket({String? token, String? nfcUid}) async {
+    setState(() {
+      _basketBusy = true;
+      _error = null;
+      _handoverMessage = null;
+    });
+    try {
+      final basket = await _ensureBasket();
+      final updated = await _basketApi.addItem(basket.id, token: token, nfcUid: nfcUid);
+      if (mounted) setState(() => _basket = updated);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = AppStrings.of(ref.read(appLanguageProvider)).t('Could not add that scan to the basket.'));
+      }
+    } finally {
+      if (mounted) setState(() => _basketBusy = false);
+    }
+  }
+
+  Future<void> _startHandover() async {
+    final basket = _basket;
+    final userId = _toUserId;
+    if (basket == null || userId == null || basket.items.isEmpty) return;
+    setState(() {
+      _basketBusy = true;
+      _error = null;
+      _handoverMessage = null;
+    });
+    try {
+      final handoverId = await _basketApi.startHandover(basket.id, toUserId: userId);
+      if (!mounted) return;
+      final strings = AppStrings.of(ref.read(appLanguageProvider));
+      setState(() {
+        _basket = null;
+        _toUserId = null;
+        _handoverMessage = '${strings.t('Draft handover started.')} #$handoverId';
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = AppStrings.of(ref.read(appLanguageProvider)).t('Could not add that scan to the basket.'));
+      }
+    } finally {
+      if (mounted) setState(() => _basketBusy = false);
+    }
   }
 
   Future<void> _lookup([String? override]) async {
@@ -143,12 +231,15 @@ class _AssetScanScreenState extends ConsumerState<AssetScanScreen> {
     final strings = AppStrings.of(ref.watch(appLanguageProvider));
     final tag = (_asset?['asset_tag'] ?? _asset?['assetNumber'] ?? '').toString();
     final name = (_asset?['name'] ?? _asset?['asset_name'] ?? '').toString();
+    final items = _basket?.items ?? const <AssetScanBasketItem>[];
     return StitchScreen(
       title: strings.t('Scan Asset'),
       fallbackRoute: '/assets/inventory',
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           TextField(
             controller: _tokenCtrl,
             decoration: const InputDecoration(
@@ -188,6 +279,10 @@ class _AssetScanScreenState extends ConsumerState<AssetScanScreen> {
             const SizedBox(height: 12),
             Text(_error!, style: const TextStyle(color: Colors.red)),
           ],
+          if (_handoverMessage != null) ...[
+            const SizedBox(height: 12),
+            Text(_handoverMessage!),
+          ],
           if (_asset != null) ...[
             const SizedBox(height: 16),
             Text(tag, style: const TextStyle(fontFamily: 'monospace', fontSize: 20)),
@@ -203,6 +298,13 @@ class _AssetScanScreenState extends ConsumerState<AssetScanScreen> {
                 child: const Text('Open register'),
               ),
             if (!_publicOnly) ...[
+              TextButton(
+                key: const Key('scan-add-basket'),
+                onPressed: _basketBusy || _tokenCtrl.text.trim().isEmpty
+                    ? null
+                    : () => _addToBasket(token: _tokenCtrl.text),
+                child: Text(strings.t('Add to basket')),
+              ),
               TextField(
                 controller: _campaignCtrl,
                 keyboardType: TextInputType.number,
@@ -221,6 +323,46 @@ class _AssetScanScreenState extends ConsumerState<AssetScanScreen> {
             ],
           ],
           const SizedBox(height: 16),
+          Text(strings.t('Scan basket'), style: Theme.of(context).textTheme.titleMedium),
+          Text(strings.t('Add scanned assets, then start a draft handover.')),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _nfcCtrl,
+            decoration: InputDecoration(labelText: strings.t('NFC UID')),
+          ),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              key: const Key('scan-add-nfc'),
+              onPressed: _basketBusy || _nfcCtrl.text.trim().isEmpty
+                  ? null
+                  : () => _addToBasket(nfcUid: _nfcCtrl.text),
+              child: Text(strings.t('Add to basket')),
+            ),
+          ),
+          if (items.isEmpty)
+            Text(strings.t('Basket is empty.'))
+          else
+            for (final item in items)
+              ListTile(
+                dense: true,
+                title: Text(item.label),
+                subtitle: item.scanMethod == null ? null : Text(item.scanMethod!),
+              ),
+          Text(strings.t('In the custody of'), style: Theme.of(context).textTheme.labelLarge),
+          for (final user in _users)
+            ListTile(
+              key: Key('scan-basket-user-${user.id}'),
+              title: Text(user.label),
+              selected: _toUserId == user.id,
+              onTap: () => setState(() => _toUserId = user.id),
+            ),
+          const SizedBox(height: 8),
+          FilledButton(
+            onPressed: _basketBusy || items.isEmpty || _toUserId == null ? null : _startHandover,
+            child: Text(strings.t('Start draft handover')),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Text('Offline queue (${_queue.length})'),
@@ -232,6 +374,7 @@ class _AssetScanScreenState extends ConsumerState<AssetScanScreen> {
             ],
           ),
         ],
+        ),
       ),
     );
   }
