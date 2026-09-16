@@ -150,7 +150,8 @@ export default function SupplierRegisterPage() {
   }, []);
 
   const canSubmit = useMemo(() => {
-    return selectedCategories.length >= 1 && documents.length > 0 && captcha.verified;
+    return selectedCategories.length >= 1 && documents.length > 0 && captcha.verified
+      && documents.every((item) => item.documentType !== "tax_clearance" || Boolean(item.expiryDate));
   }, [captcha.verified, documents.length, selectedCategories.length]);
 
   function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -173,7 +174,9 @@ export default function SupplierRegisterPage() {
     }
     if (index === 2) return selectedCategories.length >= 1;
     if (index === 4) return Boolean(form.bank_name && form.bank_account && form.bank_branch);
-    if (index === 5) return documents.length > 0;
+    if (index === 5) {
+      return documents.length > 0 && documents.every((item) => item.documentType !== "tax_clearance" || Boolean(item.expiryDate));
+    }
     return true;
   }
 
@@ -199,6 +202,7 @@ export default function SupplierRegisterPage() {
       documents.forEach((item) => {
         payload.append("documents[]", item.file);
         payload.append("document_types[]", item.documentType);
+        payload.append("document_expiry_dates[]", item.expiryDate ?? "");
       });
       owners.filter((owner) => owner.full_name.trim()).forEach((owner, index) => {
         payload.append(`owners[${index}][full_name]`, owner.full_name.trim());
