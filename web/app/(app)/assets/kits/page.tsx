@@ -56,13 +56,13 @@ export default function AssetKitsPage() {
       <form onSubmit={create} className="card space-y-3 p-4" data-testid="kit-create-form">
         <label className="block text-sm">
           {t("assets.kits.name")}
-          <input className="form-input mt-1" value={name} onChange={(e) => setName(e.target.value)} required />
+          <input className="form-input mt-1" value={name} onChange={(e) => setName(e.target.value)} required data-testid="kit-name" />
         </label>
         <fieldset>
           <legend className="text-sm font-medium">{t("assets.handover.selectAssets")}</legend>
           <div className="mt-2 max-h-48 overflow-auto space-y-1">
             {assets.map((asset) => (
-              <label key={asset.id} className="flex items-center gap-2 text-sm">
+              <label key={asset.id} className="flex items-center gap-2 text-sm" data-testid={`kit-asset-${asset.id}`}>
                 <input
                   type="checkbox"
                   checked={selected.includes(asset.id)}
@@ -74,7 +74,7 @@ export default function AssetKitsPage() {
             ))}
           </div>
         </fieldset>
-        <button type="submit" className="btn-primary" disabled={busy || !name.trim()}>{t("assets.kits.create")}</button>
+        <button type="submit" className="btn-primary" disabled={busy || !name.trim()} data-testid="kit-create">{t("assets.kits.create")}</button>
       </form>
       {kits.length === 0 ? (
         <EmptyState title="assets.kits.empty" />
