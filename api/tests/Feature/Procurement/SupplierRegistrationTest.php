@@ -144,6 +144,11 @@ class SupplierRegistrationTest extends TestCase
                 Attachment::DOCUMENT_TYPE_TAX_CLEARANCE,
                 Attachment::DOCUMENT_TYPE_BANK_DETAILS,
             ],
+            'document_expiry_dates' => [
+                null,
+                now()->addYear()->toDateString(),
+                null,
+            ],
         ], ['Accept' => 'application/json']);
 
         $response->assertCreated()
@@ -167,6 +172,38 @@ class SupplierRegistrationTest extends TestCase
             ->assertJsonFragment(['original_filename' => 'company-profile.pdf'])
             ->assertJsonFragment(['original_filename' => 'tax-clearance.pdf'])
             ->assertJsonFragment(['original_filename' => 'bank-letter.pdf']);
+    }
+
+    public function test_supplier_registration_tax_clearance_requires_expiry_date(): void
+    {
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_tax_expiry']);
+
+        $response = $this->post('/api/v1/procurement/suppliers/register', [
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Expiry Required Supplies',
+            'registration_number' => 'REG-401',
+            'tax_number' => 'TAX-401',
+            'contact_name' => 'Eve Vendor',
+            'contact_email' => 'eve@expiry.test',
+            'contact_phone' => '+264000005',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '401401401',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
+            'password_confirmation' => 'Secret123!',
+            'category_ids' => [$category->id],
+            'documents' => [$this->fakePdf('tax-clearance.pdf')],
+            'document_types' => [Attachment::DOCUMENT_TYPE_TAX_CLEARANCE],
+        ], ['Accept' => 'application/json']);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors(['documents.0']);
+        $this->assertSame(
+            'This document type requires an expiry date.',
+            $response->json('errors')['documents.0'][0] ?? null
+        );
     }
 
     public function test_supplier_registration_requires_captcha_when_enabled(): void
