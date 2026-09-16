@@ -345,5 +345,27 @@ class RiskRegisterPhase1Test extends TestCase
         $row = collect($listed['data'])->firstWhere('id', $own->id);
         $this->assertNotEmpty($row['control_code']);
         $this->assertSame('Access review', $row['title']);
+        $this->assertArrayNotHasKey('description', $row);
+        $this->assertArrayNotHasKey('control_owner_id', $row);
+        $this->assertArrayNotHasKey('created_by', $row);
+        $this->assertArrayNotHasKey('effectiveness', $row);
+    }
+
+    public function test_list_controls_forbidden_without_risk_view(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        RiskControl::create([
+            'tenant_id' => $tenant->id,
+            'title' => 'Secret control',
+            'description' => 'Design text that must not leak',
+            'control_type' => 'preventive',
+            'created_by' => $user->id,
+            'status' => 'active',
+        ]);
+
+        config(['access_control.endpoint_enforcement_mode' => 'off']);
+
+        $this->asUser($user)->getJson('/api/v1/risk/controls')->assertForbidden();
     }
 }
