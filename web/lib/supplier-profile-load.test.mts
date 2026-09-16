@@ -31,3 +31,34 @@ test("supplier portal permission does not unlock the staff alerts page", () => {
   assert.ok(notificationsLine);
   assert.doesNotMatch(notificationsLine, /supplier\.portal/);
 });
+
+test("supplier profile email banner only shows when verification is explicitly false", () => {
+  const source = readPage("app/(app)/supplier/profile/page.tsx");
+
+  assert.match(source, /emailVerified=\{profileQuery\.data\.email_verified === true\}/);
+  assert.match(source, /emailVerified === false/);
+  assert.doesNotMatch(source, /!completenessQuery\.data\?\.completeness\.email_verified/);
+});
+
+test("supplier verify-email success invalidates portal completeness caches", () => {
+  const source = readPage("app/(auth)/supplier/verify-email/page.tsx");
+
+  assert.match(source, /useQueryClient/);
+  assert.match(source, /invalidateQueries\(\{\s*queryKey:\s*\["supplier-profile"\]\s*\}\)/);
+  assert.match(source, /invalidateQueries\(\{\s*queryKey:\s*\["supplier-completeness"\]\s*\}\)/);
+  assert.match(source, /invalidateQueries\(\{\s*queryKey:\s*\["supplier-dashboard"\]\s*\}\)/);
+});
+
+test("supplier documents has its own portal page and menu", () => {
+  const sidebar = readPage("components/layout/Sidebar.tsx");
+  const profile = readPage("app/(app)/supplier/profile/page.tsx");
+  const documents = readPage("app/(app)/supplier/documents/page.tsx");
+
+  assert.match(sidebar, /href:\s*"\/supplier\/documents"/);
+  assert.doesNotMatch(profile, /SupplierDocumentsField/);
+  assert.match(profile, /\/supplier\/documents/);
+  assert.match(documents, /supplierPortalApi\.documents/);
+  assert.match(documents, /supplierPortalApi\.uploadDocument/);
+  assert.match(documents, /data-testid="supplier-documents-table"/);
+  assert.match(documents, /useI18n/);
+});

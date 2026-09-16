@@ -2,12 +2,14 @@
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supplierPortalApi, supplierPortalAttachmentsApi, VENDOR_DOC_TYPES } from "@/lib/api";
+import { supplierPortalApi } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
-import { SupplierDocumentsField, type PendingSupplierDocument } from "@/components/auth/SupplierDocumentsField";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function SupplierProfilePage() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
@@ -19,7 +21,6 @@ export default function SupplierProfilePage() {
   const [bankBranch, setBankBranch] = useState("");
   const [paymentTerms, setPaymentTerms] = useState("");
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
-  const [documents, setDocuments] = useState<PendingSupplierDocument[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const profileQuery = useQuery({
@@ -59,16 +60,11 @@ export default function SupplierProfilePage() {
       formData.append("bank_branch", bankBranch);
       formData.append("payment_terms", paymentTerms);
       categoryIds.forEach((id) => formData.append("category_ids[]", String(id)));
-      documents.forEach((item) => {
-        formData.append("documents[]", item.file);
-        formData.append("document_types[]", item.documentType);
-      });
       return supplierPortalApi.updateProfile(formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["supplier-profile"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
-      setDocuments([]);
       setError(null);
     },
     onError: (err: unknown) =>
@@ -168,50 +164,26 @@ export default function SupplierProfilePage() {
           <p className="text-xs text-neutral-500">Select every applicable category, including child categories.</p>
         </div>
 
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-neutral-700">Uploaded documents</p>
-          {(profileQuery.data.attachments ?? []).length === 0 ? (
-            <p className="text-sm text-neutral-500">No documents on file yet.</p>
-          ) : (
-            <ul className="divide-y divide-neutral-100 rounded-xl border border-neutral-200 bg-white">
-              {(profileQuery.data.attachments ?? []).map((doc) => (
-                <li key={doc.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-neutral-800">{doc.original_filename}</p>
-                    <p className="text-xs capitalize text-neutral-500">
-                      {VENDOR_DOC_TYPES.find((type) => type.value === doc.document_type)?.label
-                        ?? doc.document_type?.replace(/_/g, " ")
-                        ?? "Document"}
-                    </p>
-                  </div>
-                  <a
-                    href={supplierPortalAttachmentsApi.downloadUrl(doc.id)}
-                    className="text-sm font-medium text-primary-800 hover:underline"
-                  >
-                    Download
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <p className="text-sm font-semibold text-neutral-700">Add supporting documents</p>
-          <SupplierDocumentsField documents={documents} onChange={setDocuments} />
-        </div>
+        <p className="text-sm text-neutral-600">
+          <Link href="/supplier/documents" className="font-medium text-primary-800 hover:underline">
+            {t("supplier.documents.manage")}
+          </Link>
+        </p>
 
         <button className="btn-primary disabled:opacity-60" disabled={mutation.isPending || categoryIds.length === 0} onClick={() => mutation.mutate()}>
           {mutation.isPending ? "Saving..." : "Update Profile"}
         </button>
       </div>
 
-      <WizardDeclarations vendorStatus={profileQuery.data.status} />
+      <WizardDeclarations
+        vendorStatus={profileQuery.data.status}
+        emailVerified={profileQuery.data.email_verified === true}
+      />
     </div>
   );
 }
 
-function WizardDeclarations({ vendorStatus }: { vendorStatus?: string }) {
+function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: string; emailVerified: boolean }) {
   const queryClient = useQueryClient();
   const declarationsQuery = useQuery({
     queryKey: ["supplier-declarations"],
@@ -250,7 +222,7 @@ function WizardDeclarations({ vendorStatus }: { vendorStatus?: string }) {
       <p className="text-sm text-neutral-500">
         Completeness: {completenessQuery.data?.completeness.percent ?? 0}%. Status: {(vendorStatus ?? "draft").replace(/_/g, " ")}.
       </p>
-      {!completenessQuery.data?.completeness.email_verified && (
+      {emailVerified === false && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           Verify your email before you can submit.
           <button type="button" className="ml-2 underline" onClick={() => resendMutation.mutate()}>

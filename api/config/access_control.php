@@ -22,6 +22,8 @@ return [
         'api/v1/public/assets/*',
         'api/v1/asset-transfers/*',
         'api/v1/public/purchase-orders/*',
+        'api/v1/procurement/suppliers/register',
+        'api/v1/procurement/suppliers/verify-email',
     ],
     'endpoint_fallback_permission_rules' => [
         ['pattern' => 'api/v1/admin/access-requests*', 'permissions' => [

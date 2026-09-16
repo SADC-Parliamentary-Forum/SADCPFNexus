@@ -48,6 +48,83 @@ class SupplierDocumentRegisterTest extends TestCase
         $this->assertNotNull($current->fresh()->verified_at);
     }
 
+    public function test_supplier_document_index_returns_checklist_without_storage_paths(): void
+    {
+        $tenant = Tenant::factory()->create();
+        app(SupplierCatalogueSeeder::class)->ensureForTenant((int) $tenant->id);
+        [$http] = $this->asSupplier($tenant);
+
+        $payload = $http->getJson('/api/v1/procurement/supplier/documents')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertIsArray($payload['types'] ?? null);
+        $this->assertIsArray($payload['requirements'] ?? null);
+        $this->assertIsArray($payload['documents'] ?? null);
+        $this->assertNotEmpty($payload['types']);
+        $this->assertNotEmpty($payload['requirements']);
+
+        $tax = collect($payload['requirements'])->firstWhere('code', 'tax_clearance');
+        $this->assertNotNull($tax);
+        $this->assertTrue($tax['needed']);
+        $this->assertSame('needed', $tax['status']);
+
+        $encoded = json_encode($payload);
+        $this->assertIsString($encoded);
+        $this->assertStringNotContainsString('storage_path', $encoded);
+        $this->assertStringNotContainsString('attachments/vendors', $encoded);
+
+        $codes = collect($payload['types'])->pluck('code')->all();
+        $this->assertContains('tax_clearance', $codes);
+        $this->assertContains('other', $codes);
+        $other = collect($payload['types'])->firstWhere('code', 'other');
+        $this->assertTrue($other['allows_multiple']);
+        $this->assertFalse(collect($payload['types'])->firstWhere('code', 'tax_clearance')['allows_multiple']);
+    }
+
+    public function test_other_uploads_stay_current_while_typed_docs_are_versioned(): void
+    {
+        $tenant = Tenant::factory()->create();
+        app(SupplierCatalogueSeeder::class)->ensureForTenant((int) $tenant->id);
+        [$http] = $this->asSupplier($tenant);
+
+        $http->post('/api/v1/procurement/supplier/documents', [
+            'file' => $this->fakePdf('support-1.pdf'),
+            'type_code' => 'other',
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        $http->post('/api/v1/procurement/supplier/documents', [
+            'file' => $this->fakePdf('support-2.pdf'),
+            'type_code' => 'other',
+        ], ['Accept' => 'application/json'])->assertCreated();
+
+        $this->assertSame(
+            2,
+            SupplierDocument::query()->where('type_code', 'other')->where('is_current', true)->count()
+        );
+
+        $firstTax = $http->post('/api/v1/procurement/supplier/documents', [
+            'file' => $this->fakePdf('tax-v1.pdf'),
+            'type_code' => 'tax_clearance',
+            'expiry_date' => now()->addYear()->toDateString(),
+        ], ['Accept' => 'application/json'])->assertCreated()->json('data.id');
+
+        $http->post('/api/v1/procurement/supplier/documents', [
+            'file' => $this->fakePdf('tax-v2.pdf'),
+            'type_code' => 'tax_clearance',
+            'expiry_date' => now()->addYear()->toDateString(),
+        ], ['Accept' => 'application/json'])->assertCreated()->assertJsonPath('data.version', 2);
+
+        $this->assertFalse((bool) SupplierDocument::find($firstTax)->is_current);
+
+        $list = $http->getJson('/api/v1/procurement/supplier/documents')->assertOk()->json('data');
+        $this->assertCount(2, collect($list['documents'])->where('type_code', 'other')->all());
+        $taxReq = collect($list['requirements'])->firstWhere('code', 'tax_clearance');
+        $this->assertFalse($taxReq['needed']);
+        $this->assertSame('pending', $taxReq['status']);
+        $this->assertStringNotContainsString('storage_path', (string) json_encode($list));
+    }
+
     public function test_critical_bank_change_queues_request_after_approval(): void
     {
         $tenant = Tenant::factory()->create();

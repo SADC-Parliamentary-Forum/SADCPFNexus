@@ -42,11 +42,14 @@ class SupplierDocumentService
         $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store('attachments/vendors/'.$vendor->id.'/register', ['disk' => 'local']);
 
-        $current = SupplierDocument::query()
-            ->where('vendor_id', $vendor->id)
-            ->where('type_code', $typeCode)
-            ->where('is_current', true)
-            ->first();
+        $allowsMultiple = $type->code === 'other';
+        $current = $allowsMultiple
+            ? null
+            : SupplierDocument::query()
+                ->where('vendor_id', $vendor->id)
+                ->where('type_code', $typeCode)
+                ->where('is_current', true)
+                ->first();
 
         $version = $current ? ((int) $current->version + 1) : 1;
         if ($current) {

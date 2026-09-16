@@ -8,8 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SupplierDocument extends Model
 {
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_VERIFIED = 'verified';
+
     public const STATUS_REJECTED = 'rejected';
+
     public const STATUS_EXPIRED = 'expired';
 
     protected $fillable = [
@@ -35,6 +38,10 @@ class SupplierDocument extends Model
         'replaces_document_id',
         'is_current',
         'uploaded_by',
+    ];
+
+    protected $hidden = [
+        'storage_path',
     ];
 
     protected $casts = [
