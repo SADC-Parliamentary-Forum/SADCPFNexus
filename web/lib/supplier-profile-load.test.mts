@@ -55,6 +55,8 @@ test("supplier documents has its own portal page and menu", () => {
   const documents = readPage("app/(app)/supplier/documents/page.tsx");
 
   assert.match(sidebar, /href:\s*"\/supplier\/documents"/);
+  const manifest = readFileSync(join(webRoot, "../api/app/Modules/AccessControl/Services/NavigationManifestService.php"), "utf8");
+  assert.match(manifest, /\/supplier\/documents/);
   assert.doesNotMatch(profile, /SupplierDocumentsField/);
   assert.match(profile, /\/supplier\/documents/);
   assert.match(documents, /supplierPortalApi\.documents/);

@@ -48,6 +48,18 @@ class SupplierDocumentRegisterTest extends TestCase
         $this->assertNotNull($current->fresh()->verified_at);
     }
 
+    public function test_supplier_navigation_includes_documents_menu(): void
+    {
+        [$http] = $this->asSupplier();
+
+        $items = $http->getJson('/api/v1/access/navigation')->assertOk()->json('data.items');
+        $portal = collect($items)->firstWhere('href', '/supplier');
+        $this->assertNotNull($portal);
+        $hrefs = collect($portal['children'] ?? [])->pluck('href')->all();
+        $this->assertContains('/supplier/documents', $hrefs);
+        $this->assertContains('/supplier/profile', $hrefs);
+    }
+
     public function test_supplier_document_index_returns_checklist_without_storage_paths(): void
     {
         $tenant = Tenant::factory()->create();
