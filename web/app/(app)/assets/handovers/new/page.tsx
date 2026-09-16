@@ -14,6 +14,7 @@ function NewHandoverForm() {
   const [type, setType] = useState(params.get("type") || "issue");
   const [target, setTarget] = useState("person");
   const [toUserId, setToUserId] = useState("");
+  const [delegateUserId, setDelegateUserId] = useState("");
   const [users, setUsers] = useState<TenantUserOption[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
@@ -103,6 +104,7 @@ function NewHandoverForm() {
         type,
         custody_target_type: target,
         to_user_id: target === "person" ? Number(toUserId) : undefined,
+        delegate_user_id: target === "person" && delegateUserId ? Number(delegateUserId) : undefined,
         asset_ids: selected,
       });
       const id = created.data.data.id;
@@ -143,6 +145,7 @@ function NewHandoverForm() {
           </select>
         </label>
         {target === "person" && (
+          <>
           <label className="block text-sm">
             {t("assets.handover.inCustodyOf")}
             <select className="form-input mt-1" value={toUserId} onChange={(e) => setToUserId(e.target.value)} required data-testid="handover-to-user">
@@ -152,6 +155,17 @@ function NewHandoverForm() {
               ))}
             </select>
           </label>
+          <label className="block text-sm">
+            {t("assets.handover.delegate")}
+            <select className="form-input mt-1" value={delegateUserId} onChange={(e) => setDelegateUserId(e.target.value)} data-testid="handover-delegate">
+              <option value="">—</option>
+              {users.filter((u) => String(u.id) !== toUserId).map((u) => (
+                <option key={u.id} value={u.id}>{u.name}{u.email ? ` (${u.email})` : ""}</option>
+              ))}
+            </select>
+            <span className="mt-1 block text-xs text-neutral-500">{t("assets.handover.delegateHint")}</span>
+          </label>
+          </>
         )}
         <fieldset>
           <legend className="text-sm font-medium">{t("assets.handover.selectAssets")}</legend>

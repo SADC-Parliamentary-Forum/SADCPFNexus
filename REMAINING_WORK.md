@@ -1,7 +1,9 @@
 # SADC PF Nexus — Remaining Work
 
-**Last updated:** 2026-09-06  
+**Last updated:** 2026-09-16  
 **Baseline tip:** access residuals closeout on `cursor/access-residuals-closeout-9293`.
+
+Asset Phase 2 operations (scan basket, kits, parent/child, role templates, attestation, planner drafts, room QR, delegated collection, paper-fallback) shipped in product code on `cursor/remaining-work-build-all-5911`. Operator UAT/secrets/governance rows below stay unsigned.
 
 ---
 

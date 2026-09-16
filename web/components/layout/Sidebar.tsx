@@ -261,6 +261,8 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Dashboard", href: "/assets/dashboard", icon: "dashboard" },
       { label: "Register", href: "/assets", icon: "inventory_2" },
       { label: "Handovers", href: "/assets/handovers", icon: "handshake" },
+      { label: "Kits", href: "/assets/kits", icon: "widgets" },
+      { label: "Operations", href: "/assets/operations", icon: "tune" },
       { label: "Acquisition lots", href: "/assets/batches", icon: "inventory" },
       { label: "Checkouts", href: "/assets/checkouts", icon: "logout" },
       { label: "Lost / Stolen", href: "/assets/incidents", icon: "report" },

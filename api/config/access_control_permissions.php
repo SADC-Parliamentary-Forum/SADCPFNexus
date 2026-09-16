@@ -2959,7 +2959,13 @@ return [
             'GET /api/v1/asset-handovers/{id}',
             'POST /api/v1/asset-handovers',
             'POST /api/v1/asset-handovers/{id}/send',
+            'POST /api/v1/asset-handovers/{id}/paper-sign',
             'GET /api/v1/assets/handovers/register',
+            'POST /api/v1/assets/scan-baskets',
+            'POST /api/v1/asset-kits',
+            'POST /api/v1/asset-planner/slots',
+            'POST /api/v1/asset-equipment-templates',
+            'POST /api/v1/asset-attestations',
         ],
     ],
     'assets.handover.accept' => [
@@ -2980,6 +2986,7 @@ return [
             'POST /api/v1/asset-handovers/{id}/sign',
             'GET /api/v1/asset-handovers/{id}/certificate',
             'GET /api/v1/assets/assigned-to-me',
+            'POST /api/v1/asset-attestations/{id}/attest',
         ],
     ],
 ];

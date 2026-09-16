@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { assetsApi, type Asset, type AssetCustodyPeriod, type AssetTimelineEvent, type GenericAssetAttachment } from "@/lib/api";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { apiErrorMessage } from "@/lib/apiError";
-import { canManageAssets, getStoredUser } from "@/lib/auth";
+import { canManageAssets, canManageHandovers, getStoredUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
@@ -68,6 +68,8 @@ export default function AssetViewPage() {
   const [docs, setDocs] = useState<GenericAssetAttachment[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [parentId, setParentId] = useState("");
+  const [parentBusy, setParentBusy] = useState(false);
 
   useEffect(() => {
     setCanEdit(canManageAssets(getStoredUser()));
@@ -86,6 +88,7 @@ export default function AssetViewPage() {
       .get(numericId)
       .then((res) => {
         if (!cancelled) setAsset(res.data);
+        if (!cancelled) setParentId(res.data.parent_asset_id ? String(res.data.parent_asset_id) : "");
         void assetsApi.timeline(numericId).then((r) => { if (!cancelled) setTimeline(r.data.data ?? []); }).catch(() => undefined);
         void assetsApi.custodyHistory(numericId).then((r) => {
           if (!cancelled) {
@@ -164,7 +167,48 @@ export default function AssetViewPage() {
             <Field label={t("assets.view.fieldIssued")} value={formatDateShort(asset.issued_at)} />
             <Field label={t("assets.view.fieldCustody")} value={asset.custody_state ?? "—"} />
             <Field label={t("assets.view.fieldAge")} value={asset.age_display ?? "—"} />
+            <Field label={t("assets.parent.title")} value={asset.parent_asset_id ? String(asset.parent_asset_id) : "—"} />
           </div>
+          {canManageHandovers(getStoredUser()) && (
+            <form
+              className="card flex flex-wrap items-end gap-2 p-4"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setParentBusy(true);
+                try {
+                  const updated = await assetsApi.setParent(asset.id, parentId ? Number(parentId) : null);
+                  setAsset((cur) => cur ? { ...cur, parent_asset_id: updated.data.data.parent_asset_id } : cur);
+                } catch (err) {
+                  setError(apiErrorMessage(err, t("assets.mine.actionFailed")));
+                } finally {
+                  setParentBusy(false);
+                }
+              }}
+            >
+              <label className="text-sm">
+                {t("assets.parent.title")}
+                <input className="form-input mt-1" value={parentId} onChange={(e) => setParentId(e.target.value)} inputMode="numeric" />
+              </label>
+              <button type="submit" className="btn-secondary" disabled={parentBusy}>{t("assets.parent.set")}</button>
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={parentBusy}
+                onClick={async () => {
+                  setParentBusy(true);
+                  try {
+                    const updated = await assetsApi.setParent(asset.id, null);
+                    setParentId("");
+                    setAsset((cur) => cur ? { ...cur, parent_asset_id: updated.data.data.parent_asset_id } : cur);
+                  } finally {
+                    setParentBusy(false);
+                  }
+                }}
+              >
+                {t("assets.parent.clear")}
+              </button>
+            </form>
+          )}
           {asset.notes && (
             <div className="rounded-xl border border-neutral-200 bg-white p-4">
               <p className="text-xs text-neutral-500">{t("assets.view.fieldNotes")}</p>

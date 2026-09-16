@@ -691,11 +691,37 @@ return [
             'READ' => ['assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage'],
             'WRITE' => ['assets.handover.manage', 'assets.admin', 'assets.manage'],
         ]],
+        ['pattern' => 'api/v1/asset-kits*', 'permissions' => [
+            'READ' => ['assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.handover.manage', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/asset-locations*', 'permissions' => [
+            'READ' => ['assets.scan', 'assets.view', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.handover.manage', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/asset-equipment-templates*', 'permissions' => [
+            'READ' => ['assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.handover.manage', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/asset-attestations/{assetAttestationCampaign}/attest', 'permissions' => [
+            'WRITE' => ['assets.handover.accept', 'assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage', 'profile.read.self'],
+        ]],
+        ['pattern' => 'api/v1/asset-attestations*', 'permissions' => [
+            'READ' => ['assets.handover.manage', 'assets.handover.accept', 'assets.view', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.handover.manage', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/asset-planner*', 'permissions' => [
+            'READ' => ['assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.handover.manage', 'assets.admin', 'assets.manage'],
+        ]],
         ['pattern' => 'api/v1/asset-handovers/{assetHandover}/lines/{assetHandoverLine}/respond', 'permissions' => [
             'WRITE' => ['assets.handover.accept', 'assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage', 'profile.read.self'],
         ]],
         ['pattern' => 'api/v1/asset-handovers/{assetHandover}/sign', 'permissions' => [
             'WRITE' => ['assets.handover.accept', 'assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage', 'profile.read.self'],
+        ]],
+        ['pattern' => 'api/v1/asset-handovers/{assetHandover}/paper-sign', 'permissions' => [
+            'WRITE' => ['assets.handover.manage', 'assets.admin', 'assets.manage'],
         ]],
         ['pattern' => 'api/v1/asset-handovers/{assetHandover}/certificate', 'permissions' => [
             'READ' => ['assets.handover.accept', 'assets.handover.manage', 'assets.view', 'assets.admin', 'assets.manage', 'profile.read.self'],
@@ -712,6 +738,9 @@ return [
         ]],
         ['pattern' => 'api/v1/assets/{asset}/move', 'permissions' => [
             'WRITE' => ['assets.manage', 'assets.admin'],
+        ]],
+        ['pattern' => 'api/v1/assets/{asset}/parent', 'permissions' => [
+            'WRITE' => ['assets.handover.manage', 'assets.admin', 'assets.manage'],
         ]],
         ['pattern' => 'api/v1/assets/{asset}/checkout', 'permissions' => [
             'WRITE' => ['assets.checkout.manage', 'assets.manage', 'assets.admin'],
@@ -751,6 +780,13 @@ return [
         ]],
         ['pattern' => 'api/v1/assets/qr*', 'permissions' => [
             'READ' => ['assets.scan', 'assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/assets/rooms*', 'permissions' => [
+            'READ' => ['assets.scan', 'assets.view', 'assets.verify', 'assets.admin', 'assets.manage'],
+        ]],
+        ['pattern' => 'api/v1/assets/scan-baskets*', 'permissions' => [
+            'READ' => ['assets.scan', 'assets.view', 'assets.verify', 'assets.admin', 'assets.manage', 'assets.handover.manage'],
+            'WRITE' => ['assets.scan', 'assets.view', 'assets.verify', 'assets.admin', 'assets.manage', 'assets.handover.manage'],
         ]],
         ['pattern' => 'api/v1/assets/import*', 'permissions' => [
             'READ' => ['assets.import', 'assets.admin', 'assets.manage'],

@@ -58,6 +58,7 @@ class AssetHandoverService
             'from_department_id' => $data['from_department_id'] ?? null,
             'from_location_id' => $data['from_location_id'] ?? null,
             'to_user_id' => $data['to_user_id'] ?? null,
+            'delegate_user_id' => $this->assertDelegate($actor, isset($data['delegate_user_id']) ? (int) $data['delegate_user_id'] : null, isset($data['to_user_id']) ? (int) $data['to_user_id'] : null),
             'to_department_id' => $data['to_department_id'] ?? null,
             'to_location_id' => $data['to_location_id'] ?? ($target === 'location' ? ($data['to_location_id'] ?? null) : null),
             'to_asset_id' => $data['to_asset_id'] ?? null,
@@ -67,8 +68,13 @@ class AssetHandoverService
             'created_by' => $actor->id,
         ]);
 
+        $keepDraft = (bool) ($data['keep_draft'] ?? false);
         foreach ((array) ($data['asset_ids'] ?? []) as $assetId) {
-            $this->addLine($handover, $actor, (int) $assetId, $data['line'] ?? []);
+            $this->addLine($handover, $actor, (int) $assetId, array_merge($data['line'] ?? [], ['keep_draft' => $keepDraft]));
+        }
+        if ($keepDraft && $handover->status !== 'draft') {
+            $handover->status = 'draft';
+            $handover->save();
         }
 
         return $this->fresh($handover);
@@ -107,7 +113,7 @@ class AssetHandoverService
             'line_status' => 'pending',
         ]);
 
-        if ($handover->status === 'draft') {
+        if ($handover->status === 'draft' && empty($data['keep_draft'])) {
             $handover->status = 'prepared';
             $handover->save();
         }
@@ -264,7 +270,8 @@ class AssetHandoverService
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
                 'document_hash' => hash('sha256', $declaration->statement.'|'.$handover->id.'|'.now()->toIso8601String()),
-                'is_delegated' => false,
+                'is_delegated' => (int) $handover->delegate_user_id === (int) $actor->id
+                    && (int) $handover->to_user_id !== (int) $actor->id,
                 'signed_at' => now(),
             ]);
 
@@ -381,9 +388,29 @@ class AssetHandoverService
         ]);
     }
 
+    public function paperSign(AssetHandover $handover, User $actor, array $data = []): AssetHandover
+    {
+        $this->assertManage($actor);
+        $this->assertTenant($handover, $actor);
+        $this->assertUnsignedOpen($handover, 'This handover cannot be paper-signed.');
+        $receipt = trim((string) ($data['paper_receipt_number'] ?? ''));
+        if ($receipt === '') {
+            throw ValidationException::withMessages(['paper_receipt_number' => 'A paper receipt number is required.']);
+        }
+        $handover->paper_receipt_number = $receipt;
+        $handover->paper_signed_by = $actor->id;
+        $handover->paper_signed_at = now();
+        $handover->save();
+
+        return $this->sign($handover, $actor, [
+            'comment' => $data['comment'] ?? ('Paper receipt '.$receipt),
+            'auth_level' => $data['auth_level'] ?? 'paper',
+        ]);
+    }
+
     public function present(AssetHandover $handover, ?User $viewer = null): array
     {
-        $handover->load(['lines.asset', 'toUser:id,name,email', 'fromUser:id,name,email', 'toLocation', 'createdBy:id,name']);
+        $handover->load(['lines.asset', 'toUser:id,name,email', 'delegateUser:id,name,email', 'fromUser:id,name,email', 'toLocation', 'createdBy:id,name']);
         $declaration = AssetHandoverDeclarationVersion::currentForTenant((int) $handover->tenant_id);
         $payload = $handover->toArray();
         $payload['declaration'] = [
@@ -719,10 +746,30 @@ class AssetHandoverService
             abort(403);
         }
         $isRecipient = (int) $handover->to_user_id === (int) $actor->id;
+        $isDelegate = (int) $handover->delegate_user_id === (int) $actor->id;
         $isReturnInitiator = $handover->type === 'return' && (int) $handover->from_user_id === (int) $actor->id;
-        if (! $isRecipient && ! $isReturnInitiator) {
-            abort(403, 'Only the intended custodian can respond to this handover.');
+        if (! $isRecipient && ! $isDelegate && ! $isReturnInitiator) {
+            abort(403, 'Only the intended custodian or nominated delegate can respond to this handover.');
         }
+    }
+
+    private function assertDelegate(User $actor, ?int $delegateId, ?int $toUserId): ?int
+    {
+        if (! $delegateId) {
+            return null;
+        }
+        $delegate = User::query()->where('tenant_id', $actor->tenant_id)->find($delegateId);
+        if (! $delegate) {
+            throw ValidationException::withMessages(['delegate_user_id' => 'Delegate must belong to the same organisation.']);
+        }
+        if (! $delegate->accountAllowsAuthentication() || ! $delegate->is_active) {
+            throw ValidationException::withMessages(['delegate_user_id' => 'Deactivated staff cannot collect on behalf of a colleague.']);
+        }
+        if ($toUserId && $delegateId === $toUserId) {
+            return null;
+        }
+
+        return $delegateId;
     }
 
     private function assertManage(User $actor): void

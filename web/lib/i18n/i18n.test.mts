@@ -97,6 +97,8 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/assets/handovers/new/page.tsx",
     "app/(app)/assets/dashboard/page.tsx",
     "app/(app)/assets/scan/page.tsx",
+    "app/(app)/assets/kits/page.tsx",
+    "app/(app)/assets/operations/page.tsx",
     "app/(app)/audit/engagements/page.tsx",
     "components/audit/AuditChrome.tsx",
     "app/(app)/risk/create/page.tsx",
@@ -203,6 +205,27 @@ test("risk create catalog covers form copy in EN, FR and PT", () => {
     "hr.hub",
     "hr.subtitle",
     "hr.timesheets.recent",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
+test("asset phase 2 operations catalog covers kits planner and attestation copy in EN, FR and PT", () => {
+  const keys = [
+    "assets.kits.title",
+    "assets.kits.create",
+    "assets.ops.title",
+    "assets.ops.plannerHint",
+    "assets.ops.attestHint",
+    "assets.handover.delegate",
+    "assets.handover.paperSign",
+    "assets.scan.basket",
   ];
   for (const key of keys) {
     const en = translate("en", key);

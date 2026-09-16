@@ -26,7 +26,9 @@ class AssetHandoverController extends Controller
 
         if ($request->boolean('mine') || ! AssetAccess::canManageHandover($user)) {
             $query->where(function ($q) use ($user) {
-                $q->where('to_user_id', $user->id)->orWhere('from_user_id', $user->id);
+                $q->where('to_user_id', $user->id)
+                    ->orWhere('from_user_id', $user->id)
+                    ->orWhere('delegate_user_id', $user->id);
             });
         }
         if ($request->filled('status')) {
@@ -58,6 +60,7 @@ class AssetHandoverController extends Controller
             'type' => ['required', 'string', 'in:issue,transfer,return'],
             'custody_target_type' => ['required', 'string', 'in:person,department,location,pool,vehicle_facility'],
             'to_user_id' => ['nullable', 'integer'],
+            'delegate_user_id' => ['nullable', 'integer'],
             'to_department_id' => ['nullable', 'integer'],
             'to_location_id' => ['nullable', 'integer'],
             'to_asset_id' => ['nullable', 'integer'],
@@ -134,6 +137,17 @@ class AssetHandoverController extends Controller
         return response()->json(['data' => $this->handovers->present($updated, $request->user())]);
     }
 
+    public function paperSign(Request $request, AssetHandover $assetHandover): JsonResponse
+    {
+        $data = $request->validate([
+            'paper_receipt_number' => ['required', 'string', 'max:64'],
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $updated = $this->handovers->paperSign($assetHandover, $request->user(), $data);
+
+        return response()->json(['data' => $this->handovers->present($updated, $request->user())]);
+    }
+
     public function certificate(Request $request, AssetHandover $assetHandover): Response
     {
         return $this->handovers->certificateResponse($assetHandover, $request->user());
@@ -167,7 +181,11 @@ class AssetHandoverController extends Controller
         if (AssetAccess::canManageHandover($user)) {
             return;
         }
-        if ((int) $handover->to_user_id === (int) $user->id || (int) $handover->from_user_id === (int) $user->id) {
+        if (
+            (int) $handover->to_user_id === (int) $user->id
+            || (int) $handover->from_user_id === (int) $user->id
+            || (int) $handover->delegate_user_id === (int) $user->id
+        ) {
             return;
         }
         abort(403);

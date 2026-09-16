@@ -1485,6 +1485,23 @@ Route::prefix('v1')->group(function () {
         Route::post('assets/qr-batch', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'qrBatch']);
         Route::get('assets/qr/{token}', [\App\Http\Controllers\Api\V1\Assets\PublicAssetQrController::class, 'authenticated'])
             ->where('token', '[A-Za-z0-9_-]+');
+        Route::get('assets/rooms/{token}', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'showRoom'])
+            ->where('token', '[A-Za-z0-9_-]+');
+        Route::post('assets/scan-baskets', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'storeBasket']);
+        Route::get('assets/scan-baskets/{scanBasket}', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'showBasket']);
+        Route::post('assets/scan-baskets/{scanBasket}/items', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'addBasketItem']);
+        Route::post('assets/scan-baskets/{scanBasket}/start-handover', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'startBasketHandover']);
+
+        Route::get('asset-kits', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'indexKits']);
+        Route::post('asset-kits', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'storeKit']);
+        Route::post('asset-locations/{assetLocation}/room-token', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'issueRoomToken']);
+        Route::get('asset-equipment-templates', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'indexTemplates']);
+        Route::post('asset-equipment-templates', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'storeTemplate']);
+        Route::get('asset-equipment-templates/gaps', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'templateGaps']);
+        Route::get('asset-attestations', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'indexAttestations']);
+        Route::post('asset-attestations', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'storeAttestation']);
+        Route::post('asset-attestations/{assetAttestationCampaign}/attest', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'attest']);
+        Route::post('asset-planner/slots', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'storePlannerSlot']);
 
         Route::get('asset-settings/recovery-contact', [\App\Http\Controllers\Api\V1\Assets\AssetSettingsController::class, 'showRecoveryContact']);
         Route::put('asset-settings/recovery-contact', [\App\Http\Controllers\Api\V1\Assets\AssetSettingsController::class, 'updateRecoveryContact']);
@@ -1507,6 +1524,7 @@ Route::prefix('v1')->group(function () {
         Route::post('asset-handovers/{assetHandover}/send', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'send']);
         Route::post('asset-handovers/{assetHandover}/cancel', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'cancel']);
         Route::post('asset-handovers/{assetHandover}/sign', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'sign']);
+        Route::post('asset-handovers/{assetHandover}/paper-sign', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'paperSign']);
         Route::get('asset-handovers/{assetHandover}/certificate', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'certificate']);
         Route::post('asset-handovers/{assetHandover}/lines/{assetHandoverLine}/respond', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'respond']);
 
@@ -1557,6 +1575,7 @@ Route::prefix('v1')->group(function () {
         Route::post('assets/{asset}/transfer', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'transfer']);
         Route::post('assets/{asset}/return', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'returnAsset']);
         Route::post('assets/{asset}/mark-condition', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'markCondition']);
+        Route::post('assets/{asset}/parent', [\App\Http\Controllers\Api\V1\Assets\AssetPhase2Controller::class, 'setParent']);
         Route::post('assets/{asset}/move', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'move']);
         Route::post('assets/{asset}/checkout', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'checkout']);
         Route::post('assets/{asset}/return-checkout', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'returnCheckout']);

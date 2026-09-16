@@ -1873,6 +1873,8 @@ export interface Asset {
   book_value?: number | null;
   owner_name?: string | null;
   custodian_type?: string | null;
+  parent_asset_id?: number | null;
+  nfc_uid?: string | null;
 }
 
 export interface AssetRequest {
@@ -2034,10 +2036,76 @@ export const assetsApi = {
     api.post<{ data: AssetHandoverLine; handover: AssetHandover }>(`/asset-handovers/${id}/lines/${lineId}/respond`, data),
   signHandover: (id: number, data?: Record<string, unknown>) =>
     api.post<{ data: AssetHandover }>(`/asset-handovers/${id}/sign`, data ?? {}),
+  paperSignHandover: (id: number, data: { paper_receipt_number: string; comment?: string }) =>
+    api.post<{ data: AssetHandover }>(`/asset-handovers/${id}/paper-sign`, data),
   handoverCertificateUrl: (id: number) => `/api/asset-handovers/${id}/certificate`,
   custodyHistory: (id: number) =>
     api.get<{ data: { owner: string; history: AssetCustodyPeriod[] } }>(`/assets/${id}/custody-history`),
+  createScanBasket: () => api.post<{ data: AssetScanBasket }>("/assets/scan-baskets", {}),
+  getScanBasket: (id: number) => api.get<{ data: AssetScanBasket }>(`/assets/scan-baskets/${id}`),
+  addScanBasketItem: (id: number, data: { token?: string; nfc_uid?: string }) =>
+    api.post<{ data: AssetScanBasket }>(`/assets/scan-baskets/${id}/items`, data),
+  startScanBasketHandover: (id: number, data: Record<string, unknown>) =>
+    api.post<{ data: AssetHandover }>(`/assets/scan-baskets/${id}/start-handover`, data),
+  kits: () => api.get<{ data: AssetKit[] }>("/asset-kits"),
+  createKit: (data: { name: string; asset_ids?: number[]; notes?: string }) =>
+    api.post<{ data: AssetKit }>("/asset-kits", data),
+  setParent: (id: number, parentAssetId: number | null) =>
+    api.post<{ data: { id: number; parent_asset_id: number | null } }>(`/assets/${id}/parent`, { parent_asset_id: parentAssetId }),
+  issueRoomToken: (locationId: number) =>
+    api.post<{ data: { id: number; name: string; qr_token: string } }>(`/asset-locations/${locationId}/room-token`, {}),
+  roomByToken: (token: string) =>
+    api.get<{ data: { location: { id: number; name: string; code: string }; assets: Array<Record<string, unknown>> } }>(`/assets/rooms/${encodeURIComponent(token)}`),
+  equipmentTemplates: () => api.get<{ data: AssetEquipmentTemplate[] }>("/asset-equipment-templates"),
+  createEquipmentTemplate: (data: { name: string; role_name: string; required_categories: string[] }) =>
+    api.post<{ data: AssetEquipmentTemplate }>("/asset-equipment-templates", data),
+  equipmentTemplateGaps: (userId: number) =>
+    api.get<{ data: { user_id: number; missing_categories: string[]; held_categories: string[] } }>("/asset-equipment-templates/gaps", { params: { user_id: userId } }),
+  attestations: () => api.get<{ data: AssetAttestationCampaign[] }>("/asset-attestations"),
+  createAttestation: (data: { name: string; due_on?: string }) =>
+    api.post<{ data: AssetAttestationCampaign }>("/asset-attestations", data),
+  attestAssets: (id: number, data: { asset_ids: number[]; confirmed?: boolean }) =>
+    api.post<{ data: AssetAttestationCampaign }>(`/asset-attestations/${id}/attest`, data),
+  createPlannerSlot: (data: { asset_id: number; to_user_id: number; notes?: string }) =>
+    api.post<{ data: { id: number; handover: AssetHandover } }>("/asset-planner/slots", data),
 };
+
+export interface AssetScanBasketItem {
+  id: number;
+  asset_id: number;
+  name?: string | null;
+  tag_number?: string | null;
+  scan_method?: string | null;
+}
+
+export interface AssetScanBasket {
+  id: number;
+  status: string;
+  handover_id?: number | null;
+  items: AssetScanBasketItem[];
+}
+
+export interface AssetKit {
+  id: number;
+  name: string;
+  notes?: string | null;
+  items: Array<{ id: number; asset_id: number; name?: string | null; tag_number?: string | null }>;
+}
+
+export interface AssetEquipmentTemplate {
+  id: number;
+  name: string;
+  role_name: string;
+  required_categories: string[];
+}
+
+export interface AssetAttestationCampaign {
+  id: number;
+  name: string;
+  due_on?: string | null;
+  status: string;
+  responses_count?: number;
+}
 
 export interface AssetAcquisitionBatch {
   id: number;
@@ -2074,7 +2142,10 @@ export interface AssetHandover {
   custody_target_type: string;
   status: string;
   to_user_id?: number | null;
+  delegate_user_id?: number | null;
+  paper_receipt_number?: string | null;
   to_user?: { id: number; name: string; email?: string } | null;
+  delegate_user?: { id: number; name: string; email?: string } | null;
   lines?: AssetHandoverLine[];
   declaration?: { version_key: string; statement: string };
   owner?: string;
