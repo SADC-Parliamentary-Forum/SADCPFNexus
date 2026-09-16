@@ -307,6 +307,7 @@ test("supplier documents catalog covers register copy in EN, FR and PT", () => {
     "supplier.documents.pending",
     "supplier.documents.approved",
     "supplier.documents.manage",
+    "supplier.documents.remarks",
   ];
   for (const key of keys) {
     const en = translate("en", key);

@@ -1725,6 +1725,7 @@ export const keyEn: Dict = {
   "supplier.documents.expiryRequired": "This document type requires an expiry date.",
   "supplier.documents.uploadError": "Failed to upload document.",
   "supplier.documents.manage": "Manage supporting documents",
+  "supplier.documents.remarks": "Reason",
 };
 
 export const keyFr: Dict = {
@@ -3451,6 +3452,7 @@ export const keyFr: Dict = {
   "supplier.documents.expiryRequired": "Ce type de document exige une date d’expiration.",
   "supplier.documents.uploadError": "Échec du téléversement du document.",
   "supplier.documents.manage": "Gérer les pièces justificatives",
+  "supplier.documents.remarks": "Motif",
 };
 
 export const keyPt: Dict = {
@@ -5177,4 +5179,5 @@ export const keyPt: Dict = {
   "supplier.documents.expiryRequired": "Este tipo de documento exige uma data de validade.",
   "supplier.documents.uploadError": "Falha ao carregar o documento.",
   "supplier.documents.manage": "Gerir documentos de suporte",
+  "supplier.documents.remarks": "Motivo",
 };

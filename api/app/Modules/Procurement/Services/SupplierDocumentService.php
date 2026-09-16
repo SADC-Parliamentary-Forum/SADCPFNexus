@@ -39,6 +39,12 @@ class SupplierDocumentService
             ]);
         }
 
+        if ($type->has_expiry && empty($meta['expiry_date'])) {
+            throw ValidationException::withMessages([
+                'expiry_date' => ['This document type requires an expiry date.'],
+            ]);
+        }
+
         $mime = UploadContentSniffer::assertAllowed($file);
         $path = $file->store('attachments/vendors/'.$vendor->id.'/register', ['disk' => 'local']);
 

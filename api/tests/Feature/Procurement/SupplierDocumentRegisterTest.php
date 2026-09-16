@@ -137,6 +137,24 @@ class SupplierDocumentRegisterTest extends TestCase
         $this->assertStringNotContainsString('storage_path', (string) json_encode($list));
     }
 
+    public function test_tax_clearance_upload_requires_expiry_date(): void
+    {
+        $tenant = Tenant::factory()->create();
+        app(SupplierCatalogueSeeder::class)->ensureForTenant((int) $tenant->id);
+        [$http] = $this->asSupplier($tenant);
+
+        $http->post('/api/v1/procurement/supplier/documents', [
+            'file' => $this->fakePdf('tax-missing-expiry.pdf'),
+            'type_code' => 'tax_clearance',
+        ], ['Accept' => 'application/json'])->assertUnprocessable();
+
+        $http->post('/api/v1/procurement/supplier/documents', [
+            'file' => $this->fakePdf('tax-with-expiry.pdf'),
+            'type_code' => 'tax_clearance',
+            'expiry_date' => now()->addYear()->toDateString(),
+        ], ['Accept' => 'application/json'])->assertCreated();
+    }
+
     public function test_critical_bank_change_queues_request_after_approval(): void
     {
         $tenant = Tenant::factory()->create();

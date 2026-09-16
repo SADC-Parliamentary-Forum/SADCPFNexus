@@ -226,7 +226,15 @@ export default function SupplierDocumentsPage() {
                     <td>{row.typeLabel}</td>
                     <td className="max-w-[16rem] truncate">{row.fileName ?? "—"}</td>
                     <td>
-                      <span className={`badge ${badge}`}>{t(statusKey)}</span>
+                      <div className="space-y-1">
+                        <span className={`badge ${badge}`}>{t(statusKey)}</span>
+                        {row.document?.remarks && (row.status === "rejected" || row.status === "expired") && (
+                          <p className="text-xs text-neutral-600">
+                            <span className="font-semibold">{t("supplier.documents.remarks")}: </span>
+                            {row.document.remarks}
+                          </p>
+                        )}
+                      </div>
                     </td>
                     <td>{row.expiry ? formatDateShort(row.expiry) : "—"}</td>
                     <td>

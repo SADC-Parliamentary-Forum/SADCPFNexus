@@ -63,4 +63,5 @@ test("supplier documents has its own portal page and menu", () => {
   assert.match(documents, /supplierPortalApi\.uploadDocument/);
   assert.match(documents, /data-testid="supplier-documents-table"/);
   assert.match(documents, /useI18n/);
+  assert.match(documents, /row\.document\?\.remarks/);
 });
