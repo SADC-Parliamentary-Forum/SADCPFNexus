@@ -11,7 +11,6 @@ use App\Models\PurchaseOrder;
 use App\Models\RfqInvitation;
 use App\Models\SupplierCategory;
 use App\Models\SupplierChangeRequest;
-use App\Models\SupplierDocument;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Modules\Procurement\Services\InvoiceService;
@@ -21,7 +20,6 @@ use App\Modules\Procurement\Services\SupplierDocumentService;
 use App\Modules\Procurement\Services\SupplierEligibilityService;
 use App\Modules\Procurement\Support\VendorPresenter;
 use App\Services\NotificationService;
-use App\Support\UploadContentSniffer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -44,6 +42,7 @@ class SupplierPortalController extends Controller
     public function me(Request $request): JsonResponse
     {
         $vendor = $this->currentVendor($request);
+
         return response()->json(['data' => VendorPresenter::forSupplier($vendor, $request->user())]);
     }
 
@@ -115,13 +114,17 @@ class SupplierPortalController extends Controller
             if ($blocker === 'email_unverified') {
                 continue;
             }
-            $actions[] = ['code' => $blocker, 'label' => 'Complete: '.str_replace('_', ' ', $blocker), 'href' => '/supplier/profile'];
+            $actions[] = [
+                'code' => $blocker,
+                'label' => 'Complete: '.str_replace('_', ' ', $blocker),
+                'href' => $blocker === 'mandatory_documents' ? '/supplier/documents' : '/supplier/profile',
+            ];
         }
         foreach ($expiring as $doc) {
             $actions[] = [
                 'code' => 'expiring_document',
                 'label' => ($doc->name ?: $doc->type_code).' expires '.$doc->expiry_date?->toDateString(),
-                'href' => '/supplier/profile',
+                'href' => '/supplier/documents',
             ];
         }
         if ($openRfqCount > 0) {
@@ -138,17 +141,17 @@ class SupplierPortalController extends Controller
 
         return response()->json([
             'data' => [
-                'vendor'                => VendorPresenter::forSupplier($vendor, $request->user()),
-                'status'                => $vendor->normalizedStatus(),
-                'completeness_percent'  => $completeness['percent'],
-                'compliance_status'     => $eligibility['compliance_status'],
-                'eligibility'           => $eligibility,
-                'actions'               => $actions,
-                'open_rfq_count'        => $openRfqCount,
-                'quote_count'           => ProcurementQuote::where('vendor_id', $vendor->id)->count(),
-                'purchase_order_count'  => PurchaseOrder::where('tenant_id', $request->user()->tenant_id)->where('vendor_id', $vendor->id)->count(),
-                'invoice_count'         => Invoice::where('tenant_id', $request->user()->tenant_id)->where('vendor_id', $vendor->id)->count(),
-                'pending_compliance'    => $eligibility['compliance_status'] === 'valid' ? 0 : 1,
+                'vendor' => VendorPresenter::forSupplier($vendor, $request->user()),
+                'status' => $vendor->normalizedStatus(),
+                'completeness_percent' => $completeness['percent'],
+                'compliance_status' => $eligibility['compliance_status'],
+                'eligibility' => $eligibility,
+                'actions' => $actions,
+                'open_rfq_count' => $openRfqCount,
+                'quote_count' => ProcurementQuote::where('vendor_id', $vendor->id)->count(),
+                'purchase_order_count' => PurchaseOrder::where('tenant_id', $request->user()->tenant_id)->where('vendor_id', $vendor->id)->count(),
+                'invoice_count' => Invoice::where('tenant_id', $request->user()->tenant_id)->where('vendor_id', $vendor->id)->count(),
+                'pending_compliance' => $eligibility['compliance_status'] === 'valid' ? 0 : 1,
             ],
         ]);
     }
@@ -182,7 +185,7 @@ class SupplierPortalController extends Controller
             ->with(['quote', 'procurementRequest.supplierCategories', 'procurementRequest.items'])
             ->firstOrFail();
 
-        if (!$invitation->viewed_at) {
+        if (! $invitation->viewed_at) {
             $invitation->update(['viewed_at' => now(), 'status' => 'viewed']);
         }
 
@@ -191,7 +194,7 @@ class SupplierPortalController extends Controller
         return response()->json([
             'data' => [
                 'invitation' => $invitation->fresh(['quote']),
-                'request'    => [
+                'request' => [
                     'id' => $procurementRequest->id,
                     'reference_number' => $procurementRequest->reference_number,
                     'title' => $procurementRequest->title,
@@ -232,29 +235,29 @@ class SupplierPortalController extends Controller
 
         $data = $request->validate([
             'quoted_amount' => ['required', 'numeric', 'min:0.01'],
-            'currency'      => ['nullable', 'string', 'size:3'],
-            'quote_date'    => ['nullable', 'date'],
-            'notes'         => ['nullable', 'string', 'max:2000'],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'quote_date' => ['nullable', 'date'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         $quote = app(\App\Modules\Procurement\Services\SealedBidService::class)->replaceOrCreatePortalQuote(
             $procurementRequest,
             (int) $invitation->id,
             [
-                'vendor_id'            => $vendor->id,
+                'vendor_id' => $vendor->id,
                 'submitted_by_user_id' => $request->user()->id,
-                'vendor_name'          => $vendor->name,
-                'quoted_amount'        => $data['quoted_amount'],
-                'currency'             => $data['currency'] ?? $procurementRequest->currency,
-                'submission_channel'   => 'system_portal',
-                'notes'                => $data['notes'] ?? null,
-                'quote_date'           => $data['quote_date'] ?? now()->toDateString(),
-                'is_recommended'       => false,
+                'vendor_name' => $vendor->name,
+                'quoted_amount' => $data['quoted_amount'],
+                'currency' => $data['currency'] ?? $procurementRequest->currency,
+                'submission_channel' => 'system_portal',
+                'notes' => $data['notes'] ?? null,
+                'quote_date' => $data['quote_date'] ?? now()->toDateString(),
+                'is_recommended' => false,
             ]
         );
 
         $invitation->update([
-            'status'       => 'responded',
+            'status' => 'responded',
             'responded_at' => now(),
         ]);
 
@@ -263,8 +266,8 @@ class SupplierPortalController extends Controller
             reference: $procurementRequest->reference_number,
             title: $procurementRequest->title,
             supplier: $vendor->name,
-            amount: number_format((float) $quote->quoted_amount, 2) . ' ' . $quote->currency,
-            url: '/procurement/rfq/' . $procurementRequest->id
+            amount: number_format((float) $quote->quoted_amount, 2).' '.$quote->currency,
+            url: '/procurement/rfq/'.$procurementRequest->id
         );
 
         return response()->json(['message' => 'Quote submitted.', 'data' => $quote->fresh(['vendor', 'invitation'])], 201);
@@ -304,14 +307,15 @@ class SupplierPortalController extends Controller
 
         $data = $request->validate([
             'vendor_invoice_number' => ['required', 'string', 'max:100'],
-            'invoice_date'          => ['required', 'date'],
-            'due_date'              => ['required', 'date', 'after_or_equal:invoice_date'],
-            'amount'                => ['required', 'numeric', 'min:0.01'],
-            'currency'              => ['nullable', 'string', 'max:10'],
+            'invoice_date' => ['required', 'date'],
+            'due_date' => ['required', 'date', 'after_or_equal:invoice_date'],
+            'amount' => ['required', 'numeric', 'min:0.01'],
+            'currency' => ['nullable', 'string', 'max:10'],
         ]);
 
         try {
             $invoice = $this->invoiceService->submitSupplierProforma($purchaseOrder, $data, $request->user());
+
             return response()->json(['message' => 'Proforma invoice submitted.', 'data' => $invoice], 201);
         } catch (InvalidArgumentException $e) {
             abort(422, $e->getMessage());
@@ -324,14 +328,15 @@ class SupplierPortalController extends Controller
 
         $data = $request->validate([
             'vendor_invoice_number' => ['nullable', 'string', 'max:100'],
-            'invoice_date'          => ['nullable', 'date'],
-            'due_date'              => ['nullable', 'date'],
-            'amount'                => ['nullable', 'numeric', 'min:0.01'],
-            'currency'              => ['nullable', 'string', 'max:10'],
+            'invoice_date' => ['nullable', 'date'],
+            'due_date' => ['nullable', 'date'],
+            'amount' => ['nullable', 'numeric', 'min:0.01'],
+            'currency' => ['nullable', 'string', 'max:10'],
         ]);
 
         try {
             $updated = $this->invoiceService->submitSupplierFinal($invoice, $data, $request->user());
+
             return response()->json(['message' => 'Final invoice submitted.', 'data' => $updated]);
         } catch (InvalidArgumentException $e) {
             abort(422, $e->getMessage());
@@ -343,19 +348,19 @@ class SupplierPortalController extends Controller
         $vendor = $this->currentVendor($request);
 
         $data = $request->validate([
-            'contact_name'   => ['nullable', 'string', 'max:255'],
-            'contact_phone'  => ['nullable', 'string', 'max:50'],
-            'website'        => ['nullable', 'url', 'max:255'],
-            'address'        => ['nullable', 'string', 'max:500'],
-            'country'        => ['nullable', 'string', 'max:100'],
-            'bank_name'      => ['nullable', 'string', 'max:255'],
-            'bank_account'   => ['nullable', 'string', 'max:100'],
-            'bank_branch'    => ['nullable', 'string', 'max:255'],
-            'payment_terms'  => ['nullable', 'string', 'max:50'],
-            'category_ids'   => ['nullable', 'array', 'min:1'],
+            'contact_name' => ['nullable', 'string', 'max:255'],
+            'contact_phone' => ['nullable', 'string', 'max:50'],
+            'website' => ['nullable', 'url', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account' => ['nullable', 'string', 'max:100'],
+            'bank_branch' => ['nullable', 'string', 'max:255'],
+            'payment_terms' => ['nullable', 'string', 'max:50'],
+            'category_ids' => ['nullable', 'array', 'min:1'],
             'category_ids.*' => ['integer', Rule::exists('supplier_categories', 'id')->where('tenant_id', $vendor->tenant_id)],
-            'documents'      => ['nullable', 'array', 'max:15'],
-            'documents.*'    => ['file', 'max:25600'],
+            'documents' => ['nullable', 'array', 'max:15'],
+            'documents.*' => ['file', 'max:25600'],
             'document_types' => ['nullable', 'array'],
             'document_types.*' => ['nullable', 'string', 'max:80'],
             'name' => ['nullable', 'string', 'max:300'],
@@ -381,15 +386,15 @@ class SupplierPortalController extends Controller
         }
 
         $vendor->update([
-            'contact_name'  => array_key_exists('contact_name', $data) ? $data['contact_name'] : $vendor->contact_name,
+            'contact_name' => array_key_exists('contact_name', $data) ? $data['contact_name'] : $vendor->contact_name,
             'contact_phone' => array_key_exists('contact_phone', $data) ? $data['contact_phone'] : $vendor->contact_phone,
-            'website'       => array_key_exists('website', $data) ? $data['website'] : $vendor->website,
-            'address'       => array_key_exists('address', $data) ? $data['address'] : $vendor->address,
-            'country'       => array_key_exists('country', $data) ? $data['country'] : $vendor->country,
+            'website' => array_key_exists('website', $data) ? $data['website'] : $vendor->website,
+            'address' => array_key_exists('address', $data) ? $data['address'] : $vendor->address,
+            'country' => array_key_exists('country', $data) ? $data['country'] : $vendor->country,
             'payment_terms' => array_key_exists('payment_terms', $data) ? $data['payment_terms'] : $vendor->payment_terms,
         ]);
 
-        if (!empty($data['category_ids'])) {
+        if (! empty($data['category_ids'])) {
             $result = $this->changeRequests->queueCategoryIds($vendor, $data['category_ids'], $request->user());
             if ($result instanceof Vendor) {
                 $categoryNames = $result->categories()->orderBy('name')->pluck('name')->join(', ');
@@ -398,7 +403,7 @@ class SupplierPortalController extends Controller
                     supplier: $result->name,
                     contact: $result->contact_name ?: $result->name,
                     categories: $categoryNames,
-                    url: '/procurement/vendors/' . $result->id
+                    url: '/procurement/vendors/'.$result->id
                 );
             }
         }
@@ -458,11 +463,11 @@ class SupplierPortalController extends Controller
                 $recipient,
                 'supplier.quote_submitted',
                 [
-                    'name'      => $recipient->name,
+                    'name' => $recipient->name,
                     'reference' => $reference,
-                    'title'     => $title,
-                    'supplier'  => $supplier,
-                    'amount'    => $amount,
+                    'title' => $title,
+                    'supplier' => $supplier,
+                    'amount' => $amount,
                 ],
                 ['module' => 'procurement', 'url' => $url]
             );
@@ -481,9 +486,9 @@ class SupplierPortalController extends Controller
                 $recipient,
                 'supplier.profile_updated',
                 [
-                    'name'       => $recipient->name,
-                    'supplier'   => $supplier,
-                    'contact'    => $contact,
+                    'name' => $recipient->name,
+                    'supplier' => $supplier,
+                    'contact' => $contact,
                     'categories' => $categories ?: 'None specified',
                 ],
                 ['module' => 'procurement', 'url' => $url]

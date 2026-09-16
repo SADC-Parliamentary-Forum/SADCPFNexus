@@ -7,6 +7,7 @@ use App\Models\SupplierChangeRequest;
 use App\Models\SupplierDeclarationAcceptance;
 use App\Models\SupplierDeclarationTemplate;
 use App\Models\SupplierDocument;
+use App\Models\SupplierDocumentRequirementType;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Modules\Procurement\Services\SupplierCatalogueSeeder;
@@ -261,14 +262,56 @@ class SupplierPortalApplicationController extends Controller
     public function documents(Request $request): JsonResponse
     {
         $vendor = $this->currentVendor($request);
+        $this->catalogue->ensureForTenant((int) $vendor->tenant_id);
+        $vendor->loadMissing(['currentDocuments', 'categories']);
 
-        $docs = SupplierDocument::query()
-            ->where('vendor_id', $vendor->id)
-            ->where('is_current', true)
-            ->orderBy('type_code')
-            ->get();
+        $types = SupplierDocumentRequirementType::query()
+            ->where('tenant_id', $vendor->tenant_id)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->filter(fn (SupplierDocumentRequirementType $type) => $type->appliesToVendor($vendor))
+            ->values();
 
-        return response()->json(['data' => $docs]);
+        $current = $vendor->currentDocuments->sortBy('type_code')->values();
+        $byType = $current->groupBy('type_code');
+
+        $presentedTypes = $types->map(fn (SupplierDocumentRequirementType $type) => [
+            'code' => $type->code,
+            'label' => $type->label,
+            'mandatory' => (bool) $type->mandatory,
+            'has_expiry' => (bool) $type->has_expiry,
+            'required_at_registration' => (bool) $type->required_at_registration,
+            'allows_multiple' => $type->code === 'other',
+        ])->values();
+
+        $requirements = $types
+            ->filter(fn (SupplierDocumentRequirementType $type) => $type->mandatory || $type->required_at_registration)
+            ->map(function (SupplierDocumentRequirementType $type) use ($byType) {
+                $doc = $byType->get($type->code)?->first();
+                $status = 'needed';
+                if ($doc) {
+                    $status = $doc->isExpired() ? SupplierDocument::STATUS_EXPIRED : $doc->status;
+                }
+                $needed = ! $doc || in_array($status, [SupplierDocument::STATUS_REJECTED, SupplierDocument::STATUS_EXPIRED], true);
+
+                return [
+                    'code' => $type->code,
+                    'label' => $type->label,
+                    'needed' => $needed,
+                    'status' => $needed && ! $doc ? 'needed' : $status,
+                    'document' => $doc ? $this->presentDocument($doc) : null,
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'data' => [
+                'types' => $presentedTypes,
+                'requirements' => $requirements,
+                'documents' => $current->map(fn (SupplierDocument $doc) => $this->presentDocument($doc))->values(),
+            ],
+        ]);
     }
 
     public function uploadDocument(Request $request): JsonResponse
@@ -292,7 +335,7 @@ class SupplierPortalApplicationController extends Controller
             $data
         );
 
-        return response()->json(['message' => 'Document uploaded.', 'data' => $document], 201);
+        return response()->json(['message' => 'Document uploaded.', 'data' => $this->presentDocument($document)], 201);
     }
 
     public function downloadDocument(Request $request, SupplierDocument $supplierDocument): StreamedResponse|JsonResponse
@@ -327,6 +370,28 @@ class SupplierPortalApplicationController extends Controller
         return response()->json([
             'data' => $vendor->changeRequests()->latest()->limit(50)->get(),
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentDocument(SupplierDocument $document): array
+    {
+        return [
+            'id' => $document->id,
+            'type_code' => $document->type_code,
+            'name' => $document->name,
+            'original_filename' => $document->original_filename,
+            'document_number' => $document->document_number,
+            'issuing_authority' => $document->issuing_authority,
+            'issue_date' => optional($document->issue_date)?->toDateString(),
+            'expiry_date' => optional($document->expiry_date)?->toDateString(),
+            'version' => (int) $document->version,
+            'status' => $document->isExpired() ? SupplierDocument::STATUS_EXPIRED : $document->status,
+            'remarks' => $document->remarks,
+            'is_current' => (bool) $document->is_current,
+            'verified_at' => optional($document->verified_at)?->toIso8601String(),
+        ];
     }
 
     private function currentVendor(Request $request): Vendor

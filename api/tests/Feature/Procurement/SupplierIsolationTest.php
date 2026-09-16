@@ -92,9 +92,10 @@ class SupplierIsolationTest extends TestCase
             ->assertOk()
             ->assertJsonMissing(['vendor_invoice_number' => 'INV-B']);
         $this->asUser($userA)->getJson("/api/v1/procurement/supplier/documents/{$doc->id}/download")->assertNotFound();
-        $this->asUser($userA)->getJson('/api/v1/procurement/supplier/documents')
+        $listed = $this->asUser($userA)->getJson('/api/v1/procurement/supplier/documents')
             ->assertOk()
-            ->assertJsonMissing(['id' => $doc->id]);
+            ->json('data.documents');
+        $this->assertFalse(collect($listed ?? [])->contains(fn ($row) => (int) ($row['id'] ?? 0) === (int) $doc->id));
     }
 
     public function test_supplier_rfq_payload_omits_budget_and_evaluation_fields(): void

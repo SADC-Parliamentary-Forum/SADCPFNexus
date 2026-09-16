@@ -4321,6 +4321,7 @@ export interface SupplierDocumentRecord {
   id: number;
   type_code: string;
   name: string;
+  original_filename?: string | null;
   document_number: string | null;
   issuing_authority: string | null;
   issue_date: string | null;
@@ -4331,6 +4332,29 @@ export interface SupplierDocumentRecord {
   is_current: boolean;
   verified_at: string | null;
   verified_by?: { id: number; name: string } | null;
+}
+
+export interface SupplierPortalDocumentType {
+  code: string;
+  label: string;
+  mandatory: boolean;
+  has_expiry: boolean;
+  required_at_registration?: boolean;
+  allows_multiple: boolean;
+}
+
+export interface SupplierDocumentRequirementRow {
+  code: string;
+  label: string;
+  needed: boolean;
+  status: string;
+  document: SupplierDocumentRecord | null;
+}
+
+export interface SupplierPortalDocumentsPayload {
+  types: SupplierPortalDocumentType[];
+  requirements: SupplierDocumentRequirementRow[];
+  documents: SupplierDocumentRecord[];
 }
 
 export interface SupplierDocumentRequirementType {
@@ -4600,11 +4624,13 @@ export const supplierPortalApi = {
     api.get<{ data: Array<{ id: number; code: string; title: string; body: string; accepted: boolean }> }>("/procurement/supplier/declarations"),
   acceptDeclarations: (templateIds: number[]) =>
     api.post("/procurement/supplier/declarations", { template_ids: templateIds }),
-  documents: () => api.get<{ data: SupplierDocumentRecord[] }>("/procurement/supplier/documents"),
+  documents: () => api.get<{ data: SupplierPortalDocumentsPayload }>("/procurement/supplier/documents"),
   uploadDocument: (formData: FormData) =>
     api.post<{ data: SupplierDocumentRecord; message: string }>("/procurement/supplier/documents", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
+  downloadDocumentUrl: (documentId: number): string =>
+    `${api.defaults.baseURL}/procurement/supplier/documents/${documentId}/download`,
   resendVerification: () => api.post<{ message: string }>("/procurement/supplier/verify-email/resend"),
   rfqs: () => api.get<{ data: RfqInvitation[] }>("/procurement/supplier/rfqs"),
   rfq: (requestId: number) =>

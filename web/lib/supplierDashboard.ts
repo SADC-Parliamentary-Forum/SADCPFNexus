@@ -69,6 +69,7 @@ const COMPLIANCE: Record<string, { icon: string; tone: SupplierTone; labelKey: s
 const ACTION_ICONS: Record<string, string> = {
   submit_application: "send",
   expiring_document: "event_busy",
+  mandatory_documents: "folder_open",
   open_rfqs: "request_quote",
   po_ack: "receipt_long",
 };
