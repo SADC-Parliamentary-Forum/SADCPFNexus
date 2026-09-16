@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
-import { riskApi, type RiskKri, type RiskKriCatalogEntry } from "@/lib/api";
+import { riskApi, type Risk, type RiskKri, type RiskKriCatalogEntry, type RiskObjectiveOption } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
@@ -14,6 +14,17 @@ function statusBadge(status: RiskKri["last_status"]): string {
   if (status === "warning") return "badge-warning";
   if (status === "ok") return "badge-success";
   return "badge";
+}
+
+function riskOptionLabel(risk: Pick<Risk, "id" | "risk_code" | "title">): string {
+  const code = risk.risk_code?.trim();
+  const title = risk.title?.trim();
+  if (code && title) return `${code} — ${title}`;
+  return code || title || String(risk.id);
+}
+
+function objectiveOptionLabel(objective: RiskObjectiveOption): string {
+  return objective.code ? `${objective.code} — ${objective.title}` : objective.title;
 }
 
 export default function RiskKriPage() {
@@ -30,6 +41,16 @@ export default function RiskKriPage() {
   const catalogQuery = useQuery({
     queryKey: ["risk", "kris", "catalog"],
     queryFn: () => riskApi.kriCatalog().then((r) => r.data.data ?? []),
+  });
+
+  const risksQuery = useQuery({
+    queryKey: ["risk", "register", "picker"],
+    queryFn: () => riskApi.list({ per_page: 100 }).then((r) => r.data.data ?? []),
+  });
+
+  const objectivesQuery = useQuery({
+    queryKey: ["risk", "objectives"],
+    queryFn: () => riskApi.listObjectives().then((r) => r.data.data ?? []),
   });
 
   const evaluate = useMutation({
@@ -53,6 +74,8 @@ export default function RiskKriPage() {
   const kris = (krisQuery.data ?? []) as RiskKri[];
   const catalog = (catalogQuery.data ?? []) as RiskKriCatalogEntry[];
   const catalogByCode = Object.fromEntries(catalog.map((c) => [c.code, c]));
+  const risks = (risksQuery.data ?? []) as Risk[];
+  const objectives = (objectivesQuery.data ?? []) as RiskObjectiveOption[];
 
   return (
     <RiskPageFrame>
@@ -140,28 +163,48 @@ export default function RiskKriPage() {
                       {kri.strategic_objective && <div>Objective: {kri.strategic_objective.code}</div>}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <input
-                        className="input input-sm w-24"
-                        placeholder="Risk ID"
-                        value={draft.risk_id}
-                        onChange={(e) =>
-                          setLinkDrafts((prev) => ({
-                            ...prev,
-                            [kri.id]: { ...draft, risk_id: e.target.value },
-                          }))
-                        }
-                      />
-                      <input
-                        className="input input-sm w-28"
-                        placeholder="Objective ID"
-                        value={draft.strategic_objective_id}
-                        onChange={(e) =>
-                          setLinkDrafts((prev) => ({
-                            ...prev,
-                            [kri.id]: { ...draft, strategic_objective_id: e.target.value },
-                          }))
-                        }
-                      />
+                      <label className="space-y-1">
+                        <span className="sr-only">{t("risk.kri.linkRisk")}</span>
+                        <select
+                          className="input input-sm min-w-[12rem]"
+                          data-testid={`kri-risk-select-${kri.id}`}
+                          value={draft.risk_id}
+                          onChange={(e) =>
+                            setLinkDrafts((prev) => ({
+                              ...prev,
+                              [kri.id]: { ...draft, risk_id: e.target.value },
+                            }))
+                          }
+                        >
+                          <option value="">{t("risk.kri.none")}</option>
+                          {risks.map((risk) => (
+                            <option key={risk.id} value={String(risk.id)}>
+                              {riskOptionLabel(risk)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="space-y-1">
+                        <span className="sr-only">{t("risk.kri.linkObjective")}</span>
+                        <select
+                          className="input input-sm min-w-[12rem]"
+                          data-testid={`kri-objective-select-${kri.id}`}
+                          value={draft.strategic_objective_id}
+                          onChange={(e) =>
+                            setLinkDrafts((prev) => ({
+                              ...prev,
+                              [kri.id]: { ...draft, strategic_objective_id: e.target.value },
+                            }))
+                          }
+                        >
+                          <option value="">{t("risk.kri.none")}</option>
+                          {objectives.map((objective) => (
+                            <option key={objective.id} value={String(objective.id)}>
+                              {objectiveOptionLabel(objective)}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                       <button
                         type="button"
                         className="btn-secondary btn-sm"

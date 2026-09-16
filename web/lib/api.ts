@@ -8856,6 +8856,8 @@ export const riskApi = {
     api.post(`/risk/acceptances/${acceptanceId}/decide`, data),
   materialise: (riskId: number, data?: Record<string, unknown>) =>
     api.post(`/risk/risks/${riskId}/materialise`, data),
+  listControls: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<RiskControlOption>>("/risk/controls", { params }),
   createControl: (data: Record<string, unknown>) =>
     api.post(`/risk/controls`, data),
   linkControl: (riskId: number, data: Record<string, unknown>) =>
@@ -8907,6 +8909,14 @@ export const riskApi = {
   createRiskDependency: (data: Record<string, unknown>) =>
     api.post<{ message: string; data: RiskDependency }>("/risk/dependencies", data),
 };
+
+export interface RiskControlOption {
+  id: number;
+  control_code: string;
+  title: string;
+  control_type?: string | null;
+  status?: string | null;
+}
 
 export interface RiskControlTestingCampaign {
   id: number;

@@ -5,13 +5,15 @@ import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { riskApi, type RiskControlTestingCampaign, type RiskControlTestingItem } from "@/lib/api";
+import { riskApi, type RiskControlOption, type RiskControlTestingCampaign, type RiskControlTestingItem } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function RiskControlTestingPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [title, setTitle] = useState("");
-  const [controlIds, setControlIds] = useState("");
+  const [controlIds, setControlIds] = useState<number[]>([]);
   const [scheduledEnd, setScheduledEnd] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -19,6 +21,11 @@ export default function RiskControlTestingPage() {
   const campaignsQuery = useQuery({
     queryKey: ["risk", "control-testing"],
     queryFn: () => riskApi.listControlTestingCampaigns().then((r) => r.data.data ?? []),
+  });
+
+  const controlsQuery = useQuery({
+    queryKey: ["risk", "controls"],
+    queryFn: () => riskApi.listControls({ per_page: 100 }).then((r) => r.data.data ?? []),
   });
 
   const detailQuery = useQuery({
@@ -32,15 +39,12 @@ export default function RiskControlTestingPage() {
       riskApi.createControlTestingCampaign({
         title,
         scheduled_end: scheduledEnd || null,
-        control_ids: controlIds
-          .split(",")
-          .map((s) => Number(s.trim()))
-          .filter((n) => Number.isFinite(n) && n > 0),
+        control_ids: controlIds,
       }),
     onSuccess: () => {
       setError(null);
       setTitle("");
-      setControlIds("");
+      setControlIds([]);
       qc.invalidateQueries({ queryKey: ["risk", "control-testing"] });
     },
     onError: () => setError("Could not create campaign."),
@@ -61,6 +65,7 @@ export default function RiskControlTestingPage() {
   });
 
   const campaigns = (campaignsQuery.data ?? []) as RiskControlTestingCampaign[];
+  const controls = (controlsQuery.data ?? []) as RiskControlOption[];
   const detail = detailQuery.data as (RiskControlTestingCampaign & { items?: RiskControlTestingItem[] }) | undefined;
 
   function onCreate(e: FormEvent) {
@@ -97,10 +102,33 @@ export default function RiskControlTestingPage() {
           <span className="text-sm font-medium">Due / end date</span>
           <input id="risk-control-testing-due-end-date-setscheduledend-e-target-value" type="date" className="input w-full" value={scheduledEnd} onChange={(e) => setScheduledEnd(e.target.value)} />
         </label>
-        <label htmlFor="risk-control-testing-control-ids-comma-setcontrolids-e-target-value" className="space-y-1">
-          <span className="text-sm font-medium">Control IDs (comma)</span>
-          <input id="risk-control-testing-control-ids-comma-setcontrolids-e-target-value" className="input w-full" placeholder="12,15" value={controlIds} onChange={(e) => setControlIds(e.target.value)} />
-        </label>
+        <fieldset className="space-y-1 md:col-span-4" data-testid="testing-controls">
+          <legend className="text-sm font-medium">{t("risk.testing.controls")}</legend>
+          <div className="mt-2 max-h-48 overflow-auto space-y-1 rounded border border-neutral-200 p-2">
+            {controls.map((control) => (
+              <label
+                key={control.id}
+                className="flex items-center gap-2 text-sm"
+                data-testid={`testing-control-${control.id}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={controlIds.includes(control.id)}
+                  onChange={(e) =>
+                    setControlIds((cur) =>
+                      e.target.checked ? [...cur, control.id] : cur.filter((id) => id !== control.id),
+                    )
+                  }
+                />
+                <span className="font-mono text-xs">{control.control_code}</span>
+                <span>{control.title}</span>
+              </label>
+            ))}
+            {controls.length === 0 && (
+              <p className="text-sm text-neutral-500">{t("risk.testing.none")}</p>
+            )}
+          </div>
+        </fieldset>
         <div className="md:col-span-4">
           <button type="submit" className="btn-primary" disabled={create.isPending}>
             {create.isPending ? "Creating…" : "Create campaign"}

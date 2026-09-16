@@ -2126,6 +2126,7 @@ Route::prefix('v1')->group(function () {
             Route::post('risks/{risk}/materialise', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'materialise']);
             Route::post('risks/{risk}/accept-proposal', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'acceptProposal']);
             Route::post('risks/{risk}/reject-proposal', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'rejectProposal']);
+            Route::get('controls', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'listControls']);
             Route::post('controls', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'storeControl']);
             Route::post('risks/{risk}/controls', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'linkControl']);
             Route::get('incidents', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'listIncidents']);

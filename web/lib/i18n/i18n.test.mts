@@ -290,6 +290,52 @@ test("remaining labelled pickers replace raw numeric ids", () => {
   assert.doesNotMatch(forensics, /placeholder="Audit event ID"/);
 });
 
+test("risk KRI BCP and control-testing catalog covers labelled pickers in EN, FR and PT", () => {
+  const keys = [
+    "risk.kri.none",
+    "risk.kri.linkRisk",
+    "risk.kri.linkObjective",
+    "risk.bcp.risk",
+    "risk.bcp.policy",
+    "risk.bcp.riskA",
+    "risk.bcp.riskB",
+    "risk.testing.controls",
+    "risk.testing.none",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
+test("risk KRI BCP and control-testing use labelled pickers instead of raw ids", () => {
+  const kri = readFileSync(join(webRoot, "app/(app)/risk/kri/page.tsx"), "utf8");
+  const bcp = readFileSync(join(webRoot, "app/(app)/risk/bcp/page.tsx"), "utf8");
+  const testing = readFileSync(join(webRoot, "app/(app)/risk/control-testing/page.tsx"), "utf8");
+  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  assert.doesNotMatch(kri, /placeholder="Risk ID"/);
+  assert.doesNotMatch(kri, /placeholder="Objective ID"/);
+  assert.match(kri, /data-testid=\{`kri-risk-select-\$\{kri\.id\}`\}/);
+  assert.match(kri, /data-testid=\{`kri-objective-select-\$\{kri\.id\}`\}/);
+  assert.match(kri, /riskApi\.list\(/);
+  assert.match(kri, /listObjectives/);
+  assert.doesNotMatch(bcp, /Asset insurance policy ID/);
+  assert.doesNotMatch(bcp, />Risk ID</);
+  assert.match(bcp, /data-testid="bcp-risk-select"/);
+  assert.match(bcp, /data-testid="bcp-policy-select"/);
+  assert.match(bcp, /data-testid="bcp-risk-a-select"/);
+  assert.match(bcp, /data-testid="bcp-risk-b-select"/);
+  assert.doesNotMatch(testing, /placeholder="12,15"/);
+  assert.doesNotMatch(testing, /Control IDs \(comma\)/);
+  assert.match(testing, /data-testid="testing-controls"/);
+  assert.match(testing, /listControls/);
+  assert.match(api, /listControls:/);
+});
+
 test("asset operations attest and parent link use labelled pickers", () => {
   const operations = readFileSync(join(webRoot, "app/(app)/assets/operations/page.tsx"), "utf8");
   const profile = readFileSync(join(webRoot, "app/(app)/assets/[id]/page.tsx"), "utf8");
