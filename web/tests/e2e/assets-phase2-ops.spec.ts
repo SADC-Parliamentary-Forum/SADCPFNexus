@@ -13,20 +13,18 @@ test.describe("Asset Phase 2 operations (admin)", () => {
     await skipIfAccessDenied(page, "asset kits");
     await expect(page.getByTestId("kit-create-form")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("kit-name")).toBeVisible();
+    await expect(page.locator("[data-testid^='kit-asset-'] input[type='checkbox']").first()).toBeVisible({ timeout: 20_000 });
 
     const kitName = `E2E kit ${Date.now()}`;
     await page.getByTestId("kit-name").fill(kitName);
-    const kitBox = page.locator("[data-testid^='kit-asset-'] input[type='checkbox']").first();
-    if (await kitBox.count()) {
-      await kitBox.check();
-      const created = page.waitForResponse(
-        (r) => r.url().includes("/asset-kits") && r.request().method() === "POST",
-        { timeout: 20_000 },
-      );
-      await page.getByTestId("kit-create").click();
-      expect((await created).ok(), await created.then((r) => r.text())).toBeTruthy();
-      await expect(page.getByText(kitName).first()).toBeVisible({ timeout: 15_000 });
-    }
+    await page.locator("[data-testid^='kit-asset-'] input[type='checkbox']").first().check();
+    const created = page.waitForResponse(
+      (r) => r.url().includes("/asset-kits") && r.request().method() === "POST",
+      { timeout: 20_000 },
+    );
+    await page.getByTestId("kit-create").click();
+    expect((await created).ok(), await created.then((r) => r.text())).toBeTruthy();
+    await expect(page.getByText(kitName).first()).toBeVisible({ timeout: 15_000 });
 
     await page.goto("/assets/operations");
     await waitForApp(page);
@@ -34,6 +32,7 @@ test.describe("Asset Phase 2 operations (admin)", () => {
     await expect(page.getByTestId("ops-template-form")).toBeVisible({ timeout: 20_000 });
     await expect(page.getByTestId("ops-template-name")).toBeVisible();
     await expect(page.getByTestId("ops-attest-assets")).toBeVisible();
+    await expect(page.locator("[data-testid^='ops-attest-asset-']").first()).toBeVisible({ timeout: 20_000 });
     await expect(page.locator('input[placeholder="asset ids"]')).toHaveCount(0);
     await expect(page.getByTestId("ops-planner-asset")).toBeVisible();
     await expect(page.getByTestId("ops-room-location")).toBeVisible();
