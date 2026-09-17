@@ -1273,7 +1273,20 @@ Route::prefix('v1')->group(function () {
             Route::post('', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'store']);
             Route::get('types', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'types']);
             Route::post('import', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'importLegacy']);
+            Route::post('prefill', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'prefill']);
+
+            // Template library (versioned)
+            Route::get('templates', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'index']);
+            Route::post('templates', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'store']);
+            Route::get('templates/{template}', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'show']);
+            Route::post('templates/{template}/versions', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'storeVersion']);
+            Route::post('templates/{template}/versions/{version}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'activateVersion']);
+
             Route::get('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'show']);
+            Route::get('{contract}/readiness', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'readiness']);
+            Route::post('{contract}/generate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'generate']);
+            Route::post('{contract}/deliverables', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'addDeliverable']);
+            Route::post('{contract}/obligations', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'addObligation']);
             Route::delete('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'destroy']);
             Route::post('{contract}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'activate']);
             Route::post('{contract}/terminate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'terminate']);

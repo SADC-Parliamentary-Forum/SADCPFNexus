@@ -4999,6 +4999,24 @@ export interface ContractType {
   sort_order: number;
 }
 
+export interface ContractTemplateVersionSummary {
+  id: number;
+  template_id: number;
+  version: string;
+  status: string;
+}
+
+export interface ContractTemplateSummary {
+  id: number;
+  name: string;
+  status: string;
+  counterparty_type: string | null;
+  contract_type_id: number | null;
+  current_version_id: number | null;
+  versions?: ContractTemplateVersionSummary[];
+  current_version?: ContractTemplateVersionSummary | null;
+}
+
 export const contractsApi = {
   // First-class Contract Management module (supersedes /procurement/contracts).
   list: (params?: { status?: string; vendor_id?: number; search?: string; per_page?: number }) =>
@@ -5006,6 +5024,14 @@ export const contractsApi = {
   register: (params?: { status?: string; search?: string; per_page?: number; type_id?: number; origin_type?: string; expiring_within_days?: number }) =>
     api.get<PaginatedResponse<Contract>>("/contracts", { params: { per_page: 500, ...(params ?? {}) } }),
   types: () => api.get<{ data: ContractType[] }>("/contracts/types"),
+  prefill: (origin_type: "procurement" | "pif", origin_id: number) =>
+    api.post<{ data: Record<string, unknown> }>("/contracts/prefill", { origin_type, origin_id }),
+  readiness: (id: number) =>
+    api.get<{ data: { ready: boolean; checks: { key: string; label: string; passed: boolean; blocking: boolean }[] } }>(`/contracts/${id}/readiness`),
+  generate: (id: number, template_version_id: number) =>
+    api.post<{ data: unknown; message: string }>(`/contracts/${id}/generate`, { template_version_id }),
+  listTemplates: () =>
+    api.get<{ data: ContractTemplateSummary[] }>("/contracts/templates"),
   importLegacy: (data: {
     title: string; value: number; start_date: string; end_date: string;
     vendor_id?: number; counterparty_name?: string; type_id?: number; currency?: string;
