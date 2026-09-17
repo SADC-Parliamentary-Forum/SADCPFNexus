@@ -73,7 +73,7 @@ class ContractService
             'type', 'department', 'contractOwner', 'procurementOfficer', 'programme',
             'counterparty', 'fundingSources', 'deliverables', 'obligations',
             'paymentSchedules', 'documentVersions', 'signatories', 'amendments', 'exceptions',
-            'complianceDocuments',
+            'complianceDocuments', 'approvalRequest.workflow.steps', 'approvalRequest.history.user',
         ]);
     }
 

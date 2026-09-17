@@ -291,4 +291,28 @@ class Contract extends Model
         return in_array($this->signature_status, ['partially_signed', 'signed'], true)
             || in_array($this->lifecycle(), ['PARTIALLY_SIGNED', 'FULLY_EXECUTED', 'ACTIVE', 'COMPLETED', 'CLOSING', 'CLOSED'], true);
     }
+
+    // ── Workflow engine hooks (invoked by WorkflowService::finalizeApprovable) ──
+
+    public function onWorkflowApproved(User $actor): void
+    {
+        // Approval authorises signature; the signature workflow (WS4) follows.
+        $this->update(['contract_status' => 'APPROVED_FOR_SIGNATURE', 'status' => 'draft']);
+    }
+
+    public function onWorkflowRejected(User $actor, ?string $reason = null): void
+    {
+        $this->update(['contract_status' => 'REJECTED']);
+    }
+
+    public function onWorkflowReturned(User $actor, ?string $reason = null): void
+    {
+        // Returned contracts remain with the creator for correction.
+        $this->update(['contract_status' => 'CHANGES_REQUESTED']);
+    }
+
+    public function onWorkflowWithdrawn(): void
+    {
+        $this->update(['contract_status' => 'DRAFT']);
+    }
 }

@@ -4983,6 +4983,51 @@ export interface Contract {
   is_expiring_soon: boolean;
   vendor?: Vendor;
   procurement_request?: { id: number; reference_number: string; title: string };
+  approval_request?: ApprovalRequest | null;
+  deliverables?: ContractDeliverableRecord[];
+  obligations?: ContractObligationRecord[];
+  document_versions?: ContractDocumentVersionRecord[];
+  exceptions?: ContractExceptionRecord[];
+  counterparty?: { id: number; full_legal_name: string | null; email: string | null } | null;
+  created_at?: string;
+}
+
+export interface ContractDeliverableRecord {
+  id: number;
+  number: number;
+  name: string;
+  description: string | null;
+  due_date: string | null;
+  responsible_party: string;
+  status: string;
+  accepted_at: string | null;
+}
+
+export interface ContractObligationRecord {
+  id: number;
+  obligation: string;
+  responsible_party: string;
+  due_date: string | null;
+  status: string;
+}
+
+export interface ContractDocumentVersionRecord {
+  id: number;
+  version: number;
+  kind: string;
+  hash: string | null;
+  hash_algorithm: string | null;
+  generated_at: string | null;
+  is_locked: boolean;
+}
+
+export interface ContractExceptionRecord {
+  id: number;
+  type: string;
+  severity: string;
+  title: string;
+  description: string | null;
+  status: string;
   created_at?: string;
 }
 
@@ -5047,6 +5092,20 @@ export const contractsApi = {
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/terminate`, { reason }),
   destroy: (id: number) =>
     api.delete<{ message: string }>(`/contracts/${id}`),
+  submit: (id: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/submit`),
+  approveWorkflow: (id: number, comment?: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/approve`, { comment }),
+  returnForCorrection: (id: number, comment: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/return`, { comment }),
+  rejectWorkflow: (id: number, comment: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/reject`, { comment }),
+  withdraw: (id: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/withdraw`),
+  exceptions: (id: number) =>
+    api.get<{ data: ContractExceptionRecord[] }>(`/contracts/${id}/exceptions`),
+  addDeliverable: (id: number, data: { name: string; due_date?: string; responsible_party?: string; acceptance_criteria?: string; description?: string }) =>
+    api.post<{ data: unknown; message: string }>(`/contracts/${id}/deliverables`, data),
   listMilestones: (contractId: number) =>
     api.get<{ data: ContractMilestone[] }>(`/contracts/${contractId}/milestones`),
   createMilestone: (contractId: number, data: Partial<ContractMilestone>) =>

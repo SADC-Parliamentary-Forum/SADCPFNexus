@@ -630,6 +630,14 @@ class RolesAndPermissionsSeeder extends Seeder
                 Permission::whereIn('name', ['supplier.portal'])->where('guard_name', $guard)->get()
             );
 
+            // ── Contract Management: Governance Officer acts as legal/compliance
+            // reviewer (Governance Officer is not a canonical template role, so
+            // these grants persist through the canonical sync).
+            $governanceOfficer->givePermissionTo(
+                Permission::whereIn('name', ['contract.view', 'contract.view_all', 'contract.review'])
+                    ->where('guard_name', $guard)->get()
+            );
+
             // CanonicalRoleManager is the final authority. It performs an
             // exact replacement so removed permissions cannot survive a seed.
         }

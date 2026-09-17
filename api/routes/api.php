@@ -1287,6 +1287,14 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/generate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'generate']);
             Route::post('{contract}/deliverables', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'addDeliverable']);
             Route::post('{contract}/obligations', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'addObligation']);
+
+            // Approval workflow (shared Nexus engine)
+            Route::post('{contract}/submit', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'submit']);
+            Route::post('{contract}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approve']);
+            Route::post('{contract}/return', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'returnForCorrection']);
+            Route::post('{contract}/reject', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'reject']);
+            Route::post('{contract}/withdraw', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'withdraw']);
+            Route::get('{contract}/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'exceptions']);
             Route::delete('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'destroy']);
             Route::post('{contract}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'activate']);
             Route::post('{contract}/terminate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'terminate']);

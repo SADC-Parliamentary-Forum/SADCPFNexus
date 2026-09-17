@@ -10,6 +10,8 @@ use App\Models\ContractObligation;
 use App\Models\ContractTemplateVersion;
 use App\Modules\Contracts\Services\ContractDocumentService;
 use App\Modules\Contracts\Services\ContractService;
+use App\Modules\Contracts\Services\ContractWorkflowService;
+use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -24,6 +26,8 @@ class ContractController extends Controller
     public function __construct(
         private readonly ContractService $contracts,
         private readonly ContractDocumentService $documents,
+        private readonly ContractWorkflowService $workflow,
+        private readonly WorkflowService $engine,
     ) {}
 
     private function ensurePermission(Request $request, array $permissions, array $roles = []): void
@@ -291,6 +295,110 @@ class ContractController extends Controller
         ]));
 
         return response()->json(['message' => 'Obligation added.', 'data' => $obligation], 201);
+    }
+
+    /** Submit a prepared contract into the approval workflow (readiness-gated). */
+    public function submit(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.submit', 'contract.create'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $contract = $this->workflow->submit($contract, $request->user());
+
+        AuditLog::record('contract.submitted', [
+            'auditable_type' => Contract::class,
+            'auditable_id' => $contract->id,
+            'new_values' => ['contract_status' => $contract->contract_status],
+            'tags' => ['contract', 'workflow'],
+        ]);
+
+        return response()->json(['message' => 'Contract submitted for approval.', 'data' => $contract]);
+    }
+
+    public function approve(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.review', 'contract.approve'], ['Secretary General']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        $approval = $this->requireActiveApproval($contract);
+
+        $data = $request->validate(['comment' => ['nullable', 'string', 'max:2000']]);
+        $result = $this->engine->approve($approval, $request->user(), $data['comment'] ?? null);
+
+        AuditLog::record('contract.approval_action', [
+            'auditable_type' => Contract::class,
+            'auditable_id' => $contract->id,
+            'new_values' => ['action' => 'approve', 'advanced_to_step' => $result['advanced_to_step'] ?? null],
+            'tags' => ['contract', 'workflow'],
+        ]);
+
+        return response()->json(['message' => 'Approval recorded.', 'data' => $contract->fresh(['approvalRequest.workflow.steps', 'approvalRequest.history'])]);
+    }
+
+    public function returnForCorrection(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.review', 'contract.approve'], ['Secretary General']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        $approval = $this->requireActiveApproval($contract);
+
+        $data = $request->validate(['comment' => ['required', 'string', 'max:2000']]);
+        $this->engine->returnForCorrection($approval, $request->user(), $data['comment']);
+
+        AuditLog::record('contract.approval_action', [
+            'auditable_type' => Contract::class,
+            'auditable_id' => $contract->id,
+            'new_values' => ['action' => 'return', 'reason' => $data['comment']],
+            'tags' => ['contract', 'workflow'],
+        ]);
+
+        return response()->json(['message' => 'Contract returned for correction.', 'data' => $contract->fresh(['approvalRequest'])]);
+    }
+
+    public function reject(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.reject', 'contract.approve'], ['Secretary General']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        $approval = $this->requireActiveApproval($contract);
+
+        $data = $request->validate(['comment' => ['required', 'string', 'max:2000']]);
+        $this->engine->reject($approval, $request->user(), $data['comment']);
+
+        AuditLog::record('contract.approval_action', [
+            'auditable_type' => Contract::class,
+            'auditable_id' => $contract->id,
+            'new_values' => ['action' => 'reject', 'reason' => $data['comment']],
+            'tags' => ['contract', 'workflow'],
+        ]);
+
+        return response()->json(['message' => 'Contract rejected.', 'data' => $contract->fresh(['approvalRequest'])]);
+    }
+
+    public function withdraw(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.submit', 'contract.create'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        $approval = $this->requireActiveApproval($contract);
+
+        $this->engine->withdraw($approval, $request->user());
+
+        return response()->json(['message' => 'Contract withdrawn.', 'data' => $contract->fresh(['approvalRequest'])]);
+    }
+
+    public function exceptions(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.audit_view'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        return response()->json(['data' => $contract->exceptions]);
+    }
+
+    private function requireActiveApproval(Contract $contract): \App\Models\ApprovalRequest
+    {
+        $approval = $this->workflow->activeRequest($contract);
+        if ($approval === null) {
+            throw ValidationException::withMessages(['workflow' => ['This contract has no active approval request.']]);
+        }
+
+        return $approval;
     }
 
     public function activate(Request $request, Contract $contract): JsonResponse
