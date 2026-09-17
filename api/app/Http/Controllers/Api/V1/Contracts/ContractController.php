@@ -9,7 +9,9 @@ use App\Models\ContractDeliverable;
 use App\Models\ContractObligation;
 use App\Models\ContractTemplateVersion;
 use App\Modules\Contracts\Services\ContractDocumentService;
+use App\Modules\Contracts\Services\ContractExceptionService;
 use App\Modules\Contracts\Services\ContractService;
+use App\Modules\Contracts\Services\ContractSignatureService;
 use App\Modules\Contracts\Services\ContractWorkflowService;
 use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +30,8 @@ class ContractController extends Controller
         private readonly ContractDocumentService $documents,
         private readonly ContractWorkflowService $workflow,
         private readonly WorkflowService $engine,
+        private readonly ContractSignatureService $signatures,
+        private readonly ContractExceptionService $exceptionService,
     ) {}
 
     private function ensurePermission(Request $request, array $permissions, array $roles = []): void
@@ -57,7 +61,13 @@ class ContractController extends Controller
         $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.audit_view'], ['Procurement Officer']);
 
         // Delegate to the service so tenant + record scoping is applied uniformly.
-        return response()->json(['data' => $this->contracts->find($contract->id, $request->user())]);
+        $loaded = $this->contracts->find($contract->id, $request->user());
+
+        // Surface the critical "started before execution" exception on view (PRD §54).
+        $this->exceptionService->detectStartBeforeExecution($loaded);
+        $loaded->load('exceptions');
+
+        return response()->json(['data' => $loaded]);
     }
 
     public function types(Request $request): JsonResponse
@@ -401,12 +411,64 @@ class ContractController extends Controller
         return $approval;
     }
 
+    /** Generate the locked approved PDF and open the signing process. */
+    public function sendForSignature(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.send'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate(['order' => ['nullable', 'string', 'in:sadcpf_first,counterparty_first']]);
+        $contract = $this->signatures->sendForSignature($contract, $request->user(), $data['order'] ?? 'sadcpf_first');
+
+        AuditLog::record('contract.sent_for_signature', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['contract_status' => $contract->contract_status], 'tags' => ['contract', 'signature'],
+        ]);
+
+        return response()->json(['message' => 'Contract sent for signature.', 'data' => $contract]);
+    }
+
+    /** The authorised institutional signatory signs on behalf of SADC PF. */
+    public function signInternal(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.sign_internal'], ['Secretary General']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate(['confirm_password' => ['nullable', 'string']]);
+        $contract = $this->signatures->signInternal($contract, $request->user(), $data['confirm_password'] ?? null);
+
+        AuditLog::record('contract.signed_internal', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['signature_status' => $contract->signature_status, 'contract_status' => $contract->contract_status],
+            'tags' => ['contract', 'signature'],
+        ]);
+
+        return response()->json(['message' => 'Institutional signature recorded.', 'data' => $contract]);
+    }
+
+    /** Record a verified wet-ink signature for a signatory. */
+    public function wetSign(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.sign_internal', 'contract.manage_external_signature'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate(['party' => ['required', 'string', 'in:sadcpf,counterparty']]);
+        $sig = $contract->signatories()->where('party', $data['party'])->firstOrFail();
+        $contract = $this->signatures->recordWetSignature($contract, $sig, $request->user());
+
+        return response()->json(['message' => 'Wet-ink signature recorded.', 'data' => $contract]);
+    }
+
     public function activate(Request $request, Contract $contract): JsonResponse
     {
-        $this->ensurePermission($request, ['contract.approve'], ['Secretary General']);
-        $this->contracts->find($contract->id, $request->user());
+        $this->ensurePermission($request, ['contract.approve', 'contract.sign_internal'], ['Secretary General']);
+        $contract = $this->contracts->find($contract->id, $request->user());
 
-        $contract->update(['status' => 'active', 'signed_at' => now()]);
+        if ($contract->lifecycle() !== 'FULLY_EXECUTED') {
+            throw ValidationException::withMessages(['status' => ['A contract can only be activated once fully executed.']]);
+        }
+
+        $contract->update(['status' => 'active', 'contract_status' => 'ACTIVE', 'signed_at' => $contract->signed_at ?? now()]);
 
         AuditLog::record('contract.activated', [
             'auditable_type' => Contract::class,

@@ -43,6 +43,29 @@ class ContractExceptionService
         ]);
     }
 
+    /**
+     * Raise a CRITICAL exception when services have commenced (or are due to
+     * commence) before the contract is fully executed (PRD §54, AT §121).
+     * Nexus must not normalise retrospective contracting.
+     */
+    public function detectStartBeforeExecution(Contract $contract): ?ContractException
+    {
+        $start = $contract->service_start_date ?? $contract->start_date;
+        $executed = in_array($contract->lifecycle(), ['FULLY_EXECUTED', 'ACTIVE', 'COMPLETED', 'CLOSING', 'CLOSED'], true);
+
+        if ($start !== null && $start->lte(now()) && ! $executed) {
+            return $this->raise(
+                $contract,
+                'service_started_before_execution',
+                'critical',
+                'Services commenced / due to commence before contract execution',
+                'The service start date has been reached but the contract is not fully executed. Record an authorised exception and corrective action.',
+            );
+        }
+
+        return null;
+    }
+
     public function resolve(ContractException $exception, User $actor, ?string $resolution = null): ContractException
     {
         $exception->update([

@@ -44,6 +44,14 @@ Route::prefix('v1')->group(function () {
                 'throttle:30,1',
                 \App\Http\Middleware\AuthenticateExternalWorkplan::class,
             ]);
+
+        // External counterparty signing portal (token-gated, no account).
+        Route::middleware('throttle:30,1')->group(function () {
+            Route::get('contracts/sign/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'show']);
+            Route::post('contracts/sign/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'sign']);
+            Route::post('contracts/decline/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'decline']);
+            Route::post('contracts/request-changes/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'requestChanges']);
+        });
     });
 
     Route::prefix('procurement')->group(function () {
@@ -1295,6 +1303,11 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/reject', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'reject']);
             Route::post('{contract}/withdraw', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'withdraw']);
             Route::get('{contract}/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'exceptions']);
+
+            // Execution & signature
+            Route::post('{contract}/send-for-signature', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'sendForSignature']);
+            Route::post('{contract}/sign', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'signInternal']);
+            Route::post('{contract}/wet-sign', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'wetSign']);
             Route::delete('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'destroy']);
             Route::post('{contract}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'activate']);
             Route::post('{contract}/terminate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'terminate']);

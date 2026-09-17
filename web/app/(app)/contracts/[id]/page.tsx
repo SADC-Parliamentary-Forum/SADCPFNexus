@@ -19,7 +19,7 @@ const LIFECYCLE_BADGES: Record<string, string> = {
   TERMINATED: "badge-danger", EXPIRED: "badge-danger",
 };
 
-type Tab = "overview" | "deliverables" | "documents" | "approvals";
+type Tab = "overview" | "deliverables" | "documents" | "signatures" | "approvals";
 
 export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -63,8 +63,14 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const canSubmit = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.submit", "contract.create"]));
   const canReview = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.review", "contract.approve"]));
   const canReject = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.reject", "contract.approve"]));
+  const canSend = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.send"]));
+  const canSign = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.sign_internal"]));
   const inReview = ["IN_REVIEW", "APPROVAL_PENDING"].includes(lifecycle);
   const isDraft = ["DRAFT", "CHANGES_REQUESTED"].includes(lifecycle);
+  const readyForSignature = lifecycle === "APPROVED_FOR_SIGNATURE";
+  const inSignature = ["SENT_FOR_SIGNATURE", "PARTIALLY_SIGNED"].includes(lifecycle);
+  const sadcSignatory = (contract.signatories ?? []).find((s) => s.party === "sadcpf");
+  const sadcSigned = sadcSignatory?.status === "signed";
 
   const openExceptions = (contract.exceptions ?? []).filter((e) => e.status === "open");
 
@@ -102,6 +108,12 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
           {inReview && canSubmit && (
             <button className="btn-secondary text-sm" onClick={() => act(() => contractsApi.withdraw(contractId), "Withdrawn")}>Withdraw</button>
           )}
+          {readyForSignature && canSend && (
+            <button className="btn-primary text-sm" onClick={() => act(() => contractsApi.sendForSignature(contractId), "Sent for signature")}>Send for signature</button>
+          )}
+          {inSignature && canSign && !sadcSigned && (
+            <button className="btn-primary text-sm" onClick={() => act(() => contractsApi.signInternal(contractId), "Signature recorded")}>Sign (SADC PF)</button>
+          )}
         </div>
       </div>
 
@@ -117,7 +129,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-neutral-200">
-        {(["overview", "deliverables", "documents", "approvals"] as Tab[]).map((t) => (
+        {(["overview", "deliverables", "documents", "signatures", "approvals"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
             {t}
@@ -195,6 +207,30 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                     <td className="font-mono text-[11px] text-neutral-500">{d.hash ? `${d.hash.slice(0, 16)}…` : "—"}</td>
                     <td className="text-sm text-neutral-500">{d.generated_at ? formatDateShort(d.generated_at) : "—"}</td>
                     <td className="text-sm">{d.is_locked ? "Yes" : "No"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {tab === "signatures" && (
+        <div className="card overflow-hidden">
+          {(contract.signatories ?? []).length === 0 ? (
+            <div className="p-6 text-sm text-neutral-500">Not yet sent for signature.</div>
+          ) : (
+            <table className="data-table">
+              <thead><tr><th>Order</th><th>Party</th><th>Signatory</th><th>Method</th><th>Status</th><th>Signed</th></tr></thead>
+              <tbody>
+                {[...(contract.signatories ?? [])].sort((a, b) => a.sign_order - b.sign_order).map((s) => (
+                  <tr key={s.id}>
+                    <td className="text-sm">{s.sign_order}</td>
+                    <td className="text-sm capitalize">{s.party === "sadcpf" ? "SADC PF" : "Counterparty"}</td>
+                    <td className="text-sm text-neutral-700">{s.signer_name ?? s.signer_email ?? "—"}</td>
+                    <td className="text-sm capitalize">{s.method}</td>
+                    <td className="text-sm capitalize">{s.status.replace(/_/g, " ")}{s.decline_reason ? ` — ${s.decline_reason}` : ""}</td>
+                    <td className="text-sm text-neutral-500">{s.signed_at ? formatDateShort(s.signed_at) : "—"}</td>
                   </tr>
                 ))}
               </tbody>

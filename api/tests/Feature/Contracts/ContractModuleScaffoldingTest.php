@@ -68,6 +68,8 @@ class ContractModuleScaffoldingTest extends TestCase
 
     public function test_secretary_general_can_approve_but_not_create(): void
     {
+        // Separation of duties: the approving authority (SG) is not a preparer,
+        // and activation is execution-gated (a draft cannot be flipped to active).
         $tenant = Tenant::factory()->create();
         $vendor = $this->makeVendor($tenant);
         $contract = Contract::create(array_merge($this->contractPayload($vendor), [
@@ -78,11 +80,10 @@ class ContractModuleScaffoldingTest extends TestCase
 
         [$http] = $this->asSG($tenant);
 
-        // SG holds contract.approve (activation) but not contract.create.
-        $http->postJson("/api/v1/contracts/{$contract->id}/activate")
-            ->assertOk()
-            ->assertJsonPath('data.status', 'active');
+        // Activation blocked until fully executed.
+        $http->postJson("/api/v1/contracts/{$contract->id}/activate")->assertStatus(422);
 
+        // SG cannot create contracts (custodian role only).
         $http->postJson('/api/v1/contracts', $this->contractPayload($vendor))->assertForbidden();
     }
 

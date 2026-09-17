@@ -4987,6 +4987,7 @@ export interface Contract {
   deliverables?: ContractDeliverableRecord[];
   obligations?: ContractObligationRecord[];
   document_versions?: ContractDocumentVersionRecord[];
+  signatories?: ContractSignatoryRecord[];
   exceptions?: ContractExceptionRecord[];
   counterparty?: { id: number; full_legal_name: string | null; email: string | null } | null;
   created_at?: string;
@@ -5062,6 +5063,30 @@ export interface ContractTemplateSummary {
   current_version?: ContractTemplateVersionSummary | null;
 }
 
+export interface ContractSignatoryRecord {
+  id: number;
+  party: string;
+  sign_order: number;
+  method: string;
+  status: string;
+  signer_name: string | null;
+  signer_email: string | null;
+  signed_at: string | null;
+  decline_reason: string | null;
+}
+
+// Public (token-gated) external counterparty signing portal.
+export const contractExternalApi = {
+  view: (token: string) =>
+    api.get<{ data: { reference_number: string; title: string; counterparty: string | null; value: number | string; currency: string; start_date: string | null; end_date: string | null; status: string; document_hash: string | null } }>(`/external/contracts/sign/${token}`),
+  sign: (token: string, name: string) =>
+    api.post<{ message: string; data: { status: string } }>(`/external/contracts/sign/${token}`, { name, consent: true }),
+  decline: (token: string, reason: string) =>
+    api.post<{ message: string }>(`/external/contracts/decline/${token}`, { reason }),
+  requestChanges: (token: string, comments: string) =>
+    api.post<{ message: string }>(`/external/contracts/request-changes/${token}`, { comments }),
+};
+
 export const contractsApi = {
   // First-class Contract Management module (supersedes /procurement/contracts).
   list: (params?: { status?: string; vendor_id?: number; search?: string; per_page?: number }) =>
@@ -5102,6 +5127,12 @@ export const contractsApi = {
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/reject`, { comment }),
   withdraw: (id: number) =>
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/withdraw`),
+  sendForSignature: (id: number, order?: "sadcpf_first" | "counterparty_first") =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/send-for-signature`, { order }),
+  signInternal: (id: number, confirm_password?: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/sign`, { confirm_password }),
+  wetSign: (id: number, party: "sadcpf" | "counterparty") =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/wet-sign`, { party }),
   exceptions: (id: number) =>
     api.get<{ data: ContractExceptionRecord[] }>(`/contracts/${id}/exceptions`),
   addDeliverable: (id: number, data: { name: string; due_date?: string; responsible_party?: string; acceptance_criteria?: string; description?: string }) =>
