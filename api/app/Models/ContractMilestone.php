@@ -12,10 +12,10 @@ class ContractMilestone extends Model
     ];
 
     protected $casts = [
-        'due_date'     => 'date',
+        'due_date' => 'date',
         'completed_at' => 'datetime',
-        'amount'       => 'decimal:2',
-        'sort_order'   => 'integer',
+        'amount' => 'decimal:2',
+        'sort_order' => 'integer',
     ];
 
     public function contract()

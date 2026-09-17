@@ -49,6 +49,76 @@ class ContractController extends Controller
         return response()->json(['data' => $this->contracts->find($contract->id, $request->user())]);
     }
 
+    public function types(Request $request): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.create'], ['Procurement Officer']);
+
+        return response()->json(['data' => $this->contracts->types($request->user())]);
+    }
+
+    /**
+     * Import a historical contract. It is explicitly flagged legacy/imported and
+     * does NOT pass through any Nexus workflow (PRD §10E / §128).
+     */
+    public function importLegacy(Request $request): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.create'], ['Procurement Officer']);
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'vendor_id' => ['nullable', 'integer', 'exists:vendors,id'],
+            'counterparty_name' => ['nullable', 'string', 'max:255'],
+            'type_id' => ['nullable', 'integer', 'exists:contract_types,id'],
+            'value' => ['required', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'string', 'max:10'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'signed_at' => ['nullable', 'date'],
+            'legacy_status' => ['nullable', 'string', 'in:active,completed,terminated,expired'],
+            'description' => ['nullable', 'string'],
+        ]);
+
+        abort_if(empty($data['vendor_id']) && empty($data['counterparty_name']), 422, 'Provide a vendor or counterparty name.');
+
+        $legacyStatus = $data['legacy_status'] ?? 'active';
+        $lifecycle = match ($legacyStatus) {
+            'completed' => 'COMPLETED',
+            'terminated' => 'TERMINATED',
+            'expired' => 'EXPIRED',
+            default => 'ACTIVE',
+        };
+
+        $contract = Contract::create([
+            'tenant_id' => $request->user()->tenant_id,
+            'created_by' => $request->user()->id,
+            'origin_type' => 'legacy',
+            'is_legacy' => true,
+            'type_id' => $data['type_id'] ?? null,
+            'vendor_id' => $data['vendor_id'] ?? null,
+            'counterparty_type' => ! empty($data['vendor_id']) ? 'organisation' : 'individual',
+            'counterparty_name' => $data['counterparty_name'] ?? null,
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'start_date' => $data['start_date'],
+            'end_date' => $data['end_date'],
+            'value' => $data['value'],
+            'currency' => $data['currency'] ?? 'NAD',
+            'status' => $legacyStatus === 'expired' ? 'active' : $legacyStatus,
+            'contract_status' => $lifecycle,
+            'signature_status' => ! empty($data['signed_at']) ? 'signed' : 'unsigned',
+            'signed_at' => $data['signed_at'] ?? null,
+        ]);
+
+        AuditLog::record('contract.legacy_imported', [
+            'auditable_type' => Contract::class,
+            'auditable_id' => $contract->id,
+            'new_values' => ['title' => $contract->title, 'is_legacy' => true],
+            'tags' => ['contract', 'legacy'],
+        ]);
+
+        return response()->json(['message' => 'Legacy contract imported.', 'data' => $contract], 201);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $this->ensurePermission($request, ['contract.create'], ['Procurement Officer']);

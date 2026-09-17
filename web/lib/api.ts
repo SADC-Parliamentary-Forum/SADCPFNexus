@@ -4953,6 +4953,29 @@ export interface Contract {
   value: number;
   currency: string;
   status: "draft" | "active" | "completed" | "terminated";
+  contract_status?: string | null;
+  signature_status?: string | null;
+  health_status?: string | null;
+  origin_type?: string | null;
+  is_legacy?: boolean;
+  counterparty_type?: string | null;
+  counterparty_name?: string | null;
+  display_counterparty?: string | null;
+  type_id?: number | null;
+  type?: ContractType | null;
+  department_id?: number | null;
+  contract_owner_id?: number | null;
+  contract_owner?: { id: number; name: string } | null;
+  procurement_officer_id?: number | null;
+  programme_id?: number | null;
+  donor?: string | null;
+  original_value?: number | string | null;
+  current_value?: number | string | null;
+  ceiling_value?: number | string | null;
+  effective_date?: string | null;
+  service_start_date?: string | null;
+  service_end_date?: string | null;
+  signature_deadline?: string | null;
   signed_at: string | null;
   terminated_at: string | null;
   termination_reason: string | null;
@@ -4963,12 +4986,31 @@ export interface Contract {
   created_at?: string;
 }
 
+export interface ContractType {
+  id: number;
+  tenant_id: number;
+  name: string;
+  slug: string;
+  counterparty_type: "individual" | "organisation" | "either";
+  category: string | null;
+  description: string | null;
+  requires_legal_review: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
+
 export const contractsApi = {
   // First-class Contract Management module (supersedes /procurement/contracts).
   list: (params?: { status?: string; vendor_id?: number; search?: string; per_page?: number }) =>
     api.get<PaginatedResponse<Contract>>("/contracts", { params }),
-  register: (params?: { status?: string; search?: string; per_page?: number }) =>
+  register: (params?: { status?: string; search?: string; per_page?: number; type_id?: number; origin_type?: string; expiring_within_days?: number }) =>
     api.get<PaginatedResponse<Contract>>("/contracts", { params: { per_page: 500, ...(params ?? {}) } }),
+  types: () => api.get<{ data: ContractType[] }>("/contracts/types"),
+  importLegacy: (data: {
+    title: string; value: number; start_date: string; end_date: string;
+    vendor_id?: number; counterparty_name?: string; type_id?: number; currency?: string;
+    signed_at?: string; legacy_status?: string; description?: string;
+  }) => api.post<{ data: Contract; message: string }>("/contracts/import", data),
   get: (id: number) =>
     api.get<{ data: Contract }>(`/contracts/${id}`),
   create: (data: Partial<Contract> & { vendor_id: number; title: string; start_date: string; end_date: string; value: number }) =>

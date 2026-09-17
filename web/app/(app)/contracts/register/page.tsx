@@ -172,6 +172,7 @@ function ContractRegisterInner() {
               <tr>
                 <th>Contract Reference</th>
                 <th>Title</th>
+                <th>Type</th>
                 <th>Counterparty</th>
                 <th className="text-right">Value</th>
                 <th>End Date</th>
@@ -185,9 +186,11 @@ function ContractRegisterInner() {
                   <tr key={c.id}>
                     <td>
                       <Link href={`/contracts/${c.id}`} className="font-mono text-xs text-primary">{c.reference_number}</Link>
+                      {c.is_legacy && (<span className="ml-1.5 text-[10px] font-semibold text-neutral-500 bg-neutral-100 px-1.5 py-0.5 rounded-full">Legacy</span>)}
                     </td>
                     <td className="text-sm font-medium text-neutral-800 max-w-[200px] truncate">{c.title}</td>
-                    <td className="text-sm text-neutral-600">{c.vendor?.name ?? "—"}</td>
+                    <td className="text-xs text-neutral-500">{c.type?.name ?? "—"}</td>
+                    <td className="text-sm text-neutral-600">{c.display_counterparty ?? c.vendor?.name ?? "—"}</td>
                     <td className="text-right font-semibold text-neutral-900 text-sm">{c.currency} {Number(c.value).toLocaleString()}</td>
                     <td>
                       <div className="flex items-center gap-1.5">
