@@ -4964,24 +4964,27 @@ export interface Contract {
 }
 
 export const contractsApi = {
-  list: (params?: { status?: string }) =>
-    api.get<{ data: Contract[] }>("/procurement/contracts", { params }),
+  // First-class Contract Management module (supersedes /procurement/contracts).
+  list: (params?: { status?: string; vendor_id?: number; search?: string; per_page?: number }) =>
+    api.get<PaginatedResponse<Contract>>("/contracts", { params }),
+  register: (params?: { status?: string; search?: string; per_page?: number }) =>
+    api.get<PaginatedResponse<Contract>>("/contracts", { params: { per_page: 500, ...(params ?? {}) } }),
   get: (id: number) =>
-    api.get<{ data: Contract }>(`/procurement/contracts/${id}`),
+    api.get<{ data: Contract }>(`/contracts/${id}`),
   create: (data: Partial<Contract> & { vendor_id: number; title: string; start_date: string; end_date: string; value: number }) =>
-    api.post<{ data: Contract; message: string }>("/procurement/contracts", data),
+    api.post<{ data: Contract; message: string }>("/contracts", data),
   activate: (id: number) =>
-    api.post<{ data: Contract; message: string }>(`/procurement/contracts/${id}/activate`),
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/activate`),
   terminate: (id: number, reason: string) =>
-    api.post<{ data: Contract; message: string }>(`/procurement/contracts/${id}/terminate`, { reason }),
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/terminate`, { reason }),
   destroy: (id: number) =>
-    api.delete<{ message: string }>(`/procurement/contracts/${id}`),
+    api.delete<{ message: string }>(`/contracts/${id}`),
   listMilestones: (contractId: number) =>
-    api.get<{ data: ContractMilestone[] }>(`/procurement/contracts/${contractId}/milestones`),
+    api.get<{ data: ContractMilestone[] }>(`/contracts/${contractId}/milestones`),
   createMilestone: (contractId: number, data: Partial<ContractMilestone>) =>
-    api.post<{ data: ContractMilestone; message: string }>(`/procurement/contracts/${contractId}/milestones`, data),
+    api.post<{ data: ContractMilestone; message: string }>(`/contracts/${contractId}/milestones`, data),
   completeMilestone: (contractId: number, milestoneId: number) =>
-    api.post<{ data: ContractMilestone; message: string }>(`/procurement/contracts/${contractId}/milestones/${milestoneId}/complete`),
+    api.post<{ data: ContractMilestone; message: string }>(`/contracts/${contractId}/milestones/${milestoneId}/complete`),
 };
 
 export interface ContractMilestone {

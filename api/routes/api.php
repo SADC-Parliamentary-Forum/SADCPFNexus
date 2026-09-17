@@ -1267,6 +1267,27 @@ Route::prefix('v1')->group(function () {
             Route::delete('conduct/{conductRecord}', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'destroy']);
         });
 
+        // Contract Management (first-class module; supersedes procurement nested contracts)
+        Route::prefix('contracts')->group(function () {
+            Route::get('', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'index']);
+            Route::post('', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'store']);
+            Route::get('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'show']);
+            Route::delete('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'destroy']);
+            Route::post('{contract}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'activate']);
+            Route::post('{contract}/terminate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'terminate']);
+
+            // Reuse the existing milestone + attachment controllers (bound by {contract}).
+            Route::get('{contract}/milestones', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'index']);
+            Route::post('{contract}/milestones', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'store']);
+            Route::put('{contract}/milestones/{milestone}', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'update']);
+            Route::post('{contract}/milestones/{milestone}/complete', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'complete']);
+            Route::delete('{contract}/milestones/{milestone}', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'destroy']);
+            Route::get('{contract}/attachments', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'index']);
+            Route::post('{contract}/attachments', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'store']);
+            Route::delete('{contract}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'destroy']);
+            Route::get('{contract}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'download']);
+        });
+
         // Programmes (PIF)
         Route::prefix('programmes')->group(function () {
             Route::apiResource('', \App\Http\Controllers\Api\V1\Programmes\ProgrammeController::class)

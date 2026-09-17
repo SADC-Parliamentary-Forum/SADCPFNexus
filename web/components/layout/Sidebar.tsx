@@ -98,6 +98,19 @@ const NAV_ITEMS: NavItem[] = [
     ],
   },
   {
+    label: "Contracts",
+    href: "/contracts",
+    icon: "description",
+    section: "Operations",
+    i18nKey: "nav.contracts",
+    children: [
+      { label: "Dashboard", href: "/contracts", icon: "dashboard" },
+      { label: "Contract Register", href: "/contracts/register", icon: "menu_book" },
+      { label: "New Contract", href: "/contracts/create", icon: "add_circle" },
+      { label: "Reports", href: "/contracts/reports", icon: "assessment" },
+    ],
+  },
+  {
     label: "Supplier Portal",
     href: "/supplier",
     icon: "storefront",
@@ -376,6 +389,7 @@ const MANIFEST_I18N_KEYS: Record<string, string> = {
   Travel: "nav.travel",
   Leave: "nav.leave",
   Procurement: "nav.procurement",
+  Contracts: "nav.contracts",
   Finance: "nav.finance",
   HR: "nav.hr",
   "M&E": "nav.mande",
