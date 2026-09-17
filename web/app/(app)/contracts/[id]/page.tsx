@@ -19,7 +19,7 @@ const LIFECYCLE_BADGES: Record<string, string> = {
   TERMINATED: "badge-danger", EXPIRED: "badge-danger",
 };
 
-type Tab = "overview" | "deliverables" | "financials" | "amendments" | "documents" | "signatures" | "approvals";
+type Tab = "overview" | "deliverables" | "financials" | "amendments" | "documents" | "signatures" | "approvals" | "audit";
 
 export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -52,6 +52,12 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
     queryKey: ["contract", contractId, "ledger"],
     queryFn: () => contractsApi.ledger(contractId).then((r) => r.data.data),
     enabled: !!contractId && tab === "financials",
+  });
+
+  const { data: auditData } = useQuery({
+    queryKey: ["contract", contractId, "audit"],
+    queryFn: () => contractsApi.audit(contractId).then((r) => r.data.data),
+    enabled: !!contractId && tab === "audit",
   });
 
   const refresh = () => {
@@ -156,7 +162,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-neutral-200">
-        {(["overview", "deliverables", "financials", "amendments", "documents", "signatures", "approvals"] as Tab[]).map((t) => (
+        {(["overview", "deliverables", "financials", "amendments", "documents", "signatures", "approvals", "audit"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
             {t}
@@ -348,6 +354,26 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             <ApprovalTimeline request={contract.approval_request} />
           ) : (
             <p className="text-sm text-neutral-500">This contract has not been submitted for approval yet.</p>
+          )}
+        </div>
+      )}
+
+      {tab === "audit" && (
+        <div className="card overflow-hidden">
+          {(auditData ?? []).length === 0 ? (
+            <div className="p-6 text-sm text-neutral-500">No audit events yet.</div>
+          ) : (
+            <table className="data-table">
+              <thead><tr><th>When</th><th>Event</th></tr></thead>
+              <tbody>
+                {(auditData ?? []).map((e) => (
+                  <tr key={e.id}>
+                    <td className="text-sm text-neutral-500 whitespace-nowrap">{e.created_at ? formatDateShort(e.created_at) : "—"}</td>
+                    <td className="text-sm text-neutral-800">{e.event.replace(/^contract\./, "").replace(/_/g, " ")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       )}

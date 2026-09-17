@@ -1283,6 +1283,10 @@ Route::prefix('v1')->group(function () {
             Route::post('import', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'importLegacy']);
             Route::post('prefill', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'prefill']);
 
+            // Reports & registers
+            Route::get('reports/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'exceptions']);
+            Route::get('reports', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'index']);
+
             // Template library (versioned)
             Route::get('templates', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'index']);
             Route::post('templates', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'store']);
@@ -1317,6 +1321,7 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/amendments', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createAmendment']);
             Route::post('{contract}/amendments/{amendment}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approveAmendment']);
             Route::post('{contract}/close', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'close']);
+            Route::get('{contract}/audit', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'audit']);
             Route::delete('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'destroy']);
             Route::post('{contract}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'activate']);
             Route::post('{contract}/terminate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'terminate']);

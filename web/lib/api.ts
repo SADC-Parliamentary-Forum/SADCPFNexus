@@ -5163,6 +5163,14 @@ export const contractsApi = {
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/amendments/${amendmentId}/approve`),
   close: (id: number) =>
     api.post<{ data: Contract; message: string; certificate: Record<string, unknown> }>(`/contracts/${id}/close`),
+  report: (type: "register" | "financial" | "compliance" | "operational") =>
+    api.get<{ data: Record<string, unknown>[]; type: string; count: number }>("/contracts/reports", { params: { type } }),
+  reportDownloadUrl: (type: string, format: "csv" | "xlsx" | "pdf") =>
+    `/api/contracts/reports?type=${type}&format=${format}`,
+  exceptionRegister: () =>
+    api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
+  audit: (id: number) =>
+    api.get<{ data: { id: number; event: string; created_at: string; new_values: unknown }[] }>(`/contracts/${id}/audit`),
   exceptions: (id: number) =>
     api.get<{ data: ContractExceptionRecord[] }>(`/contracts/${id}/exceptions`),
   addDeliverable: (id: number, data: { name: string; due_date?: string; responsible_party?: string; acceptance_criteria?: string; description?: string }) =>
