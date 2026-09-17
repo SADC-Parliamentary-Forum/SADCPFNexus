@@ -4988,7 +4988,10 @@ export interface Contract {
   obligations?: ContractObligationRecord[];
   document_versions?: ContractDocumentVersionRecord[];
   signatories?: ContractSignatoryRecord[];
+  amendments?: ContractAmendmentRecord[];
+  payment_schedules?: ContractPaymentScheduleRecord[];
   exceptions?: ContractExceptionRecord[];
+  health_reasons?: string[];
   counterparty?: { id: number; full_legal_name: string | null; email: string | null } | null;
   created_at?: string;
 }
@@ -5075,6 +5078,23 @@ export interface ContractSignatoryRecord {
   decline_reason: string | null;
 }
 
+export interface ContractLedger {
+  original: number; current: number; ceiling: number; paid: number;
+  approved_unpaid: number; remaining: number; currency: string;
+}
+
+export interface ContractPaymentScheduleRecord {
+  id: number; name: string; basis: string; amount: number | string | null;
+  percentage: number | string | null; status: string; due_date: string | null;
+  amount_paid: number | string;
+}
+
+export interface ContractAmendmentRecord {
+  id: number; reference_number: string | null; sequence: number; type: string;
+  reason: string | null; value_delta: number | string | null; revised_value: number | string | null;
+  is_material: boolean; status: string; new_end_date: string | null;
+}
+
 // Public (token-gated) external counterparty signing portal.
 export const contractExternalApi = {
   view: (token: string) =>
@@ -5133,6 +5153,16 @@ export const contractsApi = {
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/sign`, { confirm_password }),
   wetSign: (id: number, party: "sadcpf" | "counterparty") =>
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/wet-sign`, { party }),
+  ledger: (id: number) =>
+    api.get<{ data: { ledger: ContractLedger; schedules: ContractPaymentScheduleRecord[] } }>(`/contracts/${id}/ledger`),
+  reviewDeliverable: (id: number, deliverableId: number, decision: "accept" | "reject", comments?: string) =>
+    api.post<{ data: unknown; message: string }>(`/contracts/${id}/deliverables/${deliverableId}/review`, { decision, comments }),
+  createAmendment: (id: number, data: { type: string; reason: string; description?: string; value_delta?: number; new_end_date?: string }) =>
+    api.post<{ data: ContractAmendmentRecord; message: string; comparison: { value: { current: number; proposed: number; revised: number }; is_material: boolean; requires_management_authorisation: boolean } }>(`/contracts/${id}/amendments`, data),
+  approveAmendment: (id: number, amendmentId: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/amendments/${amendmentId}/approve`),
+  close: (id: number) =>
+    api.post<{ data: Contract; message: string; certificate: Record<string, unknown> }>(`/contracts/${id}/close`),
   exceptions: (id: number) =>
     api.get<{ data: ContractExceptionRecord[] }>(`/contracts/${id}/exceptions`),
   addDeliverable: (id: number, data: { name: string; due_date?: string; responsible_party?: string; acceptance_criteria?: string; description?: string }) =>

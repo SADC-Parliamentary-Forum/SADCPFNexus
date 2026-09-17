@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Api\V1\Contracts;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Contract;
+use App\Models\ContractAmendment;
 use App\Models\ContractDeliverable;
 use App\Models\ContractObligation;
+use App\Models\ContractPaymentSchedule;
 use App\Models\ContractTemplateVersion;
 use App\Modules\Contracts\Services\ContractDocumentService;
 use App\Modules\Contracts\Services\ContractExceptionService;
+use App\Modules\Contracts\Services\ContractFinanceService;
+use App\Modules\Contracts\Services\ContractHealthService;
 use App\Modules\Contracts\Services\ContractService;
 use App\Modules\Contracts\Services\ContractSignatureService;
 use App\Modules\Contracts\Services\ContractWorkflowService;
@@ -32,6 +36,8 @@ class ContractController extends Controller
         private readonly WorkflowService $engine,
         private readonly ContractSignatureService $signatures,
         private readonly ContractExceptionService $exceptionService,
+        private readonly ContractFinanceService $finance,
+        private readonly ContractHealthService $health,
     ) {}
 
     private function ensurePermission(Request $request, array $permissions, array $roles = []): void
@@ -66,6 +72,13 @@ class ContractController extends Controller
         // Surface the critical "started before execution" exception on view (PRD §54).
         $this->exceptionService->detectStartBeforeExecution($loaded);
         $loaded->load('exceptions');
+
+        // Recompute rules-based health on view.
+        $health = $this->health->evaluate($loaded);
+        if ($loaded->health_status !== $health['status']) {
+            $loaded->update(['health_status' => $health['status']]);
+        }
+        $loaded->setAttribute('health_reasons', $health['reasons']);
 
         return response()->json(['data' => $loaded]);
     }
@@ -399,6 +412,228 @@ class ContractController extends Controller
         $contract = $this->contracts->find($contract->id, $request->user());
 
         return response()->json(['data' => $contract->exceptions]);
+    }
+
+    // ── Financials, deliverables, amendments, close-out (WS5) ────────────────
+
+    public function ledger(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.report'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        return response()->json(['data' => [
+            'ledger' => $this->finance->ledger($contract),
+            'schedules' => $contract->paymentSchedules,
+        ]]);
+    }
+
+    public function checkPayment(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.report'], ['Procurement Officer', 'Finance Controller']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0'],
+            'payment_schedule_id' => ['nullable', 'integer'],
+        ]);
+
+        return response()->json(['data' => $this->finance->checkPaymentEligibility($contract, (float) $data['amount'], $data['payment_schedule_id'] ?? null)]);
+    }
+
+    public function addPaymentSchedule(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.edit_draft', 'contract.create'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'basis' => ['nullable', 'string', 'max:30'],
+            'amount' => ['nullable', 'numeric', 'min:0'],
+            'percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'trigger_type' => ['nullable', 'string', 'max:40'],
+            'trigger_deliverable_id' => ['nullable', 'integer'],
+            'due_date' => ['nullable', 'date'],
+        ]);
+
+        $schedule = ContractPaymentSchedule::create(array_merge($data, [
+            'tenant_id' => $contract->tenant_id,
+            'contract_id' => $contract->id,
+            'currency' => $contract->currency,
+            'status' => 'not_due',
+            'sort_order' => (int) $contract->paymentSchedules()->max('sort_order') + 1,
+        ]));
+
+        return response()->json(['message' => 'Payment milestone added.', 'data' => $schedule], 201);
+    }
+
+    public function acceptDeliverable(Request $request, Contract $contract, ContractDeliverable $deliverable): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.accept_deliverable'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        abort_if((int) $deliverable->contract_id !== (int) $contract->id, 404);
+
+        $data = $request->validate([
+            'decision' => ['required', 'string', 'in:accept,reject'],
+            'comments' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        if ($data['decision'] === 'accept') {
+            $deliverable->update([
+                'status' => 'accepted',
+                'accepted_by' => $request->user()->id,
+                'accepted_at' => now(),
+                'review_comments' => $data['comments'] ?? null,
+            ]);
+            // Any milestone gated on this deliverable becomes payable.
+            ContractPaymentSchedule::where('contract_id', $contract->id)
+                ->where('trigger_deliverable_id', $deliverable->id)
+                ->where('status', 'not_due')
+                ->update(['status' => 'eligible']);
+        } else {
+            $deliverable->update(['status' => 'rejected', 'review_comments' => $data['comments'] ?? null]);
+        }
+
+        AuditLog::record('contract.deliverable_reviewed', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['deliverable_id' => $deliverable->id, 'decision' => $data['decision']],
+            'tags' => ['contract', 'deliverable'],
+        ]);
+
+        return response()->json(['message' => 'Deliverable '.$data['decision'].'ed.', 'data' => $deliverable->fresh()]);
+    }
+
+    public function createAmendment(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.create_amendment'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        if (! in_array($contract->lifecycle(), ['FULLY_EXECUTED', 'ACTIVE'], true)) {
+            throw ValidationException::withMessages(['status' => ['Only executed/active contracts can be amended.']]);
+        }
+
+        $data = $request->validate([
+            'type' => ['required', 'string', 'max:40'],
+            'reason' => ['required', 'string', 'max:2000'],
+            'description' => ['nullable', 'string'],
+            'value_delta' => ['nullable', 'numeric'],
+            'new_end_date' => ['nullable', 'date'],
+            'changes' => ['nullable', 'array'],
+        ]);
+
+        $delta = (float) ($data['value_delta'] ?? 0);
+        $revised = round((float) $contract->current_value + $delta, 2);
+        $materialTypes = ['value', 'scope', 'deliverables', 'key_personnel', 'funding', 'duration'];
+        $isMaterial = $delta != 0.0 || in_array($data['type'], $materialTypes, true) || ! empty($data['new_end_date']);
+
+        $sequence = (int) $contract->amendments()->max('sequence') + 1;
+        $amendment = ContractAmendment::create([
+            'tenant_id' => $contract->tenant_id,
+            'contract_id' => $contract->id,
+            'reference_number' => str_replace('CTR/', 'AMD/', (string) $contract->reference_number).'/'.str_pad((string) $sequence, 2, '0', STR_PAD_LEFT),
+            'sequence' => $sequence,
+            'type' => $data['type'],
+            'reason' => $data['reason'],
+            'description' => $data['description'] ?? null,
+            'changes' => $data['changes'] ?? null,
+            'value_delta' => $delta,
+            'revised_value' => $revised,
+            'new_end_date' => $data['new_end_date'] ?? null,
+            'is_material' => $isMaterial,
+            'status' => 'pending',
+            'created_by' => $request->user()->id,
+        ]);
+
+        $contract->update(['contract_status' => 'AMENDMENT_PENDING']);
+
+        AuditLog::record('contract.amendment_created', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['amendment' => $amendment->reference_number, 'revised_value' => $revised, 'material' => $isMaterial],
+            'tags' => ['contract', 'amendment'],
+        ]);
+
+        return response()->json([
+            'message' => 'Amendment created.',
+            'data' => $amendment,
+            'comparison' => [
+                'value' => ['current' => (float) $contract->current_value, 'proposed' => $delta, 'revised' => $revised],
+                'is_material' => $isMaterial,
+                // Threshold recalculation: revised value re-evaluated against authority.
+                'requires_management_authorisation' => $revised >= 10000,
+            ],
+        ], 201);
+    }
+
+    public function approveAmendment(Request $request, Contract $contract, ContractAmendment $amendment): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.approve_amendment'], ['Secretary General']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        abort_if((int) $amendment->contract_id !== (int) $contract->id, 404);
+
+        if ($amendment->status !== 'pending') {
+            throw ValidationException::withMessages(['status' => ['This amendment is not pending approval.']]);
+        }
+
+        $amendment->update(['status' => 'approved', 'approved_by' => $request->user()->id, 'approved_at' => now()]);
+
+        $updates = ['current_value' => $amendment->revised_value, 'contract_status' => 'ACTIVE'];
+        if ((float) $amendment->revised_value > (float) $contract->ceiling_value) {
+            $updates['ceiling_value'] = $amendment->revised_value;
+        }
+        if ($amendment->new_end_date) {
+            $updates['end_date'] = $amendment->new_end_date;
+        }
+        $contract->update($updates);
+
+        AuditLog::record('contract.amendment_approved', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['amendment' => $amendment->reference_number, 'current_value' => $amendment->revised_value],
+            'tags' => ['contract', 'amendment'],
+        ]);
+
+        return response()->json(['message' => 'Amendment approved.', 'data' => $contract->fresh(['amendments'])]);
+    }
+
+    public function close(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.close'], ['Secretary General', 'Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        if (! in_array($contract->lifecycle(), ['FULLY_EXECUTED', 'ACTIVE', 'COMPLETED'], true)) {
+            throw ValidationException::withMessages(['status' => ['Only executed/active/completed contracts can be closed.']]);
+        }
+
+        // Close-out checklist (PRD §88): all deliverables addressed.
+        $unresolved = $contract->deliverables()
+            ->whereNotIn('status', ['accepted', 'waived', 'rejected'])
+            ->count();
+        if ($unresolved > 0) {
+            throw ValidationException::withMessages([
+                'closeout' => ["Cannot close — {$unresolved} deliverable(s) are not yet resolved."],
+            ]);
+        }
+
+        $ledger = $this->finance->ledger($contract);
+        $certificate = [
+            'contract_reference' => $contract->reference_number,
+            'counterparty' => $contract->display_counterparty,
+            'original_value' => $ledger['original'],
+            'final_value' => $ledger['current'],
+            'amount_paid' => $ledger['paid'],
+            'commencement' => optional($contract->start_date)->toDateString(),
+            'completion' => optional($contract->end_date)->toDateString(),
+            'amendments' => $contract->amendments()->count(),
+            'closure_date' => now()->toDateString(),
+            'closed_by' => $request->user()->name,
+        ];
+
+        $contract->update(['contract_status' => 'CLOSED', 'status' => 'completed', 'closed_at' => now()]);
+
+        AuditLog::record('contract.closed', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => $certificate, 'tags' => ['contract', 'closeout'],
+        ]);
+
+        return response()->json(['message' => 'Contract closed.', 'data' => $contract->fresh(), 'certificate' => $certificate]);
     }
 
     private function requireActiveApproval(Contract $contract): \App\Models\ApprovalRequest

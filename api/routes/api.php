@@ -1308,6 +1308,15 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/send-for-signature', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'sendForSignature']);
             Route::post('{contract}/sign', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'signInternal']);
             Route::post('{contract}/wet-sign', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'wetSign']);
+
+            // Financials, deliverables, amendments, close-out
+            Route::get('{contract}/ledger', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'ledger']);
+            Route::post('{contract}/check-payment', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'checkPayment']);
+            Route::post('{contract}/payment-schedules', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'addPaymentSchedule']);
+            Route::post('{contract}/deliverables/{deliverable}/review', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'acceptDeliverable']);
+            Route::post('{contract}/amendments', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createAmendment']);
+            Route::post('{contract}/amendments/{amendment}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approveAmendment']);
+            Route::post('{contract}/close', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'close']);
             Route::delete('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'destroy']);
             Route::post('{contract}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'activate']);
             Route::post('{contract}/terminate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'terminate']);
