@@ -5421,6 +5421,13 @@ export const contractsApi = {
     api.patch<{ data: ContractComplianceRequirement; message: string }>(`/contracts/compliance/requirements/${id}`, data),
   contractCompliance: (id: number) =>
     api.get<{ data: { code: string; name: string; satisfied: boolean; missing: boolean; expired: boolean; blocks_activation: boolean; blocks_payment: boolean }[] }>(`/contracts/${id}/compliance`),
+  // Disputes (§78)
+  disputes: (id: number) =>
+    api.get<{ data: { id: number; type: string; description: string; status: string; date_raised: string | null; amount_at_risk: number | string | null; legal_involved: boolean; resolution: string | null; internal_owner?: { id: number; name: string } | null }[] }>(`/contracts/${id}/disputes`),
+  createDispute: (id: number, data: { type: string; description: string; amount_at_risk?: number; legal_involved?: boolean; counterparty_claim?: string }) =>
+    api.post<{ data: { id: number }; message: string }>(`/contracts/${id}/disputes`, data),
+  updateDispute: (id: number, disputeId: number, data: { status?: string; resolution?: string; legal_involved?: boolean; amount_at_risk?: number }) =>
+    api.patch<{ data: { id: number }; message: string }>(`/contracts/${id}/disputes/${disputeId}`, data),
   // Correspondence linkage (§63)
   correspondence: (id: number) =>
     api.get<{ data: { id: number; reference_number: string | null; title: string; subject: string; type: string; status: string; direction: string; created_at: string }[] }>(`/contracts/${id}/correspondence`),

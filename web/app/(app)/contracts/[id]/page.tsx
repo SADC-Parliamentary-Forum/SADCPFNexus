@@ -101,6 +101,14 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const [corrOpen, setCorrOpen] = useState(false);
   const [corr, setCorr] = useState({ title: "", subject: "", body: "", type: "procurement" });
 
+  const { data: disputeData } = useQuery({
+    queryKey: ["contract", contractId, "disputes"],
+    queryFn: () => contractsApi.disputes(contractId).then((r) => r.data.data),
+    enabled: !!contractId && tab === "lifecycle",
+  });
+  const [disputeOpen, setDisputeOpen] = useState(false);
+  const [dispute, setDispute] = useState({ type: "performance", description: "", amount_at_risk: "", legal_involved: false });
+
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["contract", contractId] });
     qc.invalidateQueries({ queryKey: ["contracts"] });
@@ -495,6 +503,41 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               ))}
             </div>
           )}
+
+          <div className="card overflow-hidden">
+            <div className="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
+              <span className="text-sm font-semibold text-neutral-800">Disputes</span>
+              <button className="btn-secondary text-xs" onClick={() => setDisputeOpen(true)}>Raise dispute</button>
+            </div>
+            {(disputeData ?? []).length === 0 ? (
+              <div className="p-4 text-sm text-neutral-500">No disputes recorded.</div>
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>Raised</th><th>Type</th><th>Description</th><th>At risk</th><th>Legal</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  {(disputeData ?? []).map((d) => (
+                    <tr key={d.id}>
+                      <td className="text-sm whitespace-nowrap">{d.date_raised ? formatDateShort(d.date_raised) : "—"}</td>
+                      <td className="text-xs capitalize">{d.type}</td>
+                      <td className="text-sm text-neutral-700 max-w-[16rem] truncate">{d.description}</td>
+                      <td className="text-sm">{d.amount_at_risk != null ? Number(d.amount_at_risk).toLocaleString() : "—"}</td>
+                      <td className="text-sm">{d.legal_involved ? "Yes" : "—"}</td>
+                      <td className="text-xs capitalize">{d.status.replace(/_/g, " ")}</td>
+                      <td className="text-right">{!["resolved", "closed"].includes(d.status) && (
+                        <button className="btn-secondary text-xs py-0.5" onClick={() => {
+                          const resolution = window.prompt("Resolution note:");
+                          if (resolution === null) return;
+                          contractsApi.updateDispute(contractId, d.id, { status: "resolved", resolution })
+                            .then(() => { toast.success("Dispute resolved"); qc.invalidateQueries({ queryKey: ["contract", contractId, "disputes"] }); })
+                            .catch((e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed"));
+                        }}>Resolve</button>
+                      )}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       )}
 
@@ -689,6 +732,31 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {disputeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDisputeOpen(false)}>
+          <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-neutral-900">Raise dispute</h3>
+            <select className="form-input" value={dispute.type} onChange={(e) => setDispute((p) => ({ ...p, type: e.target.value }))}>
+              {["payment", "performance", "scope", "delay", "quality", "other"].map((t) => <option key={t} value={t}>{t[0].toUpperCase() + t.slice(1)}</option>)}
+            </select>
+            <textarea className="form-input h-24 resize-none" placeholder="Description" value={dispute.description} onChange={(e) => setDispute((p) => ({ ...p, description: e.target.value }))} />
+            <input className="form-input" type="number" placeholder="Amount at risk (optional)" value={dispute.amount_at_risk} onChange={(e) => setDispute((p) => ({ ...p, amount_at_risk: e.target.value }))} />
+            <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={dispute.legal_involved} onChange={(e) => setDispute((p) => ({ ...p, legal_involved: e.target.checked }))} /> Legal involved</label>
+            <div className="flex gap-3">
+              <button className="btn-secondary flex-1" onClick={() => setDisputeOpen(false)}>Cancel</button>
+              <button className="btn-primary flex-1" disabled={!dispute.description.trim()}
+                onClick={() => {
+                  contractsApi.createDispute(contractId, {
+                    type: dispute.type, description: dispute.description, legal_involved: dispute.legal_involved,
+                    amount_at_risk: dispute.amount_at_risk ? Number(dispute.amount_at_risk) : undefined,
+                  }).then(() => { toast.success("Dispute recorded"); setDisputeOpen(false); setDispute({ type: "performance", description: "", amount_at_risk: "", legal_involved: false }); qc.invalidateQueries({ queryKey: ["contract", contractId, "disputes"] }); })
+                    .catch((e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed"));
+                }}>Raise</button>
+            </div>
+          </div>
         </div>
       )}
 
