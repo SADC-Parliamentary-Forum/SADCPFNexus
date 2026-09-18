@@ -8,11 +8,15 @@ export async function selectAssetAssignee(
 ): Promise<void> {
   const input = root.getByTestId("asset-assignee-picker");
   await expect(input).toBeVisible();
+  await input.click();
   const listed = root.page().waitForResponse(
-    (r) => r.url().includes("/tenant-users") && r.request().method() === "GET" && r.ok(),
+    (r) =>
+      r.url().includes("/tenant-users") &&
+      r.url().includes("search=") &&
+      r.request().method() === "GET" &&
+      r.ok(),
     { timeout: 15_000 },
   );
-  await input.click();
   await input.fill(search);
   await listed;
   const option = root.getByRole("option", { name: optionName }).first();
