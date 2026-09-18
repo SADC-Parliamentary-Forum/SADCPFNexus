@@ -16,6 +16,7 @@ use App\Modules\Contracts\Services\ContractFinanceService;
 use App\Modules\Contracts\Services\ContractFrameworkService;
 use App\Modules\Contracts\Services\ContractHealthService;
 use App\Modules\Contracts\Services\ContractLifecycleService;
+use App\Modules\Contracts\Services\ContractPackService;
 use App\Modules\Contracts\Services\ContractRenewalService;
 use App\Modules\Contracts\Services\ContractService;
 use App\Modules\Contracts\Services\ContractSignatureService;
@@ -44,6 +45,7 @@ class ContractController extends Controller
         private readonly ContractLifecycleService $lifecycle,
         private readonly ContractRenewalService $renewals,
         private readonly ContractFrameworkService $frameworks,
+        private readonly ContractPackService $pack,
     ) {}
 
     private function ensurePermission(Request $request, array $permissions, array $roles = []): void
@@ -764,6 +766,74 @@ class ContractController extends Controller
         ]);
 
         return response()->json(['message' => 'Contract resumed.', 'data' => $contract]);
+    }
+
+    public function packIndex(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.report', 'contract.audit_view'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        return response()->json(['data' => $this->pack->index($contract)]);
+    }
+
+    public function pack(Request $request, Contract $contract): \Illuminate\Http\Response
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.report', 'contract.audit_view'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        AuditLog::record('contract.pack_generated', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['reference' => $contract->reference_number], 'tags' => ['contract', 'pack'],
+        ]);
+
+        $safeRef = str_replace(['/', '\\'], '-', (string) $contract->reference_number);
+
+        return $this->pack->renderPdf($contract)->download("{$safeRef}-PACK.pdf");
+    }
+
+    /** Contract Owner records supplier performance at completion (PRD §32/§86-§87). */
+    public function performanceReview(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.close', 'contract.accept_deliverable'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        if ($contract->vendor_id === null) {
+            throw ValidationException::withMessages(['vendor' => ['Supplier performance can only be recorded for supplier (organisation) contracts.']]);
+        }
+
+        $data = $request->validate([
+            'delivery_score' => ['required', 'integer', 'min:1', 'max:5'],
+            'quality_score' => ['required', 'integer', 'min:1', 'max:5'],
+            'price_score' => ['required', 'integer', 'min:1', 'max:5'],
+            'compliance_score' => ['required', 'integer', 'min:1', 'max:5'],
+            'communication_score' => ['required', 'integer', 'min:1', 'max:5'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $evaluation = \App\Models\VendorPerformanceEvaluation::create(array_merge($data, [
+            'tenant_id' => $contract->tenant_id,
+            'vendor_id' => $contract->vendor_id,
+            'contract_id' => $contract->id,
+            'evaluated_by' => $request->user()->id,
+        ]));
+
+        AuditLog::record('contract.performance_recorded', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['overall_score' => $evaluation->overall_score], 'tags' => ['contract', 'supplier', 'performance'],
+        ]);
+
+        return response()->json(['message' => 'Supplier performance recorded.', 'data' => $evaluation], 201);
+    }
+
+    public function performanceReviews(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.report'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $reviews = \App\Models\VendorPerformanceEvaluation::where('tenant_id', $contract->tenant_id)
+            ->where('contract_id', $contract->id)->with('evaluator:id,name')->latest()->get();
+
+        return response()->json(['data' => $reviews]);
     }
 
     public function callOffs(Request $request, Contract $contract): JsonResponse

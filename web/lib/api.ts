@@ -5226,6 +5226,11 @@ export const contractsApi = {
     api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
   audit: (id: number) =>
     api.get<{ data: { id: number; event: string; created_at: string; new_values: unknown }[] }>(`/contracts/${id}/audit`),
+  packDownloadUrl: (id: number) => `/api/contracts/${id}/pack`,
+  performanceReviews: (id: number) =>
+    api.get<{ data: { id: number; overall_score: number; notes: string | null; evaluator?: { name: string } }[] }>(`/contracts/${id}/performance-reviews`),
+  submitPerformanceReview: (id: number, scores: { delivery_score: number; quality_score: number; price_score: number; compliance_score: number; communication_score: number; notes?: string }) =>
+    api.post<{ data: { overall_score: number }; message: string }>(`/contracts/${id}/performance-review`, scores),
   callOffs: (id: number) =>
     api.get<{ data: Contract[]; utilisation: ContractFrameworkUtilisation | null }>(`/contracts/${id}/call-offs`),
   createCallOff: (id: number, data: { title: string; start_date: string; end_date: string; value: number; type_id?: number }) =>

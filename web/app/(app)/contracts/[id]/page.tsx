@@ -44,6 +44,8 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const [lcBudgetConfirmed, setLcBudgetConfirmed] = useState(false);
   const [callOffTitle, setCallOffTitle] = useState("");
   const [callOffValue, setCallOffValue] = useState("");
+  const [perfOpen, setPerfOpen] = useState(false);
+  const [perf, setPerf] = useState({ delivery_score: 4, quality_score: 4, price_score: 4, compliance_score: 4, communication_score: 4, notes: "" });
 
   const { data: contract, isLoading, isError } = useQuery({
     queryKey: ["contract", contractId],
@@ -217,6 +219,12 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
           {(isExecuted || isSuspended) && canTerminate && (
             <button className="btn-secondary text-sm text-red-600" onClick={() => { setLifecycleModal("terminate"); setLifecycleReason(""); }}>Terminate</button>
           )}
+          {isExecuted && canAcceptDeliverable && contract.vendor_id && (
+            <button className="btn-secondary text-sm" onClick={() => setPerfOpen(true)}>Rate supplier</button>
+          )}
+          <a href={contractsApi.packDownloadUrl(contractId)} className="btn-secondary text-sm inline-flex items-center gap-1">
+            <span className="material-symbols-outlined text-[16px]">inventory_2</span>Contract pack
+          </a>
         </div>
       </div>
 
@@ -601,6 +609,30 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {perfOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPerfOpen(false)}>
+          <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-neutral-900">Rate supplier performance</h3>
+            {([
+              ["delivery_score", "Delivery / timeliness"], ["quality_score", "Quality"], ["price_score", "Value for money"],
+              ["compliance_score", "Compliance"], ["communication_score", "Communication"],
+            ] as [keyof typeof perf, string][]).map(([key, label]) => (
+              <div key={key} className="flex items-center justify-between gap-3">
+                <label className="text-sm text-neutral-700">{label}</label>
+                <select className="form-input w-24" value={perf[key] as number} onChange={(e) => setPerf((p) => ({ ...p, [key]: Number(e.target.value) }))}>
+                  {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+            ))}
+            <textarea className="form-input h-20 resize-none" placeholder="Notes (required for poor ratings)" value={perf.notes} onChange={(e) => setPerf((p) => ({ ...p, notes: e.target.value }))} />
+            <div className="flex gap-3">
+              <button className="btn-secondary flex-1" onClick={() => setPerfOpen(false)}>Cancel</button>
+              <button className="btn-primary flex-1" onClick={() => { act(() => contractsApi.submitPerformanceReview(contractId, perf), "Supplier performance recorded"); setPerfOpen(false); }}>Save rating</button>
+            </div>
+          </div>
         </div>
       )}
 
