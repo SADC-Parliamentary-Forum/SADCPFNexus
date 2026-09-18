@@ -2435,9 +2435,18 @@ export const assetImportApi = {
       a.click();
       URL.revokeObjectURL(url);
     }),
-  upload: (form: FormData) =>
+  upload: (
+    form: FormData,
+    onUploadProgress?: (event: { loaded: number; total?: number }) => void,
+  ) =>
     api.post<{ message: string; data: unknown }>("/assets/import", form, {
       headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: (event) => {
+        onUploadProgress?.({
+          loaded: event.loaded,
+          total: event.total && event.total > 0 ? event.total : undefined,
+        });
+      },
     }),
   show: (id: number) => api.get<{ data: unknown }>(`/assets/import/${id}`),
   staging: (id: number, params?: Record<string, string | number | undefined>) =>

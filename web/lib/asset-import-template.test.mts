@@ -33,6 +33,20 @@ test("asset register links importers to bulk upload", () => {
   assert.match(register, /ClearAssetRegisterButton/);
 });
 
+test("import page shows live upload and staging progress", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/assets/import/page.tsx"), "utf8");
+  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
+
+  assert.match(page, /data-testid="asset-import-progress"/);
+  assert.match(page, /assets\.import\.uploading/);
+  assert.match(page, /assets\.import\.stagingProgress/);
+  assert.match(page, /onUploadProgress|uploadProgress/);
+  assert.match(api, /onUploadProgress/);
+  assert.match(keys, /"assets\.import\.uploading":/);
+  assert.match(keys, /"assets\.import\.stagingProgress":/);
+});
+
 test("import and register pages offer a confirmed clear-register action", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assets/import/page.tsx"), "utf8");
   const button = readFileSync(join(webRoot, "components/assets/ClearAssetRegisterButton.tsx"), "utf8");

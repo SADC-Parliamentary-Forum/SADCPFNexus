@@ -27,6 +27,32 @@ test.describe("Assets import (admin)", () => {
     await expect(page.getByTestId("asset-register-clear")).toBeVisible();
   });
 
+  test("shows progress while the workbook is uploading", async ({ page }) => {
+    skipWithoutAuth("admin");
+    await page.goto("/assets/import");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "assets import progress");
+
+    await page.route(/\/api\/assets\/import(?:\?|$)/, async (route) => {
+      if (route.request().method() !== "POST") {
+        await route.continue();
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await route.continue();
+    });
+
+    await page.getByRole("radio", { name: /Standard template|Modèle standard|Modelo padrão/i }).check();
+    await page.locator('input[name="template"]').setInputFiles(templateXlsx);
+    const uploaded = page.waitForResponse(
+      (r) => r.url().includes("/assets/import") && r.request().method() === "POST" && !r.url().includes("/commit") && !r.url().includes("/approve"),
+      { timeout: 30_000 },
+    );
+    await page.getByRole("button", { name: /Upload and stage|Téléverser et préparer|Carregar e preparar/i }).click();
+    await expect(page.getByTestId("asset-import-progress")).toBeVisible({ timeout: 5_000 });
+    expect((await uploaded).ok()).toBeTruthy();
+  });
+
   test("labels page is authorised", async ({ page }) => {
     skipWithoutAuth("admin");
     await page.goto("/assets/labels");

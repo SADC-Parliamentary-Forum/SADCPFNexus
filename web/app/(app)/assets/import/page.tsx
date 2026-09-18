@@ -113,6 +113,10 @@ export default function AssetImportPage() {
   const [raw, setRaw] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
   const [autoApproveAllowed, setAutoApproveAllowed] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{
+    phase: "uploading" | "staging";
+    percent: number | null;
+  } | null>(null);
 
   async function downloadTemplate() {
     setBusy(true);
@@ -178,10 +182,22 @@ export default function AssetImportPage() {
     setBusy(true);
     setMsg(null);
     setError(null);
+    setUploadProgress({ phase: "uploading", percent: 0 });
     const form = new FormData(e.currentTarget);
     form.set("mode", mode);
     try {
-      const res = await assetImportApi.upload(form);
+      const res = await assetImportApi.upload(form, ({ loaded, total }) => {
+        if (total && total > 0) {
+          const percent = Math.min(100, Math.round((loaded / total) * 100));
+          setUploadProgress({
+            phase: percent >= 100 ? "staging" : "uploading",
+            percent,
+          });
+          return;
+        }
+        setUploadProgress((cur) => cur ?? { phase: "uploading", percent: null });
+      });
+      setUploadProgress({ phase: "staging", percent: 100 });
       const payload = res.data.data as {
         batch?: { id: number; status: string };
         counts?: Counts;
@@ -202,6 +218,7 @@ export default function AssetImportPage() {
       setError(ax.response?.data?.message ?? t("common.error"));
     } finally {
       setBusy(false);
+      setUploadProgress(null);
     }
   }
 
@@ -395,6 +412,32 @@ export default function AssetImportPage() {
       </div>
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
       {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+      {uploadProgress && (
+        <div
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          data-testid="asset-import-progress"
+          className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-neutral-800"
+        >
+          <p className="font-semibold text-neutral-900">{t("assets.import.uploadBusy")}</p>
+          <p className="mt-1">
+            {uploadProgress.phase === "uploading"
+              ? t("assets.import.uploading", { percent: uploadProgress.percent ?? 0 })
+              : t("assets.import.stagingProgress")}
+          </p>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-200">
+            {uploadProgress.phase === "uploading" && uploadProgress.percent != null ? (
+              <div
+                className="h-2 rounded-full bg-primary transition-[width]"
+                style={{ width: `${uploadProgress.percent}%` }}
+              />
+            ) : (
+              <div className="h-2 w-1/3 animate-pulse rounded-full bg-primary" />
+            )}
+          </div>
+        </div>
+      )}
 
       {batches.length > 0 && (
         <FormSection title="assets.import.batches" dense>
@@ -412,7 +455,7 @@ export default function AssetImportPage() {
         </FormSection>
       )}
 
-      <form onSubmit={onUpload} className="card space-y-3 p-4">
+      <form onSubmit={onUpload} className="card space-y-3 p-4" aria-busy={Boolean(uploadProgress)}>
         <div className="flex gap-3">
           <label htmlFor="assets-import-setmode-legacy" className="text-sm">
             <input id="assets-import-setmode-legacy" type="radio" checked={mode === "legacy"} onChange={() => setMode("legacy")} /> {t("assets.import.legacy")}
@@ -423,9 +466,9 @@ export default function AssetImportPage() {
         </div>
         {mode === "legacy" ? (
           <div className="grid gap-3 sm:grid-cols-3">
-            <label htmlFor="assets-import-field" className="text-sm">{t("assets.import.categoryFile")}<input id="assets-import-field" className="input mt-1" type="file" name="category" accept=".xls,.xlsx" required /></label>
-            <label htmlFor="assets-import-field-2" className="text-sm">{t("assets.import.locationFile")}<input id="assets-import-field-2" className="input mt-1" type="file" name="location" accept=".xls,.xlsx" required /></label>
-            <label htmlFor="assets-import-field-3" className="text-sm">{t("assets.import.stagingFile")}<input id="assets-import-field-3" className="input mt-1" type="file" name="staging" accept=".xlsx" /></label>
+            <label htmlFor="assets-import-field" className="text-sm">{t("assets.import.categoryFile")}<input id="assets-import-field" className="input mt-1" type="file" name="category" accept=".xls,.xlsx" required disabled={busy} /></label>
+            <label htmlFor="assets-import-field-2" className="text-sm">{t("assets.import.locationFile")}<input id="assets-import-field-2" className="input mt-1" type="file" name="location" accept=".xls,.xlsx" required disabled={busy} /></label>
+            <label htmlFor="assets-import-field-3" className="text-sm">{t("assets.import.stagingFile")}<input id="assets-import-field-3" className="input mt-1" type="file" name="staging" accept=".xlsx" disabled={busy} /></label>
           </div>
         ) : (
           <div className="space-y-2">
@@ -434,11 +477,11 @@ export default function AssetImportPage() {
               <Button type="button" variant="secondary" onClick={() => void downloadTemplate()} disabled={busy}>
                 {t("assets.import.downloadTemplate")}
               </Button>
-              <label htmlFor="assets-import-field-4" className="text-sm">{t("assets.import.template")}<input id="assets-import-field-4" className="input mt-1" type="file" name="template" accept=".xlsx" required /></label>
+              <label htmlFor="assets-import-field-4" className="text-sm">{t("assets.import.template")}<input id="assets-import-field-4" className="input mt-1" type="file" name="template" accept=".xlsx" required disabled={busy} /></label>
             </div>
           </div>
         )}
-        <Button type="submit" disabled={busy}>{busy ? t("common.loading") : t("assets.import.upload")}</Button>
+        <Button type="submit" disabled={busy}>{busy ? (uploadProgress ? t("assets.import.uploadBusy") : t("common.loading")) : t("assets.import.upload")}</Button>
       </form>
 
       {counts && (
