@@ -91,6 +91,7 @@ class DatabaseSeeder extends Seeder
 
             // ── Supplier Portal ────────────────────────────
             SupplierCategorySeeder::class,
+            CurrencySeeder::class,
             ContractTypeSeeder::class,
             ContractTemplateSeeder::class,
             ContractClauseSeeder::class,

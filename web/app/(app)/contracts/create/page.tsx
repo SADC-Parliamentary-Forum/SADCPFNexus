@@ -84,6 +84,12 @@ export default function ContractCreatePage() {
   });
   const types: ContractType[] = typeData ?? [];
 
+  const { data: currencyData } = useQuery({
+    queryKey: ["contract-currencies"],
+    queryFn: () => contractsApi.currencies().then((r) => r.data.data).catch(() => []),
+  });
+  const currencies = currencyData ?? [];
+
   const { data: vendorData } = useQuery({
     queryKey: ["vendors-approved"],
     queryFn: () => vendorsApi.list({ status: "approved", per_page: 100 }).then((r) => r.data),
@@ -303,7 +309,15 @@ export default function ContractCreatePage() {
               <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">or Flat value</label><input type="number" min="0" step="0.01" className="form-input" value={flatValue} disabled={!!(rate && units)} onChange={(e) => setFlatValue(e.target.value)} /></div>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Currency</label><input className="form-input" value={currency} maxLength={3} onChange={(e) => setCurrency(e.target.value.toUpperCase())} /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Currency</label>
+                {currencies.length > 0 ? (
+                  <select className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                    {currencies.map((c) => <option key={c.id} value={c.code}>{c.code} — {c.name}</option>)}
+                  </select>
+                ) : (
+                  <input className="form-input" value={currency} maxLength={3} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />
+                )}
+              </div>
               <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Budget currency</label><input className="form-input" value={budgetCurrency} maxLength={3} onChange={(e) => setBudgetCurrency(e.target.value.toUpperCase())} placeholder="Optional" /></div>
               <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Ceiling</label><input type="number" min="0" step="0.01" className="form-input" value={ceiling} onChange={(e) => setCeiling(e.target.value)} placeholder="Optional" /></div>
             </div>

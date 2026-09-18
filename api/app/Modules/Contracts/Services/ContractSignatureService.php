@@ -2,12 +2,15 @@
 
 namespace App\Modules\Contracts\Services;
 
+use App\Mail\ContractSignatureRequestMail;
 use App\Models\Contract;
 use App\Models\ContractDocumentVersion;
 use App\Models\ContractSignatory;
 use App\Models\SignatureEvent;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -66,7 +69,37 @@ class ContractSignatureService
 
         $this->prepareSignatories($contract, $order);
 
+        // Email the counterparty a secure signing link.
+        $this->emailCounterparty($contract);
+
         return $contract->fresh(['signatories', 'documentVersions']);
+    }
+
+    /**
+     * Email the counterparty signatory a secure link to review and sign, with an
+     * option to register as a supplier and enrol a reusable signature.
+     */
+    public function emailCounterparty(Contract $contract): bool
+    {
+        $sig = $contract->signatories()->where('party', 'counterparty')->first();
+        if ($sig === null || empty($sig->token) || empty($sig->signer_email)) {
+            return false;
+        }
+
+        $base = rtrim((string) config('app.frontend_url'), '/');
+        $signUrl = $base.'/contract-signature/'.$sig->token;
+        $registerUrl = $base.'/supplier';
+
+        try {
+            Mail::to($sig->signer_email)->send(new ContractSignatureRequestMail($contract, $sig, $signUrl, $registerUrl));
+        } catch (\Throwable $e) {
+            // Delivery must not block the signing workflow; surface via logs.
+            Log::warning('Contract signature email failed', ['contract_id' => $contract->id, 'error' => $e->getMessage()]);
+
+            return false;
+        }
+
+        return true;
     }
 
     private function prepareSignatories(Contract $contract, string $order): void

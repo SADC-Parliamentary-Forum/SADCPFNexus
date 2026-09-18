@@ -102,6 +102,72 @@ class ContractController extends Controller
         return response()->json(['data' => $this->contracts->types($request->user())]);
     }
 
+    public function storeType(Request $request): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.manage_template'], ['Procurement Officer', 'System Admin']);
+
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'counterparty_type' => ['required', 'string', 'in:individual,organisation,either'],
+            'category' => ['nullable', 'string', 'max:60'],
+            'description' => ['nullable', 'string'],
+            'requires_legal_review' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
+            'sort_order' => ['nullable', 'integer'],
+        ]);
+
+        $slug = \Illuminate\Support\Str::slug($data['name']);
+        abort_if(
+            \App\Models\ContractType::where('tenant_id', $request->user()->tenant_id)->where('slug', $slug)->exists(),
+            422,
+            'A contract type with that name already exists.'
+        );
+
+        $type = \App\Models\ContractType::create([
+            'tenant_id' => $request->user()->tenant_id,
+            'name' => $data['name'],
+            'slug' => $slug,
+            'counterparty_type' => $data['counterparty_type'],
+            'category' => $data['category'] ?? null,
+            'description' => $data['description'] ?? null,
+            'requires_legal_review' => (bool) ($data['requires_legal_review'] ?? false),
+            'is_active' => $data['is_active'] ?? true,
+            'sort_order' => $data['sort_order'] ?? 0,
+        ]);
+
+        AuditLog::record('contract.type_created', [
+            'auditable_type' => \App\Models\ContractType::class, 'auditable_id' => $type->id,
+            'new_values' => ['name' => $type->name], 'tags' => ['contract', 'type'],
+        ]);
+
+        return response()->json(['message' => 'Contract type created.', 'data' => $type], 201);
+    }
+
+    public function updateType(Request $request, \App\Models\ContractType $type): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.manage_template'], ['Procurement Officer', 'System Admin']);
+        abort_if((int) $type->tenant_id !== (int) $request->user()->tenant_id, 404);
+
+        $data = $request->validate([
+            'name' => ['nullable', 'string', 'max:255'],
+            'counterparty_type' => ['nullable', 'string', 'in:individual,organisation,either'],
+            'category' => ['nullable', 'string', 'max:60'],
+            'description' => ['nullable', 'string'],
+            'requires_legal_review' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
+            'sort_order' => ['nullable', 'integer'],
+        ]);
+
+        $type->update($data);
+
+        AuditLog::record('contract.type_updated', [
+            'auditable_type' => \App\Models\ContractType::class, 'auditable_id' => $type->id,
+            'new_values' => $data, 'tags' => ['contract', 'type'],
+        ]);
+
+        return response()->json(['message' => 'Contract type updated.', 'data' => $type->fresh()]);
+    }
+
     /**
      * Import a historical contract. It is explicitly flagged legacy/imported and
      * does NOT pass through any Nexus workflow (PRD §10E / §128).
@@ -677,6 +743,20 @@ class ContractController extends Controller
         ]);
 
         return response()->json(['message' => 'Contract sent for signature.', 'data' => $contract]);
+    }
+
+    /** Re-send the counterparty signing invitation email. */
+    public function resendSignatureEmail(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.send', 'contract.manage_external_signature'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $sent = $this->signatures->emailCounterparty($contract);
+
+        return response()->json([
+            'message' => $sent ? 'Signing invitation re-sent to the counterparty.' : 'No counterparty email/token available to send to.',
+            'sent' => $sent,
+        ], $sent ? 200 : 422);
     }
 
     /** The authorised institutional signatory signs on behalf of SADC PF. */

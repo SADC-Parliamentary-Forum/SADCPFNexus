@@ -5078,6 +5078,16 @@ export interface ContractClauseAssignmentRecord {
   clause?: ContractClauseRecord;
 }
 
+export interface CurrencyRecord {
+  id: number;
+  code: string;
+  name: string;
+  symbol: string | null;
+  is_active: boolean;
+  is_default: boolean;
+  sort_order: number;
+}
+
 export interface ContractType {
   id: number;
   tenant_id: number;
@@ -5157,6 +5167,18 @@ export const contractsApi = {
   register: (params?: { status?: string; search?: string; per_page?: number; type_id?: number; origin_type?: string; expiring_within_days?: number }) =>
     api.get<PaginatedResponse<Contract>>("/contracts", { params: { per_page: 500, ...(params ?? {}) } }),
   types: () => api.get<{ data: ContractType[] }>("/contracts/types"),
+  createType: (data: { name: string; counterparty_type: string; category?: string; description?: string; requires_legal_review?: boolean }) =>
+    api.post<{ data: ContractType; message: string }>("/contracts/types", data),
+  updateType: (id: number, data: Partial<{ name: string; counterparty_type: string; category: string; requires_legal_review: boolean; is_active: boolean }>) =>
+    api.patch<{ data: ContractType; message: string }>(`/contracts/types/${id}`, data),
+  currencies: (includeInactive = false) =>
+    api.get<{ data: CurrencyRecord[] }>("/contracts/currencies", { params: includeInactive ? { include_inactive: 1 } : {} }),
+  createCurrency: (data: { code: string; name: string; symbol?: string; is_default?: boolean }) =>
+    api.post<{ data: CurrencyRecord; message: string }>("/contracts/currencies", data),
+  updateCurrency: (id: number, data: Partial<{ name: string; symbol: string; is_default: boolean; is_active: boolean }>) =>
+    api.patch<{ data: CurrencyRecord; message: string }>(`/contracts/currencies/${id}`, data),
+  resendSignatureEmail: (id: number) =>
+    api.post<{ message: string; sent: boolean }>(`/contracts/${id}/resend-signature-email`),
   prefill: (origin_type: "procurement" | "pif", origin_id: number) =>
     api.post<{ data: Record<string, unknown> }>("/contracts/prefill", { origin_type, origin_id }),
   readiness: (id: number) =>

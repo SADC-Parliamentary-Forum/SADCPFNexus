@@ -1280,6 +1280,11 @@ Route::prefix('v1')->group(function () {
             Route::get('', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'index']);
             Route::post('', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'store']);
             Route::get('types', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'types']);
+            Route::post('types', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'storeType']);
+            Route::patch('types/{type}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'updateType']);
+            Route::get('currencies', [\App\Http\Controllers\Api\V1\Contracts\CurrencyController::class, 'index']);
+            Route::post('currencies', [\App\Http\Controllers\Api\V1\Contracts\CurrencyController::class, 'store']);
+            Route::patch('currencies/{currency}', [\App\Http\Controllers\Api\V1\Contracts\CurrencyController::class, 'update']);
             Route::post('import', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'importLegacy']);
             Route::post('prefill', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'prefill']);
 
@@ -1317,6 +1322,7 @@ Route::prefix('v1')->group(function () {
 
             // Execution & signature
             Route::post('{contract}/send-for-signature', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'sendForSignature']);
+            Route::post('{contract}/resend-signature-email', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'resendSignatureEmail']);
             Route::post('{contract}/sign', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'signInternal']);
             Route::post('{contract}/wet-sign', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'wetSign']);
 
