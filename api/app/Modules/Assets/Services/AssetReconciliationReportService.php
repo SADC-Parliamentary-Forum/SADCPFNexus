@@ -35,6 +35,7 @@ class AssetReconciliationReportService
             'awaiting_physical_verification' => $equation['created'] + $equation['matched_existing'],
             'blocking_remaining' => $rows->where('blocking', true)->count(),
             'equation' => $equation,
+            'ff_0172_present' => $rows->contains(fn ($r) => strtoupper((string) $r->asset_tag) === 'FF-0172'),
             'status' => $equation['balanced'] ? ($equation['outstanding_exceptions'] === 0 && $batch->status === 'committed' ? 'COMPLETE' : 'INCOMPLETE') : 'FAILED / INCOMPLETE',
         ];
     }
@@ -90,6 +91,7 @@ class AssetReconciliationReportService
 ```
 
 **Balanced:** {$this->yn($eq['balanced'])}
+**FF-0172 present:** {$this->yn((bool) ($report['ff_0172_present'] ?? false))} (category-only Admiral 3 Drawer Mobile Pedestal)
 **Migration status:** {$report['status']}
 MD;
     }

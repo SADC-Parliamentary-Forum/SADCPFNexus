@@ -156,6 +156,12 @@ class AssetQrService
         );
         $recovery = $contact?->publicPayload() ?? [];
         $status = $this->publicStatus($asset);
+        $noticeKey = match ($status) {
+            'LOST' => 'assets.public.noticeLost',
+            'STOLEN' => 'assets.public.noticeStolen',
+            'DISPOSED' => 'assets.public.noticeDisposed',
+            default => 'assets.public.noticeRegistered',
+        };
         $notice = match ($status) {
             'LOST' => 'THIS SADC PF ASSET HAS BEEN REPORTED LOST. Please contact SADC Parliamentary Forum.',
             'STOLEN' => 'THIS SADC PF ASSET HAS BEEN REPORTED STOLEN. Please contact SADC Parliamentary Forum.',
@@ -166,6 +172,7 @@ class AssetQrService
         return [
             'organisation' => $asset->owner_name ?: 'SADC Parliamentary Forum',
             'notice' => $notice,
+            'notice_key' => $noticeKey,
             'asset_tag' => $tag,
             'assetNumber' => $tag,
             'asset_name' => $asset->name,
