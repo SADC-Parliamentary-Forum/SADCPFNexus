@@ -1964,6 +1964,8 @@ export const assetsApi = {
     api.post<{ data: Asset; message: string }>(`/assets/${id}/return`, data ?? {}),
   registerExport: (params?: Record<string, string | number>) =>
     api.get<Blob>("/assets/register-export", { params, responseType: "blob" }),
+  clearRegister: (data: { confirmation: string }) =>
+    api.post<{ message: string; data: { deleted_count: number; remaining_count: number } }>("/assets/register/clear", data),
   qrBatch: (ids: number[]) =>
     api.post<{ data: Array<{ id: number; image: string }> }>("/assets/qr-batch", { ids }),
   uploadInvoice: (assetId: number, file: File) => {

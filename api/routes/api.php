@@ -1482,6 +1482,7 @@ Route::prefix('v1')->group(function () {
         Route::get('assets/dashboard', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'dashboard']);
         Route::get('assets/assigned-to-me', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'assignedToMe']);
         Route::get('assets/register-export', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'registerExport']);
+        Route::post('assets/register/clear', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'clearRegister']);
         Route::post('assets/qr-batch', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'qrBatch']);
         Route::get('assets/qr/{token}', [\App\Http\Controllers\Api\V1\Assets\PublicAssetQrController::class, 'authenticated'])
             ->where('token', '[A-Za-z0-9_-]+');

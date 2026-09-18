@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { canDisposeAssets, canRetireAssets, canAccessRoute } from "./authAccess.ts";
+import { canDisposeAssets, canRetireAssets, canAccessRoute, canClearAssetRegister } from "./authAccess.ts";
 
 const webRoot = join(process.cwd());
 
@@ -15,14 +15,19 @@ const admin = { roles: ["Administration Officer"], permissions: ["assets.view", 
 test("retire and dispose stay off the general-employee and create-only roles", () => {
   assert.equal(canRetireAssets(viewer), false);
   assert.equal(canDisposeAssets(viewer), false);
+  assert.equal(canClearAssetRegister(viewer), false);
   assert.equal(canRetireAssets(creator), false);
   assert.equal(canDisposeAssets(creator), false);
+  assert.equal(canClearAssetRegister(creator), false);
   assert.equal(canDisposeAssets(disposer), true);
   assert.equal(canRetireAssets(disposer), false);
+  assert.equal(canClearAssetRegister(disposer), false);
   assert.equal(canRetireAssets(manager), true);
   assert.equal(canDisposeAssets(manager), true);
+  assert.equal(canClearAssetRegister(manager), false);
   assert.equal(canRetireAssets(admin), true);
   assert.equal(canDisposeAssets(admin), true);
+  assert.equal(canClearAssetRegister(admin), true);
 });
 
 test("disposal and depreciation routes are not open to register viewers", () => {
@@ -43,7 +48,8 @@ test("asset register surfaces dispose, retire, live filter, and depreciation wit
   assert.match(register, /canRetireAssets/);
   assert.match(register, /href=\{`\/assets\/disposal\?asset=/);
   assert.match(register, /assetsApi\.retire/);
-  assert.match(register, /filterStatus === "live"/);
+  assert.match(register, /setFilterStatus\("live"\)/);
+  assert.match(register, /ClearAssetRegisterButton/);
   assert.match(register, /\/assets\/depreciation/);
   assert.match(register, /pending_disposal/);
   assert.doesNotMatch(register, /assetsApi\.delete\(/);
@@ -53,6 +59,8 @@ test("asset register surfaces dispose, retire, live filter, and depreciation wit
 
   assert.match(api, /retire:\s*\(id:\s*number\)/);
   assert.match(api, /api\.delete<\{ message: string \}>\(`\/assets\/\$\{id\}`\)/);
+  assert.match(api, /clearRegister:/);
+  assert.match(api, /\/assets\/register\/clear/);
 
   const assetsBlock = sidebar.slice(sidebar.indexOf('label: "Fixed Assets"'), sidebar.indexOf('label: "Consumables'));
   assert.doesNotMatch(assetsBlock, /\/assets\/disposal/);

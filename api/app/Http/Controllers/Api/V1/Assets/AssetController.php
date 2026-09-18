@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Modules\Assets\Export\AssetRegisterExportWorkbook;
 use App\Modules\Assets\Services\AssetNumberingService;
 use App\Modules\Assets\Services\AssetQrService;
+use App\Modules\Assets\Services\AssetRegisterClearService;
 use App\Modules\Assets\Services\AssetService;
 use App\Modules\Assets\Services\AssetTimelineService;
 use App\Modules\Assets\Support\AssetAccess;
@@ -22,6 +23,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class AssetController extends Controller
 {
@@ -30,6 +32,7 @@ class AssetController extends Controller
         private readonly AssetQrService $qr,
         private readonly AssetNumberingService $numbering,
         private readonly AssetTimelineService $timeline,
+        private readonly AssetRegisterClearService $registerClear,
     ) {}
 
     /**
@@ -564,6 +567,42 @@ class AssetController extends Controller
         }
 
         return array_values($ids);
+    }
+
+    /**
+     * Permanently delete this tenant's register rows so a fresh bulk upload can replace them.
+     * Categories, locations, and numbering policies are kept.
+     */
+    public function clearRegister(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! AssetAccess::canClearRegister($user)) {
+            abort(403, 'Only asset administrators can clear the register for a fresh upload.');
+        }
+
+        $tenantId = (int) $user->tenant_id;
+        if ($tenantId < 1) {
+            abort(403, 'A tenant context is required to clear the asset register.');
+        }
+
+        $data = $request->validate([
+            'confirmation' => ['required', 'string', 'max:64'],
+        ]);
+        if (strcasecmp(trim($data['confirmation']), AssetRegisterClearService::CONFIRMATION_PHRASE) !== 0) {
+            throw ValidationException::withMessages([
+                'confirmation' => 'Type '.AssetRegisterClearService::CONFIRMATION_PHRASE.' to confirm wiping the asset register.',
+            ]);
+        }
+
+        $result = $this->registerClear->clear($tenantId, null, $user);
+
+        return response()->json([
+            'message' => 'Asset register cleared.',
+            'data' => [
+                'deleted_count' => max(0, $result['before'] - $result['after']),
+                'remaining_count' => $result['after'],
+            ],
+        ]);
     }
 
     public function dashboard(Request $request): JsonResponse

@@ -85,6 +85,7 @@ test("shared chrome components translate user-facing copy", () => {
     "components/layout/GlobalSearch.tsx",
     "app/dashboard/page.tsx",
     "app/(app)/assets/import/page.tsx",
+    "components/assets/ClearAssetRegisterButton.tsx",
     "app/(app)/assets/page.tsx",
     "app/(app)/assets/labels/page.tsx",
     "app/(app)/assets/labels/templates/page.tsx",
@@ -154,6 +155,26 @@ test("API client sends Accept-Language from the stored locale", () => {
   const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
   assert.match(source, /Accept-Language/);
   assert.match(source, /readStoredLocale/);
+});
+
+test("asset register clear catalog covers EN, FR and PT", () => {
+  const keys = [
+    "assets.register.clear",
+    "assets.register.clearConfirmTitle",
+    "assets.register.clearConfirmMessage",
+    "assets.register.clearConfirmLabel",
+    "assets.register.clearWrongPhrase",
+    "assets.register.clearSuccess",
+    "assets.register.clearFailed",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
 });
 
 test("asset import review table uses translated column headers", () => {

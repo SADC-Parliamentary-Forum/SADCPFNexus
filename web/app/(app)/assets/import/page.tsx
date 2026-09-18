@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { FormSection } from "@/components/ui/FormSection";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { ClearAssetRegisterButton } from "@/components/assets/ClearAssetRegisterButton";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -376,9 +377,22 @@ export default function AssetImportPage() {
           subtitle={t("assets.import.subtitle")}
           breadcrumbs={<PageBreadcrumbs items={[{ label: t("assets.import.title") }]} />}
         />
-        <Button type="button" variant="secondary" onClick={() => void downloadTemplate()} disabled={busy}>
-          {t("assets.import.downloadTemplate")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="secondary" onClick={() => void downloadTemplate()} disabled={busy}>
+            {t("assets.import.downloadTemplate")}
+          </Button>
+          <ClearAssetRegisterButton
+            onCleared={() => {
+              setBatches([]);
+              setBatchId(null);
+              setBatchStatus("");
+              setCounts(null);
+              setEquation(null);
+              setRows([]);
+              setSelected([]);
+            }}
+          />
+        </div>
       </div>
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
       {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}

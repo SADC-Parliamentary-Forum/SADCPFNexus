@@ -25,6 +25,7 @@ import { DEFAULT_PAGE_SIZE, getLastPage, getListData, getTotal } from "@/lib/lis
 import { ListPagination } from "@/components/ui/ListPagination";
 import { BulkSelectionBar, RowCheckbox, SelectAllCheckbox } from "@/components/ui/BulkSelectionBar";
 import { AssetLabelsQuickPrintModal } from "@/components/assets/AssetLabelsQuickPrintModal";
+import { ClearAssetRegisterButton } from "@/components/assets/ClearAssetRegisterButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 const RETIREABLE_STATUSES = new Set(["active", "service_due", "loan_out"]);
@@ -998,6 +999,7 @@ export default function AssetsPage() {
                 <span className="material-symbols-outlined text-[18px]">upload_file</span>
                 Import
               </Link>
+              <ClearAssetRegisterButton onCleared={() => { void loadAssets(); }} />
               <Link href="/assets/add" className="btn-primary">
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 Add Asset

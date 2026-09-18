@@ -868,6 +868,9 @@ return [
         ['pattern' => 'api/v1/assets/assigned-to-me', 'permissions' => [
             'READ' => ['assets.view', 'assets.handover.accept', 'profile.read.self', 'assets.admin', 'assets.manage'],
         ]],
+        ['pattern' => 'api/v1/assets/register/clear', 'permissions' => [
+            'WRITE' => ['assets.admin'],
+        ]],
         ['pattern' => 'api/v1/assets*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin'],
             'POST' => ['assets.create', 'assets.manage', 'assets.admin'],
