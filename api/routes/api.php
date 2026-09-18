@@ -1293,6 +1293,7 @@ Route::prefix('v1')->group(function () {
             // Reports & registers
             Route::get('reports/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'exceptions']);
             Route::get('reports/analytics', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'analytics']);
+            Route::get('reports/risk', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'risk']);
             Route::get('reports', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'index']);
 
             // Template library (versioned)

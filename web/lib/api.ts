@@ -5121,6 +5121,31 @@ export interface ContractAnalytics {
   supplier_performance: { evaluations: number; average_overall: number | null };
 }
 
+export interface ContractRiskFactor {
+  code: string;
+  label: string;
+  weight: number;
+}
+
+export interface ContractRiskEntry {
+  id: number;
+  reference_number: string | null;
+  title: string;
+  level: "critical" | "high" | "medium" | "low";
+  score: number;
+  value: number;
+  end_date: string | null;
+  factors: ContractRiskFactor[];
+}
+
+export interface ContractRiskPortfolio {
+  generated_at: string;
+  totals: { contracts: number; at_risk: number; at_risk_value: number };
+  levels: { critical: number; high: number; medium: number; low: number };
+  top_factors: { code: string; label: string; count: number }[];
+  contracts: ContractRiskEntry[];
+}
+
 export interface ContractFrameworkUtilisation {
   ceiling: number; used: number; remaining: number; call_off_count: number; currency: string;
 }
@@ -5325,6 +5350,8 @@ export const contractsApi = {
     `/api/contracts/reports?type=${type}&format=${format}`,
   analytics: () =>
     api.get<{ data: ContractAnalytics }>("/contracts/reports/analytics"),
+  risk: () =>
+    api.get<{ data: ContractRiskPortfolio }>("/contracts/reports/risk"),
   exceptionRegister: () =>
     api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
   audit: (id: number) =>

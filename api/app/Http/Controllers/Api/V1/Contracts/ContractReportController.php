@@ -21,6 +21,7 @@ class ContractReportController extends Controller
         private readonly ContractReportService $reports,
         private readonly ContractService $contracts,
         private readonly \App\Modules\Contracts\Services\ContractAnalyticsService $analytics,
+        private readonly \App\Modules\Contracts\Services\ContractRiskService $risk,
     ) {}
 
     /** Management analytics for the contract portfolio (PRD §101). */
@@ -29,6 +30,14 @@ class ContractReportController extends Controller
         $this->gate($request);
 
         return response()->json(['data' => $this->analytics->summary($request->user())]);
+    }
+
+    /** Portfolio risk analytics — per-contract risk scores and a heatmap. */
+    public function risk(Request $request): JsonResponse
+    {
+        $this->gate($request);
+
+        return response()->json(['data' => $this->risk->portfolio($request->user())]);
     }
 
     private function gate(Request $request): void

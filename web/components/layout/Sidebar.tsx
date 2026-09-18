@@ -109,6 +109,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "New Contract", href: "/contracts/create", icon: "add_circle" },
       { label: "Reports", href: "/contracts/reports", icon: "assessment" },
       { label: "Analytics", href: "/contracts/analytics", icon: "insights" },
+      { label: "Risk", href: "/contracts/risk", icon: "warning" },
       { label: "Settings", href: "/contracts/settings", icon: "settings" },
     ],
   },
