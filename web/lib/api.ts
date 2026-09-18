@@ -5152,6 +5152,20 @@ export interface ContractAuthorityDelegation {
   delegate?: { id: number; name: string; email: string } | null;
 }
 
+export interface ContractComplianceRequirement {
+  id: number;
+  code: string;
+  name: string;
+  description: string | null;
+  contract_type_id: number | null;
+  requires_expiry: boolean;
+  blocks_activation: boolean;
+  blocks_payment: boolean;
+  is_active: boolean;
+  sort_order: number;
+  contract_type?: { id: number; name: string } | null;
+}
+
 export interface ContractRiskFactor {
   code: string;
   label: string;
@@ -5398,6 +5412,15 @@ export const contractsApi = {
     api.delete<{ message: string }>(`/contracts/authority/delegations/${id}`),
   contractAuthority: (id: number, action: "approve" | "sign") =>
     api.get<{ data: { action: string; required_roles: string[]; governed: boolean; user_may_act: boolean; sod_conflict: boolean } }>(`/contracts/${id}/authority`, { params: { action } }),
+  // Compliance requirements (§81-82)
+  complianceRequirements: () =>
+    api.get<{ data: ContractComplianceRequirement[] }>("/contracts/compliance/requirements"),
+  createComplianceRequirement: (data: { code: string; name: string; description?: string; contract_type_id?: number; requires_expiry?: boolean; blocks_activation?: boolean; blocks_payment?: boolean }) =>
+    api.post<{ data: ContractComplianceRequirement; message: string }>("/contracts/compliance/requirements", data),
+  updateComplianceRequirement: (id: number, data: Partial<ContractComplianceRequirement>) =>
+    api.patch<{ data: ContractComplianceRequirement; message: string }>(`/contracts/compliance/requirements/${id}`, data),
+  contractCompliance: (id: number) =>
+    api.get<{ data: { code: string; name: string; satisfied: boolean; missing: boolean; expired: boolean; blocks_activation: boolean; blocks_payment: boolean }[] }>(`/contracts/${id}/compliance`),
   // Correspondence linkage (§63)
   correspondence: (id: number) =>
     api.get<{ data: { id: number; reference_number: string | null; title: string; subject: string; type: string; status: string; direction: string; created_at: string }[] }>(`/contracts/${id}/correspondence`),

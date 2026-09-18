@@ -79,7 +79,14 @@ class ContractFinanceService
             $reasons[] = 'Warning: the contract term has ended.';
         }
 
+        // Configurable compliance requirements that block payment (PRD §82).
+        $complianceBlocks = app(ContractComplianceService::class)->unmet($contract, 'payment');
+        foreach ($complianceBlocks as $reason) {
+            $reasons[] = $reason;
+        }
+
         $eligible = $overrun <= 0
+            && $complianceBlocks === []
             && ! collect($reasons)->contains(fn ($r) => str_contains($r, 'not been accepted') || str_contains($r, 'already been paid'));
 
         return ['eligible' => $eligible, 'reasons' => $reasons, 'overrun' => max(0, $overrun)];

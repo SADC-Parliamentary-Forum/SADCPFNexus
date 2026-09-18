@@ -896,6 +896,11 @@ class ContractController extends Controller
             throw ValidationException::withMessages(['status' => ['A contract can only be activated once fully executed.']]);
         }
 
+        $blocking = app(\App\Modules\Contracts\Services\ContractComplianceService::class)->unmet($contract, 'activation');
+        if ($blocking !== []) {
+            throw ValidationException::withMessages(['compliance' => $blocking]);
+        }
+
         $contract->update(['status' => 'active', 'contract_status' => 'ACTIVE', 'signed_at' => $contract->signed_at ?? now()]);
 
         AuditLog::record('contract.activated', [

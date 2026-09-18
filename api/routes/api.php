@@ -1302,6 +1302,11 @@ Route::prefix('v1')->group(function () {
             Route::get('authority/delegations', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'delegations']);
             Route::post('authority/delegations', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'storeDelegation']);
             Route::delete('authority/delegations/{delegation}', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'revokeDelegation']);
+
+            // Configurable compliance requirements (PRD §81-82)
+            Route::get('compliance/requirements', [\App\Http\Controllers\Api\V1\Contracts\ContractComplianceController::class, 'index']);
+            Route::post('compliance/requirements', [\App\Http\Controllers\Api\V1\Contracts\ContractComplianceController::class, 'store']);
+            Route::patch('compliance/requirements/{requirement}', [\App\Http\Controllers\Api\V1\Contracts\ContractComplianceController::class, 'update']);
             Route::get('reports', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'index']);
 
             // Template library (versioned)
@@ -1332,6 +1337,7 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/withdraw', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'withdraw']);
             Route::get('{contract}/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'exceptions']);
             Route::get('{contract}/authority', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'forContract']);
+            Route::get('{contract}/compliance', [\App\Http\Controllers\Api\V1\Contracts\ContractComplianceController::class, 'forContract']);
             Route::get('{contract}/correspondence', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'correspondence']);
             Route::post('{contract}/correspondence', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createCorrespondence']);
 
