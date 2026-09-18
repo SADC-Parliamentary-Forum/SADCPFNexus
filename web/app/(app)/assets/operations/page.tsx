@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { assetsApi, assetMetaApi, tenantUsersApi, type Asset, type AssetAttestationCampaign, type AssetEquipmentTemplate, type TenantUserOption } from "@/lib/api";
+import { assetsApi, assetMetaApi, type Asset, type AssetAttestationCampaign, type AssetEquipmentTemplate, type TenantUserOption } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type LocationRow = { id: number; name: string; code: string };
@@ -15,7 +16,8 @@ function assetLabel(asset: Asset): string {
 export default function AssetOperationsPage() {
   const { t } = useI18n();
   const [error, setError] = useState("");
-  const [users, setUsers] = useState<TenantUserOption[]>([]);
+  const [gapUser, setGapUser] = useState<TenantUserOption | null>(null);
+  const [plannerUser, setPlannerUser] = useState<TenantUserOption | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [templates, setTemplates] = useState<AssetEquipmentTemplate[]>([]);
   const [campaigns, setCampaigns] = useState<AssetAttestationCampaign[]>([]);
@@ -23,10 +25,8 @@ export default function AssetOperationsPage() {
   const [templateName, setTemplateName] = useState("");
   const [roleName, setRoleName] = useState("staff");
   const [categories, setCategories] = useState("ICT");
-  const [gapUserId, setGapUserId] = useState("");
   const [missing, setMissing] = useState<string[]>([]);
   const [plannerAssetId, setPlannerAssetId] = useState("");
-  const [plannerUserId, setPlannerUserId] = useState("");
   const [plannerNotes, setPlannerNotes] = useState("");
   const [campaignName, setCampaignName] = useState("");
   const [dueOn, setDueOn] = useState("");
@@ -37,14 +37,12 @@ export default function AssetOperationsPage() {
   const [roomAssets, setRoomAssets] = useState<Array<Record<string, unknown>>>([]);
 
   async function load() {
-    const [userRes, assetRes, templateRes, campaignRes, locRes] = await Promise.all([
-      tenantUsersApi.list(),
+    const [assetRes, templateRes, campaignRes, locRes] = await Promise.all([
       assetsApi.list({ per_page: 100 }),
       assetsApi.equipmentTemplates().catch(() => ({ data: { data: [] as AssetEquipmentTemplate[] } })),
       assetsApi.attestations().catch(() => ({ data: { data: [] as AssetAttestationCampaign[] } })),
       assetMetaApi.locations().catch(() => ({ data: { data: [] as LocationRow[] } })),
     ]);
-    setUsers(userRes.data.data ?? []);
     setAssets(assetRes.data.data ?? []);
     setTemplates(templateRes.data.data ?? []);
     setCampaigns(campaignRes.data.data ?? []);
@@ -107,22 +105,23 @@ export default function AssetOperationsPage() {
           <button type="submit" className="btn-primary sm:col-span-3" data-testid="ops-template-save">{t("common.save")}</button>
         </form>
         <ul className="text-sm">{templates.map((row) => <li key={row.id}>{row.name} · {row.role_name} · {(row.required_categories ?? []).join(", ")}</li>)}</ul>
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="text-sm">
-            {t("assets.handover.inCustodyOf")}
-            <select className="form-input mt-1" value={gapUserId} onChange={(e) => setGapUserId(e.target.value)} data-testid="ops-gap-user">
-              <option value="">{t("assets.notAssigned")}</option>
-              {users.map((u) => <option key={u.id} value={u.id}>{u.name}{u.email ? ` (${u.email})` : ""}</option>)}
-            </select>
-          </label>
+        <div className="flex flex-wrap items-end gap-2" data-testid="ops-gap-user">
+          <div className="min-w-[260px] flex-1">
+            <AssetAssigneePicker
+              id="ops-gap-user"
+              label={t("assets.handover.inCustodyOf")}
+              value={gapUser}
+              onSelect={setGapUser}
+            />
+          </div>
           <button
             type="button"
             className="btn-secondary"
             onClick={() => void wrap(async () => {
-              const r = await assetsApi.equipmentTemplateGaps(Number(gapUserId));
+              const r = await assetsApi.equipmentTemplateGaps(Number(gapUser?.id));
               setMissing(r.data.data.missing_categories ?? []);
             })}
-            disabled={!gapUserId}
+            disabled={!gapUser}
             data-testid="ops-gaps"
           >
             {t("assets.ops.gaps")}
@@ -142,7 +141,7 @@ export default function AssetOperationsPage() {
             void wrap(async () => {
               const created = await assetsApi.createPlannerSlot({
                 asset_id: Number(plannerAssetId),
-                to_user_id: Number(plannerUserId),
+                to_user_id: Number(plannerUser?.id),
                 notes: plannerNotes || undefined,
               });
               window.location.href = `/assets/handovers/${created.data.data.handover.id}`;
@@ -156,13 +155,15 @@ export default function AssetOperationsPage() {
               {assets.map((a) => <option key={a.id} value={a.id}>{assetLabel(a)}</option>)}
             </select>
           </label>
-          <label className="block text-sm">
-            {t("assets.handover.inCustodyOf")}
-            <select className="form-input mt-1" value={plannerUserId} onChange={(e) => setPlannerUserId(e.target.value)} required data-testid="ops-planner-user">
-              <option value="">{t("assets.notAssigned")}</option>
-              {users.map((u) => <option key={u.id} value={u.id}>{u.name}{u.email ? ` (${u.email})` : ""}</option>)}
-            </select>
-          </label>
+          <div className="block text-sm" data-testid="ops-planner-user">
+            <AssetAssigneePicker
+              id="ops-planner-user"
+              label={t("assets.handover.inCustodyOf")}
+              value={plannerUser}
+              onSelect={setPlannerUser}
+              required
+            />
+          </div>
           <label className="block text-sm">
             {t("assets.view.fieldNotes")}
             <input className="form-input mt-1" value={plannerNotes} onChange={(e) => setPlannerNotes(e.target.value)} data-testid="ops-planner-notes" />

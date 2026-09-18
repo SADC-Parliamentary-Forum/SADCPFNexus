@@ -19,6 +19,14 @@ test("import page offers a downloadable Excel template for bulk upload", () => {
   assert.match(api, /sadcpf-asset-import-template\.xlsx/);
 });
 
+test("import template hint describes assignment fields", () => {
+  const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
+  assert.match(keys, /assigned_to/);
+  assert.match(keys, /assigned_to_email/);
+  assert.match(keys, /department/);
+  assert.doesNotMatch(keys, /custodian_candidate are matched/);
+});
+
 test("asset register links importers to bulk upload", () => {
   const register = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
   assert.match(register, /href=["']\/assets\/import["']/);

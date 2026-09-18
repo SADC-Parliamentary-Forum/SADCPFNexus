@@ -4,7 +4,8 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { assetsApi, assetMovementsApi, tenantUsersApi, type Asset, type TenantUserOption } from "@/lib/api";
+import { assetsApi, assetMovementsApi, type Asset, type TenantUserOption } from "@/lib/api";
+import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 
 const MOVEMENT_TYPES = [
   { id: "transfer",    label: "Transfer",    icon: "swap_horiz",        color: "text-blue-700 bg-blue-50 border-blue-200",    activeColor: "bg-blue-600 text-white border-blue-600",    desc: "Assign the asset to a different staff member." },
@@ -55,50 +56,6 @@ function AssetSearch({ value, onSelect }: { value: Asset | null; onSelect: (a: A
               <div>
                 <p className="text-sm font-semibold text-neutral-900">{a.asset_code} — {a.name}</p>
                 <p className="text-xs text-neutral-400">{a.category} · {a.status}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function UserSearch({ label, value, onSelect, required }: { label: string; value: TenantUserOption | null; onSelect: (u: TenantUserOption | null) => void; required?: boolean }) {
-  const [query, setQuery] = useState(value?.name ?? "");
-  const [options, setOptions] = useState<TenantUserOption[]>([]);
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!query.trim() || (value && query === value.name)) { setOptions([]); return; }
-    const t = setTimeout(async () => {
-      try { const r = await tenantUsersApi.list({ search: query }); setOptions(r.data.data ?? []); setOpen(true); } catch { setOptions([]); }
-    }, 300);
-    return () => clearTimeout(t);
-  }, [query, value]);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <label htmlFor="assets-movement-new-field" className="block text-xs font-semibold text-neutral-700 mb-1">{label}{required && <span className="text-red-500 ml-0.5">*</span>}</label>
-      <input id="assets-movement-new-field" className="form-input" placeholder="Search by name or email…" value={query}
-        onChange={(e) => { setQuery(e.target.value); onSelect(null); }} autoComplete="off" />
-      {open && options.length > 0 && (
-        <div className="absolute z-50 mt-1 w-full rounded-xl border border-neutral-200 bg-white shadow-lg overflow-hidden">
-          {options.slice(0, 6).map((u) => (
-            <button key={u.id} type="button"
-              className="w-full px-3 py-2.5 text-left hover:bg-neutral-50 flex items-center gap-2"
-              onMouseDown={() => { onSelect(u); setQuery(u.name); setOpen(false); }}>
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-bold flex-shrink-0">{u.name[0]}</div>
-              <div>
-                <p className="text-sm font-medium text-neutral-900">{u.name}</p>
-                <p className="text-xs text-neutral-400">{u.job_title ?? u.email}</p>
               </div>
             </button>
           ))}
@@ -217,8 +174,8 @@ function NewAssetMovementPageContent() {
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <UserSearch label="From (current holder)" value={fromUser} onSelect={setFromUser} />
-            {needsToUser && <UserSearch label="To (new assignee)" value={toUser} onSelect={setToUser} required />}
+            <AssetAssigneePicker id="assets-movement-from-user" label="From (current holder)" value={fromUser} onSelect={setFromUser} />
+            {needsToUser && <AssetAssigneePicker id="assets-movement-to-user" label="To (new assignee)" value={toUser} onSelect={setToUser} required />}
           </div>
 
           <div>

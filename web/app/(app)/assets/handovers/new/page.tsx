@@ -2,10 +2,11 @@
 
 import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { assetsApi, tenantUsersApi, type Asset, type TenantUserOption } from "@/lib/api";
+import { assetsApi, type Asset, type TenantUserOption } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 
 function NewHandoverForm() {
   const { t } = useI18n();
@@ -13,9 +14,8 @@ function NewHandoverForm() {
   const params = useSearchParams();
   const [type, setType] = useState(params.get("type") || "issue");
   const [target, setTarget] = useState("person");
-  const [toUserId, setToUserId] = useState("");
-  const [delegateUserId, setDelegateUserId] = useState("");
-  const [users, setUsers] = useState<TenantUserOption[]>([]);
+  const [toUser, setToUser] = useState<TenantUserOption | null>(null);
+  const [delegateUser, setDelegateUser] = useState<TenantUserOption | null>(null);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [selected, setSelected] = useState<number[]>([]);
   const [batchAssetIds, setBatchAssetIds] = useState<number[]>([]);
@@ -24,10 +24,6 @@ function NewHandoverForm() {
 
   const preset = Number(params.get("assetId") || 0);
   const batchId = Number(params.get("batchId") || 0);
-
-  useEffect(() => {
-    tenantUsersApi.list().then((r) => setUsers(r.data.data ?? [])).catch(() => setUsers([]));
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -103,8 +99,8 @@ function NewHandoverForm() {
       const created = await assetsApi.createHandover({
         type,
         custody_target_type: target,
-        to_user_id: target === "person" ? Number(toUserId) : undefined,
-        delegate_user_id: target === "person" && delegateUserId ? Number(delegateUserId) : undefined,
+        to_user_id: target === "person" ? toUser?.id : undefined,
+        delegate_user_id: target === "person" && delegateUser ? delegateUser.id : undefined,
         asset_ids: selected,
       });
       const id = created.data.data.id;
@@ -146,25 +142,24 @@ function NewHandoverForm() {
         </label>
         {target === "person" && (
           <>
-          <label className="block text-sm">
-            {t("assets.handover.inCustodyOf")}
-            <select className="form-input mt-1" value={toUserId} onChange={(e) => setToUserId(e.target.value)} required data-testid="handover-to-user">
-              <option value="">{t("assets.notAssigned")}</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}{u.email ? ` (${u.email})` : ""}</option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm">
-            {t("assets.handover.delegate")}
-            <select className="form-input mt-1" value={delegateUserId} onChange={(e) => setDelegateUserId(e.target.value)} data-testid="handover-delegate">
-              <option value="">—</option>
-              {users.filter((u) => String(u.id) !== toUserId).map((u) => (
-                <option key={u.id} value={u.id}>{u.name}{u.email ? ` (${u.email})` : ""}</option>
-              ))}
-            </select>
-            <span className="mt-1 block text-xs text-neutral-500">{t("assets.handover.delegateHint")}</span>
-          </label>
+          <div data-testid="handover-to-user">
+            <AssetAssigneePicker
+              id="handover-to-user"
+              label={t("assets.handover.inCustodyOf")}
+              value={toUser}
+              onSelect={setToUser}
+              required
+            />
+          </div>
+          <div data-testid="handover-delegate">
+            <AssetAssigneePicker
+              id="handover-delegate"
+              label={t("assets.handover.delegate")}
+              value={delegateUser}
+              onSelect={setDelegateUser}
+              hint={t("assets.handover.delegateHint")}
+            />
+          </div>
           </>
         )}
         <fieldset>

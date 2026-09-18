@@ -15,19 +15,19 @@ class AssetsTest extends TestCase
     {
         return AssetCategory::create([
             'tenant_id' => $tenant->id,
-            'name'      => 'IT Equipment',
-            'code'      => 'IT-' . uniqid(),
+            'name' => 'IT Equipment',
+            'code' => 'IT-'.uniqid(),
         ]);
     }
 
     private function makeAsset(Tenant $tenant, AssetCategory $category): Asset
     {
         return Asset::create([
-            'tenant_id'  => $tenant->id,
-            'asset_code' => 'AST-' . uniqid(),
-            'name'       => 'Test Laptop',
-            'category'   => $category->code,
-            'status'     => 'active',
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'AST-'.uniqid(),
+            'name' => 'Test Laptop',
+            'category' => $category->code,
+            'status' => 'active',
         ]);
     }
 
@@ -62,15 +62,15 @@ class AssetsTest extends TestCase
 
         $response = $http->postJson('/api/v1/assets', [
             'asset_code' => 'AST-TEST-001',
-            'name'       => 'HP Laptop',
-            'category'   => $category->code,
-            'status'     => 'active',
+            'name' => 'HP Laptop',
+            'category' => $category->code,
+            'status' => 'active',
         ]);
 
         $response->assertCreated();
         $this->assertDatabaseHas('assets', [
             'asset_code' => 'AST-TEST-001',
-            'tenant_id'  => $tenant->id,
+            'tenant_id' => $tenant->id,
         ]);
         $this->assertNull($response->json('assigned_to'));
         $this->assertSame(0, AssetAssignmentHistory::query()->where('asset_id', $response->json('id'))->count());
@@ -101,6 +101,46 @@ class AssetsTest extends TestCase
         ]);
     }
 
+    public function test_assign_captures_assignee_full_name_email_and_department(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $dept = $this->makeDepartment($tenant);
+        $dept->forceFill(['name' => 'Human Resources', 'code' => 'HR'])->save();
+        $staff = $this->makeUser('staff', $tenant);
+        $staff->forceFill([
+            'name' => 'Amina Banda',
+            'email' => 'amina.banda@sadcpf.org',
+            'department_id' => $dept->id,
+        ])->save();
+        $category = $this->makeCategory($tenant);
+        $asset = $this->makeAsset($tenant, $category);
+
+        $directory = $http->getJson('/api/v1/tenant-users?search=Human Resources')->assertOk();
+        $hit = collect($directory->json('data'))->firstWhere('id', $staff->id);
+        $this->assertNotNull($hit);
+        $this->assertSame('Amina Banda', $hit['name']);
+        $this->assertSame('amina.banda@sadcpf.org', $hit['email']);
+        $this->assertSame('Human Resources', $hit['department']);
+        $this->assertSame($dept->id, (int) $hit['department_id']);
+
+        $response = $http->postJson("/api/v1/assets/{$asset->id}/assign", [
+            'assigned_to' => $staff->id,
+        ])->assertOk();
+
+        $this->assertSame($staff->id, (int) $response->json('data.assigned_to'));
+        $this->assertSame('Amina Banda', $response->json('data.assigned_user.name'));
+        $this->assertSame('amina.banda@sadcpf.org', $response->json('data.assigned_user.email'));
+        $this->assertSame('Human Resources', $response->json('data.assigned_user.department.name'));
+        $this->assertSame('Human Resources', $response->json('data.department'));
+        $this->assertDatabaseHas('asset_assignment_histories', [
+            'asset_id' => $asset->id,
+            'assigned_to' => $staff->id,
+            'department' => 'Human Resources',
+            'returned_at' => null,
+        ]);
+    }
+
     public function test_create_rejects_assignee_from_another_tenant(): void
     {
         $tenant = Tenant::factory()->create();
@@ -124,8 +164,8 @@ class AssetsTest extends TestCase
 
         $http->postJson('/api/v1/assets', [
             'asset_code' => 'AST-STAFF-001',
-            'name'       => 'HP Laptop',
-            'category'   => $category->code,
+            'name' => 'HP Laptop',
+            'category' => $category->code,
         ])->assertForbidden();
     }
 
@@ -137,16 +177,16 @@ class AssetsTest extends TestCase
         $asset = $this->makeAsset($tenant, $category);
 
         $http->deleteJson("/api/v1/assets/{$asset->id}")
-             ->assertOk()
-             ->assertJsonPath('message', 'Asset retired.');
+            ->assertOk()
+            ->assertJsonPath('message', 'Asset retired.');
 
         $this->assertDatabaseHas('assets', [
-            'id'     => $asset->id,
+            'id' => $asset->id,
             'status' => 'retired',
         ]);
 
         $this->assertDatabaseHas('audit_logs', [
-            'event'        => 'assets.retired',
+            'event' => 'assets.retired',
             'auditable_id' => $asset->id,
         ]);
     }
@@ -161,7 +201,7 @@ class AssetsTest extends TestCase
         $http->deleteJson("/api/v1/assets/{$asset->id}")->assertForbidden();
 
         $this->assertDatabaseHas('assets', [
-            'id'     => $asset->id,
+            'id' => $asset->id,
             'status' => 'active',
         ]);
     }
@@ -212,7 +252,7 @@ class AssetsTest extends TestCase
         $response->assertCreated();
         $this->assertDatabaseHas('asset_requests', [
             'requester_id' => $user->id,
-            'status'       => 'pending',
+            'status' => 'pending',
         ]);
     }
 
@@ -222,10 +262,10 @@ class AssetsTest extends TestCase
         [$http, $user] = $this->asStaff($tenant);
 
         $req = AssetRequest::create([
-            'tenant_id'     => $tenant->id,
-            'requester_id'  => $user->id,
+            'tenant_id' => $tenant->id,
+            'requester_id' => $user->id,
             'justification' => 'Need equipment',
-            'status'        => 'pending',
+            'status' => 'pending',
         ]);
 
         $http->getJson("/api/v1/asset-requests/{$req->id}")->assertOk();
@@ -238,10 +278,10 @@ class AssetsTest extends TestCase
         $other = $this->makeUser('staff', $tenant);
 
         $req = AssetRequest::create([
-            'tenant_id'     => $tenant->id,
-            'requester_id'  => $other->id,
+            'tenant_id' => $tenant->id,
+            'requester_id' => $other->id,
             'justification' => 'Not yours',
-            'status'        => 'pending',
+            'status' => 'pending',
         ]);
 
         $http->getJson("/api/v1/asset-requests/{$req->id}")->assertForbidden();
@@ -253,10 +293,10 @@ class AssetsTest extends TestCase
         [$http, $user] = $this->asStaff($tenant);
 
         $req = AssetRequest::create([
-            'tenant_id'     => $tenant->id,
-            'requester_id'  => $user->id,
+            'tenant_id' => $tenant->id,
+            'requester_id' => $user->id,
             'justification' => 'Original reason',
-            'status'        => 'pending',
+            'status' => 'pending',
         ]);
 
         $http->putJson("/api/v1/asset-requests/{$req->id}", [
@@ -264,7 +304,7 @@ class AssetsTest extends TestCase
         ])->assertOk();
 
         $this->assertDatabaseHas('asset_requests', [
-            'id'            => $req->id,
+            'id' => $req->id,
             'justification' => 'Updated reason',
         ]);
     }
@@ -275,10 +315,10 @@ class AssetsTest extends TestCase
         [$http, $user] = $this->asStaff($tenant);
 
         $req = AssetRequest::create([
-            'tenant_id'     => $tenant->id,
-            'requester_id'  => $user->id,
+            'tenant_id' => $tenant->id,
+            'requester_id' => $user->id,
             'justification' => 'Done',
-            'status'        => 'approved',
+            'status' => 'approved',
         ]);
 
         $http->putJson("/api/v1/asset-requests/{$req->id}", [
@@ -292,10 +332,10 @@ class AssetsTest extends TestCase
         [$http, $user] = $this->asStaff($tenant);
 
         $req = AssetRequest::create([
-            'tenant_id'     => $tenant->id,
-            'requester_id'  => $user->id,
+            'tenant_id' => $tenant->id,
+            'requester_id' => $user->id,
             'justification' => 'Cancel me',
-            'status'        => 'pending',
+            'status' => 'pending',
         ]);
 
         $http->deleteJson("/api/v1/asset-requests/{$req->id}")->assertOk();
@@ -309,10 +349,10 @@ class AssetsTest extends TestCase
         $staff = $this->makeUser('staff', $tenant);
 
         $req = AssetRequest::create([
-            'tenant_id'     => $tenant->id,
-            'requester_id'  => $staff->id,
+            'tenant_id' => $tenant->id,
+            'requester_id' => $staff->id,
             'justification' => 'Needs approval',
-            'status'        => 'pending',
+            'status' => 'pending',
         ]);
 
         $http->putJson("/api/v1/asset-requests/{$req->id}", [
@@ -320,7 +360,7 @@ class AssetsTest extends TestCase
         ])->assertOk();
 
         $this->assertDatabaseHas('asset_requests', [
-            'id'     => $req->id,
+            'id' => $req->id,
             'status' => 'approved',
         ]);
     }

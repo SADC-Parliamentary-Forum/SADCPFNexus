@@ -1,12 +1,13 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { adminApi, assetImportApi, assetMetaApi, tenantUsersApi, type TenantUserOption } from "@/lib/api";
+import { adminApi, assetImportApi, assetMetaApi, type TenantUserOption } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { FormSection } from "@/components/ui/FormSection";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { ClearAssetRegisterButton } from "@/components/assets/ClearAssetRegisterButton";
+import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -106,8 +107,7 @@ export default function AssetImportPage() {
   const [mapLocationId, setMapLocationId] = useState<number | "">("");
   const [custodianType, setCustodianType] = useState("shared");
   const [custodianDepartmentId, setCustodianDepartmentId] = useState<number | "">("");
-  const [custodianUserId, setCustodianUserId] = useState<number | "">("");
-  const [users, setUsers] = useState<TenantUserOption[]>([]);
+  const [custodianUser, setCustodianUser] = useState<TenantUserOption | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [raw, setRaw] = useState<unknown>(null);
@@ -166,7 +166,6 @@ export default function AssetImportPage() {
     adminApi.listDepartments().then((r) => {
       setDepartments((r.data as { data?: Department[] }).data ?? []);
     }).catch(() => setDepartments([]));
-    tenantUsersApi.list().then((r) => setUsers(r.data.data ?? [])).catch(() => setUsers([]));
   }, []);
 
   useEffect(() => {
@@ -354,7 +353,7 @@ export default function AssetImportPage() {
       await assetImportApi.mapCustodian(batchId, {
         legacy_key: legacyKey,
         custodian_type: custodianType,
-        user_id: custodianType === "user" && custodianUserId !== "" ? custodianUserId : null,
+        user_id: custodianType === "user" && custodianUser ? custodianUser.id : null,
         department_id: custodianType === "department" && custodianDepartmentId !== "" ? custodianDepartmentId : null,
         location_id: custodianType === "store" && mapLocationId !== "" ? mapLocationId : null,
       });
@@ -599,15 +598,18 @@ export default function AssetImportPage() {
               </label>
             )}
             {custodianType === "user" && (
-              <label htmlFor="assets-import-setcustodianuserid-e-target-value-number-e-targe" className="text-sm">{t("assets.import.selectUser")}
-                <select id="assets-import-setcustodianuserid-e-target-value-number-e-targe" className="input mt-1" value={custodianUserId} onChange={(e) => setCustodianUserId(e.target.value === "" ? "" : Number(e.target.value))}>
-                  <option value="">{t("assets.notAssigned")}</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
-              </label>
+              <div className="sm:col-span-2">
+                <AssetAssigneePicker
+                  id="assets-import-custodian-user"
+                  label={t("assets.import.selectUser")}
+                  value={custodianUser}
+                  onSelect={setCustodianUser}
+                  disabled={busy}
+                />
+              </div>
             )}
             <div className="self-end">
-              <Button type="button" onClick={confirmCustodianMap} disabled={busy || (custodianType === "user" && custodianUserId === "")}>{t("assets.import.mapCustodian")}</Button>
+              <Button type="button" onClick={confirmCustodianMap} disabled={busy || (custodianType === "user" && !custodianUser)}>{t("assets.import.mapCustodian")}</Button>
             </div>
           </div>
         </FormSection>
