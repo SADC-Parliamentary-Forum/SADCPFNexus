@@ -5180,6 +5180,8 @@ export const contractsApi = {
     api.patch<{ data: CurrencyRecord; message: string }>(`/contracts/currencies/${id}`, data),
   resendSignatureEmail: (id: number) =>
     api.post<{ message: string; sent: boolean }>(`/contracts/${id}/resend-signature-email`),
+  extract: (text: string) =>
+    api.post<{ data: { unverified: boolean; disclaimer: string; suggestions: Record<string, { value: string | number; confidence: string }>; amounts_found: { currency: string; amount: number }[]; dates_found: string[] } }>("/contracts/extract", { text }),
   prefill: (origin_type: "procurement" | "pif", origin_id: number) =>
     api.post<{ data: Record<string, unknown> }>("/contracts/prefill", { origin_type, origin_id }),
   readiness: (id: number) =>

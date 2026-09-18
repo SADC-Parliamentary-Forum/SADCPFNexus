@@ -169,6 +169,31 @@ class ContractController extends Controller
     }
 
     /**
+     * AI-assisted extraction of legacy contract metadata from pasted text or an
+     * uploaded plain-text document. Returns UNVERIFIED suggestions for human
+     * review before import (PRD §103/§129); nothing is persisted here.
+     */
+    public function extract(Request $request): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.create'], ['Procurement Officer']);
+
+        $data = $request->validate([
+            'text' => ['nullable', 'string', 'max:200000'],
+            'file' => ['nullable', 'file', 'mimetypes:text/plain', 'max:5120'],
+        ]);
+
+        $text = $data['text'] ?? '';
+        if ($text === '' && $request->hasFile('file')) {
+            $text = (string) file_get_contents($request->file('file')->getRealPath());
+        }
+        if (trim($text) === '') {
+            throw ValidationException::withMessages(['text' => ['Paste the contract text or upload a plain-text document to extract from.']]);
+        }
+
+        return response()->json(['data' => app(\App\Modules\Contracts\Services\ContractExtractionService::class)->extract($text)]);
+    }
+
+    /**
      * Import a historical contract. It is explicitly flagged legacy/imported and
      * does NOT pass through any Nexus workflow (PRD §10E / §128).
      */

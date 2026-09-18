@@ -1285,6 +1285,7 @@ Route::prefix('v1')->group(function () {
             Route::get('currencies', [\App\Http\Controllers\Api\V1\Contracts\CurrencyController::class, 'index']);
             Route::post('currencies', [\App\Http\Controllers\Api\V1\Contracts\CurrencyController::class, 'store']);
             Route::patch('currencies/{currency}', [\App\Http\Controllers\Api\V1\Contracts\CurrencyController::class, 'update']);
+            Route::post('extract', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'extract']);
             Route::post('import', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'importLegacy']);
             Route::post('prefill', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'prefill']);
 

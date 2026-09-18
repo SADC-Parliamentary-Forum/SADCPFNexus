@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi, vendorsApi, procurementApi, type Contract, type Vendor } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   draft:      { label: "Draft",      cls: "badge-muted",   icon: "edit_note"    },
@@ -27,6 +28,7 @@ function unwrapList(payload: unknown): Contract[] {
 function ContractRegisterInner() {
   const router       = useRouter();
   const queryClient  = useQueryClient();
+  const toast        = useToast();
   const searchParams = useSearchParams();
   const requestParam = searchParams.get("request");
 
@@ -34,6 +36,13 @@ function ContractRegisterInner() {
   const [search, setSearch]             = useState("");
   const [showModal, setShowModal]       = useState(false);
   const [submitError, setSubmitError]   = useState<string | null>(null);
+
+  // AI-assisted legacy import
+  const [legacyOpen, setLegacyOpen] = useState(false);
+  const [legacyText, setLegacyText] = useState("");
+  const [extracting, setExtracting] = useState(false);
+  const [legacyDisclaimer, setLegacyDisclaimer] = useState<string | null>(null);
+  const [legacy, setLegacy] = useState({ title: "", counterparty_name: "", value: "", currency: DEFAULT_CURRENCY, start_date: "", end_date: "", signed_at: "", legacy_status: "active" });
 
   const [title, setTitle]               = useState("");
   const [selectedVendorId, setSelectedVendorId] = useState<number | "">("");
@@ -120,6 +129,10 @@ function ContractRegisterInner() {
           <button onClick={openModal} className="btn-primary inline-flex items-center gap-1.5 text-sm">
             <span className="material-symbols-outlined text-[16px]">add</span>
             New Contract
+          </button>
+          <button onClick={() => { setLegacyOpen(true); setLegacyText(""); setLegacyDisclaimer(null); }} className="btn-secondary inline-flex items-center gap-1.5 text-sm">
+            <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
+            Import legacy
           </button>
           <Link href="/contracts" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
             <span className="material-symbols-outlined text-[16px]">arrow_back</span>
@@ -210,6 +223,72 @@ function ContractRegisterInner() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {legacyOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={() => setLegacyOpen(false)}>
+          <div className="card w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50">
+                <span className="material-symbols-outlined text-[20px] text-purple-600">auto_awesome</span>
+              </div>
+              <h2 className="text-base font-bold text-neutral-900">Import legacy contract (AI-assisted)</h2>
+            </div>
+            <p className="text-xs text-neutral-500">Paste the text of the existing signed contract. Nexus will propose values for you to review and confirm — nothing is saved until you import.</p>
+            <textarea className="form-input h-32 resize-none font-mono text-xs" placeholder="Paste the legacy contract text here…" value={legacyText} onChange={(e) => setLegacyText(e.target.value)} />
+            <div>
+              <button className="btn-secondary text-sm disabled:opacity-60" disabled={!legacyText.trim() || extracting} onClick={() => {
+                setExtracting(true);
+                contractsApi.extract(legacyText.trim()).then((r) => {
+                  const s = r.data.data.suggestions;
+                  setLegacyDisclaimer(r.data.data.disclaimer);
+                  setLegacy((prev) => ({
+                    ...prev,
+                    counterparty_name: (s.counterparty_name?.value as string) ?? prev.counterparty_name,
+                    value: s.value ? String(s.value.value) : prev.value,
+                    currency: (s.currency?.value as string) ?? prev.currency,
+                    start_date: (s.start_date?.value as string) ?? prev.start_date,
+                    end_date: (s.end_date?.value as string) ?? prev.end_date,
+                    signed_at: (s.signed_at?.value as string) ?? prev.signed_at,
+                    title: prev.title || ((s.type_hint?.value as string) ? `${s.type_hint!.value} — ${s.counterparty_name?.value ?? ""}`.trim() : prev.title),
+                  }));
+                }).catch(() => toast.error("Extraction failed")).finally(() => setExtracting(false));
+              }}>{extracting ? "Extracting…" : "Extract with AI"}</button>
+            </div>
+            {legacyDisclaimer && (
+              <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">⚠ {legacyDisclaimer}</div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1 col-span-2"><label className="text-xs font-semibold text-neutral-600">Title <span className="text-red-500">*</span></label><input className="form-input" value={legacy.title} onChange={(e) => setLegacy({ ...legacy, title: e.target.value })} /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Counterparty name</label><input className="form-input" value={legacy.counterparty_name} onChange={(e) => setLegacy({ ...legacy, counterparty_name: e.target.value })} /></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Value</label><input type="number" className="form-input" value={legacy.value} onChange={(e) => setLegacy({ ...legacy, value: e.target.value })} /></div>
+                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Currency</label><input className="form-input" value={legacy.currency} maxLength={3} onChange={(e) => setLegacy({ ...legacy, currency: e.target.value.toUpperCase() })} /></div>
+              </div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Start date</label><input type="date" className="form-input" value={legacy.start_date} onChange={(e) => setLegacy({ ...legacy, start_date: e.target.value })} /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">End date</label><input type="date" className="form-input" value={legacy.end_date} onChange={(e) => setLegacy({ ...legacy, end_date: e.target.value })} /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Signed date</label><input type="date" className="form-input" value={legacy.signed_at} onChange={(e) => setLegacy({ ...legacy, signed_at: e.target.value })} /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Status</label>
+                <select className="form-input" value={legacy.legacy_status} onChange={(e) => setLegacy({ ...legacy, legacy_status: e.target.value })}>
+                  <option value="active">Active</option><option value="completed">Completed</option><option value="terminated">Terminated</option><option value="expired">Expired</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button className="btn-secondary flex-1" onClick={() => setLegacyOpen(false)}>Cancel</button>
+              <button className="btn-primary flex-1 disabled:opacity-60"
+                disabled={!legacy.title.trim() || !legacy.counterparty_name.trim() || !legacy.value || !legacy.start_date || !legacy.end_date}
+                onClick={() => {
+                  contractsApi.importLegacy({
+                    title: legacy.title.trim(), counterparty_name: legacy.counterparty_name.trim(), value: Number(legacy.value),
+                    currency: legacy.currency, start_date: legacy.start_date, end_date: legacy.end_date,
+                    signed_at: legacy.signed_at || undefined, legacy_status: legacy.legacy_status,
+                  }).then((res) => { queryClient.invalidateQueries({ queryKey: ["contracts"] }); setLegacyOpen(false); router.push(`/contracts/${res.data.data.id}`); })
+                    .catch((e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Import failed"));
+                }}>Import contract</button>
+            </div>
+          </div>
         </div>
       )}
 
