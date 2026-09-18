@@ -217,6 +217,16 @@ class Contract extends Model
         return $this->hasMany(ContractComplianceDocument::class);
     }
 
+    public function suspensions(): HasMany
+    {
+        return $this->hasMany(ContractSuspension::class)->orderByDesc('id');
+    }
+
+    public function terminations(): HasMany
+    {
+        return $this->hasMany(ContractTermination::class)->orderByDesc('id');
+    }
+
     public function approvalRequest(): MorphOne
     {
         return $this->morphOne(ApprovalRequest::class, 'approvable');

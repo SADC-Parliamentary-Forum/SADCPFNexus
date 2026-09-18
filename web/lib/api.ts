@@ -5133,8 +5133,12 @@ export const contractsApi = {
     api.post<{ data: Contract; message: string }>("/contracts", data),
   activate: (id: number) =>
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/activate`),
-  terminate: (id: number, reason: string) =>
-    api.post<{ data: Contract; message: string }>(`/contracts/${id}/terminate`, { reason }),
+  suspend: (id: number, reason: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/suspend`, { reason }),
+  resume: (id: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/resume`),
+  terminate: (id: number, type: string, reason: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/terminate`, { type, reason }),
   destroy: (id: number) =>
     api.delete<{ message: string }>(`/contracts/${id}`),
   submit: (id: number) =>

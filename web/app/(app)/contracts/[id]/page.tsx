@@ -35,6 +35,9 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const [amendType, setAmendType] = useState("value");
   const [amendReason, setAmendReason] = useState("");
   const [amendDelta, setAmendDelta] = useState("");
+  const [lifecycleModal, setLifecycleModal] = useState<null | "suspend" | "terminate">(null);
+  const [lifecycleReason, setLifecycleReason] = useState("");
+  const [terminationType, setTerminationType] = useState("convenience");
 
   const { data: contract, isLoading, isError } = useQuery({
     queryKey: ["contract", contractId],
@@ -83,6 +86,8 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const canAmend = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.create_amendment"]));
   const canApproveAmendment = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.approve_amendment"]));
   const canClose = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.close"]));
+  const canSuspend = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.suspend"]));
+  const canTerminate = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.terminate"]));
   const canSend = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.send"]));
   const canSign = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.sign_internal"]));
   const inReview = ["IN_REVIEW", "APPROVAL_PENDING"].includes(lifecycle);
@@ -92,6 +97,17 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const sadcSignatory = (contract.signatories ?? []).find((s) => s.party === "sadcpf");
   const sadcSigned = sadcSignatory?.status === "signed";
   const isExecuted = ["FULLY_EXECUTED", "ACTIVE", "COMPLETED"].includes(lifecycle);
+  const isActiveLifecycle = lifecycle === "ACTIVE";
+  const isSuspended = lifecycle === "SUSPENDED";
+
+  const runLifecycle = () => {
+    if (!lifecycleModal || !lifecycleReason.trim()) return;
+    const action = lifecycleModal === "suspend"
+      ? () => contractsApi.suspend(contractId, lifecycleReason.trim())
+      : () => contractsApi.terminate(contractId, terminationType, lifecycleReason.trim());
+    act(action, lifecycleModal === "suspend" ? "Contract suspended" : "Contract terminated");
+    setLifecycleModal(null); setLifecycleReason("");
+  };
 
   const createAmendment = () => {
     contractsApi.createAmendment(contractId, { type: amendType, reason: amendReason.trim(), value_delta: amendDelta ? Number(amendDelta) : undefined })
@@ -146,6 +162,15 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
           )}
           {isExecuted && canClose && (
             <button className="btn-secondary text-sm" onClick={() => act(() => contractsApi.close(contractId), "Contract closed")}>Close out</button>
+          )}
+          {isActiveLifecycle && canSuspend && (
+            <button className="btn-secondary text-sm" onClick={() => { setLifecycleModal("suspend"); setLifecycleReason(""); }}>Suspend</button>
+          )}
+          {isSuspended && canSuspend && (
+            <button className="btn-primary text-sm" onClick={() => act(() => contractsApi.resume(contractId), "Contract resumed")}>Resume</button>
+          )}
+          {(isExecuted || isSuspended) && canTerminate && (
+            <button className="btn-secondary text-sm text-red-600" onClick={() => { setLifecycleModal("terminate"); setLifecycleReason(""); }}>Terminate</button>
           )}
         </div>
       </div>
@@ -375,6 +400,34 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {lifecycleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setLifecycleModal(null)}>
+          <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-neutral-900">{lifecycleModal === "suspend" ? "Suspend contract" : "Terminate contract"}</h3>
+            {lifecycleModal === "terminate" && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-neutral-600">Termination type</label>
+                <select className="form-input" value={terminationType} onChange={(e) => setTerminationType(e.target.value)}>
+                  {["convenience", "cause", "mutual", "force_majeure", "other"].map((t) => (
+                    <option key={t} value={t} className="capitalize">{t.replace(/_/g, " ")}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-neutral-600">Reason <span className="text-red-500">*</span></label>
+              <textarea className="form-input h-24 resize-none" value={lifecycleReason} onChange={(e) => setLifecycleReason(e.target.value)} />
+            </div>
+            <div className="flex gap-3">
+              <button className="btn-secondary flex-1" onClick={() => setLifecycleModal(null)}>Cancel</button>
+              <button className="btn-primary flex-1 disabled:opacity-60" disabled={!lifecycleReason.trim()} onClick={runLifecycle}>
+                {lifecycleModal === "suspend" ? "Suspend" : "Terminate"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

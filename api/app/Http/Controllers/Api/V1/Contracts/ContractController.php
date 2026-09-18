@@ -14,6 +14,7 @@ use App\Modules\Contracts\Services\ContractDocumentService;
 use App\Modules\Contracts\Services\ContractExceptionService;
 use App\Modules\Contracts\Services\ContractFinanceService;
 use App\Modules\Contracts\Services\ContractHealthService;
+use App\Modules\Contracts\Services\ContractLifecycleService;
 use App\Modules\Contracts\Services\ContractService;
 use App\Modules\Contracts\Services\ContractSignatureService;
 use App\Modules\Contracts\Services\ContractWorkflowService;
@@ -38,6 +39,7 @@ class ContractController extends Controller
         private readonly ContractExceptionService $exceptionService,
         private readonly ContractFinanceService $finance,
         private readonly ContractHealthService $health,
+        private readonly ContractLifecycleService $lifecycle,
     ) {}
 
     private function ensurePermission(Request $request, array $permissions, array $roles = []): void
@@ -715,27 +717,70 @@ class ContractController extends Controller
         return response()->json(['message' => 'Contract activated.', 'data' => $contract->fresh(['vendor'])]);
     }
 
+    public function suspend(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.suspend'], ['Secretary General']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:2000'],
+            'effective_date' => ['nullable', 'date'],
+            'affected_obligations' => ['nullable', 'string'],
+            'payment_impact' => ['nullable', 'string'],
+            'restart_conditions' => ['nullable', 'string'],
+            'resumption_date' => ['nullable', 'date'],
+        ]);
+
+        $suspension = $this->lifecycle->suspend($contract, $request->user(), $data);
+
+        AuditLog::record('contract.suspended', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['contract_status' => 'SUSPENDED'], 'tags' => ['contract', 'lifecycle'],
+        ]);
+
+        return response()->json(['message' => 'Contract suspended.', 'data' => $contract->fresh(), 'suspension' => $suspension]);
+    }
+
+    public function resume(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.suspend'], ['Secretary General']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $contract = $this->lifecycle->resume($contract, $request->user());
+
+        AuditLog::record('contract.resumed', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['contract_status' => 'ACTIVE'], 'tags' => ['contract', 'lifecycle'],
+        ]);
+
+        return response()->json(['message' => 'Contract resumed.', 'data' => $contract]);
+    }
+
     public function terminate(Request $request, Contract $contract): JsonResponse
     {
         $this->ensurePermission($request, ['contract.terminate'], ['Secretary General']);
-        $this->contracts->find($contract->id, $request->user());
+        $contract = $this->contracts->find($contract->id, $request->user());
 
-        $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
-
-        $contract->update([
-            'status' => 'terminated',
-            'terminated_at' => now(),
-            'termination_reason' => $data['reason'],
+        $data = $request->validate([
+            'type' => ['required', 'string', 'in:convenience,cause,mutual,force_majeure,other'],
+            'reason' => ['required', 'string', 'max:2000'],
+            'notice_reference' => ['nullable', 'string', 'max:255'],
+            'effective_date' => ['nullable', 'date'],
+            'outstanding_obligations' => ['nullable', 'string'],
+            'final_amount' => ['nullable', 'numeric', 'min:0'],
+            'dispute_status' => ['nullable', 'string', 'max:40'],
         ]);
+
+        $termination = $this->lifecycle->terminate($contract, $request->user(), $data);
 
         AuditLog::record('contract.terminated', [
             'auditable_type' => Contract::class,
             'auditable_id' => $contract->id,
-            'new_values' => ['status' => 'terminated'],
-            'tags' => ['contract'],
+            'new_values' => ['status' => 'terminated', 'type' => $data['type']],
+            'tags' => ['contract', 'lifecycle'],
         ]);
 
-        return response()->json(['message' => 'Contract terminated.', 'data' => $contract->fresh()]);
+        return response()->json(['message' => 'Contract terminated.', 'data' => $contract->fresh(), 'termination' => $termination]);
     }
 
     public function destroy(Request $request, Contract $contract): JsonResponse
