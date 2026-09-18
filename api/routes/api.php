@@ -2525,6 +2525,7 @@ Route::prefix('v1')->group(function () {
         // Admin Workflows
         Route::prefix('admin/workflows')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'index']);
+            Route::get('module-catalogue', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'moduleCatalogue']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'store']);
             Route::put('{workflow}', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'update']);
             Route::delete('{workflow}', [\App\Http\Controllers\Api\V1\Admin\WorkflowAdminController::class, 'destroy']);

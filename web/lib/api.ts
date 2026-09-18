@@ -692,6 +692,7 @@ export const adminApi = {
     api.post(`/admin/users/role-sync-requests/${id}/approve`),
   // Workflows
   listWorkflows: () => api.get<{ data: ApprovalWorkflow[] }>("/admin/workflows"),
+  workflowModuleCatalogue: () => api.get<{ data: { value: string; label: string }[] }>("/admin/workflows/module-catalogue"),
   createWorkflow: (data: any) => api.post("/admin/workflows", data),
   updateWorkflow: (id: number, data: any) => api.put(`/admin/workflows/${id}`, data),
   deleteWorkflow: (id: number) => api.delete(`/admin/workflows/${id}`),

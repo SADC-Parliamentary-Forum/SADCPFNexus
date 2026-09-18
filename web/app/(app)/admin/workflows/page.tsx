@@ -6,7 +6,8 @@ import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
-const MODULE_OPTIONS = [
+// Fallback list used only if the backend module catalogue cannot be loaded.
+const FALLBACK_MODULE_OPTIONS = [
   { value: "leave",          label: "Leave" },
   { value: "travel",         label: "Travel & Missions" },
   { value: "imprest",        label: "Imprest Advances" },
@@ -26,6 +27,7 @@ export default function AdminWorkflowPage() {
   const [programmes, setProgrammes] = useState<Programme[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Partial<ApprovalWorkflow> | null>(null);
+  const [moduleOptions, setModuleOptions] = useState<{ value: string; label: string }[]>(FALLBACK_MODULE_OPTIONS);
   const { toast } = useToast();
   const { confirm } = useConfirm();
 
@@ -43,6 +45,15 @@ export default function AdminWorkflowPage() {
       setDepartments((deptRes.data as any).data || []);
       setProgrammes((progRes.data as any).data || []);
     }).finally(() => setLoading(false));
+
+    // Source the full module catalogue from the backend (all workflow-able
+    // modules unioned with any already configured), so every module is editable.
+    adminApi.workflowModuleCatalogue()
+      .then((res) => {
+        const opts = res.data.data ?? [];
+        if (opts.length > 0) setModuleOptions(opts);
+      })
+      .catch(() => { /* keep fallback */ });
   }, []);
 
   const handleAddStep = () => {
@@ -165,7 +176,7 @@ export default function AdminWorkflowPage() {
                     {wf.is_active ? "Active" : "Inactive"}
                   </span>
                 </div>
-                <p className="text-xs text-neutral-500 mt-1 capitalize">{MODULE_OPTIONS.find(m => m.value === wf.module_type)?.label ?? wf.module_type}</p>
+                <p className="text-xs text-neutral-500 mt-1 capitalize">{moduleOptions.find(m => m.value === wf.module_type)?.label ?? wf.module_type}</p>
                 {tLabel && (
                   <span className="inline-block mt-1 text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-100 rounded px-1.5 py-0.5">
                     {tLabel}
@@ -213,7 +224,7 @@ export default function AdminWorkflowPage() {
                     value={editing.module_type}
                     onChange={e => setEditing({ ...editing, module_type: e.target.value })}
                   >
-                    {MODULE_OPTIONS.map(m => (
+                    {moduleOptions.map(m => (
                       <option key={m.value} value={m.value}>{m.label}</option>
                     ))}
                   </select>
