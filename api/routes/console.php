@@ -63,6 +63,9 @@ Schedule::command('decisions:promote-weekly-assignments')->mondays()->at('07:35'
 // Correspondence deadline overdue notifications + HOD escalation after 3 days.
 Schedule::command('correspondence:escalate-deadlines')->dailyAt('08:05');
 
+// Contract signature/expiry/deliverable reminders + overdue escalation (PRD §64-66).
+Schedule::command('contracts:send-reminders')->dailyAt('08:35');
+
 // Notify (never reassign/auto-approve) approvers of overdue workflow steps,
 // escalating to their supervisor after a sustained breach.
 Schedule::command('workflow:escalate-overdue')->hourly()->withoutOverlapping();
