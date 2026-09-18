@@ -873,21 +873,46 @@ class AssetImportService
                 $email = strtolower($candidate);
             }
         }
-        if ($email === '') {
-            return ['user_id' => null, 'unmatched' => false];
-        }
-        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ($email !== '') {
+            if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return ['user_id' => null, 'unmatched' => true];
+            }
+
+            $match = User::query()
+                ->where('tenant_id', $tenantId)
+                ->where('is_active', true)
+                ->whereRaw('LOWER(email) = ?', [$email])
+                ->first();
+
+            if ($match) {
+                return ['user_id' => (int) $match->id, 'unmatched' => false];
+            }
+
             return ['user_id' => null, 'unmatched' => true];
         }
 
-        $match = User::query()
+        $candidate = trim(preg_replace('/\s+/', ' ', (string) ($merged['custodian_candidate'] ?? '')) ?? '');
+        if ($candidate === '' || str_contains($candidate, '@')) {
+            return ['user_id' => null, 'unmatched' => false];
+        }
+
+        $needle = mb_strtolower($candidate);
+        $matches = User::query()
             ->where('tenant_id', $tenantId)
             ->where('is_active', true)
-            ->whereRaw('LOWER(email) = ?', [$email])
-            ->first();
+            ->get()
+            ->filter(function (User $user) use ($needle): bool {
+                $name = mb_strtolower(trim(preg_replace('/\s+/', ' ', (string) $user->name) ?? ''));
 
-        if ($match) {
-            return ['user_id' => (int) $match->id, 'unmatched' => false];
+                return $name !== '' && $name === $needle;
+            });
+
+        if ($matches->count() === 1) {
+            return ['user_id' => (int) $matches->first()->id, 'unmatched' => false];
+        }
+
+        if ($matches->count() > 1) {
+            return ['user_id' => null, 'unmatched' => true];
         }
 
         return ['user_id' => null, 'unmatched' => true];

@@ -29,6 +29,17 @@ final class NexusAssetTemplateParser
         'legacy_description',
     ];
 
+    private const MONEY_HEADERS = [
+        'original_cost',
+        'current_book_value',
+        'accumulated_depreciation',
+        'opening_depreciation',
+        'source_depreciation',
+        'opening_cost',
+        'closing_cost',
+        'closing_book_value',
+    ];
+
     /**
      * @return list<array<string, mixed>>
      */
@@ -75,6 +86,11 @@ final class NexusAssetTemplateParser
             }
             $tag = strtoupper(trim((string) ($assoc['asset_tag'] ?? '')));
             $assoc['asset_tag'] = $tag !== '' ? $tag : null;
+            foreach (self::MONEY_HEADERS as $moneyKey) {
+                if (array_key_exists($moneyKey, $assoc)) {
+                    $assoc[$moneyKey] = self::parseMoney($assoc[$moneyKey]);
+                }
+            }
             $assoc['legacy_description'] = $assoc['legacy_description'] ?? ($assoc['asset_name'] ?? null);
             $assoc['source_filename'] = $filename;
             $assoc['source_sheet'] = $sheet;
@@ -85,5 +101,26 @@ final class NexusAssetTemplateParser
         }
 
         return $records;
+    }
+
+    public static function parseMoney(mixed $value): ?float
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (is_int($value) || is_float($value)) {
+            return round((float) $value, 2);
+        }
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return null;
+        }
+        $normalized = str_replace(["\u{00A0}", ' '], '', $raw);
+        $normalized = str_replace(',', '', $normalized);
+        if (! is_numeric($normalized)) {
+            return null;
+        }
+
+        return round((float) $normalized, 2);
     }
 }

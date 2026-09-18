@@ -3,7 +3,6 @@
 namespace Tests\Feature\Assets;
 
 use App\Models\Asset;
-use App\Models\AssetAssignmentHistory;
 use App\Models\AssetImportBatch;
 use App\Models\AssetImportLineage;
 use App\Models\AssetImportRaw;
@@ -57,11 +56,13 @@ class AssetRegisterImportTest extends TestCase
         $rows = (new \App\Modules\Assets\Import\NexusAssetTemplateParser)->parseFile($path, 'sadcpf-asset-import-template.xlsx');
         unlink($path);
 
-        $this->assertSame([], $rows);
+        $this->assertGreaterThanOrEqual(300, count($rows));
+        $this->assertSame('AS-0001', $rows[0]['asset_tag']);
         $this->assertContains('asset_tag', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('asset_name', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('original_cost', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('assigned_to_email', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('custodian_candidate', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
     }
 
     public function test_template_assigned_to_email_optionally_resolves_tenant_user(): void
@@ -114,6 +115,37 @@ class AssetRegisterImportTest extends TestCase
 
         $unassigned = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5103')->first();
         $this->assertNull($unassigned?->assigned_to);
+    }
+
+    public function test_template_custodian_candidate_name_resolves_tenant_user(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $staff->forceFill(['name' => 'Unaro Mungendje'])->save();
+
+        $path = sys_get_temp_dir().'/template-custodian-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'legacy_category', 'legacy_location', 'custodian_candidate', 'original_cost'],
+            ['CE-0001', 'HP laser Jet Printer P2055dn', 'Computer Equipment', 'USM-Office#16A', 'Unaro Mungendje', '2,472.00'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        $batch = AssetImportBatch::find($res->json('data.batch.id'));
+        $row = $batch->stagingRows()->where('asset_tag', 'CE-0001')->first();
+        $this->assertNotNull($row);
+        $this->assertSame($staff->id, (int) $row->custodian_user_id);
+        $this->assertSame('user', $row->custodian_type);
+        $this->assertSame('2472.00', (string) $row->original_cost);
+        $this->assertSame('it', $row->category_code);
     }
 
     public function test_map_custodian_to_user_assigns_on_commit(): void
