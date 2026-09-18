@@ -58,7 +58,18 @@ export const CLASSIFICATION_BADGE: Record<ClassificationLevel, string> = {
 };
 
 // ─── Asset categories ─────────────────────────────────────────────────────────
-export const ASSET_CATEGORIES = ["IT Equipment", "Furniture & Fixtures", "Vehicles", "Other Assets"] as const;
+export const ASSET_CATEGORIES = [
+  "Office Furniture",
+  "IT Equipment",
+  "Office Equipment",
+  "Kitchen Equipment",
+  "Vehicles",
+  "Security Equipment",
+  "Specialized Equipment",
+  "Audio Visual Equipment",
+  "Other (Sports Equipment)",
+  "Other (Conference Equipment)",
+] as const;
 export type AssetCategory = typeof ASSET_CATEGORIES[number];
 
 export const ASSET_CONDITIONS = ["New", "Good", "Fair", "Poor"] as const;
