@@ -1293,6 +1293,15 @@ Route::prefix('v1')->group(function () {
             // Reports & registers
             Route::get('reports/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'exceptions']);
             Route::get('reports/analytics', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'analytics']);
+            Route::get('reports/risk', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'risk']);
+
+            // Authority Matrix + delegated authority (PRD §41-42)
+            Route::get('authority/rules', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'index']);
+            Route::post('authority/rules', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'store']);
+            Route::patch('authority/rules/{rule}', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'update']);
+            Route::get('authority/delegations', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'delegations']);
+            Route::post('authority/delegations', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'storeDelegation']);
+            Route::delete('authority/delegations/{delegation}', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'revokeDelegation']);
             Route::get('reports', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'index']);
 
             // Template library (versioned)
@@ -1322,6 +1331,7 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/reject', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'reject']);
             Route::post('{contract}/withdraw', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'withdraw']);
             Route::get('{contract}/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'exceptions']);
+            Route::get('{contract}/authority', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'forContract']);
 
             // Execution & signature
             Route::post('{contract}/send-for-signature', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'sendForSignature']);

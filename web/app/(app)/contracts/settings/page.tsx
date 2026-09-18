@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
-import { contractsApi, type ContractType, type CurrencyRecord } from "@/lib/api";
+import { contractsApi, type ContractType, type CurrencyRecord, type ContractAuthorityRule } from "@/lib/api";
 
 export default function ContractSettingsPage() {
   const qc = useQueryClient();
@@ -18,6 +18,10 @@ export default function ContractSettingsPage() {
     queryKey: ["contract-currencies-admin"],
     queryFn: () => contractsApi.currencies(true).then((r) => r.data.data),
   });
+  const { data: authorityRules = [] } = useQuery({
+    queryKey: ["contract-authority-rules"],
+    queryFn: () => contractsApi.authorityRules().then((r) => r.data.data).catch(() => []),
+  });
 
   // New contract type form
   const [typeName, setTypeName] = useState("");
@@ -29,8 +33,18 @@ export default function ContractSettingsPage() {
   const [curName, setCurName] = useState("");
   const [curSymbol, setCurSymbol] = useState("");
 
+  // New authority rule form
+  const [ruleName, setRuleName] = useState("");
+  const [ruleAction, setRuleAction] = useState<"approve" | "sign">("approve");
+  const [ruleFloor, setRuleFloor] = useState("");
+  const [ruleCeiling, setRuleCeiling] = useState("");
+  const [ruleRole, setRuleRole] = useState("");
+  const [ruleAltRole, setRuleAltRole] = useState("");
+  const [rulePolicy, setRulePolicy] = useState("");
+
   const refreshTypes = () => qc.invalidateQueries({ queryKey: ["contract-types-admin"] });
   const refreshCurrencies = () => qc.invalidateQueries({ queryKey: ["contract-currencies-admin"] });
+  const refreshRules = () => qc.invalidateQueries({ queryKey: ["contract-authority-rules"] });
 
   const err = (e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Action failed");
 
@@ -53,6 +67,26 @@ export default function ContractSettingsPage() {
     contractsApi.updateCurrency(c.id, { is_default: true }).then(() => { toast.success("Default set"); refreshCurrencies(); }).catch(err);
   const toggleCurrency = (c: CurrencyRecord) =>
     contractsApi.updateCurrency(c.id, { is_active: !c.is_active }).then(() => { toast.success("Updated"); refreshCurrencies(); }).catch(err);
+
+  const addRule = () => {
+    if (!ruleName.trim() || !ruleRole.trim()) return;
+    contractsApi.createAuthorityRule({
+      name: ruleName.trim(), action: ruleAction, authorised_role: ruleRole.trim(),
+      alternate_role: ruleAltRole.trim() || undefined, amount_floor: ruleFloor ? Number(ruleFloor) : 0,
+      amount_ceiling: ruleCeiling ? Number(ruleCeiling) : undefined, policy_source: rulePolicy.trim() || undefined,
+    }).then(() => {
+      toast.success("Authority rule added");
+      setRuleName(""); setRuleFloor(""); setRuleCeiling(""); setRuleRole(""); setRuleAltRole(""); setRulePolicy("");
+      refreshRules();
+    }).catch(err);
+  };
+  const toggleRule = (r: ContractAuthorityRule) =>
+    contractsApi.updateAuthorityRule(r.id, { is_active: !r.is_active }).then(() => { toast.success("Updated"); refreshRules(); }).catch(err);
+
+  const band = (r: ContractAuthorityRule) => {
+    const floor = Number(r.amount_floor).toLocaleString();
+    return r.amount_ceiling != null ? `${floor} – ${Number(r.amount_ceiling).toLocaleString()}` : `≥ ${floor}`;
+  };
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -116,6 +150,47 @@ export default function ContractSettingsPage() {
           <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Name</label><input className="form-input" value={curName} onChange={(e) => setCurName(e.target.value)} placeholder="Kenyan Shilling" /></div>
           <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Symbol</label><input className="form-input w-24" value={curSymbol} onChange={(e) => setCurSymbol(e.target.value)} placeholder="KSh" /></div>
           <button className="btn-primary text-sm" onClick={addCurrency}>Add currency</button>
+        </div>
+      </div>
+
+      {/* Authority Matrix */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3 border-b border-neutral-100">
+          <h2 className="text-sm font-semibold text-neutral-800">Authority matrix</h2>
+          <p className="text-xs text-neutral-500 mt-0.5">Value-banded approval / signing authority, evaluated when the action occurs. Confirm the operative matrix with SADC PF before go-live (PRD §41, §134).</p>
+        </div>
+        <table className="data-table">
+          <thead><tr><th>Rule</th><th>Action</th><th>Value band</th><th>Authorised role</th><th>Alternate</th><th>Policy</th><th>Active</th><th></th></tr></thead>
+          <tbody>
+            {authorityRules.length === 0 ? (
+              <tr><td colSpan={8} className="text-sm text-neutral-400 p-4">No authority rules configured — approvals fall back to role permissions.</td></tr>
+            ) : authorityRules.map((r) => (
+              <tr key={r.id}>
+                <td className="text-sm font-medium text-neutral-800">{r.name}</td>
+                <td className="text-xs capitalize text-neutral-500">{r.action}</td>
+                <td className="text-sm text-neutral-600">{band(r)} {r.currency ?? ""}</td>
+                <td className="text-sm text-neutral-800">{r.authorised_role}</td>
+                <td className="text-xs text-neutral-500">{r.alternate_role ?? "—"}</td>
+                <td className="text-xs text-neutral-500">{r.policy_source ?? "—"}</td>
+                <td className="text-sm">{r.is_active ? "Yes" : "No"}</td>
+                <td className="text-right"><button className="btn-secondary text-xs py-0.5" onClick={() => toggleRule(r)}>{r.is_active ? "Deactivate" : "Activate"}</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="p-4 border-t border-neutral-100 flex flex-wrap items-end gap-2">
+          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Rule name</label><input className="form-input" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="e.g. SG signs above 100k" /></div>
+          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Action</label>
+            <select className="form-input w-28" value={ruleAction} onChange={(e) => setRuleAction(e.target.value as "approve" | "sign")}>
+              <option value="approve">Approve</option><option value="sign">Sign</option>
+            </select>
+          </div>
+          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Floor</label><input className="form-input w-28" type="number" value={ruleFloor} onChange={(e) => setRuleFloor(e.target.value)} placeholder="0" /></div>
+          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Ceiling</label><input className="form-input w-28" type="number" value={ruleCeiling} onChange={(e) => setRuleCeiling(e.target.value)} placeholder="none" /></div>
+          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Authorised role</label><input className="form-input" value={ruleRole} onChange={(e) => setRuleRole(e.target.value)} placeholder="Secretary General" /></div>
+          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Alternate role</label><input className="form-input" value={ruleAltRole} onChange={(e) => setRuleAltRole(e.target.value)} placeholder="(optional)" /></div>
+          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Policy ref</label><input className="form-input w-36" value={rulePolicy} onChange={(e) => setRulePolicy(e.target.value)} placeholder="(optional)" /></div>
+          <button className="btn-primary text-sm" onClick={addRule}>Add rule</button>
         </div>
       </div>
     </div>

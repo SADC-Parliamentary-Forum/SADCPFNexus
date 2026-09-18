@@ -5121,6 +5121,62 @@ export interface ContractAnalytics {
   supplier_performance: { evaluations: number; average_overall: number | null };
 }
 
+export interface ContractAuthorityRule {
+  id: number;
+  name: string;
+  action: "approve" | "sign";
+  contract_type_id: number | null;
+  amount_floor: number | string;
+  amount_ceiling: number | string | null;
+  currency: string | null;
+  authorised_role: string;
+  alternate_role: string | null;
+  effective_from: string | null;
+  effective_until: string | null;
+  policy_source: string | null;
+  approval_reference: string | null;
+  is_active: boolean;
+  sort_order: number;
+  contract_type?: { id: number; name: string } | null;
+}
+
+export interface ContractAuthorityDelegation {
+  id: number;
+  delegator_role: string | null;
+  delegate_user_id: number;
+  action: "approve" | "sign" | null;
+  reason: string | null;
+  effective_from: string;
+  expires_at: string;
+  is_active: boolean;
+  delegate?: { id: number; name: string; email: string } | null;
+}
+
+export interface ContractRiskFactor {
+  code: string;
+  label: string;
+  weight: number;
+}
+
+export interface ContractRiskEntry {
+  id: number;
+  reference_number: string | null;
+  title: string;
+  level: "critical" | "high" | "medium" | "low";
+  score: number;
+  value: number;
+  end_date: string | null;
+  factors: ContractRiskFactor[];
+}
+
+export interface ContractRiskPortfolio {
+  generated_at: string;
+  totals: { contracts: number; at_risk: number; at_risk_value: number };
+  levels: { critical: number; high: number; medium: number; low: number };
+  top_factors: { code: string; label: string; count: number }[];
+  contracts: ContractRiskEntry[];
+}
+
 export interface ContractFrameworkUtilisation {
   ceiling: number; used: number; remaining: number; call_off_count: number; currency: string;
 }
@@ -5325,6 +5381,23 @@ export const contractsApi = {
     `/api/contracts/reports?type=${type}&format=${format}`,
   analytics: () =>
     api.get<{ data: ContractAnalytics }>("/contracts/reports/analytics"),
+  risk: () =>
+    api.get<{ data: ContractRiskPortfolio }>("/contracts/reports/risk"),
+  // Authority Matrix (§41-42)
+  authorityRules: () =>
+    api.get<{ data: ContractAuthorityRule[] }>("/contracts/authority/rules"),
+  createAuthorityRule: (data: Partial<ContractAuthorityRule> & { name: string; action: string; authorised_role: string }) =>
+    api.post<{ data: ContractAuthorityRule; message: string }>("/contracts/authority/rules", data),
+  updateAuthorityRule: (id: number, data: Partial<ContractAuthorityRule>) =>
+    api.patch<{ data: ContractAuthorityRule; message: string }>(`/contracts/authority/rules/${id}`, data),
+  authorityDelegations: () =>
+    api.get<{ data: ContractAuthorityDelegation[] }>("/contracts/authority/delegations"),
+  createAuthorityDelegation: (data: { delegator_role: string; delegate_user_id: number; action?: string; reason?: string; effective_from: string; expires_at: string }) =>
+    api.post<{ data: ContractAuthorityDelegation; message: string }>("/contracts/authority/delegations", data),
+  revokeAuthorityDelegation: (id: number) =>
+    api.delete<{ message: string }>(`/contracts/authority/delegations/${id}`),
+  contractAuthority: (id: number, action: "approve" | "sign") =>
+    api.get<{ data: { action: string; required_roles: string[]; governed: boolean; user_may_act: boolean; sod_conflict: boolean } }>(`/contracts/${id}/authority`, { params: { action } }),
   exceptionRegister: () =>
     api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
   audit: (id: number) =>
