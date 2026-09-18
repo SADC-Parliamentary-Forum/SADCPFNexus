@@ -1277,15 +1277,15 @@ export default function AssetsPage() {
                           {asset.age_display && (
                             <p className="text-xs text-neutral-500 mt-0.5">{t("assets.register.age")}: {asset.age_display}</p>
                           )}
-                          <p className={`text-xs mt-0.5 ${asset.assigned_user?.name ? "text-neutral-500" : "text-neutral-400"}`}>
-                            {asset.assigned_user?.name
-                              ? `${t("assets.assignedTo")}: ${formatAssigneeLabel({
-                                  name: asset.assigned_user.name,
-                                  email: asset.assigned_user.email,
-                                  department: asset.assigned_user.department ?? asset.department,
-                                })}`
-                              : t("assets.notAssigned")}
-                          </p>
+                          {asset.assigned_user?.name && (
+                            <p className="text-xs mt-0.5 text-neutral-500">
+                              {`${t("assets.assignedTo")}: ${formatAssigneeLabel({
+                                name: asset.assigned_user.name,
+                                email: asset.assigned_user.email,
+                                department: asset.assigned_user.department ?? asset.department,
+                              })}`}
+                            </p>
+                          )}
                         </div>
                       </div>
                       {(showAddAssetButton || canDispose || canRetire || asset.custody_state === "pending_return") && (
