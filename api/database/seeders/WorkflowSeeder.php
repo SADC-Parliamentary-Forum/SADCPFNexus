@@ -24,11 +24,11 @@ class WorkflowSeeder extends Seeder
             return;
         }
 
-        $sgRole      = Role::where('name', 'Secretary General')->where('guard_name', 'sanctum')->first();
-        $hrRole      = Role::where('name', 'HR Manager')->where('guard_name', 'sanctum')->first();
+        $sgRole = Role::where('name', 'Secretary General')->where('guard_name', 'sanctum')->first();
+        $hrRole = Role::where('name', 'HR Manager')->where('guard_name', 'sanctum')->first();
         $hrAdminRole = Role::where('name', 'HR Administrator')->where('guard_name', 'sanctum')->first();
-        $finRole     = Role::where('name', 'Finance Controller')->where('guard_name', 'sanctum')->first();
-        $govRole     = Role::where('name', 'Governance Officer')->where('guard_name', 'sanctum')->first();
+        $finRole = Role::where('name', 'Finance Controller')->where('guard_name', 'sanctum')->first();
+        $govRole = Role::where('name', 'Governance Officer')->where('guard_name', 'sanctum')->first();
         $adminOfficerRole = Role::where('name', 'Administration Officer')->where('guard_name', 'sanctum')->first()
             ?? Role::where('name', 'HR Administrator')->where('guard_name', 'sanctum')->first();
         $directorRole = Role::where('name', 'Director')->where('guard_name', 'sanctum')->first();
@@ -38,7 +38,7 @@ class WorkflowSeeder extends Seeder
             ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'recommend', 'step_name' => 'HOD Recommendation', 'authority_action' => 'leave.recommend', 'allow_return' => true, 'sla_hours' => 48],
             ['approver_type' => 'up_the_chain', 'actor_selector' => 'hod', 'stage_type' => 'review', 'step_name' => 'Department Review', 'allow_return' => true, 'sla_hours' => 48],
             ...($hrRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $hrRole->id, 'stage_type' => 'certify', 'step_name' => 'Administration Certification', 'authority_action' => 'leave.certify', 'sla_hours' => 72]] : []),
-            ...($sgRole  ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'authorise', 'step_name' => 'Head of Institution Authorisation', 'authority_action' => 'sg.approve', 'sla_hours' => 72]] : []),
+            ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'authorise', 'step_name' => 'Head of Institution Authorisation', 'authority_action' => 'sg.approve', 'sla_hours' => 72]] : []),
         ], ApprovalWorkflow::SELF_APPROVAL_ALLOW_WITH_CONTROLS);
 
         $this->makeWorkflow($tenant, 'Standard Travel & Mission Approval', 'travel', [
@@ -52,7 +52,7 @@ class WorkflowSeeder extends Seeder
         $this->makeWorkflow($tenant, 'Imprest Advance Approval', 'imprest', [
             ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'recommend', 'step_name' => 'Supervisor Recommendation', 'allow_return' => true],
             ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance Certification', 'authority_action' => 'finance.certify']] : []),
-            ...($sgRole  ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'SG Approval']] : []),
+            ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'SG Approval']] : []),
         ]);
 
         // Correspondence Approval (PRD §19): two stages to match the two client-facing
@@ -65,20 +65,20 @@ class WorkflowSeeder extends Seeder
 
         $this->makeWorkflow($tenant, 'Purchase Order / LPO Approval', 'purchase_order', [
             ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance Certification', 'authority_action' => 'finance.certify', 'allow_return' => true]] : []),
-            ...($sgRole  ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'SG / Authorised Signatory', 'allow_return' => true, 'requires_signature' => true]] : []),
+            ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'SG / Authorised Signatory', 'allow_return' => true, 'requires_signature' => true]] : []),
         ]);
 
         $this->makeWorkflow($tenant, 'Procurement Approval', 'procurement', [
             ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'recommend', 'step_name' => 'Supervisor Recommendation', 'allow_return' => true],
             ['approver_type' => 'up_the_chain', 'actor_selector' => 'hod', 'stage_type' => 'authorise', 'step_name' => 'HOD Authorisation'],
             ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance Certification', 'authority_action' => 'finance.certify', 'condition_expression' => ['field' => 'amount', 'op' => 'gte', 'value' => 5000], 'skip_if_condition_false' => true]] : []),
-            ...($sgRole  ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'SG Approval']] : []),
+            ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'SG Approval']] : []),
         ]);
 
         $this->makeWorkflow($tenant, 'Finance & Payment Approval', 'finance', [
             ['approver_type' => 'supervisor', 'actor_selector' => 'supervisor', 'stage_type' => 'recommend'],
             ...($finRole ? [['approver_type' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'authority_action' => 'finance.certify']] : []),
-            ...($sgRole  ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve']] : []),
+            ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve']] : []),
         ]);
 
         $this->makeWorkflow($tenant, 'Salary Advance Approval', 'salary_advance', [
@@ -155,6 +155,16 @@ class WorkflowSeeder extends Seeder
             ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'Secretary General Approval', 'authority_action' => 'sg.approve', 'requires_signature' => true, 'sla_hours' => 72]] : []),
         ]);
 
+        // Contract Management — Finance review → Legal (conditional) → Director
+        // authorisation (value threshold) → SG approval for signature. Procurement
+        // prepares/submits but never approves; SG is the approving authority.
+        $this->makeWorkflow($tenant, 'Contract Approval', 'contract', [
+            ...($finRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $finRole->id, 'stage_type' => 'certify', 'step_name' => 'Finance Review', 'authority_action' => 'finance.certify', 'allow_return' => true, 'sla_hours' => 72]] : []),
+            ...($govRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $govRole->id, 'stage_type' => 'review', 'step_name' => 'Legal / Compliance Review', 'allow_return' => true, 'sla_hours' => 72, 'condition_expression' => ['field' => 'requires_legal_review', 'op' => 'eq', 'value' => true], 'skip_if_condition_false' => true]] : []),
+            ...($directorRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'director_finance', 'role_id' => $directorRole->id, 'stage_type' => 'authorise', 'step_name' => 'Management Authorisation', 'authority_action' => 'finance.authorise', 'sla_hours' => 72, 'condition_expression' => ['field' => 'amount', 'op' => 'gte', 'value' => 10000], 'skip_if_condition_false' => true]] : []),
+            ...($sgRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'sg', 'role_id' => $sgRole->id, 'stage_type' => 'approve', 'step_name' => 'Secretary General Approval', 'authority_action' => 'sg.approve', 'sla_hours' => 72]] : []),
+        ]);
+
         // Employee Lifecycle — approval gates only (operational tasks use Assignments)
         $this->makeWorkflow($tenant, 'Lifecycle Appointment Authorisation', 'lifecycle_appointment_authorise', [
             ...($hrRole ? [['approver_type' => 'specific_role', 'actor_selector' => 'specific_role', 'role_id' => $hrRole->id, 'stage_type' => 'authorise', 'step_name' => 'HR Authorise Appointment', 'sla_hours' => 72]] : []),
@@ -199,7 +209,7 @@ class WorkflowSeeder extends Seeder
         }
 
         if ($this->command) {
-            $this->command->info("Workflow '{$name}' seeded with " . count($steps) . ' steps.');
+            $this->command->info("Workflow '{$name}' seeded with ".count($steps).' steps.');
         }
     }
 }

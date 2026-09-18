@@ -4981,6 +4981,29 @@ export interface Contract {
   value: number;
   currency: string;
   status: "draft" | "active" | "completed" | "terminated";
+  contract_status?: string | null;
+  signature_status?: string | null;
+  health_status?: string | null;
+  origin_type?: string | null;
+  is_legacy?: boolean;
+  counterparty_type?: string | null;
+  counterparty_name?: string | null;
+  display_counterparty?: string | null;
+  type_id?: number | null;
+  type?: ContractType | null;
+  department_id?: number | null;
+  contract_owner_id?: number | null;
+  contract_owner?: { id: number; name: string } | null;
+  procurement_officer_id?: number | null;
+  programme_id?: number | null;
+  donor?: string | null;
+  original_value?: number | string | null;
+  current_value?: number | string | null;
+  ceiling_value?: number | string | null;
+  effective_date?: string | null;
+  service_start_date?: string | null;
+  service_end_date?: string | null;
+  signature_deadline?: string | null;
   signed_at: string | null;
   terminated_at: string | null;
   termination_reason: string | null;
@@ -4988,28 +5011,271 @@ export interface Contract {
   is_expiring_soon: boolean;
   vendor?: Vendor;
   procurement_request?: { id: number; reference_number: string; title: string };
+  approval_request?: ApprovalRequest | null;
+  deliverables?: ContractDeliverableRecord[];
+  obligations?: ContractObligationRecord[];
+  document_versions?: ContractDocumentVersionRecord[];
+  signatories?: ContractSignatoryRecord[];
+  amendments?: ContractAmendmentRecord[];
+  payment_schedules?: ContractPaymentScheduleRecord[];
+  extensions?: ContractExtensionRecord[];
+  renewals?: ContractRenewalRecord[];
+  suspensions?: ContractSuspensionRecord[];
+  terminations?: ContractTerminationRecord[];
+  renewal_type?: string | null;
+  auto_renew?: boolean;
+  renewals_count?: number;
+  is_framework?: boolean;
+  framework_ceiling?: number | string | null;
+  parent_contract_id?: number | null;
+  exceptions?: ContractExceptionRecord[];
+  health_reasons?: string[];
+  counterparty?: { id: number; full_legal_name: string | null; email: string | null } | null;
   created_at?: string;
 }
 
+export interface ContractDeliverableRecord {
+  id: number;
+  number: number;
+  name: string;
+  description: string | null;
+  due_date: string | null;
+  responsible_party: string;
+  status: string;
+  accepted_at: string | null;
+}
+
+export interface ContractObligationRecord {
+  id: number;
+  obligation: string;
+  responsible_party: string;
+  due_date: string | null;
+  status: string;
+}
+
+export interface ContractDocumentVersionRecord {
+  id: number;
+  version: number;
+  kind: string;
+  hash: string | null;
+  hash_algorithm: string | null;
+  generated_at: string | null;
+  is_locked: boolean;
+}
+
+export interface ContractExceptionRecord {
+  id: number;
+  type: string;
+  severity: string;
+  title: string;
+  description: string | null;
+  status: string;
+  created_at?: string;
+}
+
+export interface ContractExtensionRecord {
+  id: number; current_end_date: string | null; proposed_end_date: string;
+  reason: string; status: string; financial_impact: number | string | null;
+}
+
+export interface ContractRenewalRecord {
+  id: number; renewal_number: number; new_start_date: string; new_end_date: string;
+  reason: string | null; procurement_validated: boolean; budget_confirmed: boolean; status: string;
+}
+
+export interface ContractSuspensionRecord {
+  id: number; effective_date: string | null; reason: string; status: string; resumption_date: string | null;
+}
+
+export interface ContractTerminationRecord {
+  id: number; type: string; reason: string; effective_date: string | null; final_amount: number | string | null;
+}
+
+export interface ContractFrameworkUtilisation {
+  ceiling: number; used: number; remaining: number; call_off_count: number; currency: string;
+}
+
+export interface ContractClauseRecord {
+  id: number; key: string; title: string; category: string | null; clause_type: string;
+  donor: string | null; is_active: boolean;
+}
+
+export interface ContractClauseAssignmentRecord {
+  id: number; clause_id: number; clause_version_id: number | null; is_deviation: boolean;
+  deviation_text: string | null; deviation_reason: string | null; deviation_status: string | null;
+  clause?: ContractClauseRecord;
+}
+
+export interface ContractType {
+  id: number;
+  tenant_id: number;
+  name: string;
+  slug: string;
+  counterparty_type: "individual" | "organisation" | "either";
+  category: string | null;
+  description: string | null;
+  requires_legal_review: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface ContractTemplateVersionSummary {
+  id: number;
+  template_id: number;
+  version: string;
+  status: string;
+}
+
+export interface ContractTemplateSummary {
+  id: number;
+  name: string;
+  status: string;
+  counterparty_type: string | null;
+  contract_type_id: number | null;
+  current_version_id: number | null;
+  versions?: ContractTemplateVersionSummary[];
+  current_version?: ContractTemplateVersionSummary | null;
+}
+
+export interface ContractSignatoryRecord {
+  id: number;
+  party: string;
+  sign_order: number;
+  method: string;
+  status: string;
+  signer_name: string | null;
+  signer_email: string | null;
+  signed_at: string | null;
+  decline_reason: string | null;
+}
+
+export interface ContractLedger {
+  original: number; current: number; ceiling: number; paid: number;
+  approved_unpaid: number; remaining: number; currency: string;
+}
+
+export interface ContractPaymentScheduleRecord {
+  id: number; name: string; basis: string; amount: number | string | null;
+  percentage: number | string | null; status: string; due_date: string | null;
+  amount_paid: number | string;
+}
+
+export interface ContractAmendmentRecord {
+  id: number; reference_number: string | null; sequence: number; type: string;
+  reason: string | null; value_delta: number | string | null; revised_value: number | string | null;
+  is_material: boolean; status: string; new_end_date: string | null;
+}
+
+// Public (token-gated) external counterparty signing portal.
+export const contractExternalApi = {
+  view: (token: string) =>
+    api.get<{ data: { reference_number: string; title: string; counterparty: string | null; value: number | string; currency: string; start_date: string | null; end_date: string | null; status: string; document_hash: string | null } }>(`/external/contracts/sign/${token}`),
+  sign: (token: string, name: string) =>
+    api.post<{ message: string; data: { status: string } }>(`/external/contracts/sign/${token}`, { name, consent: true }),
+  decline: (token: string, reason: string) =>
+    api.post<{ message: string }>(`/external/contracts/decline/${token}`, { reason }),
+  requestChanges: (token: string, comments: string) =>
+    api.post<{ message: string }>(`/external/contracts/request-changes/${token}`, { comments }),
+};
+
 export const contractsApi = {
-  list: (params?: { status?: string }) =>
-    api.get<{ data: Contract[] }>("/procurement/contracts", { params }),
+  // First-class Contract Management module (supersedes /procurement/contracts).
+  list: (params?: { status?: string; vendor_id?: number; search?: string; per_page?: number }) =>
+    api.get<PaginatedResponse<Contract>>("/contracts", { params }),
+  register: (params?: { status?: string; search?: string; per_page?: number; type_id?: number; origin_type?: string; expiring_within_days?: number }) =>
+    api.get<PaginatedResponse<Contract>>("/contracts", { params: { per_page: 500, ...(params ?? {}) } }),
+  types: () => api.get<{ data: ContractType[] }>("/contracts/types"),
+  prefill: (origin_type: "procurement" | "pif", origin_id: number) =>
+    api.post<{ data: Record<string, unknown> }>("/contracts/prefill", { origin_type, origin_id }),
+  readiness: (id: number) =>
+    api.get<{ data: { ready: boolean; checks: { key: string; label: string; passed: boolean; blocking: boolean }[] } }>(`/contracts/${id}/readiness`),
+  generate: (id: number, template_version_id: number) =>
+    api.post<{ data: unknown; message: string }>(`/contracts/${id}/generate`, { template_version_id }),
+  listTemplates: () =>
+    api.get<{ data: ContractTemplateSummary[] }>("/contracts/templates"),
+  importLegacy: (data: {
+    title: string; value: number; start_date: string; end_date: string;
+    vendor_id?: number; counterparty_name?: string; type_id?: number; currency?: string;
+    signed_at?: string; legacy_status?: string; description?: string;
+  }) => api.post<{ data: Contract; message: string }>("/contracts/import", data),
   get: (id: number) =>
-    api.get<{ data: Contract }>(`/procurement/contracts/${id}`),
+    api.get<{ data: Contract }>(`/contracts/${id}`),
   create: (data: Partial<Contract> & { vendor_id: number; title: string; start_date: string; end_date: string; value: number }) =>
-    api.post<{ data: Contract; message: string }>("/procurement/contracts", data),
+    api.post<{ data: Contract; message: string }>("/contracts", data),
   activate: (id: number) =>
-    api.post<{ data: Contract; message: string }>(`/procurement/contracts/${id}/activate`),
-  terminate: (id: number, reason: string) =>
-    api.post<{ data: Contract; message: string }>(`/procurement/contracts/${id}/terminate`, { reason }),
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/activate`),
+  suspend: (id: number, reason: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/suspend`, { reason }),
+  resume: (id: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/resume`),
+  terminate: (id: number, type: string, reason: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/terminate`, { type, reason }),
+  createExtension: (id: number, data: { proposed_end_date: string; reason: string; impact?: string; financial_impact?: number }) =>
+    api.post<{ data: ContractExtensionRecord; message: string }>(`/contracts/${id}/extensions`, data),
+  approveExtension: (id: number, extensionId: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/extensions/${extensionId}/approve`),
+  createRenewal: (id: number, data: { new_start_date: string; new_end_date: string; reason?: string; procurement_validated?: boolean; budget_confirmed?: boolean }) =>
+    api.post<{ data: ContractRenewalRecord; message: string }>(`/contracts/${id}/renewals`, data),
+  approveRenewal: (id: number, renewalId: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/renewals/${renewalId}/approve`),
   destroy: (id: number) =>
-    api.delete<{ message: string }>(`/procurement/contracts/${id}`),
+    api.delete<{ message: string }>(`/contracts/${id}`),
+  submit: (id: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/submit`),
+  approveWorkflow: (id: number, comment?: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/approve`, { comment }),
+  returnForCorrection: (id: number, comment: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/return`, { comment }),
+  rejectWorkflow: (id: number, comment: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/reject`, { comment }),
+  withdraw: (id: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/withdraw`),
+  sendForSignature: (id: number, order?: "sadcpf_first" | "counterparty_first") =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/send-for-signature`, { order }),
+  signInternal: (id: number, confirm_password?: string) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/sign`, { confirm_password }),
+  wetSign: (id: number, party: "sadcpf" | "counterparty") =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/wet-sign`, { party }),
+  ledger: (id: number) =>
+    api.get<{ data: { ledger: ContractLedger; schedules: ContractPaymentScheduleRecord[] } }>(`/contracts/${id}/ledger`),
+  reviewDeliverable: (id: number, deliverableId: number, decision: "accept" | "reject", comments?: string) =>
+    api.post<{ data: unknown; message: string }>(`/contracts/${id}/deliverables/${deliverableId}/review`, { decision, comments }),
+  createAmendment: (id: number, data: { type: string; reason: string; description?: string; value_delta?: number; new_end_date?: string }) =>
+    api.post<{ data: ContractAmendmentRecord; message: string; comparison: { value: { current: number; proposed: number; revised: number }; is_material: boolean; requires_management_authorisation: boolean } }>(`/contracts/${id}/amendments`, data),
+  approveAmendment: (id: number, amendmentId: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/amendments/${amendmentId}/approve`),
+  close: (id: number) =>
+    api.post<{ data: Contract; message: string; certificate: Record<string, unknown> }>(`/contracts/${id}/close`),
+  report: (type: "register" | "financial" | "compliance" | "operational") =>
+    api.get<{ data: Record<string, unknown>[]; type: string; count: number }>("/contracts/reports", { params: { type } }),
+  reportDownloadUrl: (type: string, format: "csv" | "xlsx" | "pdf") =>
+    `/api/contracts/reports?type=${type}&format=${format}`,
+  exceptionRegister: () =>
+    api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
+  audit: (id: number) =>
+    api.get<{ data: { id: number; event: string; created_at: string; new_values: unknown }[] }>(`/contracts/${id}/audit`),
+  callOffs: (id: number) =>
+    api.get<{ data: Contract[]; utilisation: ContractFrameworkUtilisation | null }>(`/contracts/${id}/call-offs`),
+  createCallOff: (id: number, data: { title: string; start_date: string; end_date: string; value: number; type_id?: number }) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/call-offs`, data),
+  clauseLibrary: () =>
+    api.get<{ data: ContractClauseRecord[] }>("/contracts/clauses"),
+  listClauses: (id: number) =>
+    api.get<{ data: ContractClauseAssignmentRecord[] }>(`/contracts/${id}/clauses`),
+  assignClause: (id: number, clauseId: number, deviationText?: string, deviationReason?: string) =>
+    api.post<{ data: ContractClauseAssignmentRecord; message: string }>(`/contracts/${id}/clauses`, { clause_id: clauseId, deviation_text: deviationText, deviation_reason: deviationReason }),
+  unassignClause: (id: number, assignmentId: number) =>
+    api.delete<{ message: string }>(`/contracts/${id}/clauses/${assignmentId}`),
+  exceptions: (id: number) =>
+    api.get<{ data: ContractExceptionRecord[] }>(`/contracts/${id}/exceptions`),
+  addDeliverable: (id: number, data: { name: string; due_date?: string; responsible_party?: string; acceptance_criteria?: string; description?: string }) =>
+    api.post<{ data: unknown; message: string }>(`/contracts/${id}/deliverables`, data),
   listMilestones: (contractId: number) =>
-    api.get<{ data: ContractMilestone[] }>(`/procurement/contracts/${contractId}/milestones`),
+    api.get<{ data: ContractMilestone[] }>(`/contracts/${contractId}/milestones`),
   createMilestone: (contractId: number, data: Partial<ContractMilestone>) =>
-    api.post<{ data: ContractMilestone; message: string }>(`/procurement/contracts/${contractId}/milestones`, data),
+    api.post<{ data: ContractMilestone; message: string }>(`/contracts/${contractId}/milestones`, data),
   completeMilestone: (contractId: number, milestoneId: number) =>
-    api.post<{ data: ContractMilestone; message: string }>(`/procurement/contracts/${contractId}/milestones/${milestoneId}/complete`),
+    api.post<{ data: ContractMilestone; message: string }>(`/contracts/${contractId}/milestones/${milestoneId}/complete`),
 };
 
 export interface ContractMilestone {

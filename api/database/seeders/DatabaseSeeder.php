@@ -91,6 +91,9 @@ class DatabaseSeeder extends Seeder
 
             // ── Supplier Portal ────────────────────────────
             SupplierCategorySeeder::class,
+            ContractTypeSeeder::class,
+            ContractTemplateSeeder::class,
+            ContractClauseSeeder::class,
         ]);
     }
 }

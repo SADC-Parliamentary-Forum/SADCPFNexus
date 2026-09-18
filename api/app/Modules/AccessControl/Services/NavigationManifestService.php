@@ -116,6 +116,21 @@ class NavigationManifestService
             // Already covered under My Work — do not expose Procurement parent.
         }
 
+        // Contracts — register hub for anyone who can see the module.
+        if ($holds('contract.view', 'contract.view_all', 'contract.audit_view')) {
+            $children = [
+                $this->item('Dashboard', '/contracts', 'dashboard'),
+                $this->item('Contract Register', '/contracts/register', 'menu_book'),
+            ];
+            if ($holds('contract.create')) {
+                $children[] = $this->item('New Contract', '/contracts/create', 'add_circle');
+            }
+            if ($holds('contract.report', 'contract.view_all', 'contract.audit_view')) {
+                $children[] = $this->item('Reports', '/contracts/reports', 'assessment');
+            }
+            $items[] = $this->item('Contracts', '/contracts', 'description', children: $children, linkable: true);
+        }
+
         if ($has('programme.module.view', 'pif.view', 'governance.view', 'programme.request.create', 'pif.create')) {
             $items[] = $this->item('Programmes / PIF', '/pif', 'assignment', linkable: $has('programme.module.view', 'pif.view', 'governance.view'));
         }

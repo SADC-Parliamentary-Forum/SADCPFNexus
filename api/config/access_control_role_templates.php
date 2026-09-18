@@ -58,6 +58,9 @@ return [
             // Organisational calendar: staff may list types and create events;
             // catalogue mutations stay workplan.admin / governance.admin / hr.admin.
             'workplan.view', 'workplan.create',
+            // Contract Management: a staff member may be a Contract Owner on records
+            // assigned to them (record-level scope), so they can view and accept deliverables.
+            'contract.view', 'contract.accept_deliverable',
         ],
         'inherits' => [],
         'legacy_roles' => ['staff', 'Staff'],
@@ -98,6 +101,8 @@ return [
             'risk.module.view', 'risk.view', 'risk.create', 'risk.submit', 'risk.review', 'risk.approve',
             'mande.review',
             'workplan.view',
+            // Departmental review of contracts routed to this directorate.
+            'contract.view', 'contract.review',
         ],
         'inherits' => ['Supervisor / Line Manager'],
         // HOD remains the supervisor role; only Director maps to this wider
@@ -132,6 +137,11 @@ return [
             'weekly-reports.return', 'weekly-reports.accept',
             'weekly-reports.view-department', 'weekly-reports.view-management',
             'weekly-reports.consolidate-department', 'weekly-reports.export',
+            // Contract Management: institutional signatory + final approval authority.
+            'contract.view', 'contract.view_all', 'contract.approve', 'contract.reject',
+            'contract.sign_internal', 'contract.approve_amendment', 'contract.suspend',
+            'contract.terminate', 'contract.close', 'contract.manage_authority',
+            'contract.report', 'contract.audit_view',
         ],
         'inherits' => [],
         'legacy_roles' => ['Secretary General'],
@@ -222,6 +232,8 @@ return [
             'overtime.send-payroll', 'timesheets.export', 'timesheets.view',
             'imprest.view', 'imprest.approve',
             'risk.view',
+            // Contract Management: financial review of contracts and financial reporting.
+            'contract.view', 'contract.view_all', 'contract.review', 'contract.report',
         ],
         'inherits' => [],
         'legacy_roles' => ['Finance Controller'],
@@ -232,7 +244,7 @@ return [
     'Director Finance and Corporate Services' => [
         'purpose' => 'Assigned financial and corporate approvals',
         'risk_level' => 'critical',
-        'permissions' => ['programme.funds_procurement_rates.authorise.assigned', 'salary_advance.approve.assigned', 'travel.request.approve.assigned', 'procurement.purchase_order.create.assigned'],
+        'permissions' => ['programme.funds_procurement_rates.authorise.assigned', 'salary_advance.approve.assigned', 'travel.request.approve.assigned', 'procurement.purchase_order.create.assigned', 'contract.approve'],
         'inherits' => ['Finance Officer'],
         // Finance Controller is deliberately mapped to Finance Officer. The
         // director-level approval role is assigned explicitly as its own
@@ -251,6 +263,8 @@ return [
             'programme.request.withdraw.created', 'programme.document.manage.created',
             'programme.conflict_declaration.submit.created', 'programme.mande_link.read.authorised',
             'pif.view', 'pif.create',
+            // Programme officers are frequently the Contract Owner / requesting officer.
+            'contract.view', 'contract.accept_deliverable',
         ],
         'inherits' => [],
         // Generic staff must not receive programme-authoring access merely
@@ -318,6 +332,11 @@ return [
             'assets.view', 'assets.create', 'assets.import', 'assets.verify', 'assets.print', 'finance.view', 'governance.view',
             'stock.view', 'stock.create', 'stock.edit', 'stock.issue', 'stock.manage', 'stock.approve', 'stock.transfer',
             'risk.view',
+            // Contract Management: the Procurement Officer is the Contract Custodian.
+            // They administer the lifecycle but never self-approve or sign institutionally.
+            'contract.view', 'contract.view_all', 'contract.create', 'contract.edit_draft', 'contract.submit',
+            'contract.generate_document', 'contract.send', 'contract.manage_external_signature',
+            'contract.create_amendment', 'contract.manage_template', 'contract.report', 'contract.audit_view',
         ],
         'inherits' => [],
         'legacy_roles' => ['Procurement Officer'],
@@ -352,6 +371,8 @@ return [
             'risk.module.view', 'risk.view', 'risk.review',
             'mande.module.view', 'mande.view', 'mande.review',
             'finance.view', 'travel.view', 'imprest.view', 'hr.view', 'governance.view',
+            // Read-only assurance access to the contract register and audit trail.
+            'contract.view_all', 'contract.audit_view', 'contract.report',
         ],
         'inherits' => [],
         'legacy_roles' => ['Internal Auditor'],
@@ -362,7 +383,7 @@ return [
     'External Auditor' => [
         'purpose' => 'Time-limited, engagement-scoped read-only assurance access',
         'risk_level' => 'high',
-        'permissions' => ['audit.event.read.organisation', 'reports.view.authorised', 'finance.view', 'risk.module.view', 'mande.module.view'],
+        'permissions' => ['audit.event.read.organisation', 'reports.view.authorised', 'finance.view', 'risk.module.view', 'mande.module.view', 'contract.view_all', 'contract.audit_view'],
         'inherits' => [],
         'legacy_roles' => [],
         'feature_only' => false,

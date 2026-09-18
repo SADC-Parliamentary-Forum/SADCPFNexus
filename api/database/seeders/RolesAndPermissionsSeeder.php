@@ -177,6 +177,12 @@ class RolesAndPermissionsSeeder extends Seeder
             // Document Service Phase 1–2
             'documents.upload', 'documents.view', 'documents.download', 'documents.finalize',
             'documents.view-audit', 'documents.admin', 'documents.legal-hold',
+            // Contract Management (PRD §93) — Procurement custodian; authority stays separate
+            'contract.view', 'contract.view_all', 'contract.create', 'contract.edit_draft', 'contract.submit',
+            'contract.review', 'contract.approve', 'contract.reject', 'contract.generate_document', 'contract.send',
+            'contract.sign_internal', 'contract.manage_external_signature', 'contract.accept_deliverable',
+            'contract.create_amendment', 'contract.approve_amendment', 'contract.suspend', 'contract.terminate',
+            'contract.close', 'contract.manage_template', 'contract.manage_authority', 'contract.report', 'contract.audit_view',
         ];
 
         foreach ($permissions as $perm) {
@@ -622,6 +628,14 @@ class RolesAndPermissionsSeeder extends Seeder
             $supplierFinance = Role::firstOrCreate(['name' => 'Supplier Finance User', 'guard_name' => $guard]);
             $supplierFinance->syncPermissions(
                 Permission::whereIn('name', ['supplier.portal'])->where('guard_name', $guard)->get()
+            );
+
+            // ── Contract Management: Governance Officer acts as legal/compliance
+            // reviewer (Governance Officer is not a canonical template role, so
+            // these grants persist through the canonical sync).
+            $governanceOfficer->givePermissionTo(
+                Permission::whereIn('name', ['contract.view', 'contract.view_all', 'contract.review'])
+                    ->where('guard_name', $guard)->get()
             );
 
             // CanonicalRoleManager is the final authority. It performs an

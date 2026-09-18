@@ -44,6 +44,14 @@ Route::prefix('v1')->group(function () {
                 'throttle:30,1',
                 \App\Http\Middleware\AuthenticateExternalWorkplan::class,
             ]);
+
+        // External counterparty signing portal (token-gated, no account).
+        Route::middleware('throttle:30,1')->group(function () {
+            Route::get('contracts/sign/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'show']);
+            Route::post('contracts/sign/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'sign']);
+            Route::post('contracts/decline/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'decline']);
+            Route::post('contracts/request-changes/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'requestChanges']);
+        });
     });
 
     Route::prefix('procurement')->group(function () {
@@ -1265,6 +1273,88 @@ Route::prefix('v1')->group(function () {
             Route::post('conduct', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'store']);
             Route::put('conduct/{conductRecord}', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'update']);
             Route::delete('conduct/{conductRecord}', [\App\Http\Controllers\Api\V1\Hr\ConductRecordController::class, 'destroy']);
+        });
+
+        // Contract Management (first-class module; supersedes procurement nested contracts)
+        Route::prefix('contracts')->group(function () {
+            Route::get('', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'index']);
+            Route::post('', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'store']);
+            Route::get('types', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'types']);
+            Route::post('import', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'importLegacy']);
+            Route::post('prefill', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'prefill']);
+
+            // Reports & registers
+            Route::get('reports/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'exceptions']);
+            Route::get('reports', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'index']);
+
+            // Template library (versioned)
+            Route::get('templates', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'index']);
+            Route::post('templates', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'store']);
+            Route::get('templates/{template}', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'show']);
+            Route::post('templates/{template}/versions', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'storeVersion']);
+            Route::post('templates/{template}/versions/{version}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'activateVersion']);
+
+            // Clause library (versioned)
+            Route::get('clauses', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'index']);
+            Route::post('clauses', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'store']);
+            Route::post('clauses/{clause}/versions', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'addVersion']);
+            Route::post('clauses/{clause}/versions/{version}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'activateVersion']);
+
+            Route::get('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'show']);
+            Route::get('{contract}/readiness', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'readiness']);
+            Route::post('{contract}/generate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'generate']);
+            Route::post('{contract}/deliverables', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'addDeliverable']);
+            Route::post('{contract}/obligations', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'addObligation']);
+
+            // Approval workflow (shared Nexus engine)
+            Route::post('{contract}/submit', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'submit']);
+            Route::post('{contract}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approve']);
+            Route::post('{contract}/return', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'returnForCorrection']);
+            Route::post('{contract}/reject', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'reject']);
+            Route::post('{contract}/withdraw', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'withdraw']);
+            Route::get('{contract}/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'exceptions']);
+
+            // Execution & signature
+            Route::post('{contract}/send-for-signature', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'sendForSignature']);
+            Route::post('{contract}/sign', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'signInternal']);
+            Route::post('{contract}/wet-sign', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'wetSign']);
+
+            // Financials, deliverables, amendments, close-out
+            Route::get('{contract}/ledger', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'ledger']);
+            Route::post('{contract}/check-payment', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'checkPayment']);
+            Route::post('{contract}/payment-schedules', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'addPaymentSchedule']);
+            Route::post('{contract}/deliverables/{deliverable}/review', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'acceptDeliverable']);
+            Route::post('{contract}/amendments', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createAmendment']);
+            Route::post('{contract}/amendments/{amendment}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approveAmendment']);
+            Route::post('{contract}/close', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'close']);
+            Route::get('{contract}/audit', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'audit']);
+
+            // Per-contract clause assignments
+            Route::get('{contract}/clauses', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'contractClauses']);
+            Route::post('{contract}/clauses', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'assign']);
+            Route::delete('{contract}/clauses/{assignment}', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'unassign']);
+            Route::delete('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'destroy']);
+            Route::post('{contract}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'activate']);
+            Route::post('{contract}/suspend', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'suspend']);
+            Route::post('{contract}/resume', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'resume']);
+            Route::post('{contract}/terminate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'terminate']);
+            Route::get('{contract}/call-offs', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'callOffs']);
+            Route::post('{contract}/call-offs', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createCallOff']);
+            Route::post('{contract}/extensions', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createExtension']);
+            Route::post('{contract}/extensions/{extension}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approveExtension']);
+            Route::post('{contract}/renewals', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createRenewal']);
+            Route::post('{contract}/renewals/{renewal}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approveRenewal']);
+
+            // Reuse the existing milestone + attachment controllers (bound by {contract}).
+            Route::get('{contract}/milestones', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'index']);
+            Route::post('{contract}/milestones', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'store']);
+            Route::put('{contract}/milestones/{milestone}', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'update']);
+            Route::post('{contract}/milestones/{milestone}/complete', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'complete']);
+            Route::delete('{contract}/milestones/{milestone}', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'destroy']);
+            Route::get('{contract}/attachments', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'index']);
+            Route::post('{contract}/attachments', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'store']);
+            Route::delete('{contract}/attachments/{attachment}', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'destroy']);
+            Route::get('{contract}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Procurement\ContractAttachmentController::class, 'download']);
         });
 
         // Programmes (PIF)

@@ -13,15 +13,15 @@ class ContractTest extends TestCase
     private function makeAwardedRequest(Tenant $tenant, int $userId): ProcurementRequest
     {
         return ProcurementRequest::create([
-            'tenant_id'    => $tenant->id,
+            'tenant_id' => $tenant->id,
             'requester_id' => $userId,
-            'title'           => 'Security Services',
-            'description'     => 'Annual contract',
-            'category'        => 'services',
+            'title' => 'Security Services',
+            'description' => 'Annual contract',
+            'category' => 'services',
             'estimated_value' => 120000,
-            'currency'        => 'NAD',
-            'status'          => 'awarded',
-            'awarded_at'      => now(),
+            'currency' => 'NAD',
+            'status' => 'awarded',
+            'awarded_at' => now(),
         ]);
     }
 
@@ -29,13 +29,13 @@ class ContractTest extends TestCase
     {
         return array_merge([
             'procurement_request_id' => $req->id,
-            'vendor_id'              => $vendor->id,
-            'title'                  => 'Security Services Contract 2026',
-            'description'            => 'Annual security services agreement',
-            'start_date'             => now()->toDateString(),
-            'end_date'               => now()->addYear()->toDateString(),
-            'value'                  => 120000,
-            'currency'               => 'NAD',
+            'vendor_id' => $vendor->id,
+            'title' => 'Security Services Contract 2026',
+            'description' => 'Annual security services agreement',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
+            'value' => 120000,
+            'currency' => 'NAD',
         ], $overrides);
     }
 
@@ -45,7 +45,7 @@ class ContractTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         [$http, $user] = $this->asProcurementOfficer($tenant);
-        $req    = $this->makeAwardedRequest($tenant, $user->id);
+        $req = $this->makeAwardedRequest($tenant, $user->id);
         $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'SecureGuard Ltd', 'is_approved' => true, 'is_active' => true]);
 
         $http->postJson('/api/v1/procurement/contracts', $this->contractPayload($req, $vendor))
@@ -57,20 +57,21 @@ class ContractTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         [$http, $user] = $this->asProcurementOfficer($tenant);
-        $req    = $this->makeAwardedRequest($tenant, $user->id);
+        $req = $this->makeAwardedRequest($tenant, $user->id);
         $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'V', 'is_approved' => true, 'is_active' => true]);
 
         $response = $http->postJson('/api/v1/procurement/contracts', $this->contractPayload($req, $vendor))
             ->assertCreated();
 
-        $this->assertStringStartsWith('CTR-', $response->json('data.reference_number'));
+        // Contract references are now governed, sequential CTR/{YYYY}/{SEQ}.
+        $this->assertMatchesRegularExpression('#^CTR/\d{4}/\d{4}$#', $response->json('data.reference_number'));
     }
 
     public function test_staff_cannot_create_contract(): void
     {
         $tenant = Tenant::factory()->create();
         [$http, $user] = $this->asStaff($tenant);
-        $req    = $this->makeAwardedRequest($tenant, $user->id);
+        $req = $this->makeAwardedRequest($tenant, $user->id);
         $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'V', 'is_approved' => true, 'is_active' => true]);
 
         $http->postJson('/api/v1/procurement/contracts', $this->contractPayload($req, $vendor))
@@ -83,12 +84,12 @@ class ContractTest extends TestCase
     {
         $tenant = Tenant::factory()->create();
         [$http, $user] = $this->asProcurementOfficer($tenant);
-        $req    = $this->makeAwardedRequest($tenant, $user->id);
+        $req = $this->makeAwardedRequest($tenant, $user->id);
         $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'V', 'is_approved' => true, 'is_active' => true]);
         $contract = Contract::create(array_merge($this->contractPayload($req, $vendor), [
-            'tenant_id'  => $tenant->id,
+            'tenant_id' => $tenant->id,
             'created_by' => $user->id,
-            'status'     => 'draft',
+            'status' => 'draft',
         ]));
 
         $http->postJson("/api/v1/procurement/contracts/{$contract->id}/activate")
@@ -101,19 +102,19 @@ class ContractTest extends TestCase
         $tenant = Tenant::factory()->create();
         [$http, $user] = $this->asProcurementOfficer($tenant);
         $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'V', 'is_approved' => true, 'is_active' => true]);
-        $req    = $this->makeAwardedRequest($tenant, $user->id);
+        $req = $this->makeAwardedRequest($tenant, $user->id);
 
         Contract::create([
-            'tenant_id'              => $tenant->id,
+            'tenant_id' => $tenant->id,
             'procurement_request_id' => $req->id,
-            'vendor_id'              => $vendor->id,
-            'title'                  => 'Expired Contract',
-            'start_date'             => now()->subYears(2)->toDateString(),
-            'end_date'               => now()->subDays(10)->toDateString(),
-            'value'                  => 50000,
-            'currency'               => 'NAD',
-            'status'                 => 'active',
-            'created_by'             => $user->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Expired Contract',
+            'start_date' => now()->subYears(2)->toDateString(),
+            'end_date' => now()->subDays(10)->toDateString(),
+            'value' => 50000,
+            'currency' => 'NAD',
+            'status' => 'active',
+            'created_by' => $user->id,
         ]);
 
         $response = $http->getJson('/api/v1/procurement/contracts?status=active')
@@ -128,19 +129,19 @@ class ContractTest extends TestCase
         $tenant = Tenant::factory()->create();
         [$http, $user] = $this->asProcurementOfficer($tenant);
         $vendor = Vendor::create(['tenant_id' => $tenant->id, 'name' => 'V', 'is_approved' => true, 'is_active' => true]);
-        $req    = $this->makeAwardedRequest($tenant, $user->id);
+        $req = $this->makeAwardedRequest($tenant, $user->id);
 
         $contract = Contract::create([
-            'tenant_id'              => $tenant->id,
+            'tenant_id' => $tenant->id,
             'procurement_request_id' => $req->id,
-            'vendor_id'              => $vendor->id,
-            'title'                  => 'Active Contract',
-            'start_date'             => now()->toDateString(),
-            'end_date'               => now()->addYear()->toDateString(),
-            'value'                  => 50000,
-            'currency'               => 'NAD',
-            'status'                 => 'active',
-            'created_by'             => $user->id,
+            'vendor_id' => $vendor->id,
+            'title' => 'Active Contract',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
+            'value' => 50000,
+            'currency' => 'NAD',
+            'status' => 'active',
+            'created_by' => $user->id,
         ]);
 
         $http->deleteJson("/api/v1/procurement/contracts/{$contract->id}")
@@ -155,19 +156,19 @@ class ContractTest extends TestCase
         $t2 = Tenant::factory()->create();
         [$http1, $u1] = $this->asProcurementOfficer($t1);
         $vendor2 = Vendor::create(['tenant_id' => $t2->id, 'name' => 'ForeignV', 'is_approved' => true, 'is_active' => true]);
-        $req2    = $this->makeAwardedRequest($t2, $u1->id);
+        $req2 = $this->makeAwardedRequest($t2, $u1->id);
 
         $contract2 = Contract::create([
-            'tenant_id'              => $t2->id,
+            'tenant_id' => $t2->id,
             'procurement_request_id' => $req2->id,
-            'vendor_id'              => $vendor2->id,
-            'title'                  => 'Cross Tenant',
-            'start_date'             => now()->toDateString(),
-            'end_date'               => now()->addYear()->toDateString(),
-            'value'                  => 10000,
-            'currency'               => 'NAD',
-            'status'                 => 'draft',
-            'created_by'             => $u1->id,
+            'vendor_id' => $vendor2->id,
+            'title' => 'Cross Tenant',
+            'start_date' => now()->toDateString(),
+            'end_date' => now()->addYear()->toDateString(),
+            'value' => 10000,
+            'currency' => 'NAD',
+            'status' => 'draft',
+            'created_by' => $u1->id,
         ]);
 
         $http1->getJson("/api/v1/procurement/contracts/{$contract2->id}")->assertNotFound();
