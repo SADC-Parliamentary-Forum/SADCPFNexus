@@ -48,7 +48,21 @@ class ContractController extends Controller
         private readonly ContractFrameworkService $frameworks,
         private readonly ContractPackService $pack,
         private readonly ContractDiffService $diff,
+        private readonly \App\Modules\Contracts\Services\ContractAuthorityService $authority,
     ) {}
+
+    /**
+     * Enforce the Authority Matrix (PRD §41) for an action. Additive: if no
+     * rule governs this action/value, RBAC alone applies. When a rule matches,
+     * the actor must hold an authorised/alternate role or an in-force delegation.
+     */
+    private function ensureAuthority(Request $request, string $action, Contract $contract): void
+    {
+        if (! $this->authority->userMayAct($request->user(), $action, $contract)) {
+            $roles = implode(', ', $this->authority->requiredRoles($action, $contract));
+            abort(403, "Authority Matrix: this action requires one of [{$roles}] for a contract of this value.");
+        }
+    }
 
     private function ensurePermission(Request $request, array $permissions, array $roles = []): void
     {
@@ -449,6 +463,7 @@ class ContractController extends Controller
     {
         $this->ensurePermission($request, ['contract.review', 'contract.approve'], ['Secretary General']);
         $contract = $this->contracts->find($contract->id, $request->user());
+        $this->ensureAuthority($request, 'approve', $contract);
         $approval = $this->requireActiveApproval($contract);
 
         $data = $request->validate(['comment' => ['nullable', 'string', 'max:2000']]);
@@ -789,6 +804,7 @@ class ContractController extends Controller
     {
         $this->ensurePermission($request, ['contract.sign_internal'], ['Secretary General']);
         $contract = $this->contracts->find($contract->id, $request->user());
+        $this->ensureAuthority($request, 'sign', $contract);
 
         $data = $request->validate(['confirm_password' => ['nullable', 'string']]);
         $contract = $this->signatures->signInternal($contract, $request->user(), $data['confirm_password'] ?? null);
