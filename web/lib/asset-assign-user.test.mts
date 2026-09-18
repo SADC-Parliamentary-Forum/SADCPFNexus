@@ -56,6 +56,15 @@ test("asset view shows assignee name, email and department", () => {
   assert.match(view, /assigned_user\?\.email/);
 });
 
+test("handover e2e selects staff from the searchable assignee picker", () => {
+  const spec = readFileSync(join(webRoot, "tests/e2e/assets-handover.spec.ts"), "utf8");
+  const helper = readFileSync(join(webRoot, "tests/e2e/helpers/asset-assignee.ts"), "utf8");
+  assert.match(spec, /selectAssetAssignee/);
+  assert.doesNotMatch(spec, /selectOption/);
+  assert.match(helper, /asset-assignee-picker/);
+  assert.match(helper, /getByRole\("option"/);
+});
+
 test("import map-custodian sends optional user_id when type is person", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assets/import/page.tsx"), "utf8");
   assert.match(page, /custodianType === ["']user["']/);

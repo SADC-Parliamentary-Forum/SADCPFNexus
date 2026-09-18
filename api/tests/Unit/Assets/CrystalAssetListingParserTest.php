@@ -105,7 +105,14 @@ class CrystalAssetListingParserTest extends TestCase
 
         $rows = (new NexusAssetTemplateParser)->parseFile($path, 'template.xlsx');
         unlink($path);
-        $this->assertSame([], $rows);
+        $this->assertGreaterThanOrEqual(300, count($rows));
+        $this->assertSame('AS-0001', $rows[0]['asset_tag']);
+        $this->assertContains('assigned_to', $headers);
+        $this->assertContains('assigned_to_email', $headers);
+        $this->assertContains('department', $headers);
+        foreach ($rows as $row) {
+            $this->assertNotSame('', trim((string) ($row['asset_name'] ?? $row['asset_tag'] ?? '')));
+        }
     }
 
     public function test_description_parser_never_invents_unknown_or_na_serials(): void
