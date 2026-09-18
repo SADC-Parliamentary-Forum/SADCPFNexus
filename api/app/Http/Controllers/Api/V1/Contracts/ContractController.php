@@ -536,6 +536,62 @@ class ContractController extends Controller
         return response()->json(['data' => $contract->exceptions]);
     }
 
+    /** Correspondence linked to this contract (PRD §63). */
+    public function correspondence(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.audit_view'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $items = \App\Models\Correspondence::where('tenant_id', $request->user()->tenant_id)
+            ->where('contract_id', $contract->id)
+            ->orderByDesc('created_at')
+            ->get(['id', 'reference_number', 'title', 'subject', 'type', 'status', 'direction', 'created_at']);
+
+        return response()->json(['data' => $items]);
+    }
+
+    /** Create a correspondence draft from a contract, linked back to it (PRD §63). */
+    public function createCorrespondence(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.send', 'contract.create'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:500'],
+            'subject' => ['required', 'string', 'max:500'],
+            'body' => ['nullable', 'string', 'max:10000'],
+            'type' => ['nullable', 'in:internal_memo,external,diplomatic_note,procurement'],
+            'priority' => ['nullable', 'in:low,normal,high,urgent'],
+            'response_required' => ['nullable', 'boolean'],
+            'internal_deadline' => ['nullable', 'date'],
+        ]);
+
+        $correspondence = \App\Models\Correspondence::create([
+            'tenant_id' => $request->user()->tenant_id,
+            'created_by' => $request->user()->id,
+            'contract_id' => $contract->id,
+            'department_id' => $contract->department_id,
+            'title' => $data['title'],
+            'subject' => $data['subject'],
+            'body' => $data['body'] ?? null,
+            'type' => $data['type'] ?? 'procurement',
+            'priority' => $data['priority'] ?? 'normal',
+            'direction' => 'outgoing',
+            'confidentiality' => 'general_official',
+            'response_required' => (bool) ($data['response_required'] ?? false),
+            'internal_deadline' => $data['internal_deadline'] ?? null,
+            'status' => 'draft',
+        ]);
+
+        AuditLog::record('contract.correspondence_created', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['correspondence_id' => $correspondence->id, 'title' => $correspondence->title],
+            'tags' => ['contract', 'correspondence'],
+        ]);
+
+        return response()->json(['message' => 'Correspondence draft created and linked to the contract.', 'data' => $correspondence], 201);
+    }
+
     // ── Financials, deliverables, amendments, close-out (WS5) ────────────────
 
     public function ledger(Request $request, Contract $contract): JsonResponse

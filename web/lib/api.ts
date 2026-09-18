@@ -5398,6 +5398,11 @@ export const contractsApi = {
     api.delete<{ message: string }>(`/contracts/authority/delegations/${id}`),
   contractAuthority: (id: number, action: "approve" | "sign") =>
     api.get<{ data: { action: string; required_roles: string[]; governed: boolean; user_may_act: boolean; sod_conflict: boolean } }>(`/contracts/${id}/authority`, { params: { action } }),
+  // Correspondence linkage (§63)
+  correspondence: (id: number) =>
+    api.get<{ data: { id: number; reference_number: string | null; title: string; subject: string; type: string; status: string; direction: string; created_at: string }[] }>(`/contracts/${id}/correspondence`),
+  createCorrespondence: (id: number, data: { title: string; subject: string; body?: string; type?: string; priority?: string }) =>
+    api.post<{ data: { id: number }; message: string }>(`/contracts/${id}/correspondence`, data),
   exceptionRegister: () =>
     api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
   audit: (id: number) =>

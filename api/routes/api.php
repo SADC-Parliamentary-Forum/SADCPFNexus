@@ -1332,6 +1332,8 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/withdraw', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'withdraw']);
             Route::get('{contract}/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'exceptions']);
             Route::get('{contract}/authority', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'forContract']);
+            Route::get('{contract}/correspondence', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'correspondence']);
+            Route::post('{contract}/correspondence', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createCorrespondence']);
 
             // Execution & signature
             Route::post('{contract}/send-for-signature', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'sendForSignature']);
