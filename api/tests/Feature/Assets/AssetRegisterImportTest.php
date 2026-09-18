@@ -7,6 +7,7 @@ use App\Models\AssetImportBatch;
 use App\Models\AssetImportLineage;
 use App\Models\AssetImportRaw;
 use App\Models\AssetQrToken;
+use App\Models\AuditLog;
 use App\Models\Tenant;
 use App\Modules\Assets\Services\AssetImportCommitService;
 use App\Modules\Assets\Services\AssetQrService;
@@ -974,5 +975,131 @@ class AssetRegisterImportTest extends TestCase
             'review_status' => 'pending',
         ]);
         $this->assertSame(0, Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5501')->count());
+    }
+
+    public function test_approve_succeeds_when_rows_are_already_approved(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $batchId = $this->stageSingleRow($http, 'CE-6101', 'Already approved laptop');
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])
+            ->assertOk();
+        $again = $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true]);
+        $again->assertOk()->assertJsonPath('approved', 0);
+    }
+
+    public function test_approve_and_commit_accept_browser_user_agent_over_255_chars(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $batchId = $this->stageSingleRow($http, 'CE-6102', 'Long UA laptop');
+        $userAgent = str_repeat('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0 ', 8);
+        $this->assertGreaterThan(255, strlen($userAgent));
+
+        $http->withHeaders(['User-Agent' => $userAgent])
+            ->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])
+            ->assertOk();
+
+        $commit = $http->withHeaders(['User-Agent' => $userAgent])
+            ->postJson("/api/v1/assets/import/{$batchId}/commit");
+        $commit->assertOk();
+        $this->assertSame(1, Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-6102')->count());
+        $this->assertLessThanOrEqual(255, strlen((string) AuditLog::query()->where('event', 'assets.import_approved')->latest('id')->value('user_agent')));
+        $this->assertLessThanOrEqual(255, strlen((string) AuditLog::query()->where('event', 'assets.import_committed')->latest('id')->value('user_agent')));
+    }
+
+    public function test_commit_does_not_cap_php_max_execution_time(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $batchId = $this->stageSingleRow($http, 'CE-6104', 'Time limit laptop');
+        $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])->assertOk();
+        $before = (string) ini_get('max_execution_time');
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/commit")->assertOk();
+
+        $this->assertSame($before, (string) ini_get('max_execution_time'));
+    }
+
+    public function test_commit_lands_assets_when_qr_file_storage_is_unwritable(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $batchId = $this->stageSingleRow($http, 'CE-6103', 'QR disk laptop');
+        $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])->assertOk();
+
+        $qrRoot = storage_path('app/qr');
+        if (! is_dir($qrRoot)) {
+            mkdir($qrRoot, 0777, true);
+        }
+        $previous = fileperms($qrRoot);
+        chmod($qrRoot, 0555);
+        try {
+            $http->postJson("/api/v1/assets/import/{$batchId}/commit")->assertOk();
+        } finally {
+            chmod($qrRoot, $previous ?: 0777);
+        }
+
+        $asset = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-6103')->first();
+        $this->assertNotNull($asset);
+        $this->assertNotEmpty($asset->qr_token);
+        $this->assertDatabaseHas('asset_qr_tokens', [
+            'asset_id' => $asset->id,
+            'token' => $asset->qr_token,
+        ]);
+        $this->getJson('/api/v1/public/assets/'.$asset->qr_token)->assertOk();
+    }
+
+    public function test_bulk_commit_writes_batch_audit_not_per_asset_audit_rows(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $path = sys_get_temp_dir().'/template-audit-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name'],
+            ['CE-6201', 'Audit laptop one'],
+            ['CE-6202', 'Audit laptop two'],
+            ['CE-6203', 'Audit laptop three'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+        $batchId = $res->json('data.batch.id');
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])->assertOk();
+        $http->postJson("/api/v1/assets/import/{$batchId}/commit")->assertOk();
+
+        $this->assertSame(3, Asset::query()->where('tenant_id', $tenant->id)->count());
+        $this->assertSame(0, AuditLog::query()->where('event', 'assets.import_created')->count());
+        $this->assertSame(0, AuditLog::query()->where('event', 'assets.qr_generated')->count());
+        $this->assertSame(1, AuditLog::query()->where('event', 'assets.import_committed')->where('auditable_id', $batchId)->count());
+    }
+
+    /**
+     * @param  \Illuminate\Testing\TestResponse|\Illuminate\Foundation\Testing\TestCase  $http
+     */
+    private function stageSingleRow($http, string $tag, string $name): int
+    {
+        $path = sys_get_temp_dir().'/template-row-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name'],
+            [$tag, $name],
+        ]);
+        (new Xlsx($sheet))->save($path);
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        return (int) $res->json('data.batch.id');
     }
 }

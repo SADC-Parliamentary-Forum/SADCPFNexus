@@ -226,7 +226,7 @@ class AssetImportService
         $query = AssetImportStaging::query()
             ->where('import_batch_id', $batch->id)
             ->where('blocking', false)
-            ->whereNotIn('review_status', ['committed', 'excluded']);
+            ->whereNotIn('review_status', ['committed', 'excluded', 'approved']);
         if (! $allNonBlocking) {
             $query->whereIn('id', $stagingIds);
         }
@@ -236,12 +236,16 @@ class AssetImportService
             'reviewed_at' => now(),
         ]);
 
-        AuditLog::record('assets.import_approved', [
-            'auditable_type' => AssetImportBatch::class,
-            'auditable_id' => $batch->id,
-            'new_values' => ['approved' => $count],
-            'tags' => 'assets',
-        ]);
+        try {
+            AuditLog::record('assets.import_approved', [
+                'auditable_type' => AssetImportBatch::class,
+                'auditable_id' => $batch->id,
+                'new_values' => ['approved' => $count],
+                'tags' => 'assets',
+            ]);
+        } catch (\Throwable) {
+            // Approval must succeed even if the audit writer rejects the user-agent.
+        }
 
         return $count;
     }

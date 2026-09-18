@@ -21,7 +21,7 @@ const contentSecurityPolicy = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob:",
-  "frame-src https://challenges.cloudflare.com https://hcaptcha.com https://*.hcaptcha.com https://newassets.hcaptcha.com",
+  "frame-src 'self' blob: https://challenges.cloudflare.com https://hcaptcha.com https://*.hcaptcha.com https://newassets.hcaptcha.com",
   `connect-src 'self' ${apiOrigin} https:`,
 ].join("; ");
 

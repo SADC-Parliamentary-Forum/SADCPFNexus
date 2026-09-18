@@ -2428,12 +2428,18 @@ export const assetImportApi = {
     api.get("/assets/import", { params }),
   downloadTemplate: () =>
     api.get<Blob>("/assets/import/template", { responseType: "blob" }).then((res) => {
-      const url = URL.createObjectURL(res.data);
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = "sadcpf-asset-import-template.xlsx";
+      a.rel = "noopener";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 2000);
     }),
   upload: (form: FormData) =>
     api.post<{ message: string; data: unknown }>("/assets/import", form, {
@@ -2454,7 +2460,7 @@ export const assetImportApi = {
   mapCustodian: (id: number, data: Record<string, unknown>) =>
     api.post(`/assets/import/${id}/map-custodian`, data),
   commit: (id: number, data?: { approve_non_blocking?: boolean }) =>
-    api.post(`/assets/import/${id}/commit`, data ?? {}),
+    api.post(`/assets/import/${id}/commit`, data ?? {}, { timeout: 180_000 }),
   report: (id: number) => api.get(`/assets/import/${id}/report`),
 };
 
