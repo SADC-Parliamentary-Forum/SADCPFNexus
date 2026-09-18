@@ -23,10 +23,18 @@ final class NexusAssetTemplateParser
         'accumulated_depreciation',
         'currency',
         'funding_source',
-        'legacy_location',
-        'custodian_candidate',
+        'asset_owner',
+        'assigned_to',
         'assigned_to_email',
+        'location',
+        'department',
         'legacy_description',
+    ];
+
+    /** Spreadsheet headers that map onto historical import keys. */
+    private const HEADER_ALIASES = [
+        'location' => 'legacy_location',
+        'assigned_to' => 'custodian_candidate',
     ];
 
     private const MONEY_HEADERS = [
@@ -92,6 +100,13 @@ final class NexusAssetTemplateParser
                 }
             }
             $assoc['legacy_description'] = $assoc['legacy_description'] ?? ($assoc['asset_name'] ?? null);
+            foreach (self::HEADER_ALIASES as $from => $to) {
+                $fromVal = trim((string) ($assoc[$from] ?? ''));
+                $toVal = trim((string) ($assoc[$to] ?? ''));
+                if ($toVal === '' && $fromVal !== '') {
+                    $assoc[$to] = $fromVal;
+                }
+            }
             $assoc['source_filename'] = $filename;
             $assoc['source_sheet'] = $sheet;
             $assoc['source_row_number'] = $i + 1;

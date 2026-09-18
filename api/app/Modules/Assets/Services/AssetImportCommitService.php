@@ -157,6 +157,8 @@ class AssetImportCommitService
             'custodian_type' => $row->custodian_type,
             'custodian_department_id' => $row->custodian_department_id,
             'assigned_to' => $row->custodian_user_id,
+            'department' => $this->importedDepartmentName($row),
+            'owner_name' => $this->importedOwnerName($row),
             'ownership_type' => is_array($row->source_refs) ? ($row->source_refs['ownership_type'] ?? 'sadc_pf_owned') : 'sadc_pf_owned',
             'home_location_id' => $row->location_id,
             'imei' => is_array($row->source_refs) ? ($row->source_refs['imei'] ?? null) : null,
@@ -243,16 +245,22 @@ class AssetImportCommitService
         try {
             app(AssetService::class)->assign($asset->fresh() ?? $asset, $assignee, $user, [
                 'notes' => 'Imported assignment',
+                'department' => $this->importedDepartmentName($row),
             ]);
         } catch (ValidationException|HttpException) {
             $fresh = $asset->fresh() ?? $asset;
             $fresh->assigned_to = $assignee->id;
+            $department = $this->importedDepartmentName($row);
+            if ($department) {
+                $fresh->department = $department;
+            }
             $fresh->save();
             if (! $fresh->assignmentHistories()->whereNull('returned_at')->where('assigned_to', $assignee->id)->exists()) {
                 AssetAssignmentHistory::create([
                     'tenant_id' => $fresh->tenant_id,
                     'asset_id' => $fresh->id,
                     'assigned_to' => $assignee->id,
+                    'department' => $department,
                     'assignment_type' => 'custody',
                     'assigned_at' => now(),
                     'assigned_by' => $user->id,
@@ -260,6 +268,22 @@ class AssetImportCommitService
                 ]);
             }
         }
+    }
+
+    private function importedOwnerName(AssetImportStaging $row): string
+    {
+        $refs = is_array($row->source_refs) ? $row->source_refs : [];
+        $owner = trim((string) ($refs['asset_owner'] ?? ''));
+
+        return $owner !== '' ? $owner : 'SADC Parliamentary Forum';
+    }
+
+    private function importedDepartmentName(AssetImportStaging $row): ?string
+    {
+        $refs = is_array($row->source_refs) ? $row->source_refs : [];
+        $name = trim((string) ($refs['department'] ?? ''));
+
+        return $name !== '' ? $name : null;
     }
 
     private function ensureIdentity(Asset $asset, User $user): void

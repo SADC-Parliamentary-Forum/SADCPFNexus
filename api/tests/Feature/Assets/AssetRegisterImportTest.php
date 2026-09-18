@@ -61,8 +61,14 @@ class AssetRegisterImportTest extends TestCase
         $this->assertContains('asset_tag', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('asset_name', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('original_cost', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('assigned_to', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('assigned_to_email', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
-        $this->assertContains('custodian_candidate', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('location', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('department', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('asset_owner', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertSame('SADC Parliamentary Forum', $rows[1]['asset_owner']);
+        $this->assertSame('Unaro Mungendje', $rows[1]['assigned_to']);
+        $this->assertSame('USM-Office#16A', $rows[1]['legacy_location']);
     }
 
     public function test_template_assigned_to_email_optionally_resolves_tenant_user(): void
@@ -115,6 +121,65 @@ class AssetRegisterImportTest extends TestCase
 
         $unassigned = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5103')->first();
         $this->assertNull($unassigned?->assigned_to);
+    }
+
+    public function test_assignment_fields_workbook_captures_name_email_department_and_owner(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $dept = $this->makeDepartment($tenant);
+        $dept->forceFill(['name' => 'ICT', 'code' => 'ICT'])->save();
+        $staff = $this->makeUser('staff', $tenant);
+        $staff->forceFill([
+            'name' => 'Unaro Mungendje',
+            'email' => 'unaro.mungendje@sadcpf.org',
+            'department_id' => $dept->id,
+        ])->save();
+
+        $path = sys_get_temp_dir().'/template-assign-fields-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'asset_owner', 'assigned_to', 'assigned_to_email', 'location', 'department', 'original_cost'],
+            ['CE-9001', 'HP ZBook 15', 'SADC Parliamentary Forum', 'Unaro Mungendje', 'unaro.mungendje@sadcpf.org', 'USM-Office#16A', 'ICT', '1,200.00'],
+            ['CE-9002', 'Shared projector', 'SADC Parliamentary Forum', '', '', 'Boardroom', '', '800.00'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'assignment-fields.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        $batch = AssetImportBatch::find($res->json('data.batch.id'));
+        $matched = $batch->stagingRows()->where('asset_tag', 'CE-9001')->first();
+        $this->assertNotNull($matched);
+        $this->assertSame($staff->id, (int) $matched->custodian_user_id);
+        $this->assertSame('user', $matched->custodian_type);
+        $this->assertSame($dept->id, (int) $matched->custodian_department_id);
+        $this->assertSame('Unaro Mungendje', $matched->custodian_candidate);
+        $this->assertSame('USM-Office#16A', $matched->legacy_location);
+        $this->assertSame('SADC Parliamentary Forum', $matched->source_refs['asset_owner'] ?? null);
+        $this->assertSame('ICT', $matched->source_refs['department'] ?? null);
+
+        $http->postJson("/api/v1/assets/import/{$batch->id}/commit", ['approve_non_blocking' => true])->assertOk();
+
+        $asset = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-9001')->first();
+        $this->assertNotNull($asset);
+        $this->assertSame($staff->id, (int) $asset->assigned_to);
+        $this->assertSame('ICT', $asset->department);
+        $this->assertSame('SADC Parliamentary Forum', $asset->owner_name);
+        $this->assertDatabaseHas('asset_assignment_histories', [
+            'asset_id' => $asset->id,
+            'assigned_to' => $staff->id,
+            'department' => 'ICT',
+            'returned_at' => null,
+        ]);
+
+        $shared = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-9002')->first();
+        $this->assertNull($shared?->assigned_to);
+        $this->assertSame('SADC Parliamentary Forum', $shared?->owner_name);
     }
 
     public function test_template_custodian_candidate_name_resolves_tenant_user(): void

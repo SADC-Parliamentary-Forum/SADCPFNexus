@@ -12,6 +12,7 @@ use App\Models\AssetImportStaging;
 use App\Models\AssetLocation;
 use App\Models\AssetLocationMapping;
 use App\Models\AuditLog;
+use App\Models\Department;
 use App\Models\User;
 use App\Modules\Assets\Import\AssetCategoryMapper;
 use App\Modules\Assets\Import\AssetDescriptionParser;
@@ -445,6 +446,8 @@ class AssetImportService
             $locationId = $this->mapLocation($batch, $user, $merged['legacy_location'] ?? null);
             $custodian = $this->suggestCustodian($user, $merged['custodian_candidate'] ?? null, $merged['legacy_location'] ?? null);
             $resolved = $this->resolveAssignedUser((int) $user->tenant_id, $merged);
+            $department = $this->resolveAssigneeDepartment((int) $user->tenant_id, $merged, $resolved['user_id']);
+            $merged['department'] = $department['name'];
             $qualityFlags = array_values(array_unique(array_merge(
                 $parsedDesc['flags'],
                 ! empty($merged['duplicate_in_source']) ? ['ASSET_TAG_CONFLICT'] : [],
@@ -483,14 +486,14 @@ class AssetImportService
                 'custodian_candidate' => $merged['custodian_candidate'] ?? $custodian['candidate'],
                 'custodian_type' => $custodian['type'],
                 'custodian_user_id' => $resolved['user_id'],
-                'custodian_department_id' => null,
+                'custodian_department_id' => $department['id'],
                 'custodian_confidence' => $custodian['confidence'],
                 'status' => 'active',
                 'proposed_action' => $proposed,
                 'review_status' => 'pending',
                 'matched_asset_id' => $existing?->id,
                 'field_diff' => $diff,
-                'source_refs' => $merged['source_refs'],
+                'source_refs' => $this->assignmentSourceRefs($merged),
                 'blocking' => ! empty($merged['duplicate_in_source']),
                 'blocking_errors' => ! empty($merged['duplicate_in_source']) ? ['DUPLICATE_ASSET_TAG'] : null,
                 'data_quality_flags' => $qualityFlags,
@@ -574,8 +577,10 @@ class AssetImportService
             $merged['make'] = $staging['make'] ?? $merged['make'] ?? null;
             $merged['model'] = $staging['model'] ?? $merged['model'] ?? null;
             $merged['serial_number'] = $staging['serial_number'] ?? $merged['serial_number'] ?? null;
-            $merged['custodian_candidate'] = $staging['custodian_candidate'] ?? null;
+            $merged['custodian_candidate'] = $staging['custodian_candidate'] ?? $staging['assigned_to'] ?? null;
             $merged['assigned_to_email'] = $staging['assigned_to_email'] ?? $merged['assigned_to_email'] ?? null;
+            $merged['asset_owner'] = $staging['asset_owner'] ?? $merged['asset_owner'] ?? null;
+            $merged['department'] = $staging['department'] ?? $merged['department'] ?? null;
             $merged['original_cost'] = $staging['original_cost'] ?? $merged['original_cost'] ?? null;
             $merged['current_book_value'] = $staging['current_book_value'] ?? $merged['current_book_value'] ?? null;
             $merged['accumulated_depreciation'] = $staging['accumulated_depreciation'] ?? $merged['accumulated_depreciation'] ?? null;
@@ -868,7 +873,7 @@ class AssetImportService
     {
         $email = strtolower(trim((string) ($merged['assigned_to_email'] ?? '')));
         if ($email === '') {
-            $candidate = trim((string) ($merged['custodian_candidate'] ?? ''));
+            $candidate = trim((string) ($merged['custodian_candidate'] ?? $merged['assigned_to'] ?? ''));
             if (str_contains($candidate, '@')) {
                 $email = strtolower($candidate);
             }
@@ -891,7 +896,7 @@ class AssetImportService
             return ['user_id' => null, 'unmatched' => true];
         }
 
-        $candidate = trim(preg_replace('/\s+/', ' ', (string) ($merged['custodian_candidate'] ?? '')) ?? '');
+        $candidate = trim(preg_replace('/\s+/', ' ', (string) ($merged['custodian_candidate'] ?? $merged['assigned_to'] ?? '')) ?? '');
         if ($candidate === '' || str_contains($candidate, '@')) {
             return ['user_id' => null, 'unmatched' => false];
         }
@@ -916,6 +921,59 @@ class AssetImportService
         }
 
         return ['user_id' => null, 'unmatched' => true];
+    }
+
+    /**
+     * @param  array<string, mixed>  $merged
+     * @return array{name: ?string, id: ?int}
+     */
+    private function resolveAssigneeDepartment(int $tenantId, array $merged, ?int $userId): array
+    {
+        $name = trim((string) ($merged['department'] ?? ''));
+        $departmentId = null;
+
+        if ($userId) {
+            $assignee = User::query()->with('department')->find($userId);
+            if ($assignee?->department_id) {
+                $departmentId = (int) $assignee->department_id;
+            }
+            if ($name === '') {
+                $name = trim((string) ($assignee?->department?->name ?? ''));
+            }
+        }
+
+        if ($departmentId === null && $name !== '') {
+            $match = Department::query()
+                ->where('tenant_id', $tenantId)
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])
+                ->first();
+            $departmentId = $match?->id ? (int) $match->id : null;
+        }
+
+        return [
+            'name' => $name !== '' ? $name : null,
+            'id' => $departmentId,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $merged
+     * @return array<int|string, mixed>
+     */
+    private function assignmentSourceRefs(array $merged): array
+    {
+        $refs = $merged['source_refs'] ?? [];
+        if (! is_array($refs)) {
+            $refs = [];
+        }
+        foreach (['asset_owner', 'department', 'assigned_to_email'] as $key) {
+            $value = trim((string) ($merged[$key] ?? ''));
+            if ($value !== '') {
+                $refs[$key] = $value;
+            }
+        }
+
+        return $refs;
     }
 
     private function isSharedLocation(string $location): bool

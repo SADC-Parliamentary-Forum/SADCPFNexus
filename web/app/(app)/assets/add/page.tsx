@@ -3,9 +3,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { assetsApi, assetCategoriesApi, tenantUsersApi, type AssetCategory } from "@/lib/api";
+import { assetsApi, assetCategoriesApi, type AssetCategory, type TenantUserOption } from "@/lib/api";
 import { canManageAssets, getStoredUser } from "@/lib/auth";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
+import { assigneeDepartmentName, formatAssigneeLabel } from "@/lib/asset-assignee";
 
 const STATUSES = ["active", "service_due", "loan_out", "retired"] as const;
 const DEPRECIATION_METHODS = [
@@ -54,13 +56,12 @@ function computeDepreciatedValue(
 export default function AddAssetPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
-  const [userOptions, setUserOptions] = useState<{ id: number; name: string }[]>([]);
+  const [assignedUser, setAssignedUser] = useState<TenantUserOption | null>(null);
   const [categories, setCategories] = useState<AssetCategory[]>([]);
   const [assetCode, setAssetCode] = useState("");
   const [name, setName] = useState("");
   const [category, setCategory] = useState<string>("");
   const [status, setStatus] = useState<string>("active");
-  const [assignedTo, setAssignedTo] = useState<number | "">("");
   const [issuedAt, setIssuedAt] = useState("");
   const [notes, setNotes] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -85,9 +86,8 @@ export default function AddAssetPage() {
       return;
     }
     if (!allowed) return;
-    Promise.all([tenantUsersApi.list(), assetCategoriesApi.list()])
-      .then(([userRes, catRes]) => {
-        setUserOptions((userRes.data as { data?: { id: number; name: string }[] }).data ?? []);
+    assetCategoriesApi.list()
+      .then((catRes) => {
         const list = (catRes.data as { data?: AssetCategory[] }).data ?? [];
         setCategories(list);
         if (list.length > 0 && !category) {
@@ -160,7 +160,8 @@ export default function AddAssetPage() {
         name: assetName,
         category,
         status: status || "active",
-        assigned_to: assignedTo === "" ? undefined : Number(assignedTo),
+        assigned_to: assignedUser?.id,
+        department: assigneeDepartmentName(assignedUser) ?? undefined,
         issued_at: issuedAt || undefined,
         notes: notes.trim() || undefined,
         invoice_number: invoiceNumber.trim() || undefined,
@@ -324,22 +325,14 @@ export default function AddAssetPage() {
                 </select>
               </div>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="assigned_to" className={labelCls}>Assigned to</label>
-              <select
-                id="assigned_to"
-                value={assignedTo === "" ? "" : assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value === "" ? "" : Number(e.target.value))}
-                className={inputCls}
-                disabled={submitting}
-              >
-                <option value="">— Not assigned —</option>
-                {userOptions.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
-              <p className="text-xs text-neutral-500">Optional. Leave unassigned if the asset is not in someone&apos;s custody.</p>
-            </div>
+            <AssetAssigneePicker
+              id="assigned_to"
+              label="Assigned to"
+              value={assignedUser}
+              onSelect={setAssignedUser}
+              disabled={submitting}
+              hint="Optional. Search by full name, email or department."
+            />
             <div className="space-y-2">
               <label htmlFor="issued_at" className={labelCls}>Issued date</label>
               <input
@@ -539,6 +532,7 @@ export default function AddAssetPage() {
                   value: categories.find((c) => c.code === category)?.name ?? category,
                 },
                 { label: "Status", value: status.replace("_", " ") },
+                { label: "Assigned to", value: assignedUser ? formatAssigneeLabel(assignedUser) : "—" },
                 { label: "Invoice number", value: invoiceNumber || "—" },
                 { label: "Purchase value", value: pv != null ? `$${pv.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—" },
                 { label: "Invoice attached", value: invoiceFile ? invoiceFile.name : "No" },

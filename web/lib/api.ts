@@ -284,6 +284,8 @@ export interface TenantUserOption {
   name: string;
   email: string;
   job_title?: string | null;
+  department?: string | null;
+  department_id?: number | null;
 }
 
 export const tenantUsersApi = {
@@ -1842,7 +1844,12 @@ export interface Asset {
   asset_class?: string | null;
   status: string;
   assigned_to: number | null;
-  assigned_user?: { id: number; name: string; email: string } | null;
+  assigned_user?: {
+    id: number;
+    name: string;
+    email: string;
+    department?: { id: number; name: string } | string | null;
+  } | null;
   location_id?: number | null;
   location?: { id: number; name: string; code?: string } | null;
   home_location_id?: number | null;
@@ -1872,6 +1879,7 @@ export interface Asset {
   funding_source?: string | null;
   book_value?: number | null;
   owner_name?: string | null;
+  department?: string | null;
   custodian_type?: string | null;
   parent_asset_id?: number | null;
   nfc_uid?: string | null;
@@ -1901,6 +1909,7 @@ export const assetsApi = {
     category: string;
     status?: string;
     assigned_to?: number | null;
+    department?: string;
     issued_at?: string;
     value?: number;
     notes?: string;
@@ -1918,6 +1927,7 @@ export const assetsApi = {
     category: string;
     status?: string;
     assigned_to?: number | null;
+    department?: string;
     issued_at?: string;
     value?: number;
     notes?: string;
