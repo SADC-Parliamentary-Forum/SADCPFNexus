@@ -377,6 +377,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/contracts/authority", permission: ["contract.manage_authority"] },
   { path: "/contracts/templates", permission: ["contract.manage_template"] },
   { path: "/contracts/reports", permission: ["contract.report", "contract.view_all", "contract.audit_view"] },
+  { path: "/contracts/analytics", permission: ["contract.report", "contract.view_all", "contract.audit_view"] },
   { path: "/contracts/create", permission: ["contract.create"] },
   { path: "/contracts/register", permission: ["contract.view", "contract.view_all", "contract.audit_view"] },
   { path: "/contracts", permission: ["contract.view", "contract.view_all", "contract.audit_view"] },

@@ -108,6 +108,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Contract Register", href: "/contracts/register", icon: "menu_book" },
       { label: "New Contract", href: "/contracts/create", icon: "add_circle" },
       { label: "Reports", href: "/contracts/reports", icon: "assessment" },
+      { label: "Analytics", href: "/contracts/analytics", icon: "insights" },
       { label: "Settings", href: "/contracts/settings", icon: "settings" },
     ],
   },

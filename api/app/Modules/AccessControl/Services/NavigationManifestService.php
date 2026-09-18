@@ -127,6 +127,7 @@ class NavigationManifestService
             }
             if ($holds('contract.report', 'contract.view_all', 'contract.audit_view')) {
                 $children[] = $this->item('Reports', '/contracts/reports', 'assessment');
+                $children[] = $this->item('Analytics', '/contracts/analytics', 'insights');
             }
             if ($holds('contract.manage_template', 'contract.manage_authority')) {
                 $children[] = $this->item('Settings', '/contracts/settings', 'settings');

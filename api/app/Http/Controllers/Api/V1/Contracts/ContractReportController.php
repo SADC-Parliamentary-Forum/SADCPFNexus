@@ -20,7 +20,16 @@ class ContractReportController extends Controller
     public function __construct(
         private readonly ContractReportService $reports,
         private readonly ContractService $contracts,
+        private readonly \App\Modules\Contracts\Services\ContractAnalyticsService $analytics,
     ) {}
+
+    /** Management analytics for the contract portfolio (PRD §101). */
+    public function analytics(Request $request): JsonResponse
+    {
+        $this->gate($request);
+
+        return response()->json(['data' => $this->analytics->summary($request->user())]);
+    }
 
     private function gate(Request $request): void
     {

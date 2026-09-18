@@ -5064,6 +5064,19 @@ export interface ContractTerminationRecord {
   id: number; type: string; reason: string; effective_date: string | null; final_amount: number | string | null;
 }
 
+export interface ContractAnalytics {
+  totals: { contracts: number; active: number; current_value: number };
+  value_by_department: { label: string; count: number; value: number }[];
+  value_by_type: { label: string; count: number; value: number }[];
+  value_by_donor: { label: string; count: number; value: number }[];
+  monthly_creation: { month: string; count: number }[];
+  expiry_forecast: { bucket: string; count: number; value: number }[];
+  amendment_frequency: { total_contracts: number; contracts_with_amendments: number; total_amendments: number; avg_per_contract: number };
+  avg_execution_turnaround_days: number | null;
+  on_time_deliverable_rate: { accepted: number; on_time: number; rate: number };
+  supplier_performance: { evaluations: number; average_overall: number | null };
+}
+
 export interface ContractFrameworkUtilisation {
   ceiling: number; used: number; remaining: number; call_off_count: number; currency: string;
 }
@@ -5247,6 +5260,8 @@ export const contractsApi = {
     api.get<{ data: Record<string, unknown>[]; type: string; count: number }>("/contracts/reports", { params: { type } }),
   reportDownloadUrl: (type: string, format: "csv" | "xlsx" | "pdf") =>
     `/api/contracts/reports?type=${type}&format=${format}`,
+  analytics: () =>
+    api.get<{ data: ContractAnalytics }>("/contracts/reports/analytics"),
   exceptionRegister: () =>
     api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
   audit: (id: number) =>
