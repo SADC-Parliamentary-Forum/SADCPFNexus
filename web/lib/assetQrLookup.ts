@@ -1,7 +1,7 @@
 import { assetQrApi, publicAssetQrApi } from "@/lib/api";
 import { parseAssetQrToken } from "@/lib/assetQrToken";
 
-export type AssetScanAction = { key: string; label: string; href: string };
+export type AssetScanAction = { key: string; label: string; label_key?: string; href: string };
 
 export type AssetScanHit =
   | {

@@ -241,7 +241,7 @@ export default function AssetScanPage() {
               {t("assets.scan.addBasket")}
             </button>
             {hit.actions.map((action) => (
-              <a key={action.key} href={action.href} className="btn-secondary text-sm">{action.label}</a>
+              <a key={action.key} href={action.href} className="btn-secondary text-sm">{action.label_key ? t(action.label_key) : action.label}</a>
             ))}
           </div>
         </section>

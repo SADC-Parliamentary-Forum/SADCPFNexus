@@ -120,6 +120,12 @@ class AssetVerificationService
         $campaign->status = 'closed';
         $campaign->save();
 
+        AuditLog::record('assets.verification_campaign_closed', [
+            'auditable_type' => AssetVerificationCampaign::class,
+            'auditable_id' => $campaign->id,
+            'tags' => 'assets',
+        ]);
+
         return $campaign->fresh();
     }
 }

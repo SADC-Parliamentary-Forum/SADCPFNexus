@@ -6,16 +6,25 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { assetsApi, assetMovementsApi, type Asset, type TenantUserOption } from "@/lib/api";
 import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const MOVEMENT_TYPES = [
-  { id: "transfer",    label: "Transfer",    icon: "swap_horiz",        color: "text-blue-700 bg-blue-50 border-blue-200",    activeColor: "bg-blue-600 text-white border-blue-600",    desc: "Assign the asset to a different staff member." },
-  { id: "maintenance", label: "Maintenance", icon: "build",             color: "text-amber-700 bg-amber-50 border-amber-200",  activeColor: "bg-amber-500 text-white border-amber-500", desc: "Send the asset for servicing or repair." },
-  { id: "storage",     label: "Storage",     icon: "inventory_2",       color: "text-neutral-700 bg-neutral-50 border-neutral-200", activeColor: "bg-neutral-600 text-white border-neutral-600", desc: "Move the asset into storage or a storeroom." },
-  { id: "return",      label: "Return",      icon: "undo",              color: "text-green-700 bg-green-50 border-green-200",  activeColor: "bg-green-600 text-white border-green-600",  desc: "Return the asset to the asset register pool." },
-  { id: "disposal",    label: "Disposal",    icon: "delete_forever",    color: "text-red-700 bg-red-50 border-red-200",        activeColor: "bg-red-600 text-white border-red-600",      desc: "Record the asset as disposed, written-off, or donated." },
-];
+  { id: "assign", labelKey: "assets.movement.type.assign", descKey: "assets.movement.desc.assign", icon: "person_add", color: "text-blue-700 bg-blue-50 border-blue-200", activeColor: "bg-blue-600 text-white border-blue-600" },
+  { id: "transfer", labelKey: "assets.movement.type.transfer", descKey: "assets.movement.desc.transfer", icon: "swap_horiz", color: "text-blue-700 bg-blue-50 border-blue-200", activeColor: "bg-blue-600 text-white border-blue-600" },
+  { id: "return", labelKey: "assets.movement.type.return", descKey: "assets.movement.desc.return", icon: "undo", color: "text-green-700 bg-green-50 border-green-200", activeColor: "bg-green-600 text-white border-green-600" },
+  { id: "move", labelKey: "assets.movement.type.move", descKey: "assets.movement.desc.move", icon: "inventory_2", color: "text-neutral-700 bg-neutral-50 border-neutral-200", activeColor: "bg-neutral-600 text-white border-neutral-600" },
+  { id: "check_out", labelKey: "assets.movement.type.check_out", descKey: "assets.movement.desc.check_out", icon: "logout", color: "text-amber-700 bg-amber-50 border-amber-200", activeColor: "bg-amber-500 text-white border-amber-500" },
+  { id: "check_in", labelKey: "assets.movement.type.check_in", descKey: "assets.movement.desc.check_in", icon: "login", color: "text-green-700 bg-green-50 border-green-200", activeColor: "bg-green-600 text-white border-green-600" },
+  { id: "send_for_repair", labelKey: "assets.movement.type.send_for_repair", descKey: "assets.movement.desc.send_for_repair", icon: "build", color: "text-amber-700 bg-amber-50 border-amber-200", activeColor: "bg-amber-500 text-white border-amber-500" },
+  { id: "return_from_repair", labelKey: "assets.movement.type.return_from_repair", descKey: "assets.movement.desc.return_from_repair", icon: "home_repair_service", color: "text-green-700 bg-green-50 border-green-200", activeColor: "bg-green-600 text-white border-green-600" },
+  { id: "mark_missing", labelKey: "assets.movement.type.mark_missing", descKey: "assets.movement.desc.mark_missing", icon: "help", color: "text-red-700 bg-red-50 border-red-200", activeColor: "bg-red-600 text-white border-red-600" },
+  { id: "recover", labelKey: "assets.movement.type.recover", descKey: "assets.movement.desc.recover", icon: "restore", color: "text-green-700 bg-green-50 border-green-200", activeColor: "bg-green-600 text-white border-green-600" },
+  { id: "dispose", labelKey: "assets.movement.type.dispose", descKey: "assets.movement.desc.dispose", icon: "delete_forever", color: "text-red-700 bg-red-50 border-red-200", activeColor: "bg-red-600 text-white border-red-600" },
+  { id: "write_off", labelKey: "assets.movement.type.write_off", descKey: "assets.movement.desc.write_off", icon: "money_off", color: "text-red-700 bg-red-50 border-red-200", activeColor: "bg-red-600 text-white border-red-600" },
+] as const;
 
 function AssetSearch({ value, onSelect }: { value: Asset | null; onSelect: (a: Asset | null) => void }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState(value ? `${value.asset_code} — ${value.name}` : "");
   const [options, setOptions] = useState<Asset[]>([]);
   const [open, setOpen] = useState(false);
@@ -41,8 +50,8 @@ function AssetSearch({ value, onSelect }: { value: Asset | null; onSelect: (a: A
 
   return (
     <div ref={ref} className="relative">
-      <label htmlFor="assets-movement-new-asset" className="block text-xs font-semibold text-neutral-700 mb-1">Asset <span className="text-red-500">*</span></label>
-      <input id="assets-movement-new-asset" className="form-input" placeholder="Search by code or name…" value={query}
+      <label htmlFor="assets-movement-new-asset" className="block text-xs font-semibold text-neutral-700 mb-1">{t("assets.movement.asset")} <span className="text-red-500">*</span></label>
+      <input id="assets-movement-new-asset" className="form-input" placeholder={t("assets.movement.searchAsset")} value={query}
         onChange={(e) => { setQuery(e.target.value); onSelect(null); }} autoComplete="off" />
       {open && options.length > 0 && (
         <div className="absolute z-50 mt-1 w-full rounded-xl border border-neutral-200 bg-white shadow-lg overflow-hidden">
@@ -66,12 +75,13 @@ function AssetSearch({ value, onSelect }: { value: Asset | null; onSelect: (a: A
 }
 
 function NewAssetMovementPageContent() {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const preloadAssetId = searchParams.get("asset_id");
 
   const [asset, setAsset] = useState<Asset | null>(null);
-  const [movementType, setMovementType] = useState<"transfer" | "maintenance" | "disposal" | "storage" | "return">("transfer");
+  const [movementType, setMovementType] = useState<(typeof MOVEMENT_TYPES)[number]["id"]>("transfer");
   const [fromUser, setFromUser] = useState<TenantUserOption | null>(null);
   const [toUser, setToUser] = useState<TenantUserOption | null>(null);
   const [reason, setReason] = useState("");
@@ -86,7 +96,7 @@ function NewAssetMovementPageContent() {
     assetsApi.get(parseInt(preloadAssetId)).then((r) => setAsset(r.data)).catch(() => {});
   }, [preloadAssetId]);
 
-  const needsToUser = ["transfer"].includes(movementType);
+  const needsToUser = ["transfer", "assign"].includes(movementType);
   const canSubmit = asset && movementDate && (!needsToUser || toUser);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,7 +117,7 @@ function NewAssetMovementPageContent() {
       router.push("/assets");
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string };
-      const msg = Object.values(ax.response?.data?.errors ?? {}).flat()[0] ?? ax.response?.data?.message ?? "Failed to record movement.";
+      const msg = Object.values(ax.response?.data?.errors ?? {}).flat()[0] ?? ax.response?.data?.message ?? t("common.error");
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -123,9 +133,9 @@ function NewAssetMovementPageContent() {
           <span className="material-symbols-outlined text-[20px]">arrow_back</span>
         </Link>
         <ModulePageHeader
-        title="Record Asset Movement"
-        subtitle="Transfer, send for maintenance, or record a disposal of a managed asset."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Record Asset Movement" }]} />}
+        title={t("assets.movement.title")}
+        subtitle={t("assets.movement.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("assets.movement.title") }]} />}
       />
       </div>
 
@@ -136,16 +146,16 @@ function NewAssetMovementPageContent() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <span className="material-symbols-outlined text-primary text-[18px]">moving</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900">Movement Type</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("assets.movement.typeHeading")}</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {MOVEMENT_TYPES.map((t) => (
-              <button key={t.id} type="button" onClick={() => setMovementType(t.id as typeof movementType)}
-                className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-all ${movementType === t.id ? t.activeColor : "bg-white border-neutral-200 hover:border-neutral-300"}`}>
-                <span className={`material-symbols-outlined text-[20px] mt-0.5 ${movementType === t.id ? "" : t.color.split(" ")[0]}`}>{t.icon}</span>
+            {MOVEMENT_TYPES.map((kind) => (
+              <button key={kind.id} type="button" onClick={() => setMovementType(kind.id)}
+                className={`flex items-start gap-3 rounded-xl border p-3 text-left transition-all ${movementType === kind.id ? kind.activeColor : "bg-white border-neutral-200 hover:border-neutral-300"}`}>
+                <span className={`material-symbols-outlined text-[20px] mt-0.5 ${movementType === kind.id ? "" : kind.color.split(" ")[0]}`}>{kind.icon}</span>
                 <div>
-                  <p className="text-sm font-semibold">{t.label}</p>
-                  <p className={`text-xs mt-0.5 ${movementType === t.id ? "opacity-80" : "text-neutral-500"}`}>{t.desc}</p>
+                  <p className="text-sm font-semibold">{t(kind.labelKey)}</p>
+                  <p className={`text-xs mt-0.5 ${movementType === kind.id ? "opacity-80" : "text-neutral-500"}`}>{t(kind.descKey)}</p>
                 </div>
               </button>
             ))}
@@ -158,7 +168,7 @@ function NewAssetMovementPageContent() {
             <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${selectedType.color.split(" ").slice(1).join(" ")}`}>
               <span className={`material-symbols-outlined text-[18px] ${selectedType.color.split(" ")[0]}`}>{selectedType.icon}</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900">Movement Details</h3>
+            <h3 className="text-sm font-semibold text-neutral-900">{t("assets.movement.details")}</h3>
           </div>
 
           <AssetSearch value={asset} onSelect={setAsset} />
@@ -174,23 +184,23 @@ function NewAssetMovementPageContent() {
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <AssetAssigneePicker id="assets-movement-from-user" label="From (current holder)" value={fromUser} onSelect={setFromUser} />
-            {needsToUser && <AssetAssigneePicker id="assets-movement-to-user" label="To (new assignee)" value={toUser} onSelect={setToUser} required />}
+            <AssetAssigneePicker id="assets-movement-from-user" label={t("assets.movement.fromUser")} value={fromUser} onSelect={setFromUser} />
+            {needsToUser && <AssetAssigneePicker id="assets-movement-to-user" label={t("assets.movement.toUser")} value={toUser} onSelect={setToUser} required />}
           </div>
 
           <div>
-            <label htmlFor="assets-movement-new-movement-date" className="block text-xs font-semibold text-neutral-700 mb-1">Movement Date <span className="text-red-500">*</span></label>
+            <label htmlFor="assets-movement-new-movement-date" className="block text-xs font-semibold text-neutral-700 mb-1">{t("assets.movement.date")} <span className="text-red-500">*</span></label>
             <input id="assets-movement-new-movement-date" type="date" className="form-input" value={movementDate} onChange={(e) => setMovementDate(e.target.value)} />
           </div>
 
           <div>
-            <label htmlFor="assets-movement-new-reason" className="block text-xs font-semibold text-neutral-700 mb-1">Reason</label>
-            <input id="assets-movement-new-reason" className="form-input" placeholder="e.g. Staff member changed role, asset sent for annual service…" value={reason} onChange={(e) => setReason(e.target.value)} />
+            <label htmlFor="assets-movement-new-reason" className="block text-xs font-semibold text-neutral-700 mb-1">{t("assets.movement.reason")}</label>
+            <input id="assets-movement-new-reason" className="form-input" placeholder={t("assets.movement.reasonHint")} value={reason} onChange={(e) => setReason(e.target.value)} />
           </div>
 
           <div>
-            <label htmlFor="assets-movement-new-notes" className="block text-xs font-semibold text-neutral-700 mb-1">Notes</label>
-            <textarea id="assets-movement-new-notes" rows={3} className="form-input resize-none" placeholder="Additional notes for the asset register…" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <label htmlFor="assets-movement-new-notes" className="block text-xs font-semibold text-neutral-700 mb-1">{t("assets.movement.notes")}</label>
+            <textarea id="assets-movement-new-notes" rows={3} className="form-input resize-none" placeholder={t("assets.movement.notesHint")} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>
 
@@ -204,12 +214,12 @@ function NewAssetMovementPageContent() {
         <div className="flex justify-between">
           <Link href="/assets" className="btn-secondary px-5 py-2.5 text-sm flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">close</span>
-            Cancel
+            {t("common.cancel")}
           </Link>
           <button type="submit" disabled={!canSubmit || submitting}
             className="btn-primary px-6 py-2.5 text-sm flex items-center gap-2 disabled:opacity-40">
             <span className="material-symbols-outlined text-[18px]">save</span>
-            {submitting ? "Recording…" : "Record Movement"}
+            {submitting ? t("common.loading") : t("assets.movement.submit")}
           </button>
         </div>
       </form>
@@ -219,7 +229,7 @@ function NewAssetMovementPageContent() {
 
 export default function NewAssetMovementPage() {
   return (
-    <Suspense fallback={<div className="w-full min-w-0 card p-6 text-sm text-neutral-500">Loading asset movement form...</div>}>
+    <Suspense fallback={<div className="w-full min-w-0 card p-6 text-sm text-neutral-500">…</div>}>
       <NewAssetMovementPageContent />
     </Suspense>
   );

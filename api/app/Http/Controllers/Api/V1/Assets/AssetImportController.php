@@ -91,11 +91,21 @@ class AssetImportController extends Controller
                 'blocking' => $query->where('blocking', true),
                 'missing_serial' => $query->whereNull('serial_number'),
                 'missing_model' => $query->whereNull('model'),
+                'missing_asset_tag' => $query->whereNull('asset_tag'),
                 'missing_location' => $query->whereNull('legacy_location')->whereNull('location_id'),
                 'unmapped_custodian' => $query->whereNull('custodian_user_id')->whereNull('custodian_department_id'),
                 'approved' => $query->where('review_status', 'approved'),
                 'excluded' => $query->where('review_status', 'excluded'),
                 'pending' => $query->where('review_status', 'pending'),
+                'duplicate_asset_tags' => $query->where(function ($q) {
+                    $q->whereJsonContains('blocking_errors', 'DUPLICATE_ASSET_TAG')
+                        ->orWhereJsonContains('data_quality_flags', 'ASSET_TAG_CONFLICT');
+                }),
+                'serial_conflicts' => $query->whereJsonContains('data_quality_flags', 'DUPLICATE_SERIAL'),
+                'financial_discrepancies' => $query->whereIn('asset_tag', $assetImportBatch->discrepancies()->select('asset_tag')),
+                'ready_to_import' => $query->where('review_status', 'approved')->where('proposed_action', 'CREATE'),
+                'already_exists' => $query->whereIn('proposed_action', ['UPDATE', 'NO_CHANGE']),
+                'ready_to_update' => $query->where('review_status', 'approved')->where('proposed_action', 'UPDATE'),
                 default => null,
             };
         }
@@ -143,6 +153,42 @@ class AssetImportController extends Controller
         abort_unless((int) $assetImportBatch->tenant_id === (int) $request->user()->tenant_id, 404);
         $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
         $row = $this->imports->exclude($assetImportBatch, $request->user(), $staging->id, $data['reason']);
+
+        return response()->json(['data' => $row]);
+    }
+
+    public function mergeDuplicates(Request $request, AssetImportBatch $assetImportBatch, AssetImportStaging $staging): JsonResponse
+    {
+        abort_unless((int) $assetImportBatch->tenant_id === (int) $request->user()->tenant_id, 404);
+        abort_unless((int) $staging->import_batch_id === (int) $assetImportBatch->id, 404);
+        $data = $request->validate(['keep_raw_id' => ['nullable', 'integer']]);
+        $row = $this->imports->mergeDuplicateSources(
+            $assetImportBatch,
+            $request->user(),
+            $staging->id,
+            isset($data['keep_raw_id']) ? (int) $data['keep_raw_id'] : null
+        );
+
+        return response()->json(['data' => $row]);
+    }
+
+    public function markUnavailable(Request $request, AssetImportBatch $assetImportBatch, AssetImportStaging $staging): JsonResponse
+    {
+        abort_unless((int) $assetImportBatch->tenant_id === (int) $request->user()->tenant_id, 404);
+        abort_unless((int) $staging->import_batch_id === (int) $assetImportBatch->id, 404);
+        $data = $request->validate([
+            'field' => ['required', 'in:serial_number,make,model,legacy_location,location'],
+        ]);
+        $row = $this->imports->markFieldUnavailable($assetImportBatch, $request->user(), $staging->id, $data['field']);
+
+        return response()->json(['data' => $row]);
+    }
+
+    public function resolveDiscrepancy(Request $request, AssetImportBatch $assetImportBatch, int $discrepancy): JsonResponse
+    {
+        abort_unless((int) $assetImportBatch->tenant_id === (int) $request->user()->tenant_id, 404);
+        $data = $request->validate(['chosen_value' => ['required', 'string', 'max:2000']]);
+        $row = $this->imports->resolveDiscrepancy($assetImportBatch, $request->user(), $discrepancy, $data['chosen_value']);
 
         return response()->json(['data' => $row]);
     }

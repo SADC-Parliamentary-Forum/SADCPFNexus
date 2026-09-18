@@ -181,8 +181,16 @@ class NavigationManifestService
                 $children[] = $this->item('Register', '/assets', 'inventory_2');
                 $children[] = $this->item('Checkouts', '/assets/checkouts', 'logout');
                 $children[] = $this->item('Lost / Stolen', '/assets/incidents', 'report');
-                $children[] = $this->item('Imports', '/assets/import', 'upload_file');
                 $children[] = $this->item('Settings', '/assets/settings', 'settings');
+            }
+            if ($holds('assets.import', 'assets.admin', 'assets.manage')) {
+                $children[] = $this->item('Imports', '/assets/import', 'upload_file');
+            }
+            if ($holds('assets.print', 'assets.admin', 'assets.manage')) {
+                $children[] = $this->item('Labels', '/assets/labels', 'qr_code_2');
+            }
+            if ($holds('assets.verify', 'assets.admin', 'assets.manage')) {
+                $children[] = $this->item('Verification', '/assets/verification', 'fact_check');
             }
             $items[] = $this->item(
                 'Fixed Assets',

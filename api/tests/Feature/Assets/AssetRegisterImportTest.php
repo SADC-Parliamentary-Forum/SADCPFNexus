@@ -1081,6 +1081,209 @@ class AssetRegisterImportTest extends TestCase
         $this->assertSame(1, AuditLog::query()->where('event', 'assets.import_committed')->where('auditable_id', $batchId)->count());
     }
 
+    public function test_duplicate_source_rows_can_be_merged_and_fields_marked_unavailable(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+
+        $path = sys_get_temp_dir().'/template-merge-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'serial_number', 'model', 'legacy_category'],
+            ['CE-2001', 'Laptop A', 'SN-A', 'Latitude', 'Computer Equipment'],
+            ['CE-2001', 'Laptop dup', 'SN-B', 'Latitude', 'Computer Equipment'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        $batchId = (int) $res->json('data.batch.id');
+        $this->assertGreaterThan(0, (int) $res->json('data.counts.duplicate_asset_tags'));
+
+        $staging = $http->getJson("/api/v1/assets/import/{$batchId}/staging?filter=duplicate_asset_tags")
+            ->assertOk()
+            ->json('data');
+        $this->assertNotEmpty($staging);
+        $rowId = (int) $staging[0]['id'];
+        $this->assertTrue((bool) $staging[0]['blocking']);
+
+        $merged = $http->postJson("/api/v1/assets/import/{$batchId}/staging/{$rowId}/merge-duplicates");
+        $merged->assertOk();
+        $this->assertFalse((bool) $merged->json('data.blocking'));
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/staging/{$rowId}/mark-unavailable", [
+            'field' => 'serial_number',
+        ])->assertOk()->assertJsonPath('data.serial_number', null);
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/staging/{$rowId}/mark-unavailable", [
+            'field' => 'model',
+        ])->assertOk()->assertJsonPath('data.model', null);
+
+        $make = $http->postJson("/api/v1/assets/import/{$batchId}/staging/{$rowId}/mark-unavailable", [
+            'field' => 'make',
+        ])->assertOk();
+        $this->assertContains('MAKE_UNAVAILABLE', $make->json('data.data_quality_flags'));
+        $this->assertContains('SERIAL_UNAVAILABLE', $make->json('data.data_quality_flags'));
+        $this->assertContains('MODEL_UNAVAILABLE', $make->json('data.data_quality_flags'));
+    }
+
+    public function test_admin_can_resolve_cross_source_discrepancy(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $batchId = $this->stageSingleRow($http, 'CE-4401', 'Chair');
+        $batch = AssetImportBatch::query()->findOrFail($batchId);
+        $discrepancy = \App\Models\AssetImportDiscrepancy::create([
+            'import_batch_id' => $batch->id,
+            'asset_tag' => 'CE-4401',
+            'field' => 'legacy_location',
+            'source_a_value' => 'Office 16C',
+            'source_b_value' => 'Boardroom',
+            'chosen_value' => 'Office 16C',
+            'rule' => 'prefer_category_listing',
+            'requires_review' => true,
+        ]);
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/discrepancies/{$discrepancy->id}/resolve", [
+            'chosen_value' => 'Boardroom',
+        ])->assertOk()
+            ->assertJsonPath('data.chosen_value', 'Boardroom')
+            ->assertJsonPath('data.requires_review', false);
+
+        $this->assertDatabaseHas('asset_import_staging', [
+            'import_batch_id' => $batch->id,
+            'asset_tag' => 'CE-4401',
+            'legacy_location' => 'Boardroom',
+        ]);
+    }
+
+    public function test_corrupt_template_records_failed_batch_status(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $path = sys_get_temp_dir().'/not-excel-'.uniqid().'.xlsx';
+        file_put_contents($path, 'this is not a workbook');
+
+        $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'broken.xlsx'),
+        ])->assertStatus(422);
+
+        $this->assertDatabaseHas('asset_import_batches', [
+            'tenant_id' => $tenant->id,
+            'status' => 'failed',
+        ]);
+        unlink($path);
+    }
+
+    public function test_verification_close_relocated_photos_and_gps(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $admin] = $this->asAdmin($tenant);
+        $asset = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CE-8100',
+            'tag_number' => 'CE-8100',
+            'name' => 'Verify laptop',
+            'category' => 'it',
+            'status' => 'active',
+        ]);
+        $campaign = app(\App\Modules\Assets\Services\AssetVerificationService::class)->createCampaign([
+            'name' => '2026 SADC PF COMPLETE ASSET VERIFICATION',
+            'starts_on' => now()->toDateString(),
+        ], $admin);
+
+        $http->postJson("/api/v1/assets-meta/verification-campaigns/{$campaign->id}/results", [
+            'asset_id' => $asset->id,
+            'result' => 'relocated',
+            'verification_method' => 'qr',
+            'gps_lat' => -22.57,
+            'gps_lng' => 17.08,
+            'photos' => [['name' => 'find.jpg', 'content_type' => 'image/jpeg']],
+            'mismatch_types' => ['relocated'],
+        ])->assertCreated()
+            ->assertJsonPath('data.result', 'relocated');
+
+        $http->postJson("/api/v1/assets-meta/verification-campaigns/{$campaign->id}/close")
+            ->assertOk()
+            ->assertJsonPath('data.status', 'closed');
+
+        $http->postJson("/api/v1/assets-meta/verification-campaigns/{$campaign->id}/results", [
+            'asset_id' => $asset->id,
+            'result' => 'verified',
+        ])->assertStatus(422);
+    }
+
+    public function test_public_qr_payload_includes_notice_key_without_serial(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [, $admin] = $this->asAdmin($tenant);
+        $asset = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CE-9100',
+            'tag_number' => 'CE-9100',
+            'name' => 'Public notice laptop',
+            'category' => 'it',
+            'status' => 'active',
+            'serial_number' => 'HIDDEN-SN',
+            'purchase_value' => 1000,
+        ]);
+        $asset = app(AssetQrService::class)->ensure($asset, $admin);
+
+        $this->getJson('/api/v1/public/assets/'.$asset->qr_token)
+            ->assertOk()
+            ->assertJsonPath('data.notice_key', 'assets.public.noticeRegistered');
+        $payload = $this->getJson('/api/v1/public/assets/'.$asset->qr_token)->json('data');
+        $this->assertArrayNotHasKey('serial_number', $payload);
+        $this->assertArrayNotHasKey('purchase_value', $payload);
+    }
+
+    public function test_asset_nav_hides_import_without_permission(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $viewer = $this->makeUser('staff', $tenant);
+        $viewer->givePermissionTo(['assets.view']);
+        $this->asUser($viewer);
+        $items = $this->getJson('/api/v1/access/navigation')->assertOk()->json('data.items');
+        $flat = $this->flattenNavHrefs($items);
+        $this->assertNotContains('/assets/import', $flat);
+        $this->assertNotContains('/assets/labels', $flat);
+        $this->assertNotContains('/assets/verification', $flat);
+
+        [$adminHttp] = $this->asAdmin($tenant);
+        $adminItems = $adminHttp->getJson('/api/v1/access/navigation')->assertOk()->json('data.items');
+        $adminFlat = $this->flattenNavHrefs($adminItems);
+        $this->assertContains('/assets/import', $adminFlat);
+        $this->assertContains('/assets/labels', $adminFlat);
+        $this->assertContains('/assets/verification', $adminFlat);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @return list<string>
+     */
+    private function flattenNavHrefs(array $items): array
+    {
+        $hrefs = [];
+        foreach ($items as $item) {
+            if (! empty($item['href'])) {
+                $hrefs[] = $item['href'];
+            }
+            foreach ($item['children'] ?? [] as $child) {
+                if (! empty($child['href'])) {
+                    $hrefs[] = $child['href'];
+                }
+            }
+        }
+
+        return $hrefs;
+    }
+
     /**
      * @param  \Illuminate\Testing\TestResponse|\Illuminate\Foundation\Testing\TestCase  $http
      */

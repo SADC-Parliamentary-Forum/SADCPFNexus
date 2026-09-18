@@ -1662,6 +1662,9 @@ Route::prefix('v1')->group(function () {
         Route::patch('assets/import/{assetImportBatch}/staging/{staging}', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'updateStaging']);
         Route::post('assets/import/{assetImportBatch}/approve', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'approve']);
         Route::post('assets/import/{assetImportBatch}/staging/{staging}/exclude', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'exclude']);
+        Route::post('assets/import/{assetImportBatch}/staging/{staging}/merge-duplicates', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'mergeDuplicates']);
+        Route::post('assets/import/{assetImportBatch}/staging/{staging}/mark-unavailable', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'markUnavailable']);
+        Route::post('assets/import/{assetImportBatch}/discrepancies/{discrepancy}/resolve', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'resolveDiscrepancy']);
         Route::get('assets/import/{assetImportBatch}/raw/{raw}', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'raw']);
         Route::post('assets/import/{assetImportBatch}/map-location', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'mapLocation']);
         Route::post('assets/import/{assetImportBatch}/map-custodian', [\App\Http\Controllers\Api\V1\Assets\AssetImportController::class, 'mapCustodian']);

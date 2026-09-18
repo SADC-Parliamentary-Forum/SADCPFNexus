@@ -194,4 +194,14 @@ test.describe("Asset scan and recovery settings (admin)", () => {
     const phone = page.locator('input[name="primary_phone"], input').nth(0);
     await expect(phone).toBeVisible();
   });
+
+  test("verification campaign dashboard is authorised", async ({ page }) => {
+    skipWithoutAuth("admin");
+    await page.goto("/assets/verification");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "assets verification");
+    await expect(page.getByRole("heading").first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId("scan-start-camera")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Record unregistered find|Enregistrer une trouvaille|Registar achado/i }).first()).toBeVisible();
+  });
 });

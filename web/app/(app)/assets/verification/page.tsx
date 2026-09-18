@@ -1,15 +1,40 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useRef, useState } from "react";
 import api, { assetQrApi, assetUnregisteredFindsApi, assetVerificationApi } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { AssetQrCamera } from "@/components/assets/AssetQrCamera";
 
 type Campaign = { id: number; name: string; status: string; starts_on: string; ends_on?: string };
 type Counts = Record<string, number>;
-type Find = { id: number; description: string; status: string; found_location?: string | null };
+type Find = {
+  id: number;
+  description: string;
+  status: string;
+  found_location?: string | null;
+  make?: string | null;
+  model?: string | null;
+  serial_number?: string | null;
+};
+type Gps = { lat: number; lng: number } | null;
+
+function readFilesAsPhotos(files: FileList | null): Promise<Array<{ name: string; content_type: string; data_url: string }>> {
+  const list = Array.from(files ?? []).slice(0, 4);
+  return Promise.all(list.map((file) => new Promise<{ name: string; content_type: string; data_url: string }>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve({
+      name: file.name,
+      content_type: file.type || "image/jpeg",
+      data_url: String(reader.result ?? ""),
+    });
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  }));
+}
 
 export default function AssetVerificationPage() {
   const { t } = useI18n();
@@ -24,8 +49,14 @@ export default function AssetVerificationPage() {
   const [creating, setCreating] = useState(false);
   const [counts, setCounts] = useState<Counts | null>(null);
   const [finds, setFinds] = useState<Find[]>([]);
-  const [findDesc, setFindDesc] = useState("");
+  const [findForm, setFindForm] = useState({ description: "", make: "", model: "", serial_number: "", found_location: "", notes: "" });
+  const [findPhotos, setFindPhotos] = useState<FileList | null>(null);
   const [scanToken, setScanToken] = useState("");
+  const [cameraActive, setCameraActive] = useState(true);
+  const [restartKey, setRestartKey] = useState(0);
+  const [gps, setGps] = useState<Gps>(null);
+  const [verifyPhotos, setVerifyPhotos] = useState<FileList | null>(null);
+  const gpsAsked = useRef(false);
   const [scanned, setScanned] = useState<{
     id: number;
     asset_tag: string;
@@ -34,6 +65,8 @@ export default function AssetVerificationPage() {
     custodian?: string | null;
     condition?: string | null;
   } | null>(null);
+
+  const active = campaigns.find((c) => c.id === activeId);
 
   async function load(campaignId?: number) {
     const r = await api.get<{ data: Campaign[] }>("/assets-meta/verification-campaigns");
@@ -50,6 +83,16 @@ export default function AssetVerificationPage() {
   }
 
   useEffect(() => { load().catch(() => setCampaigns([])); }, []);
+
+  useEffect(() => {
+    if (gpsAsked.current || typeof navigator === "undefined" || !navigator.geolocation) return;
+    gpsAsked.current = true;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setGps({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setGps(null),
+      { enableHighAccuracy: false, timeout: 8000 },
+    );
+  }, []);
 
   async function createCampaign(e: React.FormEvent) {
     e.preventDefault();
@@ -74,18 +117,41 @@ export default function AssetVerificationPage() {
     }
   }
 
+  async function closeCampaign() {
+    if (!activeId || active?.status === "closed") return;
+    setErrorMsg(null);
+    try {
+      await assetVerificationApi.close(activeId);
+      setMsg(t("assets.verify.closed"));
+      await load(activeId);
+    } catch (error: unknown) {
+      const ax = error as { response?: { data?: { message?: string } } };
+      setErrorMsg(ax?.response?.data?.message ?? t("common.error"));
+    }
+  }
+
   async function recordFind(e: React.FormEvent) {
     e.preventDefault();
-    await assetUnregisteredFindsApi.create({ description: findDesc, campaign_id: activeId ?? campaigns[0]?.id });
-    setFindDesc("");
+    const photos = await readFilesAsPhotos(findPhotos).catch(() => []);
+    await assetUnregisteredFindsApi.create({
+      description: findForm.description,
+      make: findForm.make || null,
+      model: findForm.model || null,
+      serial_number: findForm.serial_number || null,
+      found_location: findForm.found_location || null,
+      notes: findForm.notes || null,
+      photos: photos.length ? photos : null,
+      campaign_id: activeId ?? campaigns[0]?.id,
+    });
+    setFindForm({ description: "", make: "", model: "", serial_number: "", found_location: "", notes: "" });
+    setFindPhotos(null);
     await load(activeId ?? undefined);
   }
 
-  async function scanTokenSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  const applyLookup = useCallback(async (rawValue: string) => {
     setErrorMsg(null);
     try {
-      const raw = scanToken.trim();
+      const raw = rawValue.trim();
       let token = raw;
       try {
         const parsed = new URL(raw);
@@ -98,6 +164,7 @@ export default function AssetVerificationPage() {
       }
       const r = await assetQrApi.lookup(token);
       const row = r.data.data;
+      setScanToken(token);
       setScanned({
         id: row.id,
         asset_tag: row.asset_tag,
@@ -106,23 +173,36 @@ export default function AssetVerificationPage() {
         custodian: row.custodian?.name ?? null,
         condition: row.condition ?? null,
       });
+      setCameraActive(false);
     } catch {
       setScanned(null);
       setErrorMsg(t("assets.public.notFound"));
     }
+  }, [t]);
+
+  async function scanTokenSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await applyLookup(scanToken);
   }
 
-  async function recordScanResult(result: "verified" | "missing" | "wrong_location" | "wrong_custodian" | "condition_changed") {
+  async function recordScanResult(result: "verified" | "missing" | "wrong_location" | "wrong_custodian" | "condition_changed" | "relocated" | "damaged") {
     if (!activeId || !scanned) return;
+    const photos = await readFilesAsPhotos(verifyPhotos).catch(() => []);
     await assetVerificationApi.record(activeId, {
       asset_id: scanned.id,
       result,
       verification_method: "qr",
       mismatch_types: result === "verified" ? null : [result],
+      gps_lat: gps?.lat ?? null,
+      gps_lng: gps?.lng ?? null,
+      photos: photos.length ? photos : null,
     });
     setMsg(t("assets.verify.recordResult"));
     setScanToken("");
     setScanned(null);
+    setVerifyPhotos(null);
+    setCameraActive(true);
+    setRestartKey((k) => k + 1);
     await load(activeId);
   }
 
@@ -172,6 +252,7 @@ export default function AssetVerificationPage() {
               <th>{t("assets.verify.colStatus")}</th>
               <th>{t("assets.verify.colStarts")}</th>
               <th>{t("assets.verify.colEnds")}</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -180,50 +261,87 @@ export default function AssetVerificationPage() {
                 <td>
                   <button type="button" className="text-left font-medium" onClick={() => load(c.id)}>{c.name}</button>
                 </td>
-                <td>{c.status}</td>
+                <td>{t(`assets.verify.status.${c.status}`) === `assets.verify.status.${c.status}` ? c.status : t(`assets.verify.status.${c.status}`)}</td>
                 <td>{c.starts_on}</td>
                 <td>{c.ends_on ?? "—"}</td>
+                <td>
+                  {activeId === c.id && c.status === "open" && (
+                    <Button type="button" size="sm" variant="secondary" onClick={() => void closeCampaign()} data-testid="assets-verify-close">
+                      {t("assets.verify.closeCampaign")}
+                    </Button>
+                  )}
+                </td>
               </tr>
             ))}
-            {campaigns.length === 0 && <tr><td colSpan={4}>{t("common.noResults")}</td></tr>}
+            {campaigns.length === 0 && <tr><td colSpan={5}>{t("common.noResults")}</td></tr>}
           </tbody>
         </table>
       </div>
 
-      <form onSubmit={scanTokenSubmit} className="card flex flex-wrap items-end gap-2 p-4">
-        <label htmlFor="assets-verification-setscantoken-e-target-value-required" className="text-sm flex-1">{t("assets.verify.scanToken")}
-          <input id="assets-verification-setscantoken-e-target-value-required" className="input mt-1" value={scanToken} onChange={(e) => setScanToken(e.target.value)} required />
-        </label>
-        <Button type="submit">{t("assets.verify.scan")}</Button>
-      </form>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="card space-y-3 p-4">
+          <h2 className="text-sm font-semibold">{t("assets.verify.camera")}</h2>
+          <p className="text-xs text-neutral-500">{gps ? t("assets.verify.gpsOn") : t("assets.verify.gpsOff")}</p>
+          <AssetQrCamera
+            active={cameraActive && !scanned}
+            scanning={!scanned}
+            restartKey={restartKey}
+            onDetect={(raw) => { void applyLookup(raw); }}
+          />
+        </div>
+        <form onSubmit={scanTokenSubmit} className="card flex flex-col gap-2 p-4">
+          <label htmlFor="assets-verification-scan-token" className="text-sm">{t("assets.verify.scanToken")}
+            <input id="assets-verification-scan-token" className="input mt-1" value={scanToken} onChange={(e) => setScanToken(e.target.value)} required />
+          </label>
+          <Button type="submit">{t("assets.verify.scan")}</Button>
+        </form>
+      </div>
       {scanned && (
         <div className="card space-y-3 p-4 text-sm">
           <div className="flex flex-wrap items-center gap-3">
             <span className="font-mono">{scanned.asset_tag}</span>
             <span>{scanned.name}</span>
+            <Link href={`/assets/${scanned.id}`} className="text-primary font-semibold" data-testid="assets-verify-open-asset">
+              {t("assets.verify.openAsset")}
+            </Link>
           </div>
           <p>{t("assets.verify.expectedLocation")}: {scanned.location ?? "—"}</p>
           <p>{t("assets.verify.expectedCustodian")}: {scanned.custodian ?? "—"}</p>
           <p>{t("assets.verify.expectedCondition")}: {scanned.condition ?? "—"}</p>
+          <label className="block text-sm">{t("assets.verify.photos")}
+            <input className="input mt-1" type="file" accept="image/*" multiple onChange={(e) => setVerifyPhotos(e.target.files)} />
+          </label>
           <div className="flex flex-wrap gap-2">
             <Button type="button" size="sm" onClick={() => recordScanResult("verified")}>{t("assets.verify.action.verified")}</Button>
             <Button type="button" size="sm" variant="secondary" onClick={() => recordScanResult("wrong_location")}>{t("assets.verify.action.wrongLocation")}</Button>
+            <Button type="button" size="sm" variant="secondary" onClick={() => recordScanResult("relocated")} data-testid="assets-verify-relocated">{t("assets.verify.action.relocated")}</Button>
             <Button type="button" size="sm" variant="secondary" onClick={() => recordScanResult("wrong_custodian")}>{t("assets.verify.action.wrongCustodian")}</Button>
             <Button type="button" size="sm" variant="secondary" onClick={() => recordScanResult("condition_changed")}>{t("assets.verify.action.conditionChanged")}</Button>
+            <Button type="button" size="sm" variant="secondary" onClick={() => recordScanResult("damaged")}>{t("assets.verify.action.damaged")}</Button>
             <Button type="button" size="sm" variant="secondary" onClick={() => recordScanResult("missing")}>{t("assets.verify.action.missing")}</Button>
           </div>
         </div>
       )}
 
       <h2 className="text-sm font-semibold">{t("assets.verify.unregistered")}</h2>
-      <form onSubmit={recordFind} className="card flex gap-2 p-4">
-        <input className="input flex-1" value={findDesc} onChange={(e) => setFindDesc(e.target.value)} placeholder={t("assets.verify.recordFind")} required />
-        <Button type="submit">{t("assets.verify.recordFind")}</Button>
+      <form onSubmit={recordFind} className="card grid gap-2 p-4 sm:grid-cols-2">
+        <input className="input sm:col-span-2" value={findForm.description} onChange={(e) => setFindForm({ ...findForm, description: e.target.value })} placeholder={t("assets.verify.recordFind")} required />
+        <input className="input" value={findForm.make} onChange={(e) => setFindForm({ ...findForm, make: e.target.value })} placeholder={t("assets.verify.findMake")} />
+        <input className="input" value={findForm.model} onChange={(e) => setFindForm({ ...findForm, model: e.target.value })} placeholder={t("assets.verify.findModel")} />
+        <input className="input" value={findForm.serial_number} onChange={(e) => setFindForm({ ...findForm, serial_number: e.target.value })} placeholder={t("assets.verify.findSerial")} />
+        <input className="input" value={findForm.found_location} onChange={(e) => setFindForm({ ...findForm, found_location: e.target.value })} placeholder={t("assets.verify.findLocation")} />
+        <textarea className="input sm:col-span-2" rows={2} value={findForm.notes} onChange={(e) => setFindForm({ ...findForm, notes: e.target.value })} placeholder={t("assets.verify.findNotes")} />
+        <label className="text-sm sm:col-span-2">{t("assets.verify.photos")}
+          <input className="input mt-1" type="file" accept="image/*" multiple onChange={(e) => setFindPhotos(e.target.files)} />
+        </label>
+        <div>
+          <Button type="submit">{t("assets.verify.recordFind")}</Button>
+        </div>
       </form>
       <ul className="card space-y-2 p-4 text-sm">
         {finds.map((f) => (
           <li key={f.id} className="flex flex-wrap items-center justify-between gap-2">
-            <span>{f.description} — {f.status}</span>
+            <span>{f.description}{f.serial_number ? ` · ${f.serial_number}` : ""}{f.found_location ? ` · ${f.found_location}` : ""} — {f.status}</span>
             {f.status !== "promoted" && (
               <Button type="button" size="sm" variant="secondary" onClick={() => promoteFind(f)}>{t("assets.verify.promote")}</Button>
             )}

@@ -37,11 +37,13 @@ type BatchSummary = { id: number; batch_number: string; status: string };
 type Location = { id: number; name: string; code: string };
 type Department = { id: number; name: string };
 type Discrepancy = {
+  id?: number;
   asset_tag: string;
   field: string;
   source_a_value?: string | null;
   source_b_value?: string | null;
   chosen_value?: string | null;
+  requires_review?: boolean;
 };
 type Equation = {
   unique_source_tags?: number;
@@ -57,8 +59,15 @@ const FILTERS = [
   "pending",
   "blocking",
   "missing_serial",
+  "missing_model",
   "missing_location",
   "unmapped_custodian",
+  "duplicate_asset_tags",
+  "serial_conflicts",
+  "financial_discrepancies",
+  "ready_to_import",
+  "already_exists",
+  "ready_to_update",
   "approved",
   "excluded",
 ] as const;
@@ -66,8 +75,15 @@ const FILTERS = [
 const COUNT_FILTER: Record<string, (typeof FILTERS)[number]> = {
   blocking_errors: "blocking",
   missing_serial: "missing_serial",
+  missing_model: "missing_model",
   missing_location: "missing_location",
   unmapped_custodian: "unmapped_custodian",
+  duplicate_asset_tags: "duplicate_asset_tags",
+  serial_conflicts: "serial_conflicts",
+  financial_discrepancies: "financial_discrepancies",
+  ready_to_import: "ready_to_import",
+  already_exists: "already_exists",
+  ready_to_update: "ready_to_update",
   excluded: "excluded",
   pending_review: "pending",
 };
@@ -85,15 +101,24 @@ function importApiError(err: unknown, fallback: string): string {
 }
 
 function filterKey(filter: string): string {
-  if (filter === "all") return "assets.import.filterAll";
-  if (filter === "pending") return "assets.import.filterPending";
-  if (filter === "blocking") return "assets.import.filterBlocking";
-  if (filter === "missing_serial") return "assets.import.filterMissingSerial";
-  if (filter === "missing_location") return "assets.import.filterMissingLocation";
-  if (filter === "unmapped_custodian") return "assets.import.filterUnmappedCustodian";
-  if (filter === "approved") return "assets.import.filterApproved";
-  if (filter === "excluded") return "assets.import.filterExcluded";
-  return filter;
+  const keys: Record<string, string> = {
+    all: "assets.import.filterAll",
+    pending: "assets.import.filterPending",
+    blocking: "assets.import.filterBlocking",
+    missing_serial: "assets.import.filterMissingSerial",
+    missing_model: "assets.import.filterMissingModel",
+    missing_location: "assets.import.filterMissingLocation",
+    unmapped_custodian: "assets.import.filterUnmappedCustodian",
+    duplicate_asset_tags: "assets.import.filterDuplicates",
+    serial_conflicts: "assets.import.filterSerialConflicts",
+    financial_discrepancies: "assets.import.filterFinancial",
+    ready_to_import: "assets.import.filterReady",
+    already_exists: "assets.import.filterExists",
+    ready_to_update: "assets.import.filterUpdate",
+    approved: "assets.import.filterApproved",
+    excluded: "assets.import.filterExcluded",
+  };
+  return keys[filter] ?? filter;
 }
 
 export default function AssetImportPage() {
@@ -313,14 +338,42 @@ export default function AssetImportPage() {
     }
   }
 
-  async function markSerialUnavailable() {
+  async function markUnavailable(field: "serial_number" | "make" | "model" | "legacy_location") {
     if (!batchId || !editing) return;
-    await assetImportApi.updateStaging(batchId, editing.id, {
-      serial_number: null,
-      admin_notes: t("assets.import.markSerialUnavailable"),
-    });
+    await assetImportApi.markUnavailable(batchId, editing.id, field);
     setEditing(null);
     await loadStaging(batchId);
+    await loadPreview(batchId);
+  }
+
+  async function mergeDuplicates(row: StagingRow) {
+    if (!batchId) return;
+    setBusy(true);
+    try {
+      await assetImportApi.mergeDuplicates(batchId, row.id);
+      setMsg(t("assets.import.mergeDuplicates"));
+      await loadPreview(batchId);
+      await loadStaging(batchId);
+    } catch (err: unknown) {
+      setError(importApiError(err, t("common.error")));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resolveDiscrepancy(d: Discrepancy, chosen: string) {
+    if (!batchId || !d.id) return;
+    setBusy(true);
+    try {
+      await assetImportApi.resolveDiscrepancy(batchId, d.id, chosen);
+      setMsg(t("assets.import.resolved"));
+      await loadPreview(batchId);
+      await loadStaging(batchId);
+    } catch (err: unknown) {
+      setError(importApiError(err, t("common.error")));
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function confirmLocationMap() {
@@ -481,12 +534,29 @@ export default function AssetImportPage() {
         </p>
       )}
 
+      {counts && ((counts.blocking_errors ?? 0) > 0 || (counts.pending_review ?? 0) > 0) && (
+        <p className="text-sm text-amber-800">{t("assets.import.unresolvedHint")}</p>
+      )}
+
       {discrepancies.length > 0 && (
         <FormSection title="assets.import.discrepancies" dense>
-          <ul className="max-h-40 space-y-1 overflow-auto text-sm">
-            {discrepancies.slice(0, 20).map((d, idx) => (
-              <li key={`${d.asset_tag}-${d.field}-${idx}`}>
-                <span className="font-mono">{d.asset_tag}</span> {d.field}: {d.source_a_value ?? "—"} / {d.source_b_value ?? "—"}
+          <ul className="max-h-56 space-y-2 overflow-auto text-sm">
+            {discrepancies.slice(0, 40).map((d, idx) => (
+              <li key={d.id ?? `${d.asset_tag}-${d.field}-${idx}`} className="flex flex-wrap items-center gap-2">
+                <span className="font-mono">{d.asset_tag}</span>
+                <span>{d.field}</span>
+                <span>{d.source_a_value ?? "—"} / {d.source_b_value ?? "—"}</span>
+                {d.id && d.requires_review !== false && (
+                  <>
+                    <Button type="button" size="sm" variant="secondary" onClick={() => resolveDiscrepancy(d, d.source_a_value ?? "")} disabled={busy}>
+                      {t("assets.import.chooseA")}
+                    </Button>
+                    <Button type="button" size="sm" variant="secondary" onClick={() => resolveDiscrepancy(d, d.source_b_value ?? "")} disabled={busy}>
+                      {t("assets.import.chooseB")}
+                    </Button>
+                  </>
+                )}
+                {d.requires_review === false && <span className="text-green-700">{t("assets.import.resolved")}: {d.chosen_value}</span>}
               </li>
             ))}
           </ul>
@@ -559,6 +629,9 @@ export default function AssetImportPage() {
                 <td className="space-x-2">
                   <button type="button" onClick={() => setEditing(row)}>{t("common.edit")}</button>
                   <button type="button" onClick={() => showRaw(row)}>{t("assets.import.compare")}</button>
+                  {(row.blocking || (row.data_quality_flags ?? []).includes("ASSET_TAG_CONFLICT")) && (
+                    <button type="button" onClick={() => mergeDuplicates(row)}>{t("assets.import.mergeDuplicates")}</button>
+                  )}
                   <button type="button" onClick={() => exclude(row)}>{t("assets.import.exclude")}</button>
                 </td>
               </tr>
@@ -579,7 +652,9 @@ export default function AssetImportPage() {
             <label htmlFor="assets-import-field-10" className="text-sm sm:col-span-2">{t("assets.import.notes")}<input id="assets-import-field-10" className="input mt-1" name="admin_notes" /></label>
             <div className="flex flex-wrap gap-2 sm:col-span-2">
               <Button type="submit" disabled={busy}>{t("common.save")}</Button>
-              <Button type="button" variant="secondary" onClick={markSerialUnavailable}>{t("assets.import.markSerialUnavailable")}</Button>
+              <Button type="button" variant="secondary" onClick={() => markUnavailable("serial_number")}>{t("assets.import.markSerialUnavailable")}</Button>
+              <Button type="button" variant="secondary" onClick={() => markUnavailable("make")}>{t("assets.import.markMakeUnavailable")}</Button>
+              <Button type="button" variant="secondary" onClick={() => markUnavailable("model")}>{t("assets.import.markModelUnavailable")}</Button>
               <Button type="button" variant="secondary" onClick={() => setEditing(null)}>{t("common.close")}</Button>
             </div>
           </form>
