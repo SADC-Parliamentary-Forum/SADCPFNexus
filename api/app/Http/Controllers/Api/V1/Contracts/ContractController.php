@@ -15,6 +15,7 @@ use App\Modules\Contracts\Services\ContractExceptionService;
 use App\Modules\Contracts\Services\ContractFinanceService;
 use App\Modules\Contracts\Services\ContractHealthService;
 use App\Modules\Contracts\Services\ContractLifecycleService;
+use App\Modules\Contracts\Services\ContractRenewalService;
 use App\Modules\Contracts\Services\ContractService;
 use App\Modules\Contracts\Services\ContractSignatureService;
 use App\Modules\Contracts\Services\ContractWorkflowService;
@@ -40,6 +41,7 @@ class ContractController extends Controller
         private readonly ContractFinanceService $finance,
         private readonly ContractHealthService $health,
         private readonly ContractLifecycleService $lifecycle,
+        private readonly ContractRenewalService $renewals,
     ) {}
 
     private function ensurePermission(Request $request, array $permissions, array $roles = []): void
@@ -71,8 +73,10 @@ class ContractController extends Controller
         // Delegate to the service so tenant + record scoping is applied uniformly.
         $loaded = $this->contracts->find($contract->id, $request->user());
 
-        // Surface the critical "started before execution" exception on view (PRD §54).
+        // Surface the critical "started before execution" exception on view (PRD §54)
+        // and the auto-renewal deadline warning (PRD §74).
         $this->exceptionService->detectStartBeforeExecution($loaded);
+        $this->exceptionService->detectAutoRenewalDeadline($loaded);
         $loaded->load('exceptions');
 
         // Recompute rules-based health on view.
@@ -192,6 +196,8 @@ class ContractController extends Controller
             'signature_deadline' => ['nullable', 'date'],
             'renewal_decision_date' => ['nullable', 'date'],
             'notice_period_days' => ['nullable', 'integer', 'min:0'],
+            'renewal_type' => ['nullable', 'string', 'in:non_renewable,renewable_once,renewable_multiple,automatic,subject_to_approval'],
+            'auto_renew' => ['nullable', 'boolean'],
             'rate' => ['nullable', 'numeric', 'min:0'],
             'rate_basis' => ['nullable', 'string', 'max:30'],
             'units' => ['nullable', 'numeric', 'min:0'],
@@ -754,6 +760,84 @@ class ContractController extends Controller
         ]);
 
         return response()->json(['message' => 'Contract resumed.', 'data' => $contract]);
+    }
+
+    public function createExtension(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.create_amendment'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'proposed_end_date' => ['required', 'date'],
+            'reason' => ['required', 'string', 'max:2000'],
+            'impact' => ['nullable', 'string'],
+            'financial_impact' => ['nullable', 'numeric'],
+        ]);
+
+        $extension = $this->renewals->createExtension($contract, $request->user(), $data);
+
+        AuditLog::record('contract.extension_created', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['proposed_end_date' => $data['proposed_end_date']], 'tags' => ['contract', 'extension'],
+        ]);
+
+        return response()->json(['message' => 'Extension proposed.', 'data' => $extension], 201);
+    }
+
+    public function approveExtension(Request $request, Contract $contract, \App\Models\ContractExtension $extension): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.approve_amendment'], ['Secretary General']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        abort_if((int) $extension->contract_id !== (int) $contract->id, 404);
+
+        $contract = $this->renewals->approveExtension($contract, $extension, $request->user());
+
+        AuditLog::record('contract.extension_approved', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['end_date' => optional($contract->end_date)->toDateString()], 'tags' => ['contract', 'extension'],
+        ]);
+
+        return response()->json(['message' => 'Extension approved.', 'data' => $contract]);
+    }
+
+    public function createRenewal(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.create_amendment'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'new_start_date' => ['required', 'date'],
+            'new_end_date' => ['required', 'date', 'after:new_start_date'],
+            'reason' => ['nullable', 'string', 'max:2000'],
+            'procurement_validated' => ['nullable', 'boolean'],
+            'budget_confirmed' => ['nullable', 'boolean'],
+        ]);
+
+        $renewal = $this->renewals->createRenewal($contract, $request->user(), $data);
+
+        AuditLog::record('contract.renewal_created', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['renewal_number' => $renewal->renewal_number], 'tags' => ['contract', 'renewal'],
+        ]);
+
+        return response()->json(['message' => 'Renewal proposed.', 'data' => $renewal], 201);
+    }
+
+    public function approveRenewal(Request $request, Contract $contract, \App\Models\ContractRenewal $renewal): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.approve_amendment'], ['Secretary General']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        abort_if((int) $renewal->contract_id !== (int) $contract->id, 404);
+
+        $contract = $this->renewals->approveRenewal($contract, $renewal, $request->user());
+
+        AuditLog::record('contract.renewal_approved', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['renewals_count' => $contract->renewals_count, 'end_date' => optional($contract->end_date)->toDateString()],
+            'tags' => ['contract', 'renewal'],
+        ]);
+
+        return response()->json(['message' => 'Renewal approved.', 'data' => $contract]);
     }
 
     public function terminate(Request $request, Contract $contract): JsonResponse

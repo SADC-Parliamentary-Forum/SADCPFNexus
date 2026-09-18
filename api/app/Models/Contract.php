@@ -31,6 +31,7 @@ class Contract extends Model
         'preparation_date', 'agreement_date', 'effective_date', 'service_start_date',
         'service_end_date', 'signature_deadline', 'renewal_decision_date',
         'notice_period_days', 'closeout_target_date',
+        'renewal_type', 'auto_renew', 'renewals_count',
         'value', 'original_value', 'current_value', 'ceiling_value',
         'rate', 'rate_basis', 'units',
         'currency', 'budget_currency', 'conversion_reference', 'converted_value',
@@ -63,6 +64,8 @@ class Contract extends Model
         'units' => 'decimal:2',
         'converted_value' => 'decimal:2',
         'notice_period_days' => 'integer',
+        'renewals_count' => 'integer',
+        'auto_renew' => 'boolean',
         'is_legacy' => 'boolean',
         'scope' => 'array',
     ];
@@ -225,6 +228,16 @@ class Contract extends Model
     public function terminations(): HasMany
     {
         return $this->hasMany(ContractTermination::class)->orderByDesc('id');
+    }
+
+    public function extensions(): HasMany
+    {
+        return $this->hasMany(ContractExtension::class)->orderByDesc('id');
+    }
+
+    public function renewals(): HasMany
+    {
+        return $this->hasMany(ContractRenewal::class)->orderByDesc('id');
     }
 
     public function approvalRequest(): MorphOne

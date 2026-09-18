@@ -66,6 +66,36 @@ class ContractExceptionService
         return null;
     }
 
+    /**
+     * Flag auto-renewal contracts approaching the non-renewal/cancellation
+     * deadline so the window is not missed by inaction (PRD §74).
+     */
+    public function detectAutoRenewalDeadline(Contract $contract): ?ContractException
+    {
+        if (! $contract->auto_renew || $contract->end_date === null) {
+            return null;
+        }
+        if (! in_array($contract->lifecycle(), ['ACTIVE', 'FULLY_EXECUTED'], true)) {
+            return null;
+        }
+
+        // Notice window: the configured notice period, or 90 days by default.
+        $window = (int) ($contract->notice_period_days ?: 90);
+        $deadline = $contract->end_date->copy()->subDays($window);
+
+        if (now()->betweenIncluded($deadline, $contract->end_date)) {
+            return $this->raise(
+                $contract,
+                'auto_renewal_deadline',
+                'high',
+                'Automatic renewal deadline approaching',
+                'This contract renews automatically. Decide on renewal or serve non-renewal notice before the deadline.',
+            );
+        }
+
+        return null;
+    }
+
     public function resolve(ContractException $exception, User $actor, ?string $resolution = null): ContractException
     {
         $exception->update([

@@ -4990,6 +4990,13 @@ export interface Contract {
   signatories?: ContractSignatoryRecord[];
   amendments?: ContractAmendmentRecord[];
   payment_schedules?: ContractPaymentScheduleRecord[];
+  extensions?: ContractExtensionRecord[];
+  renewals?: ContractRenewalRecord[];
+  suspensions?: ContractSuspensionRecord[];
+  terminations?: ContractTerminationRecord[];
+  renewal_type?: string | null;
+  auto_renew?: boolean;
+  renewals_count?: number;
   exceptions?: ContractExceptionRecord[];
   health_reasons?: string[];
   counterparty?: { id: number; full_legal_name: string | null; email: string | null } | null;
@@ -5033,6 +5040,24 @@ export interface ContractExceptionRecord {
   description: string | null;
   status: string;
   created_at?: string;
+}
+
+export interface ContractExtensionRecord {
+  id: number; current_end_date: string | null; proposed_end_date: string;
+  reason: string; status: string; financial_impact: number | string | null;
+}
+
+export interface ContractRenewalRecord {
+  id: number; renewal_number: number; new_start_date: string; new_end_date: string;
+  reason: string | null; procurement_validated: boolean; budget_confirmed: boolean; status: string;
+}
+
+export interface ContractSuspensionRecord {
+  id: number; effective_date: string | null; reason: string; status: string; resumption_date: string | null;
+}
+
+export interface ContractTerminationRecord {
+  id: number; type: string; reason: string; effective_date: string | null; final_amount: number | string | null;
 }
 
 export interface ContractType {
@@ -5139,6 +5164,14 @@ export const contractsApi = {
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/resume`),
   terminate: (id: number, type: string, reason: string) =>
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/terminate`, { type, reason }),
+  createExtension: (id: number, data: { proposed_end_date: string; reason: string; impact?: string; financial_impact?: number }) =>
+    api.post<{ data: ContractExtensionRecord; message: string }>(`/contracts/${id}/extensions`, data),
+  approveExtension: (id: number, extensionId: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/extensions/${extensionId}/approve`),
+  createRenewal: (id: number, data: { new_start_date: string; new_end_date: string; reason?: string; procurement_validated?: boolean; budget_confirmed?: boolean }) =>
+    api.post<{ data: ContractRenewalRecord; message: string }>(`/contracts/${id}/renewals`, data),
+  approveRenewal: (id: number, renewalId: number) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/renewals/${renewalId}/approve`),
   destroy: (id: number) =>
     api.delete<{ message: string }>(`/contracts/${id}`),
   submit: (id: number) =>

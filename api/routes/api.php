@@ -1327,6 +1327,10 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/suspend', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'suspend']);
             Route::post('{contract}/resume', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'resume']);
             Route::post('{contract}/terminate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'terminate']);
+            Route::post('{contract}/extensions', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createExtension']);
+            Route::post('{contract}/extensions/{extension}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approveExtension']);
+            Route::post('{contract}/renewals', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createRenewal']);
+            Route::post('{contract}/renewals/{renewal}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approveRenewal']);
 
             // Reuse the existing milestone + attachment controllers (bound by {contract}).
             Route::get('{contract}/milestones', [\App\Http\Controllers\Api\V1\Procurement\ContractMilestoneController::class, 'index']);

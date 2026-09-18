@@ -19,7 +19,7 @@ const LIFECYCLE_BADGES: Record<string, string> = {
   TERMINATED: "badge-danger", EXPIRED: "badge-danger",
 };
 
-type Tab = "overview" | "deliverables" | "financials" | "amendments" | "documents" | "signatures" | "approvals" | "audit";
+type Tab = "overview" | "deliverables" | "financials" | "amendments" | "lifecycle" | "documents" | "signatures" | "approvals" | "audit";
 
 export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -35,9 +35,13 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const [amendType, setAmendType] = useState("value");
   const [amendReason, setAmendReason] = useState("");
   const [amendDelta, setAmendDelta] = useState("");
-  const [lifecycleModal, setLifecycleModal] = useState<null | "suspend" | "terminate">(null);
+  const [lifecycleModal, setLifecycleModal] = useState<null | "suspend" | "terminate" | "extend" | "renew">(null);
   const [lifecycleReason, setLifecycleReason] = useState("");
   const [terminationType, setTerminationType] = useState("convenience");
+  const [lcEndDate, setLcEndDate] = useState("");
+  const [lcStartDate, setLcStartDate] = useState("");
+  const [lcProcValidated, setLcProcValidated] = useState(false);
+  const [lcBudgetConfirmed, setLcBudgetConfirmed] = useState(false);
 
   const { data: contract, isLoading, isError } = useQuery({
     queryKey: ["contract", contractId],
@@ -101,12 +105,24 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const isSuspended = lifecycle === "SUSPENDED";
 
   const runLifecycle = () => {
-    if (!lifecycleModal || !lifecycleReason.trim()) return;
-    const action = lifecycleModal === "suspend"
-      ? () => contractsApi.suspend(contractId, lifecycleReason.trim())
-      : () => contractsApi.terminate(contractId, terminationType, lifecycleReason.trim());
-    act(action, lifecycleModal === "suspend" ? "Contract suspended" : "Contract terminated");
-    setLifecycleModal(null); setLifecycleReason("");
+    if (!lifecycleModal) return;
+    let action: () => Promise<unknown>;
+    let msg: string;
+    if (lifecycleModal === "suspend") {
+      if (!lifecycleReason.trim()) return;
+      action = () => contractsApi.suspend(contractId, lifecycleReason.trim()); msg = "Contract suspended";
+    } else if (lifecycleModal === "terminate") {
+      if (!lifecycleReason.trim()) return;
+      action = () => contractsApi.terminate(contractId, terminationType, lifecycleReason.trim()); msg = "Contract terminated";
+    } else if (lifecycleModal === "extend") {
+      if (!lcEndDate || !lifecycleReason.trim()) return;
+      action = () => contractsApi.createExtension(contractId, { proposed_end_date: lcEndDate, reason: lifecycleReason.trim() }); msg = "Extension proposed";
+    } else {
+      if (!lcStartDate || !lcEndDate) return;
+      action = () => contractsApi.createRenewal(contractId, { new_start_date: lcStartDate, new_end_date: lcEndDate, reason: lifecycleReason.trim() || undefined, procurement_validated: lcProcValidated, budget_confirmed: lcBudgetConfirmed }); msg = "Renewal proposed";
+    }
+    act(action, msg);
+    setLifecycleModal(null); setLifecycleReason(""); setLcEndDate(""); setLcStartDate(""); setLcProcValidated(false); setLcBudgetConfirmed(false);
   };
 
   const createAmendment = () => {
@@ -169,6 +185,12 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
           {isSuspended && canSuspend && (
             <button className="btn-primary text-sm" onClick={() => act(() => contractsApi.resume(contractId), "Contract resumed")}>Resume</button>
           )}
+          {isActiveLifecycle && canAmend && (
+            <button className="btn-secondary text-sm" onClick={() => { setLifecycleModal("extend"); setLifecycleReason(""); setLcEndDate(""); }}>Extend</button>
+          )}
+          {isActiveLifecycle && canAmend && contract.renewal_type && contract.renewal_type !== "non_renewable" && (
+            <button className="btn-secondary text-sm" onClick={() => { setLifecycleModal("renew"); setLifecycleReason(""); setLcStartDate(""); setLcEndDate(""); }}>Renew</button>
+          )}
           {(isExecuted || isSuspended) && canTerminate && (
             <button className="btn-secondary text-sm text-red-600" onClick={() => { setLifecycleModal("terminate"); setLifecycleReason(""); }}>Terminate</button>
           )}
@@ -187,7 +209,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-neutral-200">
-        {(["overview", "deliverables", "financials", "amendments", "documents", "signatures", "approvals", "audit"] as Tab[]).map((t) => (
+        {(["overview", "deliverables", "financials", "amendments", "lifecycle", "documents", "signatures", "approvals", "audit"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
             {t}
@@ -326,6 +348,72 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
+      {tab === "lifecycle" && (
+        <div className="space-y-4">
+          <div className="card p-4 text-sm text-neutral-600">
+            Renewal type: <span className="font-medium text-neutral-900">{contract.renewal_type ? contract.renewal_type.replace(/_/g, " ") : "not set"}</span>
+            {contract.auto_renew && <span className="ml-2 badge badge-warning">Auto-renews</span>}
+            <span className="ml-2 text-neutral-500">· Renewals: {contract.renewals_count ?? 0}</span>
+          </div>
+          <div className="card overflow-hidden">
+            <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Extensions</div>
+            {(contract.extensions ?? []).length === 0 ? (
+              <div className="p-4 text-sm text-neutral-500">No extensions.</div>
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>Proposed end</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  {(contract.extensions ?? []).map((e) => (
+                    <tr key={e.id}>
+                      <td className="text-sm">{e.proposed_end_date ? formatDateShort(e.proposed_end_date) : "—"}</td>
+                      <td className="text-sm text-neutral-700">{e.reason}</td>
+                      <td className="text-sm capitalize">{e.status}</td>
+                      <td className="text-right">{canApproveAmendment && e.status === "pending" && (
+                        <button className="btn-secondary text-xs py-0.5" onClick={() => act(() => contractsApi.approveExtension(contractId, e.id), "Extension approved")}>Approve</button>
+                      )}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <div className="card overflow-hidden">
+            <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Renewals</div>
+            {(contract.renewals ?? []).length === 0 ? (
+              <div className="p-4 text-sm text-neutral-500">No renewals.</div>
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>#</th><th>New period</th><th>Procurement</th><th>Budget</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  {(contract.renewals ?? []).map((r) => (
+                    <tr key={r.id}>
+                      <td className="text-sm">{r.renewal_number}</td>
+                      <td className="text-sm">{formatDateShort(r.new_start_date)} → {formatDateShort(r.new_end_date)}</td>
+                      <td className="text-sm">{r.procurement_validated ? "✓" : "—"}</td>
+                      <td className="text-sm">{r.budget_confirmed ? "✓" : "—"}</td>
+                      <td className="text-sm capitalize">{r.status}</td>
+                      <td className="text-right">{canApproveAmendment && r.status === "pending" && (
+                        <button className="btn-secondary text-xs py-0.5" onClick={() => act(() => contractsApi.approveRenewal(contractId, r.id), "Renewal approved")}>Approve</button>
+                      )}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          {((contract.suspensions ?? []).length > 0 || (contract.terminations ?? []).length > 0) && (
+            <div className="card p-4 space-y-2 text-sm">
+              {(contract.suspensions ?? []).map((s) => (
+                <div key={`s${s.id}`} className="text-neutral-600"><span className="badge badge-muted mr-2">Suspension</span>{s.reason} — {s.status}</div>
+              ))}
+              {(contract.terminations ?? []).map((t) => (
+                <div key={`t${t.id}`} className="text-neutral-600"><span className="badge badge-danger mr-2">Termination ({t.type})</span>{t.reason}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {tab === "documents" && (
         <div className="card overflow-hidden">
           {(contract.document_versions ?? []).length === 0 ? (
@@ -406,7 +494,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       {lifecycleModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setLifecycleModal(null)}>
           <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-base font-bold text-neutral-900">{lifecycleModal === "suspend" ? "Suspend contract" : "Terminate contract"}</h3>
+            <h3 className="text-base font-bold text-neutral-900 capitalize">{lifecycleModal} contract</h3>
             {lifecycleModal === "terminate" && (
               <div className="space-y-1">
                 <label className="text-xs font-semibold text-neutral-600">Termination type</label>
@@ -417,15 +505,31 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                 </select>
               </div>
             )}
+            {lifecycleModal === "renew" && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-neutral-600">New start date <span className="text-red-500">*</span></label>
+                <input type="date" className="form-input" value={lcStartDate} onChange={(e) => setLcStartDate(e.target.value)} />
+              </div>
+            )}
+            {(lifecycleModal === "extend" || lifecycleModal === "renew") && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-neutral-600">{lifecycleModal === "extend" ? "Proposed end date" : "New end date"} <span className="text-red-500">*</span></label>
+                <input type="date" className="form-input" value={lcEndDate} onChange={(e) => setLcEndDate(e.target.value)} />
+              </div>
+            )}
+            {lifecycleModal === "renew" && (
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={lcProcValidated} onChange={(e) => setLcProcValidated(e.target.checked)} /> Procurement validated</label>
+                <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={lcBudgetConfirmed} onChange={(e) => setLcBudgetConfirmed(e.target.checked)} /> Budget confirmed</label>
+              </div>
+            )}
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Reason <span className="text-red-500">*</span></label>
-              <textarea className="form-input h-24 resize-none" value={lifecycleReason} onChange={(e) => setLifecycleReason(e.target.value)} />
+              <label className="text-xs font-semibold text-neutral-600">Reason {lifecycleModal !== "renew" && <span className="text-red-500">*</span>}</label>
+              <textarea className="form-input h-20 resize-none" value={lifecycleReason} onChange={(e) => setLifecycleReason(e.target.value)} />
             </div>
             <div className="flex gap-3">
               <button className="btn-secondary flex-1" onClick={() => setLifecycleModal(null)}>Cancel</button>
-              <button className="btn-primary flex-1 disabled:opacity-60" disabled={!lifecycleReason.trim()} onClick={runLifecycle}>
-                {lifecycleModal === "suspend" ? "Suspend" : "Terminate"}
-              </button>
+              <button className="btn-primary flex-1 capitalize" onClick={runLifecycle}>{lifecycleModal}</button>
             </div>
           </div>
         </div>

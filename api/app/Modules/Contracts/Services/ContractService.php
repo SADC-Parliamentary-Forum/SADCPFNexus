@@ -73,7 +73,7 @@ class ContractService
             'type', 'department', 'contractOwner', 'procurementOfficer', 'programme',
             'counterparty', 'fundingSources', 'deliverables', 'obligations',
             'paymentSchedules', 'documentVersions', 'signatories', 'amendments', 'exceptions',
-            'complianceDocuments', 'suspensions', 'terminations',
+            'complianceDocuments', 'suspensions', 'terminations', 'extensions', 'renewals',
             'approvalRequest.workflow.steps', 'approvalRequest.history.user',
         ]);
     }
@@ -143,6 +143,8 @@ class ContractService
                 'renewal_decision_date' => $data['renewal_decision_date'] ?? null,
                 'notice_period_days' => $data['notice_period_days'] ?? null,
                 'closeout_target_date' => $data['closeout_target_date'] ?? null,
+                'renewal_type' => $data['renewal_type'] ?? null,
+                'auto_renew' => (bool) ($data['auto_renew'] ?? false),
                 'rate' => $data['rate'] ?? null,
                 'rate_basis' => $data['rate_basis'] ?? null,
                 'units' => $data['units'] ?? null,
