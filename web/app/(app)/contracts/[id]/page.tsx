@@ -19,7 +19,7 @@ const LIFECYCLE_BADGES: Record<string, string> = {
   TERMINATED: "badge-danger", EXPIRED: "badge-danger",
 };
 
-type Tab = "overview" | "deliverables" | "financials" | "clauses" | "amendments" | "lifecycle" | "documents" | "signatures" | "approvals" | "audit";
+type Tab = "overview" | "deliverables" | "financials" | "clauses" | "amendments" | "lifecycle" | "calloffs" | "documents" | "signatures" | "approvals" | "audit";
 
 export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -35,13 +35,15 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const [amendType, setAmendType] = useState("value");
   const [amendReason, setAmendReason] = useState("");
   const [amendDelta, setAmendDelta] = useState("");
-  const [lifecycleModal, setLifecycleModal] = useState<null | "suspend" | "terminate" | "extend" | "renew">(null);
+  const [lifecycleModal, setLifecycleModal] = useState<null | "suspend" | "terminate" | "extend" | "renew" | "calloff">(null);
   const [lifecycleReason, setLifecycleReason] = useState("");
   const [terminationType, setTerminationType] = useState("convenience");
   const [lcEndDate, setLcEndDate] = useState("");
   const [lcStartDate, setLcStartDate] = useState("");
   const [lcProcValidated, setLcProcValidated] = useState(false);
   const [lcBudgetConfirmed, setLcBudgetConfirmed] = useState(false);
+  const [callOffTitle, setCallOffTitle] = useState("");
+  const [callOffValue, setCallOffValue] = useState("");
 
   const { data: contract, isLoading, isError } = useQuery({
     queryKey: ["contract", contractId],
@@ -77,6 +79,12 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
     queryKey: ["contract-clause-library"],
     queryFn: () => contractsApi.clauseLibrary().then((r) => r.data.data).catch(() => []),
     enabled: !!contractId && tab === "clauses",
+  });
+
+  const { data: callOffData } = useQuery({
+    queryKey: ["contract", contractId, "call-offs"],
+    queryFn: () => contractsApi.callOffs(contractId).then((r) => r.data),
+    enabled: !!contractId && tab === "calloffs",
   });
 
   const refresh = () => {
@@ -129,12 +137,15 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
     } else if (lifecycleModal === "extend") {
       if (!lcEndDate || !lifecycleReason.trim()) return;
       action = () => contractsApi.createExtension(contractId, { proposed_end_date: lcEndDate, reason: lifecycleReason.trim() }); msg = "Extension proposed";
-    } else {
+    } else if (lifecycleModal === "renew") {
       if (!lcStartDate || !lcEndDate) return;
       action = () => contractsApi.createRenewal(contractId, { new_start_date: lcStartDate, new_end_date: lcEndDate, reason: lifecycleReason.trim() || undefined, procurement_validated: lcProcValidated, budget_confirmed: lcBudgetConfirmed }); msg = "Renewal proposed";
+    } else {
+      if (!callOffTitle.trim() || !lcStartDate || !lcEndDate || !callOffValue) return;
+      action = () => contractsApi.createCallOff(contractId, { title: callOffTitle.trim(), start_date: lcStartDate, end_date: lcEndDate, value: Number(callOffValue) }); msg = "Call-off created";
     }
     act(action, msg);
-    setLifecycleModal(null); setLifecycleReason(""); setLcEndDate(""); setLcStartDate(""); setLcProcValidated(false); setLcBudgetConfirmed(false);
+    setLifecycleModal(null); setLifecycleReason(""); setLcEndDate(""); setLcStartDate(""); setLcProcValidated(false); setLcBudgetConfirmed(false); setCallOffTitle(""); setCallOffValue("");
   };
 
   const createAmendment = () => {
@@ -221,10 +232,10 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-neutral-200">
-        {(["overview", "deliverables", "financials", "clauses", "amendments", "lifecycle", "documents", "signatures", "approvals", "audit"] as Tab[]).map((t) => (
+        {(["overview", "deliverables", "financials", "clauses", "amendments", "lifecycle", ...(contract.is_framework ? ["calloffs" as Tab] : []), "documents", "signatures", "approvals", "audit"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
-            {t}
+            {t === "calloffs" ? "Call-offs" : t}
           </button>
         ))}
       </div>
@@ -467,6 +478,55 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
+      {tab === "calloffs" && (
+        <div className="space-y-4">
+          {callOffData?.utilisation && (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {([
+                ["Ceiling", callOffData.utilisation.ceiling],
+                ["Used", callOffData.utilisation.used],
+                ["Remaining", callOffData.utilisation.remaining],
+              ] as [string, number][]).map(([label, val]) => (
+                <div key={label} className="card p-4">
+                  <p className="text-2xl font-bold text-neutral-900">{callOffData.utilisation!.currency} {Number(val).toLocaleString()}</p>
+                  <p className="text-xs text-neutral-500 mt-0.5">{label}</p>
+                </div>
+              ))}
+              <div className="card p-4">
+                <p className="text-2xl font-bold text-neutral-900">{callOffData.utilisation.call_off_count}</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Call-offs</p>
+              </div>
+            </div>
+          )}
+          <div className="card overflow-hidden">
+            <div className="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
+              <span className="text-sm font-semibold text-neutral-800">Call-offs</span>
+              {canAmend && (
+                <button className="btn-secondary text-xs" onClick={() => { setLifecycleModal("calloff"); setLifecycleReason(""); setLcStartDate(""); setLcEndDate(""); setCallOffTitle(""); setCallOffValue(""); }}>New call-off</button>
+              )}
+            </div>
+            {(callOffData?.data ?? []).length === 0 ? (
+              <div className="p-4 text-sm text-neutral-500">No call-offs issued under this framework.</div>
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>Reference</th><th>Title</th><th className="text-right">Value</th><th>Ends</th><th>Status</th></tr></thead>
+                <tbody>
+                  {(callOffData?.data ?? []).map((c) => (
+                    <tr key={c.id}>
+                      <td><Link href={`/contracts/${c.id}`} className="font-mono text-xs text-primary">{c.reference_number}</Link></td>
+                      <td className="text-sm text-neutral-800">{c.title}</td>
+                      <td className="text-right text-sm">{c.currency} {Number(c.current_value ?? c.value).toLocaleString()}</td>
+                      <td className="text-sm text-neutral-500">{c.end_date ? formatDateShort(c.end_date) : "—"}</td>
+                      <td className="text-sm capitalize">{(c.contract_status ?? c.status ?? "").toString().replace(/_/g, " ").toLowerCase()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
       {tab === "documents" && (
         <div className="card overflow-hidden">
           {(contract.document_versions ?? []).length === 0 ? (
@@ -558,15 +618,23 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                 </select>
               </div>
             )}
-            {lifecycleModal === "renew" && (
+            {lifecycleModal === "calloff" && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">New start date <span className="text-red-500">*</span></label>
+                <label className="text-xs font-semibold text-neutral-600">Call-off title <span className="text-red-500">*</span></label>
+                <input className="form-input" value={callOffTitle} onChange={(e) => setCallOffTitle(e.target.value)} />
+                <label className="text-xs font-semibold text-neutral-600 mt-2 block">Value <span className="text-red-500">*</span></label>
+                <input type="number" min="0" step="0.01" className="form-input" value={callOffValue} onChange={(e) => setCallOffValue(e.target.value)} />
+              </div>
+            )}
+            {(lifecycleModal === "renew" || lifecycleModal === "calloff") && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-neutral-600">{lifecycleModal === "calloff" ? "Start date" : "New start date"} <span className="text-red-500">*</span></label>
                 <input type="date" className="form-input" value={lcStartDate} onChange={(e) => setLcStartDate(e.target.value)} />
               </div>
             )}
-            {(lifecycleModal === "extend" || lifecycleModal === "renew") && (
+            {(lifecycleModal === "extend" || lifecycleModal === "renew" || lifecycleModal === "calloff") && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">{lifecycleModal === "extend" ? "Proposed end date" : "New end date"} <span className="text-red-500">*</span></label>
+                <label className="text-xs font-semibold text-neutral-600">{lifecycleModal === "extend" ? "Proposed end date" : "End date"} <span className="text-red-500">*</span></label>
                 <input type="date" className="form-input" value={lcEndDate} onChange={(e) => setLcEndDate(e.target.value)} />
               </div>
             )}
@@ -576,10 +644,12 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                 <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={lcBudgetConfirmed} onChange={(e) => setLcBudgetConfirmed(e.target.checked)} /> Budget confirmed</label>
               </div>
             )}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Reason {lifecycleModal !== "renew" && <span className="text-red-500">*</span>}</label>
-              <textarea className="form-input h-20 resize-none" value={lifecycleReason} onChange={(e) => setLifecycleReason(e.target.value)} />
-            </div>
+            {lifecycleModal !== "calloff" && (
+              <div className="space-y-1">
+                <label className="text-xs font-semibold text-neutral-600">Reason {!["renew"].includes(lifecycleModal) && <span className="text-red-500">*</span>}</label>
+                <textarea className="form-input h-20 resize-none" value={lifecycleReason} onChange={(e) => setLifecycleReason(e.target.value)} />
+              </div>
+            )}
             <div className="flex gap-3">
               <button className="btn-secondary flex-1" onClick={() => setLifecycleModal(null)}>Cancel</button>
               <button className="btn-primary flex-1 capitalize" onClick={runLifecycle}>{lifecycleModal}</button>

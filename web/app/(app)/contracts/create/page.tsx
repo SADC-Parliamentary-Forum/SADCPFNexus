@@ -64,6 +64,8 @@ export default function ContractCreatePage() {
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [budgetCurrency, setBudgetCurrency] = useState("");
   const [ceiling, setCeiling] = useState("");
+  const [isFramework, setIsFramework] = useState(false);
+  const [frameworkCeiling, setFrameworkCeiling] = useState("");
 
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [obligations, setObligations] = useState<Obligation[]>([]);
@@ -170,6 +172,8 @@ export default function ContractCreatePage() {
         units: units ? Number(units) : undefined,
         value: !rate || !units ? Number(flatValue || 0) : undefined,
         ceiling_value: ceiling ? Number(ceiling) : undefined,
+        is_framework: isFramework || undefined,
+        framework_ceiling: isFramework && frameworkCeiling ? Number(frameworkCeiling) : undefined,
         currency,
         budget_currency: budgetCurrency || undefined,
         deliverables: deliverables.filter((d) => d.name.trim()).length ? deliverables.filter((d) => d.name.trim()) : undefined,
@@ -306,6 +310,18 @@ export default function ContractCreatePage() {
             <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 text-sm">
               <span className="text-neutral-600">Calculated total value: </span>
               <span className="font-bold text-neutral-900">{currency} {computedValue.toLocaleString()}</span>
+            </div>
+            <div className="space-y-2 border-t border-neutral-100 pt-3">
+              <label className="flex items-center gap-2 text-sm text-neutral-700">
+                <input type="checkbox" checked={isFramework} onChange={(e) => setIsFramework(e.target.checked)} />
+                This is a framework agreement (call-offs will draw down against a ceiling)
+              </label>
+              {isFramework && (
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-neutral-600">Framework ceiling</label>
+                  <input type="number" min="0" step="0.01" className="form-input" value={frameworkCeiling} onChange={(e) => setFrameworkCeiling(e.target.value)} placeholder="Maximum draw-down value" />
+                </div>
+              )}
             </div>
           </div>
         )}

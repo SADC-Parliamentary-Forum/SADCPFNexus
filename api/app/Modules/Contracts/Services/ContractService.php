@@ -74,6 +74,7 @@ class ContractService
             'counterparty', 'fundingSources', 'deliverables', 'obligations',
             'paymentSchedules', 'documentVersions', 'signatories', 'amendments', 'exceptions',
             'complianceDocuments', 'suspensions', 'terminations', 'extensions', 'renewals',
+            'callOffs', 'parentContract',
             'approvalRequest.workflow.steps', 'approvalRequest.history.user',
         ]);
     }
@@ -145,6 +146,8 @@ class ContractService
                 'closeout_target_date' => $data['closeout_target_date'] ?? null,
                 'renewal_type' => $data['renewal_type'] ?? null,
                 'auto_renew' => (bool) ($data['auto_renew'] ?? false),
+                'is_framework' => (bool) ($data['is_framework'] ?? false),
+                'framework_ceiling' => $data['framework_ceiling'] ?? null,
                 'rate' => $data['rate'] ?? null,
                 'rate_basis' => $data['rate_basis'] ?? null,
                 'units' => $data['units'] ?? null,

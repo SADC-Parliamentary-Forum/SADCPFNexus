@@ -13,6 +13,7 @@ use App\Models\ContractTemplateVersion;
 use App\Modules\Contracts\Services\ContractDocumentService;
 use App\Modules\Contracts\Services\ContractExceptionService;
 use App\Modules\Contracts\Services\ContractFinanceService;
+use App\Modules\Contracts\Services\ContractFrameworkService;
 use App\Modules\Contracts\Services\ContractHealthService;
 use App\Modules\Contracts\Services\ContractLifecycleService;
 use App\Modules\Contracts\Services\ContractRenewalService;
@@ -42,6 +43,7 @@ class ContractController extends Controller
         private readonly ContractHealthService $health,
         private readonly ContractLifecycleService $lifecycle,
         private readonly ContractRenewalService $renewals,
+        private readonly ContractFrameworkService $frameworks,
     ) {}
 
     private function ensurePermission(Request $request, array $permissions, array $roles = []): void
@@ -198,6 +200,8 @@ class ContractController extends Controller
             'notice_period_days' => ['nullable', 'integer', 'min:0'],
             'renewal_type' => ['nullable', 'string', 'in:non_renewable,renewable_once,renewable_multiple,automatic,subject_to_approval'],
             'auto_renew' => ['nullable', 'boolean'],
+            'is_framework' => ['nullable', 'boolean'],
+            'framework_ceiling' => ['nullable', 'numeric', 'min:0'],
             'rate' => ['nullable', 'numeric', 'min:0'],
             'rate_basis' => ['nullable', 'string', 'max:30'],
             'units' => ['nullable', 'numeric', 'min:0'],
@@ -760,6 +764,43 @@ class ContractController extends Controller
         ]);
 
         return response()->json(['message' => 'Contract resumed.', 'data' => $contract]);
+    }
+
+    public function callOffs(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        return response()->json([
+            'data' => $contract->callOffs()->with(['type'])->get(),
+            'utilisation' => $contract->is_framework ? $this->frameworks->utilisation($contract) : null,
+        ]);
+    }
+
+    public function createCallOff(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.create'], ['Procurement Officer']);
+        $framework = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'value' => ['required', 'numeric', 'min:0'],
+            'type_id' => ['nullable', 'integer', 'exists:contract_types,id'],
+            'department_id' => ['nullable', 'integer', 'exists:departments,id'],
+        ]);
+
+        $callOff = $this->frameworks->createCallOff($framework, $request->user(), $data);
+
+        AuditLog::record('contract.call_off_created', [
+            'auditable_type' => Contract::class, 'auditable_id' => $callOff->id,
+            'new_values' => ['framework' => $framework->reference_number, 'value' => $callOff->value],
+            'tags' => ['contract', 'framework'],
+        ]);
+
+        return response()->json(['message' => 'Call-off created.', 'data' => $callOff], 201);
     }
 
     public function createExtension(Request $request, Contract $contract): JsonResponse

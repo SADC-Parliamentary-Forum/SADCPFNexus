@@ -21,6 +21,7 @@ class Contract extends Model
 
     protected $fillable = [
         'tenant_id', 'origin_type', 'origin_reference',
+        'is_framework', 'framework_ceiling', 'parent_contract_id',
         'procurement_request_id', 'tender_id', 'type_id', 'vendor_id', 'purchase_order_id',
         'counterparty_type', 'counterparty_name',
         'department_id', 'contract_owner_id', 'procurement_officer_id',
@@ -66,6 +67,8 @@ class Contract extends Model
         'notice_period_days' => 'integer',
         'renewals_count' => 'integer',
         'auto_renew' => 'boolean',
+        'is_framework' => 'boolean',
+        'framework_ceiling' => 'decimal:2',
         'is_legacy' => 'boolean',
         'scope' => 'array',
     ];
@@ -243,6 +246,16 @@ class Contract extends Model
     public function clauseAssignments(): HasMany
     {
         return $this->hasMany(ContractClauseAssignment::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function parentContract(): BelongsTo
+    {
+        return $this->belongsTo(Contract::class, 'parent_contract_id');
+    }
+
+    public function callOffs(): HasMany
+    {
+        return $this->hasMany(Contract::class, 'parent_contract_id')->orderBy('id');
     }
 
     public function approvalRequest(): MorphOne

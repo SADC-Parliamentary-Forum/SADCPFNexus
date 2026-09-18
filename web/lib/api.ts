@@ -4997,6 +4997,9 @@ export interface Contract {
   renewal_type?: string | null;
   auto_renew?: boolean;
   renewals_count?: number;
+  is_framework?: boolean;
+  framework_ceiling?: number | string | null;
+  parent_contract_id?: number | null;
   exceptions?: ContractExceptionRecord[];
   health_reasons?: string[];
   counterparty?: { id: number; full_legal_name: string | null; email: string | null } | null;
@@ -5058,6 +5061,10 @@ export interface ContractSuspensionRecord {
 
 export interface ContractTerminationRecord {
   id: number; type: string; reason: string; effective_date: string | null; final_amount: number | string | null;
+}
+
+export interface ContractFrameworkUtilisation {
+  ceiling: number; used: number; remaining: number; call_off_count: number; currency: string;
 }
 
 export interface ContractClauseRecord {
@@ -5219,6 +5226,10 @@ export const contractsApi = {
     api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
   audit: (id: number) =>
     api.get<{ data: { id: number; event: string; created_at: string; new_values: unknown }[] }>(`/contracts/${id}/audit`),
+  callOffs: (id: number) =>
+    api.get<{ data: Contract[]; utilisation: ContractFrameworkUtilisation | null }>(`/contracts/${id}/call-offs`),
+  createCallOff: (id: number, data: { title: string; start_date: string; end_date: string; value: number; type_id?: number }) =>
+    api.post<{ data: Contract; message: string }>(`/contracts/${id}/call-offs`, data),
   clauseLibrary: () =>
     api.get<{ data: ContractClauseRecord[] }>("/contracts/clauses"),
   listClauses: (id: number) =>

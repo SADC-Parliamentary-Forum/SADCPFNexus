@@ -1338,6 +1338,8 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/suspend', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'suspend']);
             Route::post('{contract}/resume', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'resume']);
             Route::post('{contract}/terminate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'terminate']);
+            Route::get('{contract}/call-offs', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'callOffs']);
+            Route::post('{contract}/call-offs', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createCallOff']);
             Route::post('{contract}/extensions', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createExtension']);
             Route::post('{contract}/extensions/{extension}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approveExtension']);
             Route::post('{contract}/renewals', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createRenewal']);
