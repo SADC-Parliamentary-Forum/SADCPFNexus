@@ -51,8 +51,13 @@ class AssetImportCommitService
             throw ValidationException::withMessages(['commit' => 'No approved non-blocking records to commit.']);
         }
 
-        set_time_limit(180);
-        ignore_user_abort(true);
+        // Do not call set_time_limit() here: PHPUnit shares this process, and a
+        // 180s cap from the first commit() killed the rest of the CI suite.
+        // Production php.ini already allows 300s. ignore_user_abort keeps the
+        // register write going if the Next/CloudPanel proxy disconnects.
+        if (! app()->runningUnitTests()) {
+            ignore_user_abort(true);
+        }
 
         $created = 0;
         $updated = 0;

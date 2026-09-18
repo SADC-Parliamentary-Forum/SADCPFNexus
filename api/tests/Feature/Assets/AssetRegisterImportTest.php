@@ -1009,6 +1009,19 @@ class AssetRegisterImportTest extends TestCase
         $this->assertLessThanOrEqual(255, strlen((string) AuditLog::query()->where('event', 'assets.import_committed')->latest('id')->value('user_agent')));
     }
 
+    public function test_commit_does_not_cap_php_max_execution_time(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $batchId = $this->stageSingleRow($http, 'CE-6104', 'Time limit laptop');
+        $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])->assertOk();
+        $before = (string) ini_get('max_execution_time');
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/commit")->assertOk();
+
+        $this->assertSame($before, (string) ini_get('max_execution_time'));
+    }
+
     public function test_commit_lands_assets_when_qr_file_storage_is_unwritable(): void
     {
         $tenant = Tenant::factory()->create();
