@@ -342,6 +342,16 @@ class ContractService
             }
         }
 
+        // Configurable compliance requirements (PRD §81-82).
+        foreach (app(ContractComplianceService::class)->status($contract) as $c) {
+            $checks[] = [
+                'key' => 'compliance:'.$c['code'],
+                'label' => 'Compliance: '.$c['name'],
+                'passed' => $c['satisfied'],
+                'blocking' => $c['blocks_activation'],
+            ];
+        }
+
         $ready = collect($checks)->every(fn ($c) => ! $c['blocking'] || $c['passed']);
 
         return ['ready' => $ready, 'checks' => $checks];

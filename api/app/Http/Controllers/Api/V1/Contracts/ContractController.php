@@ -536,6 +536,132 @@ class ContractController extends Controller
         return response()->json(['data' => $contract->exceptions]);
     }
 
+    /** Disputes raised on this contract (PRD §78). */
+    public function disputes(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.audit_view'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        return response()->json(['data' => $contract->disputes()->with('internalOwner:id,name')->get()]);
+    }
+
+    /** Raise a dispute against the contract (audited child record; PRD §78). */
+    public function createDispute(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.create', 'contract.edit_draft', 'contract.suspend'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'type' => ['required', 'in:payment,performance,scope,delay,quality,other'],
+            'description' => ['required', 'string', 'max:5000'],
+            'date_raised' => ['nullable', 'date'],
+            'counterparty_claim' => ['nullable', 'string', 'max:5000'],
+            'internal_owner_id' => ['nullable', 'integer', 'exists:users,id'],
+            'legal_involved' => ['nullable', 'boolean'],
+            'amount_at_risk' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $dispute = $contract->disputes()->create(array_merge($data, [
+            'tenant_id' => $contract->tenant_id,
+            'date_raised' => $data['date_raised'] ?? now()->toDateString(),
+            'status' => 'open',
+            'created_by' => $request->user()->id,
+        ]));
+
+        AuditLog::record('contract.dispute_raised', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['dispute_id' => $dispute->id, 'type' => $dispute->type],
+            'tags' => ['contract', 'dispute'],
+        ]);
+
+        return response()->json(['message' => 'Dispute recorded.', 'data' => $dispute], 201);
+    }
+
+    /** Update a dispute (status change, legal involvement, resolution; PRD §78). */
+    public function updateDispute(Request $request, Contract $contract, \App\Models\ContractDispute $dispute): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.create', 'contract.edit_draft', 'contract.suspend'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        abort_if((int) $dispute->contract_id !== (int) $contract->id, 404);
+
+        $data = $request->validate([
+            'status' => ['nullable', 'in:open,under_review,escalated,resolved,closed'],
+            'legal_involved' => ['nullable', 'boolean'],
+            'amount_at_risk' => ['nullable', 'numeric', 'min:0'],
+            'counterparty_claim' => ['nullable', 'string', 'max:5000'],
+            'resolution' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        if (in_array($data['status'] ?? null, ['resolved', 'closed'], true)) {
+            $data['resolved_at'] = now()->toDateString();
+        }
+        $dispute->update($data);
+
+        AuditLog::record('contract.dispute_updated', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => array_merge(['dispute_id' => $dispute->id], $data),
+            'tags' => ['contract', 'dispute'],
+        ]);
+
+        return response()->json(['message' => 'Dispute updated.', 'data' => $dispute->fresh('internalOwner:id,name')]);
+    }
+
+    /** Correspondence linked to this contract (PRD §63). */
+    public function correspondence(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.audit_view'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $items = \App\Models\Correspondence::where('tenant_id', $request->user()->tenant_id)
+            ->where('contract_id', $contract->id)
+            ->orderByDesc('created_at')
+            ->get(['id', 'reference_number', 'title', 'subject', 'type', 'status', 'direction', 'created_at']);
+
+        return response()->json(['data' => $items]);
+    }
+
+    /** Create a correspondence draft from a contract, linked back to it (PRD §63). */
+    public function createCorrespondence(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.send', 'contract.create'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:500'],
+            'subject' => ['required', 'string', 'max:500'],
+            'body' => ['nullable', 'string', 'max:10000'],
+            'type' => ['nullable', 'in:internal_memo,external,diplomatic_note,procurement'],
+            'priority' => ['nullable', 'in:low,normal,high,urgent'],
+            'response_required' => ['nullable', 'boolean'],
+            'internal_deadline' => ['nullable', 'date'],
+        ]);
+
+        $correspondence = \App\Models\Correspondence::create([
+            'tenant_id' => $request->user()->tenant_id,
+            'created_by' => $request->user()->id,
+            'contract_id' => $contract->id,
+            'department_id' => $contract->department_id,
+            'title' => $data['title'],
+            'subject' => $data['subject'],
+            'body' => $data['body'] ?? null,
+            'type' => $data['type'] ?? 'procurement',
+            'priority' => $data['priority'] ?? 'normal',
+            'direction' => 'outgoing',
+            'confidentiality' => 'general_official',
+            'response_required' => (bool) ($data['response_required'] ?? false),
+            'internal_deadline' => $data['internal_deadline'] ?? null,
+            'status' => 'draft',
+        ]);
+
+        AuditLog::record('contract.correspondence_created', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['correspondence_id' => $correspondence->id, 'title' => $correspondence->title],
+            'tags' => ['contract', 'correspondence'],
+        ]);
+
+        return response()->json(['message' => 'Correspondence draft created and linked to the contract.', 'data' => $correspondence], 201);
+    }
+
     // ── Financials, deliverables, amendments, close-out (WS5) ────────────────
 
     public function ledger(Request $request, Contract $contract): JsonResponse
@@ -838,6 +964,11 @@ class ContractController extends Controller
 
         if ($contract->lifecycle() !== 'FULLY_EXECUTED') {
             throw ValidationException::withMessages(['status' => ['A contract can only be activated once fully executed.']]);
+        }
+
+        $blocking = app(\App\Modules\Contracts\Services\ContractComplianceService::class)->unmet($contract, 'activation');
+        if ($blocking !== []) {
+            throw ValidationException::withMessages(['compliance' => $blocking]);
         }
 
         $contract->update(['status' => 'active', 'contract_status' => 'ACTIVE', 'signed_at' => $contract->signed_at ?? now()]);

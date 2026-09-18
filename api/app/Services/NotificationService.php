@@ -676,6 +676,24 @@ class NotificationService
                 'body' => "Dear {{name}},\n\nStock item {{item_name}} ({{item_code}}) has fallen to {{balance}} unit(s), at or below the reorder level of {{reorder_level}}.\n\nRecorded by: {{actor}}\n\nPlease review replenishment needs in the Consumables / Stock register.\n\nRegards,\nSADC-PF Nexus",
             ],
 
+            // Contract Management reminders & escalation (PRD §64-66)
+            'contract.expiry_reminder' => [
+                'subject' => 'Contract expiring soon — {{reference}}',
+                'body' => "Dear {{name}},\n\nContract {{reference}} ({{title}}) is due to end on {{end_date}} — in {{days}} day(s).\n\nPlease review whether it should be renewed, extended or closed out.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'contract.deliverable_reminder' => [
+                'subject' => 'Contract deliverable due — {{reference}}',
+                'body' => "Dear {{name}},\n\nDeliverable \"{{deliverable}}\" on contract {{reference}} is due on {{due_date}} — in {{days}} day(s).\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'contract.signature_reminder' => [
+                'subject' => 'Contract awaiting signature — {{reference}}',
+                'body' => "Dear {{name}},\n\nContract {{reference}} ({{title}}) is awaiting signature; the deadline is {{deadline}} — in {{days}} day(s).\n\nPlease follow up to complete execution.\n\nRegards,\nSADC-PF Nexus",
+            ],
+            'contract.escalation' => [
+                'subject' => 'Contract requires attention — {{reference}}',
+                'body' => "Dear {{name}},\n\nContract {{reference}} ({{title}}) needs attention:\n\n{{issue}}\n\nPlease action this promptly.\n\nRegards,\nSADC-PF Nexus",
+            ],
+
             // Daily alert digest (sent to managers/admins)
             'alerts.daily_digest' => [
                 'subject' => 'SADC-PF Nexus — Daily Alerts Digest ({{date}})',

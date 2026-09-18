@@ -223,6 +223,11 @@ class Contract extends Model
         return $this->hasMany(ContractComplianceDocument::class);
     }
 
+    public function disputes(): HasMany
+    {
+        return $this->hasMany(ContractDispute::class)->orderByDesc('date_raised');
+    }
+
     public function suspensions(): HasMany
     {
         return $this->hasMany(ContractSuspension::class)->orderByDesc('id');

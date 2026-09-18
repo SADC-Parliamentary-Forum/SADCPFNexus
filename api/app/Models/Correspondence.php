@@ -4,11 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Correspondence extends Model
 {
@@ -27,7 +27,7 @@ class Correspondence extends Model
         'tenant_id', 'created_by', 'reviewed_by', 'approved_by',
         'reference_number', 'registry_reference', 'title', 'subject', 'body',
         'type', 'priority', 'language', 'language_tags', 'status', 'direction',
-        'file_code', 'signatory_code', 'department_id', 'programme_id',
+        'file_code', 'signatory_code', 'department_id', 'programme_id', 'contract_id',
         'file_path', 'original_filename', 'mime_type', 'size_bytes',
         'content_hash', 'managed_document_id', 'document_version_id',
         'review_comment', 'rejection_reason',
@@ -49,11 +49,11 @@ class Correspondence extends Model
 
     protected $casts = [
         'submitted_at' => 'datetime',
-        'reviewed_at'  => 'datetime',
-        'approved_at'  => 'datetime',
-        'sent_at'      => 'datetime',
-        'received_at'  => 'datetime',
-        'registered_at'=> 'datetime',
+        'reviewed_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'sent_at' => 'datetime',
+        'received_at' => 'datetime',
+        'registered_at' => 'datetime',
         'original_immutable_at' => 'datetime',
         'signed_immutable_at' => 'datetime',
         'letterhead_applied_at' => 'datetime',
@@ -63,7 +63,7 @@ class Correspondence extends Model
         'sender_deadline' => 'date',
         'internal_deadline' => 'date',
         'final_deadline' => 'date',
-        'size_bytes'   => 'integer',
+        'size_bytes' => 'integer',
         'content_restricted' => 'boolean',
         'response_required' => 'boolean',
         'legal_hold' => 'boolean',
@@ -109,37 +109,42 @@ class Correspondence extends Model
             ?: app(\App\Modules\Correspondence\Services\CorrespondenceRegisterService::class)->allocateOutgoingReference($this, $approver);
 
         $this->update([
-            'status'                => 'approved',
-            'approved_by'           => $approver->id,
-            'approved_at'           => now(),
-            'reference_number'      => $referenceNumber,
+            'status' => 'approved',
+            'approved_by' => $approver->id,
+            'approved_at' => now(),
+            'reference_number' => $referenceNumber,
             'letterhead_applied_at' => $this->letterhead_applied_at ?? now(),
         ]);
 
         AuditLog::record('correspondence.approved', [
             'auditable_type' => self::class,
-            'auditable_id'   => $this->id,
-            'new_values'     => ['status' => 'approved', 'reference_number' => $referenceNumber],
+            'auditable_id' => $this->id,
+            'new_values' => ['status' => 'approved', 'reference_number' => $referenceNumber],
         ]);
     }
 
     public function onWorkflowRejected(User $approver, ?string $reason = null): void
     {
         $this->update([
-            'status'          => 'draft',
-            'rejection_reason'=> $reason,
+            'status' => 'draft',
+            'rejection_reason' => $reason,
         ]);
 
         AuditLog::record('correspondence.rejected', [
             'auditable_type' => self::class,
-            'auditable_id'   => $this->id,
-            'new_values'     => ['reason' => $reason],
+            'auditable_id' => $this->id,
+            'new_values' => ['reason' => $reason],
         ]);
     }
 
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
+    }
+
+    public function contract(): BelongsTo
+    {
+        return $this->belongsTo(Contract::class);
     }
 
     public function senderContact(): BelongsTo
@@ -240,23 +245,55 @@ class Correspondence extends Model
 
         $sequence = str_pad($maxSeq + 1, 4, '0', STR_PAD_LEFT);
 
-        return strtoupper($fileCode) . '/' . strtoupper($signatory) . '/' . strtoupper($initials) . '/' . $sequence . '/' . $year;
+        return strtoupper($fileCode).'/'.strtoupper($signatory).'/'.strtoupper($initials).'/'.$sequence.'/'.$year;
     }
 
     public static function extractInitials(string $name): string
     {
         $parts = preg_split('/\s+/', trim($name));
+
         return implode('', array_map(fn ($p) => strtoupper(substr($p, 0, 1)), $parts));
     }
 
-    public function isDraft(): bool { return $this->status === 'draft'; }
-    public function isPendingReview(): bool { return $this->status === 'pending_review'; }
-    public function isPendingApproval(): bool { return $this->status === 'pending_approval'; }
-    public function isApproved(): bool { return in_array($this->status, ['approved', 'signed', 'ready_dispatch'], true); }
-    public function isSent(): bool { return $this->status === 'sent'; }
-    public function isOriginalImmutable(): bool { return $this->original_immutable_at !== null; }
-    public function isSignedImmutable(): bool { return $this->signed_immutable_at !== null; }
-    public function isVoided(): bool { return $this->voided_at !== null || $this->status === 'voided'; }
+    public function isDraft(): bool
+    {
+        return $this->status === 'draft';
+    }
+
+    public function isPendingReview(): bool
+    {
+        return $this->status === 'pending_review';
+    }
+
+    public function isPendingApproval(): bool
+    {
+        return $this->status === 'pending_approval';
+    }
+
+    public function isApproved(): bool
+    {
+        return in_array($this->status, ['approved', 'signed', 'ready_dispatch'], true);
+    }
+
+    public function isSent(): bool
+    {
+        return $this->status === 'sent';
+    }
+
+    public function isOriginalImmutable(): bool
+    {
+        return $this->original_immutable_at !== null;
+    }
+
+    public function isSignedImmutable(): bool
+    {
+        return $this->signed_immutable_at !== null;
+    }
+
+    public function isVoided(): bool
+    {
+        return $this->voided_at !== null || $this->status === 'voided';
+    }
 
     public function canDispatch(): bool
     {
