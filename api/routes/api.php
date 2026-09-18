@@ -1299,6 +1299,7 @@ Route::prefix('v1')->group(function () {
             Route::post('clauses', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'store']);
             Route::post('clauses/{clause}/versions', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'addVersion']);
             Route::post('clauses/{clause}/versions/{version}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'activateVersion']);
+            Route::get('clauses/{clause}/compare', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'compareVersions']);
 
             Route::get('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'show']);
             Route::get('{contract}/readiness', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'readiness']);
@@ -1328,6 +1329,7 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/amendments/{amendment}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approveAmendment']);
             Route::post('{contract}/close', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'close']);
             Route::get('{contract}/audit', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'audit']);
+            Route::get('{contract}/documents/compare', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'compareDocuments']);
             Route::get('{contract}/pack', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'pack']);
             Route::get('{contract}/pack-index', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'packIndex']);
             Route::get('{contract}/performance-reviews', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'performanceReviews']);

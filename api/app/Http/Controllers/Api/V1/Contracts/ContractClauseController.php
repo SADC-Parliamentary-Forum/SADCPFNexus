@@ -22,7 +22,29 @@ class ContractClauseController extends Controller
     public function __construct(
         private readonly ContractClauseService $clauses,
         private readonly ContractService $contracts,
+        private readonly \App\Modules\Contracts\Services\ContractDiffService $diff,
     ) {}
+
+    /** Redline diff between two versions of a clause (PRD §53). */
+    public function compareVersions(Request $request, ContractClause $clause): JsonResponse
+    {
+        $this->gateView($request);
+        $this->tenantClause($request, $clause);
+
+        $data = $request->validate([
+            'from' => ['required', 'integer'],
+            'to' => ['required', 'integer'],
+        ]);
+
+        $from = $clause->versions()->find($data['from']);
+        $to = $clause->versions()->find($data['to']);
+        abort_if($from === null || $to === null, 404, 'Clause version not found.');
+
+        return response()->json(['data' => array_merge(
+            $this->diff->diff((string) $from->body, (string) $to->body),
+            ['from' => ['id' => $from->id, 'version' => $from->version], 'to' => ['id' => $to->id, 'version' => $to->version]],
+        )]);
+    }
 
     private function gateManage(Request $request): void
     {

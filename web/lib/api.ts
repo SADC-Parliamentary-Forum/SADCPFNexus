@@ -5226,6 +5226,8 @@ export const contractsApi = {
     api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
   audit: (id: number) =>
     api.get<{ data: { id: number; event: string; created_at: string; new_values: unknown }[] }>(`/contracts/${id}/audit`),
+  compareDocuments: (id: number, from: number, to: number) =>
+    api.get<{ data: { segments: { type: string; text: string }[]; added: number; removed: number } }>(`/contracts/${id}/documents/compare`, { params: { from, to } }),
   packDownloadUrl: (id: number) => `/api/contracts/${id}/pack`,
   performanceReviews: (id: number) =>
     api.get<{ data: { id: number; overall_score: number; notes: string | null; evaluator?: { name: string } }[] }>(`/contracts/${id}/performance-reviews`),

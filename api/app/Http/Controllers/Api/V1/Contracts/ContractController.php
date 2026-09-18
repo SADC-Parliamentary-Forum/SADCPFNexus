@@ -10,6 +10,7 @@ use App\Models\ContractDeliverable;
 use App\Models\ContractObligation;
 use App\Models\ContractPaymentSchedule;
 use App\Models\ContractTemplateVersion;
+use App\Modules\Contracts\Services\ContractDiffService;
 use App\Modules\Contracts\Services\ContractDocumentService;
 use App\Modules\Contracts\Services\ContractExceptionService;
 use App\Modules\Contracts\Services\ContractFinanceService;
@@ -46,6 +47,7 @@ class ContractController extends Controller
         private readonly ContractRenewalService $renewals,
         private readonly ContractFrameworkService $frameworks,
         private readonly ContractPackService $pack,
+        private readonly ContractDiffService $diff,
     ) {}
 
     private function ensurePermission(Request $request, array $permissions, array $roles = []): void
@@ -766,6 +768,41 @@ class ContractController extends Controller
         ]);
 
         return response()->json(['message' => 'Contract resumed.', 'data' => $contract]);
+    }
+
+    /** Redline diff between two text-based (working) document versions (PRD §53). */
+    public function compareDocuments(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all'], ['Procurement Officer']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'from' => ['required', 'integer'],
+            'to' => ['required', 'integer'],
+        ]);
+
+        $from = $contract->documentVersions->firstWhere('id', (int) $data['from']);
+        $to = $contract->documentVersions->firstWhere('id', (int) $data['to']);
+        abort_if($from === null || $to === null, 404, 'Document version not found on this contract.');
+
+        foreach ([$from, $to] as $doc) {
+            if (! $doc->storage_path || ! \Illuminate\Support\Facades\Storage::exists($doc->storage_path)) {
+                throw ValidationException::withMessages(['document' => ['A selected version has no stored content to compare.']]);
+            }
+            if (str_ends_with((string) $doc->storage_path, '.pdf')) {
+                throw ValidationException::withMessages(['document' => ['Locked PDF versions cannot be text-compared; compare working drafts.']]);
+            }
+        }
+
+        $result = $this->diff->diff(
+            \Illuminate\Support\Facades\Storage::get($from->storage_path),
+            \Illuminate\Support\Facades\Storage::get($to->storage_path),
+        );
+
+        return response()->json(['data' => array_merge($result, [
+            'from' => ['id' => $from->id, 'version' => $from->version, 'kind' => $from->kind],
+            'to' => ['id' => $to->id, 'version' => $to->version, 'kind' => $to->kind],
+        ])]);
     }
 
     public function packIndex(Request $request, Contract $contract): JsonResponse

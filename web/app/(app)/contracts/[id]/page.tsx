@@ -46,6 +46,9 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const [callOffValue, setCallOffValue] = useState("");
   const [perfOpen, setPerfOpen] = useState(false);
   const [perf, setPerf] = useState({ delivery_score: 4, quality_score: 4, price_score: 4, compliance_score: 4, communication_score: 4, notes: "" });
+  const [cmpFrom, setCmpFrom] = useState<number | "">("");
+  const [cmpTo, setCmpTo] = useState<number | "">("");
+  const [cmpResult, setCmpResult] = useState<{ segments: { type: string; text: string }[]; added: number; removed: number } | null>(null);
 
   const { data: contract, isLoading, isError } = useQuery({
     queryKey: ["contract", contractId],
@@ -535,7 +538,16 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {tab === "documents" && (
+      {tab === "documents" && (() => {
+        const workingVersions = (contract.document_versions ?? []).filter((d) => d.kind === "working");
+        const runCompare = () => {
+          if (!cmpFrom || !cmpTo) return;
+          contractsApi.compareDocuments(contractId, Number(cmpFrom), Number(cmpTo))
+            .then((r) => setCmpResult(r.data.data))
+            .catch((e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Compare failed"));
+        };
+        return (
+        <div className="space-y-4">
         <div className="card overflow-hidden">
           {(contract.document_versions ?? []).length === 0 ? (
             <div className="p-6 text-sm text-neutral-500">No generated documents yet.</div>
@@ -556,7 +568,38 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             </table>
           )}
         </div>
-      )}
+        {workingVersions.length >= 2 && (
+          <div className="card p-4 space-y-3">
+            <p className="text-sm font-semibold text-neutral-800">Compare working drafts (redline)</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <select className="form-input w-auto" value={cmpFrom} onChange={(e) => setCmpFrom(e.target.value ? Number(e.target.value) : "")}>
+                <option value="">From version…</option>
+                {workingVersions.map((d) => <option key={d.id} value={d.id}>v{d.version}</option>)}
+              </select>
+              <span className="text-neutral-400">→</span>
+              <select className="form-input w-auto" value={cmpTo} onChange={(e) => setCmpTo(e.target.value ? Number(e.target.value) : "")}>
+                <option value="">To version…</option>
+                {workingVersions.map((d) => <option key={d.id} value={d.id}>v{d.version}</option>)}
+              </select>
+              <button className="btn-secondary text-sm" disabled={!cmpFrom || !cmpTo || cmpFrom === cmpTo} onClick={runCompare}>Compare</button>
+            </div>
+            {cmpResult && (
+              <div className="space-y-2">
+                <p className="text-xs text-neutral-500">{cmpResult.added} added · {cmpResult.removed} removed</p>
+                <pre className="text-xs bg-neutral-50 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">
+                  {cmpResult.segments.map((s, i) => (
+                    <div key={i} className={s.type === "added" ? "text-green-700 bg-green-50" : s.type === "removed" ? "text-red-700 bg-red-50 line-through" : "text-neutral-600"}>
+                      {s.type === "added" ? "+ " : s.type === "removed" ? "- " : "  "}{s.text}
+                    </div>
+                  ))}
+                </pre>
+              </div>
+            )}
+          </div>
+        )}
+        </div>
+        );
+      })()}
 
       {tab === "signatures" && (
         <div className="card overflow-hidden">
