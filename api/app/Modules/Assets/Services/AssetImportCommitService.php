@@ -51,6 +51,9 @@ class AssetImportCommitService
             throw ValidationException::withMessages(['commit' => 'No approved non-blocking records to commit.']);
         }
 
+        set_time_limit(180);
+        ignore_user_abort(true);
+
         $created = 0;
         $updated = 0;
         $unchanged = 0;
@@ -88,7 +91,9 @@ class AssetImportCommitService
             $batch->summary = $equation;
             $batch->status = $equation['balanced'] && $equation['outstanding_exceptions'] === 0 ? 'committed' : 'incomplete';
             $batch->save();
+        });
 
+        try {
             AuditLog::record('assets.import_committed', [
                 'auditable_type' => AssetImportBatch::class,
                 'auditable_id' => $batch->id,
@@ -100,7 +105,9 @@ class AssetImportCommitService
                 ],
                 'tags' => 'assets',
             ]);
-        });
+        } catch (\Throwable) {
+            // Register rows must stay committed even if the audit writer fails.
+        }
 
         $fresh = $batch->fresh();
 
@@ -117,14 +124,14 @@ class AssetImportCommitService
 
         if ($existing && $row->proposed_action === 'NO_CHANGE') {
             $this->ensureIdentity($existing, $user);
-            $this->qr->ensure($existing, $user);
+            $this->qr->ensureToken($existing, $user);
 
             return 'unchanged';
         }
 
         if ($existing && $row->proposed_action === 'REQUIRES_REVIEW' && $existing->last_verified_at) {
             $this->ensureIdentity($existing, $user);
-            $this->qr->ensure($existing, $user);
+            $this->qr->ensureToken($existing, $user);
 
             return 'unchanged';
         }
@@ -169,7 +176,6 @@ class AssetImportCommitService
         ];
 
         if ($existing) {
-            $old = $existing->only(array_keys($payload));
             $previousLocationId = $existing->location_id;
             foreach ($payload as $key => $value) {
                 if ($key === 'assigned_to' && $existing->last_verified_at) {
@@ -185,17 +191,10 @@ class AssetImportCommitService
             if ($existing->location_id && (int) $existing->location_id !== (int) $previousLocationId && ! $existing->last_verified_at) {
                 app(\App\Modules\Assets\Services\AssetService::class)->recordLocationBaseline($existing, $user, 'Imported location');
             }
-            $this->qr->ensure($existing, $user);
+            $this->qr->ensureToken($existing, $user);
             if (! $existing->last_verified_at) {
                 $this->applyImportedAssignment($existing, $row, $user);
             }
-            AuditLog::record('assets.import_updated', [
-                'auditable_type' => Asset::class,
-                'auditable_id' => $existing->id,
-                'old_values' => $old,
-                'new_values' => $payload,
-                'tags' => 'assets',
-            ]);
 
             return 'updated';
         }
@@ -207,14 +206,8 @@ class AssetImportCommitService
         if ($asset->location_id) {
             app(\App\Modules\Assets\Services\AssetService::class)->recordLocationBaseline($asset, $user, 'Imported from Crystal register');
         }
-        $this->qr->ensure($asset, $user);
+        $this->qr->ensureToken($asset, $user);
         $this->applyImportedAssignment($asset, $row, $user);
-        AuditLog::record('assets.import_created', [
-            'auditable_type' => Asset::class,
-            'auditable_id' => $asset->id,
-            'new_values' => ['asset_tag' => $asset->tag_number, 'uuid' => $asset->uuid],
-            'tags' => 'assets',
-        ]);
 
         return 'created';
     }

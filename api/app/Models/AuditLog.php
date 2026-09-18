@@ -32,7 +32,7 @@ class AuditLog extends Model
     protected $casts = [
         'old_values' => 'array',
         'new_values' => 'array',
-        'tags'       => 'array',
+        'tags' => 'string',
         'created_at' => 'datetime',
     ];
 
@@ -65,22 +65,27 @@ class AuditLog extends Model
         $lastLog = static::latest('id')->first();
         $previousHash = $lastLog?->entry_hash ?? '0';
 
+        $tags = $context['tags'] ?? null;
+        if (is_array($tags)) {
+            $tags = implode(',', array_map(strval(...), $tags));
+        }
+
         $entry = [
-            'tenant_id'     => $context['tenant_id'] ?? $user?->tenant_id ?? null,
-            'user_id'       => $context['user_id'] ?? $user?->id ?? null,
-            'event'         => $event,
-            'auditable_type'=> $context['auditable_type'] ?? null,
-            'auditable_id'  => $context['auditable_id'] ?? null,
-            'old_values'    => $context['old_values'] ?? null,
-            'new_values'    => $context['new_values'] ?? null,
-            'url'           => array_key_exists('url', $context) ? $context['url'] : $request?->fullUrl(),
-            'ip_address'    => array_key_exists('ip_address', $context) ? $context['ip_address'] : $request?->ip(),
-            'user_agent'    => array_key_exists('user_agent', $context) ? $context['user_agent'] : $request?->userAgent(),
-            'tags'          => $context['tags'] ?? null,
+            'tenant_id' => $context['tenant_id'] ?? $user?->tenant_id ?? null,
+            'user_id' => $context['user_id'] ?? $user?->id ?? null,
+            'event' => $event,
+            'auditable_type' => $context['auditable_type'] ?? null,
+            'auditable_id' => $context['auditable_id'] ?? null,
+            'old_values' => $context['old_values'] ?? null,
+            'new_values' => $context['new_values'] ?? null,
+            'url' => self::limitVarchar(array_key_exists('url', $context) ? $context['url'] : $request?->fullUrl()),
+            'ip_address' => array_key_exists('ip_address', $context) ? $context['ip_address'] : $request?->ip(),
+            'user_agent' => self::limitVarchar(array_key_exists('user_agent', $context) ? $context['user_agent'] : $request?->userAgent()),
+            'tags' => self::limitVarchar(is_string($tags) ? $tags : null),
             'previous_hash' => $previousHash,
         ];
 
-        $entry['entry_hash'] = hash('sha256', json_encode($entry) . $previousHash);
+        $entry['entry_hash'] = hash('sha256', json_encode($entry).$previousHash);
 
         $log = static::create($entry);
 
@@ -101,5 +106,25 @@ class AuditLog extends Model
         }
 
         return $log;
+    }
+
+    /**
+     * audit_logs.url / user_agent / tags are VARCHAR(255). Modern browser
+     * User-Agent strings (and proxied URLs) overflow that and 500 the writer.
+     */
+    private static function limitVarchar(mixed $value, int $max = 255): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        $string = is_scalar($value) ? (string) $value : '';
+        if ($string === '') {
+            return null;
+        }
+        if (mb_strlen($string) <= $max) {
+            return $string;
+        }
+
+        return mb_substr($string, 0, $max);
     }
 }

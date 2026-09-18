@@ -72,6 +72,18 @@ const COUNT_FILTER: Record<string, (typeof FILTERS)[number]> = {
   pending_review: "pending",
 };
 
+function importApiError(err: unknown, fallback: string): string {
+  const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[] | string> } } };
+  const message = ax.response?.data?.message;
+  if (typeof message === "string" && message.trim()) return message;
+  const errors = ax.response?.data?.errors;
+  if (errors && typeof errors === "object") {
+    const first = Object.values(errors).flat()[0];
+    if (typeof first === "string" && first.trim()) return first;
+  }
+  return fallback;
+}
+
 function filterKey(filter: string): string {
   if (filter === "all") return "assets.import.filterAll";
   if (filter === "pending") return "assets.import.filterPending";
@@ -198,8 +210,7 @@ export default function AssetImportPage() {
       setFilter("all");
       if (payload.batch?.id) await loadPreview(payload.batch.id);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -214,8 +225,7 @@ export default function AssetImportPage() {
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -231,8 +241,7 @@ export default function AssetImportPage() {
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -241,6 +250,8 @@ export default function AssetImportPage() {
   async function commit() {
     if (!batchId) return;
     setBusy(true);
+    setError(null);
+    setMsg(t("assets.import.committing"));
     try {
       const r = await assetImportApi.commit(batchId, { approve_non_blocking: autoApproveAllowed });
       const payload = r.data as { message?: string; data?: { batch?: { status: string }; equation?: Equation } };
@@ -248,8 +259,7 @@ export default function AssetImportPage() {
       setBatchStatus(payload.data?.batch?.status ?? batchStatus);
       setEquation(payload.data?.equation ?? equation);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -297,8 +307,7 @@ export default function AssetImportPage() {
       setEditing(null);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -337,8 +346,7 @@ export default function AssetImportPage() {
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -361,8 +369,7 @@ export default function AssetImportPage() {
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -395,6 +402,11 @@ export default function AssetImportPage() {
       </div>
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
       {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+      {busy && (
+        <div data-testid="asset-import-busy" className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          {t("assets.import.working")}
+        </div>
+      )}
 
       {batches.length > 0 && (
         <FormSection title="assets.import.batches" dense>

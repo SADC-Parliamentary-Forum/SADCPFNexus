@@ -34,6 +34,37 @@ class AssetQrService
         return $this->generate($asset, $actor);
     }
 
+    /**
+     * Mint a public QR token without rendering SVG. Bulk import uses this so a
+     * 300-row commit does not generate hundreds of images and audit events in
+     * one HTTP request (production was 500ing on /commit).
+     */
+    public function ensureToken(Asset $asset, ?User $actor = null): Asset
+    {
+        if ($asset->qr_token && AssetQrToken::query()->where('token', $asset->qr_token)->whereNull('revoked_at')->exists()) {
+            return $asset;
+        }
+
+        if (! $asset->uuid) {
+            $asset->uuid = (string) Str::uuid();
+        }
+
+        $token = $this->randomToken();
+        $asset->qr_token = $token;
+        $asset->qr_generated_at = now();
+        $asset->save();
+
+        AssetQrToken::create([
+            'tenant_id' => $asset->tenant_id,
+            'asset_id' => $asset->id,
+            'token' => $token,
+            'generated_at' => now(),
+            'generated_by' => $actor?->id,
+        ]);
+
+        return $asset;
+    }
+
     public function generate(Asset $asset, ?User $actor = null, bool $replace = false): Asset
     {
         if ($replace && $asset->qr_token) {
@@ -49,7 +80,8 @@ class AssetQrService
             $asset->uuid = (string) Str::uuid();
         }
 
-        $token = $this->randomToken();
+        $shouldMint = $replace || ! $asset->qr_token;
+        $token = $shouldMint ? $this->randomToken() : $asset->qr_token;
         $asset->qr_token = $token;
         $asset->qr_generated_at = now();
 
@@ -68,13 +100,16 @@ class AssetQrService
         $asset->qr_path = $path;
         $asset->save();
 
-        AssetQrToken::create([
-            'tenant_id' => $asset->tenant_id,
-            'asset_id' => $asset->id,
-            'token' => $token,
-            'generated_at' => now(),
-            'generated_by' => $actor?->id,
-        ]);
+        $exists = AssetQrToken::query()->where('token', $token)->whereNull('revoked_at')->exists();
+        if (! $exists) {
+            AssetQrToken::create([
+                'tenant_id' => $asset->tenant_id,
+                'asset_id' => $asset->id,
+                'token' => $token,
+                'generated_at' => now(),
+                'generated_by' => $actor?->id,
+            ]);
+        }
 
         AuditLog::record($replace ? 'assets.qr_regenerated' : 'assets.qr_generated', [
             'auditable_type' => Asset::class,
