@@ -19,7 +19,7 @@ const LIFECYCLE_BADGES: Record<string, string> = {
   TERMINATED: "badge-danger", EXPIRED: "badge-danger",
 };
 
-type Tab = "overview" | "deliverables" | "financials" | "amendments" | "lifecycle" | "documents" | "signatures" | "approvals" | "audit";
+type Tab = "overview" | "deliverables" | "financials" | "clauses" | "amendments" | "lifecycle" | "documents" | "signatures" | "approvals" | "audit";
 
 export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -65,6 +65,18 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
     queryKey: ["contract", contractId, "audit"],
     queryFn: () => contractsApi.audit(contractId).then((r) => r.data.data),
     enabled: !!contractId && tab === "audit",
+  });
+
+  const { data: clauseData } = useQuery({
+    queryKey: ["contract", contractId, "clauses"],
+    queryFn: () => contractsApi.listClauses(contractId).then((r) => r.data.data),
+    enabled: !!contractId && tab === "clauses",
+  });
+
+  const { data: clauseLibrary } = useQuery({
+    queryKey: ["contract-clause-library"],
+    queryFn: () => contractsApi.clauseLibrary().then((r) => r.data.data).catch(() => []),
+    enabled: !!contractId && tab === "clauses",
   });
 
   const refresh = () => {
@@ -209,7 +221,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-neutral-200">
-        {(["overview", "deliverables", "financials", "amendments", "lifecycle", "documents", "signatures", "approvals", "audit"] as Tab[]).map((t) => (
+        {(["overview", "deliverables", "financials", "clauses", "amendments", "lifecycle", "documents", "signatures", "approvals", "audit"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
             {t}
@@ -314,6 +326,47 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "clauses" && (
+        <div className="space-y-4">
+          <div className="card overflow-hidden">
+            <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Assigned clauses</div>
+            {(clauseData ?? []).length === 0 ? (
+              <div className="p-4 text-sm text-neutral-500">No clauses assigned.</div>
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>Clause</th><th>Type</th><th>Deviation</th><th></th></tr></thead>
+                <tbody>
+                  {(clauseData ?? []).map((a) => (
+                    <tr key={a.id}>
+                      <td className="text-sm font-medium text-neutral-800">{a.clause?.title ?? a.clause?.key}</td>
+                      <td className="text-xs capitalize text-neutral-500">{(a.clause?.clause_type ?? "").replace(/_/g, " ")}</td>
+                      <td className="text-sm">{a.is_deviation ? <span className="badge badge-warning">Deviation ({a.deviation_status})</span> : "—"}</td>
+                      <td className="text-right">
+                        {canAmend && (
+                          <button className="btn-secondary text-xs py-0.5 text-red-600" onClick={() => act(() => contractsApi.unassignClause(contractId, a.id), "Clause removed")}>Remove</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          {canAmend && (clauseLibrary ?? []).length > 0 && (
+            <div className="card p-4">
+              <p className="text-xs font-semibold text-neutral-600 mb-2">Add a clause from the library</p>
+              <div className="flex flex-wrap gap-2">
+                {(clauseLibrary ?? []).filter((lib) => !(clauseData ?? []).some((a) => a.clause_id === lib.id)).map((lib) => (
+                  <button key={lib.id} className="btn-secondary text-xs" onClick={() => act(() => contractsApi.assignClause(contractId, lib.id), "Clause assigned")}>
+                    + {lib.title}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>

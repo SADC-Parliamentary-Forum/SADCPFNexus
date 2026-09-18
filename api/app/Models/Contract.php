@@ -240,6 +240,11 @@ class Contract extends Model
         return $this->hasMany(ContractRenewal::class)->orderByDesc('id');
     }
 
+    public function clauseAssignments(): HasMany
+    {
+        return $this->hasMany(ContractClauseAssignment::class)->orderBy('sort_order')->orderBy('id');
+    }
+
     public function approvalRequest(): MorphOne
     {
         return $this->morphOne(ApprovalRequest::class, 'approvable');

@@ -93,6 +93,7 @@ class DatabaseSeeder extends Seeder
             SupplierCategorySeeder::class,
             ContractTypeSeeder::class,
             ContractTemplateSeeder::class,
+            ContractClauseSeeder::class,
         ]);
     }
 }

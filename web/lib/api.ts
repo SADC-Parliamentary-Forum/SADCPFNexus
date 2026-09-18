@@ -5060,6 +5060,17 @@ export interface ContractTerminationRecord {
   id: number; type: string; reason: string; effective_date: string | null; final_amount: number | string | null;
 }
 
+export interface ContractClauseRecord {
+  id: number; key: string; title: string; category: string | null; clause_type: string;
+  donor: string | null; is_active: boolean;
+}
+
+export interface ContractClauseAssignmentRecord {
+  id: number; clause_id: number; clause_version_id: number | null; is_deviation: boolean;
+  deviation_text: string | null; deviation_reason: string | null; deviation_status: string | null;
+  clause?: ContractClauseRecord;
+}
+
 export interface ContractType {
   id: number;
   tenant_id: number;
@@ -5208,6 +5219,14 @@ export const contractsApi = {
     api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
   audit: (id: number) =>
     api.get<{ data: { id: number; event: string; created_at: string; new_values: unknown }[] }>(`/contracts/${id}/audit`),
+  clauseLibrary: () =>
+    api.get<{ data: ContractClauseRecord[] }>("/contracts/clauses"),
+  listClauses: (id: number) =>
+    api.get<{ data: ContractClauseAssignmentRecord[] }>(`/contracts/${id}/clauses`),
+  assignClause: (id: number, clauseId: number, deviationText?: string, deviationReason?: string) =>
+    api.post<{ data: ContractClauseAssignmentRecord; message: string }>(`/contracts/${id}/clauses`, { clause_id: clauseId, deviation_text: deviationText, deviation_reason: deviationReason }),
+  unassignClause: (id: number, assignmentId: number) =>
+    api.delete<{ message: string }>(`/contracts/${id}/clauses/${assignmentId}`),
   exceptions: (id: number) =>
     api.get<{ data: ContractExceptionRecord[] }>(`/contracts/${id}/exceptions`),
   addDeliverable: (id: number, data: { name: string; due_date?: string; responsible_party?: string; acceptance_criteria?: string; description?: string }) =>

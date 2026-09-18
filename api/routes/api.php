@@ -1294,6 +1294,12 @@ Route::prefix('v1')->group(function () {
             Route::post('templates/{template}/versions', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'storeVersion']);
             Route::post('templates/{template}/versions/{version}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractTemplateController::class, 'activateVersion']);
 
+            // Clause library (versioned)
+            Route::get('clauses', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'index']);
+            Route::post('clauses', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'store']);
+            Route::post('clauses/{clause}/versions', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'addVersion']);
+            Route::post('clauses/{clause}/versions/{version}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'activateVersion']);
+
             Route::get('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'show']);
             Route::get('{contract}/readiness', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'readiness']);
             Route::post('{contract}/generate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'generate']);
@@ -1322,6 +1328,11 @@ Route::prefix('v1')->group(function () {
             Route::post('{contract}/amendments/{amendment}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'approveAmendment']);
             Route::post('{contract}/close', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'close']);
             Route::get('{contract}/audit', [\App\Http\Controllers\Api\V1\Contracts\ContractReportController::class, 'audit']);
+
+            // Per-contract clause assignments
+            Route::get('{contract}/clauses', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'contractClauses']);
+            Route::post('{contract}/clauses', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'assign']);
+            Route::delete('{contract}/clauses/{assignment}', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'unassign']);
             Route::delete('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'destroy']);
             Route::post('{contract}/activate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'activate']);
             Route::post('{contract}/suspend', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'suspend']);
