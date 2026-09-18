@@ -22,6 +22,8 @@ test("asset register can optionally assign a live asset to a user", () => {
   assert.match(picker, /u\.email/);
   assert.match(picker, /department/);
   assert.match(picker, /assets\.searchAssignee/);
+  assert.match(picker, /onFocus/);
+  assert.match(picker, /data-testid="asset-assignee-picker"/);
 
   assert.match(api, /assigned_user\?:/);
   assert.match(api, /department\?: string \| null/);
@@ -44,6 +46,14 @@ test("edit-asset form uses the searchable assignee picker", () => {
   const edit = readFileSync(join(webRoot, "app/(app)/assets/[id]/edit/page.tsx"), "utf8");
   assert.match(edit, /AssetAssigneePicker/);
   assert.match(edit, /id="assigned_to"/);
+});
+
+test("asset view shows assignee name, email and department", () => {
+  const view = readFileSync(join(webRoot, "app/(app)/assets/[id]/page.tsx"), "utf8");
+  assert.match(view, /assets\.assignedTo/);
+  assert.match(view, /assets\.assigneeEmail/);
+  assert.match(view, /assets\.assigneeDepartment/);
+  assert.match(view, /assigned_user\?\.email/);
 });
 
 test("import map-custodian sends optional user_id when type is person", () => {

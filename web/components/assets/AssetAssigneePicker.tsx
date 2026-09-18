@@ -28,6 +28,7 @@ export function AssetAssigneePicker({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const selectedLabel = value ? formatAssigneeLabel(value) : "";
 
   useEffect(() => {
     setQuery(value ? formatAssigneeLabel(value) : "");
@@ -37,14 +38,18 @@ export function AssetAssigneePicker({
     if (disabled) {
       return;
     }
-    if (!query.trim() || (value && query === formatAssigneeLabel(value))) {
-      setOptions([]);
+    const browsingSelected = Boolean(value) && query === selectedLabel;
+    const search = browsingSelected ? "" : query.trim();
+    if (!open && browsingSelected) {
+      return;
+    }
+    if (!open && search === "") {
       return;
     }
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const r = await tenantUsersApi.list({ search: query });
+        const r = await tenantUsersApi.list({ search: search || undefined });
         setOptions(r.data.data ?? []);
         setOpen(true);
       } catch {
@@ -52,9 +57,9 @@ export function AssetAssigneePicker({
       } finally {
         setLoading(false);
       }
-    }, 250);
+    }, search ? 250 : 0);
     return () => clearTimeout(timer);
-  }, [query, value, disabled]);
+  }, [query, value, disabled, open, selectedLabel]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -86,16 +91,17 @@ export function AssetAssigneePicker({
         aria-expanded={open}
         aria-controls={`${id}-options`}
         aria-autocomplete="list"
+        data-testid="asset-assignee-picker"
         onChange={(e) => {
           setQuery(e.target.value);
           if (value) onSelect(null);
           setOpen(true);
         }}
         onFocus={() => {
-          if (options.length > 0) setOpen(true);
+          setOpen(true);
         }}
       />
-      {open && (query.trim().length > 0) && (
+      {open ? (
         <div
           id={`${id}-options`}
           role="listbox"
@@ -134,7 +140,7 @@ export function AssetAssigneePicker({
             })
           )}
         </div>
-      )}
+      ) : null}
       {value ? (
         <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2 text-xs text-neutral-700">
           <p className="font-medium text-neutral-900">{value.name}</p>
