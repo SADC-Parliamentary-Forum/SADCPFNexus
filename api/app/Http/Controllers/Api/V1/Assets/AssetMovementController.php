@@ -55,6 +55,7 @@ class AssetMovementController extends Controller
             'to_location_id' => ['nullable', 'integer', 'exists:asset_locations,id'],
             'from_department_id' => ['nullable', 'integer', 'exists:departments,id'],
             'to_department_id' => ['nullable', 'integer', 'exists:departments,id'],
+            'approved_by' => ['nullable', 'integer', 'exists:users,id'],
             'reference_document' => ['nullable', 'string', 'max:128'],
             'effective_date' => ['nullable', 'date'],
         ]);

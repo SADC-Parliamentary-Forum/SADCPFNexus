@@ -42,4 +42,5 @@
 ```
 
 **Balanced:** yes
+**FF-0172 present:** yes (category-only Admiral 3 Drawer Mobile Pedestal)
 **Migration status:** COMPLETE
