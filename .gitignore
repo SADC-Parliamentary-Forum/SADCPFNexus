@@ -110,6 +110,7 @@ Thumbs.db
 # Official SADC PF asset-register migration fixtures used by PHPUnit.
 !api/tests/Fixtures/asset-register/*.xlsx
 !api/tests/Fixtures/asset-register/*.xls
+!api/resources/assets/*.xlsx
 
 # ─── Misc local scripts ──────────────────────────────────────────────────────
 run-tests.sh

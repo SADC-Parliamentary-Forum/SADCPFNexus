@@ -19,7 +19,44 @@ test("import page offers a downloadable Excel template for bulk upload", () => {
   assert.match(api, /sadcpf-asset-import-template\.xlsx/);
 });
 
+test("import template hint describes assignment fields", () => {
+  const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
+  assert.match(keys, /assigned_to/);
+  assert.match(keys, /assigned_to_email/);
+  assert.match(keys, /department/);
+  assert.doesNotMatch(keys, /custodian_candidate are matched/);
+});
+
 test("asset register links importers to bulk upload", () => {
   const register = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
   assert.match(register, /href=["']\/assets\/import["']/);
+  assert.match(register, /ClearAssetRegisterButton/);
+});
+
+test("import commit allows blob frames and waits for a large register write", () => {
+  const csp = readFileSync(join(webRoot, "next.config.ts"), "utf8");
+  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const page = readFileSync(join(webRoot, "app/(app)/assets/import/page.tsx"), "utf8");
+  const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
+
+  assert.match(csp, /frame-src[^"]*blob:/);
+  assert.match(api, /timeout:\s*180_000/);
+  assert.match(api, /application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
+  assert.match(page, /data-testid="asset-import-busy"/);
+  assert.match(page, /assets\.import\.working/);
+  assert.match(page, /assets\.import\.committing/);
+  assert.match(keys, /"assets\.import\.working":/);
+  assert.match(keys, /"assets\.import\.committing":/);
+});
+
+test("import and register pages offer a confirmed clear-register action", () => {
+  const page = readFileSync(join(webRoot, "app/(app)/assets/import/page.tsx"), "utf8");
+  const button = readFileSync(join(webRoot, "components/assets/ClearAssetRegisterButton.tsx"), "utf8");
+  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+
+  assert.match(page, /ClearAssetRegisterButton/);
+  assert.match(button, /assetsApi\.clearRegister/);
+  assert.match(button, /CLEAR_ASSET_REGISTER_CONFIRMATION/);
+  assert.match(button, /data-testid="asset-register-clear"/);
+  assert.match(api, /\/assets\/register\/clear/);
 });

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { travelApi, type TravelRequest, type TravelAmendment, type ModuleAttachment, type TravelDestinationCountry, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
+import { travelApi, procurementApi, type TravelRequest, type TravelAmendment, type ModuleAttachment, type TravelDestinationCountry, type ProcurementRequest, TRAVEL_DOCUMENT_TYPES } from "@/lib/api";
 import { formatCurrency, formatDateShort, formatDateRelative } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { StatusTimeline } from "@/components/ui/StatusTimeline";
@@ -18,6 +18,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { TravelDestinationFields } from "@/components/travel/DestinationPickers";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   approved:                { label: "Approved",              cls: "text-green-700 bg-green-50 border-green-200",   icon: "check_circle" },
@@ -73,6 +74,7 @@ function SectionIcon({ icon, color, bg }: { icon: string; color: string; bg: str
 }
 
 export default function TravelDetailPage() {
+  const { t } = useI18n();
   const { success, error: showErrorToast, info } = useToast();
   const params = useParams();
   const router = useRouter();
@@ -128,6 +130,7 @@ export default function TravelDetailPage() {
   const [procReason, setProcReason] = useState("");
   const [procRequired, setProcRequired] = useState(false);
   const [procSaving, setProcSaving] = useState(false);
+  const [procRequests, setProcRequests] = useState<ProcurementRequest[]>([]);
   const [hotelName, setHotelName] = useState("");
   const [hotelCity, setHotelCity] = useState("");
   const [hotelCheckIn, setHotelCheckIn] = useState("");
@@ -234,6 +237,13 @@ export default function TravelDetailPage() {
       })
       .catch(() => {
         if (active) setFleet([]);
+      });
+    procurementApi.list({ per_page: 100 })
+      .then((r) => {
+        if (active) setProcRequests(getListData<ProcurementRequest>(r.data));
+      })
+      .catch(() => {
+        if (active) setProcRequests([]);
       });
     travelApi.listDestinations()
       .then((r) => {
@@ -1411,8 +1421,21 @@ export default function TravelDetailPage() {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <label htmlFor="travel-proc-id" className="text-xs text-neutral-600">
-            Procurement request ID
-            <input id="travel-proc-id" className="form-input mt-1 w-full text-sm" value={procId} onChange={(e) => setProcId(e.target.value)} placeholder="e.g. 42" data-testid="travel-proc-id" />
+            {t("travel.proc.select")}
+            <select
+              id="travel-proc-id"
+              className="form-input mt-1 w-full text-sm"
+              value={procId}
+              onChange={(e) => setProcId(e.target.value)}
+              data-testid="travel-proc-id"
+            >
+              <option value="">{t("pickers.none")}</option>
+              {procRequests.map((row) => (
+                <option key={row.id} value={String(row.id)}>
+                  {row.reference_number} — {row.title ?? row.status}
+                </option>
+              ))}
+            </select>
           </label>
           <label htmlFor="travel-proc-required" className="flex items-center gap-2 text-sm mt-5">
             <input id="travel-proc-required" type="checkbox" checked={procRequired} onChange={(e) => setProcRequired(e.target.checked)} />

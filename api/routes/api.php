@@ -1587,6 +1587,7 @@ Route::prefix('v1')->group(function () {
         Route::get('assets/dashboard', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'dashboard']);
         Route::get('assets/assigned-to-me', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'assignedToMe']);
         Route::get('assets/register-export', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'registerExport']);
+        Route::post('assets/register/clear', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'clearRegister']);
         Route::post('assets/qr-batch', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'qrBatch']);
         Route::get('assets/qr/{token}', [\App\Http\Controllers\Api\V1\Assets\PublicAssetQrController::class, 'authenticated'])
             ->where('token', '[A-Za-z0-9_-]+');
@@ -2231,6 +2232,7 @@ Route::prefix('v1')->group(function () {
             Route::post('risks/{risk}/materialise', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'materialise']);
             Route::post('risks/{risk}/accept-proposal', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'acceptProposal']);
             Route::post('risks/{risk}/reject-proposal', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'rejectProposal']);
+            Route::get('controls', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'listControls']);
             Route::post('controls', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'storeControl']);
             Route::post('risks/{risk}/controls', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'linkControl']);
             Route::get('incidents', [\App\Http\Controllers\Api\V1\Risk\RiskPhase1Controller::class, 'listIncidents']);

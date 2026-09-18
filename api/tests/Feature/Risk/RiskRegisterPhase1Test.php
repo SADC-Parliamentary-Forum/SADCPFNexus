@@ -4,9 +4,9 @@ namespace Tests\Feature\Risk;
 
 use App\Models\Assignment;
 use App\Models\Risk;
-use App\Models\RiskAcceptance;
 use App\Models\RiskAction;
 use App\Models\RiskAssessment;
+use App\Models\RiskControl;
 use App\Models\StrategicGoal;
 use App\Models\StrategicObjective;
 use App\Models\StrategicPlan;
@@ -300,5 +300,72 @@ class RiskRegisterPhase1Test extends TestCase
             'closure_evidence' => 'Treated and closed deliberately',
         ])->assertOk()
             ->assertJsonPath('data.status', 'closed');
+    }
+
+    public function test_unauthenticated_cannot_list_controls(): void
+    {
+        $this->getJson('/api/v1/risk/controls')->assertUnauthorized();
+    }
+
+    public function test_list_controls_returns_tenant_labelled_rows_and_caps_page_size(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $other = Tenant::factory()->create();
+        $admin = $this->makeAdmin($tenant);
+        $admin->givePermissionTo(['risk.view', 'risk.manage']);
+
+        $own = RiskControl::create([
+            'tenant_id' => $tenant->id,
+            'title' => 'Access review',
+            'control_type' => 'detective',
+            'created_by' => $admin->id,
+            'control_owner_id' => $admin->id,
+            'status' => 'active',
+        ]);
+        RiskControl::create([
+            'tenant_id' => $other->id,
+            'title' => 'Foreign control',
+            'control_type' => 'preventive',
+            'created_by' => $admin->id,
+            'status' => 'active',
+        ]);
+
+        $listed = $this->asUser($admin)->getJson('/api/v1/risk/controls?per_page=500')
+            ->assertOk()
+            ->json();
+
+        $this->assertLessThanOrEqual(100, (int) $listed['per_page']);
+        $ids = collect($listed['data'])->pluck('id')->all();
+        $this->assertContains($own->id, $ids);
+        $this->assertNotContains(
+            RiskControl::where('tenant_id', $other->id)->value('id'),
+            $ids
+        );
+
+        $row = collect($listed['data'])->firstWhere('id', $own->id);
+        $this->assertNotEmpty($row['control_code']);
+        $this->assertSame('Access review', $row['title']);
+        $this->assertArrayNotHasKey('description', $row);
+        $this->assertArrayNotHasKey('control_owner_id', $row);
+        $this->assertArrayNotHasKey('created_by', $row);
+        $this->assertArrayNotHasKey('effectiveness', $row);
+    }
+
+    public function test_list_controls_forbidden_without_risk_view(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        RiskControl::create([
+            'tenant_id' => $tenant->id,
+            'title' => 'Secret control',
+            'description' => 'Design text that must not leak',
+            'control_type' => 'preventive',
+            'created_by' => $user->id,
+            'status' => 'active',
+        ]);
+
+        config(['access_control.endpoint_enforcement_mode' => 'off']);
+
+        $this->asUser($user)->getJson('/api/v1/risk/controls')->assertForbidden();
     }
 }

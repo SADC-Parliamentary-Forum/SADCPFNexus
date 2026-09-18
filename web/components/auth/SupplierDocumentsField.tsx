@@ -8,6 +8,11 @@ export interface PendingSupplierDocument {
   id: string;
   file: File;
   documentType: string;
+  expiryDate?: string;
+}
+
+function typeRequiresExpiry(documentType: string): boolean {
+  return documentType === "tax_clearance";
 }
 
 interface Props {
@@ -67,13 +72,29 @@ export function SupplierDocumentsField({ documents, onChange, max = 15 }: Props)
                 className="form-input sm:w-56"
                 value={doc.documentType}
                 onChange={(e) =>
-                  onChange(documents.map((item) => item.id === doc.id ? { ...item, documentType: e.target.value } : item))
+                  onChange(documents.map((item) => item.id === doc.id ? { ...item, documentType: e.target.value, expiryDate: typeRequiresExpiry(e.target.value) ? item.expiryDate : undefined } : item))
                 }
               >
                 {VENDOR_DOC_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>{type.label}</option>
                 ))}
               </select>
+              {typeRequiresExpiry(doc.documentType) && (
+                <>
+                  <label className="sr-only" htmlFor={`${doc.id}-expiry`}>{t("auth.docsExpiry")}</label>
+                  <input
+                    id={`${doc.id}-expiry`}
+                    type="date"
+                    className="form-input sm:w-40"
+                    value={doc.expiryDate ?? ""}
+                    required
+                    data-testid={`supplier-doc-expiry-${doc.id}`}
+                    onChange={(e) =>
+                      onChange(documents.map((item) => item.id === doc.id ? { ...item, expiryDate: e.target.value } : item))
+                    }
+                  />
+                </>
+              )}
               <button
                 type="button"
                 className="text-sm font-medium text-red-600 hover:underline"

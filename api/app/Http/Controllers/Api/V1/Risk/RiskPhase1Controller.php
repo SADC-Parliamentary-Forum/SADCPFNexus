@@ -96,6 +96,22 @@ class RiskPhase1Controller extends Controller
         return response()->json(['message' => 'Risk materialised (remains open until deliberately closed).', 'data' => $updated]);
     }
 
+    public function listControls(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user->can('risk.view') || $user->can('risk.manage') || $user->can('risk.admin'), 403);
+
+        $perPage = min(100, max(1, $request->integer('per_page', 50)));
+
+        $query = RiskControl::query()
+            ->where('tenant_id', $user->tenant_id)
+            ->orderBy('control_code')
+            ->orderBy('title')
+            ->select(['id', 'control_code', 'title', 'control_type', 'status']);
+
+        return response()->json($query->paginate($perPage));
+    }
+
     public function storeControl(Request $request): JsonResponse
     {
         $data = $request->validate([

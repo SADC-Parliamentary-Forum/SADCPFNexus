@@ -1,11 +1,13 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { adminApi, assetImportApi, assetMetaApi, tenantUsersApi, type TenantUserOption } from "@/lib/api";
+import { adminApi, assetImportApi, assetMetaApi, type TenantUserOption } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { FormSection } from "@/components/ui/FormSection";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { ClearAssetRegisterButton } from "@/components/assets/ClearAssetRegisterButton";
+import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -70,6 +72,18 @@ const COUNT_FILTER: Record<string, (typeof FILTERS)[number]> = {
   pending_review: "pending",
 };
 
+function importApiError(err: unknown, fallback: string): string {
+  const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[] | string> } } };
+  const message = ax.response?.data?.message;
+  if (typeof message === "string" && message.trim()) return message;
+  const errors = ax.response?.data?.errors;
+  if (errors && typeof errors === "object") {
+    const first = Object.values(errors).flat()[0];
+    if (typeof first === "string" && first.trim()) return first;
+  }
+  return fallback;
+}
+
 function filterKey(filter: string): string {
   if (filter === "all") return "assets.import.filterAll";
   if (filter === "pending") return "assets.import.filterPending";
@@ -105,8 +119,7 @@ export default function AssetImportPage() {
   const [mapLocationId, setMapLocationId] = useState<number | "">("");
   const [custodianType, setCustodianType] = useState("shared");
   const [custodianDepartmentId, setCustodianDepartmentId] = useState<number | "">("");
-  const [custodianUserId, setCustodianUserId] = useState<number | "">("");
-  const [users, setUsers] = useState<TenantUserOption[]>([]);
+  const [custodianUser, setCustodianUser] = useState<TenantUserOption | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [raw, setRaw] = useState<unknown>(null);
@@ -165,7 +178,6 @@ export default function AssetImportPage() {
     adminApi.listDepartments().then((r) => {
       setDepartments((r.data as { data?: Department[] }).data ?? []);
     }).catch(() => setDepartments([]));
-    tenantUsersApi.list().then((r) => setUsers(r.data.data ?? [])).catch(() => setUsers([]));
   }, []);
 
   useEffect(() => {
@@ -198,8 +210,7 @@ export default function AssetImportPage() {
       setFilter("all");
       if (payload.batch?.id) await loadPreview(payload.batch.id);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -214,8 +225,7 @@ export default function AssetImportPage() {
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -231,8 +241,7 @@ export default function AssetImportPage() {
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -241,6 +250,8 @@ export default function AssetImportPage() {
   async function commit() {
     if (!batchId) return;
     setBusy(true);
+    setError(null);
+    setMsg(t("assets.import.committing"));
     try {
       const r = await assetImportApi.commit(batchId, { approve_non_blocking: autoApproveAllowed });
       const payload = r.data as { message?: string; data?: { batch?: { status: string }; equation?: Equation } };
@@ -248,8 +259,7 @@ export default function AssetImportPage() {
       setBatchStatus(payload.data?.batch?.status ?? batchStatus);
       setEquation(payload.data?.equation ?? equation);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -297,8 +307,7 @@ export default function AssetImportPage() {
       setEditing(null);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -337,8 +346,7 @@ export default function AssetImportPage() {
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -353,7 +361,7 @@ export default function AssetImportPage() {
       await assetImportApi.mapCustodian(batchId, {
         legacy_key: legacyKey,
         custodian_type: custodianType,
-        user_id: custodianType === "user" && custodianUserId !== "" ? custodianUserId : null,
+        user_id: custodianType === "user" && custodianUser ? custodianUser.id : null,
         department_id: custodianType === "department" && custodianDepartmentId !== "" ? custodianDepartmentId : null,
         location_id: custodianType === "store" && mapLocationId !== "" ? mapLocationId : null,
       });
@@ -361,8 +369,7 @@ export default function AssetImportPage() {
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { message?: string } } };
-      setError(ax.response?.data?.message ?? t("common.error"));
+      setError(importApiError(err, t("common.error")));
     } finally {
       setBusy(false);
     }
@@ -376,12 +383,30 @@ export default function AssetImportPage() {
           subtitle={t("assets.import.subtitle")}
           breadcrumbs={<PageBreadcrumbs items={[{ label: t("assets.import.title") }]} />}
         />
-        <Button type="button" variant="secondary" onClick={() => void downloadTemplate()} disabled={busy}>
-          {t("assets.import.downloadTemplate")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="secondary" onClick={() => void downloadTemplate()} disabled={busy}>
+            {t("assets.import.downloadTemplate")}
+          </Button>
+          <ClearAssetRegisterButton
+            onCleared={() => {
+              setBatches([]);
+              setBatchId(null);
+              setBatchStatus("");
+              setCounts(null);
+              setEquation(null);
+              setRows([]);
+              setSelected([]);
+            }}
+          />
+        </div>
       </div>
       {msg && <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">{msg}</div>}
       {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</div>}
+      {busy && (
+        <div data-testid="asset-import-busy" className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          {t("assets.import.working")}
+        </div>
+      )}
 
       {batches.length > 0 && (
         <FormSection title="assets.import.batches" dense>
@@ -585,15 +610,18 @@ export default function AssetImportPage() {
               </label>
             )}
             {custodianType === "user" && (
-              <label htmlFor="assets-import-setcustodianuserid-e-target-value-number-e-targe" className="text-sm">{t("assets.import.selectUser")}
-                <select id="assets-import-setcustodianuserid-e-target-value-number-e-targe" className="input mt-1" value={custodianUserId} onChange={(e) => setCustodianUserId(e.target.value === "" ? "" : Number(e.target.value))}>
-                  <option value="">{t("assets.notAssigned")}</option>
-                  {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
-              </label>
+              <div className="sm:col-span-2">
+                <AssetAssigneePicker
+                  id="assets-import-custodian-user"
+                  label={t("assets.import.selectUser")}
+                  value={custodianUser}
+                  onSelect={setCustodianUser}
+                  disabled={busy}
+                />
+              </div>
             )}
             <div className="self-end">
-              <Button type="button" onClick={confirmCustodianMap} disabled={busy || (custodianType === "user" && custodianUserId === "")}>{t("assets.import.mapCustodian")}</Button>
+              <Button type="button" onClick={confirmCustodianMap} disabled={busy || (custodianType === "user" && !custodianUser)}>{t("assets.import.mapCustodian")}</Button>
             </div>
           </div>
         </FormSection>

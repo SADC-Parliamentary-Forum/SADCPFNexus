@@ -85,6 +85,7 @@ test("shared chrome components translate user-facing copy", () => {
     "components/layout/GlobalSearch.tsx",
     "app/dashboard/page.tsx",
     "app/(app)/assets/import/page.tsx",
+    "components/assets/ClearAssetRegisterButton.tsx",
     "app/(app)/assets/page.tsx",
     "app/(app)/assets/labels/page.tsx",
     "app/(app)/assets/labels/templates/page.tsx",
@@ -109,6 +110,8 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/hr/leave/import/page.tsx",
     "app/(app)/risk/dashboard/page.tsx",
     "app/(app)/supplier/page.tsx",
+    "app/(app)/supplier/documents/page.tsx",
+    "app/(app)/supplier/profile/page.tsx",
     "app/(app)/admin/documents/page.tsx",
     "app/(app)/admin/documents/retention/page.tsx",
     "app/(app)/admin/documents/governance/page.tsx",
@@ -152,6 +155,26 @@ test("API client sends Accept-Language from the stored locale", () => {
   const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
   assert.match(source, /Accept-Language/);
   assert.match(source, /readStoredLocale/);
+});
+
+test("asset register clear catalog covers EN, FR and PT", () => {
+  const keys = [
+    "assets.register.clear",
+    "assets.register.clearConfirmTitle",
+    "assets.register.clearConfirmMessage",
+    "assets.register.clearConfirmLabel",
+    "assets.register.clearWrongPhrase",
+    "assets.register.clearSuccess",
+    "assets.register.clearFailed",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
 });
 
 test("asset import review table uses translated column headers", () => {
@@ -240,6 +263,100 @@ test("asset phase 2 operations catalog covers kits planner and attestation copy 
   }
 });
 
+test("remaining labelled pickers catalog covers simulator designer and leftover id fields in EN, FR and PT", () => {
+  const keys = [
+    "pickers.none",
+    "admin.simulator.user",
+    "admin.designer.role",
+    "admin.designer.user",
+    "travel.proc.select",
+    "budget.journal.line",
+    "correspondence.retention.letter",
+    "salary.exception.employee",
+    "audit.forensics.event",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
+test("remaining labelled pickers replace raw numeric ids", () => {
+  const simulator = readFileSync(join(webRoot, "app/(app)/admin/access/simulator/page.tsx"), "utf8");
+  const designer = readFileSync(join(webRoot, "app/(app)/admin/workflows/designer/page.tsx"), "utf8");
+  const travel = readFileSync(join(webRoot, "app/(app)/travel/[id]/page.tsx"), "utf8");
+  const budget = readFileSync(join(webRoot, "app/(app)/budget/page.tsx"), "utf8");
+  const retention = readFileSync(join(webRoot, "app/(app)/correspondence/retention/page.tsx"), "utf8");
+  const salary = readFileSync(join(webRoot, "app/(app)/salary-advances/settings/page.tsx"), "utf8");
+  const forensics = readFileSync(join(webRoot, "app/(app)/admin/audit-trail/forensics/page.tsx"), "utf8");
+  assert.match(simulator, /data-testid="sim-user-select"/);
+  assert.doesNotMatch(simulator, /label="User ID"/);
+  assert.match(designer, /data-testid=\{`wf-stage-role-\$\{index\}`\}/);
+  assert.match(designer, /data-testid=\{`wf-stage-user-\$\{index\}`\}/);
+  assert.doesNotMatch(designer, /placeholder="Role ID"/);
+  assert.doesNotMatch(designer, /placeholder="User ID"/);
+  assert.match(travel, /data-testid="travel-proc-id"/);
+  assert.doesNotMatch(travel, /placeholder="e\.g\. 42"/);
+  assert.match(budget, /data-testid="budget-journal-line"/);
+  assert.doesNotMatch(budget, /placeholder="Budget line ID"/);
+  assert.match(retention, /data-testid="retention-letter-select"/);
+  assert.doesNotMatch(retention, /placeholder="Correspondence id"/);
+  assert.match(salary, /data-testid="sa-exception-employee"/);
+  assert.doesNotMatch(salary, /inputMode="numeric"/);
+  assert.match(forensics, /data-testid="forensics-event-select"/);
+  assert.doesNotMatch(forensics, /placeholder="Audit event ID"/);
+});
+
+test("risk KRI BCP and control-testing catalog covers labelled pickers in EN, FR and PT", () => {
+  const keys = [
+    "risk.kri.none",
+    "risk.kri.linkRisk",
+    "risk.kri.linkObjective",
+    "risk.bcp.risk",
+    "risk.bcp.policy",
+    "risk.bcp.riskA",
+    "risk.bcp.riskB",
+    "risk.testing.controls",
+    "risk.testing.none",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
+test("risk KRI BCP and control-testing use labelled pickers instead of raw ids", () => {
+  const kri = readFileSync(join(webRoot, "app/(app)/risk/kri/page.tsx"), "utf8");
+  const bcp = readFileSync(join(webRoot, "app/(app)/risk/bcp/page.tsx"), "utf8");
+  const testing = readFileSync(join(webRoot, "app/(app)/risk/control-testing/page.tsx"), "utf8");
+  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  assert.doesNotMatch(kri, /placeholder="Risk ID"/);
+  assert.doesNotMatch(kri, /placeholder="Objective ID"/);
+  assert.match(kri, /data-testid=\{`kri-risk-select-\$\{kri\.id\}`\}/);
+  assert.match(kri, /data-testid=\{`kri-objective-select-\$\{kri\.id\}`\}/);
+  assert.match(kri, /riskApi\.list\(/);
+  assert.match(kri, /listObjectives/);
+  assert.doesNotMatch(bcp, /Asset insurance policy ID/);
+  assert.doesNotMatch(bcp, />Risk ID</);
+  assert.match(bcp, /data-testid="bcp-risk-select"/);
+  assert.match(bcp, /data-testid="bcp-policy-select"/);
+  assert.match(bcp, /data-testid="bcp-risk-a-select"/);
+  assert.match(bcp, /data-testid="bcp-risk-b-select"/);
+  assert.doesNotMatch(testing, /placeholder="12,15"/);
+  assert.doesNotMatch(testing, /Control IDs \(comma\)/);
+  assert.match(testing, /data-testid="testing-controls"/);
+  assert.match(testing, /listControls/);
+  assert.match(api, /listControls:/);
+});
+
 test("asset operations attest and parent link use labelled pickers", () => {
   const operations = readFileSync(join(webRoot, "app/(app)/assets/operations/page.tsx"), "utf8");
   const profile = readFileSync(join(webRoot, "app/(app)/assets/[id]/page.tsx"), "utf8");
@@ -286,6 +403,26 @@ test("asset custody handshake catalog covers mine and register copy in EN, FR an
     "assets.mine.pendingAcceptance",
     "assets.register.confirmReturn",
     "assets.register.pendingReturn",
+  ];
+  for (const key of keys) {
+    const en = translate("en", key);
+    const fr = translate("fr", key);
+    const pt = translate("pt", key);
+    assert.notEqual(en, key, `missing English for ${key}`);
+    assert.notEqual(fr, en, `French should differ for ${key}`);
+    assert.notEqual(pt, en, `Portuguese should differ for ${key}`);
+  }
+});
+
+test("supplier documents catalog covers register copy in EN, FR and PT", () => {
+  const keys = [
+    "supplier.documents.title",
+    "supplier.documents.subtitle",
+    "supplier.documents.needed",
+    "supplier.documents.pending",
+    "supplier.documents.approved",
+    "supplier.documents.manage",
+    "supplier.documents.remarks",
   ];
   for (const key of keys) {
     const en = translate("en", key);

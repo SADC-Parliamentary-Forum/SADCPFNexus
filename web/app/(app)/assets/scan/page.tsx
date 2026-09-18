@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { AssetQrCamera } from "@/components/assets/AssetQrCamera";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { lookupAssetFromQrRaw, type AssetScanHit } from "@/lib/assetQrLookup";
-import { assetsApi, tenantUsersApi, type AssetScanBasket, type TenantUserOption } from "@/lib/api";
+import { assetsApi, type AssetScanBasket, type TenantUserOption } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 
 const BASKET_KEY = "asset_scan_basket_id";
 
@@ -24,11 +25,9 @@ export default function AssetScanPage() {
   const [cameraActive, setCameraActive] = useState(true);
   const [restartKey, setRestartKey] = useState(0);
   const [basket, setBasket] = useState<AssetScanBasket | null>(null);
-  const [users, setUsers] = useState<TenantUserOption[]>([]);
-  const [toUserId, setToUserId] = useState("");
+  const [toUser, setToUser] = useState<TenantUserOption | null>(null);
 
   useEffect(() => {
-    tenantUsersApi.list().then((r) => setUsers(r.data.data ?? [])).catch(() => setUsers([]));
     const stored = Number(sessionStorage.getItem(BASKET_KEY) || 0);
     if (stored) {
       assetsApi.getScanBasket(stored).then((r) => {
@@ -103,13 +102,13 @@ export default function AssetScanPage() {
   }
 
   async function startHandover() {
-    if (!basket?.id || !toUserId) return;
+    if (!basket?.id || !toUser) return;
     setError("");
     try {
       const started = await assetsApi.startScanBasketHandover(basket.id, {
         type: "issue",
         custody_target_type: "person",
-        to_user_id: Number(toUserId),
+        to_user_id: toUser.id,
       });
       sessionStorage.removeItem(BASKET_KEY);
       router.push(`/assets/handovers/${started.data.data.id}`);
@@ -277,17 +276,18 @@ export default function AssetScanPage() {
           </ul>
         )}
         <div className="flex flex-wrap gap-2">
-          <label className="text-sm">
-            {t("assets.handover.inCustodyOf")}
-            <select className="form-input mt-1" value={toUserId} onChange={(e) => setToUserId(e.target.value)} data-testid="scan-basket-user">
-              <option value="">{t("assets.notAssigned")}</option>
-              {users.map((u) => <option key={u.id} value={u.id}>{u.name}{u.email ? ` (${u.email})` : ""}</option>)}
-            </select>
-          </label>
+          <div className="min-w-[260px]" data-testid="scan-basket-user">
+            <AssetAssigneePicker
+              id="scan-basket-user"
+              label={t("assets.handover.inCustodyOf")}
+              value={toUser}
+              onSelect={setToUser}
+            />
+          </div>
           <button
             type="button"
             className="btn-primary"
-            disabled={!basket?.items?.length || !toUserId}
+            disabled={!basket?.items?.length || !toUser}
             onClick={() => void startHandover()}
             data-testid="scan-basket-start"
           >

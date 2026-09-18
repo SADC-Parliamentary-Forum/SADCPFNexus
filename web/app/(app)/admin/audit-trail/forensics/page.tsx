@@ -3,13 +3,16 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { platformAuditApi } from "@/lib/api";
+import { platformAuditApi, type PlatformAuditEvent } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function AuditTrailForensicsPage() {
+  const { t } = useI18n();
   const { success, error, info } = useToast();
   const [cases, setCases] = useState<any[]>([]);
+  const [events, setEvents] = useState<PlatformAuditEvent[]>([]);
   const [title, setTitle] = useState("");
   const [linkCaseId, setLinkCaseId] = useState<number | "">("");
   const [eventId, setEventId] = useState("");
@@ -18,6 +21,9 @@ export default function AuditTrailForensicsPage() {
     platformAuditApi.forensicCases({ per_page: 50 })
       .then((r: any) => setCases(r.data?.data ?? r.data ?? []))
       .catch(() => setCases([]));
+    platformAuditApi.list({ per_page: 100 })
+      .then((r) => setEvents(r.data?.data ?? []))
+      .catch(() => setEvents([]));
   };
 
   useEffect(() => { load(); }, []);
@@ -85,7 +91,20 @@ export default function AuditTrailForensicsPage() {
           <option value="">Select case</option>
           {cases.map((c) => <option key={c.id} value={c.id}>{c.reference} — {c.title}</option>)}
         </select>
-        <input className="form-input text-sm" placeholder="Audit event ID" value={eventId} onChange={(e) => setEventId(e.target.value)} />
+        <select
+          className="form-input text-sm"
+          value={eventId}
+          data-testid="forensics-event-select"
+          onChange={(e) => setEventId(e.target.value)}
+        >
+          <option value="">{t("audit.forensics.event")}</option>
+          {events.map((ev) => (
+            <option key={ev.id} value={String(ev.id)}>
+              #{ev.sequence_number ?? ev.id} — {ev.event_key}
+              {ev.actor_snapshot?.display_name ? ` (${ev.actor_snapshot.display_name})` : ""}
+            </option>
+          ))}
+        </select>
         <button className="btn-secondary text-sm" onClick={link}>Link event</button>
       </div>
 

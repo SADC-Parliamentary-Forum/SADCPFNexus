@@ -122,6 +122,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "Purchase Orders", href: "/supplier/purchase-orders", icon: "receipt_long" },
       { label: "Invoices", href: "/supplier/invoices", icon: "description" },
       { label: "Profile", href: "/supplier/profile", icon: "badge" },
+      { label: "Documents", href: "/supplier/documents", icon: "folder_open" },
       { label: "Help & Support", href: "/profile/support", icon: "help" },
     ],
   },

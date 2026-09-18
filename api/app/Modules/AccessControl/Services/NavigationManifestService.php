@@ -154,6 +154,7 @@ class NavigationManifestService
                 $this->item('Purchase Orders', '/supplier/purchase-orders', 'receipt_long'),
                 $this->item('Invoices', '/supplier/invoices', 'description'),
                 $this->item('Profile', '/supplier/profile', 'badge'),
+                $this->item('Documents', '/supplier/documents', 'folder_open'),
                 $this->item('Help & Support', '/profile/support', 'help'),
             ]);
         }

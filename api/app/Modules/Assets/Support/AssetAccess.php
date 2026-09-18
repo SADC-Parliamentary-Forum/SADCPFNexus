@@ -18,6 +18,18 @@ final class AssetAccess
         return $user->hasAnyPermission(['assets.admin', 'assets.manage']);
     }
 
+    public static function canClearRegister(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+        if ($user->isSystemAdmin()) {
+            return true;
+        }
+
+        return $user->hasPermissionTo('assets.admin');
+    }
+
     public static function canViewFinancials(?User $user): bool
     {
         if (! $user) {

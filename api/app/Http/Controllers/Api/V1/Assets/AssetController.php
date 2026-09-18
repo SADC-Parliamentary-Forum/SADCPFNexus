@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Modules\Assets\Export\AssetRegisterExportWorkbook;
 use App\Modules\Assets\Services\AssetNumberingService;
 use App\Modules\Assets\Services\AssetQrService;
+use App\Modules\Assets\Services\AssetRegisterClearService;
 use App\Modules\Assets\Services\AssetService;
 use App\Modules\Assets\Services\AssetTimelineService;
 use App\Modules\Assets\Support\AssetAccess;
@@ -22,6 +23,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class AssetController extends Controller
 {
@@ -30,6 +32,7 @@ class AssetController extends Controller
         private readonly AssetQrService $qr,
         private readonly AssetNumberingService $numbering,
         private readonly AssetTimelineService $timeline,
+        private readonly AssetRegisterClearService $registerClear,
     ) {}
 
     /**
@@ -41,7 +44,7 @@ class AssetController extends Controller
     {
         $user = $request->user();
         $query = Asset::where('tenant_id', $user->tenant_id)
-            ->with(['assignedUser:id,name,email', 'location']);
+            ->with($this->assignedUserWith(['location']));
 
         if ($request->input('assigned_to') === 'me') {
             $query->where('assigned_to', $user->id);
@@ -139,6 +142,7 @@ class AssetController extends Controller
             'vat_amount' => ['nullable', 'numeric', 'min:0'],
             'budget_line' => ['nullable', 'string', 'max:128'],
             'condition' => ['nullable', 'string', 'max:64'],
+            'department' => ['nullable', 'string', 'max:128'],
         ]);
 
         $purchaseValue = isset($validated['purchase_value']) ? (float) $validated['purchase_value'] : null;
@@ -222,7 +226,9 @@ class AssetController extends Controller
         $this->timeline->record($asset, 'ASSET_CREATED', 'Asset record created', $user);
 
         if ($assigneeId) {
-            $asset = $this->assetService->assign($asset, User::findOrFail($assigneeId), $user);
+            $asset = $this->assetService->assign($asset, User::findOrFail($assigneeId), $user, [
+                'department' => $validated['department'] ?? null,
+            ]);
         }
 
         return response()->json($this->presentAsset($asset, $user), 201);
@@ -373,7 +379,7 @@ class AssetController extends Controller
         );
 
         $query = Asset::where('tenant_id', $user->tenant_id)
-            ->with(['assignedUser:id,name,email', 'location:id,name,code', 'homeLocation:id,name,code']);
+            ->with($this->assignedUserWith(['location:id,name,code', 'homeLocation:id,name,code']));
 
         $ids = $this->parseExportIds($request);
         if ($ids !== []) {
@@ -566,6 +572,42 @@ class AssetController extends Controller
         return array_values($ids);
     }
 
+    /**
+     * Permanently delete this tenant's register rows so a fresh bulk upload can replace them.
+     * Categories, locations, and numbering policies are kept.
+     */
+    public function clearRegister(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (! AssetAccess::canClearRegister($user)) {
+            abort(403, 'Only asset administrators can clear the register for a fresh upload.');
+        }
+
+        $tenantId = (int) $user->tenant_id;
+        if ($tenantId < 1) {
+            abort(403, 'A tenant context is required to clear the asset register.');
+        }
+
+        $data = $request->validate([
+            'confirmation' => ['required', 'string', 'max:64'],
+        ]);
+        if (strcasecmp(trim($data['confirmation']), AssetRegisterClearService::CONFIRMATION_PHRASE) !== 0) {
+            throw ValidationException::withMessages([
+                'confirmation' => 'Type '.AssetRegisterClearService::CONFIRMATION_PHRASE.' to confirm wiping the asset register.',
+            ]);
+        }
+
+        $result = $this->registerClear->clear($tenantId, null, $user);
+
+        return response()->json([
+            'message' => 'Asset register cleared.',
+            'data' => [
+                'deleted_count' => max(0, $result['before'] - $result['after']),
+                'remaining_count' => $result['after'],
+            ],
+        ]);
+    }
+
     public function dashboard(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -686,6 +728,7 @@ class AssetController extends Controller
             'useful_life_years' => ['nullable', 'integer', 'min:1', 'max:100'],
             'salvage_value' => ['nullable', 'numeric', 'min:0'],
             'depreciation_method' => ['nullable', 'string', 'in:straight_line,declining_balance'],
+            'department' => ['nullable', 'string', 'max:128'],
         ]);
 
         $purchaseValue = isset($validated['purchase_value']) ? (float) $validated['purchase_value'] : null;
@@ -727,7 +770,9 @@ class AssetController extends Controller
 
         $fresh = $asset->fresh();
         if ($nextAssignee && (int) $nextAssignee !== (int) $previousAssignee) {
-            $fresh = $this->assetService->assign($fresh, User::findOrFail($nextAssignee), $user);
+            $fresh = $this->assetService->assign($fresh, User::findOrFail($nextAssignee), $user, [
+                'department' => $validated['department'] ?? null,
+            ]);
         }
 
         return response()->json($this->presentAsset($fresh, $user));
@@ -823,6 +868,19 @@ class AssetController extends Controller
         $this->qr->ensure($asset, $actor);
     }
 
+    /**
+     * @param  list<string>  $extra
+     * @return list<string>
+     */
+    private function assignedUserWith(array $extra = []): array
+    {
+        return [
+            'assignedUser:id,name,email,department_id',
+            'assignedUser.department:id,name',
+            ...$extra,
+        ];
+    }
+
     private function tenantActiveUserRule(int $tenantId): \Illuminate\Validation\Rules\Exists
     {
         return Rule::exists('users', 'id')->where(
@@ -833,7 +891,7 @@ class AssetController extends Controller
     private function presentAsset(Asset $asset, ?User $user = null): Asset
     {
         $fresh = $asset->fresh() ?? $asset;
-        $fresh->load(['assignedUser:id,name,email', 'location', 'homeLocation', 'subcategory']);
+        $fresh->load($this->assignedUserWith(['location', 'homeLocation', 'subcategory']));
         if ($user && ! AssetAccess::canViewFinancials($user)) {
             foreach (AssetAccess::financialHidden() as $field) {
                 $fresh->setAttribute($field, null);

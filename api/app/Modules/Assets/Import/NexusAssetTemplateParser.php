@@ -23,10 +23,29 @@ final class NexusAssetTemplateParser
         'accumulated_depreciation',
         'currency',
         'funding_source',
-        'legacy_location',
-        'custodian_candidate',
+        'asset_owner',
+        'assigned_to',
         'assigned_to_email',
+        'location',
+        'department',
         'legacy_description',
+    ];
+
+    /** Spreadsheet headers that map onto historical import keys. */
+    private const HEADER_ALIASES = [
+        'location' => 'legacy_location',
+        'assigned_to' => 'custodian_candidate',
+    ];
+
+    private const MONEY_HEADERS = [
+        'original_cost',
+        'current_book_value',
+        'accumulated_depreciation',
+        'opening_depreciation',
+        'source_depreciation',
+        'opening_cost',
+        'closing_cost',
+        'closing_book_value',
     ];
 
     /**
@@ -75,7 +94,19 @@ final class NexusAssetTemplateParser
             }
             $tag = strtoupper(trim((string) ($assoc['asset_tag'] ?? '')));
             $assoc['asset_tag'] = $tag !== '' ? $tag : null;
+            foreach (self::MONEY_HEADERS as $moneyKey) {
+                if (array_key_exists($moneyKey, $assoc)) {
+                    $assoc[$moneyKey] = self::parseMoney($assoc[$moneyKey]);
+                }
+            }
             $assoc['legacy_description'] = $assoc['legacy_description'] ?? ($assoc['asset_name'] ?? null);
+            foreach (self::HEADER_ALIASES as $from => $to) {
+                $fromVal = trim((string) ($assoc[$from] ?? ''));
+                $toVal = trim((string) ($assoc[$to] ?? ''));
+                if ($toVal === '' && $fromVal !== '') {
+                    $assoc[$to] = $fromVal;
+                }
+            }
             $assoc['source_filename'] = $filename;
             $assoc['source_sheet'] = $sheet;
             $assoc['source_row_number'] = $i + 1;
@@ -85,5 +116,26 @@ final class NexusAssetTemplateParser
         }
 
         return $records;
+    }
+
+    public static function parseMoney(mixed $value): ?float
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (is_int($value) || is_float($value)) {
+            return round((float) $value, 2);
+        }
+        $raw = trim((string) $value);
+        if ($raw === '') {
+            return null;
+        }
+        $normalized = str_replace(["\u{00A0}", ' '], '', $raw);
+        $normalized = str_replace(',', '', $normalized);
+        if (! is_numeric($normalized)) {
+            return null;
+        }
+
+        return round((float) $normalized, 2);
     }
 }

@@ -15,22 +15,22 @@ class SupplierRegistrationTest extends TestCase
         $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_equipment']);
 
         $response = $this->post('/api/v1/procurement/suppliers/register', [
-            'tenant_id'             => $tenant->id,
-            'company_name'          => 'Laptop World',
-            'registration_number'   => 'REG-100',
-            'tax_number'            => 'TAX-100',
-            'contact_name'          => 'Alex Vendor',
-            'contact_email'         => 'alex@laptopworld.test',
-            'contact_phone'         => '+264000001',
-            'address'               => 'Windhoek',
-            'country'               => 'Namibia',
-            'bank_name'             => 'FNB',
-            'bank_account'          => '000123456',
-            'bank_branch'           => 'Windhoek',
-            'password'              => 'Secret123!',
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Laptop World',
+            'registration_number' => 'REG-100',
+            'tax_number' => 'TAX-100',
+            'contact_name' => 'Alex Vendor',
+            'contact_email' => 'alex@laptopworld.test',
+            'contact_phone' => '+264000001',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '000123456',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
             'password_confirmation' => 'Secret123!',
-            'category_ids'          => [$category->id],
-            'documents'             => [$this->fakePdf('company-profile.pdf')],
+            'category_ids' => [$category->id],
+            'documents' => [$this->fakePdf('company-profile.pdf')],
         ], ['Accept' => 'application/json']);
 
         $response->assertCreated()
@@ -59,22 +59,22 @@ class SupplierRegistrationTest extends TestCase
         );
 
         $this->post('/api/v1/procurement/suppliers/register', [
-            'tenant_id'             => $tenant->id,
-            'company_name'          => 'Overflow Supplier',
-            'registration_number'   => 'REG-200',
-            'tax_number'            => 'TAX-200',
-            'contact_name'          => 'Taylor Vendor',
-            'contact_email'         => 'taylor@overflow.test',
-            'contact_phone'         => '+264000002',
-            'address'               => 'Windhoek',
-            'country'               => 'Namibia',
-            'bank_name'             => 'FNB',
-            'bank_account'          => '000999999',
-            'bank_branch'           => 'Windhoek',
-            'password'              => 'Secret123!',
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Overflow Supplier',
+            'registration_number' => 'REG-200',
+            'tax_number' => 'TAX-200',
+            'contact_name' => 'Taylor Vendor',
+            'contact_email' => 'taylor@overflow.test',
+            'contact_phone' => '+264000002',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '000999999',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
             'password_confirmation' => 'Secret123!',
-            'category_ids'          => $categories->pluck('id')->all(),
-            'documents'             => [$this->fakePdf('tax-clearance.pdf')],
+            'category_ids' => $categories->pluck('id')->all(),
+            'documents' => [$this->fakePdf('tax-clearance.pdf')],
         ], ['Accept' => 'application/json'])->assertCreated()
             ->assertJsonPath('data.status', 'draft');
     }
@@ -85,22 +85,22 @@ class SupplierRegistrationTest extends TestCase
         $category = $this->makeSupplierCategory($tenant, ['name' => 'Office Supplies', 'code' => 'office_supplies']);
 
         $this->post('/api/v1/procurement/suppliers/register', [
-            'tenant_id'             => $tenant->id,
-            'company_name'          => 'Stationery Hub',
-            'registration_number'   => 'REG-300',
-            'tax_number'            => 'TAX-300',
-            'contact_name'          => 'Casey Vendor',
-            'contact_email'         => 'casey@stationeryhub.test',
-            'contact_phone'         => '+264000003',
-            'address'               => 'Windhoek',
-            'country'               => 'Namibia',
-            'bank_name'             => 'FNB',
-            'bank_account'          => '300300300',
-            'bank_branch'           => 'Windhoek',
-            'password'              => 'Secret123!',
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Stationery Hub',
+            'registration_number' => 'REG-300',
+            'tax_number' => 'TAX-300',
+            'contact_name' => 'Casey Vendor',
+            'contact_email' => 'casey@stationeryhub.test',
+            'contact_phone' => '+264000003',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '300300300',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
             'password_confirmation' => 'Secret123!',
-            'category_ids'          => [$category->id],
-            'documents'             => [$this->fakePdf('company-profile.pdf')],
+            'category_ids' => [$category->id],
+            'documents' => [$this->fakePdf('company-profile.pdf')],
         ], ['Accept' => 'application/json'])->assertCreated();
 
         [$http] = $this->asProcurementOfficer($tenant);
@@ -108,7 +108,7 @@ class SupplierRegistrationTest extends TestCase
         $http->getJson('/api/v1/procurement/vendors')
             ->assertOk()
             ->assertJsonFragment([
-                'name'   => 'Stationery Hub',
+                'name' => 'Stationery Hub',
                 'status' => 'draft',
             ]);
     }
@@ -119,30 +119,35 @@ class SupplierRegistrationTest extends TestCase
         $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_multi']);
 
         $response = $this->post('/api/v1/procurement/suppliers/register', [
-            'tenant_id'             => $tenant->id,
-            'company_name'          => 'Multi Doc Supplies',
-            'registration_number'   => 'REG-400',
-            'tax_number'            => 'TAX-400',
-            'contact_name'          => 'Dana Vendor',
-            'contact_email'         => 'dana@multidoc.test',
-            'contact_phone'         => '+264000004',
-            'address'               => 'Windhoek',
-            'country'               => 'Namibia',
-            'bank_name'             => 'FNB',
-            'bank_account'          => '400400400',
-            'bank_branch'           => 'Windhoek',
-            'password'              => 'Secret123!',
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Multi Doc Supplies',
+            'registration_number' => 'REG-400',
+            'tax_number' => 'TAX-400',
+            'contact_name' => 'Dana Vendor',
+            'contact_email' => 'dana@multidoc.test',
+            'contact_phone' => '+264000004',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '400400400',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
             'password_confirmation' => 'Secret123!',
-            'category_ids'          => [$category->id],
-            'documents'             => [
+            'category_ids' => [$category->id],
+            'documents' => [
                 $this->fakePdf('company-profile.pdf'),
                 $this->fakePdf('tax-clearance.pdf'),
                 $this->fakePdf('bank-letter.pdf'),
             ],
-            'document_types'        => [
+            'document_types' => [
                 Attachment::DOCUMENT_TYPE_COMPANY_PROFILE,
                 Attachment::DOCUMENT_TYPE_TAX_CLEARANCE,
                 Attachment::DOCUMENT_TYPE_BANK_DETAILS,
+            ],
+            'document_expiry_dates' => [
+                null,
+                now()->addYear()->toDateString(),
+                null,
             ],
         ], ['Accept' => 'application/json']);
 
@@ -169,6 +174,38 @@ class SupplierRegistrationTest extends TestCase
             ->assertJsonFragment(['original_filename' => 'bank-letter.pdf']);
     }
 
+    public function test_supplier_registration_tax_clearance_requires_expiry_date(): void
+    {
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_tax_expiry']);
+
+        $response = $this->post('/api/v1/procurement/suppliers/register', [
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Expiry Required Supplies',
+            'registration_number' => 'REG-401',
+            'tax_number' => 'TAX-401',
+            'contact_name' => 'Eve Vendor',
+            'contact_email' => 'eve@expiry.test',
+            'contact_phone' => '+264000005',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '401401401',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
+            'password_confirmation' => 'Secret123!',
+            'category_ids' => [$category->id],
+            'documents' => [$this->fakePdf('tax-clearance.pdf')],
+            'document_types' => [Attachment::DOCUMENT_TYPE_TAX_CLEARANCE],
+        ], ['Accept' => 'application/json']);
+
+        $response->assertUnprocessable()->assertJsonValidationErrors(['documents.0']);
+        $this->assertSame(
+            'This document type requires an expiry date.',
+            $response->json('errors')['documents.0'][0] ?? null
+        );
+    }
+
     public function test_supplier_registration_requires_captcha_when_enabled(): void
     {
         config(['captcha.enabled' => true, 'captcha.turnstile_secret' => null, 'captcha.hcaptcha_secret' => null]);
@@ -177,22 +214,22 @@ class SupplierRegistrationTest extends TestCase
         $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_captcha']);
 
         $this->post('/api/v1/procurement/suppliers/register', [
-            'tenant_id'             => $tenant->id,
-            'company_name'          => 'Captcha Supplies',
-            'registration_number'   => 'REG-500',
-            'tax_number'            => 'TAX-500',
-            'contact_name'          => 'Evan Vendor',
-            'contact_email'         => 'evan@captcha.test',
-            'contact_phone'         => '+264000005',
-            'address'               => 'Windhoek',
-            'country'               => 'Namibia',
-            'bank_name'             => 'FNB',
-            'bank_account'          => '500500500',
-            'bank_branch'           => 'Windhoek',
-            'password'              => 'Secret123!',
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Captcha Supplies',
+            'registration_number' => 'REG-500',
+            'tax_number' => 'TAX-500',
+            'contact_name' => 'Evan Vendor',
+            'contact_email' => 'evan@captcha.test',
+            'contact_phone' => '+264000005',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '500500500',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
             'password_confirmation' => 'Secret123!',
-            'category_ids'          => [$category->id],
-            'documents'             => [$this->fakePdf('company-profile.pdf')],
+            'category_ids' => [$category->id],
+            'documents' => [$this->fakePdf('company-profile.pdf')],
         ], ['Accept' => 'application/json'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['captcha_token']);
@@ -207,23 +244,23 @@ class SupplierRegistrationTest extends TestCase
         $token = $this->postJson('/api/v1/auth/captcha-challenge')->json('token');
 
         $this->post('/api/v1/procurement/suppliers/register', [
-            'tenant_id'             => $tenant->id,
-            'company_name'          => 'Captcha Ok Supplies',
-            'registration_number'   => 'REG-502',
-            'tax_number'            => 'TAX-502',
-            'contact_name'          => 'Gina Vendor',
-            'contact_email'         => 'gina@captchaok.test',
-            'contact_phone'         => '+264000016',
-            'address'               => 'Windhoek',
-            'country'               => 'Namibia',
-            'bank_name'             => 'FNB',
-            'bank_account'          => '502502502',
-            'bank_branch'           => 'Windhoek',
-            'password'              => 'Secret123!',
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Captcha Ok Supplies',
+            'registration_number' => 'REG-502',
+            'tax_number' => 'TAX-502',
+            'contact_name' => 'Gina Vendor',
+            'contact_email' => 'gina@captchaok.test',
+            'contact_phone' => '+264000016',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '502502502',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
             'password_confirmation' => 'Secret123!',
-            'category_ids'          => [$category->id],
-            'documents'             => [$this->fakePdf('company-profile.pdf')],
-            'captcha_token'         => $token,
+            'category_ids' => [$category->id],
+            'documents' => [$this->fakePdf('company-profile.pdf')],
+            'captcha_token' => $token,
         ], ['Accept' => 'application/json'])
             ->assertCreated()
             ->assertJsonCount(1, 'data.documents');
@@ -237,23 +274,23 @@ class SupplierRegistrationTest extends TestCase
         $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_mobile_captcha']);
 
         $this->post('/api/v1/procurement/suppliers/register', [
-            'tenant_id'             => $tenant->id,
-            'company_name'          => 'Mobile Captcha Supplies',
-            'registration_number'   => 'REG-501',
-            'tax_number'            => 'TAX-501',
-            'contact_name'          => 'Evan Mobile',
-            'contact_email'         => 'evan.mobile@captcha.test',
-            'contact_phone'         => '+264000015',
-            'address'               => 'Windhoek',
-            'country'               => 'Namibia',
-            'bank_name'             => 'FNB',
-            'bank_account'          => '501501501',
-            'bank_branch'           => 'Windhoek',
-            'password'              => 'Secret123!',
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Mobile Captcha Supplies',
+            'registration_number' => 'REG-501',
+            'tax_number' => 'TAX-501',
+            'contact_name' => 'Evan Mobile',
+            'contact_email' => 'evan.mobile@captcha.test',
+            'contact_phone' => '+264000015',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '501501501',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
             'password_confirmation' => 'Secret123!',
-            'category_ids'          => [$category->id],
-            'documents'             => [$this->fakePdf('company-profile.pdf')],
-            'client_type'           => 'mobile',
+            'category_ids' => [$category->id],
+            'documents' => [$this->fakePdf('company-profile.pdf')],
+            'client_type' => 'mobile',
         ], ['Accept' => 'application/json'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['captcha_token']);
@@ -270,22 +307,22 @@ class SupplierRegistrationTest extends TestCase
         }
 
         $this->post('/api/v1/procurement/suppliers/register', [
-            'tenant_id'             => $tenant->id,
-            'company_name'          => 'Overflow Docs',
-            'registration_number'   => 'REG-600',
-            'tax_number'            => 'TAX-600',
-            'contact_name'          => 'Fran Vendor',
-            'contact_email'         => 'fran@overflowdocs.test',
-            'contact_phone'         => '+264000006',
-            'address'               => 'Windhoek',
-            'country'               => 'Namibia',
-            'bank_name'             => 'FNB',
-            'bank_account'          => '600600600',
-            'bank_branch'           => 'Windhoek',
-            'password'              => 'Secret123!',
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Overflow Docs',
+            'registration_number' => 'REG-600',
+            'tax_number' => 'TAX-600',
+            'contact_name' => 'Fran Vendor',
+            'contact_email' => 'fran@overflowdocs.test',
+            'contact_phone' => '+264000006',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '600600600',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
             'password_confirmation' => 'Secret123!',
-            'category_ids'          => [$category->id],
-            'documents'             => $documents,
+            'category_ids' => [$category->id],
+            'documents' => $documents,
         ], ['Accept' => 'application/json'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors(['documents']);
@@ -297,40 +334,40 @@ class SupplierRegistrationTest extends TestCase
         $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_ack']);
 
         $response = $this->post('/api/v1/procurement/suppliers/register', [
-            'tenant_id'             => $tenant->id,
-            'company_name'          => 'Ack Mail Supplies',
-            'registration_number'   => 'REG-700',
-            'tax_number'            => 'TAX-700',
-            'contact_name'          => 'Gita Vendor',
-            'contact_email'         => 'gita@ackmail.test',
-            'contact_phone'         => '+264000007',
-            'address'               => 'Windhoek',
-            'country'               => 'Namibia',
-            'bank_name'             => 'FNB',
-            'bank_account'          => '700700700',
-            'bank_branch'           => 'Windhoek',
-            'password'              => 'Secret123!',
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Ack Mail Supplies',
+            'registration_number' => 'REG-700',
+            'tax_number' => 'TAX-700',
+            'contact_name' => 'Gita Vendor',
+            'contact_email' => 'gita@ackmail.test',
+            'contact_phone' => '+264000007',
+            'address' => 'Windhoek',
+            'country' => 'Namibia',
+            'bank_name' => 'FNB',
+            'bank_account' => '700700700',
+            'bank_branch' => 'Windhoek',
+            'password' => 'Secret123!',
             'password_confirmation' => 'Secret123!',
-            'category_ids'          => [$category->id],
-            'documents'             => [$this->fakePdf('company-profile.pdf')],
+            'category_ids' => [$category->id],
+            'documents' => [$this->fakePdf('company-profile.pdf')],
         ], ['Accept' => 'application/json']);
 
         $response->assertCreated();
 
         $this->assertDatabaseHas('users', [
-            'email'     => 'gita@ackmail.test',
+            'email' => 'gita@ackmail.test',
             'is_active' => false,
         ]);
         $this->assertDatabaseHas('notification_outbox', [
             'event_type' => 'supplier.application_received',
-            'status'     => 'published',
+            'status' => 'published',
         ]);
         $this->assertDatabaseHas('notification_recipients', [
             'user_id' => $response->json('data.user_id'),
         ]);
         $this->assertDatabaseHas('notification_channel_deliveries', [
-            'channel'               => 'email',
-            'destination_snapshot'  => 'gita@ackmail.test',
+            'channel' => 'email',
+            'destination_snapshot' => 'gita@ackmail.test',
         ]);
     }
 
@@ -403,5 +440,41 @@ class SupplierRegistrationTest extends TestCase
         $fresh = $user->fresh();
         $this->assertTrue((bool) $fresh->is_active);
         $this->assertNotNull($fresh->email_verified_at);
+    }
+
+    public function test_verified_supplier_completeness_and_dashboard_stop_asking_for_email(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asSupplier($tenant, [
+            'email_verified_at' => null,
+            'is_active' => true,
+        ]);
+
+        $http->getJson('/api/v1/procurement/supplier/completeness')
+            ->assertOk()
+            ->assertJsonPath('data.completeness.email_verified', false);
+        $this->assertContains(
+            'verify_email',
+            collect($http->getJson('/api/v1/procurement/supplier/dashboard')->assertOk()->json('data.actions'))->pluck('code')->all()
+        );
+
+        $url = app(\App\Modules\Procurement\Services\SupplierEmailVerificationService::class)->signedFrontendUrl($user);
+        parse_str(parse_url($url, PHP_URL_QUERY), $query);
+
+        $this->postJson('/api/v1/procurement/suppliers/verify-email', [
+            'user' => $query['user'],
+            'expires' => $query['expires'],
+            'signature' => $query['signature'],
+        ])->assertOk()->assertJsonPath('data.email_verified', true);
+
+        $user->refresh();
+
+        $http->getJson('/api/v1/procurement/supplier/completeness')
+            ->assertOk()
+            ->assertJsonPath('data.completeness.email_verified', true)
+            ->assertJsonPath('data.vendor.email_verified', true);
+
+        $actions = collect($http->getJson('/api/v1/procurement/supplier/dashboard')->assertOk()->json('data.actions'))->pluck('code')->all();
+        $this->assertNotContains('verify_email', $actions);
     }
 }

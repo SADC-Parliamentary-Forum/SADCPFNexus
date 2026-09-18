@@ -2,34 +2,47 @@
 
 namespace App\Modules\Assets\Import;
 
+use App\Modules\Assets\Support\AssetCategoryCatalog;
+
 final class AssetCategoryMapper
 {
-    public const MAP = [
-        'computer equipment' => 'it',
-        'office furniture & fittings' => 'furniture',
-        'office furniture and fittings' => 'furniture',
-        'household  - furniture & fittings' => 'household',
-        'household - furniture & fittings' => 'household',
-        'household furniture & fittings' => 'household',
-        'office equipment' => 'equipment',
-        'ofice equipment' => 'equipment',
-        'land & buildings' => 'land_buildings',
-        'land and buildings' => 'land_buildings',
-        'motor vehicles' => 'fleet',
-        'assets held for sale' => 'held_for_sale',
-        'it' => 'it',
-        'fleet' => 'fleet',
-        'furniture' => 'furniture',
-        'equipment' => 'equipment',
-    ];
-
     public static function toCode(?string $legacy): ?string
     {
         if ($legacy === null || trim($legacy) === '') {
             return null;
         }
-        $key = strtolower(trim(preg_replace('/\s+/', ' ', $legacy) ?? $legacy));
 
-        return self::MAP[$key] ?? null;
+        $key = self::normalize($legacy);
+
+        return self::map()[$key] ?? null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function map(): array
+    {
+        static $map = null;
+        if (is_array($map)) {
+            return $map;
+        }
+
+        $map = [];
+        foreach (AssetCategoryCatalog::items() as $item) {
+            $map[self::normalize($item['name'])] = $item['code'];
+            $map[self::normalize($item['code'])] = $item['code'];
+            foreach ($item['aliases'] as $alias) {
+                $map[self::normalize($alias)] = $item['code'];
+            }
+        }
+
+        return $map;
+    }
+
+    private static function normalize(string $value): string
+    {
+        $collapsed = preg_replace('/\s+/', ' ', $value) ?? $value;
+
+        return strtolower(trim($collapsed));
     }
 }

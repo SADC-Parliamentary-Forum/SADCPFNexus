@@ -3,7 +3,7 @@
 **Last updated:** 2026-09-16  
 **Baseline tip:** access residuals closeout on `cursor/access-residuals-closeout-9293`.
 
-Asset Phase 2 operations (scan basket, kits, parent/child, role templates, attestation, planner drafts, room QR, delegated collection, paper-fallback) shipped in product code (`#106`). Web labelled pickers + Playwright coverage follow on `cursor/asset-phase2-e2e-5911`. Operator UAT/secrets/governance rows below stay unsigned.
+Asset Phase 2 operations (scan basket, kits, parent/child, role templates, attestation, planner drafts, room QR, delegated collection, paper-fallback) shipped in product code (`#106`). Web labelled pickers + Playwright coverage shipped in `#107`. Mobile scan-basket overlay shipped in `#108`. Remaining labelled pickers (access simulator, workflow designer, travel/budget/correspondence/salary/forensics) shipped in `#111`. Risk KRI / BCP / control-testing labelled pickers follow on `cursor/risk-labelled-pickers-5911`. Operator UAT/secrets/governance rows below stay unsigned.
 
 ---
 

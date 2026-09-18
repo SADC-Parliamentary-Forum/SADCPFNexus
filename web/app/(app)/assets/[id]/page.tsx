@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { assetsApi, type Asset, type AssetCustodyPeriod, type AssetTimelineEvent, type GenericAssetAttachment } from "@/lib/api";
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { apiErrorMessage } from "@/lib/apiError";
+import { assigneeDepartmentName } from "@/lib/asset-assignee";
 import { canManageAssets, canManageHandovers, getStoredUser } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { formatDateShort } from "@/lib/utils";
@@ -164,7 +165,12 @@ export default function AssetViewPage() {
             <Field label={t("assets.view.fieldStatus")} value={STATUS_LABELS[asset.status] ?? asset.status} />
             <Field label={t("assets.view.fieldCategory")} value={asset.category} />
             <Field label={t("assets.handover.owner")} value={asset.owner_name || custody.owner || t("assets.handover.ownerValue")} />
-            <Field label={t("assets.handover.inCustodyOf")} value={custodyOf(asset, t)} />
+            <Field label={t("assets.assignedTo")} value={custodyOf(asset, t)} />
+            <Field label={t("assets.assigneeEmail")} value={asset.assigned_user?.email ?? "—"} />
+            <Field
+              label={t("assets.assigneeDepartment")}
+              value={assigneeDepartmentName(asset.assigned_user) ?? asset.department ?? "—"}
+            />
             <Field label={t("assets.view.fieldSerial")} value={asset.serial_number ?? "—"} />
             <Field label={t("assets.view.fieldTag")} value={asset.tag_number ?? "—"} />
             <Field label={t("assets.view.fieldPurchaseDate")} value={formatDateShort(asset.purchase_date)} />

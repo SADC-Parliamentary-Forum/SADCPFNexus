@@ -3,11 +3,11 @@
 namespace Tests\Feature\Assets;
 
 use App\Models\Asset;
-use App\Models\AssetAssignmentHistory;
 use App\Models\AssetImportBatch;
 use App\Models\AssetImportLineage;
 use App\Models\AssetImportRaw;
 use App\Models\AssetQrToken;
+use App\Models\AuditLog;
 use App\Models\Tenant;
 use App\Modules\Assets\Services\AssetImportCommitService;
 use App\Modules\Assets\Services\AssetQrService;
@@ -57,11 +57,19 @@ class AssetRegisterImportTest extends TestCase
         $rows = (new \App\Modules\Assets\Import\NexusAssetTemplateParser)->parseFile($path, 'sadcpf-asset-import-template.xlsx');
         unlink($path);
 
-        $this->assertSame([], $rows);
+        $this->assertGreaterThanOrEqual(300, count($rows));
+        $this->assertSame('AS-0001', $rows[0]['asset_tag']);
         $this->assertContains('asset_tag', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('asset_name', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('original_cost', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('assigned_to', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
         $this->assertContains('assigned_to_email', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('location', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('department', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertContains('asset_owner', \App\Modules\Assets\Import\NexusAssetTemplateParser::HEADERS);
+        $this->assertSame('SADC Parliamentary Forum', $rows[1]['asset_owner']);
+        $this->assertSame('Unaro Mungendje', $rows[1]['assigned_to']);
+        $this->assertSame('USM-Office#16A', $rows[1]['legacy_location']);
     }
 
     public function test_template_assigned_to_email_optionally_resolves_tenant_user(): void
@@ -114,6 +122,96 @@ class AssetRegisterImportTest extends TestCase
 
         $unassigned = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5103')->first();
         $this->assertNull($unassigned?->assigned_to);
+    }
+
+    public function test_assignment_fields_workbook_captures_name_email_department_and_owner(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $dept = $this->makeDepartment($tenant);
+        $dept->forceFill(['name' => 'ICT', 'code' => 'ICT'])->save();
+        $staff = $this->makeUser('staff', $tenant);
+        $staff->forceFill([
+            'name' => 'Unaro Mungendje',
+            'email' => 'unaro.mungendje@sadcpf.org',
+            'department_id' => $dept->id,
+        ])->save();
+
+        $path = sys_get_temp_dir().'/template-assign-fields-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'asset_owner', 'assigned_to', 'assigned_to_email', 'location', 'department', 'original_cost'],
+            ['CE-9001', 'HP ZBook 15', 'SADC Parliamentary Forum', 'Unaro Mungendje', 'unaro.mungendje@sadcpf.org', 'USM-Office#16A', 'ICT', '1,200.00'],
+            ['CE-9002', 'Shared projector', 'SADC Parliamentary Forum', '', '', 'Boardroom', '', '800.00'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'assignment-fields.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        $batch = AssetImportBatch::find($res->json('data.batch.id'));
+        $matched = $batch->stagingRows()->where('asset_tag', 'CE-9001')->first();
+        $this->assertNotNull($matched);
+        $this->assertSame($staff->id, (int) $matched->custodian_user_id);
+        $this->assertSame('user', $matched->custodian_type);
+        $this->assertSame($dept->id, (int) $matched->custodian_department_id);
+        $this->assertSame('Unaro Mungendje', $matched->custodian_candidate);
+        $this->assertSame('USM-Office#16A', $matched->legacy_location);
+        $this->assertSame('SADC Parliamentary Forum', $matched->source_refs['asset_owner'] ?? null);
+        $this->assertSame('ICT', $matched->source_refs['department'] ?? null);
+
+        $http->postJson("/api/v1/assets/import/{$batch->id}/commit", ['approve_non_blocking' => true])->assertOk();
+
+        $asset = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-9001')->first();
+        $this->assertNotNull($asset);
+        $this->assertSame($staff->id, (int) $asset->assigned_to);
+        $this->assertSame('ICT', $asset->department);
+        $this->assertSame('SADC Parliamentary Forum', $asset->owner_name);
+        $this->assertDatabaseHas('asset_assignment_histories', [
+            'asset_id' => $asset->id,
+            'assigned_to' => $staff->id,
+            'department' => 'ICT',
+            'returned_at' => null,
+        ]);
+
+        $shared = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-9002')->first();
+        $this->assertNull($shared?->assigned_to);
+        $this->assertSame('SADC Parliamentary Forum', $shared?->owner_name);
+    }
+
+    public function test_template_custodian_candidate_name_resolves_tenant_user(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $staff->forceFill(['name' => 'Unaro Mungendje'])->save();
+
+        $path = sys_get_temp_dir().'/template-custodian-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name', 'legacy_category', 'legacy_location', 'custodian_candidate', 'original_cost'],
+            ['CE-0001', 'HP laser Jet Printer P2055dn', 'Computer Equipment', 'USM-Office#16A', 'Unaro Mungendje', '2,472.00'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        $batch = AssetImportBatch::find($res->json('data.batch.id'));
+        $row = $batch->stagingRows()->where('asset_tag', 'CE-0001')->first();
+        $this->assertNotNull($row);
+        $this->assertSame($staff->id, (int) $row->custodian_user_id);
+        $this->assertSame('user', $row->custodian_type);
+        $this->assertSame('2472.00', (string) $row->original_cost);
+        $this->assertSame('it', $row->category_code);
     }
 
     public function test_map_custodian_to_user_assigns_on_commit(): void
@@ -877,5 +975,131 @@ class AssetRegisterImportTest extends TestCase
             'review_status' => 'pending',
         ]);
         $this->assertSame(0, Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-5501')->count());
+    }
+
+    public function test_approve_succeeds_when_rows_are_already_approved(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $batchId = $this->stageSingleRow($http, 'CE-6101', 'Already approved laptop');
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])
+            ->assertOk();
+        $again = $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true]);
+        $again->assertOk()->assertJsonPath('approved', 0);
+    }
+
+    public function test_approve_and_commit_accept_browser_user_agent_over_255_chars(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $batchId = $this->stageSingleRow($http, 'CE-6102', 'Long UA laptop');
+        $userAgent = str_repeat('Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/131.0.0.0 ', 8);
+        $this->assertGreaterThan(255, strlen($userAgent));
+
+        $http->withHeaders(['User-Agent' => $userAgent])
+            ->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])
+            ->assertOk();
+
+        $commit = $http->withHeaders(['User-Agent' => $userAgent])
+            ->postJson("/api/v1/assets/import/{$batchId}/commit");
+        $commit->assertOk();
+        $this->assertSame(1, Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-6102')->count());
+        $this->assertLessThanOrEqual(255, strlen((string) AuditLog::query()->where('event', 'assets.import_approved')->latest('id')->value('user_agent')));
+        $this->assertLessThanOrEqual(255, strlen((string) AuditLog::query()->where('event', 'assets.import_committed')->latest('id')->value('user_agent')));
+    }
+
+    public function test_commit_does_not_cap_php_max_execution_time(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $batchId = $this->stageSingleRow($http, 'CE-6104', 'Time limit laptop');
+        $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])->assertOk();
+        $before = (string) ini_get('max_execution_time');
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/commit")->assertOk();
+
+        $this->assertSame($before, (string) ini_get('max_execution_time'));
+    }
+
+    public function test_commit_lands_assets_when_qr_file_storage_is_unwritable(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $batchId = $this->stageSingleRow($http, 'CE-6103', 'QR disk laptop');
+        $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])->assertOk();
+
+        $qrRoot = storage_path('app/qr');
+        if (! is_dir($qrRoot)) {
+            mkdir($qrRoot, 0777, true);
+        }
+        $previous = fileperms($qrRoot);
+        chmod($qrRoot, 0555);
+        try {
+            $http->postJson("/api/v1/assets/import/{$batchId}/commit")->assertOk();
+        } finally {
+            chmod($qrRoot, $previous ?: 0777);
+        }
+
+        $asset = Asset::query()->where('tenant_id', $tenant->id)->where('tag_number', 'CE-6103')->first();
+        $this->assertNotNull($asset);
+        $this->assertNotEmpty($asset->qr_token);
+        $this->assertDatabaseHas('asset_qr_tokens', [
+            'asset_id' => $asset->id,
+            'token' => $asset->qr_token,
+        ]);
+        $this->getJson('/api/v1/public/assets/'.$asset->qr_token)->assertOk();
+    }
+
+    public function test_bulk_commit_writes_batch_audit_not_per_asset_audit_rows(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $path = sys_get_temp_dir().'/template-audit-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name'],
+            ['CE-6201', 'Audit laptop one'],
+            ['CE-6202', 'Audit laptop two'],
+            ['CE-6203', 'Audit laptop three'],
+        ]);
+        (new Xlsx($sheet))->save($path);
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+        $batchId = $res->json('data.batch.id');
+
+        $http->postJson("/api/v1/assets/import/{$batchId}/approve", ['all_non_blocking' => true])->assertOk();
+        $http->postJson("/api/v1/assets/import/{$batchId}/commit")->assertOk();
+
+        $this->assertSame(3, Asset::query()->where('tenant_id', $tenant->id)->count());
+        $this->assertSame(0, AuditLog::query()->where('event', 'assets.import_created')->count());
+        $this->assertSame(0, AuditLog::query()->where('event', 'assets.qr_generated')->count());
+        $this->assertSame(1, AuditLog::query()->where('event', 'assets.import_committed')->where('auditable_id', $batchId)->count());
+    }
+
+    /**
+     * @param  \Illuminate\Testing\TestResponse|\Illuminate\Foundation\Testing\TestCase  $http
+     */
+    private function stageSingleRow($http, string $tag, string $name): int
+    {
+        $path = sys_get_temp_dir().'/template-row-'.uniqid().'.xlsx';
+        $sheet = new Spreadsheet;
+        $sheet->getActiveSheet()->fromArray([
+            ['asset_tag', 'asset_name'],
+            [$tag, $name],
+        ]);
+        (new Xlsx($sheet))->save($path);
+        $res = $http->post('/api/v1/assets/import', [
+            'mode' => 'template',
+            'template' => $this->uploaded($path, 'template.xlsx'),
+        ]);
+        $res->assertCreated();
+        unlink($path);
+
+        return (int) $res->json('data.batch.id');
     }
 }

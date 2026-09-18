@@ -3,10 +3,12 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useQueryClient } from "@tanstack/react-query";
 import { supplierEmailVerificationApi } from "@/lib/api";
 
 function VerifyEmailInner() {
   const params = useSearchParams();
+  const queryClient = useQueryClient();
   const [message, setMessage] = useState("Verifying your email...");
   const [ok, setOk] = useState(false);
 
@@ -23,11 +25,14 @@ function VerifyEmailInner() {
       .then((res) => {
         setOk(true);
         setMessage(res.data.message);
+        queryClient.invalidateQueries({ queryKey: ["supplier-profile"] });
+        queryClient.invalidateQueries({ queryKey: ["supplier-completeness"] });
+        queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
       })
       .catch((error: { response?: { data?: { message?: string } } }) => {
         setMessage(error.response?.data?.message ?? "Unable to verify this email link.");
       });
-  }, [params]);
+  }, [params, queryClient]);
 
   return (
     <div className="mx-auto max-w-lg card p-8 space-y-4 text-center">

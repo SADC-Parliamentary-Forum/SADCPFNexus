@@ -284,6 +284,8 @@ export interface TenantUserOption {
   name: string;
   email: string;
   job_title?: string | null;
+  department?: string | null;
+  department_id?: number | null;
 }
 
 export const tenantUsersApi = {
@@ -1843,7 +1845,12 @@ export interface Asset {
   asset_class?: string | null;
   status: string;
   assigned_to: number | null;
-  assigned_user?: { id: number; name: string; email: string } | null;
+  assigned_user?: {
+    id: number;
+    name: string;
+    email: string;
+    department?: { id: number; name: string } | string | null;
+  } | null;
   location_id?: number | null;
   location?: { id: number; name: string; code?: string } | null;
   home_location_id?: number | null;
@@ -1873,6 +1880,7 @@ export interface Asset {
   funding_source?: string | null;
   book_value?: number | null;
   owner_name?: string | null;
+  department?: string | null;
   custodian_type?: string | null;
   parent_asset_id?: number | null;
   nfc_uid?: string | null;
@@ -1902,6 +1910,7 @@ export const assetsApi = {
     category: string;
     status?: string;
     assigned_to?: number | null;
+    department?: string;
     issued_at?: string;
     value?: number;
     notes?: string;
@@ -1919,6 +1928,7 @@ export const assetsApi = {
     category: string;
     status?: string;
     assigned_to?: number | null;
+    department?: string;
     issued_at?: string;
     value?: number;
     notes?: string;
@@ -1965,6 +1975,8 @@ export const assetsApi = {
     api.post<{ data: Asset; message: string }>(`/assets/${id}/return`, data ?? {}),
   registerExport: (params?: Record<string, string | number>) =>
     api.get<Blob>("/assets/register-export", { params, responseType: "blob" }),
+  clearRegister: (data: { confirmation: string }) =>
+    api.post<{ message: string; data: { deleted_count: number; remaining_count: number } }>("/assets/register/clear", data),
   qrBatch: (ids: number[]) =>
     api.post<{ data: Array<{ id: number; image: string }> }>("/assets/qr-batch", { ids }),
   uploadInvoice: (assetId: number, file: File) => {
@@ -2417,12 +2429,18 @@ export const assetImportApi = {
     api.get("/assets/import", { params }),
   downloadTemplate: () =>
     api.get<Blob>("/assets/import/template", { responseType: "blob" }).then((res) => {
-      const url = URL.createObjectURL(res.data);
+      const blob = new Blob([res.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = "sadcpf-asset-import-template.xlsx";
+      a.rel = "noopener";
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      a.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 2000);
     }),
   upload: (form: FormData) =>
     api.post<{ message: string; data: unknown }>("/assets/import", form, {
@@ -2443,7 +2461,7 @@ export const assetImportApi = {
   mapCustodian: (id: number, data: Record<string, unknown>) =>
     api.post(`/assets/import/${id}/map-custodian`, data),
   commit: (id: number, data?: { approve_non_blocking?: boolean }) =>
-    api.post(`/assets/import/${id}/commit`, data ?? {}),
+    api.post(`/assets/import/${id}/commit`, data ?? {}, { timeout: 180_000 }),
   report: (id: number) => api.get(`/assets/import/${id}/report`),
 };
 
@@ -4322,6 +4340,7 @@ export interface SupplierDocumentRecord {
   id: number;
   type_code: string;
   name: string;
+  original_filename?: string | null;
   document_number: string | null;
   issuing_authority: string | null;
   issue_date: string | null;
@@ -4332,6 +4351,29 @@ export interface SupplierDocumentRecord {
   is_current: boolean;
   verified_at: string | null;
   verified_by?: { id: number; name: string } | null;
+}
+
+export interface SupplierPortalDocumentType {
+  code: string;
+  label: string;
+  mandatory: boolean;
+  has_expiry: boolean;
+  required_at_registration?: boolean;
+  allows_multiple: boolean;
+}
+
+export interface SupplierDocumentRequirementRow {
+  code: string;
+  label: string;
+  needed: boolean;
+  status: string;
+  document: SupplierDocumentRecord | null;
+}
+
+export interface SupplierPortalDocumentsPayload {
+  types: SupplierPortalDocumentType[];
+  requirements: SupplierDocumentRequirementRow[];
+  documents: SupplierDocumentRecord[];
 }
 
 export interface SupplierDocumentRequirementType {
@@ -4601,11 +4643,13 @@ export const supplierPortalApi = {
     api.get<{ data: Array<{ id: number; code: string; title: string; body: string; accepted: boolean }> }>("/procurement/supplier/declarations"),
   acceptDeclarations: (templateIds: number[]) =>
     api.post("/procurement/supplier/declarations", { template_ids: templateIds }),
-  documents: () => api.get<{ data: SupplierDocumentRecord[] }>("/procurement/supplier/documents"),
+  documents: () => api.get<{ data: SupplierPortalDocumentsPayload }>("/procurement/supplier/documents"),
   uploadDocument: (formData: FormData) =>
     api.post<{ data: SupplierDocumentRecord; message: string }>("/procurement/supplier/documents", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
+  downloadDocumentUrl: (documentId: number): string =>
+    `${api.defaults.baseURL}/procurement/supplier/documents/${documentId}/download`,
   resendVerification: () => api.post<{ message: string }>("/procurement/supplier/verify-email/resend"),
   rfqs: () => api.get<{ data: RfqInvitation[] }>("/procurement/supplier/rfqs"),
   rfq: (requestId: number) =>
@@ -9162,6 +9206,8 @@ export const riskApi = {
     api.post(`/risk/acceptances/${acceptanceId}/decide`, data),
   materialise: (riskId: number, data?: Record<string, unknown>) =>
     api.post(`/risk/risks/${riskId}/materialise`, data),
+  listControls: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<RiskControlOption>>("/risk/controls", { params }),
   createControl: (data: Record<string, unknown>) =>
     api.post(`/risk/controls`, data),
   linkControl: (riskId: number, data: Record<string, unknown>) =>
@@ -9213,6 +9259,14 @@ export const riskApi = {
   createRiskDependency: (data: Record<string, unknown>) =>
     api.post<{ message: string; data: RiskDependency }>("/risk/dependencies", data),
 };
+
+export interface RiskControlOption {
+  id: number;
+  control_code: string;
+  title: string;
+  control_type?: string | null;
+  status?: string | null;
+}
 
 export interface RiskControlTestingCampaign {
   id: number;

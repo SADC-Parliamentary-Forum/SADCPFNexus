@@ -2,6 +2,7 @@
  * Acquisition lot → print labels → issue handover → staff partial accept/dispute.
  */
 import { test, expect } from "@playwright/test";
+import { selectAssetAssignee } from "./helpers/asset-assignee";
 import { authFixtureExists, skipWithoutAuth, waitForApp } from "./helpers/auth";
 
 test.describe("Asset issuance handover (admin + staff)", () => {
@@ -37,11 +38,9 @@ test.describe("Asset issuance handover (admin + staff)", () => {
     await waitForApp(page);
     await expect(page.getByTestId("handover-create-form")).toBeVisible({ timeout: 15_000 });
 
-    const userSelect = page.getByTestId("handover-to-user");
-    await expect(userSelect).toBeVisible();
-    const staffValue = await userSelect.locator("option", { hasText: /Demo Staff|staff@sadcpf\.org/i }).first().getAttribute("value");
-    expect(staffValue).toBeTruthy();
-    await userSelect.selectOption(staffValue!);
+    const userPicker = page.getByTestId("handover-to-user");
+    await expect(userPicker).toBeVisible();
+    await selectAssetAssignee(userPicker, "staff", /Demo Staff|staff@sadcpf\.org/i);
 
     await expect(page.locator("[data-testid^='handover-asset-']", { hasText: lotName })).toHaveCount(2, { timeout: 15_000 });
     const lotBoxes = page.locator("[data-testid^='handover-asset-']", { hasText: lotName }).locator("input[type='checkbox']");

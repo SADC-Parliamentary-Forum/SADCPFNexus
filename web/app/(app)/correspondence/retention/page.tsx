@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import api from "@/lib/api";
+import api, { correspondenceApi, type CorrespondenceLetter } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { exportToCsv } from "@/lib/csvExport";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type HoldRow = {
   id: number;
@@ -20,7 +21,9 @@ type HoldRow = {
 };
 
 export default function CorrespondenceRetentionPage() {
+  const { t } = useI18n();
   const [holds, setHolds] = useState<HoldRow[]>([]);
+  const [letters, setLetters] = useState<CorrespondenceLetter[]>([]);
   const [letterId, setLetterId] = useState("");
   const [form, setForm] = useState({
     retention_policy: "general_3y",
@@ -42,6 +45,10 @@ export default function CorrespondenceRetentionPage() {
 
   useEffect(() => {
     loadHolds().catch(() => setHolds([]));
+    correspondenceApi
+      .list({ per_page: 100 })
+      .then((r) => setLetters(r.data.data ?? []))
+      .catch(() => setLetters([]));
   }, []);
 
   async function saveRetention(e: FormEvent) {
@@ -143,16 +150,24 @@ export default function CorrespondenceRetentionPage() {
 
       <form onSubmit={saveRetention} className="card space-y-3 p-4">
         <h2 className="text-sm font-semibold text-neutral-900">Set retention / hold</h2>
-        <label htmlFor="correspondence-retention-letter-id-setletterid-e-target-value-placeholder" className="block text-sm">
-          Letter ID
-          <input id="correspondence-retention-letter-id-setletterid-e-target-value-placeholder"
+        <label htmlFor="retention-letter-select" className="block text-sm">
+          {t("correspondence.retention.letter")}
+          <select
+            id="retention-letter-select"
             className="form-input mt-1 w-full disabled:opacity-60"
             required
             value={letterId}
+            data-testid="retention-letter-select"
             onChange={(e) => setLetterId(e.target.value)}
-            placeholder="Correspondence id"
             disabled={saving}
-          />
+          >
+            <option value="">{t("pickers.none")}</option>
+            {letters.map((letter) => (
+              <option key={letter.id} value={String(letter.id)}>
+                {letter.reference_number || letter.registry_reference || `#${letter.id}`} — {letter.title}
+              </option>
+            ))}
+          </select>
         </label>
         <div className="grid gap-3 md:grid-cols-2">
           <label htmlFor="correspondence-retention-retention-policy-setform-disabled-general-3-year" className="block text-sm">

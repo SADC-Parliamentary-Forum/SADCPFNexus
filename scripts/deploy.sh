@@ -133,6 +133,7 @@ docker exec sadcpf_php php artisan migrate --force
 log "Reseeding roles/permissions + workflows (idempotent, no demo/user data touched)"
 docker exec sadcpf_php php artisan db:seed --class="Database\\Seeders\\RolesAndPermissionsSeeder" --force
 docker exec sadcpf_php php artisan db:seed --class="Database\\Seeders\\WorkflowSeeder" --force
+docker exec sadcpf_php php artisan db:seed --class="Database\\Seeders\\AssetCategorySeeder" --force
 
 log "Rebuilding Laravel caches"
 # config:cache snapshots APP_URL + FRONTEND_URL from the php container.

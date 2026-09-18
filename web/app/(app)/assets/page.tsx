@@ -4,7 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { loadPdfLibs } from "@/lib/pdf-libs";
-import { assetsApi, assetRequestsApi, tenantUsersApi, type Asset, type AssetRegisterSummary, type AssetRequest, type TenantUserOption } from "@/lib/api";
+import { assetsApi, assetRequestsApi, type Asset, type AssetRegisterSummary, type AssetRequest, type TenantUserOption } from "@/lib/api";
 import { canDisposeAssets, canManageAssets, canPrintAssetLabels, canRetireAssets, getStoredUser } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
@@ -25,6 +25,9 @@ import { DEFAULT_PAGE_SIZE, getLastPage, getListData, getTotal } from "@/lib/lis
 import { ListPagination } from "@/components/ui/ListPagination";
 import { BulkSelectionBar, RowCheckbox, SelectAllCheckbox } from "@/components/ui/BulkSelectionBar";
 import { AssetLabelsQuickPrintModal } from "@/components/assets/AssetLabelsQuickPrintModal";
+import { ClearAssetRegisterButton } from "@/components/assets/ClearAssetRegisterButton";
+import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
+import { assigneeDepartmentName, formatAssigneeLabel, tenantUserFromAsset } from "@/lib/asset-assignee";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 const RETIREABLE_STATUSES = new Set(["active", "service_due", "loan_out"]);
@@ -463,26 +466,22 @@ function AssignModal({
   onSaved: (updated: Asset) => void;
 }) {
   const { t } = useI18n();
-  const [users, setUsers] = useState<TenantUserOption[]>([]);
-  const [assignedTo, setAssignedTo] = useState<number | "">(asset.assigned_to ?? "");
+  const [assignee, setAssignee] = useState<TenantUserOption | null>(tenantUserFromAsset(asset));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    tenantUsersApi.list()
-      .then((r) => setUsers(r.data.data ?? []))
-      .catch(() => setUsers([]));
-  }, []);
-
   const handleSave = async () => {
-    if (assignedTo === "") {
+    if (!assignee) {
       onClose();
       return;
     }
     setSaving(true);
     setError(null);
     try {
-      const res = await assetsApi.assign(asset.id, { assigned_to: Number(assignedTo) });
+      const res = await assetsApi.assign(asset.id, {
+        assigned_to: assignee.id,
+        department: assigneeDepartmentName(assignee) ?? undefined,
+      });
       onSaved(res.data.data);
     } catch (e: unknown) {
       const msg =
@@ -527,30 +526,20 @@ function AssignModal({
             </div>
           )}
           <p className="text-xs text-neutral-500">{t("assets.assignHint")}</p>
-          <div>
-            <label htmlFor="assign-user" className="block text-xs font-semibold text-neutral-700 mb-1">
-              {t("assets.assignedTo")}
-            </label>
-            <select
-              id="assign-user"
-              className="form-input"
-              value={assignedTo === "" ? "" : assignedTo}
-              onChange={(e) => setAssignedTo(e.target.value === "" ? "" : Number(e.target.value))}
-              disabled={saving}
-            >
-              <option value="">{t("assets.notAssigned")}</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>{u.name}</option>
-              ))}
-            </select>
-          </div>
+          <AssetAssigneePicker
+            id="assign-user"
+            label={t("assets.assignedTo")}
+            value={assignee}
+            onSelect={setAssignee}
+            disabled={saving}
+          />
         </div>
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-100">
           <button type="button" onClick={onClose} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
           <button
             type="button"
             onClick={handleSave}
-            disabled={saving || assignedTo === ""}
+            disabled={saving || !assignee}
             className="btn-primary px-5 py-2 text-sm disabled:opacity-50 flex items-center gap-2"
           >
             <span className="material-symbols-outlined text-[16px]">person_add</span>
@@ -998,6 +987,7 @@ export default function AssetsPage() {
                 <span className="material-symbols-outlined text-[18px]">upload_file</span>
                 Import
               </Link>
+              <ClearAssetRegisterButton onCleared={() => { void loadAssets(); }} />
               <Link href="/assets/add" className="btn-primary">
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 Add Asset
@@ -1289,7 +1279,11 @@ export default function AssetsPage() {
                           )}
                           <p className={`text-xs mt-0.5 ${asset.assigned_user?.name ? "text-neutral-500" : "text-neutral-400"}`}>
                             {asset.assigned_user?.name
-                              ? `${t("assets.assignedTo")}: ${asset.assigned_user.name}`
+                              ? `${t("assets.assignedTo")}: ${formatAssigneeLabel({
+                                  name: asset.assigned_user.name,
+                                  email: asset.assigned_user.email,
+                                  department: asset.assigned_user.department ?? asset.department,
+                                })}`
                               : t("assets.notAssigned")}
                           </p>
                         </div>

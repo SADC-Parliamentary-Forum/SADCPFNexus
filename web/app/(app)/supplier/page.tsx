@@ -120,6 +120,11 @@ export default function SupplierDashboardPage() {
       icon: "badge",
       label: t("supplier.dashboard.profile"),
     },
+    {
+      href: "/supplier/documents",
+      icon: "folder_open",
+      label: t("supplier.dashboard.documents"),
+    },
   ];
 
   return (

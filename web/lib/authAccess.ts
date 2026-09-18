@@ -84,6 +84,13 @@ export function canRetireAssets(user: AuthAccessUser | null | undefined): boolea
   return hasPermission(user, ["assets.admin", "assets.manage"]);
 }
 
+/** True if the user can permanently wipe the register for a fresh bulk upload. */
+export function canClearAssetRegister(user: AuthAccessUser | null | undefined): boolean {
+  if (!user) return false;
+  if (isSystemAdmin(user)) return true;
+  return hasPermission(user, "assets.admin");
+}
+
 export function canViewAssetFinancials(user: AuthAccessUser | null | undefined): boolean {
   if (!user) return false;
   return hasPermission(user, ["assets.financials.view", "finance.admin", "finance.approve", "finance.export"]);

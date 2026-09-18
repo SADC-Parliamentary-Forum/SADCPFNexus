@@ -210,7 +210,7 @@ class AssetService
                 'tenant_id' => $asset->tenant_id,
                 'asset_id' => $asset->id,
                 'assigned_to' => $assignee->id,
-                'department' => $data['department'] ?? $asset->department,
+                'department' => $this->assigneeDepartmentName($assignee, $data, $asset->department),
                 'assignment_type' => $data['assignment_type'] ?? 'custody',
                 'assigned_at' => now(),
                 'assigned_by' => $actor->id,
@@ -223,8 +223,9 @@ class AssetService
             $asset->acknowledgement_at = $skipHandshake ? now() : null;
             $asset->acknowledged_by = $skipHandshake ? $assignee->id : null;
             $asset->custody_state = $skipHandshake ? 'accepted' : 'pending_acceptance';
-            if (! empty($data['department'])) {
-                $asset->department = $data['department'];
+            $department = $this->assigneeDepartmentName($assignee, $data, $asset->department);
+            if ($department) {
+                $asset->department = $department;
             }
             if (! empty($data['location_id'])) {
                 $this->recordLocationMove($asset, (int) $data['location_id'], $actor, 'Assignment');
@@ -721,6 +722,22 @@ class AssetService
                 'tag_number' => 'Asset tag must be unique within the tenant.',
             ]);
         }
+    }
+
+    private function assigneeDepartmentName(User $assignee, array $data, ?string $fallback = null): ?string
+    {
+        $explicit = trim((string) ($data['department'] ?? ''));
+        if ($explicit !== '') {
+            return $explicit;
+        }
+        $assignee->loadMissing('department');
+        $fromUser = trim((string) ($assignee->department?->name ?? ''));
+        if ($fromUser !== '') {
+            return $fromUser;
+        }
+        $fromAsset = trim((string) ($fallback ?? ''));
+
+        return $fromAsset !== '' ? $fromAsset : null;
     }
 
     private function assertTenant(Asset $asset, User $user): void

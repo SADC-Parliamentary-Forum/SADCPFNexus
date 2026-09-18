@@ -6,15 +6,34 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import {
+  assetsApi,
   riskApi,
+  type AssetInsurancePolicy,
   type AssetInsurancePolicyLite,
+  type Risk,
   type RiskBcpExercise,
   type RiskBcpLink,
   type RiskDependency,
 } from "@/lib/api";
 import { TableEmpty, ErrorBanner } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+
+function riskOptionLabel(risk: Pick<Risk, "id" | "risk_code" | "title">): string {
+  const code = risk.risk_code?.trim();
+  const title = risk.title?.trim();
+  if (code && title) return `${code} — ${title}`;
+  return code || title || String(risk.id);
+}
+
+function policyOptionLabel(policy: Pick<AssetInsurancePolicy, "id" | "policy_number" | "insurer_name">): string {
+  const number = policy.policy_number?.trim();
+  const insurer = policy.insurer_name?.trim();
+  if (number && insurer) return `${number} — ${insurer}`;
+  return number || insurer || String(policy.id);
+}
 
 export default function RiskBcpPage() {
+  const { t } = useI18n();
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [riskId, setRiskId] = useState("");
@@ -42,6 +61,14 @@ export default function RiskBcpPage() {
   const renewalsQuery = useQuery({
     queryKey: ["risk", "insurance-renewals"],
     queryFn: () => riskApi.listInsuranceRenewals({ within_days: 120 }).then((r) => r.data.data ?? []),
+  });
+  const risksQuery = useQuery({
+    queryKey: ["risk", "register", "picker"],
+    queryFn: () => riskApi.list({ per_page: 100 }).then((r) => r.data.data ?? []),
+  });
+  const policiesQuery = useQuery({
+    queryKey: ["assets", "insurance-policies"],
+    queryFn: () => assetsApi.insurancePolicies({ per_page: 100 }).then((r) => r.data.data ?? []),
   });
 
   const createLink = useMutation({
@@ -122,6 +149,8 @@ export default function RiskBcpPage() {
   const deps = (depsQuery.data ?? []) as RiskDependency[];
   const exercises = (exercisesQuery.data ?? []) as RiskBcpExercise[];
   const renewals = (renewalsQuery.data ?? []) as AssetInsurancePolicyLite[];
+  const risks = (risksQuery.data ?? []) as Risk[];
+  const policies = (policiesQuery.data ?? []) as AssetInsurancePolicy[];
 
   return (
     <RiskPageFrame>
@@ -151,8 +180,22 @@ export default function RiskBcpPage() {
         className="grid gap-3 rounded-lg border border-neutral-200 bg-white p-4 md:grid-cols-2 dark:border-neutral-700 dark:bg-neutral-900"
       >
         <label htmlFor="risk-bcp-risk-id-setriskid-e-target-value" className="space-y-1">
-          <span className="text-sm font-medium">Risk ID</span>
-          <input id="risk-bcp-risk-id-setriskid-e-target-value" className="input w-full" required value={riskId} onChange={(e) => setRiskId(e.target.value)} />
+          <span className="text-sm font-medium">{t("risk.bcp.risk")}</span>
+          <select
+            id="risk-bcp-risk-id-setriskid-e-target-value"
+            className="input w-full"
+            required
+            value={riskId}
+            data-testid="bcp-risk-select"
+            onChange={(e) => setRiskId(e.target.value)}
+          >
+            <option value="">{t("risk.kri.none")}</option>
+            {risks.map((risk) => (
+              <option key={risk.id} value={String(risk.id)}>
+                {riskOptionLabel(risk)}
+              </option>
+            ))}
+          </select>
         </label>
         <label htmlFor="risk-bcp-link-type-setlinktype-e-target-value-as-typeof-l" className="space-y-1">
           <span className="text-sm font-medium">Link type</span>
@@ -171,8 +214,22 @@ export default function RiskBcpPage() {
         </label>
         {linkType === "insurance_policy" && (
           <label htmlFor="risk-bcp-asset-insurance-policy-id-setpolicyid-e-target-v" className="space-y-1">
-            <span className="text-sm font-medium">Asset insurance policy ID</span>
-            <input id="risk-bcp-asset-insurance-policy-id-setpolicyid-e-target-v" className="input w-full" required value={policyId} onChange={(e) => setPolicyId(e.target.value)} />
+            <span className="text-sm font-medium">{t("risk.bcp.policy")}</span>
+            <select
+              id="risk-bcp-asset-insurance-policy-id-setpolicyid-e-target-v"
+              className="input w-full"
+              required
+              value={policyId}
+              data-testid="bcp-policy-select"
+              onChange={(e) => setPolicyId(e.target.value)}
+            >
+              <option value="">{t("risk.kri.none")}</option>
+              {policies.map((policy) => (
+                <option key={policy.id} value={String(policy.id)}>
+                  {policyOptionLabel(policy)}
+                </option>
+              ))}
+            </select>
           </label>
         )}
         <div className="md:col-span-2">
@@ -320,12 +377,40 @@ export default function RiskBcpPage() {
       >
         <h2 className="md:col-span-3 text-lg font-semibold">Interdependency mapping</h2>
         <label htmlFor="risk-bcp-risk-a-depends-setriskid-e-target-value" className="space-y-1">
-          <span className="text-sm font-medium">Risk A (depends)</span>
-          <input id="risk-bcp-risk-a-depends-setriskid-e-target-value" className="input w-full" required value={riskId} onChange={(e) => setRiskId(e.target.value)} />
+          <span className="text-sm font-medium">{t("risk.bcp.riskA")}</span>
+          <select
+            id="risk-bcp-risk-a-depends-setriskid-e-target-value"
+            className="input w-full"
+            required
+            value={riskId}
+            data-testid="bcp-risk-a-select"
+            onChange={(e) => setRiskId(e.target.value)}
+          >
+            <option value="">{t("risk.kri.none")}</option>
+            {risks.map((risk) => (
+              <option key={risk.id} value={String(risk.id)}>
+                {riskOptionLabel(risk)}
+              </option>
+            ))}
+          </select>
         </label>
         <label htmlFor="risk-bcp-risk-b-dependency-setrelatedriskid-e-target-valu" className="space-y-1">
-          <span className="text-sm font-medium">Risk B (dependency)</span>
-          <input id="risk-bcp-risk-b-dependency-setrelatedriskid-e-target-valu" className="input w-full" required value={relatedRiskId} onChange={(e) => setRelatedRiskId(e.target.value)} />
+          <span className="text-sm font-medium">{t("risk.bcp.riskB")}</span>
+          <select
+            id="risk-bcp-risk-b-dependency-setrelatedriskid-e-target-valu"
+            className="input w-full"
+            required
+            value={relatedRiskId}
+            data-testid="bcp-risk-b-select"
+            onChange={(e) => setRelatedRiskId(e.target.value)}
+          >
+            <option value="">{t("risk.kri.none")}</option>
+            {risks.map((risk) => (
+              <option key={risk.id} value={String(risk.id)}>
+                {riskOptionLabel(risk)}
+              </option>
+            ))}
+          </select>
         </label>
         <div className="flex items-end">
           <button type="submit" className="btn-primary" disabled={createDep.isPending}>
