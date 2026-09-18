@@ -48,6 +48,7 @@ Route::prefix('v1')->group(function () {
         // External counterparty signing portal (token-gated, no account).
         Route::middleware('throttle:30,1')->group(function () {
             Route::get('contracts/sign/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'show']);
+            Route::get('contracts/sign/{token}/document', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'document']);
             Route::post('contracts/sign/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'sign']);
             Route::post('contracts/decline/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'decline']);
             Route::post('contracts/request-changes/{token}', [\App\Http\Controllers\Api\V1\Contracts\ContractExternalSignatureController::class, 'requestChanges']);

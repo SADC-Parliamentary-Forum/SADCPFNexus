@@ -5162,10 +5162,29 @@ export interface ContractAmendmentRecord {
   is_material: boolean; status: string; new_end_date: string | null;
 }
 
-// Public (token-gated) external counterparty signing portal.
+export interface ExternalContractWorkspace {
+  reference_number: string;
+  title: string;
+  counterparty: string | null;
+  value: number | string;
+  currency: string;
+  start_date: string | null;
+  end_date: string | null;
+  signature_deadline: string | null;
+  purpose: string | null;
+  my_status: string;
+  document_hash: string | null;
+  document_available: boolean;
+  signatories: { party: string; status: string; signed_at: string | null }[];
+  deliverables: { name: string; description: string | null; due_date: string | null; status: string }[];
+  obligations: { obligation: string; responsible_party: string; due_date: string | null; status: string }[];
+}
+
+// Public (token-gated) external counterparty workspace + signing portal.
 export const contractExternalApi = {
   view: (token: string) =>
-    api.get<{ data: { reference_number: string; title: string; counterparty: string | null; value: number | string; currency: string; start_date: string | null; end_date: string | null; status: string; document_hash: string | null } }>(`/external/contracts/sign/${token}`),
+    api.get<{ data: ExternalContractWorkspace }>(`/external/contracts/sign/${token}`),
+  documentUrl: (token: string) => `/api/external/contracts/sign/${token}/document`,
   sign: (token: string, name: string) =>
     api.post<{ message: string; data: { status: string } }>(`/external/contracts/sign/${token}`, { name, consent: true }),
   decline: (token: string, reason: string) =>

@@ -27,11 +27,18 @@ class ContractExternalSignatureController extends Controller
         return $sig;
     }
 
-    /** Minimal, scoped view of the contract for the counterparty. */
+    /**
+     * Scoped, read-only workspace for the counterparty (PRD §95): only this
+     * contract's own terms, deliverables, obligations and signature status.
+     * NEVER exposes internal reviewers, budget/funding, workflow/approvals,
+     * internal comments, or any other contract.
+     */
     public function show(string $token): JsonResponse
     {
         $sig = $this->resolve($token);
-        $contract = $sig->contract;
+        $contract = $sig->contract->loadMissing(['deliverables', 'obligations', 'signatories', 'currentDocumentVersion']);
+
+        $scope = (array) ($contract->scope ?? []);
 
         return response()->json(['data' => [
             'reference_number' => $contract->reference_number,
@@ -41,9 +48,55 @@ class ContractExternalSignatureController extends Controller
             'currency' => $contract->currency,
             'start_date' => $contract->start_date,
             'end_date' => $contract->end_date,
-            'status' => $sig->status,
+            'signature_deadline' => $contract->signature_deadline,
+            'purpose' => $scope['purpose'] ?? null,
+            'my_status' => $sig->status,
             'document_hash' => optional($contract->currentDocumentVersion)->hash,
+            'document_available' => $this->documentPath($contract) !== null,
+            // Signature progress (parties + status only — no internal identities).
+            'signatories' => $contract->signatories->sortBy('sign_order')->map(fn ($s) => [
+                'party' => $s->party,
+                'status' => $s->status,
+                'signed_at' => optional($s->signed_at)->toDateString(),
+            ])->values(),
+            // What the counterparty must deliver.
+            'deliverables' => $contract->deliverables->map(fn ($d) => [
+                'name' => $d->name,
+                'description' => $d->description,
+                'due_date' => optional($d->due_date)->toDateString(),
+                'status' => $d->status,
+            ])->values(),
+            // Contract obligations (both parties' commitments).
+            'obligations' => $contract->obligations->map(fn ($o) => [
+                'obligation' => $o->obligation,
+                'responsible_party' => $o->responsible_party,
+                'due_date' => optional($o->due_date)->toDateString(),
+                'status' => $o->status,
+            ])->values(),
         ]]);
+    }
+
+    /** Download the contract document scoped to this counterparty's link. */
+    public function document(string $token): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $sig = $this->resolve($token);
+        $path = $this->documentPath($sig->contract);
+        abort_if($path === null, 404, 'No contract document is available yet.');
+
+        $ext = str_ends_with($path, '.pdf') ? 'pdf' : 'html';
+        $safeRef = str_replace(['/', '\\'], '-', (string) $sig->contract->reference_number);
+
+        return \Illuminate\Support\Facades\Storage::download($path, "{$safeRef}.{$ext}");
+    }
+
+    private function documentPath(\App\Models\Contract $contract): ?string
+    {
+        $doc = $contract->currentDocumentVersion;
+        if ($doc && $doc->storage_path && \Illuminate\Support\Facades\Storage::exists($doc->storage_path)) {
+            return $doc->storage_path;
+        }
+
+        return null;
     }
 
     public function sign(Request $request, string $token): JsonResponse
