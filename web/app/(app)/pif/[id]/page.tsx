@@ -29,6 +29,7 @@ import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { useToast } from "@/components/ui/Toast";
 import { personLabel } from "@/lib/pifForm";
 import { TableEmpty, EmptyState } from "@/components/ui/EmptyState";
+import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 const STATUS_BADGE: Record<string, string> = {
@@ -482,6 +483,15 @@ export default function PifDetailPage() {
               <span className="material-symbols-outlined text-[15px]">picture_as_pdf</span>
               <span className="hidden sm:inline">Download PDF</span>
             </a>
+            {["approved", "active", "on_hold", "completed", "amended"].includes(programme.status) && (isSystemAdmin(getStoredUser()) || hasPermission(getStoredUser(), ["contract.create"])) && (
+              <Link
+                href={`/contracts/create?pif=${programme.id}`}
+                className="btn-secondary px-3 py-1.5 text-xs"
+              >
+                <span className="material-symbols-outlined text-[15px]">handshake</span>
+                <span className="hidden sm:inline">New contract</span>
+              </Link>
+            )}
             {["approved", "active", "on_hold", "completed", "amended"].includes(programme.status) && (
               <button
                 type="button"
@@ -602,6 +612,46 @@ export default function PifDetailPage() {
       {/* ── OVERVIEW TAB ─────────────────────────────────────────────────────── */}
       {tab === "overview" && (
         <div className="space-y-6">
+          <div className="card overflow-hidden">
+            <div className="flex items-center justify-between gap-3 border-b border-neutral-100 px-5 py-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">Contracts</h3>
+              {["approved", "active", "on_hold", "completed", "amended"].includes(programme.status) && (isSystemAdmin(getStoredUser()) || hasPermission(getStoredUser(), ["contract.create"])) && (
+                <Link href={`/contracts/create?pif=${programme.id}`} className="btn-secondary text-xs py-1 px-2">
+                  New contract
+                </Link>
+              )}
+            </div>
+            {(programme.contracts ?? []).length === 0 ? (
+              <p className="px-5 py-4 text-sm text-neutral-500">No contracts linked to this PIF.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Reference</th>
+                      <th>Title</th>
+                      <th>Counterparty</th>
+                      <th>Status</th>
+                      <th className="text-right">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(programme.contracts ?? []).map((c) => (
+                      <tr key={c.id}>
+                        <td>
+                          <Link href={`/contracts/${c.id}`} className="font-mono text-xs text-primary">{c.reference_number}</Link>
+                        </td>
+                        <td className="text-sm text-neutral-800">{c.title}</td>
+                        <td className="text-sm text-neutral-600">{c.counterparty_name ?? "—"}</td>
+                        <td className="text-xs capitalize">{(c.contract_status ?? c.status ?? "").replace(/_/g, " ").toLowerCase()}</td>
+                        <td className="text-right text-sm">{c.currency ?? ""} {Number(c.value ?? 0).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
           {programme.background && (
             <div className="card p-5">
               <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400 mb-3">Background</h3>

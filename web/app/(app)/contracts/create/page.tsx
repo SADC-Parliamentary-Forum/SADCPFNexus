@@ -9,7 +9,7 @@ import { Stepper } from "@/components/ui/Stepper";
 import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import {
-  contractsApi, vendorsApi, procurementApi,
+  contractsApi, vendorsApi, procurementApi, programmeApi,
   type ContractType, type Vendor,
 } from "@/lib/api";
 
@@ -51,6 +51,7 @@ function ContractCreateInner() {
   const [origin, setOrigin] = useState<Origin>("standalone");
   const [originReference, setOriginReference] = useState("");
   const [procurementRequestId, setProcurementRequestId] = useState<number | "">("");
+  const [programmeId, setProgrammeId] = useState<number | "">("");
   const [awardReference, setAwardReference] = useState("");
 
   const [partyType, setPartyType] = useState<Party>("individual");
@@ -117,6 +118,16 @@ function ContractCreateInner() {
   type AwardOpt = { id: number; reference_number: string; title: string };
   const awarded: AwardOpt[] = ((awardedData as { data?: AwardOpt[] })?.data ?? []);
 
+  const { data: pifListData } = useQuery({
+    queryKey: ["programmes-contract-origin"],
+    queryFn: () => programmeApi.list({ per_page: 100 }).then((r) => r.data).catch(() => ({ data: [] })),
+    enabled: origin === "pif",
+  });
+  type PifOpt = { id: number; reference_number: string; title: string; status: string };
+  const pifs: PifOpt[] = ((pifListData as { data?: PifOpt[] })?.data ?? []).filter((p) =>
+    ["approved", "amended", "active", "completed"].includes(p.status),
+  );
+
   const { data: templateData } = useQuery({
     queryKey: ["contract-templates"],
     queryFn: () => contractsApi.listTemplates().then((r) => r.data.data).catch(() => []),
@@ -133,9 +144,15 @@ function ContractCreateInner() {
 
   useEffect(() => {
     const request = searchParams.get("request");
-    if (!request) return;
-    setOrigin("procurement");
-    setProcurementRequestId(Number(request));
+    if (request) {
+      setOrigin("procurement");
+      setProcurementRequestId(Number(request));
+    }
+    const pif = searchParams.get("pif");
+    if (pif) {
+      setOrigin("pif");
+      setProgrammeId(Number(pif));
+    }
   }, [searchParams]);
 
   const prefillFromAward = async () => {
@@ -154,12 +171,36 @@ function ContractCreateInner() {
     }
   };
 
+  const prefillFromPif = async (id?: number) => {
+    const pid = id ?? programmeId;
+    if (!pid) return;
+    try {
+      const { data } = await contractsApi.prefill("pif", Number(pid));
+      const d = data.data as Record<string, unknown>;
+      if (d.title) setTitle(String(d.title));
+      if (d.award_reference) setAwardReference(String(d.award_reference));
+      if (d.rate) setRate(String(d.rate));
+      if (d.currency) setCurrency(String(d.currency));
+      toast.success(t("contracts.origin.prefilledPif"));
+    } catch {
+      toast.error(t("contracts.origin.prefillFailedPif"));
+    }
+  };
+
+  useEffect(() => {
+    if (origin !== "pif" || !programmeId || !searchParams.get("pif")) return;
+    void prefillFromPif(Number(programmeId));
+    // Prefill once when arriving from a PIF with ?pif=
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [origin, programmeId]);
+
   const canNext = (): boolean => {
     switch (step) {
       case 1:
         if (origin === "legacy") return false;
         if (origin === "standalone") return originReference.trim().length > 0;
         if (origin === "procurement") return !!procurementRequestId;
+        if (origin === "pif") return !!programmeId;
         return true;
       case 2: return partyType === "organisation" ? !!vendorId : (!!firstName.trim() && !!surname.trim());
       case 3: return !!title.trim() && !!typeId && !!startDate && !!endDate;
@@ -179,6 +220,7 @@ function ContractCreateInner() {
         origin_type: origin,
         origin_reference: origin === "standalone" ? originReference : undefined,
         procurement_request_id: origin === "procurement" && procurementRequestId ? Number(procurementRequestId) : undefined,
+        programme_id: origin === "pif" && programmeId ? Number(programmeId) : undefined,
         award_reference: awardReference || undefined,
         type_id: typeId ? Number(typeId) : undefined,
         counterparty_type: partyType,
@@ -266,6 +308,22 @@ function ContractCreateInner() {
                     {awarded.map((a) => (<option key={a.id} value={a.id}>{a.reference_number} — {a.title}</option>))}
                   </select>
                   <button type="button" className="btn-secondary whitespace-nowrap" disabled={!procurementRequestId} onClick={prefillFromAward}>{t("contracts.origin.prefill")}</button>
+                </div>
+              </div>
+            )}
+            {origin === "pif" && (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-neutral-600">{t("contracts.origin.selectPif")}</label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  {pifs.length > 0 ? (
+                    <select className="form-input w-full" value={programmeId} onChange={(e) => setProgrammeId(e.target.value ? Number(e.target.value) : "")}>
+                      <option value="">{t("contracts.origin.selectPifPlaceholder")}</option>
+                      {pifs.map((p) => (<option key={p.id} value={p.id}>{p.reference_number} — {p.title}</option>))}
+                    </select>
+                  ) : (
+                    <input className="form-input w-full" type="number" min={1} placeholder={t("contracts.origin.selectPifPlaceholder")} value={programmeId} onChange={(e) => setProgrammeId(e.target.value ? Number(e.target.value) : "")} />
+                  )}
+                  <button type="button" className="btn-secondary whitespace-nowrap" disabled={!programmeId} onClick={() => prefillFromPif()}>{t("contracts.origin.prefill")}</button>
                 </div>
               </div>
             )}

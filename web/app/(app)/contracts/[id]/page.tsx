@@ -374,7 +374,16 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             <h3 className="text-sm font-semibold text-neutral-800">{t("contracts.overview.facts")}</h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <dt className="text-neutral-500">{t("contracts.overview.type")}</dt><dd className="text-neutral-900">{contract.type?.name ?? "—"}</dd>
-              <dt className="text-neutral-500">{t("contracts.overview.origin")}</dt><dd className="text-neutral-900 capitalize">{contract.origin_type ?? "—"}</dd>
+              <dt className="text-neutral-500">{t("contracts.overview.origin")}</dt>
+              <dd className="text-neutral-900">
+                {contract.programme ? (
+                  <Link href={`/pif/${contract.programme.id}`} className="text-primary hover:underline">
+                    {contract.programme.reference_number} · {contract.programme.title}
+                  </Link>
+                ) : (
+                  <span className="capitalize">{contract.origin_type ?? "—"}</span>
+                )}
+              </dd>
               <dt className="text-neutral-500">{t("contracts.overview.value")}</dt><dd className="text-neutral-900 font-semibold">{formatContractMoney(contract.currency, contract.current_value ?? contract.value)}</dd>
               {contract.budget_currency && (<><dt className="text-neutral-500">{t("contracts.overview.budgetCurrency")}</dt><dd className="text-neutral-900">{contract.budget_currency}{contract.converted_value != null ? ` · ${Number(contract.converted_value).toLocaleString()}` : ""}{contract.conversion_reference ? ` (${contract.conversion_reference})` : ""}</dd></>)}
               <dt className="text-neutral-500">{t("contracts.overview.start")}</dt><dd className="text-neutral-900">{contract.start_date ? formatDateShort(contract.start_date) : "—"}</dd>

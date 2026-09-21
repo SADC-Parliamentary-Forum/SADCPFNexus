@@ -5016,6 +5016,7 @@ export interface Contract {
   contract_owner?: { id: number; name: string } | null;
   procurement_officer_id?: number | null;
   programme_id?: number | null;
+  programme?: { id: number; reference_number: string; title: string; status?: string } | null;
   donor?: string | null;
   original_value?: number | string | null;
   current_value?: number | string | null;
@@ -6758,6 +6759,17 @@ export interface Programme {
   procurement_items?: ProgrammeProcurementItem[];
   documents?: ProgrammeDocument[];
   arrival_departures?: ProgrammeArrivalDeparture[];
+  contracts?: {
+    id: number;
+    reference_number: string;
+    title: string;
+    status: string;
+    contract_status?: string | null;
+    value?: number | string | null;
+    currency?: string | null;
+    origin_type?: string | null;
+    counterparty_name?: string | null;
+  }[];
 }
 
 export type ProgrammeAttachmentType =
