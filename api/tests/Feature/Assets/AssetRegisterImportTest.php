@@ -763,6 +763,42 @@ class AssetRegisterImportTest extends TestCase
         $this->assertSame(4, \App\Models\AssetMovement::query()->where('asset_id', $asset->id)->count());
     }
 
+    public function test_movement_form_assign_updates_asset_holder(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $holder = $this->makeUser('staff', $tenant);
+        $asset = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CE-7300',
+            'tag_number' => 'CE-7300',
+            'name' => 'Assign laptop',
+            'category' => 'it',
+            'status' => 'active',
+        ]);
+
+        $http->postJson('/api/v1/assets/movements', [
+            'asset_id' => $asset->id,
+            'to_user_id' => $holder->id,
+            'movement_type' => 'assign',
+            'movement_date' => now()->toDateString(),
+            'reason' => 'Issue to staff',
+        ])->assertCreated();
+
+        $this->assertSame($holder->id, $asset->fresh()->assigned_to);
+        $this->assertSame('assigned', $asset->fresh()->status);
+
+        $http->postJson('/api/v1/assets/movements', [
+            'asset_id' => $asset->id,
+            'from_user_id' => $holder->id,
+            'movement_type' => 'return',
+            'movement_date' => now()->toDateString(),
+        ])->assertCreated();
+
+        $this->assertNull($asset->fresh()->assigned_to);
+        $this->assertSame('active', $asset->fresh()->status);
+    }
+
     public function test_verify_permission_can_record_qr_scan_result(): void
     {
         $tenant = Tenant::factory()->create();
@@ -1115,6 +1151,7 @@ class AssetRegisterImportTest extends TestCase
         $merged = $http->postJson("/api/v1/assets/import/{$batchId}/staging/{$rowId}/merge-duplicates");
         $merged->assertOk();
         $this->assertFalse((bool) $merged->json('data.blocking'));
+        $this->assertSame('pending', $merged->json('data.review_status'));
 
         $http->postJson("/api/v1/assets/import/{$batchId}/staging/{$rowId}/mark-unavailable", [
             'field' => 'serial_number',
@@ -1130,6 +1167,11 @@ class AssetRegisterImportTest extends TestCase
         $this->assertContains('MAKE_UNAVAILABLE', $make->json('data.data_quality_flags'));
         $this->assertContains('SERIAL_UNAVAILABLE', $make->json('data.data_quality_flags'));
         $this->assertContains('MODEL_UNAVAILABLE', $make->json('data.data_quality_flags'));
+        $this->assertNotContains('MISSING_SERIAL', $make->json('data.data_quality_flags'));
+        $this->assertNotContains('MISSING_MODEL', $make->json('data.data_quality_flags'));
+
+        $missingSerial = $http->getJson("/api/v1/assets/import/{$batchId}/staging?filter=missing_serial")->json('data');
+        $this->assertSame([], array_filter($missingSerial, fn ($row) => (int) $row['id'] === $rowId));
     }
 
     public function test_admin_can_resolve_cross_source_discrepancy(): void

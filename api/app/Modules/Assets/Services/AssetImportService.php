@@ -177,9 +177,9 @@ class AssetImportService
                 + $rows->where('proposed_action', 'NO_CHANGE')->count(),
             'ready_to_update' => $rows->where('proposed_action', 'UPDATE')->where('review_status', 'approved')->count(),
             'missing_asset_tag' => $rows->filter(fn ($r) => empty($r->asset_tag))->count(),
-            'missing_serial' => $rows->filter(fn ($r) => empty($r->serial_number))->count(),
-            'missing_model' => $rows->filter(fn ($r) => empty($r->model))->count(),
-            'missing_location' => $rows->filter(fn ($r) => empty($r->legacy_location) && empty($r->location_id))->count(),
+            'missing_serial' => $rows->filter(fn ($r) => empty($r->serial_number) && ! in_array('SERIAL_UNAVAILABLE', $r->data_quality_flags ?? [], true))->count(),
+            'missing_model' => $rows->filter(fn ($r) => empty($r->model) && ! in_array('MODEL_UNAVAILABLE', $r->data_quality_flags ?? [], true))->count(),
+            'missing_location' => $rows->filter(fn ($r) => empty($r->legacy_location) && empty($r->location_id) && ! in_array('LOCATION_UNAVAILABLE', $r->data_quality_flags ?? [], true))->count(),
             'unmapped_custodian' => $rows->filter(fn ($r) => empty($r->custodian_user_id) && empty($r->custodian_department_id))->count(),
             'duplicate_asset_tags' => $rows->filter(function ($r) {
                 return in_array('DUPLICATE_ASSET_TAG', $r->blocking_errors ?? [], true)
@@ -322,13 +322,18 @@ class AssetImportService
         $refs = is_array($row->source_refs) ? $row->source_refs : [];
         $kept = [];
         $seenKind = [];
+        if ($keepRawId) {
+            foreach ($refs as $ref) {
+                if ((int) ($ref['raw_id'] ?? 0) === $keepRawId) {
+                    $kept[] = $ref;
+                    $seenKind[(string) ($ref['kind'] ?? 'unknown')] = true;
+                }
+            }
+        }
         foreach ($refs as $ref) {
             $kind = (string) ($ref['kind'] ?? 'unknown');
             $rawId = isset($ref['raw_id']) ? (int) $ref['raw_id'] : 0;
             if ($keepRawId && $rawId === $keepRawId) {
-                $kept[] = $ref;
-                $seenKind[$kind] = true;
-
                 continue;
             }
             if (isset($seenKind[$kind])) {
@@ -340,6 +345,17 @@ class AssetImportService
         $row->source_refs = $kept !== [] ? $kept : $refs;
         $row->blocking_errors = array_values(array_diff($row->blocking_errors ?? [], ['DUPLICATE_ASSET_TAG']));
         $row->data_quality_flags = array_values(array_diff($row->data_quality_flags ?? [], ['ASSET_TAG_CONFLICT']));
+        if ($keepRawId) {
+            $raw = AssetImportRaw::query()->where('import_batch_id', $batch->id)->find($keepRawId);
+            if ($raw && is_array($raw->raw_json)) {
+                $parsed = $raw->raw_json;
+                foreach (['asset_name', 'serial_number', 'make', 'model', 'legacy_description', 'legacy_location'] as $field) {
+                    if (array_key_exists($field, $parsed)) {
+                        $row->{$field} = $parsed[$field];
+                    }
+                }
+            }
+        }
         $this->validateRow($row, $user);
         $row->save();
 
@@ -376,10 +392,10 @@ class AssetImportService
         if (in_array($field, ['location', 'legacy_location'], true)) {
             $row->location_id = null;
         }
-        $this->validateRow($row, $user);
         $flags = $row->data_quality_flags ?? [];
         $flags[] = $map[$field]['flag'];
         $row->data_quality_flags = array_values(array_unique($flags));
+        $this->validateRow($row, $user);
         $row->save();
 
         AuditLog::record('assets.import_field_unavailable', [
@@ -881,21 +897,24 @@ class AssetImportService
             $blocking[] = 'DUPLICATE_ASSET_TAG';
             $flags[] = 'ASSET_TAG_CONFLICT';
         }
-        if (empty($row->serial_number)) {
+        $serialUnavailable = in_array('SERIAL_UNAVAILABLE', $flags, true);
+        $modelUnavailable = in_array('MODEL_UNAVAILABLE', $flags, true);
+        $locationUnavailable = in_array('LOCATION_UNAVAILABLE', $flags, true);
+        if (empty($row->serial_number) && ! $serialUnavailable) {
             $flags[] = 'MISSING_SERIAL';
             $warnings[] = 'Missing serial number';
-        } elseif ($serialCounts && ($serialCounts[$row->serial_number] ?? 1) > 1) {
+        } elseif (! empty($row->serial_number) && $serialCounts && ($serialCounts[$row->serial_number] ?? 1) > 1) {
             $flags[] = 'DUPLICATE_SERIAL';
             $warnings[] = 'Duplicate serial number';
         }
-        if (empty($row->model)) {
+        if (empty($row->model) && ! $modelUnavailable) {
             $flags[] = 'MISSING_MODEL';
             $warnings[] = 'Missing model';
         }
-        if (empty($row->legacy_location) && empty($row->location_id)) {
+        if (empty($row->legacy_location) && empty($row->location_id) && ! $locationUnavailable) {
             $flags[] = 'MISSING_LOCATION';
             $warnings[] = 'Missing location';
-        } elseif (empty($row->location_id)) {
+        } elseif (! $locationUnavailable && empty($row->location_id)) {
             $flags[] = 'UNVERIFIED_LOCATION';
             $warnings[] = 'Location not mapped to Nexus location';
         }
@@ -915,12 +934,28 @@ class AssetImportService
             $warnings[] = 'Missing cost';
         }
 
+        if ($serialUnavailable) {
+            $flags = array_values(array_diff($flags, ['MISSING_SERIAL']));
+        }
+        if ($modelUnavailable) {
+            $flags = array_values(array_diff($flags, ['MISSING_MODEL']));
+        }
+        if ($locationUnavailable) {
+            $flags = array_values(array_diff($flags, ['MISSING_LOCATION']));
+        }
+
         $flags = array_values(array_unique($flags));
         $row->data_quality_flags = $flags;
         $row->warnings = $warnings;
         $row->blocking_errors = $blocking;
         $row->blocking = $blocking !== [];
-        $row->review_status = $row->review_status === 'excluded' ? 'excluded' : ($blocking !== [] ? 'blocked' : $row->review_status);
+        if ($row->review_status === 'excluded') {
+            // keep exclusion
+        } elseif ($blocking !== []) {
+            $row->review_status = 'blocked';
+        } elseif ($row->review_status === 'blocked') {
+            $row->review_status = 'pending';
+        }
         $row->data_quality_status = $this->qualityStatus($flags);
     }
 

@@ -132,20 +132,26 @@ export default function AssetVerificationPage() {
 
   async function recordFind(e: React.FormEvent) {
     e.preventDefault();
-    const photos = await readFilesAsPhotos(findPhotos).catch(() => []);
-    await assetUnregisteredFindsApi.create({
-      description: findForm.description,
-      make: findForm.make || null,
-      model: findForm.model || null,
-      serial_number: findForm.serial_number || null,
-      found_location: findForm.found_location || null,
-      notes: findForm.notes || null,
-      photos: photos.length ? photos : null,
-      campaign_id: activeId ?? campaigns[0]?.id,
-    });
-    setFindForm({ description: "", make: "", model: "", serial_number: "", found_location: "", notes: "" });
-    setFindPhotos(null);
-    await load(activeId ?? undefined);
+    setErrorMsg(null);
+    try {
+      const photos = await readFilesAsPhotos(findPhotos).catch(() => []);
+      await assetUnregisteredFindsApi.create({
+        description: findForm.description,
+        make: findForm.make || null,
+        model: findForm.model || null,
+        serial_number: findForm.serial_number || null,
+        found_location: findForm.found_location || null,
+        notes: findForm.notes || null,
+        photos: photos.length ? photos : null,
+        campaign_id: activeId ?? campaigns[0]?.id,
+      });
+      setFindForm({ description: "", make: "", model: "", serial_number: "", found_location: "", notes: "" });
+      setFindPhotos(null);
+      await load(activeId ?? undefined);
+    } catch (error: unknown) {
+      const ax = error as { response?: { data?: { message?: string } } };
+      setErrorMsg(ax?.response?.data?.message ?? t("common.error"));
+    }
   }
 
   const applyLookup = useCallback(async (rawValue: string) => {
@@ -187,23 +193,29 @@ export default function AssetVerificationPage() {
 
   async function recordScanResult(result: "verified" | "missing" | "wrong_location" | "wrong_custodian" | "condition_changed" | "relocated" | "damaged") {
     if (!activeId || !scanned) return;
-    const photos = await readFilesAsPhotos(verifyPhotos).catch(() => []);
-    await assetVerificationApi.record(activeId, {
-      asset_id: scanned.id,
-      result,
-      verification_method: "qr",
-      mismatch_types: result === "verified" ? null : [result],
-      gps_lat: gps?.lat ?? null,
-      gps_lng: gps?.lng ?? null,
-      photos: photos.length ? photos : null,
-    });
-    setMsg(t("assets.verify.recordResult"));
-    setScanToken("");
-    setScanned(null);
-    setVerifyPhotos(null);
-    setCameraActive(true);
-    setRestartKey((k) => k + 1);
-    await load(activeId);
+    setErrorMsg(null);
+    try {
+      const photos = await readFilesAsPhotos(verifyPhotos).catch(() => []);
+      await assetVerificationApi.record(activeId, {
+        asset_id: scanned.id,
+        result,
+        verification_method: "qr",
+        mismatch_types: result === "verified" ? null : [result],
+        gps_lat: gps?.lat ?? null,
+        gps_lng: gps?.lng ?? null,
+        photos: photos.length ? photos : null,
+      });
+      setMsg(t("assets.verify.recordResult"));
+      setScanToken("");
+      setScanned(null);
+      setVerifyPhotos(null);
+      setCameraActive(true);
+      setRestartKey((k) => k + 1);
+      await load(activeId);
+    } catch (error: unknown) {
+      const ax = error as { response?: { data?: { message?: string } } };
+      setErrorMsg(ax?.response?.data?.message ?? t("common.error"));
+    }
   }
 
   async function promoteFind(find: Find) {

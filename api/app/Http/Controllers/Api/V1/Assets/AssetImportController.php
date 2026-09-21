@@ -89,10 +89,19 @@ class AssetImportController extends Controller
         if ($filter = $request->input('filter')) {
             match ($filter) {
                 'blocking' => $query->where('blocking', true),
-                'missing_serial' => $query->whereNull('serial_number'),
-                'missing_model' => $query->whereNull('model'),
+                'missing_serial' => $query->whereNull('serial_number')->where(function ($q) {
+                    $q->whereNull('data_quality_flags')
+                        ->orWhereJsonDoesntContain('data_quality_flags', 'SERIAL_UNAVAILABLE');
+                }),
+                'missing_model' => $query->whereNull('model')->where(function ($q) {
+                    $q->whereNull('data_quality_flags')
+                        ->orWhereJsonDoesntContain('data_quality_flags', 'MODEL_UNAVAILABLE');
+                }),
                 'missing_asset_tag' => $query->whereNull('asset_tag'),
-                'missing_location' => $query->whereNull('legacy_location')->whereNull('location_id'),
+                'missing_location' => $query->whereNull('legacy_location')->whereNull('location_id')->where(function ($q) {
+                    $q->whereNull('data_quality_flags')
+                        ->orWhereJsonDoesntContain('data_quality_flags', 'LOCATION_UNAVAILABLE');
+                }),
                 'unmapped_custodian' => $query->whereNull('custodian_user_id')->whereNull('custodian_department_id'),
                 'approved' => $query->where('review_status', 'approved'),
                 'excluded' => $query->where('review_status', 'excluded'),
@@ -102,7 +111,14 @@ class AssetImportController extends Controller
                         ->orWhereJsonContains('data_quality_flags', 'ASSET_TAG_CONFLICT');
                 }),
                 'serial_conflicts' => $query->whereJsonContains('data_quality_flags', 'DUPLICATE_SERIAL'),
-                'financial_discrepancies' => $query->whereIn('asset_tag', $assetImportBatch->discrepancies()->select('asset_tag')),
+                'financial_discrepancies' => $query->whereIn(
+                    'asset_tag',
+                    $assetImportBatch->discrepancies()
+                        ->where(function ($q) {
+                            $q->where('field', 'like', '%cost%')->orWhere('field', 'like', '%book%');
+                        })
+                        ->select('asset_tag')
+                ),
                 'ready_to_import' => $query->where('review_status', 'approved')->where('proposed_action', 'CREATE'),
                 'already_exists' => $query->whereIn('proposed_action', ['UPDATE', 'NO_CHANGE']),
                 'ready_to_update' => $query->where('review_status', 'approved')->where('proposed_action', 'UPDATE'),

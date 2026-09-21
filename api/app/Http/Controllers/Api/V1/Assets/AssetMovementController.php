@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\V1\Assets;
 
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
+use App\Models\AssetLocationHistory;
 use App\Models\AssetMovement;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -63,19 +65,100 @@ class AssetMovementController extends Controller
         $data['tenant_id'] = $request->user()->tenant_id;
         $data['recorded_by'] = $request->user()->id;
 
-        $movement = AssetMovement::create($data);
+        $asset = Asset::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->findOrFail($data['asset_id']);
 
-        // If it's a transfer, update the asset's assigned_to
-        if ($data['movement_type'] === 'transfer' && isset($data['to_user_id'])) {
-            Asset::where('id', $data['asset_id'])->update([
-                'assigned_to' => $data['to_user_id'],
-                'issued_at' => $data['movement_date'],
-            ]);
-        }
+        $data['from_user_id'] = $data['from_user_id'] ?? $asset->assigned_to;
+        $data['from_location_id'] = $data['from_location_id'] ?? $asset->location_id;
+
+        $movement = AssetMovement::create($data);
+        $this->applyMovementAssetState($asset, $data);
 
         $movement->load(['asset:id,asset_code,name', 'fromUser:id,name', 'toUser:id,name', 'recorder:id,name']);
 
         return response()->json(['data' => $movement, 'message' => 'Movement recorded successfully.'], 201);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function applyMovementAssetState(Asset $asset, array $data): void
+    {
+        $type = (string) $data['movement_type'];
+        $custodyChanged = false;
+
+        if (in_array($type, ['assign', 'transfer'], true) && ! empty($data['to_user_id'])) {
+            $asset->assigned_to = (int) $data['to_user_id'];
+            $asset->issued_at = $data['movement_date'] ?? now()->toDateString();
+            $asset->status = 'assigned';
+            $custodyChanged = true;
+        }
+
+        if (in_array($type, ['return', 'check_in'], true)) {
+            $asset->assigned_to = null;
+            $asset->status = 'active';
+            $custodyChanged = true;
+        }
+
+        if ($type === 'check_out') {
+            $asset->status = 'issued';
+            if (! empty($data['to_user_id'])) {
+                $asset->assigned_to = (int) $data['to_user_id'];
+            }
+            $custodyChanged = true;
+        }
+
+        if (in_array($type, ['send_for_repair', 'maintenance'], true)) {
+            $asset->status = 'under_repair';
+        }
+
+        if ($type === 'return_from_repair') {
+            $asset->status = $asset->assigned_to ? 'assigned' : 'active';
+        }
+
+        if ($type === 'mark_missing') {
+            $asset->status = 'missing';
+        }
+
+        if ($type === 'recover') {
+            $asset->status = $asset->assigned_to ? 'assigned' : 'active';
+        }
+
+        if (in_array($type, ['dispose', 'disposal'], true)) {
+            $asset->status = 'disposed';
+        }
+
+        if ($type === 'write_off') {
+            $asset->status = 'written_off';
+        }
+
+        if (in_array($type, ['move', 'storage'], true) && ! empty($data['to_location_id'])) {
+            $asset->location_id = (int) $data['to_location_id'];
+            AssetLocationHistory::create([
+                'tenant_id' => $asset->tenant_id,
+                'asset_id' => $asset->id,
+                'location_id' => (int) $data['to_location_id'],
+                'moved_at' => now(),
+                'moved_by' => $data['recorded_by'] ?? null,
+                'notes' => $data['notes'] ?? $data['reason'] ?? null,
+            ]);
+            $custodyChanged = true;
+        }
+
+        if ($custodyChanged && ($asset->label_status ?? 'never_printed') !== 'never_printed') {
+            $asset->label_status = 'reprint_required';
+            $asset->label_reprint_reason = 'CUSTODY_OR_LOCATION_CHANGED';
+        }
+
+        $asset->save();
+
+        AuditLog::record('assets.movement_recorded', [
+            'auditable_type' => Asset::class,
+            'auditable_id' => $asset->id,
+            'new_values' => ['movement_type' => $type, 'status' => $asset->status],
+            'tags' => 'assets',
+        ]);
     }
 
     /**
