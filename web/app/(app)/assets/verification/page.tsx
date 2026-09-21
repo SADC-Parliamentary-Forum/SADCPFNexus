@@ -10,7 +10,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { AssetQrCamera } from "@/components/assets/AssetQrCamera";
 
 type Campaign = { id: number; name: string; status: string; starts_on: string; ends_on?: string };
-type Counts = Record<string, number>;
+type Counts = Record<string, number | Record<string, number>>;
 type Find = {
   id: number;
   description: string;
@@ -33,7 +33,7 @@ function readFilesAsPhotos(files: FileList | null): Promise<Array<{ name: string
     });
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
-  }));
+  })));
 }
 
 export default function AssetVerificationPage() {
@@ -230,7 +230,7 @@ export default function AssetVerificationPage() {
       {errorMsg && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{errorMsg}</div>}
       {counts && (
         <div className="grid gap-3 sm:grid-cols-4">
-          {Object.entries(counts).map(([k, v]) => (
+          {Object.entries(counts).filter((entry): entry is [string, number] => typeof entry[1] === "number").map(([k, v]) => (
             <div key={k} className="card p-3">
               <div className="text-xs text-neutral-500">{t(`assets.verify.count.${k}`)}</div>
               <div className="text-lg font-semibold">{v}</div>

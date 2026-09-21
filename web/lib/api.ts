@@ -2398,7 +2398,22 @@ export interface AssetMovement {
   from_user_id: number | null;
   to_user_id: number | null;
   recorded_by: number;
-  movement_type: "transfer" | "maintenance" | "disposal" | "storage" | "return";
+  movement_type:
+    | "transfer"
+    | "maintenance"
+    | "disposal"
+    | "storage"
+    | "return"
+    | "assign"
+    | "move"
+    | "check_out"
+    | "check_in"
+    | "send_for_repair"
+    | "return_from_repair"
+    | "mark_missing"
+    | "recover"
+    | "dispose"
+    | "write_off";
   reason: string | null;
   notes: string | null;
   movement_date: string;
