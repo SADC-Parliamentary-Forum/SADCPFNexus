@@ -4,11 +4,14 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useToast } from "@/components/ui/Toast";
-import { contractsApi, type ContractType, type CurrencyRecord, type ContractAuthorityRule, type ContractComplianceRequirement } from "@/lib/api";
+import { contractsApi, type ContractType, type CurrencyRecord, type ContractAuthorityRule, type ContractComplianceRequirement, type ContractClauseRecord } from "@/lib/api";
+import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 
 export default function ContractSettingsPage() {
   const qc = useQueryClient();
   const toast = useToast();
+  const user = getStoredUser();
+  const canManageClauses = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.manage_clause"]));
 
   const { data: types = [] } = useQuery({
     queryKey: ["contract-types-admin"],
@@ -25,6 +28,10 @@ export default function ContractSettingsPage() {
   const { data: complianceReqs = [] } = useQuery({
     queryKey: ["contract-compliance-requirements"],
     queryFn: () => contractsApi.complianceRequirements().then((r) => r.data.data).catch(() => []),
+  });
+  const { data: clauses = [] } = useQuery({
+    queryKey: ["contract-clause-library"],
+    queryFn: () => contractsApi.clauseLibrary().then((r) => r.data.data).catch(() => [] as ContractClauseRecord[]),
   });
 
   // New contract type form
@@ -53,10 +60,18 @@ export default function ContractSettingsPage() {
   const [reqBlockAct, setReqBlockAct] = useState(false);
   const [reqBlockPay, setReqBlockPay] = useState(false);
 
+  // New clause form
+  const [clauseKey, setClauseKey] = useState("");
+  const [clauseTitle, setClauseTitle] = useState("");
+  const [clauseCategory, setClauseCategory] = useState("");
+  const [clauseType, setClauseType] = useState("optional");
+  const [clauseBody, setClauseBody] = useState("");
+
   const refreshTypes = () => qc.invalidateQueries({ queryKey: ["contract-types-admin"] });
   const refreshCurrencies = () => qc.invalidateQueries({ queryKey: ["contract-currencies-admin"] });
   const refreshRules = () => qc.invalidateQueries({ queryKey: ["contract-authority-rules"] });
   const refreshCompliance = () => qc.invalidateQueries({ queryKey: ["contract-compliance-requirements"] });
+  const refreshClauses = () => qc.invalidateQueries({ queryKey: ["contract-clause-library"] });
 
   const err = (e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Action failed");
 
@@ -113,6 +128,18 @@ export default function ContractSettingsPage() {
   };
   const toggleRequirement = (r: ContractComplianceRequirement) =>
     contractsApi.updateComplianceRequirement(r.id, { is_active: !r.is_active }).then(() => { toast.success("Updated"); refreshCompliance(); }).catch(err);
+
+  const addClause = () => {
+    if (!clauseKey.trim() || !clauseTitle.trim() || !clauseBody.trim()) return;
+    contractsApi.createClause({
+      key: clauseKey.trim(), title: clauseTitle.trim(), category: clauseCategory.trim() || undefined,
+      clause_type: clauseType, body: clauseBody.trim(),
+    }).then(() => {
+      toast.success("Clause added to the library");
+      setClauseKey(""); setClauseTitle(""); setClauseCategory(""); setClauseType("optional"); setClauseBody("");
+      refreshClauses();
+    }).catch(err);
+  };
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -252,6 +279,48 @@ export default function ContractSettingsPage() {
           <label className="flex items-center gap-2 text-sm text-neutral-600 pb-2"><input type="checkbox" checked={reqBlockPay} onChange={(e) => setReqBlockPay(e.target.checked)} /> Blocks payment</label>
           <button className="btn-primary text-sm" onClick={addRequirement}>Add requirement</button>
         </div>
+      </div>
+
+      {/* Clause library */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3 border-b border-neutral-100">
+          <h2 className="text-sm font-semibold text-neutral-800">Clause library</h2>
+          <p className="text-xs text-neutral-500 mt-0.5">Reusable, versioned clauses. Creating or activating versions requires the contract.manage_clause permission (PRD §93).</p>
+        </div>
+        <table className="data-table">
+          <thead><tr><th>Key</th><th>Title</th><th>Category</th><th>Type</th><th>Active</th></tr></thead>
+          <tbody>
+            {clauses.length === 0 ? (
+              <tr><td colSpan={5} className="text-sm text-neutral-400 p-4">No clauses in the library.</td></tr>
+            ) : clauses.map((c) => (
+              <tr key={c.id}>
+                <td className="text-sm font-mono">{c.key}</td>
+                <td className="text-sm font-medium text-neutral-800">{c.title}</td>
+                <td className="text-xs text-neutral-500">{c.category ?? "—"}</td>
+                <td className="text-xs capitalize text-neutral-500">{c.clause_type.replace(/_/g, " ")}</td>
+                <td className="text-sm">{c.is_active ? "Yes" : "No"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {canManageClauses && (
+          <div className="p-4 border-t border-neutral-100 flex flex-wrap items-end gap-2">
+            <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Key</label><input className="form-input w-40" value={clauseKey} onChange={(e) => setClauseKey(e.target.value)} placeholder="confidentiality" /></div>
+            <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Title</label><input className="form-input" value={clauseTitle} onChange={(e) => setClauseTitle(e.target.value)} placeholder="Confidentiality" /></div>
+            <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Category</label><input className="form-input w-36" value={clauseCategory} onChange={(e) => setClauseCategory(e.target.value)} placeholder="standard" /></div>
+            <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Type</label>
+              <select className="form-input" value={clauseType} onChange={(e) => setClauseType(e.target.value)}>
+                <option value="optional">Optional</option>
+                <option value="mandatory_editable">Mandatory (editable)</option>
+                <option value="mandatory_locked">Mandatory (locked)</option>
+                <option value="conditional">Conditional</option>
+                <option value="donor_specific">Donor-specific</option>
+              </select>
+            </div>
+            <div className="space-y-1 w-full"><label className="text-xs font-semibold text-neutral-600">Body</label><textarea className="form-input min-h-20" value={clauseBody} onChange={(e) => setClauseBody(e.target.value)} placeholder="Standard clause text…" /></div>
+            <button className="btn-primary text-sm" onClick={addClause}>Add clause</button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -380,7 +380,7 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/procurement/contracts", permission: ["contract.view", "contract.view_all", "procurement.manage_po", "procurement.admin"] },
   { path: "/procurement/analytics", permission: ["procurement.view", "procurement.admin"] },
   // Contract Management (first-class module). More specific paths first.
-  { path: "/contracts/settings", permission: ["contract.manage_template", "contract.manage_authority"] },
+  { path: "/contracts/settings", permission: ["contract.manage_template", "contract.manage_authority", "contract.manage_clause"] },
   { path: "/contracts/authority", permission: ["contract.manage_authority"] },
   { path: "/contracts/templates", permission: ["contract.manage_template"] },
   { path: "/contracts/reports", permission: ["contract.report", "contract.view_all", "contract.audit_view"] },

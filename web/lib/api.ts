@@ -5467,6 +5467,8 @@ export const contractsApi = {
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/call-offs`, data),
   clauseLibrary: () =>
     api.get<{ data: ContractClauseRecord[] }>("/contracts/clauses"),
+  createClause: (data: { key: string; title: string; category?: string; clause_type: string; body: string; version?: string }) =>
+    api.post<{ data: ContractClauseRecord; message: string }>("/contracts/clauses", data),
   listClauses: (id: number) =>
     api.get<{ data: ContractClauseAssignmentRecord[] }>(`/contracts/${id}/clauses`),
   assignClause: (id: number, clauseId: number, deviationText?: string, deviationReason?: string) =>

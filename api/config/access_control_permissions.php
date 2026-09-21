@@ -3146,6 +3146,14 @@ return [
         'risk_level' => 'high', 'data_classification' => 'Internal',
         'mfa_required' => false, 'linked_routes' => ['/contracts/templates'],
     ],
+    'contract.manage_clause' => [
+        'display_name' => 'Manage contract clause library',
+        'description' => 'Create, version and activate reusable contract clauses',
+        'module' => 'contract', 'feature' => 'admin', 'action' => 'manage',
+        'supported_scopes' => ['organisation'],
+        'risk_level' => 'high', 'data_classification' => 'Internal',
+        'mfa_required' => false, 'linked_routes' => ['/contracts/settings'],
+    ],
     'contract.manage_authority' => [
         'display_name' => 'Manage contract authority matrix',
         'description' => 'Configure the contract signing/approval authority matrix',

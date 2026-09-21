@@ -15,7 +15,8 @@ use Illuminate\Http\Request;
 
 /**
  * Clause library administration and per-contract clause assignment (PRD §30–§33).
- * Library governance reuses the contract.manage_template capability.
+ * Library writes require contract.manage_clause (PRD §93); assignment to a
+ * contract remains a draft-edit capability.
  */
 class ContractClauseController extends Controller
 {
@@ -49,8 +50,8 @@ class ContractClauseController extends Controller
     private function gateManage(Request $request): void
     {
         abort_unless(
-            $request->user()->hasAnyPermission(['contract.manage_template', 'contract.manage_clause'])
-            || $request->user()->hasAnyRole(['Procurement Officer', 'System Admin']),
+            $request->user()->hasAnyPermission(['contract.manage_clause'])
+            || $request->user()->hasAnyRole(['System Admin']),
             403
         );
     }
@@ -58,7 +59,7 @@ class ContractClauseController extends Controller
     private function gateView(Request $request): void
     {
         abort_unless(
-            $request->user()->hasAnyPermission(['contract.view', 'contract.view_all', 'contract.manage_template', 'contract.create'])
+            $request->user()->hasAnyPermission(['contract.view', 'contract.view_all', 'contract.manage_clause', 'contract.manage_template', 'contract.create'])
             || $request->user()->hasAnyRole(['Procurement Officer']),
             403
         );
