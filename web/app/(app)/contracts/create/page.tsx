@@ -63,6 +63,8 @@ export default function ContractCreatePage() {
   const [flatValue, setFlatValue] = useState("");
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [budgetCurrency, setBudgetCurrency] = useState("");
+  const [conversionReference, setConversionReference] = useState("");
+  const [convertedValue, setConvertedValue] = useState("");
   const [ceiling, setCeiling] = useState("");
   const [isFramework, setIsFramework] = useState(false);
   const [frameworkCeiling, setFrameworkCeiling] = useState("");
@@ -182,6 +184,8 @@ export default function ContractCreatePage() {
         framework_ceiling: isFramework && frameworkCeiling ? Number(frameworkCeiling) : undefined,
         currency,
         budget_currency: budgetCurrency || undefined,
+        conversion_reference: conversionReference || undefined,
+        converted_value: convertedValue ? Number(convertedValue) : undefined,
         deliverables: deliverables.filter((d) => d.name.trim()).length ? deliverables.filter((d) => d.name.trim()) : undefined,
         obligations: obligations.filter((o) => o.obligation.trim()).length ? obligations.filter((o) => o.obligation.trim()) : undefined,
       };
@@ -319,6 +323,8 @@ export default function ContractCreatePage() {
                 )}
               </div>
               <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Budget currency</label><input className="form-input" value={budgetCurrency} maxLength={3} onChange={(e) => setBudgetCurrency(e.target.value.toUpperCase())} placeholder="Optional" /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Conversion reference</label><input className="form-input" value={conversionReference} onChange={(e) => setConversionReference(e.target.value)} placeholder="e.g. rate/source used" /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Converted commitment</label><input className="form-input" type="number" value={convertedValue} onChange={(e) => setConvertedValue(e.target.value)} placeholder="In budget currency" /></div>
               <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Ceiling</label><input type="number" min="0" step="0.01" className="form-input" value={ceiling} onChange={(e) => setCeiling(e.target.value)} placeholder="Optional" /></div>
             </div>
             <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 text-sm">

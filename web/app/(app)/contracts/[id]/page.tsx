@@ -285,6 +285,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               <dt className="text-neutral-500">Type</dt><dd className="text-neutral-900">{contract.type?.name ?? "—"}</dd>
               <dt className="text-neutral-500">Origin</dt><dd className="text-neutral-900 capitalize">{contract.origin_type ?? "—"}</dd>
               <dt className="text-neutral-500">Value</dt><dd className="text-neutral-900 font-semibold">{contract.currency} {Number(contract.current_value ?? contract.value).toLocaleString()}</dd>
+              {contract.budget_currency && (<><dt className="text-neutral-500">Budget currency</dt><dd className="text-neutral-900">{contract.budget_currency}{contract.converted_value != null ? ` · ${Number(contract.converted_value).toLocaleString()}` : ""}{contract.conversion_reference ? ` (${contract.conversion_reference})` : ""}</dd></>)}
               <dt className="text-neutral-500">Start</dt><dd className="text-neutral-900">{contract.start_date ? formatDateShort(contract.start_date) : "—"}</dd>
               <dt className="text-neutral-500">End</dt><dd className="text-neutral-900">{contract.end_date ? formatDateShort(contract.end_date) : "—"}</dd>
               <dt className="text-neutral-500">Signature</dt><dd className="text-neutral-900">{contract.signature_status ?? "—"}</dd>

@@ -4997,6 +4997,9 @@ export interface Contract {
   end_date: string;
   value: number;
   currency: string;
+  budget_currency?: string | null;
+  conversion_reference?: string | null;
+  converted_value?: number | string | null;
   status: "draft" | "active" | "completed" | "terminated";
   contract_status?: string | null;
   signature_status?: string | null;
