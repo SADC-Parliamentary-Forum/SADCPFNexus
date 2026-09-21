@@ -45,6 +45,6 @@ test.describe("Contracts — register", () => {
   });
 
   test("register exposes a New Contract action", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /New Contract/i }).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /New Contract/i }).first()).toBeVisible();
   });
 });
