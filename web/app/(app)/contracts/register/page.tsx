@@ -89,14 +89,16 @@ function ContractRegisterInner() {
                 {t("contracts.new")}
               </Link>
             )}
-            <button
-              type="button"
-              onClick={() => { setLegacyOpen(true); setLegacyText(""); setLegacyDisclaimer(null); }}
-              className="btn-secondary inline-flex items-center gap-1.5 text-sm"
-            >
-              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">auto_awesome</span>
-              {t("contracts.importLegacy")}
-            </button>
+            {canCreate && (
+              <button
+                type="button"
+                onClick={() => { setLegacyOpen(true); setLegacyText(""); setLegacyDisclaimer(null); }}
+                className="btn-secondary inline-flex items-center gap-1.5 text-sm"
+              >
+                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">auto_awesome</span>
+                {t("contracts.importLegacy")}
+              </button>
+            )}
           </>
         }
       />
@@ -142,7 +144,7 @@ function ContractRegisterInner() {
         <div className="card p-6 text-center text-sm text-red-600">{t("contracts.loadError")}</div>
       ) : items.length === 0 ? (
         <div className="card">
-          <EmptyState icon="description" title={t("contracts.empty")} description={t("contracts.emptyHint")} />
+          <EmptyState icon="description" title={t("contracts.empty")} description={canCreate ? t("contracts.emptyHint") : t("contracts.emptyViewOnly")} />
         </div>
       ) : (
         <div className="card overflow-hidden">
