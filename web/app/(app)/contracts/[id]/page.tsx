@@ -109,6 +109,15 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const [disputeOpen, setDisputeOpen] = useState(false);
   const [dispute, setDispute] = useState({ type: "performance", description: "", amount_at_risk: "", legal_involved: false });
 
+  const { data: personnelData } = useQuery({
+    queryKey: ["contract", contractId, "key-personnel"],
+    queryFn: () => contractsApi.keyPersonnel(contractId).then((r) => r.data.data),
+    enabled: !!contractId && tab === "lifecycle",
+  });
+  const [personOpen, setPersonOpen] = useState(false);
+  const [person, setPerson] = useState({ name: "", role: "", email: "", cv_reference: "" });
+  const refreshPersonnel = () => qc.invalidateQueries({ queryKey: ["contract", contractId, "key-personnel"] });
+
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["contract", contractId] });
     qc.invalidateQueries({ queryKey: ["contracts"] });
@@ -506,6 +515,56 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
           <div className="card overflow-hidden">
             <div className="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
+              <span className="text-sm font-semibold text-neutral-800">Key personnel</span>
+              <button className="btn-secondary text-xs" onClick={() => setPersonOpen(true)}>Add personnel</button>
+            </div>
+            {(personnelData?.personnel ?? []).length === 0 ? (
+              <div className="p-4 text-sm text-neutral-500">No key personnel recorded.</div>
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>Name</th><th>Role</th><th>CV ref</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  {(personnelData?.personnel ?? []).map((p) => (
+                    <tr key={p.id}>
+                      <td className="text-sm text-neutral-800">{p.name}</td>
+                      <td className="text-sm text-neutral-600">{p.role}</td>
+                      <td className="text-xs text-neutral-500">{p.cv_reference ?? "—"}</td>
+                      <td className="text-xs capitalize">{p.status}</td>
+                      <td className="text-right">{p.status === "active" && (
+                        <button className="btn-secondary text-xs py-0.5" onClick={() => {
+                          const proposed_name = window.prompt("Replacement name:");
+                          if (!proposed_name) return;
+                          const reason = window.prompt("Reason for replacement:") ?? "";
+                          contractsApi.requestPersonnelReplacement(contractId, p.id, { proposed_name, proposed_role: p.role, reason })
+                            .then(() => { toast.success("Replacement requested (pending approval)"); refreshPersonnel(); })
+                            .catch((e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed"));
+                        }}>Request replacement</button>
+                      )}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            {(personnelData?.pending_replacements ?? []).length > 0 && (
+              <div className="p-4 border-t border-neutral-100 space-y-2">
+                <p className="text-xs font-semibold text-neutral-600">Pending replacements</p>
+                {(personnelData?.pending_replacements ?? []).map((r) => (
+                  <div key={r.id} className="flex items-center justify-between text-sm">
+                    <span className="text-neutral-700">→ {r.proposed_name} ({r.proposed_role}) — {r.reason}</span>
+                    {canApproveAmendment && (
+                      <span className="flex gap-2">
+                        <button className="btn-secondary text-xs py-0.5" onClick={() => contractsApi.approvePersonnelReplacement(contractId, r.id).then(() => { toast.success("Replacement approved"); refreshPersonnel(); }).catch(() => toast.error("Failed"))}>Approve</button>
+                        <button className="btn-secondary text-xs py-0.5" onClick={() => contractsApi.rejectPersonnelReplacement(contractId, r.id).then(() => { toast.success("Replacement rejected"); refreshPersonnel(); }).catch(() => toast.error("Failed"))}>Reject</button>
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="card overflow-hidden">
+            <div className="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
               <span className="text-sm font-semibold text-neutral-800">Disputes</span>
               <button className="btn-secondary text-xs" onClick={() => setDisputeOpen(true)}>Raise dispute</button>
             </div>
@@ -732,6 +791,27 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {personOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setPersonOpen(false)}>
+          <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-base font-bold text-neutral-900">Add key personnel</h3>
+            <input className="form-input" placeholder="Name" value={person.name} onChange={(e) => setPerson((p) => ({ ...p, name: e.target.value }))} />
+            <input className="form-input" placeholder="Role" value={person.role} onChange={(e) => setPerson((p) => ({ ...p, role: e.target.value }))} />
+            <input className="form-input" placeholder="Email (optional)" value={person.email} onChange={(e) => setPerson((p) => ({ ...p, email: e.target.value }))} />
+            <input className="form-input" placeholder="CV reference (optional)" value={person.cv_reference} onChange={(e) => setPerson((p) => ({ ...p, cv_reference: e.target.value }))} />
+            <div className="flex gap-3">
+              <button className="btn-secondary flex-1" onClick={() => setPersonOpen(false)}>Cancel</button>
+              <button className="btn-primary flex-1" disabled={!person.name.trim() || !person.role.trim()}
+                onClick={() => {
+                  contractsApi.addKeyPersonnel(contractId, { name: person.name, role: person.role, email: person.email || undefined, cv_reference: person.cv_reference || undefined })
+                    .then(() => { toast.success("Key personnel added"); setPersonOpen(false); setPerson({ name: "", role: "", email: "", cv_reference: "" }); refreshPersonnel(); })
+                    .catch((e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed"));
+                }}>Add</button>
+            </div>
+          </div>
         </div>
       )}
 

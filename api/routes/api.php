@@ -1341,6 +1341,13 @@ Route::prefix('v1')->group(function () {
             Route::get('{contract}/disputes', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'disputes']);
             Route::post('{contract}/disputes', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createDispute']);
             Route::patch('{contract}/disputes/{dispute}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'updateDispute']);
+
+            // Key personnel + replacement approval (PRD §80)
+            Route::get('{contract}/key-personnel', [\App\Http\Controllers\Api\V1\Contracts\ContractKeyPersonnelController::class, 'index']);
+            Route::post('{contract}/key-personnel', [\App\Http\Controllers\Api\V1\Contracts\ContractKeyPersonnelController::class, 'store']);
+            Route::post('{contract}/key-personnel/{personnel}/replace', [\App\Http\Controllers\Api\V1\Contracts\ContractKeyPersonnelController::class, 'requestReplacement']);
+            Route::post('{contract}/personnel-replacements/{replacement}/approve', [\App\Http\Controllers\Api\V1\Contracts\ContractKeyPersonnelController::class, 'approveReplacement']);
+            Route::post('{contract}/personnel-replacements/{replacement}/reject', [\App\Http\Controllers\Api\V1\Contracts\ContractKeyPersonnelController::class, 'rejectReplacement']);
             Route::get('{contract}/correspondence', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'correspondence']);
             Route::post('{contract}/correspondence', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createCorrespondence']);
 

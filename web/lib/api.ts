@@ -5421,6 +5421,17 @@ export const contractsApi = {
     api.patch<{ data: ContractComplianceRequirement; message: string }>(`/contracts/compliance/requirements/${id}`, data),
   contractCompliance: (id: number) =>
     api.get<{ data: { code: string; name: string; satisfied: boolean; missing: boolean; expired: boolean; blocks_activation: boolean; blocks_payment: boolean }[] }>(`/contracts/${id}/compliance`),
+  // Key personnel (§80)
+  keyPersonnel: (id: number) =>
+    api.get<{ data: { personnel: { id: number; name: string; role: string; email: string | null; cv_reference: string | null; status: string; is_key: boolean }[]; pending_replacements: { id: number; personnel_id: number; proposed_name: string; proposed_role: string; reason: string; status: string }[] } }>(`/contracts/${id}/key-personnel`),
+  addKeyPersonnel: (id: number, data: { name: string; role: string; email?: string; cv_reference?: string; is_key?: boolean }) =>
+    api.post<{ data: { id: number }; message: string }>(`/contracts/${id}/key-personnel`, data),
+  requestPersonnelReplacement: (id: number, personnelId: number, data: { proposed_name: string; proposed_role: string; proposed_email?: string; proposed_cv_reference?: string; reason: string }) =>
+    api.post<{ data: { id: number }; message: string }>(`/contracts/${id}/key-personnel/${personnelId}/replace`, data),
+  approvePersonnelReplacement: (id: number, replacementId: number, note?: string) =>
+    api.post<{ data: { id: number }; message: string }>(`/contracts/${id}/personnel-replacements/${replacementId}/approve`, { note }),
+  rejectPersonnelReplacement: (id: number, replacementId: number, note?: string) =>
+    api.post<{ message: string }>(`/contracts/${id}/personnel-replacements/${replacementId}/reject`, { note }),
   // Disputes (§78)
   disputes: (id: number) =>
     api.get<{ data: { id: number; type: string; description: string; status: string; date_raised: string | null; amount_at_risk: number | string | null; legal_involved: boolean; resolution: string | null; internal_owner?: { id: number; name: string } | null }[] }>(`/contracts/${id}/disputes`),

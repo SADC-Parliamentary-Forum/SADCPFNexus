@@ -228,6 +228,11 @@ class Contract extends Model
         return $this->hasMany(ContractDispute::class)->orderByDesc('date_raised');
     }
 
+    public function keyPersonnel(): HasMany
+    {
+        return $this->hasMany(ContractKeyPersonnel::class)->orderBy('status')->orderBy('name');
+    }
+
     public function suspensions(): HasMany
     {
         return $this->hasMany(ContractSuspension::class)->orderByDesc('id');
