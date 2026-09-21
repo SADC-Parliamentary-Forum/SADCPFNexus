@@ -32,9 +32,9 @@ class CaptchaAndPortalLoginTest extends TestCase
         $this->makeStaff('staff@portal.test');
 
         $this->postJson('/api/v1/auth/login', [
-            'email'    => 'staff@portal.test',
+            'email' => 'staff@portal.test',
             'password' => 'Password@123',
-            'portal'   => 'staff',
+            'portal' => 'staff',
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['captcha_token']);
     }
@@ -46,9 +46,9 @@ class CaptchaAndPortalLoginTest extends TestCase
 
         $this->withHeader('Origin', 'http://localhost')
             ->postJson('/api/v1/auth/login', [
-                'email'         => 'staff@portal.test',
-                'password'      => 'Password@123',
-                'portal'        => 'staff',
+                'email' => 'staff@portal.test',
+                'password' => 'Password@123',
+                'portal' => 'staff',
                 'captcha_token' => $token,
             ])->assertOk()
             ->assertJsonPath('user.email', 'staff@portal.test');
@@ -60,16 +60,16 @@ class CaptchaAndPortalLoginTest extends TestCase
         $token = $this->issueCaptchaToken();
 
         $this->postJson('/api/v1/auth/login', [
-            'email'         => 'staff@portal.test',
-            'password'      => 'Password@123',
-            'portal'        => 'staff',
+            'email' => 'staff@portal.test',
+            'password' => 'Password@123',
+            'portal' => 'staff',
             'captcha_token' => $token,
         ])->assertOk();
 
         $this->postJson('/api/v1/auth/login', [
-            'email'         => 'staff@portal.test',
-            'password'      => 'Password@123',
-            'portal'        => 'staff',
+            'email' => 'staff@portal.test',
+            'password' => 'Password@123',
+            'portal' => 'staff',
             'captcha_token' => $token,
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['captcha_token']);
@@ -80,11 +80,11 @@ class CaptchaAndPortalLoginTest extends TestCase
         $this->makeStaff('staff@portal.test');
 
         $this->postJson('/api/v1/auth/login', [
-            'email'            => 'staff@portal.test',
-            'password'         => 'Password@123',
-            'portal'           => 'staff',
-            'captcha_token'    => $this->issueCaptchaToken(),
-            'website_confirm'  => 'http://spam.test',
+            'email' => 'staff@portal.test',
+            'password' => 'Password@123',
+            'portal' => 'staff',
+            'captcha_token' => $this->issueCaptchaToken(),
+            'website_confirm' => 'http://spam.test',
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['captcha_token']);
     }
@@ -94,8 +94,8 @@ class CaptchaAndPortalLoginTest extends TestCase
         $this->makeStaff('staff@portal.test');
 
         $this->postJson('/api/v1/auth/login', [
-            'email'       => 'staff@portal.test',
-            'password'    => 'Password@123',
+            'email' => 'staff@portal.test',
+            'password' => 'Password@123',
             'client_type' => 'mobile',
             'device_name' => 'mobile',
         ])->assertOk()
@@ -107,9 +107,9 @@ class CaptchaAndPortalLoginTest extends TestCase
         $this->makeSupplier('vendor@portal.test');
 
         $this->postJson('/api/v1/auth/login', [
-            'email'         => 'vendor@portal.test',
-            'password'      => 'Password@123',
-            'portal'        => 'staff',
+            'email' => 'vendor@portal.test',
+            'password' => 'Password@123',
+            'portal' => 'staff',
             'captcha_token' => $this->issueCaptchaToken(),
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['email']);
@@ -120,9 +120,9 @@ class CaptchaAndPortalLoginTest extends TestCase
         $this->makeStaff('staff@portal.test');
 
         $this->postJson('/api/v1/auth/login', [
-            'email'         => 'staff@portal.test',
-            'password'      => 'Password@123',
-            'portal'        => 'supplier',
+            'email' => 'staff@portal.test',
+            'password' => 'Password@123',
+            'portal' => 'supplier',
             'captcha_token' => $this->issueCaptchaToken(),
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['email']);
@@ -134,9 +134,9 @@ class CaptchaAndPortalLoginTest extends TestCase
 
         $response = $this->withHeader('Origin', 'http://localhost')
             ->postJson('/api/v1/auth/login', [
-                'email'         => 'vendor@portal.test',
-                'password'      => 'Password@123',
-                'portal'        => 'supplier',
+                'email' => 'vendor@portal.test',
+                'password' => 'Password@123',
+                'portal' => 'supplier',
                 'captcha_token' => $this->issueCaptchaToken(),
             ]);
 
@@ -203,6 +203,14 @@ class CaptchaAndPortalLoginTest extends TestCase
             ->assertJsonPath('token', null);
     }
 
+    public function test_stateful_captcha_challenge_does_not_require_csrf_header(): void
+    {
+        $this->withHeader('Origin', 'http://localhost')
+            ->postJson('/api/v1/auth/captcha-challenge')
+            ->assertOk()
+            ->assertJsonStructure(['token']);
+    }
+
     public function test_browser_login_succeeds_when_hcaptcha_siteverify_passes(): void
     {
         $this->makeStaff('staff@portal.test');
@@ -218,9 +226,9 @@ class CaptchaAndPortalLoginTest extends TestCase
 
         $this->withHeader('Origin', 'http://localhost')
             ->postJson('/api/v1/auth/login', [
-                'email'         => 'staff@portal.test',
-                'password'      => 'Password@123',
-                'portal'        => 'staff',
+                'email' => 'staff@portal.test',
+                'password' => 'Password@123',
+                'portal' => 'staff',
                 'captcha_token' => 'hcaptcha-response-token',
             ])->assertOk()
             ->assertJsonPath('user.email', 'staff@portal.test');
@@ -247,9 +255,9 @@ class CaptchaAndPortalLoginTest extends TestCase
         ]);
 
         $this->postJson('/api/v1/auth/login', [
-            'email'         => 'staff@portal.test',
-            'password'      => 'Password@123',
-            'portal'        => 'staff',
+            'email' => 'staff@portal.test',
+            'password' => 'Password@123',
+            'portal' => 'staff',
             'captcha_token' => 'bad-hcaptcha-token',
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['captcha_token']);
@@ -266,11 +274,11 @@ class CaptchaAndPortalLoginTest extends TestCase
     private function makeStaff(string $email): User
     {
         $user = User::factory()->create([
-            'tenant_id'       => $this->tenant->id,
-            'email'           => $email,
-            'password'        => Hash::make('Password@123'),
-            'is_active'       => true,
-            'account_status'  => User::STATUS_ACTIVE,
+            'tenant_id' => $this->tenant->id,
+            'email' => $email,
+            'password' => Hash::make('Password@123'),
+            'is_active' => true,
+            'account_status' => User::STATUS_ACTIVE,
             'setup_completed' => true,
         ]);
         $user->assignRole('staff');
@@ -281,20 +289,20 @@ class CaptchaAndPortalLoginTest extends TestCase
     private function makeSupplier(string $email, bool $setupCompleted = true): User
     {
         $vendor = Vendor::create([
-            'tenant_id'   => $this->tenant->id,
-            'name'        => 'Portal Supplies',
+            'tenant_id' => $this->tenant->id,
+            'name' => 'Portal Supplies',
             'is_approved' => true,
-            'is_active'   => true,
-            'status'      => 'approved',
+            'is_active' => true,
+            'status' => 'approved',
         ]);
 
         $user = User::factory()->create([
-            'tenant_id'       => $this->tenant->id,
-            'vendor_id'       => $vendor->id,
-            'email'           => $email,
-            'password'        => Hash::make('Password@123'),
-            'is_active'       => true,
-            'account_status'  => User::STATUS_ACTIVE,
+            'tenant_id' => $this->tenant->id,
+            'vendor_id' => $vendor->id,
+            'email' => $email,
+            'password' => Hash::make('Password@123'),
+            'is_active' => true,
+            'account_status' => User::STATUS_ACTIVE,
             'setup_completed' => $setupCompleted,
         ]);
         $user->assignRole('Supplier');
