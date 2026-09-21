@@ -89,67 +89,79 @@ class AssetImportService
             return $existing->fresh(['stagingRows']);
         }
 
-        return DB::transaction(function () use ($uploads, $user, $mode, $names, $hashes, $fingerprint) {
-            $batch = AssetImportBatch::create([
-                'tenant_id' => $user->tenant_id,
-                'batch_number' => $this->nextBatchNumber($user->tenant_id),
-                'mode' => $mode,
-                'filenames' => $names,
-                'file_hashes' => $hashes,
-                'fingerprint' => $fingerprint,
-                'uploaded_by' => $user->id,
-                'uploaded_at' => now(),
-                'status' => 'uploaded',
-            ]);
+        try {
+            return DB::transaction(function () use ($uploads, $user, $mode, $names, $hashes, $fingerprint) {
+                $batch = AssetImportBatch::create([
+                    'tenant_id' => $user->tenant_id,
+                    'batch_number' => $this->nextBatchNumber($user->tenant_id),
+                    'mode' => $mode,
+                    'filenames' => $names,
+                    'file_hashes' => $hashes,
+                    'fingerprint' => $fingerprint,
+                    'uploaded_by' => $user->id,
+                    'uploaded_at' => now(),
+                    'status' => 'uploaded',
+                ]);
 
-            $parsed = [];
-            $sourceRows = 0;
-            foreach ($uploads as $role => $meta) {
-                if (in_array($role, ['category', 'location'], true)) {
-                    $result = $this->crystal->parseFile($meta['path'], $meta['name']);
-                    $sourceRows += count($result['records']) + count($result['skipped']);
-                    foreach ($result['records'] as $record) {
-                        $raw = $this->storeRaw($batch, $record);
-                        $parsed[] = ['record' => $record, 'raw_id' => $raw->id];
-                    }
-                } elseif ($role === 'staging') {
-                    $result = $this->stagingParser->parseFile($meta['path'], $meta['name']);
-                    $sourceRows += count($result['records']);
-                    foreach ($result['records'] as $record) {
-                        $raw = $this->storeRaw($batch, $record);
-                        $parsed[] = ['record' => $record, 'raw_id' => $raw->id];
-                    }
-                    $this->seedSuggestedMappings($batch, $user, $result['location_mappings'] ?? []);
-                } elseif ($role === 'template') {
-                    $records = $this->templateParser->parseFile($meta['path'], $meta['name']);
-                    $sourceRows += count($records);
-                    foreach ($records as $record) {
-                        $raw = $this->storeRaw($batch, $record);
-                        $parsed[] = ['record' => $record, 'raw_id' => $raw->id];
+                $parsed = [];
+                $sourceRows = 0;
+                foreach ($uploads as $role => $meta) {
+                    if (in_array($role, ['category', 'location'], true)) {
+                        $result = $this->crystal->parseFile($meta['path'], $meta['name']);
+                        $sourceRows += count($result['records']) + count($result['skipped']);
+                        foreach ($result['records'] as $record) {
+                            $raw = $this->storeRaw($batch, $record);
+                            $parsed[] = ['record' => $record, 'raw_id' => $raw->id];
+                        }
+                    } elseif ($role === 'staging') {
+                        $result = $this->stagingParser->parseFile($meta['path'], $meta['name']);
+                        $sourceRows += count($result['records']);
+                        foreach ($result['records'] as $record) {
+                            $raw = $this->storeRaw($batch, $record);
+                            $parsed[] = ['record' => $record, 'raw_id' => $raw->id];
+                        }
+                        $this->seedSuggestedMappings($batch, $user, $result['location_mappings'] ?? []);
+                    } elseif ($role === 'template') {
+                        $records = $this->templateParser->parseFile($meta['path'], $meta['name']);
+                        $sourceRows += count($records);
+                        foreach ($records as $record) {
+                            $raw = $this->storeRaw($batch, $record);
+                            $parsed[] = ['record' => $record, 'raw_id' => $raw->id];
+                        }
                     }
                 }
-            }
 
-            $batch->source_row_count = $sourceRows;
-            $batch->parsed_row_count = count($parsed);
-            $batch->status = 'reconciling';
-            $batch->save();
+                $batch->source_row_count = $sourceRows;
+                $batch->parsed_row_count = count($parsed);
+                $batch->status = 'parsed';
+                $batch->save();
 
-            $this->reconcile($batch, $user, $parsed);
-            $this->validate($batch, $user);
+                $batch->status = 'reconciling';
+                $batch->save();
 
-            $batch->status = 'review';
-            $batch->save();
+                $this->reconcile($batch, $user, $parsed);
+                $this->validate($batch, $user);
 
-            AuditLog::record('assets.import_ingested', [
-                'auditable_type' => AssetImportBatch::class,
-                'auditable_id' => $batch->id,
-                'new_values' => ['batch_number' => $batch->batch_number, 'parsed' => $batch->parsed_row_count],
-                'tags' => 'assets',
+                $batch->status = 'review';
+                $batch->save();
+
+                AuditLog::record('assets.import_ingested', [
+                    'auditable_type' => AssetImportBatch::class,
+                    'auditable_id' => $batch->id,
+                    'new_values' => ['batch_number' => $batch->batch_number, 'parsed' => $batch->parsed_row_count],
+                    'tags' => 'assets',
+                ]);
+
+                return $batch->fresh();
+            });
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            $this->recordFailedBatch($user, $mode, $names, $hashes, $fingerprint, $e);
+            throw ValidationException::withMessages([
+                'files' => 'Could not parse the uploaded source file.',
             ]);
-
-            return $batch->fresh();
-        });
+        }
     }
 
     public function preview(AssetImportBatch $batch, User $user): array
@@ -165,9 +177,9 @@ class AssetImportService
                 + $rows->where('proposed_action', 'NO_CHANGE')->count(),
             'ready_to_update' => $rows->where('proposed_action', 'UPDATE')->where('review_status', 'approved')->count(),
             'missing_asset_tag' => $rows->filter(fn ($r) => empty($r->asset_tag))->count(),
-            'missing_serial' => $rows->filter(fn ($r) => empty($r->serial_number))->count(),
-            'missing_model' => $rows->filter(fn ($r) => empty($r->model))->count(),
-            'missing_location' => $rows->filter(fn ($r) => empty($r->legacy_location) && empty($r->location_id))->count(),
+            'missing_serial' => $rows->filter(fn ($r) => empty($r->serial_number) && ! in_array('SERIAL_UNAVAILABLE', $r->data_quality_flags ?? [], true))->count(),
+            'missing_model' => $rows->filter(fn ($r) => empty($r->model) && ! in_array('MODEL_UNAVAILABLE', $r->data_quality_flags ?? [], true))->count(),
+            'missing_location' => $rows->filter(fn ($r) => empty($r->legacy_location) && empty($r->location_id) && ! in_array('LOCATION_UNAVAILABLE', $r->data_quality_flags ?? [], true))->count(),
             'unmapped_custodian' => $rows->filter(fn ($r) => empty($r->custodian_user_id) && empty($r->custodian_department_id))->count(),
             'duplicate_asset_tags' => $rows->filter(function ($r) {
                 return in_array('DUPLICATE_ASSET_TAG', $r->blocking_errors ?? [], true)
@@ -297,6 +309,147 @@ class AssetImportService
         $row->save();
 
         return $row->fresh();
+    }
+
+    public function mergeDuplicateSources(AssetImportBatch $batch, User $user, int $stagingId, ?int $keepRawId = null): AssetImportStaging
+    {
+        $this->assertCanImport($user);
+        $this->assertTenant($batch, $user);
+        $this->assertBatchMutable($batch);
+        $row = AssetImportStaging::query()->where('import_batch_id', $batch->id)->findOrFail($stagingId);
+        $this->assertRowMutable($row);
+
+        $refs = is_array($row->source_refs) ? $row->source_refs : [];
+        $kept = [];
+        $seenKind = [];
+        if ($keepRawId) {
+            foreach ($refs as $ref) {
+                if ((int) ($ref['raw_id'] ?? 0) === $keepRawId) {
+                    $kept[] = $ref;
+                    $seenKind[(string) ($ref['kind'] ?? 'unknown')] = true;
+                }
+            }
+        }
+        foreach ($refs as $ref) {
+            $kind = (string) ($ref['kind'] ?? 'unknown');
+            $rawId = isset($ref['raw_id']) ? (int) $ref['raw_id'] : 0;
+            if ($keepRawId && $rawId === $keepRawId) {
+                continue;
+            }
+            if (isset($seenKind[$kind])) {
+                continue;
+            }
+            $seenKind[$kind] = true;
+            $kept[] = $ref;
+        }
+        $row->source_refs = $kept !== [] ? $kept : $refs;
+        $row->blocking_errors = array_values(array_diff($row->blocking_errors ?? [], ['DUPLICATE_ASSET_TAG']));
+        $row->data_quality_flags = array_values(array_diff($row->data_quality_flags ?? [], ['ASSET_TAG_CONFLICT']));
+        if ($keepRawId) {
+            $raw = AssetImportRaw::query()->where('import_batch_id', $batch->id)->find($keepRawId);
+            if ($raw && is_array($raw->raw_json)) {
+                $parsed = $raw->raw_json;
+                foreach (['asset_name', 'serial_number', 'make', 'model', 'legacy_description', 'legacy_location'] as $field) {
+                    if (array_key_exists($field, $parsed)) {
+                        $row->{$field} = $parsed[$field];
+                    }
+                }
+            }
+        }
+        $this->validateRow($row, $user);
+        $row->save();
+
+        AuditLog::record('assets.import_duplicates_merged', [
+            'auditable_type' => AssetImportStaging::class,
+            'auditable_id' => $row->id,
+            'new_values' => ['tag' => $row->asset_tag, 'keep_raw_id' => $keepRawId],
+            'tags' => 'assets',
+        ]);
+
+        return $row->fresh();
+    }
+
+    public function markFieldUnavailable(AssetImportBatch $batch, User $user, int $stagingId, string $field): AssetImportStaging
+    {
+        $this->assertCanImport($user);
+        $this->assertTenant($batch, $user);
+        $this->assertBatchMutable($batch);
+        $row = AssetImportStaging::query()->where('import_batch_id', $batch->id)->findOrFail($stagingId);
+        $this->assertRowMutable($row);
+
+        $map = [
+            'serial_number' => ['column' => 'serial_number', 'flag' => 'SERIAL_UNAVAILABLE'],
+            'make' => ['column' => 'make', 'flag' => 'MAKE_UNAVAILABLE'],
+            'model' => ['column' => 'model', 'flag' => 'MODEL_UNAVAILABLE'],
+            'legacy_location' => ['column' => 'legacy_location', 'flag' => 'LOCATION_UNAVAILABLE'],
+            'location' => ['column' => 'legacy_location', 'flag' => 'LOCATION_UNAVAILABLE'],
+        ];
+        if (! isset($map[$field])) {
+            throw ValidationException::withMessages(['field' => 'Field cannot be marked unavailable.']);
+        }
+        $column = $map[$field]['column'];
+        $row->{$column} = null;
+        if (in_array($field, ['location', 'legacy_location'], true)) {
+            $row->location_id = null;
+        }
+        $flags = $row->data_quality_flags ?? [];
+        $flags[] = $map[$field]['flag'];
+        $row->data_quality_flags = array_values(array_unique($flags));
+        $this->validateRow($row, $user);
+        $row->save();
+
+        AuditLog::record('assets.import_field_unavailable', [
+            'auditable_type' => AssetImportStaging::class,
+            'auditable_id' => $row->id,
+            'new_values' => ['field' => $field, 'tag' => $row->asset_tag],
+            'tags' => 'assets',
+        ]);
+
+        return $row->fresh();
+    }
+
+    public function resolveDiscrepancy(AssetImportBatch $batch, User $user, int $discrepancyId, string $chosenValue): AssetImportDiscrepancy
+    {
+        $this->assertCanImport($user);
+        $this->assertTenant($batch, $user);
+        $this->assertBatchMutable($batch);
+        $discrepancy = AssetImportDiscrepancy::query()
+            ->where('import_batch_id', $batch->id)
+            ->findOrFail($discrepancyId);
+        $discrepancy->chosen_value = $chosenValue;
+        $discrepancy->requires_review = false;
+        $discrepancy->rule = 'admin_chosen';
+        $discrepancy->save();
+
+        $staging = AssetImportStaging::query()
+            ->where('import_batch_id', $batch->id)
+            ->where('asset_tag', $discrepancy->asset_tag)
+            ->first();
+        if ($staging) {
+            $column = match ($discrepancy->field) {
+                'description', 'legacy_description' => 'legacy_description',
+                'acquisition_date' => 'acquisition_date',
+                'closing_cost', 'original_cost', 'cost' => 'original_cost',
+                'closing_book_value', 'book_value', 'current_book_value' => 'current_book_value',
+                'legacy_location', 'location' => 'legacy_location',
+                default => null,
+            };
+            if ($column) {
+                $this->assertRowMutable($staging);
+                $staging->{$column} = $chosenValue === '' ? null : $chosenValue;
+                $this->validateRow($staging, $user);
+                $staging->save();
+            }
+        }
+
+        AuditLog::record('assets.import_discrepancy_resolved', [
+            'auditable_type' => AssetImportDiscrepancy::class,
+            'auditable_id' => $discrepancy->id,
+            'new_values' => ['field' => $discrepancy->field, 'chosen_value' => $chosenValue],
+            'tags' => 'assets',
+        ]);
+
+        return $discrepancy->fresh();
     }
 
     public function confirmLocationMapping(AssetImportBatch $batch, User $user, string $legacy, int $locationId): void
@@ -585,10 +738,16 @@ class AssetImportService
             $merged['assigned_to_email'] = $staging['assigned_to_email'] ?? $merged['assigned_to_email'] ?? null;
             $merged['asset_owner'] = $staging['asset_owner'] ?? $merged['asset_owner'] ?? null;
             $merged['department'] = $staging['department'] ?? $merged['department'] ?? null;
-            $merged['original_cost'] = $staging['original_cost'] ?? $merged['original_cost'] ?? null;
-            $merged['current_book_value'] = $staging['current_book_value'] ?? $merged['current_book_value'] ?? null;
-            $merged['accumulated_depreciation'] = $staging['accumulated_depreciation'] ?? $merged['accumulated_depreciation'] ?? null;
-            $merged['currency'] = $staging['currency'] ?? $merged['currency'] ?? null;
+            if (($merged['closing_cost'] ?? $merged['opening_cost'] ?? $merged['original_cost'] ?? null) === null) {
+                $merged['original_cost'] = $staging['original_cost'] ?? null;
+            }
+            if (($merged['closing_book_value'] ?? $merged['current_book_value'] ?? null) === null) {
+                $merged['current_book_value'] = $staging['current_book_value'] ?? null;
+            }
+            if (($merged['accumulated_depreciation'] ?? null) === null) {
+                $merged['accumulated_depreciation'] = $staging['accumulated_depreciation'] ?? null;
+            }
+            $merged['currency'] = $merged['currency'] ?? $staging['currency'] ?? null;
             $merged['funding_source'] = $staging['funding_source'] ?? $merged['funding_source'] ?? null;
             if (empty($merged['legacy_location'])) {
                 $merged['legacy_location'] = $staging['legacy_location'] ?? null;
@@ -738,21 +897,24 @@ class AssetImportService
             $blocking[] = 'DUPLICATE_ASSET_TAG';
             $flags[] = 'ASSET_TAG_CONFLICT';
         }
-        if (empty($row->serial_number)) {
+        $serialUnavailable = in_array('SERIAL_UNAVAILABLE', $flags, true);
+        $modelUnavailable = in_array('MODEL_UNAVAILABLE', $flags, true);
+        $locationUnavailable = in_array('LOCATION_UNAVAILABLE', $flags, true);
+        if (empty($row->serial_number) && ! $serialUnavailable) {
             $flags[] = 'MISSING_SERIAL';
             $warnings[] = 'Missing serial number';
-        } elseif ($serialCounts && ($serialCounts[$row->serial_number] ?? 1) > 1) {
+        } elseif (! empty($row->serial_number) && $serialCounts && ($serialCounts[$row->serial_number] ?? 1) > 1) {
             $flags[] = 'DUPLICATE_SERIAL';
             $warnings[] = 'Duplicate serial number';
         }
-        if (empty($row->model)) {
+        if (empty($row->model) && ! $modelUnavailable) {
             $flags[] = 'MISSING_MODEL';
             $warnings[] = 'Missing model';
         }
-        if (empty($row->legacy_location) && empty($row->location_id)) {
+        if (empty($row->legacy_location) && empty($row->location_id) && ! $locationUnavailable) {
             $flags[] = 'MISSING_LOCATION';
             $warnings[] = 'Missing location';
-        } elseif (empty($row->location_id)) {
+        } elseif (! $locationUnavailable && empty($row->location_id)) {
             $flags[] = 'UNVERIFIED_LOCATION';
             $warnings[] = 'Location not mapped to Nexus location';
         }
@@ -772,12 +934,28 @@ class AssetImportService
             $warnings[] = 'Missing cost';
         }
 
+        if ($serialUnavailable) {
+            $flags = array_values(array_diff($flags, ['MISSING_SERIAL']));
+        }
+        if ($modelUnavailable) {
+            $flags = array_values(array_diff($flags, ['MISSING_MODEL']));
+        }
+        if ($locationUnavailable) {
+            $flags = array_values(array_diff($flags, ['MISSING_LOCATION']));
+        }
+
         $flags = array_values(array_unique($flags));
         $row->data_quality_flags = $flags;
         $row->warnings = $warnings;
         $row->blocking_errors = $blocking;
         $row->blocking = $blocking !== [];
-        $row->review_status = $row->review_status === 'excluded' ? 'excluded' : ($blocking !== [] ? 'blocked' : $row->review_status);
+        if ($row->review_status === 'excluded') {
+            // keep exclusion
+        } elseif ($blocking !== []) {
+            $row->review_status = 'blocked';
+        } elseif ($row->review_status === 'blocked') {
+            $row->review_status = 'pending';
+        }
         $row->data_quality_status = $this->qualityStatus($flags);
     }
 
@@ -1067,6 +1245,26 @@ class AssetImportService
         }
 
         return $diff;
+    }
+
+    /**
+     * @param  array<string, string>  $names
+     * @param  array<string, string>  $hashes
+     */
+    private function recordFailedBatch(User $user, string $mode, array $names, array $hashes, string $fingerprint, \Throwable $e): void
+    {
+        AssetImportBatch::create([
+            'tenant_id' => $user->tenant_id,
+            'batch_number' => $this->nextBatchNumber($user->tenant_id),
+            'mode' => $mode,
+            'filenames' => $names,
+            'file_hashes' => $hashes,
+            'fingerprint' => $fingerprint,
+            'uploaded_by' => $user->id,
+            'uploaded_at' => now(),
+            'status' => 'failed',
+            'failure_reason' => Str::limit($e->getMessage(), 2000),
+        ]);
     }
 
     private function nextBatchNumber(int $tenantId): string

@@ -62,7 +62,7 @@ export default function PublicAssetQrPage() {
             <>
               <p className="text-xs font-semibold uppercase tracking-wide text-primary">{data.organisation || t("assets.public.title")}</p>
               <p className={`mt-2 text-sm ${data.publicStatus === "LOST" || data.publicStatus === "STOLEN" ? "font-semibold text-red-700" : "text-neutral-600"}`}>
-                {data.notice || t("assets.public.notice")}
+                {t(data.notice_key || "assets.public.notice")}
               </p>
               <h1 className="mt-6 font-mono text-3xl font-bold">{data.asset_tag || data.assetNumber}</h1>
               <p className="mt-2 text-lg text-neutral-800">{data.asset_name}</p>

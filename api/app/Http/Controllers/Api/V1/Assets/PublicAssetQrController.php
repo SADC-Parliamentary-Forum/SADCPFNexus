@@ -91,30 +91,30 @@ class PublicAssetQrController extends Controller
     }
 
     /**
-     * @return list<array{key: string, label: string, href: string}>
+     * @return list<array{key: string, label: string, label_key: string, href: string}>
      */
     private function allowedActions(Asset $asset, $user): array
     {
         $manage = AssetAccess::canManageHandover($user) || AssetAccess::canManage($user);
         $actions = [];
         if ($manage && ! $asset->reserved_handover_id && in_array($asset->status, ['available', 'active', 'assigned'], true)) {
-            $actions[] = ['key' => 'start_handover', 'label' => 'Start handover', 'href' => '/assets/handovers/new?assetId='.$asset->id];
+            $actions[] = ['key' => 'start_handover', 'label' => 'Start handover', 'label_key' => 'assets.scan.action.startHandover', 'href' => '/assets/handovers/new?assetId='.$asset->id];
         }
         if ($manage && $asset->assigned_to) {
-            $actions[] = ['key' => 'transfer', 'label' => 'Transfer', 'href' => '/assets/handovers/new?type=transfer&assetId='.$asset->id];
-            $actions[] = ['key' => 'return', 'label' => 'Return', 'href' => '/assets/handovers/new?type=return&assetId='.$asset->id];
+            $actions[] = ['key' => 'transfer', 'label' => 'Transfer', 'label_key' => 'assets.scan.action.transfer', 'href' => '/assets/handovers/new?type=transfer&assetId='.$asset->id];
+            $actions[] = ['key' => 'return', 'label' => 'Return', 'label_key' => 'assets.scan.action.return', 'href' => '/assets/handovers/new?type=return&assetId='.$asset->id];
         }
         if ($asset->reserved_handover_id) {
-            $actions[] = ['key' => 'view_handover', 'label' => 'Open handover', 'href' => '/assets/handovers/'.$asset->reserved_handover_id];
+            $actions[] = ['key' => 'view_handover', 'label' => 'Open handover', 'label_key' => 'assets.scan.action.viewHandover', 'href' => '/assets/handovers/'.$asset->reserved_handover_id];
         }
         if (AssetAccess::canManage($user) || $user->hasPermissionTo('assets.checkout.manage')) {
-            $actions[] = ['key' => 'checkout', 'label' => 'Checkout', 'href' => '/assets/checkouts?asset='.$asset->id];
+            $actions[] = ['key' => 'checkout', 'label' => 'Checkout', 'label_key' => 'assets.scan.action.checkout', 'href' => '/assets/checkouts?asset='.$asset->id];
         }
         if ($user->hasAnyPermission(['assets.verify', 'assets.admin', 'assets.manage']) || $user->isSystemAdmin()) {
-            $actions[] = ['key' => 'verify', 'label' => 'Verify', 'href' => '/assets/verification?asset='.$asset->id];
+            $actions[] = ['key' => 'verify', 'label' => 'Verify', 'label_key' => 'assets.scan.action.verify', 'href' => '/assets/verification?asset='.$asset->id];
         }
         if ($user->hasAnyPermission(['assets.print', 'assets.admin', 'assets.manage']) || $user->isSystemAdmin()) {
-            $actions[] = ['key' => 'print', 'label' => 'Print label', 'href' => '/assets/labels?asset='.$asset->id];
+            $actions[] = ['key' => 'print', 'label' => 'Print label', 'label_key' => 'assets.scan.action.print', 'href' => '/assets/labels?asset='.$asset->id];
         }
 
         return $actions;

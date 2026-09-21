@@ -33,7 +33,7 @@ class AssetPhase2OpsTest extends TestCase
         return Asset::create(array_merge([
             'tenant_id' => $tenant->id,
             'asset_code' => 'PF-'.uniqid(),
-            'tag_number' => 'PF/ICT/LT/'.random_int(1000, 9999),
+            'tag_number' => 'PF/ICT/LT/'.strtoupper(bin2hex(random_bytes(4))),
             'name' => 'Dell Latitude',
             'category' => 'ICT',
             'status' => 'available',

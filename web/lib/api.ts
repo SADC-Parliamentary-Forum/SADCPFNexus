@@ -2398,7 +2398,22 @@ export interface AssetMovement {
   from_user_id: number | null;
   to_user_id: number | null;
   recorded_by: number;
-  movement_type: "transfer" | "maintenance" | "disposal" | "storage" | "return";
+  movement_type:
+    | "transfer"
+    | "maintenance"
+    | "disposal"
+    | "storage"
+    | "return"
+    | "assign"
+    | "move"
+    | "check_out"
+    | "check_in"
+    | "send_for_repair"
+    | "return_from_repair"
+    | "mark_missing"
+    | "recover"
+    | "dispose"
+    | "write_off";
   reason: string | null;
   notes: string | null;
   movement_date: string;
@@ -2455,6 +2470,12 @@ export const assetImportApi = {
     api.post(`/assets/import/${id}/approve`, data),
   exclude: (batchId: number, stagingId: number, reason: string) =>
     api.post(`/assets/import/${batchId}/staging/${stagingId}/exclude`, { reason }),
+  mergeDuplicates: (batchId: number, stagingId: number, data?: { keep_raw_id?: number }) =>
+    api.post<{ data: unknown }>(`/assets/import/${batchId}/staging/${stagingId}/merge-duplicates`, data ?? {}),
+  markUnavailable: (batchId: number, stagingId: number, field: string) =>
+    api.post<{ data: unknown }>(`/assets/import/${batchId}/staging/${stagingId}/mark-unavailable`, { field }),
+  resolveDiscrepancy: (batchId: number, discrepancyId: number, chosen_value: string) =>
+    api.post<{ data: unknown }>(`/assets/import/${batchId}/discrepancies/${discrepancyId}/resolve`, { chosen_value }),
   raw: (batchId: number, rawId: number) => api.get(`/assets/import/${batchId}/raw/${rawId}`),
   mapLocation: (id: number, data: { legacy_location: string; location_id: number }) =>
     api.post(`/assets/import/${id}/map-location`, data),
@@ -2477,7 +2498,7 @@ export const assetQrApi = {
     status?: string | null;
     purchase_value?: string | number | null;
     book_value?: string | number | null;
-    allowed_actions?: Array<{ key: string; label: string; href: string }>;
+    allowed_actions?: Array<{ key: string; label: string; label_key?: string; href: string }>;
     reserved_handover_id?: number | null;
   } }>(`/assets/qr/${encodeURIComponent(token)}`),
 };
@@ -2558,6 +2579,7 @@ export const publicAssetQrApi = {
 export interface PublicAssetPayload {
   organisation: string;
   notice: string;
+  notice_key?: string;
   asset_tag: string;
   assetNumber?: string;
   asset_name: string;
