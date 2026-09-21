@@ -53,9 +53,18 @@ export function clearPortalCookie(): void {
   document.cookie = `${PORTAL_COOKIE}=; path=/; max-age=0`;
 }
 
+function readXsrfCookie(): string | undefined {
+  if (typeof document === "undefined") return undefined;
+  const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 const api = axios.create({
   baseURL: "/api",
   withCredentials: true,
+  xsrfCookieName: "XSRF-TOKEN",
+  xsrfHeaderName: "X-XSRF-TOKEN",
+  withXSRFToken: true,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -68,6 +77,10 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     config.headers["Accept-Language"] = readStoredLocale();
+    const xsrf = readXsrfCookie();
+    if (xsrf) {
+      config.headers["X-XSRF-TOKEN"] = xsrf;
+    }
   }
   if (typeof FormData !== "undefined" && config.data instanceof FormData) {
     const headers = config.headers;
@@ -84,10 +97,15 @@ api.interceptors.request.use((config) => {
 // In-memory token cache — avoids synchronous localStorage read on every request
 let csrfBootstrapped = false;
 
-export async function ensureCsrfCookie(): Promise<void> {
-  if (csrfBootstrapped) return;
-  await axios.get("/sanctum/csrf-cookie", { withCredentials: true });
-  csrfBootstrapped = true;
+export async function ensureCsrfCookie(force = false): Promise<void> {
+  if (csrfBootstrapped && !force) return;
+  try {
+    await axios.get("/sanctum/csrf-cookie", { withCredentials: true });
+    csrfBootstrapped = true;
+  } catch (error) {
+    csrfBootstrapped = false;
+    throw error;
+  }
 }
 
 // Handle 401 globally — flag prevents concurrent 401s from firing multiple hard reloads
@@ -96,9 +114,25 @@ let _redirectingMfaSetup = false;
 
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     if (typeof window !== "undefined") {
       const status = error.response?.status;
+      const original = error.config as (typeof error.config & { _csrfRetry?: boolean }) | undefined;
+      if (status === 419 && original && !original._csrfRetry) {
+        original._csrfRetry = true;
+        csrfBootstrapped = false;
+        try {
+          await ensureCsrfCookie(true);
+          const xsrf = readXsrfCookie();
+          if (xsrf) {
+            original.headers = original.headers ?? {};
+            original.headers["X-XSRF-TOKEN"] = xsrf;
+          }
+          return api.request(original);
+        } catch {
+          /* fall through to existing handlers */
+        }
+      }
       const data = error.response?.data as { mfa_setup_required?: boolean; message?: string; code?: string } | undefined;
 
       // Privileged role without MFA — send user to security setup (API middleware).
@@ -193,11 +227,11 @@ export const authApi = {
     return api.post<{ user?: AuthUser; mfa_required?: boolean; message?: string }>("/auth/login", body);
   },
   captchaConfig: async () => {
-    await ensureCsrfCookie();
+    void ensureCsrfCookie().catch(() => undefined);
     return api.get<{ enabled: boolean; driver: string; site_key: string | null }>("/auth/captcha");
   },
   captchaChallenge: async () => {
-    await ensureCsrfCookie();
+    await ensureCsrfCookie().catch(() => undefined);
     return api.post<{ enabled?: boolean; driver?: string; token: string | null; expires_at?: number }>(
       "/auth/captcha-challenge",
     );

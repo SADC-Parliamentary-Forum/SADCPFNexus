@@ -188,6 +188,12 @@ export default function LoginPage() {
               </Link>
               {" "}{t("login.forStaffAccounts")}
             </p>
+            <p>
+              {t("login.supplierInstead")}{" "}
+              <Link href="/supplier/login" className="font-medium text-primary-800 hover:underline">
+                {t("login.supplierPortalLink")}
+              </Link>
+            </p>
             <p className="text-neutral-700">{t("login.mailboxHelp")}</p>
           </div>
         </div>

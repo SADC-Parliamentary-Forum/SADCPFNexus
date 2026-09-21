@@ -41,9 +41,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // Append security headers to all responses.
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         $middleware->alias([
-            'rls'            => \App\Http\Middleware\SetRlsContext::class,
-            'role'           => \Spatie\Permission\Middleware\RoleMiddleware::class,
-            'permission'     => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'rls' => \App\Http\Middleware\SetRlsContext::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'mfa.privileged' => \App\Http\Middleware\RequireMfaForPrivileged::class,
             'access' => \App\Http\Middleware\EnforceAccessPermission::class,
@@ -55,23 +55,25 @@ return Application::configure(basePath: dirname(__DIR__))
         // acts as the shared secret (only the email recipient has it).
         $middleware->validateCsrfTokens(except: [
             'email-approval/*',
+            'api/v1/auth/captcha-challenge',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Ensure API auth failures always return JSON 401, never redirect to route('login').
         $exceptions->render(function (AuthenticationException $e, Request $request) {
-            if (!$request->is('api/*') && !$request->is('api')) {
+            if (! $request->is('api/*') && ! $request->is('api')) {
                 return null;
             }
             $response = response()->json(['message' => __('Unauthenticated.')], 401);
             foreach (\App\Support\CorsHelper::headersForRequest($request) as $name => $value) {
                 $response->header($name, $value);
             }
+
             return $response;
         });
 
         $exceptions->render(function (Throwable $e, Request $request) {
-            if (!$request->is('api/*') && !$request->is('api')) {
+            if (! $request->is('api/*') && ! $request->is('api')) {
                 return null;
             }
 
@@ -103,7 +105,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // Optional Sentry when SENTRY_LARAVEL_DSN is set and package is installed.
             if ($status >= 500) {
                 Observability::captureException($e, [
-                    'status'     => $status,
+                    'status' => $status,
                     'request_id' => $request->attributes->get('request_id'),
                 ]);
             }
@@ -112,6 +114,7 @@ return Application::configure(basePath: dirname(__DIR__))
             foreach (CorsHelper::headersForRequest($request) as $name => $value) {
                 $response->header($name, $value);
             }
+
             return $response;
         });
     })->create();

@@ -183,12 +183,16 @@ test.describe("Supplier portal login", () => {
     await expect(page.getByText(/travel & mission/i)).toHaveCount(0);
   });
 
-  test("staff login page does not advertise the supplier portal", async ({ page }) => {
+  test("staff login page links to the supplier portal", async ({ page }) => {
     await page.goto("/login");
     await expect(page.getByRole("heading", { name: /staff sign in/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /go to the supplier portal/i })).toHaveCount(0);
-    await expect(page.getByText(/are you a supplier\?/i)).toHaveCount(0);
-    await expect(page.getByText(/use the supplier portal for rfqs/i)).toHaveCount(0);
+    const supplierLink = page.getByRole("link", { name: /go to the supplier portal/i });
+    await expect(supplierLink).toBeVisible();
+    await expect(supplierLink).toHaveAttribute("href", "/supplier/login");
+    await expect(page.getByText(/are you a supplier\?/i)).toBeVisible();
+    await supplierLink.click();
+    await page.waitForURL("**/supplier/login", { timeout: 10_000 });
+    await expect(page.getByRole("heading", { name: /supplier sign in/i })).toBeVisible();
   });
 
   test("registration wizard shows eight steps and blocks create without documents", async ({ page }) => {

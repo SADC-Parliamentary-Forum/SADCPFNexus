@@ -46,42 +46,44 @@ export function CaptchaGate({ value, onChange }: Props) {
   const honeypotRef = useRef(value.honeypot);
   const [loading, setLoading] = useState(true);
   const [issuing, setIssuing] = useState(false);
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(false);
   const [driver, setDriver] = useState<CaptchaDriver>("challenge");
   const [siteKey, setSiteKey] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [configFailed, setConfigFailed] = useState(false);
 
   honeypotRef.current = value.honeypot;
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const response = await authApi.captchaConfig();
-        if (cancelled) return;
-        if (!response.data.enabled) {
-          setEnabled(false);
-          onChange({ token: "", honeypot: "", verified: true });
-          return;
-        }
-        setEnabled(true);
-        const nextDriver = response.data.driver;
-        setDriver(
-          nextDriver === "hcaptcha" || nextDriver === "turnstile" ? nextDriver : "challenge",
-        );
-        setSiteKey(response.data.site_key);
-      } catch {
-        if (!cancelled) {
-          setError(t("login.captchaFailed"));
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+  const loadConfig = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    setConfigFailed(false);
+    try {
+      const response = await authApi.captchaConfig();
+      if (!response.data.enabled) {
+        setEnabled(false);
+        onChange({ token: "", honeypot: honeypotRef.current, verified: true });
+        return;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // onChange is stable enough for mount; avoid re-fetch loops from parent identity.
+      setEnabled(true);
+      const nextDriver = response.data.driver;
+      setDriver(
+        nextDriver === "hcaptcha" || nextDriver === "turnstile" ? nextDriver : "challenge",
+      );
+      setSiteKey(response.data.site_key);
+    } catch {
+      setEnabled(false);
+      setConfigFailed(true);
+      setError(t("login.captchaFailed"));
+      onChange({ token: "", honeypot: honeypotRef.current, verified: false });
+    } finally {
+      setLoading(false);
+    }
+  }, [onChange, t]);
+
+  useEffect(() => {
+    void loadConfig();
+    // Load once on mount; retry is explicit via loadConfig.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -203,6 +205,28 @@ export function CaptchaGate({ value, onChange }: Props) {
         className="sr-only"
       >
         {t("common.loading")}
+      </div>
+    );
+  }
+
+  if (configFailed) {
+    return (
+      <div
+        className="space-y-2"
+        data-testid="captcha-gate"
+        data-ready="true"
+        data-enabled="true"
+        data-driver={driver}
+        data-verified="false"
+      >
+        <p role="alert" className="text-xs text-red-600">{error || t("login.captchaFailed")}</p>
+        <button
+          type="button"
+          className="text-xs font-medium text-primary-800 hover:underline"
+          onClick={() => void loadConfig()}
+        >
+          {t("login.captchaRetry")}
+        </button>
       </div>
     );
   }

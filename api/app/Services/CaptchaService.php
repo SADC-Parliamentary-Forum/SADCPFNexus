@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class CaptchaService
 {
@@ -42,12 +43,12 @@ class CaptchaService
         $driver = $this->driver();
 
         return [
-            'enabled'  => $this->enabled(),
-            'driver'   => $driver,
+            'enabled' => $this->enabled(),
+            'driver' => $driver,
             'site_key' => match ($driver) {
-                'hcaptcha'  => (string) config('captcha.hcaptcha_site_key'),
+                'hcaptcha' => (string) config('captcha.hcaptcha_site_key'),
                 'turnstile' => (string) config('captcha.turnstile_site_key'),
-                default     => null,
+                default => null,
             },
         ];
     }
@@ -63,10 +64,10 @@ class CaptchaService
         $payload = $nonce.'.'.$expiresAt;
         $token = $payload.'.'.$this->sign($payload);
 
-        Cache::put($this->cacheKey($nonce), '1', $ttl);
+        $this->storeChallenge($nonce, $ttl);
 
         return [
-            'token'      => $token,
+            'token' => $token,
             'expires_at' => $expiresAt,
         ];
     }
@@ -121,7 +122,7 @@ class CaptchaService
             return;
         }
 
-        Cache::forget($this->cacheKey($parts[0]));
+        $this->forgetChallenge($parts[0]);
     }
 
     public function isMobileClient(Request $request): bool
@@ -166,16 +167,15 @@ class CaptchaService
             $this->reject();
         }
 
-        $key = $this->cacheKey($nonce);
         if ($consume) {
-            if (! Cache::pull($key)) {
+            if (! $this->pullChallenge($nonce)) {
                 $this->reject();
             }
 
             return;
         }
 
-        if (! Cache::has($key)) {
+        if (! $this->hasChallenge($nonce)) {
             $this->reject();
         }
     }
@@ -185,10 +185,10 @@ class CaptchaService
         $response = Http::asForm()
             ->timeout(8)
             ->post('https://api.hcaptcha.com/siteverify', [
-                'secret'   => (string) config('captcha.hcaptcha_secret'),
+                'secret' => (string) config('captcha.hcaptcha_secret'),
                 'response' => $token,
                 'remoteip' => $ip,
-                'sitekey'  => (string) config('captcha.hcaptcha_site_key'),
+                'sitekey' => (string) config('captcha.hcaptcha_site_key'),
             ]);
 
         if (! $response->ok() || ! ($response->json('success') === true)) {
@@ -202,7 +202,7 @@ class CaptchaService
         $response = Http::asForm()
             ->timeout(8)
             ->post('https://challenges.cloudflare.com/turnstile/v0/siteverify', [
-                'secret'   => $secret,
+                'secret' => $secret,
                 'response' => $token,
                 'remoteip' => $ip,
             ]);
@@ -220,6 +220,81 @@ class CaptchaService
     private function cacheKey(string $nonce): string
     {
         return 'captcha:challenge:'.$nonce;
+    }
+
+    private function storeChallenge(string $nonce, int $ttl): void
+    {
+        $key = $this->cacheKey($nonce);
+        try {
+            Cache::put($key, '1', $ttl);
+            if (Cache::has($key)) {
+                return;
+            }
+        } catch (Throwable $e) {
+            report($e);
+        }
+
+        Cache::store('file')->put($key, '1', $ttl);
+    }
+
+    private function pullChallenge(string $nonce): bool
+    {
+        $key = $this->cacheKey($nonce);
+        foreach ($this->challengeStores() as $store) {
+            try {
+                if ($store->pull($key)) {
+                    return true;
+                }
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        return false;
+    }
+
+    private function hasChallenge(string $nonce): bool
+    {
+        $key = $this->cacheKey($nonce);
+        foreach ($this->challengeStores() as $store) {
+            try {
+                if ($store->has($key)) {
+                    return true;
+                }
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        return false;
+    }
+
+    private function forgetChallenge(string $nonce): void
+    {
+        $key = $this->cacheKey($nonce);
+        foreach ($this->challengeStores() as $store) {
+            try {
+                $store->forget($key);
+            } catch (Throwable) {
+                // Ignore backend-specific failures while clearing a used token.
+            }
+        }
+    }
+
+    /**
+     * @return iterable<\Illuminate\Contracts\Cache\Repository>
+     */
+    private function challengeStores(): iterable
+    {
+        yield Cache::driver();
+        try {
+            $file = Cache::store('file');
+            if ($file !== Cache::driver()) {
+                yield $file;
+            }
+        } catch (Throwable) {
+            // File store is optional when the default driver already persisted the nonce.
+        }
     }
 
     private function reject(): never
