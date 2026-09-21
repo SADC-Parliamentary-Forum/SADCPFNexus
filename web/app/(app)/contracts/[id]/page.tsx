@@ -2,6 +2,7 @@
 
 import { use, useState, type ReactNode } from "react";
 import Link from "next/link";
+import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
@@ -11,6 +12,7 @@ import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import {
+  ContractField,
   ContractMoreMenu,
   ContractStatusBadge,
   ContractTabBar,
@@ -123,6 +125,13 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const [personOpen, setPersonOpen] = useState(false);
   const [person, setPerson] = useState({ name: "", role: "", email: "", cv_reference: "" });
   const refreshPersonnel = () => qc.invalidateQueries({ queryKey: ["contract", contractId, "key-personnel"] });
+  const [editing, setEditing] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftDescription, setDraftDescription] = useState("");
+  const [draftStart, setDraftStart] = useState("");
+  const [draftEnd, setDraftEnd] = useState("");
+  const [draftValue, setDraftValue] = useState("");
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["contract", contractId] });
@@ -151,6 +160,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const canTerminate = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.terminate"]));
   const canSend = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.send"]));
   const canSign = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.sign_internal"]));
+  const canEditDraft = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.edit_draft", "contract.create"]));
   const inReview = ["IN_REVIEW", "APPROVAL_PENDING"].includes(lifecycle);
   const isDraft = ["DRAFT", "CHANGES_REQUESTED"].includes(lifecycle);
   const readyForSignature = lifecycle === "APPROVED_FOR_SIGNATURE";
@@ -200,6 +210,35 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       : () => contractsApi.rejectWorkflow(contractId, comment.trim());
     act(action, commentModal === "return" ? "Returned for correction" : "Contract rejected");
     setCommentModal(null); setComment("");
+  };
+
+  const saveDraft = () => {
+    if (!draftTitle.trim() || !draftStart || !draftEnd) return;
+    setSavingDraft(true);
+    contractsApi.update(contractId, {
+      lock_version: contract.lock_version ?? 1,
+      title: draftTitle.trim(),
+      description: draftDescription.trim() || null,
+      start_date: draftStart,
+      end_date: draftEnd,
+      value: draftValue === "" ? undefined : Number(draftValue),
+    })
+      .then(() => {
+        toast.success(t("contracts.draftSaved"));
+        setEditing(false);
+        refresh();
+      })
+      .catch((e: unknown) => {
+        const status = axios.isAxiosError(e) ? e.response?.status : undefined;
+        if (status === 409) {
+          toast.error(t("contracts.conflict"));
+          setEditing(false);
+          refresh();
+          return;
+        }
+        toast.error(axios.isAxiosError(e) ? (e.response?.data as { message?: string } | undefined)?.message ?? t("contracts.actionFailed") : t("contracts.actionFailed"));
+      })
+      .finally(() => setSavingDraft(false));
   };
 
   const tabItems: { id: Tab; label: string }[] = [
@@ -278,6 +317,19 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
         meta={<ContractStatusBadge status={lifecycle} />}
         actions={
           <>
+            {isDraft && canEditDraft && !editing && (
+              <button type="button" className="btn-secondary text-sm" onClick={() => {
+                setDraftTitle(contract.title);
+                setDraftDescription(contract.description ?? "");
+                setDraftStart((contract.start_date ?? "").slice(0, 10));
+                setDraftEnd((contract.end_date ?? "").slice(0, 10));
+                setDraftValue(String(contract.current_value ?? contract.value ?? ""));
+                setEditing(true);
+                setTab("overview");
+              }}>
+                {t("contracts.editDraft")}
+              </button>
+            )}
             {isDraft && canSubmit && (
               <button type="button" className="btn-primary text-sm disabled:opacity-60" disabled={submitMut.isPending || (readiness && !readiness.ready)} onClick={() => submitMut.mutate()}>
                 {t("contracts.actions.submit")}
@@ -346,6 +398,39 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </ul>
             ) : <p className="text-sm text-neutral-400">{t("contracts.loading")}</p>}
           </div>
+          {editing && canEditDraft && (
+            <form
+              className="card p-5 space-y-4 md:col-span-2"
+              onSubmit={(ev) => { ev.preventDefault(); saveDraft(); }}
+            >
+              <h3 className="text-sm font-semibold text-neutral-800">{t("contracts.editDraft")}</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <ContractField label={t("contracts.field.title")} htmlFor="draft-title" className="sm:col-span-2">
+                  <input id="draft-title" className="form-input" value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} required />
+                </ContractField>
+                <ContractField label={t("contracts.field.description")} htmlFor="draft-description" className="sm:col-span-2">
+                  <textarea id="draft-description" className="form-input min-h-[5rem]" value={draftDescription} onChange={(e) => setDraftDescription(e.target.value)} />
+                </ContractField>
+                <ContractField label={t("contracts.field.startDate")} htmlFor="draft-start">
+                  <input id="draft-start" type="date" className="form-input" value={draftStart} onChange={(e) => setDraftStart(e.target.value)} required />
+                </ContractField>
+                <ContractField label={t("contracts.field.endDate")} htmlFor="draft-end">
+                  <input id="draft-end" type="date" className="form-input" value={draftEnd} onChange={(e) => setDraftEnd(e.target.value)} required />
+                </ContractField>
+                <ContractField label={t("contracts.field.value")} htmlFor="draft-value">
+                  <input id="draft-value" type="number" min={0} step="0.01" className="form-input" value={draftValue} onChange={(e) => setDraftValue(e.target.value)} />
+                </ContractField>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="submit" className="btn-primary text-sm disabled:opacity-60" disabled={savingDraft}>
+                  {t("contracts.saveDraft")}
+                </button>
+                <button type="button" className="btn-secondary text-sm" onClick={() => setEditing(false)}>
+                  {t("common.cancel")}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 

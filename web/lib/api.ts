@@ -5051,6 +5051,7 @@ export interface Contract {
   exceptions?: ContractExceptionRecord[];
   health_reasons?: string[];
   counterparty?: { id: number; full_legal_name: string | null; email: string | null } | null;
+  lock_version?: number;
   created_at?: string;
 }
 
@@ -5346,6 +5347,8 @@ export const contractsApi = {
   }) => api.post<{ data: Contract; message: string }>("/contracts/import", data),
   get: (id: number) =>
     api.get<{ data: Contract }>(`/contracts/${id}`),
+  update: (id: number, data: Partial<Contract> & { lock_version: number }) =>
+    api.patch<{ data: Contract; message: string }>(`/contracts/${id}`, data),
   create: (data: Partial<Contract> & { vendor_id: number; title: string; start_date: string; end_date: string; value: number }) =>
     api.post<{ data: Contract; message: string }>("/contracts", data),
   activate: (id: number) =>
