@@ -233,6 +233,11 @@ class Contract extends Model
         return $this->hasMany(ContractKeyPersonnel::class)->orderBy('status')->orderBy('name');
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class)->orderByDesc('invoice_date');
+    }
+
     public function suspensions(): HasMany
     {
         return $this->hasMany(ContractSuspension::class)->orderByDesc('id');

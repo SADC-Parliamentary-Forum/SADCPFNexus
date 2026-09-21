@@ -98,6 +98,12 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
     enabled: !!contractId && tab === "correspondence",
   });
 
+  const { data: invoiceData } = useQuery({
+    queryKey: ["contract", contractId, "invoices"],
+    queryFn: () => contractsApi.contractInvoices(contractId).then((r) => r.data.data),
+    enabled: !!contractId && tab === "financials",
+  });
+
   const [corrOpen, setCorrOpen] = useState(false);
   const [corr, setCorr] = useState({ title: "", subject: "", body: "", type: "procurement" });
 
@@ -377,6 +383,28 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </table>
             </div>
           )}
+          <div className="card overflow-hidden">
+            <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Linked invoices</div>
+            {(invoiceData ?? []).length === 0 ? (
+              <div className="p-4 text-sm text-neutral-500">No invoices linked to this contract.</div>
+            ) : (
+              <table className="data-table">
+                <thead><tr><th>Invoice</th><th>Milestone</th><th>Deliverable</th><th className="text-right">Amount</th><th>Due</th><th>Status</th></tr></thead>
+                <tbody>
+                  {(invoiceData ?? []).map((inv) => (
+                    <tr key={inv.id}>
+                      <td className="text-sm font-mono">{inv.vendor_invoice_number ?? inv.reference_number}</td>
+                      <td className="text-sm text-neutral-600">{inv.contract_payment_schedule?.name ?? "—"}</td>
+                      <td className="text-sm text-neutral-600">{inv.contract_payment_schedule?.trigger_deliverable?.name ?? "—"}</td>
+                      <td className="text-right text-sm">{inv.currency} {Number(inv.amount).toLocaleString()}</td>
+                      <td className="text-sm">{inv.due_date ? formatDateShort(inv.due_date) : "—"}</td>
+                      <td className="text-xs capitalize">{inv.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       )}
 

@@ -5424,6 +5424,9 @@ export const contractsApi = {
     api.patch<{ data: ContractComplianceRequirement; message: string }>(`/contracts/compliance/requirements/${id}`, data),
   contractCompliance: (id: number) =>
     api.get<{ data: { code: string; name: string; satisfied: boolean; missing: boolean; expired: boolean; blocks_activation: boolean; blocks_payment: boolean }[] }>(`/contracts/${id}/compliance`),
+  // Invoice linkage (§58)
+  contractInvoices: (id: number) =>
+    api.get<{ data: { id: number; reference_number: string | null; vendor_invoice_number: string | null; amount: number | string; currency: string; invoice_date: string | null; due_date: string | null; status: string; contract_payment_schedule?: { id: number; name: string; trigger_deliverable?: { id: number; name: string; status: string } | null } | null }[] }>(`/contracts/${id}/invoices`),
   // Key personnel (§80)
   keyPersonnel: (id: number) =>
     api.get<{ data: { personnel: { id: number; name: string; role: string; email: string | null; cv_reference: string | null; status: string; is_key: boolean }[]; pending_replacements: { id: number; personnel_id: number; proposed_name: string; proposed_role: string; reason: string; status: string }[] } }>(`/contracts/${id}/key-personnel`),

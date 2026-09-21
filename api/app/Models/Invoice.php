@@ -13,6 +13,7 @@ class Invoice extends Model
 
     protected $fillable = [
         'tenant_id', 'purchase_order_id', 'goods_receipt_note_id', 'vendor_id',
+        'contract_id', 'contract_payment_schedule_id',
         'reference_number', 'vendor_invoice_number',
         'invoice_date', 'due_date', 'amount', 'currency',
         'status', 'match_status', 'match_notes', 'rejection_reason',
@@ -22,26 +23,51 @@ class Invoice extends Model
 
     protected $casts = [
         'invoice_date' => 'date',
-        'due_date'     => 'date',
-        'reviewed_at'  => 'datetime',
-        'amount'       => 'decimal:2',
+        'due_date' => 'date',
+        'reviewed_at' => 'datetime',
+        'amount' => 'decimal:2',
     ];
 
     protected static function booted(): void
     {
         static::creating(function (self $inv): void {
             if (empty($inv->reference_number)) {
-                $inv->reference_number = 'INV-' . strtoupper(Str::random(8));
+                $inv->reference_number = 'INV-'.strtoupper(Str::random(8));
             }
         });
     }
 
     // ── Relations ─────────────────────────────────────────────────────────────
 
-    public function purchaseOrder()    { return $this->belongsTo(PurchaseOrder::class); }
-    public function goodsReceiptNote() { return $this->belongsTo(GoodsReceiptNote::class); }
-    public function vendor()           { return $this->belongsTo(Vendor::class); }
-    public function reviewedBy()       { return $this->belongsTo(User::class, 'reviewed_by'); }
+    public function purchaseOrder()
+    {
+        return $this->belongsTo(PurchaseOrder::class);
+    }
+
+    public function contract()
+    {
+        return $this->belongsTo(Contract::class);
+    }
+
+    public function contractPaymentSchedule()
+    {
+        return $this->belongsTo(ContractPaymentSchedule::class, 'contract_payment_schedule_id');
+    }
+
+    public function goodsReceiptNote()
+    {
+        return $this->belongsTo(GoodsReceiptNote::class);
+    }
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class);
+    }
+
+    public function reviewedBy()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
 
     // ── Methods ───────────────────────────────────────────────────────────────
 
@@ -50,9 +76,20 @@ class Invoice extends Model
         return $this->morphMany(Attachment::class, 'attachable')->latest();
     }
 
-    public function isMatched(): bool  { return $this->match_status === 'matched'; }
-    public function isApproved(): bool { return $this->status === 'approved'; }
-    public function isRejected(): bool { return $this->status === 'rejected'; }
+    public function isMatched(): bool
+    {
+        return $this->match_status === 'matched';
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === 'rejected';
+    }
 
     /**
      * Run 3-way match: compare PO total amount ↔ Invoice amount.
@@ -62,29 +99,29 @@ class Invoice extends Model
      */
     public function performThreeWayMatch(): array
     {
-        $po     = $this->purchaseOrder;
-        $grn    = $this->goodsReceiptNote;
-        $notes  = [];
+        $po = $this->purchaseOrder;
+        $grn = $this->goodsReceiptNote;
+        $notes = [];
         $status = 'matched';
 
         // Check invoice amount vs PO total
         if ((float) $this->amount > (float) $po->total_amount) {
-            $notes[]  = "Invoice amount ({$this->currency} {$this->amount}) exceeds PO total ({$po->currency} {$po->total_amount}).";
-            $status   = 'variance';
+            $notes[] = "Invoice amount ({$this->currency} {$this->amount}) exceeds PO total ({$po->currency} {$po->total_amount}).";
+            $status = 'variance';
         } elseif (abs((float) $this->amount - (float) $po->total_amount) > 0.01) {
-            $notes[]  = "Invoice amount ({$this->currency} {$this->amount}) differs from PO total ({$po->currency} {$po->total_amount}).";
-            $status   = 'variance';
+            $notes[] = "Invoice amount ({$this->currency} {$this->amount}) differs from PO total ({$po->currency} {$po->total_amount}).";
+            $status = 'variance';
         }
 
         // Check GRN acceptance status
         if ($grn && ! $grn->isAccepted()) {
             $notes[] = "Linked GRN ({$grn->reference_number}) has not been accepted (status: {$grn->status}).";
-            $status  = 'variance';
+            $status = 'variance';
         }
 
         return [
             'match_status' => $status,
-            'match_notes'  => implode(' ', $notes),
+            'match_notes' => implode(' ', $notes),
         ];
     }
 }

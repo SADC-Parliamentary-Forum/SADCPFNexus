@@ -536,6 +536,61 @@ class ContractController extends Controller
         return response()->json(['data' => $contract->exceptions]);
     }
 
+    /** Invoices linked to this contract, with milestone + derived deliverable (PRD §58). */
+    public function invoices(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.view', 'contract.view_all', 'contract.report'], ['Procurement Officer', 'Finance Controller']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+
+        $invoices = $contract->invoices()
+            ->with(['contractPaymentSchedule:id,name,trigger_deliverable_id', 'contractPaymentSchedule.triggerDeliverable:id,name,status'])
+            ->get(['id', 'reference_number', 'vendor_invoice_number', 'amount', 'currency', 'invoice_date', 'due_date', 'status', 'contract_payment_schedule_id']);
+
+        return response()->json(['data' => $invoices]);
+    }
+
+    /** Link an existing invoice to this contract, optionally to a milestone (PRD §58). */
+    public function linkInvoice(Request $request, Contract $contract, \App\Models\Invoice $invoice): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.create', 'contract.report'], ['Procurement Officer', 'Finance Controller']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        abort_if((int) $invoice->tenant_id !== (int) $request->user()->tenant_id, 404);
+
+        $data = $request->validate([
+            'contract_payment_schedule_id' => ['nullable', 'integer'],
+        ]);
+
+        if (! empty($data['contract_payment_schedule_id'])) {
+            $owns = $contract->paymentSchedules()->whereKey($data['contract_payment_schedule_id'])->exists();
+            abort_unless($owns, 422, 'That milestone does not belong to this contract.');
+        }
+
+        $invoice->update([
+            'contract_id' => $contract->id,
+            'contract_payment_schedule_id' => $data['contract_payment_schedule_id'] ?? null,
+        ]);
+
+        AuditLog::record('contract.invoice_linked', [
+            'auditable_type' => Contract::class, 'auditable_id' => $contract->id,
+            'new_values' => ['invoice_id' => $invoice->id, 'milestone_id' => $data['contract_payment_schedule_id'] ?? null],
+            'tags' => ['contract', 'invoice'],
+        ]);
+
+        return response()->json(['message' => 'Invoice linked to the contract.', 'data' => $invoice->fresh()]);
+    }
+
+    /** Unlink an invoice from this contract (PRD §58). */
+    public function unlinkInvoice(Request $request, Contract $contract, \App\Models\Invoice $invoice): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.create', 'contract.report'], ['Procurement Officer', 'Finance Controller']);
+        $contract = $this->contracts->find($contract->id, $request->user());
+        abort_if((int) $invoice->contract_id !== (int) $contract->id, 404);
+
+        $invoice->update(['contract_id' => null, 'contract_payment_schedule_id' => null]);
+
+        return response()->json(['message' => 'Invoice unlinked.']);
+    }
+
     /** Disputes raised on this contract (PRD §78). */
     public function disputes(Request $request, Contract $contract): JsonResponse
     {

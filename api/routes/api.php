@@ -1338,6 +1338,9 @@ Route::prefix('v1')->group(function () {
             Route::get('{contract}/exceptions', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'exceptions']);
             Route::get('{contract}/authority', [\App\Http\Controllers\Api\V1\Contracts\ContractAuthorityController::class, 'forContract']);
             Route::get('{contract}/compliance', [\App\Http\Controllers\Api\V1\Contracts\ContractComplianceController::class, 'forContract']);
+            Route::get('{contract}/invoices', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'invoices']);
+            Route::post('{contract}/invoices/{invoice}/link', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'linkInvoice']);
+            Route::delete('{contract}/invoices/{invoice}/link', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'unlinkInvoice']);
             Route::get('{contract}/disputes', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'disputes']);
             Route::post('{contract}/disputes', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'createDispute']);
             Route::patch('{contract}/disputes/{dispute}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'updateDispute']);
