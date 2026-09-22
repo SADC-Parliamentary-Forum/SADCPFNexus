@@ -26,7 +26,7 @@ test("login form maps CSRF failures to a friendly retry and resets captcha", () 
   assert.match(form, /loginFormErrorMessage/);
   assert.match(form, /shouldResetLoginCaptcha/);
   assert.match(form, /ensureCsrfCookie\(true\)/);
-  assert.match(keys, /"login\.sessionExpired":\s*"Your session expired/);
-  assert.match(keys, /"login\.sessionExpired":\s*"Votre session a expiré/);
-  assert.match(keys, /"login\.sessionExpired":\s*"A sua sessão expirou/);
+  assert.match(keys, /"login\.csrfExpired":\s*"Your session expired/);
+  assert.match(keys, /"login\.csrfExpired":\s*"Votre session a expiré/);
+  assert.match(keys, /"login\.csrfExpired":\s*"A sua sessão expirou/);
 });

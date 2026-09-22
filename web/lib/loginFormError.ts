@@ -1,4 +1,4 @@
-import { isCsrfMismatch } from "./apiError.ts";
+import { isCsrfMismatch } from "./csrf.ts";
 
 type LoginErr = {
   response?: {
@@ -24,7 +24,7 @@ function firstFieldError(
 /** User-facing login error. Never leaks raw Laravel CSRF copy. */
 export function loginFormErrorMessage(err: unknown, t: (key: string) => string): string {
   if (isCsrfMismatch(err)) {
-    return t("login.sessionExpired");
+    return t("login.csrfExpired");
   }
   const data = (err as LoginErr).response?.data;
   const fieldMessage =

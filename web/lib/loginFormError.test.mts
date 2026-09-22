@@ -3,7 +3,7 @@ import test from "node:test";
 import { loginFormErrorMessage, shouldResetLoginCaptcha } from "./loginFormError.ts";
 
 const t = (key: string) => {
-  if (key === "login.sessionExpired") {
+  if (key === "login.csrfExpired" || key === "login.sessionExpired") {
     return "Your session expired. Refresh the security check and try signing in again.";
   }
   if (key === "login.error") {

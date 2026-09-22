@@ -15,7 +15,7 @@ import { writeStoredUser } from "@/lib/session";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { CaptchaGate, EMPTY_CAPTCHA, type CaptchaValue } from "@/components/auth/CaptchaGate";
 import { isSupplierUser, postAuthDestination } from "@/lib/postAuthDestination";
-import { isCsrfMismatch } from "@/lib/apiError";
+import { isCsrfMismatch } from "@/lib/csrf";
 import { loginFormErrorMessage, shouldResetLoginCaptcha } from "@/lib/loginFormError";
 
 interface Props {
