@@ -7,7 +7,10 @@ final class AssetReportCatalogue
     public const TEMPLATE_VERSION = '2.0';
 
     /** @var list<string> */
-    public const READY = ['R01', 'R02', 'R03', 'R04', 'R05', 'R06', 'R08', 'R09'];
+    public const READY = [
+        'R01', 'R02', 'R03', 'R04', 'R05', 'R06', 'R08', 'R09',
+        'R11', 'R12', 'R13', 'R14', 'R15', 'R16', 'R17', 'R18', 'R19',
+    ];
 
     /**
      * @return list<array{id:string,family:string,name:string,purpose:string,priority:string,formats:list<string>}>

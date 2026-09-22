@@ -5,6 +5,9 @@ namespace Tests\Feature\Assets;
 use App\Models\Asset;
 use App\Models\AssetAssignmentHistory;
 use App\Models\AssetCategory;
+use App\Models\AssetLocation;
+use App\Models\AssetLocationHistory;
+use App\Models\AssetTransfer;
 use App\Models\Tenant;
 use App\Modules\Assets\Support\AssetAccess;
 use Tests\TestCase;
@@ -30,7 +33,8 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertContains('xlsx', $r01['formats']);
         $this->assertTrue($r01['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R09')['ready']);
-        $this->assertFalse(collect($data)->firstWhere('id', 'R11')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R11')['ready']);
+        $this->assertFalse(collect($data)->firstWhere('id', 'R21')['ready']);
     }
 
     public function test_assigned_to_user_current_excludes_returned_and_includes_overdue_loan(): void
@@ -213,6 +217,107 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertStringStartsWith('%PDF', $pdf->streamedContent());
         $this->assertNotEmpty($pdf->headers->get('X-Report-Checksum'));
         $this->assertDatabaseHas('audit_logs', ['event' => 'assets.report.exported']);
+    }
+
+    public function test_inventory_must_reports_separate_capital_and_controlled(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $category = AssetCategory::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'ICT Equipment',
+            'code' => 'ICT',
+            'useful_life_years' => 4,
+        ]);
+        $hq = AssetLocation::create([
+            'tenant_id' => $tenant->id,
+            'code' => 'HQ-IT',
+            'name' => 'Headquarters ICT',
+            'building' => 'HQ',
+            'floor' => '2',
+            'room' => '214',
+            'is_active' => true,
+        ]);
+        $capital = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CAP-001',
+            'tag_number' => 'CAP-001',
+            'name' => 'Capital server',
+            'category' => $category->code,
+            'asset_class' => 'capital',
+            'status' => 'active',
+            'location_id' => $hq->id,
+            'department' => 'ICT',
+            'purchase_date' => now()->subDays(10),
+            'purchase_value' => 50000,
+            'book_value' => 40000,
+            'funding_source' => 'core',
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        AssetLocationHistory::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $capital->id,
+            'location_id' => $hq->id,
+            'location_label' => 'Headquarters ICT',
+            'moved_at' => now()->subDays(3),
+            'notes' => 'Commissioned',
+        ]);
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CTL-001',
+            'tag_number' => null,
+            'name' => 'Controlled tablet',
+            'category' => $category->code,
+            'asset_class' => 'controlled',
+            'status' => 'active',
+            'donor_name' => 'EU',
+            'funding_source' => 'grant',
+            'ownership_type' => 'donated',
+            'purchase_date' => now()->subDays(5),
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        AssetTransfer::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => Asset::query()->where('asset_code', 'CAP-001')->value('id'),
+            'from_user_id' => $this->makeUser('staff', $tenant)->id,
+            'to_user_id' => $this->makeUser('staff', $tenant)->id,
+            'status' => 'pending_incoming',
+            'reason' => 'Office move',
+        ]);
+
+        $r11 = $http->getJson('/api/v1/assets/reports/run?report_id=R11')->assertOk();
+        $this->assertSame('Master fixed asset register', $r11->json('title'));
+        $this->assertContains('CAP-001', collect($r11->json('data'))->pluck('asset_tag')->all());
+        $this->assertNotContains('CTL-001', collect($r11->json('data'))->pluck('asset_tag')->all());
+
+        $r12 = $http->getJson('/api/v1/assets/reports/run?report_id=R12')->assertOk();
+        $this->assertContains('CTL-001', collect($r12->json('data'))->pluck('asset_tag')->all());
+
+        $r13 = $http->getJson('/api/v1/assets/reports/run?report_id=R13')->assertOk();
+        $this->assertContains('CAP-001', collect($r13->json('data'))->pluck('asset_tag')->all());
+        $this->assertSame('Headquarters ICT', collect($r13->json('data'))->firstWhere('asset_tag', 'CAP-001')['site']);
+
+        $r14 = $http->getJson('/api/v1/assets/reports/run?report_id=R14')->assertOk();
+        $this->assertGreaterThanOrEqual(1, (int) $r14->json('totals.classes'));
+        $this->assertContains('purchase_value', collect($r14->json('columns'))->pluck('key')->all());
+
+        $r15 = $http->getJson('/api/v1/assets/reports/run?report_id=R15')->assertOk();
+        $this->assertGreaterThanOrEqual(2, (int) $r15->json('totals.count'));
+
+        $r16 = $http->getJson('/api/v1/assets/reports/run?report_id=R16')->assertOk();
+        $this->assertGreaterThanOrEqual(1, (int) $r16->json('totals.count'));
+
+        $r17 = $http->getJson('/api/v1/assets/reports/run?report_id=R17&from='.now()->subMonth()->toDateString())->assertOk();
+        $this->assertGreaterThanOrEqual(2, (int) $r17->json('totals.count'));
+
+        $r18 = $http->getJson('/api/v1/assets/reports/run?report_id=R18')->assertOk();
+        $this->assertContains('CTL-001', collect($r18->json('data'))->pluck('asset_tag')->all());
+
+        $r19 = $http->getJson('/api/v1/assets/reports/run?report_id=R19')->assertOk();
+        $this->assertContains('CTL-001', collect($r19->json('data'))->pluck('asset_tag')->all());
+
+        $xlsx = $http->get('/api/v1/assets/reports/export?report_id=R11&format=xlsx&official=1')->assertOk();
+        $this->assertStringContainsString('spreadsheetml', (string) $xlsx->headers->get('content-type'));
     }
 
     public function test_tenant_users_can_be_found_by_staff_number(): void

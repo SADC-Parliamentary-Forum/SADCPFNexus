@@ -8,6 +8,8 @@ import {
   presentFamilies,
   familyI18nKey,
   reportHref,
+  reportRowKey,
+  displayReportValue,
 } from "./asset-report-catalogue.ts";
 import { catalogFor } from "./i18n/messages.ts";
 
@@ -28,7 +30,10 @@ test("catalogue helpers group and filter the ten PRD families", () => {
   assert.equal(familyI18nKey("Custody"), "assets.reports.familyCustody");
   assert.equal(reportHref("R01"), "#asset-report-r01");
   assert.equal(reportHref("R09"), "#asset-report-r01");
-  assert.equal(reportHref("R11"), null);
+  assert.equal(reportHref("R11"), "#asset-report-r01");
+  assert.equal(reportHref("R21"), null);
+  assert.equal(reportRowKey({ asset_id: 11, asset_tag: "CAP-001" }, 0), "11-0");
+  assert.equal(displayReportValue(null), "—");
 });
 
 test("reports page keeps register export testids and runs the R01 catalogue", () => {
@@ -43,6 +48,8 @@ test("reports page keeps register export testids and runs the R01 catalogue", ()
   assert.match(page, /data-testid=["']asset-reports-download-csv["']/);
   assert.match(page, /data-testid=["']asset-reports-download-excel["']/);
   assert.match(page, /data-testid=["']asset-reports-status["']/);
+  assert.match(page, /report\.columns/);
+  assert.match(page, /displayReportValue/);
 });
 
 test("EN FR PT share the new report-centre keys", () => {

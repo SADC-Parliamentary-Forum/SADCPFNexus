@@ -71,7 +71,10 @@ export function presentFamilies(items: AssetReportCatalogueItem[]): ReportFamily
   return REPORT_FAMILIES.filter((family) => present.has(family));
 }
 
-export const READY_REPORTS = ["R01", "R02", "R03", "R04", "R05", "R06", "R08", "R09"] as const;
+export const READY_REPORTS = [
+  "R01", "R02", "R03", "R04", "R05", "R06", "R08", "R09",
+  "R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18", "R19",
+] as const;
 
 export function reportNeedsStaff(id: string): boolean {
   return id === "R01" || id === "R02" || id === "R08" || id === "R09";
@@ -82,4 +85,16 @@ export function reportHref(id: string): string | null {
     return "#asset-report-r01";
   }
   return null;
+}
+
+export function reportRowKey(row: Record<string, unknown>, index: number): string {
+  const identity = row.assignment_id ?? row.asset_id ?? row.class ?? row.asset_tag ?? index;
+  return String(identity)+"-"+String(index);
+}
+
+export function displayReportValue(value: unknown): string {
+  if (value == null || value === "") {
+    return "—";
+  }
+  return String(value);
 }

@@ -11,11 +11,13 @@ import {
   type TenantUserOption,
 } from "@/lib/api";
 import {
+  displayReportValue,
   filterCatalogue,
   modeI18nKey,
   presentFamilies,
   reportHref,
   reportNeedsStaff,
+  reportRowKey,
   REPORT_MODES,
   familyI18nKey,
   type ReportMode,
@@ -155,47 +157,49 @@ export default function AssetReportsPage() {
           <h2 className="text-base font-semibold text-neutral-900">{report?.title ?? t("assets.reports.assignedToUser")}</h2>
           <p className="mt-1 text-sm text-neutral-500">{t("assets.reports.assignedToUserHint")}</p>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <AssetAssigneePicker
-            id="asset-reports-staff"
-            label={t("assets.reports.staff")}
-            value={staff}
-            onSelect={setStaff}
-            required
-            hint={t("assets.reports.pickStaff")}
-          />
-          <div>
-            <label htmlFor="asset-reports-mode" className="block text-xs font-medium text-neutral-700 mb-1">
-              {t("assets.reports.mode")}
-            </label>
-            <select
-              id="asset-reports-mode"
-              className="form-input text-sm w-full"
-              value={mode}
-              onChange={(e) => setMode(e.target.value as ReportMode)}
-              data-testid="asset-reports-r01-mode"
-            >
-              {REPORT_MODES.map((value) => (
-                <option key={value} value={value}>{t(modeI18nKey(value))}</option>
-              ))}
-            </select>
-          </div>
-          {mode === "as_of" ? (
+        {reportNeedsStaff(selectedId) ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <AssetAssigneePicker
+              id="asset-reports-staff"
+              label={t("assets.reports.staff")}
+              value={staff}
+              onSelect={setStaff}
+              required
+              hint={t("assets.reports.pickStaff")}
+            />
             <div>
-              <label htmlFor="asset-reports-as-of" className="block text-xs font-medium text-neutral-700 mb-1">
-                {t("assets.reports.asOf")}
+              <label htmlFor="asset-reports-mode" className="block text-xs font-medium text-neutral-700 mb-1">
+                {t("assets.reports.mode")}
               </label>
-              <input
-                id="asset-reports-as-of"
-                type="datetime-local"
+              <select
+                id="asset-reports-mode"
                 className="form-input text-sm w-full"
-                value={asOf}
-                onChange={(e) => setAsOf(e.target.value)}
-                data-testid="asset-reports-r01-as-of"
-              />
+                value={mode}
+                onChange={(e) => setMode(e.target.value as ReportMode)}
+                data-testid="asset-reports-r01-mode"
+              >
+                {REPORT_MODES.map((value) => (
+                  <option key={value} value={value}>{t(modeI18nKey(value))}</option>
+                ))}
+              </select>
             </div>
-          ) : null}
-        </div>
+            {mode === "as_of" ? (
+              <div>
+                <label htmlFor="asset-reports-as-of" className="block text-xs font-medium text-neutral-700 mb-1">
+                  {t("assets.reports.asOf")}
+                </label>
+                <input
+                  id="asset-reports-as-of"
+                  type="datetime-local"
+                  className="form-input text-sm w-full"
+                  value={asOf}
+                  onChange={(e) => setAsOf(e.target.value)}
+                  data-testid="asset-reports-r01-as-of"
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -256,52 +260,42 @@ export default function AssetReportsPage() {
             </p>
             <div className="flex flex-wrap gap-2 text-xs">
               <span className="rounded-full bg-neutral-100 px-3 py-1">{t("assets.reports.totalCount")}: {report.totals.count}</span>
-              <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-800">{t("assets.reports.totalUnacknowledged")}: {report.totals.unacknowledged}</span>
-              <span className="rounded-full bg-red-50 px-3 py-1 text-red-800">{t("assets.reports.totalOverdue")}: {report.totals.overdue}</span>
+              {report.totals.unacknowledged != null ? (
+                <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-800">{t("assets.reports.totalUnacknowledged")}: {report.totals.unacknowledged}</span>
+              ) : null}
+              {report.totals.overdue != null ? (
+                <span className="rounded-full bg-red-50 px-3 py-1 text-red-800">{t("assets.reports.totalOverdue")}: {report.totals.overdue}</span>
+              ) : null}
             </div>
             <div className="overflow-x-auto rounded-xl border border-neutral-200">
               <table className="data-table min-w-full text-sm">
                 <thead>
                   <tr>
-                    <th>{t("assets.reports.colTag")}</th>
-                    <th>{t("assets.reports.colDescription")}</th>
-                    <th>{t("assets.reports.colClass")}</th>
-                    <th>{t("assets.reports.colSerial")}</th>
-                    <th>{t("assets.reports.colType")}</th>
-                    <th>{t("assets.reports.colIssueDate")}</th>
-                    <th>{t("assets.reports.colExpectedReturn")}</th>
-                    <th>{t("assets.reports.colLocation")}</th>
-                    <th>{t("assets.reports.colCondition")}</th>
-                    <th>{t("assets.reports.colAck")}</th>
-                    <th>{t("assets.reports.colStatus")}</th>
-                    {report.data.some((row) => "book_value" in row) ? <th>{t("assets.register.bookValue")}</th> : null}
+                    {(report.columns ?? []).map((column) => (
+                      <th key={column.key}>{column.label}</th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {report.data.length === 0 ? (
                     <tr>
-                      <td colSpan={12} className="px-3 py-6 text-center text-neutral-500">{t("assets.reports.empty")}</td>
+                      <td colSpan={Math.max(report.columns?.length ?? 1, 1)} className="px-3 py-6 text-center text-neutral-500">{t("assets.reports.empty")}</td>
                     </tr>
-                  ) : report.data.map((row) => (
-                    <tr key={row.assignment_id}>
-                      <td>
-                        {row.asset_id ? (
-                          <Link href={`/assets/${row.asset_id}`} className="text-primary font-medium">
-                            {row.asset_tag ?? row.asset_id}
-                          </Link>
-                        ) : (row.asset_tag ?? "—")}
-                      </td>
-                      <td>{row.description ?? "—"}</td>
-                      <td>{row.class ?? "—"}</td>
-                      <td>{row.serial_number ?? "—"}</td>
-                      <td>{row.assignment_type}</td>
-                      <td>{row.issue_date ?? "—"}</td>
-                      <td>{row.expected_return ?? "—"}</td>
-                      <td>{row.location ?? "—"}</td>
-                      <td>{row.condition ?? "—"}</td>
-                      <td>{row.acknowledgement_status}</td>
-                      <td>{row.asset_status ?? "—"}</td>
-                      {"book_value" in row ? <td>{row.book_value ?? "—"}</td> : null}
+                  ) : report.data.map((row, index) => (
+                    <tr key={reportRowKey(row as unknown as Record<string, unknown>, index)}>
+                      {(report.columns ?? []).map((column) => {
+                        const value = (row as unknown as Record<string, unknown>)[column.key];
+                        if (column.key === "asset_tag" && row.asset_id) {
+                          return (
+                            <td key={column.key}>
+                              <Link href={`/assets/${row.asset_id}`} className="text-primary font-medium">
+                                {displayReportValue(value ?? row.asset_id)}
+                              </Link>
+                            </td>
+                          );
+                        }
+                        return <td key={column.key}>{displayReportValue(value)}</td>;
+                      })}
                     </tr>
                   ))}
                 </tbody>

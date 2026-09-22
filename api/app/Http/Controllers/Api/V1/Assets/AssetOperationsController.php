@@ -283,6 +283,8 @@ class AssetOperationsController extends Controller
             'mode' => ['nullable', 'string', 'max:32'],
             'as_of' => ['nullable', 'date'],
             'department' => ['nullable', 'string', 'max:120'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
         ]);
 
         return response()->json($engine->run($request->user(), strtoupper($data['report_id']), $data));
@@ -300,6 +302,8 @@ class AssetOperationsController extends Controller
             'mode' => ['nullable', 'string', 'max:32'],
             'as_of' => ['nullable', 'date'],
             'department' => ['nullable', 'string', 'max:120'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
         ]);
 
         return $engine->export(
