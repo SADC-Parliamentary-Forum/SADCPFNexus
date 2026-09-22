@@ -62,6 +62,7 @@ test("reports page keeps register export testids and runs the R01 catalogue", ()
   assert.match(page, /data-testid=["']asset-reports-status["']/);
   assert.match(page, /report\.columns/);
   assert.match(page, /displayReportValue/);
+  assert.match(page, /blocked_reason/);
 });
 
 test("EN FR PT share the new report-centre keys", () => {

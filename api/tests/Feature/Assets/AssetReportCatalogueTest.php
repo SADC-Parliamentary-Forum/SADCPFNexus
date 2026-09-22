@@ -61,6 +61,7 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertTrue(collect($data)->firstWhere('id', 'R26')['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R28')['ready']);
         $this->assertFalse(collect($data)->firstWhere('id', 'R30')['ready']);
+        $this->assertStringContainsString('rate reference', (string) collect($data)->firstWhere('id', 'R30')['blocked_reason']);
     }
 
     public function test_assigned_to_user_current_excludes_returned_and_includes_overdue_loan(): void
@@ -1006,7 +1007,8 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertContains('CAPEX-SRV', collect($r28->json('data'))->pluck('asset_tag')->all());
         $this->assertSame('revaluation', collect($r28->json('data'))->firstWhere('asset_tag', 'CAPEX-SRV')['adjustment_type']);
 
-        $http->getJson('/api/v1/assets/reports/run?report_id=R30')->assertStatus(422);
+        $fx = $http->getJson('/api/v1/assets/reports/run?report_id=R30')->assertStatus(422);
+        $this->assertStringContainsString('rate reference', (string) $fx->json('message'));
     }
 
     public function test_acceptance_criteria_cover_identity_exports_guards_and_isolation(): void
@@ -1041,7 +1043,8 @@ class AssetReportCatalogueTest extends TestCase
 
         $http->getJson('/api/v1/assets/reports/run?report_id=R01')->assertStatus(422);
         $http->getJson('/api/v1/assets/reports/run?report_id=R99')->assertNotFound();
-        $http->getJson('/api/v1/assets/reports/run?report_id=R30')->assertStatus(422);
+        $blocked = $http->getJson('/api/v1/assets/reports/run?report_id=R30')->assertStatus(422);
+        $this->assertStringContainsString('rate reference', (string) $blocked->json('message'));
 
         $empty = $http->getJson('/api/v1/assets/reports/run?report_id=R07&from=2000-01-01&to=2000-01-02')->assertOk();
         $this->assertSame(0, (int) $empty->json('totals.count'));

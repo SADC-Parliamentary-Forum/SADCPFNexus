@@ -462,6 +462,11 @@ export default function AssetReportsPage() {
                         <span className="font-medium text-neutral-900">{item.name}</span>
                       )}
                       <p className="text-xs text-neutral-500 mt-0.5">{item.purpose}</p>
+                      {item.blocked_reason ? (
+                        <p className="text-xs text-amber-800 mt-0.5" data-testid={`asset-report-blocked-${item.id.toLowerCase()}`}>
+                          {item.blocked_reason}
+                        </p>
+                      ) : null}
                     </td>
                     <td>{t(familyI18nKey(item.family))}</td>
                     <td>{item.priority === "must" ? t("assets.reports.priorityMust") : t("assets.reports.priorityShould")}</td>

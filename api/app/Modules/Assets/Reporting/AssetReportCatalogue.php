@@ -6,6 +6,11 @@ final class AssetReportCatalogue
 {
     public const TEMPLATE_VERSION = '2.0';
 
+    /** @var array<string, string> */
+    public const BLOCKED = [
+        'R30' => 'Assets store a single currency and purchase value. Original currency, functional value, and a rate reference are not persisted.',
+    ];
+
     /** @var list<string> */
     public const READY = [
         'R01', 'R02', 'R03', 'R04', 'R05', 'R06', 'R07', 'R08', 'R09', 'R10',
@@ -17,7 +22,7 @@ final class AssetReportCatalogue
     ];
 
     /**
-     * @return list<array{id:string,family:string,name:string,purpose:string,priority:string,formats:list<string>}>
+     * @return list<array{id:string,family:string,name:string,purpose:string,priority:string,formats:list<string>,template_version:string,ready:bool,blocked_reason:?string}>
      */
     public static function all(): array
     {
@@ -86,6 +91,7 @@ final class AssetReportCatalogue
             'formats' => $pdfXlsxCsv,
             'template_version' => self::TEMPLATE_VERSION,
             'ready' => in_array($row[0], self::READY, true),
+            'blocked_reason' => self::BLOCKED[$row[0]] ?? null,
         ], $rows);
     }
 

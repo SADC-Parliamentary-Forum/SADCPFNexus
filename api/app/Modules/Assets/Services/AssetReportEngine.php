@@ -34,7 +34,11 @@ class AssetReportEngine
     {
         $meta = AssetReportCatalogue::find($reportId);
         abort_unless($meta, 404, 'Unknown report.');
-        abort_unless(in_array($reportId, self::READY, true), 422, 'This report is catalogued but not yet implemented.');
+        abort_unless(
+            in_array($reportId, self::READY, true),
+            422,
+            $meta['blocked_reason'] ?? 'This report is catalogued but not yet implemented.',
+        );
 
         $payload = match ($reportId) {
             'R01', 'R02' => $this->assignedPayload($actor, $reportId, $params),

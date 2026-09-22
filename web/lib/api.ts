@@ -1943,6 +1943,7 @@ export type AssetReportCatalogueItem = {
   formats: string[];
   template_version: string;
   ready?: boolean;
+  blocked_reason?: string | null;
 };
 
 export type AssetAssignedToUserRow = {
