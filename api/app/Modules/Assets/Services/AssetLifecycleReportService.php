@@ -5,6 +5,8 @@ namespace App\Modules\Assets\Services;
 use App\Models\Asset;
 use App\Models\AssetDisposal;
 use App\Models\AssetIncident;
+use App\Models\AssetInsuranceClaim;
+use App\Models\AssetInsurancePolicy;
 use App\Models\AssetMaintenanceRecord;
 use App\Models\AuditLog;
 use App\Models\User;
@@ -19,16 +21,56 @@ class AssetLifecycleReportService
     public function build(User $actor, string $reportId, array $params): array
     {
         return match ($reportId) {
+            'R39' => $this->warrantyExpiry($actor, $params),
             'R40' => $this->serviceDue($actor),
+            'R41' => $this->repairHistory($actor),
+            'R42' => $this->repeatFailures($actor),
             'R43' => $this->unavailable($actor),
             'R44' => $this->disposalCandidates($actor),
             'R45' => $this->pendingDisposals($actor),
             'R46' => $this->disposedAndWrittenOff($actor),
+            'R47' => $this->disposalValuations($actor),
             'R48' => $this->riskIncidents($actor),
+            'R49' => $this->insuranceSchedule($actor),
             'R50' => $this->executiveDashboard($actor),
+            'R51' => $this->replacementForecast($actor),
             'R52' => $this->auditTrail($actor),
             default => abort(404, 'Unknown lifecycle report.'),
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function warrantyExpiry(User $actor, array $params): array
+    {
+        $horizon = isset($params['to']) ? \Illuminate\Support\Carbon::parse((string) $params['to']) : now()->addDays(90);
+        $showFinance = AssetAccess::canViewFinancials($actor);
+        $rows = Asset::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereNotIn('status', Asset::DISPOSED_STATUSES)
+            ->whereNotNull('warranty_expiry')
+            ->whereDate('warranty_expiry', '<=', $horizon)
+            ->orderBy('warranty_expiry')
+            ->limit(5000)
+            ->get()
+            ->map(fn (Asset $asset) => $this->assetRow($asset, $showFinance, [
+                'warranty_expiry' => optional($asset->warranty_expiry)->toDateString(),
+                'warranty_provider' => $asset->warranty_provider,
+                'warranty_status' => optional($asset->warranty_expiry)->isPast() ? 'expired' : 'expiring',
+            ]))
+            ->all();
+
+        return [
+            'title' => 'Warranty expiry',
+            'scope' => ['to' => $horizon->toDateString()],
+            'columns' => $this->columns(['asset_tag', 'description', 'warranty_provider', 'warranty_expiry', 'warranty_status']),
+            'data' => $rows,
+            'totals' => ['count' => count($rows), 'expired' => collect($rows)->where('warranty_status', 'expired')->count()],
+            'exceptions' => collect($rows)->where('warranty_status', 'expired')->values()->all(),
+            'declaration' => null,
+        ];
     }
 
     /**
@@ -350,6 +392,251 @@ class AssetLifecycleReportService
     /**
      * @return array<string, mixed>
      */
+    private function repairHistory(User $actor): array
+    {
+        $showFinance = AssetAccess::canViewFinancials($actor);
+        $rows = AssetMaintenanceRecord::query()
+            ->with('asset')
+            ->where('tenant_id', $actor->tenant_id)
+            ->orderByDesc('id')
+            ->limit(2500)
+            ->get()
+            ->map(function (AssetMaintenanceRecord $row) use ($showFinance) {
+                $payload = [
+                    'asset_id' => $row->asset_id,
+                    'asset_tag' => $row->asset?->tag_number ?: $row->asset?->asset_code,
+                    'description' => $row->asset?->name,
+                    'title' => $row->title,
+                    'maintenance_type' => $row->maintenance_type,
+                    'status' => $row->status,
+                    'vendor' => $row->vendor,
+                    'scheduled_on' => optional($row->scheduled_on)->toDateString(),
+                    'completed_on' => optional($row->completed_on)->toDateString(),
+                ];
+                if ($showFinance) {
+                    $payload['cost'] = $row->cost;
+                }
+
+                return $payload;
+            })->all();
+
+        return [
+            'title' => 'Repair history and cost',
+            'scope' => [],
+            'columns' => $this->columns(array_values(array_filter([
+                'asset_tag', 'description', 'title', 'maintenance_type', 'status', 'vendor', 'completed_on',
+                $showFinance ? 'cost' : null,
+            ]))),
+            'data' => $rows,
+            'totals' => [
+                'count' => count($rows),
+                ...($showFinance ? ['cost' => collect($rows)->sum('cost')] : []),
+            ],
+            'exceptions' => [],
+            'declaration' => null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function repeatFailures(User $actor): array
+    {
+        $showFinance = AssetAccess::canViewFinancials($actor);
+        $grouped = AssetMaintenanceRecord::query()
+            ->with('asset')
+            ->where('tenant_id', $actor->tenant_id)
+            ->get()
+            ->groupBy('asset_id');
+        $rows = $grouped->filter(function ($group) {
+            $count = $group->count();
+            $cost = $group->sum(fn (AssetMaintenanceRecord $row) => (float) ($row->cost ?? 0));
+
+            return $count >= 2 || $cost >= 5000;
+        })->map(function ($group) use ($showFinance) {
+            /** @var AssetMaintenanceRecord $first */
+            $first = $group->first();
+            $payload = [
+                'asset_id' => $first->asset_id,
+                'asset_tag' => $first->asset?->tag_number ?: $first->asset?->asset_code,
+                'description' => $first->asset?->name,
+                'count' => $group->count(),
+                'status' => $first->asset?->status,
+            ];
+            if ($showFinance) {
+                $payload['cost'] = round($group->sum(fn (AssetMaintenanceRecord $row) => (float) ($row->cost ?? 0)), 2);
+            }
+
+            return $payload;
+        })->values()->all();
+
+        return [
+            'title' => 'High-cost or repeat-failure assets',
+            'scope' => [],
+            'columns' => $this->columns(array_values(array_filter([
+                'asset_tag', 'description', 'count', 'status',
+                $showFinance ? 'cost' : null,
+            ]))),
+            'data' => $rows,
+            'totals' => ['count' => count($rows)],
+            'exceptions' => $rows,
+            'declaration' => null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function disposalValuations(User $actor): array
+    {
+        $showFinance = AssetAccess::canViewFinancials($actor);
+        $rows = AssetDisposal::query()
+            ->with(['asset', 'requester'])
+            ->where('tenant_id', $actor->tenant_id)
+            ->orderByDesc('id')
+            ->get()
+            ->map(function (AssetDisposal $row) use ($showFinance) {
+                $payload = $this->disposalRow($row, $showFinance);
+                $payload['reserve_price'] = $showFinance ? $row->estimated_value : null;
+                $payload['selected_outcome'] = $row->method ?: $row->status;
+
+                return $payload;
+            })->all();
+
+        return [
+            'title' => 'Disposal valuation and bids',
+            'scope' => [],
+            'columns' => $this->columns(array_values(array_filter([
+                'asset_tag', 'description', 'reference', 'method', 'disposal_status', 'selected_outcome',
+                $showFinance ? 'reserve_price' : null,
+                $showFinance ? 'proceeds' : null,
+            ]))),
+            'data' => $rows,
+            'totals' => ['count' => count($rows)],
+            'exceptions' => collect($rows)->whereNull('reserve_price')->values()->all(),
+            'declaration' => null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function insuranceSchedule(User $actor): array
+    {
+        $showFinance = AssetAccess::canViewFinancials($actor);
+        $policies = AssetInsurancePolicy::query()
+            ->with(['asset', 'claims'])
+            ->where('tenant_id', $actor->tenant_id)
+            ->orderByDesc('id')
+            ->get()
+            ->map(function (AssetInsurancePolicy $policy) use ($showFinance) {
+                $payload = [
+                    'policy_number' => $policy->policy_number,
+                    'insurer_name' => $policy->insurer_name,
+                    'asset_tag' => $policy->asset?->tag_number ?: $policy->asset?->asset_code,
+                    'description' => $policy->asset?->name,
+                    'coverage_type' => $policy->coverage_type,
+                    'status' => $policy->status,
+                    'effective_to' => optional($policy->effective_to)->toDateString(),
+                    'claims' => $policy->claims->count(),
+                ];
+                if ($showFinance) {
+                    $payload['sum_insured'] = $policy->sum_insured;
+                    $payload['claim_amount'] = $policy->claims->sum(fn (AssetInsuranceClaim $claim) => (float) ($claim->claim_amount ?? 0));
+                }
+
+                return $payload;
+            });
+        $gaps = Asset::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereNotIn('status', Asset::DISPOSED_STATUSES)
+            ->where(fn ($q) => $q->where('asset_class', 'capital')->orWhereNull('asset_class'))
+            ->whereNotIn('id', AssetInsurancePolicy::query()->where('tenant_id', $actor->tenant_id)->whereNotNull('asset_id')->pluck('asset_id'))
+            ->limit(1000)
+            ->get()
+            ->map(fn (Asset $asset) => [
+                'policy_number' => null,
+                'insurer_name' => null,
+                'asset_tag' => $asset->tag_number ?: $asset->asset_code,
+                'description' => $asset->name,
+                'coverage_type' => null,
+                'status' => 'uninsured',
+                'effective_to' => null,
+                'claims' => 0,
+            ]);
+        $rows = $policies->concat($gaps)->values()->all();
+
+        return [
+            'title' => 'Insurance schedule and claims',
+            'scope' => [],
+            'columns' => $this->columns(array_values(array_filter([
+                'policy_number', 'insurer_name', 'asset_tag', 'description', 'status', 'effective_to', 'claims',
+                $showFinance ? 'sum_insured' : null,
+            ]))),
+            'data' => $rows,
+            'totals' => [
+                'count' => count($rows),
+                'policies' => $policies->count(),
+                'uninsured' => $gaps->count(),
+            ],
+            'exceptions' => $gaps->all(),
+            'declaration' => null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function replacementForecast(User $actor): array
+    {
+        $showFinance = AssetAccess::canViewFinancials($actor);
+        $assets = Asset::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereNotIn('status', Asset::DISPOSED_STATUSES)
+            ->where(function ($q) {
+                $q->whereNotNull('replacement_due_on')
+                    ->orWhere(function ($q2) {
+                        $q2->whereNotNull('useful_life_years')->whereNotNull('purchase_date');
+                    })
+                    ->orWhereIn('condition', ['poor', 'damaged', 'beyond_economic_repair']);
+            })
+            ->orderBy('asset_code')
+            ->limit(5000)
+            ->get();
+        $rows = $assets->map(function (Asset $asset) use ($showFinance) {
+            $due = $asset->replacement_due_on;
+            if (! $due && $asset->purchase_date && $asset->useful_life_years) {
+                $due = $asset->purchase_date->copy()->addYears((int) $asset->useful_life_years);
+            }
+            $year = $due?->year ?? now()->year;
+
+            return $this->assetRow($asset, $showFinance, [
+                'forecast_year' => $year,
+                'replacement_due_on' => optional($due)->toDateString(),
+                'candidate_reason' => $asset->condition ?: 'end_of_life',
+            ]);
+        })->all();
+
+        return [
+            'title' => 'Replacement forecast',
+            'scope' => [],
+            'columns' => $this->columns(array_values(array_filter([
+                'forecast_year', 'asset_tag', 'description', 'class', 'replacement_due_on', 'candidate_reason',
+                $showFinance ? 'book_value' : null,
+            ]))),
+            'data' => $rows,
+            'totals' => [
+                'count' => count($rows),
+                'years' => collect($rows)->pluck('forecast_year')->unique()->count(),
+            ],
+            'exceptions' => [],
+            'declaration' => null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     private function auditTrail(User $actor): array
     {
         $showFinance = AssetAccess::canViewFinancials($actor);
@@ -542,6 +829,20 @@ class AssetLifecycleReportService
             'record_id' => 'Record ID',
             'prior_value' => 'Prior value',
             'new_value' => 'New value',
+            'warranty_expiry' => 'Warranty expiry',
+            'warranty_provider' => 'Provider',
+            'warranty_status' => 'Warranty status',
+            'completed_on' => 'Completed',
+            'reserve_price' => 'Reserve price',
+            'selected_outcome' => 'Outcome',
+            'policy_number' => 'Policy',
+            'insurer_name' => 'Insurer',
+            'coverage_type' => 'Coverage',
+            'effective_to' => 'Effective to',
+            'claims' => 'Claims',
+            'sum_insured' => 'Sum insured',
+            'forecast_year' => 'Year',
+            'replacement_due_on' => 'Replacement due',
         ];
         $types = [
             'cost' => 'number',
@@ -551,6 +852,14 @@ class AssetLifecycleReportService
             'scheduled_on' => 'date',
             'date_noticed' => 'date',
             'event_time' => 'date',
+            'warranty_expiry' => 'date',
+            'completed_on' => 'date',
+            'effective_to' => 'date',
+            'replacement_due_on' => 'date',
+            'reserve_price' => 'number',
+            'sum_insured' => 'number',
+            'claims' => 'number',
+            'forecast_year' => 'number',
         ];
 
         return array_map(fn (string $key) => [

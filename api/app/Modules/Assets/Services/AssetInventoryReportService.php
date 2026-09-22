@@ -28,6 +28,7 @@ class AssetInventoryReportService
             'R17' => $this->acquisitions($actor, $params),
             'R18' => $this->grantAndDonated($actor),
             'R19' => $this->untagged($actor),
+            'R20' => $this->parentAndComponents($actor),
             default => abort(404, 'Unknown inventory report.'),
         };
     }
@@ -361,6 +362,41 @@ class AssetInventoryReportService
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    private function parentAndComponents(User $actor): array
+    {
+        $showFinance = AssetAccess::canViewFinancials($actor);
+        $assets = Asset::query()
+            ->with(['parentAsset', 'childAssets', 'assignedUser', 'location'])
+            ->where('tenant_id', $actor->tenant_id)
+            ->where(function ($q) {
+                $q->whereNotNull('parent_asset_id')->orWhereHas('childAssets');
+            })
+            ->orderBy('asset_code')
+            ->limit(5000)
+            ->get();
+        $rows = $assets->map(fn (Asset $asset) => $this->assetRow($asset, $showFinance, [
+            'parent_tag' => $asset->parentAsset?->tag_number ?: $asset->parentAsset?->asset_code,
+            'component_role' => $asset->parent_asset_id ? 'component' : 'parent',
+        ]))->all();
+
+        return [
+            'title' => 'Parent and component assets',
+            'scope' => [],
+            'columns' => $this->columns(['asset_tag', 'description', 'component_role', 'parent_tag', 'asset_status'], $showFinance),
+            'data' => $rows,
+            'totals' => [
+                'count' => count($rows),
+                'parents' => collect($rows)->where('component_role', 'parent')->count(),
+                'components' => collect($rows)->where('component_role', 'component')->count(),
+            ],
+            'exceptions' => [],
+            'declaration' => null,
+        ];
+    }
+
+    /**
      * @param  list<string>  $keys
      * @return list<array{key:string,label:string,type:string}>
      */
@@ -385,6 +421,8 @@ class AssetInventoryReportService
             'count' => 'Count',
             'acquisition_date' => 'Acquisition date',
             'label_status' => 'Label status',
+            'parent_tag' => 'Parent',
+            'component_role' => 'Role',
             'purchase_value' => 'Cost',
             'book_value' => 'Net book value',
         ];

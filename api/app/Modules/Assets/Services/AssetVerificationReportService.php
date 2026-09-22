@@ -23,6 +23,7 @@ class AssetVerificationReportService
             'R33' => $this->foundNotOnRegister($actor, $params),
             'R34' => $this->discrepancies($actor, $params, ['wrong_location', 'relocated'], 'Location mismatch'),
             'R35' => $this->discrepancies($actor, $params, ['wrong_custodian'], 'Custodian mismatch'),
+            'R36' => $this->discrepancies($actor, $params, ['condition_changed', 'damaged'], 'Condition mismatch'),
             'R37' => $this->discrepancyValue($actor, $params),
             'R38' => $this->signOffPack($actor, $params),
             default => abort(404, 'Unknown verification report.'),

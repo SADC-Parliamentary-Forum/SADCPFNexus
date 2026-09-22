@@ -9,6 +9,7 @@ use App\Models\AssetDepreciationRun;
 use App\Models\AssetDepreciationRunLine;
 use App\Models\AssetDisposal;
 use App\Models\AssetIncident;
+use App\Models\AssetInsurancePolicy;
 use App\Models\AssetLocation;
 use App\Models\AssetLocationHistory;
 use App\Models\AssetMaintenanceRecord;
@@ -48,7 +49,9 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertTrue(collect($data)->firstWhere('id', 'R38')['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R40')['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R52')['ready']);
-        $this->assertFalse(collect($data)->firstWhere('id', 'R51')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R07')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R51')['ready']);
+        $this->assertFalse(collect($data)->firstWhere('id', 'R24')['ready']);
     }
 
     public function test_assigned_to_user_current_excludes_returned_and_includes_overdue_loan(): void
@@ -724,6 +727,154 @@ class AssetReportCatalogueTest extends TestCase
 
         $xlsx = $http->get('/api/v1/assets/reports/export?report_id=R50&format=xlsx&official=1')->assertOk();
         $this->assertStringContainsString('spreadsheetml', (string) $xlsx->headers->get('content-type'));
+    }
+
+    public function test_should_reports_cover_returns_components_warranty_and_forecast(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $admin] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $category = AssetCategory::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'ICT Equipment',
+            'code' => 'ICT',
+            'useful_life_years' => 4,
+        ]);
+        $this->seedAssignedAsset($tenant, $category->code, $staff->id, 'Returned dock', 'available', now()->subDays(20), now()->subDay());
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'SH-POOL',
+            'tag_number' => 'SH-POOL',
+            'name' => 'Pool projector',
+            'category' => $category->code,
+            'status' => 'active',
+            'custodian_type' => 'pool',
+            'department' => 'ICT',
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        $parent = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'KIT-1',
+            'tag_number' => 'KIT-1',
+            'name' => 'Conference kit',
+            'category' => $category->code,
+            'status' => 'active',
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'KIT-1A',
+            'tag_number' => 'KIT-1A',
+            'name' => 'Kit microphone',
+            'category' => $category->code,
+            'status' => 'active',
+            'parent_asset_id' => $parent->id,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        $worn = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'WR-1',
+            'tag_number' => 'WR-1',
+            'name' => 'Warranty laptop',
+            'category' => $category->code,
+            'status' => 'active',
+            'warranty_expiry' => now()->addDays(10),
+            'warranty_provider' => 'Dell',
+            'useful_life_years' => 4,
+            'purchase_date' => now()->subYears(3),
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        AssetMaintenanceRecord::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $worn->id,
+            'maintenance_type' => 'corrective',
+            'status' => 'completed',
+            'title' => 'Keyboard',
+            'cost' => 3000,
+            'completed_on' => now()->subMonth()->toDateString(),
+            'recorded_by' => $admin->id,
+        ]);
+        AssetMaintenanceRecord::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $worn->id,
+            'maintenance_type' => 'corrective',
+            'status' => 'completed',
+            'title' => 'Screen',
+            'cost' => 4000,
+            'completed_on' => now()->subWeek()->toDateString(),
+            'recorded_by' => $admin->id,
+        ]);
+        $campaign = AssetVerificationCampaign::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Condition sweep',
+            'status' => 'open',
+            'starts_on' => now()->toDateString(),
+            'created_by' => $admin->id,
+        ]);
+        AssetVerificationResult::create([
+            'campaign_id' => $campaign->id,
+            'asset_id' => $worn->id,
+            'result' => 'condition_changed',
+            'condition' => 'poor',
+            'verified_by' => $admin->id,
+            'verified_at' => now(),
+        ]);
+        AssetDisposal::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $parent->id,
+            'reference' => 'DISP-VAL-1',
+            'status' => 'approved',
+            'reason' => 'surplus',
+            'method' => 'sale',
+            'justification' => 'Kit surplus',
+            'estimated_value' => 2500,
+            'proceeds' => 1800,
+            'requested_by' => $admin->id,
+        ]);
+        AssetInsurancePolicy::create([
+            'tenant_id' => $tenant->id,
+            'policy_number' => 'POL-1',
+            'insurer_name' => 'Santam',
+            'coverage_type' => 'all_risk',
+            'effective_from' => now()->subYear()->toDateString(),
+            'effective_to' => now()->addYear()->toDateString(),
+            'status' => 'active',
+            'asset_id' => $worn->id,
+            'sum_insured' => 20000,
+            'created_by' => $admin->id,
+        ]);
+
+        $r07 = $http->getJson('/api/v1/assets/reports/run?report_id=R07')->assertOk();
+        $this->assertSame('Returned assets', $r07->json('title'));
+        $this->assertGreaterThanOrEqual(1, (int) $r07->json('totals.count'));
+
+        $r10 = $http->getJson('/api/v1/assets/reports/run?report_id=R10')->assertOk();
+        $this->assertContains('SH-POOL', collect($r10->json('data'))->pluck('asset_tag')->all());
+
+        $r20 = $http->getJson('/api/v1/assets/reports/run?report_id=R20')->assertOk();
+        $this->assertContains('KIT-1', collect($r20->json('data'))->pluck('asset_tag')->all());
+        $this->assertContains('KIT-1A', collect($r20->json('data'))->pluck('asset_tag')->all());
+
+        $r36 = $http->getJson('/api/v1/assets/reports/run?report_id=R36')->assertOk();
+        $this->assertContains('WR-1', collect($r36->json('data'))->pluck('asset_tag')->all());
+
+        $r39 = $http->getJson('/api/v1/assets/reports/run?report_id=R39')->assertOk();
+        $this->assertContains('WR-1', collect($r39->json('data'))->pluck('asset_tag')->all());
+
+        $r41 = $http->getJson('/api/v1/assets/reports/run?report_id=R41')->assertOk();
+        $this->assertGreaterThanOrEqual(2, (int) $r41->json('totals.count'));
+
+        $r42 = $http->getJson('/api/v1/assets/reports/run?report_id=R42')->assertOk();
+        $this->assertContains('WR-1', collect($r42->json('data'))->pluck('asset_tag')->all());
+
+        $r47 = $http->getJson('/api/v1/assets/reports/run?report_id=R47')->assertOk();
+        $this->assertContains('DISP-VAL-1', collect($r47->json('data'))->pluck('reference')->all());
+
+        $r49 = $http->getJson('/api/v1/assets/reports/run?report_id=R49')->assertOk();
+        $this->assertContains('POL-1', collect($r49->json('data'))->pluck('policy_number')->all());
+
+        $r51 = $http->getJson('/api/v1/assets/reports/run?report_id=R51')->assertOk();
+        $this->assertContains('WR-1', collect($r51->json('data'))->pluck('asset_tag')->all());
     }
 
     public function test_tenant_users_can_be_found_by_staff_number(): void

@@ -21,8 +21,10 @@ class AssetCustodyReportService
             'R04' => $this->unassigned($actor),
             'R05' => $this->overdueLoans($actor),
             'R06' => $this->pendingAcknowledgement($actor),
+            'R07' => $this->returned($actor, $params),
             'R08' => $this->custodyHistory($actor, $params),
             'R09' => $this->staffClearance($actor, $params),
+            'R10' => $this->sharedAndPooled($actor),
             default => abort(404, 'Unknown custody report.'),
         };
     }
@@ -164,6 +166,69 @@ class AssetCustodyReportService
      * @param  array<string, mixed>  $params
      * @return array<string, mixed>
      */
+    private function returned(User $actor, array $params): array
+    {
+        $showFinance = AssetAccess::canViewFinancials($actor);
+        $query = AssetAssignmentHistory::query()
+            ->with(['asset', 'assignee', 'assignedBy'])
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereNotNull('returned_at')
+            ->orderByDesc('returned_at');
+        if (! empty($params['user_id'])) {
+            $query->where('assigned_to', (int) $params['user_id']);
+        }
+        $rows = $query->limit(5000)->get()->map(fn (AssetAssignmentHistory $row) => $this->historyRow($row, $showFinance) + [
+            'returned_at' => optional($row->returned_at)->toDateString(),
+            'receiving_officer' => $row->assignedBy?->name,
+        ])->all();
+
+        return [
+            'title' => 'Returned assets',
+            'scope' => array_filter(['user_id' => $params['user_id'] ?? null]),
+            'columns' => $this->columns(['custodian_name', 'asset_tag', 'description', 'issue_date', 'returned_at', 'condition', 'receiving_officer'], $showFinance),
+            'data' => $rows,
+            'totals' => ['count' => count($rows)],
+            'exceptions' => [],
+            'declaration' => null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function sharedAndPooled(User $actor): array
+    {
+        $showFinance = AssetAccess::canViewFinancials($actor);
+        $rows = Asset::query()
+            ->with(['assignedUser', 'location'])
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereNotIn('status', Asset::DISPOSED_STATUSES)
+            ->whereIn('custodian_type', ['store', 'pool', 'department', 'shared', 'location'])
+            ->orderBy('asset_code')
+            ->limit(5000)
+            ->get()
+            ->map(fn (Asset $asset) => $this->assetRow($asset, $showFinance, [
+                'custodian_type' => $asset->custodian_type,
+                'location' => $asset->location?->name ?: $asset->department,
+                'accountable_unit' => $asset->department,
+            ]))
+            ->all();
+
+        return [
+            'title' => 'Shared and pooled assets',
+            'scope' => [],
+            'columns' => $this->columns(['asset_tag', 'description', 'custodian_type', 'accountable_unit', 'location', 'asset_status'], $showFinance),
+            'data' => $rows,
+            'totals' => ['count' => count($rows)],
+            'exceptions' => [],
+            'declaration' => null,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
     private function custodyHistory(User $actor, array $params): array
     {
         abort_if(empty($params['user_id']) && empty($params['asset_id']), 422, 'Provide a staff member or asset.');
@@ -292,6 +357,9 @@ class AssetCustodyReportService
             'condition' => 'Condition',
             'acknowledgement_status' => 'Acknowledgement',
             'asset_status' => 'Status',
+            'custodian_type' => 'Custody type',
+            'accountable_unit' => 'Accountable unit',
+            'receiving_officer' => 'Receiving officer',
             'book_value' => 'Net book value',
         ];
         $types = [
