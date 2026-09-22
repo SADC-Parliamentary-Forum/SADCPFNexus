@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   REPORT_FAMILIES,
+  READY_REPORTS,
   filterCatalogue,
   presentFamilies,
   familyI18nKey,
@@ -40,6 +41,8 @@ test("catalogue helpers group and filter the ten PRD families", () => {
   assert.equal(reportHref("R51"), "#asset-report-r01");
   assert.equal(reportHref("R24"), "#asset-report-r01");
   assert.equal(reportHref("R30"), null);
+  assert.equal(READY_REPORTS.length, 51);
+  assert.equal(READY_REPORTS.includes("R30"), false);
   assert.equal(reportNeedsPeriod("R07"), true);
   assert.equal(reportNeedsPeriod("R01"), false);
   assert.equal(reportNeedsCampaign("R36"), true);

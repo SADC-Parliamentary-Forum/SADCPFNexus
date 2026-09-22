@@ -62,6 +62,8 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertTrue(collect($data)->firstWhere('id', 'R28')['ready']);
         $this->assertFalse(collect($data)->firstWhere('id', 'R30')['ready']);
         $this->assertStringContainsString('rate reference', (string) collect($data)->firstWhere('id', 'R30')['blocked_reason']);
+        $this->assertSame(51, collect($data)->where('ready', true)->count());
+        $this->assertSame(['R30'], collect($data)->where('ready', false)->pluck('id')->all());
     }
 
     public function test_assigned_to_user_current_excludes_returned_and_includes_overdue_loan(): void
@@ -486,7 +488,11 @@ class AssetReportCatalogueTest extends TestCase
 
         $viewer = $this->makeUser('staff', $tenant);
         $viewer->givePermissionTo('assets.view');
-        $this->asUser($viewer)->getJson('/api/v1/assets/reports/run?report_id=R21')->assertForbidden();
+        $staffHttp = $this->asUser($viewer);
+        $staffHttp->getJson('/api/v1/assets/reports/run?report_id=R21')->assertForbidden();
+        $staffHttp->getJson('/api/v1/assets/reports/run?report_id=R24')->assertForbidden();
+        $staffHttp->getJson('/api/v1/assets/reports/run?report_id=R26')->assertForbidden();
+        $staffHttp->getJson('/api/v1/assets/reports/run?report_id=R28')->assertForbidden();
     }
 
     public function test_verification_must_reports_cover_campaign_exceptions_and_sign_off(): void
