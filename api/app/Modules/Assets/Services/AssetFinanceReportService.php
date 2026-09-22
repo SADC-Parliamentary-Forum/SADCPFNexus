@@ -4,8 +4,14 @@ namespace App\Modules\Assets\Services;
 
 use App\Models\Asset;
 use App\Models\AssetDepreciationRunLine;
+use App\Models\AssetDisposal;
+use App\Models\AssetRevaluation;
+use App\Models\BudgetActualTransaction;
+use App\Models\BudgetLine;
+use App\Models\GlJournal;
 use App\Models\User;
 use App\Modules\Assets\Support\AssetAccess;
+use App\Modules\Budget\Services\BudgetAvailabilityService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -23,8 +29,11 @@ class AssetFinanceReportService
             'R21' => $this->depreciationSchedule($actor, $params),
             'R22' => $this->nbvByClass($actor),
             'R23' => $this->fullyDepreciatedInUse($actor),
+            'R24' => $this->capexVsBudget($actor, $params),
             'R25' => $this->additionsReconciliation($actor, $params),
+            'R26' => $this->disposalsReconciliation($actor, $params),
             'R27' => $this->depreciationExceptions($actor),
+            'R28' => $this->impairmentAndRevaluation($actor),
             'R29' => $this->fundingSourceSchedule($actor),
             default => abort(404, 'Unknown finance report.'),
         };
@@ -286,6 +295,206 @@ class AssetFinanceReportService
     }
 
     /**
+     * Capital budget lines vs register acquisitions. String-match only — no invented FK.
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function capexVsBudget(User $actor, array $params): array
+    {
+        [$from, $to] = $this->period($params);
+        $availability = app(BudgetAvailabilityService::class);
+        $lines = BudgetLine::query()
+            ->whereHas('budget', fn ($q) => $q->where('tenant_id', $actor->tenant_id))
+            ->where(function ($q) {
+                $q->whereIn('category', ['capital', 'capex'])
+                    ->orWhere('code', 'like', 'CAPEX%')
+                    ->orWhere('code', 'like', 'CAP-%');
+            })
+            ->orderBy('code')
+            ->get();
+        $capitalAssets = $this->capitalAssets($actor, includeDisposed: true)
+            ->where(function ($q) use ($from, $to) {
+                $q->whereBetween('purchase_date', [$from->toDateString(), $to->toDateString()])
+                    ->orWhereBetween('capitalisation_date', [$from->toDateString(), $to->toDateString()])
+                    ->orWhereNotNull('budget_line');
+            })
+            ->get();
+        $rows = $lines->map(function (BudgetLine $line) use ($availability, $capitalAssets) {
+            $check = $availability->check($line->id);
+            $register = $capitalAssets->filter(function (Asset $asset) use ($line) {
+                return filled($asset->budget_line) && strcasecmp((string) $asset->budget_line, (string) $line->code) === 0;
+            });
+            $registerCost = round($register->sum(fn (Asset $asset) => (float) ($asset->purchase_value ?? 0)), 2);
+            $gap = abs($registerCost - (float) $check['actual']) > 0.01;
+
+            return [
+                'budget_code' => $line->code,
+                'budget_name' => $line->displayName(),
+                'approved' => $check['approved'],
+                'commitments' => $check['commitments'],
+                'actual' => $check['actual'],
+                'available' => $check['available'],
+                'register_acquisitions' => $registerCost,
+                'register_count' => $register->count(),
+                'match_status' => $gap ? 'register_vs_budget_actual_differs' : 'aligned',
+            ];
+        })->values()->all();
+        $unmatched = $capitalAssets->filter(function (Asset $asset) use ($lines) {
+            if (! filled($asset->budget_line)) {
+                return true;
+            }
+
+            return $lines->first(fn (BudgetLine $line) => strcasecmp((string) $line->code, (string) $asset->budget_line) === 0) === null;
+        })->map(fn (Asset $asset) => $this->financeRow($asset, [
+            'budget_code' => $asset->budget_line,
+            'exception_reason' => filled($asset->budget_line) ? 'unknown_budget_line' : 'missing_budget_line',
+        ]))->values()->all();
+
+        return [
+            'title' => 'Capital expenditure vs budget',
+            'scope' => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
+            'columns' => $this->columns([
+                'budget_code', 'budget_name', 'approved', 'commitments', 'actual', 'available', 'register_acquisitions', 'register_count', 'match_status',
+            ]),
+            'data' => $rows,
+            'totals' => [
+                'count' => count($rows),
+                'approved' => collect($rows)->sum('approved'),
+                'register_acquisitions' => collect($rows)->sum('register_acquisitions'),
+                'unmatched_assets' => count($unmatched),
+            ],
+            'exceptions' => $unmatched,
+            'declaration' => 'Register acquisitions are matched to budget lines by budget_line code only. There is no posted capex ledger link.',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function disposalsReconciliation(User $actor, array $params): array
+    {
+        [$from, $to] = $this->period($params);
+        $refs = BudgetActualTransaction::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereNotNull('accounting_reference')
+            ->pluck('accounting_reference')
+            ->merge(
+                GlJournal::query()
+                    ->where('tenant_id', $actor->tenant_id)
+                    ->pluck('journal_no')
+            )
+            ->filter()
+            ->map(fn ($ref) => strtoupper((string) $ref))
+            ->unique();
+        $rows = AssetDisposal::query()
+            ->with(['asset', 'requester'])
+            ->where('tenant_id', $actor->tenant_id)
+            ->where(function ($q) use ($from, $to) {
+                $q->whereBetween('completed_at', [$from, $to])
+                    ->orWhereBetween('created_at', [$from, $to]);
+            })
+            ->orderByDesc('id')
+            ->get()
+            ->map(function (AssetDisposal $row) use ($refs) {
+                $ref = strtoupper((string) ($row->accounting_reference ?: ''));
+                $matched = $ref !== '' && $refs->contains($ref);
+
+                return [
+                    'asset_id' => $row->asset_id,
+                    'asset_tag' => $row->asset?->tag_number ?: $row->asset?->asset_code,
+                    'description' => $row->asset?->name,
+                    'reference' => $row->reference,
+                    'disposal_status' => $row->status,
+                    'method' => $row->method,
+                    'proceeds' => $row->proceeds,
+                    'book_value' => $row->asset?->book_value,
+                    'accounting_reference' => $row->accounting_reference,
+                    'gl_matched' => $matched,
+                    'exception_reason' => $matched || $row->status !== 'completed' ? null : 'unmatched_gl',
+                ];
+            })->all();
+        $covered = collect($rows)->pluck('asset_id')->filter()->all();
+        $orphans = Asset::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereIn('status', Asset::DISPOSED_STATUSES)
+            ->when($covered !== [], fn ($q) => $q->whereNotIn('id', $covered))
+            ->get()
+            ->map(fn (Asset $asset) => $this->financeRow($asset, [
+                'reference' => null,
+                'exception_reason' => 'disposed_without_disposal_record',
+                'gl_matched' => false,
+            ]))
+            ->all();
+        $exceptions = collect($rows)->whereNotNull('exception_reason')->values()->merge($orphans)->all();
+
+        return [
+            'title' => 'Disposals reconciliation',
+            'scope' => ['from' => $from->toDateString(), 'to' => $to->toDateString()],
+            'columns' => $this->columns([
+                'asset_tag', 'description', 'reference', 'disposal_status', 'method', 'proceeds', 'book_value', 'accounting_reference', 'gl_matched',
+            ]),
+            'data' => $rows,
+            'totals' => [
+                'count' => count($rows),
+                'matched' => collect($rows)->where('gl_matched', true)->count(),
+                'proceeds' => collect($rows)->sum('proceeds'),
+            ],
+            'exceptions' => $exceptions,
+            'declaration' => 'GL match is by accounting_reference against budget actuals or posted journal numbers. Disposal completion does not auto-post a journal.',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function impairmentAndRevaluation(User $actor): array
+    {
+        $rows = AssetRevaluation::query()
+            ->with(['asset', 'requester', 'approver'])
+            ->where('tenant_id', $actor->tenant_id)
+            ->orderByDesc('id')
+            ->limit(2500)
+            ->get()
+            ->map(function (AssetRevaluation $row) {
+                $previous = (float) ($row->previous_book_value ?? 0);
+                $proposed = (float) ($row->proposed_value ?? 0);
+
+                return [
+                    'asset_id' => $row->asset_id,
+                    'asset_tag' => $row->asset?->tag_number ?: $row->asset?->asset_code,
+                    'description' => $row->asset?->name,
+                    'adjustment_type' => 'revaluation',
+                    'previous_book_value' => $previous,
+                    'proposed_value' => $proposed,
+                    'adjustment' => round($proposed - $previous, 2),
+                    'status' => $row->status,
+                    'effective_date' => optional($row->effective_date)->toDateString(),
+                    'reason' => $row->reason,
+                    'approved_by' => $row->approver?->name,
+                    'exception_reason' => $row->status === 'pending' ? 'pending_approval' : null,
+                ];
+            })->all();
+
+        return [
+            'title' => 'Impairment and revaluation',
+            'scope' => [],
+            'columns' => $this->columns([
+                'asset_tag', 'description', 'adjustment_type', 'previous_book_value', 'proposed_value', 'adjustment', 'status', 'effective_date', 'reason',
+            ]),
+            'data' => $rows,
+            'totals' => [
+                'count' => count($rows),
+                'revaluations' => count($rows),
+                'impairments' => 0,
+            ],
+            'exceptions' => collect($rows)->whereNotNull('exception_reason')->values()->all(),
+            'declaration' => 'Only approved or pending revaluations are sourced. Impairment amounts are not stored on the register and are not invented here.',
+        ];
+    }
+
+    /**
      * @param  Collection<int, int|string>  $assetIds
      * @return Collection<int, AssetDepreciationRunLine>
      */
@@ -399,6 +608,28 @@ class AssetFinanceReportService
             'matched' => 'Matched',
             'count' => 'Count',
             'exception_reason' => 'Exception',
+            'budget_code' => 'Budget code',
+            'budget_name' => 'Budget line',
+            'approved' => 'Approved',
+            'commitments' => 'Commitments',
+            'actual' => 'Budget actuals',
+            'available' => 'Available',
+            'register_acquisitions' => 'Register acquisitions',
+            'register_count' => 'Register count',
+            'match_status' => 'Match',
+            'reference' => 'Reference',
+            'disposal_status' => 'Disposal status',
+            'method' => 'Method',
+            'proceeds' => 'Proceeds',
+            'accounting_reference' => 'Accounting reference',
+            'gl_matched' => 'GL matched',
+            'adjustment_type' => 'Type',
+            'previous_book_value' => 'Previous NBV',
+            'proposed_value' => 'Proposed value',
+            'adjustment' => 'Adjustment',
+            'status' => 'Status',
+            'effective_date' => 'Effective date',
+            'reason' => 'Reason',
         ];
         $types = [
             'purchase_value' => 'number',
@@ -413,8 +644,19 @@ class AssetFinanceReportService
             'useful_life_years' => 'number',
             'remaining_life_years' => 'number',
             'count' => 'number',
+            'approved' => 'number',
+            'commitments' => 'number',
+            'actual' => 'number',
+            'available' => 'number',
+            'register_acquisitions' => 'number',
+            'register_count' => 'number',
+            'proceeds' => 'number',
+            'previous_book_value' => 'number',
+            'proposed_value' => 'number',
+            'adjustment' => 'number',
             'capitalisation_date' => 'date',
             'acquisition_date' => 'date',
+            'effective_date' => 'date',
         ];
 
         return array_map(fn (string $key) => [

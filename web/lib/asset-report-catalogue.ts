@@ -74,7 +74,7 @@ export function presentFamilies(items: AssetReportCatalogueItem[]): ReportFamily
 export const READY_REPORTS = [
   "R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10",
   "R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18", "R19", "R20",
-  "R21", "R22", "R23", "R25", "R27", "R29",
+  "R21", "R22", "R23", "R24", "R25", "R26", "R27", "R28", "R29",
   "R31", "R32", "R33", "R34", "R35", "R36", "R37", "R38",
   "R39", "R40", "R41", "R42", "R43", "R44", "R45", "R46", "R47", "R48", "R49",
   "R50", "R51", "R52",
@@ -85,7 +85,7 @@ export function reportNeedsStaff(id: string): boolean {
 }
 
 export function reportNeedsPeriod(id: string): boolean {
-  return id === "R07" || id === "R17" || id === "R21" || id === "R25" || id === "R39";
+  return id === "R07" || id === "R17" || id === "R21" || id === "R24" || id === "R25" || id === "R26" || id === "R39";
 }
 
 export function reportNeedsCampaign(id: string): boolean {

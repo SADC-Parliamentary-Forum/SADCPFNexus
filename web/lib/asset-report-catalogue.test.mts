@@ -38,7 +38,8 @@ test("catalogue helpers group and filter the ten PRD families", () => {
   assert.equal(reportHref("R40"), "#asset-report-r01");
   assert.equal(reportHref("R52"), "#asset-report-r01");
   assert.equal(reportHref("R51"), "#asset-report-r01");
-  assert.equal(reportHref("R24"), null);
+  assert.equal(reportHref("R24"), "#asset-report-r01");
+  assert.equal(reportHref("R30"), null);
   assert.equal(reportNeedsPeriod("R07"), true);
   assert.equal(reportNeedsPeriod("R01"), false);
   assert.equal(reportNeedsCampaign("R36"), true);

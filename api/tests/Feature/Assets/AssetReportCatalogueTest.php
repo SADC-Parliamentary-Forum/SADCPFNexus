@@ -13,10 +13,16 @@ use App\Models\AssetInsurancePolicy;
 use App\Models\AssetLocation;
 use App\Models\AssetLocationHistory;
 use App\Models\AssetMaintenanceRecord;
+use App\Models\AssetRevaluation;
 use App\Models\AssetTransfer;
 use App\Models\AssetUnregisteredFind;
 use App\Models\AssetVerificationCampaign;
 use App\Models\AssetVerificationResult;
+use App\Models\Budget;
+use App\Models\BudgetActualTransaction;
+use App\Models\BudgetLine;
+use App\Models\BudgetReservation;
+use App\Models\FinancialYear;
 use App\Models\Tenant;
 use App\Modules\Assets\Support\AssetAccess;
 use Tests\TestCase;
@@ -51,7 +57,10 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertTrue(collect($data)->firstWhere('id', 'R52')['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R07')['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R51')['ready']);
-        $this->assertFalse(collect($data)->firstWhere('id', 'R24')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R24')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R26')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R28')['ready']);
+        $this->assertFalse(collect($data)->firstWhere('id', 'R30')['ready']);
     }
 
     public function test_assigned_to_user_current_excludes_returned_and_includes_overdue_loan(): void
@@ -877,6 +886,129 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertContains('WR-1', collect($r51->json('data'))->pluck('asset_tag')->all());
     }
 
+    public function test_finance_should_reports_use_budget_disposal_and_revaluation_sources(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $admin] = $this->asAdmin($tenant);
+        $admin->givePermissionTo('assets.financials.view');
+        $fy = FinancialYear::defaultAprilMarch($tenant->id, 2026);
+        $budget = Budget::create([
+            'tenant_id' => $tenant->id,
+            'financial_year_id' => $fy->id,
+            'year' => '2026',
+            'name' => 'FY 2026/27 Capital',
+            'type' => 'core',
+            'status' => 'active',
+            'currency' => 'NAD',
+            'total_amount' => 100000,
+            'created_by' => $admin->id,
+        ]);
+        $line = BudgetLine::create([
+            'budget_id' => $budget->id,
+            'code' => 'CAPEX-IT-2026',
+            'name' => 'ICT capital',
+            'category' => 'capital',
+            'amount_allocated' => 100000,
+            'original_allocation' => 100000,
+            'amount_spent' => 0,
+            'is_active' => true,
+        ]);
+        BudgetReservation::create([
+            'tenant_id' => $tenant->id,
+            'budget_line_id' => $line->id,
+            'budget_line' => 'CAPEX-IT-2026',
+            'reserved_by' => $admin->id,
+            'reserved_amount' => 20000,
+            'original_amount' => 20000,
+            'current_amount' => 20000,
+            'status' => 'reserved',
+            'source_type' => 'manual',
+        ]);
+        BudgetActualTransaction::create([
+            'tenant_id' => $tenant->id,
+            'budget_line_id' => $line->id,
+            'financial_year_id' => $fy->id,
+            'accounting_reference' => 'GL-DISP-1',
+            'transaction_date' => now()->toDateString(),
+            'amount' => 18000,
+            'base_currency_amount' => 18000,
+            'posted_by' => $admin->id,
+        ]);
+        $category = AssetCategory::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'ICT Equipment',
+            'code' => 'ICT',
+            'useful_life_years' => 4,
+        ]);
+        $server = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CAPEX-SRV',
+            'tag_number' => 'CAPEX-SRV',
+            'name' => 'Capital server',
+            'category' => $category->code,
+            'asset_class' => 'capital',
+            'status' => 'active',
+            'budget_line' => 'CAPEX-IT-2026',
+            'purchase_date' => now()->subDays(20),
+            'purchase_value' => 40000,
+            'book_value' => 36000,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        $disposed = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'DISP-SRV',
+            'tag_number' => 'DISP-SRV',
+            'name' => 'Disposed server',
+            'category' => $category->code,
+            'asset_class' => 'capital',
+            'status' => 'disposed',
+            'purchase_value' => 9000,
+            'book_value' => 1200,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        AssetDisposal::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $disposed->id,
+            'reference' => 'DISP-REC-1',
+            'status' => 'completed',
+            'reason' => 'surplus',
+            'method' => 'sale',
+            'justification' => 'Sold',
+            'proceeds' => 1500,
+            'accounting_reference' => 'GL-DISP-1',
+            'requested_by' => $admin->id,
+            'completed_at' => now(),
+        ]);
+        AssetRevaluation::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $server->id,
+            'reference' => 'REV-1',
+            'status' => 'approved',
+            'previous_book_value' => 40000,
+            'proposed_value' => 36000,
+            'reason' => 'Market adjustment',
+            'effective_date' => now()->toDateString(),
+            'requested_by' => $admin->id,
+            'approved_by' => $admin->id,
+            'approved_at' => now(),
+        ]);
+
+        $r24 = $http->getJson('/api/v1/assets/reports/run?report_id=R24')->assertOk();
+        $this->assertSame('Capital expenditure vs budget', $r24->json('title'));
+        $this->assertContains('CAPEX-IT-2026', collect($r24->json('data'))->pluck('budget_code')->all());
+        $this->assertGreaterThanOrEqual(40000, (float) collect($r24->json('data'))->firstWhere('budget_code', 'CAPEX-IT-2026')['register_acquisitions']);
+
+        $r26 = $http->getJson('/api/v1/assets/reports/run?report_id=R26')->assertOk();
+        $this->assertContains('DISP-REC-1', collect($r26->json('data'))->pluck('reference')->all());
+        $this->assertTrue((bool) collect($r26->json('data'))->firstWhere('reference', 'DISP-REC-1')['gl_matched']);
+
+        $r28 = $http->getJson('/api/v1/assets/reports/run?report_id=R28')->assertOk();
+        $this->assertContains('CAPEX-SRV', collect($r28->json('data'))->pluck('asset_tag')->all());
+        $this->assertSame('revaluation', collect($r28->json('data'))->firstWhere('asset_tag', 'CAPEX-SRV')['adjustment_type']);
+
+        $http->getJson('/api/v1/assets/reports/run?report_id=R30')->assertStatus(422);
+    }
+
     public function test_acceptance_criteria_cover_identity_exports_guards_and_isolation(): void
     {
         $tenant = Tenant::factory()->create();
@@ -909,7 +1041,7 @@ class AssetReportCatalogueTest extends TestCase
 
         $http->getJson('/api/v1/assets/reports/run?report_id=R01')->assertStatus(422);
         $http->getJson('/api/v1/assets/reports/run?report_id=R99')->assertNotFound();
-        $http->getJson('/api/v1/assets/reports/run?report_id=R24')->assertStatus(422);
+        $http->getJson('/api/v1/assets/reports/run?report_id=R30')->assertStatus(422);
 
         $empty = $http->getJson('/api/v1/assets/reports/run?report_id=R07&from=2000-01-01&to=2000-01-02')->assertOk();
         $this->assertSame(0, (int) $empty->json('totals.count'));
