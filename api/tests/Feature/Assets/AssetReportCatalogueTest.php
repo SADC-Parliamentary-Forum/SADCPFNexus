@@ -877,6 +877,107 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertContains('WR-1', collect($r51->json('data'))->pluck('asset_tag')->all());
     }
 
+    public function test_acceptance_criteria_cover_identity_exports_guards_and_isolation(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $admin] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $staff->forceFill(['employee_number' => 'RW-0001', 'name' => 'Ronald Windwaai'])->save();
+        $category = AssetCategory::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'ICT Equipment',
+            'code' => 'ICT',
+            'useful_life_years' => 4,
+        ]);
+        $this->seedAssignedAsset($tenant, $category->code, $staff->id, 'Assigned laptop', 'assigned');
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'PF-UNASSIGNED',
+            'tag_number' => '00123',
+            'name' => '=CMD("calc")',
+            'category' => $category->code,
+            'status' => 'active',
+            'assigned_to' => null,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+
+        $byNumber = $http->getJson('/api/v1/assets/reports/run?report_id=R01&staff_number=RW-0001')->assertOk();
+        $this->assertSame('R01', $byNumber->json('run.report_id'));
+        $this->assertSame($staff->id, (int) $byNumber->json('custodian.id'));
+        $this->assertSame('RW-0001', $byNumber->json('custodian.employee_number'));
+        $this->assertSame('2.0', $byNumber->json('run.template_version'));
+
+        $http->getJson('/api/v1/assets/reports/run?report_id=R01')->assertStatus(422);
+        $http->getJson('/api/v1/assets/reports/run?report_id=R99')->assertNotFound();
+        $http->getJson('/api/v1/assets/reports/run?report_id=R24')->assertStatus(422);
+
+        $empty = $http->getJson('/api/v1/assets/reports/run?report_id=R07&from=2000-01-01&to=2000-01-02')->assertOk();
+        $this->assertSame(0, (int) $empty->json('totals.count'));
+
+        $print = $http->get('/api/v1/assets/reports/export?report_id=R04&format=pdf&official=1&intent=print')->assertOk();
+        $this->assertStringStartsWith('%PDF', $print->streamedContent());
+        $this->assertNotEmpty($print->headers->get('X-Report-Checksum'));
+        $this->assertSame('R04', $print->headers->get('X-Report-Id'));
+        $html = view('pdf.asset_report', [
+            'title' => 'Unassigned active assets',
+            'run' => [
+                'report_id' => 'R04',
+                'report_run_id' => 'FAR-R04-TEST',
+                'template_version' => '2.0',
+                'data_as_of' => now()->toIso8601String(),
+                'generated_at' => now()->toIso8601String(),
+                'generated_by' => ['name' => $admin->name],
+                'official' => true,
+                'checksum' => $print->headers->get('X-Report-Checksum'),
+            ],
+            'scope' => [],
+            'columns' => [['key' => 'asset_tag', 'label' => 'Tag']],
+            'data' => [['asset_tag' => '00123']],
+            'totals' => ['count' => 1],
+            'exceptions' => [],
+            'declaration' => null,
+        ])->render();
+        $this->assertStringContainsString('Catalogue R04', $html);
+        $this->assertStringContainsString('Template 2.0', $html);
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assets.report.printed']);
+
+        $xlsx = $http->get('/api/v1/assets/reports/export?report_id=R04&format=xlsx&official=1')->assertOk();
+        $tmp = tempnam(sys_get_temp_dir(), 'farac');
+        file_put_contents($tmp, $xlsx->streamedContent());
+        $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tmp);
+        $this->assertSame('Report Info', $sheet->getSheet(0)->getTitle());
+        $this->assertNotNull($sheet->getSheetByName('Summary'));
+        $data = $sheet->getSheetByName('Data');
+        $this->assertNotNull($data);
+        $tagCell = null;
+        foreach ($data->getRowIterator() as $row) {
+            foreach ($row->getCellIterator() as $cell) {
+                if ((string) $cell->getValue() === '00123') {
+                    $tagCell = $cell;
+                }
+            }
+        }
+        $this->assertNotNull($tagCell);
+        $this->assertSame(\PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING, $tagCell->getDataType());
+        @unlink($tmp);
+
+        $this->assertTrue(
+            \Illuminate\Support\Facades\Storage::disk('local')->exists(
+                'official-reports/'.$tenant->id.'/'.$xlsx->headers->get('X-Report-Run-Id').'.xlsx'
+            ) || \Illuminate\Support\Facades\DB::table('report_export_events')
+                ->where('tenant_id', $tenant->id)
+                ->where('report_key', 'far.R04')
+                ->where('file_hash', $xlsx->headers->get('X-Report-Checksum'))
+                ->exists()
+        );
+
+        $other = Tenant::factory()->create();
+        [$otherHttp] = $this->asAdmin($other);
+        $foreign = $otherHttp->getJson('/api/v1/assets/reports/run?report_id=R04')->assertOk();
+        $this->assertNotContains('00123', collect($foreign->json('data'))->pluck('asset_tag')->all());
+        $this->assertSame($admin->id, (int) $byNumber->json('run.generated_by.id'));
+    }
+
     public function test_tenant_users_can_be_found_by_staff_number(): void
     {
         $tenant = Tenant::factory()->create();

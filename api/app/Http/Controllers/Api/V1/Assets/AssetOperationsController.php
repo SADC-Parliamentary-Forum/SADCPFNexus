@@ -13,7 +13,6 @@ use App\Models\AssetTransfer;
 use App\Models\Attachment;
 use App\Models\User;
 use App\Modules\Assets\Reporting\AssetReportCatalogue;
-use App\Modules\Assets\Services\AssetAssignedToUserReportService;
 use App\Modules\Assets\Services\AssetCheckoutService;
 use App\Modules\Assets\Services\AssetIncidentService;
 use App\Modules\Assets\Services\AssetReportEngine;
@@ -258,20 +257,18 @@ class AssetOperationsController extends Controller
         return response()->json(['data' => AssetReportCatalogue::all()]);
     }
 
-    public function assignedToUserReport(Request $request, AssetAssignedToUserReportService $reports): JsonResponse
+    public function assignedToUserReport(Request $request, AssetReportEngine $engine): JsonResponse
     {
         $data = $request->validate([
-            'user_id' => ['required', 'integer'],
+            'user_id' => ['nullable', 'integer'],
+            'staff_number' => ['nullable', 'string', 'max:64'],
+            'employee_number' => ['nullable', 'string', 'max:64'],
             'mode' => ['nullable', 'string', 'max:32'],
             'as_of' => ['nullable', 'date'],
         ]);
+        $data['report_id'] = 'R01';
 
-        return response()->json($reports->run(
-            $request->user(),
-            (int) $data['user_id'],
-            $data['mode'] ?? 'current',
-            $data['as_of'] ?? null,
-        ));
+        return response()->json($engine->run($request->user(), 'R01', $data));
     }
 
     public function runGovernedReport(Request $request, AssetReportEngine $engine): JsonResponse
@@ -279,6 +276,8 @@ class AssetOperationsController extends Controller
         $data = $request->validate([
             'report_id' => ['required', 'string', 'max:8'],
             'user_id' => ['nullable', 'integer'],
+            'staff_number' => ['nullable', 'string', 'max:64'],
+            'employee_number' => ['nullable', 'string', 'max:64'],
             'asset_id' => ['nullable', 'integer'],
             'mode' => ['nullable', 'string', 'max:32'],
             'as_of' => ['nullable', 'date'],
@@ -299,6 +298,8 @@ class AssetOperationsController extends Controller
             'official' => ['nullable', 'boolean'],
             'intent' => ['nullable', 'in:export,print'],
             'user_id' => ['nullable', 'integer'],
+            'staff_number' => ['nullable', 'string', 'max:64'],
+            'employee_number' => ['nullable', 'string', 'max:64'],
             'asset_id' => ['nullable', 'integer'],
             'mode' => ['nullable', 'string', 'max:32'],
             'as_of' => ['nullable', 'date'],

@@ -177,6 +177,12 @@ class AssetCustodyReportService
         if (! empty($params['user_id'])) {
             $query->where('assigned_to', (int) $params['user_id']);
         }
+        if (! empty($params['from'])) {
+            $query->whereDate('returned_at', '>=', $params['from']);
+        }
+        if (! empty($params['to'])) {
+            $query->whereDate('returned_at', '<=', $params['to']);
+        }
         $rows = $query->limit(5000)->get()->map(fn (AssetAssignmentHistory $row) => $this->historyRow($row, $showFinance) + [
             'returned_at' => optional($row->returned_at)->toDateString(),
             'receiving_officer' => $row->assignedBy?->name,
@@ -184,7 +190,11 @@ class AssetCustodyReportService
 
         return [
             'title' => 'Returned assets',
-            'scope' => array_filter(['user_id' => $params['user_id'] ?? null]),
+            'scope' => array_filter([
+                'user_id' => $params['user_id'] ?? null,
+                'from' => $params['from'] ?? null,
+                'to' => $params['to'] ?? null,
+            ]),
             'columns' => $this->columns(['custodian_name', 'asset_tag', 'description', 'issue_date', 'returned_at', 'condition', 'receiving_officer'], $showFinance),
             'data' => $rows,
             'totals' => ['count' => count($rows)],

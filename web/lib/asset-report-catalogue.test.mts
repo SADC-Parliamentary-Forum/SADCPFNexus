@@ -8,6 +8,8 @@ import {
   presentFamilies,
   familyI18nKey,
   reportHref,
+  reportNeedsCampaign,
+  reportNeedsPeriod,
   reportRowKey,
   displayReportValue,
 } from "./asset-report-catalogue.ts";
@@ -37,6 +39,10 @@ test("catalogue helpers group and filter the ten PRD families", () => {
   assert.equal(reportHref("R52"), "#asset-report-r01");
   assert.equal(reportHref("R51"), "#asset-report-r01");
   assert.equal(reportHref("R24"), null);
+  assert.equal(reportNeedsPeriod("R07"), true);
+  assert.equal(reportNeedsPeriod("R01"), false);
+  assert.equal(reportNeedsCampaign("R36"), true);
+  assert.equal(reportNeedsCampaign("R10"), false);
   assert.equal(reportRowKey({ asset_id: 11, asset_tag: "CAP-001" }, 0), "11-0");
   assert.equal(displayReportValue(null), "—");
 });
@@ -64,6 +70,8 @@ test("EN FR PT share the new report-centre keys", () => {
     "assets.reports.modeCurrent",
     "assets.reports.familyCustody",
     "assets.reports.runMeta",
+    "assets.reports.periodFrom",
+    "assets.reports.campaignId",
   ];
   for (const locale of ["en", "fr", "pt"] as const) {
     const table = catalogFor(locale);

@@ -84,6 +84,14 @@ export function reportNeedsStaff(id: string): boolean {
   return id === "R01" || id === "R02" || id === "R08" || id === "R09";
 }
 
+export function reportNeedsPeriod(id: string): boolean {
+  return id === "R07" || id === "R17" || id === "R21" || id === "R25" || id === "R39";
+}
+
+export function reportNeedsCampaign(id: string): boolean {
+  return ["R31", "R32", "R33", "R34", "R35", "R36", "R37", "R38"].includes(id);
+}
+
 export function reportHref(id: string): string | null {
   if (READY_REPORTS.includes(id as (typeof READY_REPORTS)[number])) {
     return "#asset-report-r01";

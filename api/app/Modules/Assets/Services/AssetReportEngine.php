@@ -53,7 +53,8 @@ class AssetReportEngine
             'report_run_id' => $runId,
             'template_version' => AssetReportCatalogue::TEMPLATE_VERSION,
             'parameters' => array_filter([
-                'user_id' => $params['user_id'] ?? null,
+                'user_id' => $params['user_id'] ?? $this->resolveStaffId($actor, $params),
+                'staff_number' => $params['staff_number'] ?? $params['employee_number'] ?? null,
                 'asset_id' => $params['asset_id'] ?? null,
                 'mode' => $params['mode'] ?? ($reportId === 'R02' ? 'current' : null),
                 'as_of' => $asOf,
@@ -145,9 +146,39 @@ class AssetReportEngine
                 'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 default => 'text/csv; charset=UTF-8',
             },
+            'X-Report-Id' => $reportId,
             'X-Report-Run-Id' => $payload['run']['report_run_id'],
             'X-Report-Checksum' => $checksum,
         ]);
+    }
+
+    /**
+     * Staff identity is user id or employee/staff number within the actor tenant.
+     *
+     * @param  array<string, mixed>  $params
+     */
+    public function resolveStaffId(User $actor, array $params): ?int
+    {
+        if (! empty($params['user_id'])) {
+            $match = User::query()
+                ->where('tenant_id', $actor->tenant_id)
+                ->whereKey((int) $params['user_id'])
+                ->value('id');
+
+            return $match ? (int) $match : null;
+        }
+
+        $number = trim((string) ($params['staff_number'] ?? $params['employee_number'] ?? ''));
+        if ($number === '') {
+            return null;
+        }
+
+        $match = User::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->where('employee_number', $number)
+            ->value('id');
+
+        return $match ? (int) $match : null;
     }
 
     /**
@@ -156,9 +187,10 @@ class AssetReportEngine
      */
     private function assignedPayload(User $actor, string $reportId, array $params): array
     {
-        abort_unless(! empty($params['user_id']), 422, 'Staff member is required.');
+        $staffId = $this->resolveStaffId($actor, $params);
+        abort_unless($staffId !== null, 422, 'Staff member is required.');
         $mode = $reportId === 'R02' ? 'current' : ($params['mode'] ?? 'current');
-        $result = $this->assigned->run($actor, (int) $params['user_id'], $mode, $params['as_of'] ?? null);
+        $result = $this->assigned->run($actor, $staffId, $mode, $params['as_of'] ?? null);
         $showFinance = isset($result['data'][0]['book_value']) || isset($result['data'][0]['purchase_value']);
         $exceptions = [];
         foreach ($result['data'] as $row) {

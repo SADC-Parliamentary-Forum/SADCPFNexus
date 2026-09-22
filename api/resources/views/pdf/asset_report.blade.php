@@ -29,7 +29,8 @@
         <span class="badge">{{ !empty($run['official']) ? 'Official' : 'Draft' }}</span>
     </p>
     <p class="muted">
-        Report ID {{ $run['report_run_id'] }}
+        Catalogue {{ $run['report_id'] }}
+        · Report ID {{ $run['report_run_id'] }}
         · Template {{ $run['template_version'] }}
         · Data as of {{ $run['data_as_of'] }}
         · Generated {{ $run['generated_at'] }}

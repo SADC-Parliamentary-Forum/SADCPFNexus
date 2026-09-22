@@ -2118,11 +2118,12 @@ export const assetsApi = {
   reportPack: (type: string) => api.get<{ data: unknown[] }>(`/assets/reports/${type}`),
   reportCatalogue: () =>
     api.get<{ data: AssetReportCatalogueItem[] }>("/assets/report-catalogue"),
-  assignedToUserReport: (params: { user_id: number; mode?: string; as_of?: string }) =>
+  assignedToUserReport: (params: { user_id?: number; staff_number?: string; mode?: string; as_of?: string }) =>
     api.get<AssetAssignedToUserReport>("/assets/reports/assigned-to-user", { params }),
   runGovernedReport: (params: {
     report_id: string;
     user_id?: number;
+    staff_number?: string;
     asset_id?: number;
     mode?: string;
     as_of?: string;
@@ -2137,6 +2138,7 @@ export const assetsApi = {
     official?: boolean;
     intent?: "export" | "print";
     user_id?: number;
+    staff_number?: string;
     asset_id?: number;
     mode?: string;
     as_of?: string;

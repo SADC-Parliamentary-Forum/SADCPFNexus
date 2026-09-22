@@ -16,6 +16,8 @@ import {
   modeI18nKey,
   presentFamilies,
   reportHref,
+  reportNeedsCampaign,
+  reportNeedsPeriod,
   reportNeedsStaff,
   reportRowKey,
   REPORT_MODES,
@@ -47,6 +49,9 @@ export default function AssetReportsPage() {
   const [staff, setStaff] = useState<TenantUserOption | null>(null);
   const [mode, setMode] = useState<ReportMode>("current");
   const [asOf, setAsOf] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [campaignId, setCampaignId] = useState("");
   const [running, setRunning] = useState(false);
   const [report, setReport] = useState<AssetAssignedToUserReport | null>(null);
   const [selectedId, setSelectedId] = useState("R01");
@@ -96,8 +101,12 @@ export default function AssetReportsPage() {
       const res = await assetsApi.runGovernedReport({
         report_id: reportId,
         user_id: staff?.id,
+        staff_number: staff?.employee_number || undefined,
         mode: reportId === "R02" ? "current" : mode,
         as_of: mode === "as_of" && asOf ? asOf : undefined,
+        from: reportNeedsPeriod(reportId) && from ? from : undefined,
+        to: reportNeedsPeriod(reportId) && to ? to : undefined,
+        campaign_id: reportNeedsCampaign(reportId) && campaignId ? Number(campaignId) : undefined,
       });
       setSelectedId(reportId);
       setReport(res.data);
@@ -122,8 +131,12 @@ export default function AssetReportsPage() {
         official,
         intent,
         user_id: staff?.id,
+        staff_number: staff?.employee_number || undefined,
         mode: selectedId === "R02" ? "current" : mode,
         as_of: mode === "as_of" && asOf ? asOf : undefined,
+        from: reportNeedsPeriod(selectedId) && from ? from : undefined,
+        to: reportNeedsPeriod(selectedId) && to ? to : undefined,
+        campaign_id: reportNeedsCampaign(selectedId) && campaignId ? Number(campaignId) : undefined,
       });
       const blob = res.data as Blob;
       const type = (blob.type || "").toLowerCase();
@@ -198,6 +211,51 @@ export default function AssetReportsPage() {
                 />
               </div>
             ) : null}
+          </div>
+        ) : null}
+        {reportNeedsPeriod(selectedId) ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label htmlFor="asset-reports-from" className="block text-xs font-medium text-neutral-700 mb-1">
+                {t("assets.reports.periodFrom")}
+              </label>
+              <input
+                id="asset-reports-from"
+                type="date"
+                className="form-input text-sm w-full"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                data-testid="asset-reports-from"
+              />
+            </div>
+            <div>
+              <label htmlFor="asset-reports-to" className="block text-xs font-medium text-neutral-700 mb-1">
+                {t("assets.reports.periodTo")}
+              </label>
+              <input
+                id="asset-reports-to"
+                type="date"
+                className="form-input text-sm w-full"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                data-testid="asset-reports-to"
+              />
+            </div>
+          </div>
+        ) : null}
+        {reportNeedsCampaign(selectedId) ? (
+          <div className="max-w-xs">
+            <label htmlFor="asset-reports-campaign" className="block text-xs font-medium text-neutral-700 mb-1">
+              {t("assets.reports.campaignId")}
+            </label>
+            <input
+              id="asset-reports-campaign"
+              type="number"
+              className="form-input text-sm w-full"
+              value={campaignId}
+              onChange={(e) => setCampaignId(e.target.value)}
+              data-testid="asset-reports-campaign"
+            />
           </div>
         ) : null}
         <div className="flex flex-wrap gap-2">
