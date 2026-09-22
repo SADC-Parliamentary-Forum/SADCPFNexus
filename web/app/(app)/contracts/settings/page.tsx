@@ -60,7 +60,7 @@ function SettingsTable({
   children: ReactNode;
 }) {
   return (
-    <div className="min-w-0 overflow-x-auto rounded-lg border border-neutral-200">
+    <div className="min-w-0 max-h-[32rem] overflow-auto rounded-lg border border-neutral-200">
       {error ? (
         <div className="p-3">
           <ErrorBanner message={apiErrorMessage(error, "Could not load this list.")} onRetry={onRetry} />
@@ -338,6 +338,26 @@ export default function ContractSettingsPage() {
             description="Classify agreements and decide whether legal review is required before signature."
             icon="category"
           >
+            <form onSubmit={addType} className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <FormField label="New type name" htmlFor="cs-type-name" required>
+                <input id="cs-type-name" className="form-input" value={typeName} onChange={(e) => setTypeName(e.target.value)} placeholder="e.g. Translation Services Agreement" />
+              </FormField>
+              <FormField label="Counterparty" htmlFor="cs-type-counterparty">
+                <select id="cs-type-counterparty" className="form-input" value={typeCounterparty} onChange={(e) => setTypeCounterparty(e.target.value)}>
+                  <option value="individual">Individual</option>
+                  <option value="organisation">Organisation</option>
+                  <option value="either">Either</option>
+                </select>
+              </FormField>
+              <div className="flex items-end pb-2">
+                <Checkbox id="cs-type-legal" checked={typeLegal} onChange={setTypeLegal} label="Requires legal review" />
+              </div>
+              <div className="flex items-end">
+                <button type="submit" className="btn-primary text-sm w-full sm:w-auto" disabled={!typeName.trim() || savingType}>
+                  {savingType ? "Adding…" : "Add type"}
+                </button>
+              </div>
+            </form>
             <SettingsTable
               caption="Contract types"
               columns={5}
@@ -348,7 +368,7 @@ export default function ContractSettingsPage() {
             >
               {types.length > 0 ? (
                 <>
-                  <thead>
+                  <thead className="sticky top-0 z-10 bg-white">
                     <tr>
                       <th>Name</th>
                       <th>Counterparty</th>
@@ -379,26 +399,6 @@ export default function ContractSettingsPage() {
                 </>
               ) : null}
             </SettingsTable>
-            <form onSubmit={addType} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <FormField label="New type name" htmlFor="cs-type-name" required>
-                <input id="cs-type-name" className="form-input" value={typeName} onChange={(e) => setTypeName(e.target.value)} placeholder="e.g. Translation Services Agreement" />
-              </FormField>
-              <FormField label="Counterparty" htmlFor="cs-type-counterparty">
-                <select id="cs-type-counterparty" className="form-input" value={typeCounterparty} onChange={(e) => setTypeCounterparty(e.target.value)}>
-                  <option value="individual">Individual</option>
-                  <option value="organisation">Organisation</option>
-                  <option value="either">Either</option>
-                </select>
-              </FormField>
-              <div className="flex items-end pb-2">
-                <Checkbox id="cs-type-legal" checked={typeLegal} onChange={setTypeLegal} label="Requires legal review" />
-              </div>
-              <div className="flex items-end">
-                <button type="submit" className="btn-primary text-sm w-full sm:w-auto" disabled={!typeName.trim() || savingType}>
-                  {savingType ? "Adding…" : "Add type"}
-                </button>
-              </div>
-            </form>
           </FormSection>
         </div>
       )}
@@ -410,6 +410,22 @@ export default function ContractSettingsPage() {
             description="Maintain the reference list used when recording contract values."
             icon="payments"
           >
+            <form onSubmit={addCurrency} className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <FormField label="Code" htmlFor="cs-currency-code" required>
+                <input id="cs-currency-code" className="form-input uppercase" value={curCode} maxLength={8} onChange={(e) => setCurCode(e.target.value.toUpperCase())} placeholder="KES" />
+              </FormField>
+              <FormField label="Name" htmlFor="cs-currency-name" required>
+                <input id="cs-currency-name" className="form-input" value={curName} onChange={(e) => setCurName(e.target.value)} placeholder="Kenyan Shilling" />
+              </FormField>
+              <FormField label="Symbol" htmlFor="cs-currency-symbol">
+                <input id="cs-currency-symbol" className="form-input" value={curSymbol} onChange={(e) => setCurSymbol(e.target.value)} placeholder="KSh" />
+              </FormField>
+              <div className="flex items-end">
+                <button type="submit" className="btn-primary text-sm w-full sm:w-auto" disabled={!curCode.trim() || !curName.trim() || savingCurrency}>
+                  {savingCurrency ? "Adding…" : "Add currency"}
+                </button>
+              </div>
+            </form>
             <SettingsTable
               caption="Currencies"
               columns={6}
@@ -420,7 +436,7 @@ export default function ContractSettingsPage() {
             >
               {currencies.length > 0 ? (
                 <>
-                  <thead>
+                  <thead className="sticky top-0 z-10 bg-white">
                     <tr>
                       <th>Code</th>
                       <th>Name</th>
@@ -457,22 +473,6 @@ export default function ContractSettingsPage() {
                 </>
               ) : null}
             </SettingsTable>
-            <form onSubmit={addCurrency} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <FormField label="Code" htmlFor="cs-currency-code" required>
-                <input id="cs-currency-code" className="form-input uppercase" value={curCode} maxLength={8} onChange={(e) => setCurCode(e.target.value.toUpperCase())} placeholder="KES" />
-              </FormField>
-              <FormField label="Name" htmlFor="cs-currency-name" required>
-                <input id="cs-currency-name" className="form-input" value={curName} onChange={(e) => setCurName(e.target.value)} placeholder="Kenyan Shilling" />
-              </FormField>
-              <FormField label="Symbol" htmlFor="cs-currency-symbol">
-                <input id="cs-currency-symbol" className="form-input" value={curSymbol} onChange={(e) => setCurSymbol(e.target.value)} placeholder="KSh" />
-              </FormField>
-              <div className="flex items-end">
-                <button type="submit" className="btn-primary text-sm w-full sm:w-auto" disabled={!curCode.trim() || !curName.trim() || savingCurrency}>
-                  {savingCurrency ? "Adding…" : "Add currency"}
-                </button>
-              </div>
-            </form>
           </FormSection>
         </div>
       )}
@@ -484,6 +484,37 @@ export default function ContractSettingsPage() {
             description="Value bands that decide who may approve or sign. If no rule matches, the action falls back to role permissions."
             icon="gavel"
           >
+            <form onSubmit={addRule} className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <FormField label="Rule name" htmlFor="cs-rule-name" required>
+                <input id="cs-rule-name" className="form-input" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="e.g. SG signs above 100k" />
+              </FormField>
+              <FormField label="Action" htmlFor="cs-rule-action">
+                <select id="cs-rule-action" className="form-input" value={ruleAction} onChange={(e) => setRuleAction(e.target.value as "approve" | "sign")}>
+                  <option value="approve">Approve</option>
+                  <option value="sign">Sign</option>
+                </select>
+              </FormField>
+              <FormField label="Floor" htmlFor="cs-rule-floor">
+                <input id="cs-rule-floor" className="form-input" type="number" min={0} value={ruleFloor} onChange={(e) => setRuleFloor(e.target.value)} placeholder="0" />
+              </FormField>
+              <FormField label="Ceiling" htmlFor="cs-rule-ceiling">
+                <input id="cs-rule-ceiling" className="form-input" type="number" min={0} value={ruleCeiling} onChange={(e) => setRuleCeiling(e.target.value)} placeholder="none" />
+              </FormField>
+              <FormField label="Authorised role" htmlFor="cs-rule-role" required>
+                <input id="cs-rule-role" className="form-input" value={ruleRole} onChange={(e) => setRuleRole(e.target.value)} placeholder="Secretary General" />
+              </FormField>
+              <FormField label="Alternate role" htmlFor="cs-rule-alt">
+                <input id="cs-rule-alt" className="form-input" value={ruleAltRole} onChange={(e) => setRuleAltRole(e.target.value)} placeholder="Optional" />
+              </FormField>
+              <FormField label="Policy ref" htmlFor="cs-rule-policy">
+                <input id="cs-rule-policy" className="form-input" value={rulePolicy} onChange={(e) => setRulePolicy(e.target.value)} placeholder="Optional" />
+              </FormField>
+              <div className="flex items-end">
+                <button type="submit" className="btn-primary text-sm w-full sm:w-auto" disabled={!ruleName.trim() || !ruleRole.trim() || savingRule}>
+                  {savingRule ? "Adding…" : "Add rule"}
+                </button>
+              </div>
+            </form>
             <SettingsTable
               caption="Authority rules"
               columns={8}
@@ -494,7 +525,7 @@ export default function ContractSettingsPage() {
             >
               {authorityRules.length > 0 ? (
                 <>
-                  <thead>
+                  <thead className="sticky top-0 z-10 bg-white">
                     <tr>
                       <th>Rule</th>
                       <th>Action</th>
@@ -527,37 +558,6 @@ export default function ContractSettingsPage() {
                 </>
               ) : null}
             </SettingsTable>
-            <form onSubmit={addRule} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <FormField label="Rule name" htmlFor="cs-rule-name" required>
-                <input id="cs-rule-name" className="form-input" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="e.g. SG signs above 100k" />
-              </FormField>
-              <FormField label="Action" htmlFor="cs-rule-action">
-                <select id="cs-rule-action" className="form-input" value={ruleAction} onChange={(e) => setRuleAction(e.target.value as "approve" | "sign")}>
-                  <option value="approve">Approve</option>
-                  <option value="sign">Sign</option>
-                </select>
-              </FormField>
-              <FormField label="Floor" htmlFor="cs-rule-floor">
-                <input id="cs-rule-floor" className="form-input" type="number" min={0} value={ruleFloor} onChange={(e) => setRuleFloor(e.target.value)} placeholder="0" />
-              </FormField>
-              <FormField label="Ceiling" htmlFor="cs-rule-ceiling">
-                <input id="cs-rule-ceiling" className="form-input" type="number" min={0} value={ruleCeiling} onChange={(e) => setRuleCeiling(e.target.value)} placeholder="none" />
-              </FormField>
-              <FormField label="Authorised role" htmlFor="cs-rule-role" required>
-                <input id="cs-rule-role" className="form-input" value={ruleRole} onChange={(e) => setRuleRole(e.target.value)} placeholder="Secretary General" />
-              </FormField>
-              <FormField label="Alternate role" htmlFor="cs-rule-alt">
-                <input id="cs-rule-alt" className="form-input" value={ruleAltRole} onChange={(e) => setRuleAltRole(e.target.value)} placeholder="Optional" />
-              </FormField>
-              <FormField label="Policy ref" htmlFor="cs-rule-policy">
-                <input id="cs-rule-policy" className="form-input" value={rulePolicy} onChange={(e) => setRulePolicy(e.target.value)} placeholder="Optional" />
-              </FormField>
-              <div className="flex items-end">
-                <button type="submit" className="btn-primary text-sm w-full sm:w-auto" disabled={!ruleName.trim() || !ruleRole.trim() || savingRule}>
-                  {savingRule ? "Adding…" : "Add rule"}
-                </button>
-              </div>
-            </form>
           </FormSection>
         </div>
       )}
@@ -569,6 +569,24 @@ export default function ContractSettingsPage() {
             description="Documents that must be on file. Blocking items appear in readiness and can stop activation or payment."
             icon="verified_user"
           >
+            <form onSubmit={addRequirement} className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <FormField label="Code" htmlFor="cs-req-code" required>
+                <input id="cs-req-code" className="form-input" value={reqCode} onChange={(e) => setReqCode(e.target.value)} placeholder="tax_clearance" />
+              </FormField>
+              <FormField label="Name" htmlFor="cs-req-name" required>
+                <input id="cs-req-name" className="form-input" value={reqName} onChange={(e) => setReqName(e.target.value)} placeholder="Tax clearance certificate" />
+              </FormField>
+              <div className="flex items-end">
+                <button type="submit" className="btn-primary text-sm w-full sm:w-auto" disabled={!reqCode.trim() || !reqName.trim() || savingReq}>
+                  {savingReq ? "Adding…" : "Add requirement"}
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-2 sm:col-span-2 lg:col-span-3">
+                <Checkbox id="cs-req-expiry" checked={reqExpiry} onChange={setReqExpiry} label="Tracks expiry" />
+                <Checkbox id="cs-req-block-act" checked={reqBlockAct} onChange={setReqBlockAct} label="Blocks activation" />
+                <Checkbox id="cs-req-block-pay" checked={reqBlockPay} onChange={setReqBlockPay} label="Blocks payment" />
+              </div>
+            </form>
             <SettingsTable
               caption="Compliance requirements"
               columns={7}
@@ -579,7 +597,7 @@ export default function ContractSettingsPage() {
             >
               {complianceReqs.length > 0 ? (
                 <>
-                  <thead>
+                  <thead className="sticky top-0 z-10 bg-white">
                     <tr>
                       <th>Code</th>
                       <th>Name</th>
@@ -610,24 +628,6 @@ export default function ContractSettingsPage() {
                 </>
               ) : null}
             </SettingsTable>
-            <form onSubmit={addRequirement} className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <FormField label="Code" htmlFor="cs-req-code" required>
-                <input id="cs-req-code" className="form-input" value={reqCode} onChange={(e) => setReqCode(e.target.value)} placeholder="tax_clearance" />
-              </FormField>
-              <FormField label="Name" htmlFor="cs-req-name" required>
-                <input id="cs-req-name" className="form-input" value={reqName} onChange={(e) => setReqName(e.target.value)} placeholder="Tax clearance certificate" />
-              </FormField>
-              <div className="flex flex-col justify-end gap-1 text-sm text-neutral-600">
-                <Checkbox id="cs-req-expiry" checked={reqExpiry} onChange={setReqExpiry} label="Tracks expiry" />
-                <Checkbox id="cs-req-block-act" checked={reqBlockAct} onChange={setReqBlockAct} label="Blocks activation" />
-                <Checkbox id="cs-req-block-pay" checked={reqBlockPay} onChange={setReqBlockPay} label="Blocks payment" />
-              </div>
-              <div className="flex items-end">
-                <button type="submit" className="btn-primary text-sm w-full sm:w-auto" disabled={!reqCode.trim() || !reqName.trim() || savingReq}>
-                  {savingReq ? "Adding…" : "Add requirement"}
-                </button>
-              </div>
-            </form>
           </FormSection>
         </div>
       )}

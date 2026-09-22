@@ -8,7 +8,7 @@ const source = readFileSync(join(process.cwd(), "app/(app)/contracts/settings/pa
 test("contract settings fills the content column and keeps tables inside a scroll wrap", () => {
   assert.match(source, /data-testid=["']contract-settings["']/);
   assert.match(source, /w-full min-w-0/);
-  assert.match(source, /overflow-x-auto/);
+  assert.match(source, /overflow-x-auto|overflow-auto/);
   assert.match(source, /ModulePageHeader/);
   assert.match(source, /PageBreadcrumbs/);
   assert.doesNotMatch(source, /max-w-4xl/);
