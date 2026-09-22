@@ -29,6 +29,7 @@ import {
   nextSort,
   parseReportTab,
   reportColumns,
+  reportCurrency,
   reportDownloadHref,
   reportKpis,
   rowMatchesQuery,
@@ -223,7 +224,7 @@ function ContractReportsDesk() {
   const rowCount = showExceptions ? filteredExceptions.length : filteredRows.length;
   const hasSourceRows = showExceptions ? exceptions.length > 0 : rows.length > 0;
   const kpis = reportKpis(tab, rows, exceptions);
-  const currency = typeof rows[0]?.currency === "string" && rows[0].currency ? String(rows[0].currency) : "NAD";
+  const currency = reportCurrency(rows);
 
   const onTabKey = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
@@ -314,7 +315,9 @@ function ContractReportsDesk() {
           {kpis.map((kpi) => (
             <div key={kpi.id} className="card p-4" data-testid={`contract-reports-kpi-${kpi.id}`}>
               <p className={`text-xl font-bold tabular-nums leading-tight ${kpiTone(kpi.tone)}`}>
-                {kpi.money ? formatCurrency(kpi.value, currency) : kpi.value}
+                {kpi.money
+                  ? (currency ? formatCurrency(kpi.value, currency) : t("contracts.reports.mixedCurrency"))
+                  : kpi.value}
               </p>
               <p className="mt-1 text-xs text-neutral-500">{t(kpi.labelKey)}</p>
             </div>

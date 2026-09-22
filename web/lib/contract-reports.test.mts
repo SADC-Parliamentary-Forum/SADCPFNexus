@@ -12,6 +12,7 @@ import {
   nextReportTab,
   nextSort,
   parseReportTab,
+  reportCurrency,
   reportColumns,
   reportDownloadHref,
   reportKpis,
@@ -94,6 +95,8 @@ test("tab parsing, filtered exports, sort and KPIs stay deterministic", () => {
   assert.equal(kpis.find((item) => item.id === "expiring")?.value, 1);
   assert.equal(kpis.find((item) => item.id === "expired")?.value, 1);
   assert.equal(kpis.find((item) => item.id === "amendments")?.value, 3);
+  assert.equal(reportCurrency([{ currency: "NAD" }, { currency: "NAD" }]), "NAD");
+  assert.equal(reportCurrency([{ currency: "NAD" }, { currency: "USD" }]), null);
 });
 
 test("reports page is a labelled tabbed desk with exports and overflow", () => {
@@ -114,6 +117,7 @@ test("reports page is a labelled tabbed desk with exports and overflow", () => {
   assert.match(page, /useI18n/);
   assert.match(page, /reportDownloadHref/);
   assert.match(page, /parseReportTab/);
+  assert.match(page, /reportCurrency/);
   assert.doesNotMatch(page, /c\.replace\(\/_\/g/);
   assert.doesNotMatch(page, /className=\{`filter-tab capitalize/);
 });
@@ -129,6 +133,7 @@ test("contract reports catalogue covers EN, FR and PT", () => {
     "contracts.reports.emptyFiltered",
     "contracts.reports.print",
     "contracts.reports.kpi.currentValue",
+    "contracts.reports.mixedCurrency",
     "contracts.reports.col.reference",
     "contracts.reports.col.original_value",
   ];

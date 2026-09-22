@@ -237,6 +237,17 @@ export function matchesOperationalHorizon(
   return true;
 }
 
+export function reportCurrency(rows: Record<string, unknown>[]): string | null {
+  const currencies = [
+    ...new Set(
+      rows
+        .map((row) => (typeof row.currency === "string" ? row.currency.trim() : ""))
+        .filter(Boolean),
+    ),
+  ];
+  return currencies.length === 1 ? currencies[0] : null;
+}
+
 export function reportKpis(
   tab: ReportTabId,
   rows: Record<string, unknown>[],
