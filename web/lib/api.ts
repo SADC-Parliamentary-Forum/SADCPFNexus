@@ -3,6 +3,7 @@ import { clearStoredUser } from "@/lib/session";
 import { captureClientException } from "@/lib/observability";
 import { MFA_SETUP_PATH } from "@/lib/privilegedMfa";
 import { readStoredLocale } from "@/lib/i18n/messages";
+import { shouldRetryCsrf } from "@/lib/csrf";
 
 const MUST_RESET_COOKIE = "sadcpf_must_reset";
 const COOKIE_MAX_AGE_DAYS = 7;
@@ -118,7 +119,7 @@ api.interceptors.response.use(
     if (typeof window !== "undefined") {
       const status = error.response?.status;
       const original = error.config as (typeof error.config & { _csrfRetry?: boolean }) | undefined;
-      if (status === 419 && original && !original._csrfRetry) {
+      if (original && shouldRetryCsrf(error, Boolean(original._csrfRetry))) {
         original._csrfRetry = true;
         csrfBootstrapped = false;
         try {
