@@ -109,7 +109,11 @@ export function PortalSignInForm({ portal, emailPlaceholder, prefillEmail }: Pro
   return (
     <>
       {error && (
-        <div role="alert" className="mb-5 flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div
+          role="alert"
+          data-testid="login-error"
+          className="mb-5 flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
+        >
           <span className="material-symbols-outlined text-[16px] mt-0.5">error_outline</span>
           {error}
         </div>
