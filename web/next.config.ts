@@ -26,6 +26,11 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Bakes the internal Laravel origin into server code so the cookie-preserving
+  // App Router proxy works in the standalone production image.
+  env: {
+    API_INTERNAL_URL: apiInternalUrl,
+  },
   // Produces a self-contained build in .next/standalone — required for the production Docker image
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   allowedDevOrigins: ["127.0.0.1", "localhost"],

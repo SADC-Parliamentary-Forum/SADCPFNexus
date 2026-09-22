@@ -25,6 +25,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // RouteNotFoundException when a request lacks credentials.
         $middleware->redirectGuestsTo(fn () => null);
         $middleware->statefulApi();
+        // Next.js / CloudPanel sit in front of Laravel. Honour the browser
+        // host, proto, and client IP so Sanctum CSRF cookies and login
+        // throttles bind to nexus.sadcpf.org instead of the internal hop.
+        $middleware->trustProxies(at: '*');
 
         // Use custom AddCorsHeaders (with CorsHelper + config/cors.php) as the single CORS implementation.
         $middleware->prepend(\App\Http\Middleware\AddCorsHeaders::class);

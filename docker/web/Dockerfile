@@ -38,8 +38,10 @@ RUN npm run verify:build-context && npm run build
 # ── Stage 4: Production runner ─────────────────────────────────────────────────
 FROM node:20-alpine AS runner
 WORKDIR /app
+ARG API_INTERNAL_URL=http://localhost:8000/api/v1
 ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1
+    NEXT_TELEMETRY_DISABLED=1 \
+    API_INTERNAL_URL=$API_INTERNAL_URL
 # standalone output bundles only what's needed — no full node_modules required
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
