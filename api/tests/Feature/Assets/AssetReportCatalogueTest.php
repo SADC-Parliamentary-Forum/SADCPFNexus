@@ -97,6 +97,37 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertArrayNotHasKey('accumulated_depreciation', $row);
     }
 
+    public function test_current_mode_includes_assigned_assets_without_history(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $staff->forceFill(['employee_number' => 'SADCPF-002'])->save();
+        $category = AssetCategory::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'ICT Equipment',
+            'code' => 'ICT',
+            'useful_life_years' => 4,
+        ]);
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'AST-LAP-001',
+            'tag_number' => 'PF/ICT/DEMO1',
+            'name' => 'Dell Latitude 5520',
+            'category' => $category->code,
+            'status' => 'active',
+            'assigned_to' => $staff->id,
+            'issued_at' => now()->subMonths(3),
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+
+        $res = $http->getJson('/api/v1/assets/reports/assigned-to-user?user_id='.$staff->id.'&mode=current')
+            ->assertOk();
+        $this->assertCount(1, $res->json('data'));
+        $this->assertSame('Dell Latitude 5520', $res->json('data.0.description'));
+        $this->assertSame('inferred', $res->json('data.0.acknowledgement_status'));
+    }
+
     public function test_tenant_users_can_be_found_by_staff_number(): void
     {
         $tenant = Tenant::factory()->create();

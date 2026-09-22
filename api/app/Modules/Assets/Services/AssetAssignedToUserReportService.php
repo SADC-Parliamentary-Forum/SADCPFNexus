@@ -2,6 +2,7 @@
 
 namespace App\Modules\Assets\Services;
 
+use App\Models\Asset;
 use App\Models\AssetAssignmentHistory;
 use App\Models\AuditLog;
 use App\Models\User;
@@ -39,6 +40,18 @@ class AssetAssignedToUserReportService
 
         $showFinance = AssetAccess::canViewFinancials($actor);
         $rows = $history->values()->map(fn (AssetAssignmentHistory $row) => $this->serialize($row, $showFinance))->all();
+        if (in_array($mode, ['current', 'history', 'as_of'], true)) {
+            $covered = $history->pluck('asset_id')->filter()->all();
+            $orphans = Asset::query()
+                ->where('tenant_id', $actor->tenant_id)
+                ->where('assigned_to', $custodian->id)
+                ->when($covered !== [], fn ($q) => $q->whereNotIn('id', $covered))
+                ->whereNotIn('status', Asset::DISPOSED_STATUSES)
+                ->get();
+            foreach ($orphans as $asset) {
+                $rows[] = $this->serializeCurrentAsset($asset, $showFinance);
+            }
+        }
 
         $runId = 'FAR-R01-'.now()->format('Ymd').'-'.Str::upper(Str::random(6));
         $params = [
@@ -150,6 +163,40 @@ class AssetAssignedToUserReportService
             $payload['purchase_value'] = $asset?->purchase_value;
             $payload['accumulated_depreciation'] = $asset?->accumulated_depreciation;
             $payload['book_value'] = $asset?->book_value;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Current assigned_to with no history row — migrated data, not invented history.
+     *
+     * @return array<string, mixed>
+     */
+    private function serializeCurrentAsset(Asset $asset, bool $showFinance): array
+    {
+        $payload = [
+            'assignment_id' => -1 * (int) $asset->id,
+            'asset_id' => $asset->id,
+            'asset_tag' => $asset->tag_number ?: $asset->asset_code,
+            'description' => $asset->name,
+            'class' => $asset->asset_class ?: $asset->category,
+            'make_model' => trim(($asset->manufacturer ? $asset->manufacturer.' ' : '').(string) $asset->model) ?: null,
+            'serial_number' => $asset->serial_number,
+            'assignment_type' => 'assigned',
+            'issue_date' => optional($asset->issued_at)->toDateString(),
+            'expected_return' => null,
+            'location' => $asset->department,
+            'condition' => $asset->condition,
+            'acknowledgement_status' => 'inferred',
+            'last_verification' => optional($asset->last_verified_at)->toDateString(),
+            'asset_status' => $asset->status,
+            'overdue' => false,
+        ];
+        if ($showFinance) {
+            $payload['purchase_value'] = $asset->purchase_value;
+            $payload['accumulated_depreciation'] = $asset->accumulated_depreciation;
+            $payload['book_value'] = $asset->book_value;
         }
 
         return $payload;
