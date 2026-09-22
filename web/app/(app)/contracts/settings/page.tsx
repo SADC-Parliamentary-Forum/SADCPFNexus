@@ -6,9 +6,22 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { ErrorBanner, TableEmpty } from "@/components/ui/EmptyState";
 import { Checkbox } from "@/components/ui/Checkbox";
+import {
+  BulkSelectionBar,
+  RowCheckbox,
+  SelectAllCheckbox,
+  selectionColumnClass,
+} from "@/components/ui/BulkSelectionBar";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useRowSelection } from "@/lib/useRowSelection";
+import {
+  settingsIdsToActivate,
+  settingsIdsToDeactivate,
+  summarizeSettingsBulk,
+} from "@/lib/contract-settings-bulk";
+import { cn } from "@/lib/utils";
 import {
   contractsApi,
   type ContractType,
@@ -39,6 +52,57 @@ function FlagBadge({ on, onLabel = "Yes", offLabel = "No" }: { on: boolean; onLa
     <span className={`badge ${on ? "badge-success" : "badge-muted"}`}>
       {on ? onLabel : offLabel}
     </span>
+  );
+}
+
+function rowClass(selected: boolean, active: boolean) {
+  return cn(selected && "bg-primary/5", !active && "opacity-60");
+}
+
+function SettingsBulkBar({
+  selectedCount,
+  deactivateCount,
+  activateCount,
+  busy,
+  onClear,
+  onDeactivate,
+  onActivate,
+}: {
+  selectedCount: number;
+  deactivateCount: number;
+  activateCount: number;
+  busy: boolean;
+  onClear: () => void;
+  onDeactivate: () => void;
+  onActivate: () => void;
+}) {
+  return (
+    <BulkSelectionBar count={selectedCount} onClear={onClear} disabled={busy} className="mt-0 mb-3">
+      {deactivateCount > 0 ? (
+        <button
+          type="button"
+          data-testid="cs-bulk-deactivate"
+          disabled={busy}
+          onClick={onDeactivate}
+          className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+        >
+          <span className="material-symbols-outlined text-[14px]" aria-hidden>block</span>
+          {busy ? "Updating…" : `Deactivate selected (${deactivateCount})`}
+        </button>
+      ) : null}
+      {activateCount > 0 ? (
+        <button
+          type="button"
+          data-testid="cs-bulk-activate"
+          disabled={busy}
+          onClick={onActivate}
+          className="inline-flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
+        >
+          <span className="material-symbols-outlined text-[14px]" aria-hidden>check_circle</span>
+          {busy ? "Updating…" : `Activate selected (${activateCount})`}
+        </button>
+      ) : null}
+    </BulkSelectionBar>
   );
 }
 
@@ -116,6 +180,11 @@ export default function ContractSettingsPage() {
   const currencies = currenciesQuery.data ?? [];
   const authorityRules = rulesQuery.data ?? [];
   const complianceReqs = complianceQuery.data ?? [];
+  const typeSelection = useRowSelection({ rows: types, getId: (row) => row.id });
+  const currencySelection = useRowSelection({ rows: currencies, getId: (row) => row.id });
+  const ruleSelection = useRowSelection({ rows: authorityRules, getId: (row) => row.id });
+  const reqSelection = useRowSelection({ rows: complianceReqs, getId: (row) => row.id });
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const counts: Record<SettingsTab, number> = {
     types: types.length,
@@ -156,6 +225,48 @@ export default function ContractSettingsPage() {
   const refreshCompliance = () => qc.invalidateQueries({ queryKey: ["contract-compliance-requirements"] });
 
   const fail = (e: unknown, fallback: string) => toast.error(apiErrorMessage(e, fallback));
+
+  const applyBulk = async (
+    ids: number[],
+    isActive: boolean,
+    update: (id: number, data: { is_active: boolean }) => Promise<unknown>,
+    refresh: () => void,
+    clear: () => void,
+    noun: string,
+  ) => {
+    if (ids.length === 0 || bulkLoading) return;
+    if (!isActive) {
+      const ok = await confirm({
+        title: `Deactivate ${ids.length} selected ${noun}`,
+        message: `These ${noun} will no longer apply when creating or processing contracts.`,
+        confirmText: "Deactivate",
+        variant: "danger",
+      });
+      if (!ok) return;
+    }
+    setBulkLoading(true);
+    let succeeded = 0;
+    let failed = 0;
+    for (const id of ids) {
+      try {
+        await update(id, { is_active: isActive });
+        succeeded += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    const summary = summarizeSettingsBulk(succeeded, failed);
+    if (summary.kind === "success") {
+      toast.success(isActive ? `Activated ${succeeded} ${noun}` : `Deactivated ${succeeded} ${noun}`);
+      clear();
+    } else if (summary.kind === "partial") {
+      toast.warning(`Updated ${succeeded} ${noun}. ${failed} could not be updated.`);
+    } else {
+      toast.error(`Could not update the selected ${noun}.`);
+    }
+    refresh();
+    setBulkLoading(false);
+  };
 
   const selectTab = (id: SettingsTab) => {
     setTab(id);
@@ -358,9 +469,18 @@ export default function ContractSettingsPage() {
                 </button>
               </div>
             </form>
+            <SettingsBulkBar
+              selectedCount={typeSelection.selectedCount}
+              deactivateCount={settingsIdsToDeactivate(types, typeSelection.selectedIds).length}
+              activateCount={settingsIdsToActivate(types, typeSelection.selectedIds).length}
+              busy={bulkLoading}
+              onClear={typeSelection.clear}
+              onDeactivate={() => void applyBulk(settingsIdsToDeactivate(types, typeSelection.selectedIds), false, (id, data) => contractsApi.updateType(id, data), refreshTypes, typeSelection.clear, "types")}
+              onActivate={() => void applyBulk(settingsIdsToActivate(types, typeSelection.selectedIds), true, (id, data) => contractsApi.updateType(id, data), refreshTypes, typeSelection.clear, "types")}
+            />
             <SettingsTable
               caption="Contract types"
-              columns={5}
+              columns={6}
               loading={typesQuery.isLoading}
               error={typesQuery.error}
               onRetry={() => void typesQuery.refetch()}
@@ -370,6 +490,14 @@ export default function ContractSettingsPage() {
                 <>
                   <thead className="sticky top-0 z-10 bg-white">
                     <tr>
+                      <th className={selectionColumnClass.th}>
+                        <SelectAllCheckbox
+                          checked={typeSelection.allSelectableSelected}
+                          indeterminate={typeSelection.someSelectableSelected && !typeSelection.allSelectableSelected}
+                          onChange={typeSelection.toggleAllSelectable}
+                          disabled={typeSelection.selectableIds.length === 0 || bulkLoading}
+                        />
+                      </th>
                       <th>Name</th>
                       <th>Counterparty</th>
                       <th>Legal review</th>
@@ -379,7 +507,15 @@ export default function ContractSettingsPage() {
                   </thead>
                   <tbody>
                     {types.map((t) => (
-                      <tr key={t.id} className={t.is_active ? undefined : "opacity-60"}>
+                      <tr key={t.id} className={rowClass(typeSelection.isSelected(t.id), t.is_active)}>
+                        <td className={selectionColumnClass.td}>
+                          <RowCheckbox
+                            checked={typeSelection.isSelected(t.id)}
+                            onChange={() => typeSelection.toggle(t.id)}
+                            disabled={bulkLoading}
+                            label={`Select ${t.name}`}
+                          />
+                        </td>
                         <td className="text-sm font-medium text-neutral-800">{t.name}</td>
                         <td className="text-xs capitalize text-neutral-500">{t.counterparty_type}</td>
                         <td>
@@ -426,9 +562,18 @@ export default function ContractSettingsPage() {
                 </button>
               </div>
             </form>
+            <SettingsBulkBar
+              selectedCount={currencySelection.selectedCount}
+              deactivateCount={settingsIdsToDeactivate(currencies, currencySelection.selectedIds).length}
+              activateCount={settingsIdsToActivate(currencies, currencySelection.selectedIds).length}
+              busy={bulkLoading}
+              onClear={currencySelection.clear}
+              onDeactivate={() => void applyBulk(settingsIdsToDeactivate(currencies, currencySelection.selectedIds), false, (id, data) => contractsApi.updateCurrency(id, data), refreshCurrencies, currencySelection.clear, "currencies")}
+              onActivate={() => void applyBulk(settingsIdsToActivate(currencies, currencySelection.selectedIds), true, (id, data) => contractsApi.updateCurrency(id, data), refreshCurrencies, currencySelection.clear, "currencies")}
+            />
             <SettingsTable
               caption="Currencies"
-              columns={6}
+              columns={7}
               loading={currenciesQuery.isLoading}
               error={currenciesQuery.error}
               onRetry={() => void currenciesQuery.refetch()}
@@ -438,6 +583,14 @@ export default function ContractSettingsPage() {
                 <>
                   <thead className="sticky top-0 z-10 bg-white">
                     <tr>
+                      <th className={selectionColumnClass.th}>
+                        <SelectAllCheckbox
+                          checked={currencySelection.allSelectableSelected}
+                          indeterminate={currencySelection.someSelectableSelected && !currencySelection.allSelectableSelected}
+                          onChange={currencySelection.toggleAllSelectable}
+                          disabled={currencySelection.selectableIds.length === 0 || bulkLoading}
+                        />
+                      </th>
                       <th>Code</th>
                       <th>Name</th>
                       <th>Symbol</th>
@@ -448,7 +601,15 @@ export default function ContractSettingsPage() {
                   </thead>
                   <tbody>
                     {currencies.map((c) => (
-                      <tr key={c.id} className={c.is_active ? undefined : "opacity-60"}>
+                      <tr key={c.id} className={rowClass(currencySelection.isSelected(c.id), c.is_active)}>
+                        <td className={selectionColumnClass.td}>
+                          <RowCheckbox
+                            checked={currencySelection.isSelected(c.id)}
+                            onChange={() => currencySelection.toggle(c.id)}
+                            disabled={bulkLoading}
+                            label={`Select ${c.code}`}
+                          />
+                        </td>
                         <td className="font-mono text-sm">{c.code}</td>
                         <td className="text-sm text-neutral-800">{c.name}</td>
                         <td className="text-sm text-neutral-600">{c.symbol ?? "—"}</td>
@@ -515,9 +676,18 @@ export default function ContractSettingsPage() {
                 </button>
               </div>
             </form>
+            <SettingsBulkBar
+              selectedCount={ruleSelection.selectedCount}
+              deactivateCount={settingsIdsToDeactivate(authorityRules, ruleSelection.selectedIds).length}
+              activateCount={settingsIdsToActivate(authorityRules, ruleSelection.selectedIds).length}
+              busy={bulkLoading}
+              onClear={ruleSelection.clear}
+              onDeactivate={() => void applyBulk(settingsIdsToDeactivate(authorityRules, ruleSelection.selectedIds), false, (id, data) => contractsApi.updateAuthorityRule(id, data), refreshRules, ruleSelection.clear, "rules")}
+              onActivate={() => void applyBulk(settingsIdsToActivate(authorityRules, ruleSelection.selectedIds), true, (id, data) => contractsApi.updateAuthorityRule(id, data), refreshRules, ruleSelection.clear, "rules")}
+            />
             <SettingsTable
               caption="Authority rules"
-              columns={8}
+              columns={9}
               loading={rulesQuery.isLoading}
               error={rulesQuery.error}
               onRetry={() => void rulesQuery.refetch()}
@@ -527,6 +697,14 @@ export default function ContractSettingsPage() {
                 <>
                   <thead className="sticky top-0 z-10 bg-white">
                     <tr>
+                      <th className={selectionColumnClass.th}>
+                        <SelectAllCheckbox
+                          checked={ruleSelection.allSelectableSelected}
+                          indeterminate={ruleSelection.someSelectableSelected && !ruleSelection.allSelectableSelected}
+                          onChange={ruleSelection.toggleAllSelectable}
+                          disabled={ruleSelection.selectableIds.length === 0 || bulkLoading}
+                        />
+                      </th>
                       <th>Rule</th>
                       <th>Action</th>
                       <th>Value band</th>
@@ -539,7 +717,15 @@ export default function ContractSettingsPage() {
                   </thead>
                   <tbody>
                     {authorityRules.map((r) => (
-                      <tr key={r.id} className={r.is_active ? undefined : "opacity-60"}>
+                      <tr key={r.id} className={rowClass(ruleSelection.isSelected(r.id), r.is_active)}>
+                        <td className={selectionColumnClass.td}>
+                          <RowCheckbox
+                            checked={ruleSelection.isSelected(r.id)}
+                            onChange={() => ruleSelection.toggle(r.id)}
+                            disabled={bulkLoading}
+                            label={`Select ${r.name}`}
+                          />
+                        </td>
                         <td className="text-sm font-medium text-neutral-800">{r.name}</td>
                         <td className="text-xs capitalize text-neutral-500">{r.action}</td>
                         <td className="whitespace-nowrap text-sm text-neutral-600">{band(r)} {r.currency ?? ""}</td>
@@ -587,9 +773,18 @@ export default function ContractSettingsPage() {
                 <Checkbox id="cs-req-block-pay" checked={reqBlockPay} onChange={setReqBlockPay} label="Blocks payment" />
               </div>
             </form>
+            <SettingsBulkBar
+              selectedCount={reqSelection.selectedCount}
+              deactivateCount={settingsIdsToDeactivate(complianceReqs, reqSelection.selectedIds).length}
+              activateCount={settingsIdsToActivate(complianceReqs, reqSelection.selectedIds).length}
+              busy={bulkLoading}
+              onClear={reqSelection.clear}
+              onDeactivate={() => void applyBulk(settingsIdsToDeactivate(complianceReqs, reqSelection.selectedIds), false, (id, data) => contractsApi.updateComplianceRequirement(id, data), refreshCompliance, reqSelection.clear, "requirements")}
+              onActivate={() => void applyBulk(settingsIdsToActivate(complianceReqs, reqSelection.selectedIds), true, (id, data) => contractsApi.updateComplianceRequirement(id, data), refreshCompliance, reqSelection.clear, "requirements")}
+            />
             <SettingsTable
               caption="Compliance requirements"
-              columns={7}
+              columns={8}
               loading={complianceQuery.isLoading}
               error={complianceQuery.error}
               onRetry={() => void complianceQuery.refetch()}
@@ -599,6 +794,14 @@ export default function ContractSettingsPage() {
                 <>
                   <thead className="sticky top-0 z-10 bg-white">
                     <tr>
+                      <th className={selectionColumnClass.th}>
+                        <SelectAllCheckbox
+                          checked={reqSelection.allSelectableSelected}
+                          indeterminate={reqSelection.someSelectableSelected && !reqSelection.allSelectableSelected}
+                          onChange={reqSelection.toggleAllSelectable}
+                          disabled={reqSelection.selectableIds.length === 0 || bulkLoading}
+                        />
+                      </th>
                       <th>Code</th>
                       <th>Name</th>
                       <th>Expiry</th>
@@ -610,7 +813,15 @@ export default function ContractSettingsPage() {
                   </thead>
                   <tbody>
                     {complianceReqs.map((r) => (
-                      <tr key={r.id} className={r.is_active ? undefined : "opacity-60"}>
+                      <tr key={r.id} className={rowClass(reqSelection.isSelected(r.id), r.is_active)}>
+                        <td className={selectionColumnClass.td}>
+                          <RowCheckbox
+                            checked={reqSelection.isSelected(r.id)}
+                            onChange={() => reqSelection.toggle(r.id)}
+                            disabled={bulkLoading}
+                            label={`Select ${r.name}`}
+                          />
+                        </td>
                         <td className="font-mono text-sm">{r.code}</td>
                         <td className="text-sm text-neutral-800">{r.name}</td>
                         <td><FlagBadge on={r.requires_expiry} /></td>

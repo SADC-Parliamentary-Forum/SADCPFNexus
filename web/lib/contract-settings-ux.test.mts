@@ -39,3 +39,14 @@ test("contract settings uses section tabs, empty states, and labelled add forms"
   assert.doesNotMatch(source, /PRD §/);
   assert.doesNotMatch(source, /text-primary text-xs underline/);
 });
+
+test("contract settings supports multi-select bulk activate and deactivate", () => {
+  assert.match(source, /useRowSelection/);
+  assert.match(source, /BulkSelectionBar/);
+  assert.match(source, /SelectAllCheckbox/);
+  assert.match(source, /RowCheckbox/);
+  assert.match(source, /data-testid=["']cs-bulk-deactivate["']/);
+  assert.match(source, /data-testid=["']cs-bulk-activate["']/);
+  assert.match(source, /settingsIdsToDeactivate/);
+  assert.match(source, /settingsIdsToActivate/);
+});
