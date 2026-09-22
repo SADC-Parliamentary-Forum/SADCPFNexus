@@ -78,18 +78,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${apiInternalUrl}/:path*`,
-      },
-      {
-        source: "/sanctum/csrf-cookie",
-        destination: `${apiOrigin}/sanctum/csrf-cookie`,
-      },
-    ];
-  },
+  // /api/* and /sanctum/csrf-cookie are handled by App Router route
+  // handlers in web/lib/apiProxy.ts so Set-Cookie Domain/cookies survive
+  // the CloudPanel → Next → Laravel hop. Do not re-add these as rewrites:
+  // Next rewrites do not reliably copy every Set-Cookie or X-Forwarded-*.
 };
 
 export default nextConfig;

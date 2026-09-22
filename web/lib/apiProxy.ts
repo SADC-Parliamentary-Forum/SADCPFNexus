@@ -38,9 +38,6 @@ export function rewriteSetCookie(raw: string, options: CookieRewriteOptions): st
     }
     if (key === "secure") {
       hasSecure = true;
-      if (!options.secure) {
-        continue;
-      }
     }
     attributes.push(attribute);
   }
@@ -97,14 +94,33 @@ function firstForwardedValue(value: string | null): string | null {
   return first || null;
 }
 
+function parseBrowserOrigin(request: Request): { host: string; proto: string } | null {
+  const raw = request.headers.get("origin") || request.headers.get("referer");
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = new URL(raw);
+    if (!parsed.host) {
+      return null;
+    }
+    return { host: parsed.host, proto: parsed.protocol.replace(":", "") };
+  } catch {
+    return null;
+  }
+}
+
 export function resolvePublicHop(request: Request): CookieRewriteOptions & { proto: string } {
   const url = new URL(request.url);
+  const browser = parseBrowserOrigin(request);
   const publicHost =
-    firstForwardedValue(request.headers.get("x-forwarded-host"))
+    browser?.host
+    ?? firstForwardedValue(request.headers.get("x-forwarded-host"))
     ?? request.headers.get("host")
     ?? url.host;
   const proto =
-    firstForwardedValue(request.headers.get("x-forwarded-proto"))
+    browser?.proto
+    ?? firstForwardedValue(request.headers.get("x-forwarded-proto"))
     ?? url.protocol.replace(":", "");
   return { publicHost, proto, secure: proto === "https" };
 }
@@ -145,6 +161,7 @@ export async function proxyLaravel(request: Request): Promise<Response> {
     outgoing.append(key, value);
   });
   applyUpstreamSetCookies(upstream.headers, outgoing, hop);
+  outgoing.set("x-sadcpf-api-proxy", "1");
 
   return new Response(upstream.body, {
     status: upstream.status,
