@@ -7,8 +7,11 @@ use App\Models\AssetAssignmentHistory;
 use App\Models\AssetCategory;
 use App\Models\AssetDepreciationRun;
 use App\Models\AssetDepreciationRunLine;
+use App\Models\AssetDisposal;
+use App\Models\AssetIncident;
 use App\Models\AssetLocation;
 use App\Models\AssetLocationHistory;
+use App\Models\AssetMaintenanceRecord;
 use App\Models\AssetTransfer;
 use App\Models\AssetUnregisteredFind;
 use App\Models\AssetVerificationCampaign;
@@ -43,7 +46,9 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertTrue(collect($data)->firstWhere('id', 'R29')['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R31')['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R38')['ready']);
-        $this->assertFalse(collect($data)->firstWhere('id', 'R40')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R40')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R52')['ready']);
+        $this->assertFalse(collect($data)->firstWhere('id', 'R51')['ready']);
     }
 
     public function test_assigned_to_user_current_excludes_returned_and_includes_overdue_loan(): void
@@ -600,6 +605,124 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertGreaterThanOrEqual(1, (int) $r38->json('totals.unresolved'));
 
         $xlsx = $http->get('/api/v1/assets/reports/export?report_id=R38&format=xlsx&official=1&campaign_id='.$campaign->id)->assertOk();
+        $this->assertStringContainsString('spreadsheetml', (string) $xlsx->headers->get('content-type'));
+    }
+
+    public function test_lifecycle_must_reports_cover_service_disposal_risk_and_audit(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $admin] = $this->asAdmin($tenant);
+        $category = AssetCategory::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'ICT Equipment',
+            'code' => 'ICT',
+            'useful_life_years' => 4,
+        ]);
+        $repair = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'LC-REP',
+            'tag_number' => 'LC-REP',
+            'name' => 'Printer under repair',
+            'category' => $category->code,
+            'status' => 'under_repair',
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        AssetMaintenanceRecord::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $repair->id,
+            'maintenance_type' => 'corrective',
+            'status' => 'open',
+            'title' => 'Replace fuser',
+            'scheduled_on' => now()->subDays(3)->toDateString(),
+            'recorded_by' => $admin->id,
+        ]);
+        $candidate = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'LC-OLD',
+            'tag_number' => 'LC-OLD',
+            'name' => 'Obsolete desktop',
+            'category' => $category->code,
+            'status' => 'active',
+            'condition' => 'obsolete',
+            'book_value' => 0,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        AssetDisposal::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $candidate->id,
+            'reference' => 'DISP-TEST1',
+            'status' => 'recommended',
+            'reason' => 'obsolete',
+            'justification' => 'Beyond economic repair',
+            'requested_by' => $admin->id,
+        ]);
+        $written = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'LC-OFF',
+            'tag_number' => 'LC-OFF',
+            'name' => 'Written off scanner',
+            'category' => $category->code,
+            'status' => 'written_off',
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        AssetDisposal::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $written->id,
+            'reference' => 'DISP-TEST2',
+            'status' => 'completed',
+            'reason' => 'damaged',
+            'method' => 'write_off',
+            'justification' => 'Destroyed',
+            'requested_by' => $admin->id,
+            'completed_at' => now(),
+        ]);
+        $stolen = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'LC-STL',
+            'tag_number' => 'LC-STL',
+            'name' => 'Stolen laptop',
+            'category' => $category->code,
+            'status' => 'stolen',
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        AssetIncident::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $stolen->id,
+            'type' => 'stolen',
+            'status' => 'open',
+            'date_noticed' => now()->toDateString(),
+            'recorded_by' => $admin->id,
+            'circumstances' => 'Office break-in',
+        ]);
+
+        $r40 = $http->getJson('/api/v1/assets/reports/run?report_id=R40')->assertOk();
+        $this->assertSame('Service due and overdue', $r40->json('title'));
+        $this->assertContains('LC-REP', collect($r40->json('data'))->pluck('asset_tag')->all());
+
+        $r43 = $http->getJson('/api/v1/assets/reports/run?report_id=R43')->assertOk();
+        $this->assertContains('LC-REP', collect($r43->json('data'))->pluck('asset_tag')->all());
+
+        $r44 = $http->getJson('/api/v1/assets/reports/run?report_id=R44')->assertOk();
+        $this->assertContains('LC-OLD', collect($r44->json('data'))->pluck('asset_tag')->all());
+
+        $r45 = $http->getJson('/api/v1/assets/reports/run?report_id=R45')->assertOk();
+        $this->assertContains('DISP-TEST1', collect($r45->json('data'))->pluck('reference')->all());
+
+        $r46 = $http->getJson('/api/v1/assets/reports/run?report_id=R46')->assertOk();
+        $this->assertContains('LC-OFF', collect($r46->json('data'))->pluck('asset_tag')->all());
+
+        $r48 = $http->getJson('/api/v1/assets/reports/run?report_id=R48')->assertOk();
+        $this->assertContains('LC-STL', collect($r48->json('data'))->pluck('asset_tag')->all());
+
+        $r50 = $http->getJson('/api/v1/assets/reports/run?report_id=R50')->assertOk();
+        $this->assertSame('Executive asset dashboard', $r50->json('title'));
+        $this->assertGreaterThanOrEqual(6, count($r50->json('data')));
+
+        $r52 = $http->getJson('/api/v1/assets/reports/run?report_id=R52')->assertOk();
+        $this->assertSame('Asset audit trail and data-quality exceptions', $r52->json('title'));
+        $this->assertNotEmpty($r52->json('declaration'));
+
+        $xlsx = $http->get('/api/v1/assets/reports/export?report_id=R50&format=xlsx&official=1')->assertOk();
         $this->assertStringContainsString('spreadsheetml', (string) $xlsx->headers->get('content-type'));
     }
 

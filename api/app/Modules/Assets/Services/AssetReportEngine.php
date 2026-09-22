@@ -23,6 +23,7 @@ class AssetReportEngine
         private readonly AssetInventoryReportService $inventory,
         private readonly AssetFinanceReportService $finance,
         private readonly AssetVerificationReportService $verification,
+        private readonly AssetLifecycleReportService $lifecycle,
     ) {}
 
     /**
@@ -41,6 +42,7 @@ class AssetReportEngine
             'R11', 'R12', 'R13', 'R14', 'R15', 'R16', 'R17', 'R18', 'R19' => $this->inventory->build($actor, $reportId, $params),
             'R21', 'R22', 'R23', 'R25', 'R27', 'R29' => $this->finance->build($actor, $reportId, $params),
             'R31', 'R32', 'R33', 'R34', 'R35', 'R37', 'R38' => $this->verification->build($actor, $reportId, $params),
+            'R40', 'R43', 'R44', 'R45', 'R46', 'R48', 'R50', 'R52' => $this->lifecycle->build($actor, $reportId, $params),
             default => abort(404, 'Unknown report.'),
         };
 
