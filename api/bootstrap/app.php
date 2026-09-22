@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -72,6 +73,21 @@ return Application::configure(basePath: dirname(__DIR__))
             return $response;
         });
 
+        $exceptions->render(function (TokenMismatchException $e, Request $request) {
+            if (! $request->is('api/*') && ! $request->is('api') && ! $request->expectsJson()) {
+                return null;
+            }
+            $response = response()->json([
+                'message' => 'Your session expired. Refresh the page and try again.',
+                'code' => 'csrf_mismatch',
+            ], 419);
+            foreach (CorsHelper::headersForRequest($request) as $name => $value) {
+                $response->header($name, $value);
+            }
+
+            return $response;
+        });
+
         $exceptions->render(function (Throwable $e, Request $request) {
             if (! $request->is('api/*') && ! $request->is('api')) {
                 return null;
@@ -82,6 +98,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if ($e instanceof AuthenticationException) {
                 $status = 401;
+            }
+            if ($e instanceof TokenMismatchException) {
+                $status = 419;
+                $payload = [
+                    'message' => 'Your session expired. Refresh the page and try again.',
+                    'code' => 'csrf_mismatch',
+                ];
             }
             if ($e instanceof HttpExceptionInterface) {
                 $status = $e->getStatusCode();

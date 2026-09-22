@@ -14,6 +14,7 @@ import { writeStoredUser } from "@/lib/session";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { CaptchaGate, EMPTY_CAPTCHA, type CaptchaValue } from "@/components/auth/CaptchaGate";
 import { isSupplierUser, postAuthDestination } from "@/lib/postAuthDestination";
+import { isCsrfMismatch } from "@/lib/csrf";
 
 interface Props {
   portal: "staff" | "supplier";
@@ -93,6 +94,11 @@ export function PortalSignInForm({ portal, emailPlaceholder, prefillEmail }: Pro
     } catch (err: unknown) {
       const ax = err as { response?: { status?: number; data?: { message?: string; errors?: Record<string, string[]> } }; status?: number };
       const data = ax.response?.data;
+      if (isCsrfMismatch(err)) {
+        setError(t("login.csrfExpired"));
+        setCaptcha(EMPTY_CAPTCHA);
+        return;
+      }
       const msg = data?.message
         ?? (data?.errors?.captcha_token ? data.errors.captcha_token[0] : null)
         ?? (data?.errors?.code ? data.errors.code[0] : null)
