@@ -5449,8 +5449,8 @@ export const contractsApi = {
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/amendments/${amendmentId}/approve`),
   close: (id: number) =>
     api.post<{ data: Contract; message: string; certificate: Record<string, unknown> }>(`/contracts/${id}/close`),
-  report: (type: "register" | "financial" | "compliance" | "operational") =>
-    api.get<{ data: Record<string, unknown>[]; type: string; count: number }>("/contracts/reports", { params: { type } }),
+  report: (type: "register" | "financial" | "compliance" | "operational", params?: { status?: string }) =>
+    api.get<{ data: Record<string, unknown>[]; type: string; count: number }>("/contracts/reports", { params: { type, ...params } }),
   reportDownloadUrl: (type: string, format: "csv" | "xlsx" | "pdf") =>
     `/api/contracts/reports?type=${type}&format=${format}`,
   analytics: () =>
@@ -5507,8 +5507,8 @@ export const contractsApi = {
     api.get<{ data: { id: number; reference_number: string | null; title: string; subject: string; type: string; status: string; direction: string; created_at: string }[] }>(`/contracts/${id}/correspondence`),
   createCorrespondence: (id: number, data: { title: string; subject: string; body?: string; type?: string; priority?: string }) =>
     api.post<{ data: { id: number }; message: string }>(`/contracts/${id}/correspondence`, data),
-  exceptionRegister: () =>
-    api.get<{ data: (ContractExceptionRecord & { contract?: { reference_number: string; title: string } })[] }>("/contracts/reports/exceptions"),
+  exceptionRegister: (params?: { status?: string; severity?: string }) =>
+    api.get<{ data: (ContractExceptionRecord & { contract?: { id: number; reference_number: string; title: string } })[] }>("/contracts/reports/exceptions", { params }),
   audit: (id: number) =>
     api.get<{ data: { id: number; event: string; created_at: string; new_values: unknown }[] }>(`/contracts/${id}/audit`),
   compareDocuments: (id: number, from: number, to: number) =>

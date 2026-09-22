@@ -48,3 +48,24 @@ test.describe("Contracts — register", () => {
     await expect(page.getByRole("button", { name: /New Contract/i }).first()).toBeVisible();
   });
 });
+
+test.describe("Contracts — reports", () => {
+  test.beforeEach(async ({ page }) => {
+    skipWithoutAuth("staff");
+    await page.goto("/contracts/reports");
+    await page.waitForURL("**/contracts/reports", { timeout: 15_000 });
+    await page.waitForLoadState("domcontentloaded");
+    if (await landedOnLogin(page)) test.skip(true, "Staff session invalid for /contracts/reports");
+    await skipIfAccessDenied(page, "/contracts/reports");
+  });
+
+  test("reports desk shows labelled tabs and export actions", async ({ page }) => {
+    await expect(page.getByTestId("contract-reports-tabs")).toBeVisible();
+    await expect(page.getByTestId("contract-reports-register")).toBeVisible();
+    await expect(page.getByTestId("contract-reports-export-csv")).toBeVisible();
+    await expect(page.getByTestId("contract-reports-export-xlsx")).toBeVisible();
+    await expect(page.getByTestId("contract-reports-search")).toBeVisible();
+    await page.getByTestId("contract-reports-exceptions").click();
+    await expect(page.getByTestId("contract-reports-severity")).toBeVisible();
+  });
+});
