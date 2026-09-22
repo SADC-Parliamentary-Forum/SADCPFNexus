@@ -26,6 +26,11 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  // Bakes the internal Laravel origin into server code so the cookie-preserving
+  // App Router proxy works in the standalone production image.
+  env: {
+    API_INTERNAL_URL: apiInternalUrl,
+  },
   // Produces a self-contained build in .next/standalone — required for the production Docker image
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   allowedDevOrigins: ["127.0.0.1", "localhost"],
@@ -73,18 +78,10 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: `${apiInternalUrl}/:path*`,
-      },
-      {
-        source: "/sanctum/csrf-cookie",
-        destination: `${apiOrigin}/sanctum/csrf-cookie`,
-      },
-    ];
-  },
+  // /api/* and /sanctum/csrf-cookie are handled by App Router route
+  // handlers in web/lib/apiProxy.ts so Set-Cookie Domain/cookies survive
+  // the CloudPanel → Next → Laravel hop. Do not re-add these as rewrites:
+  // Next rewrites do not reliably copy every Set-Cookie or X-Forwarded-*.
 };
 
 export default nextConfig;
