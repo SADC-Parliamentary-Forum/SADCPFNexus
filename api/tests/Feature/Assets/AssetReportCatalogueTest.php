@@ -10,6 +10,9 @@ use App\Models\AssetDepreciationRunLine;
 use App\Models\AssetLocation;
 use App\Models\AssetLocationHistory;
 use App\Models\AssetTransfer;
+use App\Models\AssetUnregisteredFind;
+use App\Models\AssetVerificationCampaign;
+use App\Models\AssetVerificationResult;
 use App\Models\Tenant;
 use App\Modules\Assets\Support\AssetAccess;
 use Tests\TestCase;
@@ -38,7 +41,9 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertTrue(collect($data)->firstWhere('id', 'R11')['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R21')['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R29')['ready']);
-        $this->assertFalse(collect($data)->firstWhere('id', 'R31')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R31')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R38')['ready']);
+        $this->assertFalse(collect($data)->firstWhere('id', 'R40')['ready']);
     }
 
     public function test_assigned_to_user_current_excludes_returned_and_includes_overdue_loan(): void
@@ -464,6 +469,138 @@ class AssetReportCatalogueTest extends TestCase
         $viewer = $this->makeUser('staff', $tenant);
         $viewer->givePermissionTo('assets.view');
         $this->asUser($viewer)->getJson('/api/v1/assets/reports/run?report_id=R21')->assertForbidden();
+    }
+
+    public function test_verification_must_reports_cover_campaign_exceptions_and_sign_off(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $admin] = $this->asAdmin($tenant);
+        $admin->givePermissionTo('assets.financials.view');
+        $category = AssetCategory::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'ICT Equipment',
+            'code' => 'ICT',
+            'useful_life_years' => 4,
+        ]);
+        $missing = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'VF-MISS',
+            'tag_number' => 'VF-MISS',
+            'name' => 'Missing projector',
+            'category' => $category->code,
+            'status' => 'active',
+            'purchase_value' => 9000,
+            'book_value' => 4500,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        $relocated = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'VF-LOC',
+            'tag_number' => 'VF-LOC',
+            'name' => 'Relocated desktop',
+            'category' => $category->code,
+            'status' => 'active',
+            'purchase_value' => 7000,
+            'book_value' => 3000,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        $custodian = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'VF-CUS',
+            'tag_number' => 'VF-CUS',
+            'name' => 'Wrong custodian laptop',
+            'category' => $category->code,
+            'status' => 'active',
+            'purchase_value' => 12000,
+            'book_value' => 8000,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        $ok = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'VF-OK',
+            'tag_number' => 'VF-OK',
+            'name' => 'Verified monitor',
+            'category' => $category->code,
+            'status' => 'active',
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        $campaign = AssetVerificationCampaign::create([
+            'tenant_id' => $tenant->id,
+            'name' => '2026 HQ stocktake',
+            'status' => 'open',
+            'starts_on' => now()->subDays(5)->toDateString(),
+            'created_by' => $admin->id,
+        ]);
+        AssetVerificationResult::create([
+            'campaign_id' => $campaign->id,
+            'asset_id' => $missing->id,
+            'result' => 'missing',
+            'verified_by' => $admin->id,
+            'verified_at' => now(),
+            'notes' => 'Not in room 214',
+        ]);
+        AssetVerificationResult::create([
+            'campaign_id' => $campaign->id,
+            'asset_id' => $relocated->id,
+            'result' => 'wrong_location',
+            'verified_by' => $admin->id,
+            'verified_at' => now(),
+            'notes' => 'Found in stores',
+            'mismatch_types' => ['location'],
+        ]);
+        AssetVerificationResult::create([
+            'campaign_id' => $campaign->id,
+            'asset_id' => $custodian->id,
+            'result' => 'wrong_custodian',
+            'verified_by' => $admin->id,
+            'verified_at' => now(),
+            'notes' => 'Held by another officer',
+        ]);
+        AssetVerificationResult::create([
+            'campaign_id' => $campaign->id,
+            'asset_id' => $ok->id,
+            'result' => 'verified',
+            'verified_by' => $admin->id,
+            'verified_at' => now(),
+        ]);
+        AssetUnregisteredFind::create([
+            'tenant_id' => $tenant->id,
+            'campaign_id' => $campaign->id,
+            'status' => 'open',
+            'description' => 'Unlabelled tablet',
+            'serial_number' => 'SN-FOUND-1',
+            'found_location' => 'Boardroom',
+            'found_by' => $admin->id,
+            'found_at' => now(),
+        ]);
+
+        $r31 = $http->getJson('/api/v1/assets/reports/run?report_id=R31')->assertOk();
+        $this->assertSame('Campaign progress', $r31->json('title'));
+        $this->assertContains('2026 HQ stocktake', collect($r31->json('data'))->pluck('campaign')->all());
+
+        $r32 = $http->getJson('/api/v1/assets/reports/run?report_id=R32&campaign_id='.$campaign->id)->assertOk();
+        $this->assertContains('VF-MISS', collect($r32->json('data'))->pluck('asset_tag')->all());
+
+        $r33 = $http->getJson('/api/v1/assets/reports/run?report_id=R33&campaign_id='.$campaign->id)->assertOk();
+        $this->assertContains('SN-FOUND-1', collect($r33->json('data'))->pluck('serial_number')->all());
+
+        $r34 = $http->getJson('/api/v1/assets/reports/run?report_id=R34&campaign_id='.$campaign->id)->assertOk();
+        $this->assertContains('VF-LOC', collect($r34->json('data'))->pluck('asset_tag')->all());
+
+        $r35 = $http->getJson('/api/v1/assets/reports/run?report_id=R35&campaign_id='.$campaign->id)->assertOk();
+        $this->assertContains('VF-CUS', collect($r35->json('data'))->pluck('asset_tag')->all());
+
+        $r37 = $http->getJson('/api/v1/assets/reports/run?report_id=R37&campaign_id='.$campaign->id)->assertOk();
+        $this->assertGreaterThanOrEqual(3, (int) $r37->json('totals.count'));
+        $this->assertStringStartsWith('VX-', (string) collect($r37->json('data'))->pluck('exception_id')->first());
+
+        $r38 = $http->getJson('/api/v1/assets/reports/run?report_id=R38&campaign_id='.$campaign->id)->assertOk();
+        $this->assertSame('Verification sign-off pack', $r38->json('title'));
+        $this->assertNotEmpty($r38->json('declaration'));
+        $this->assertGreaterThanOrEqual(1, (int) $r38->json('totals.unresolved'));
+
+        $xlsx = $http->get('/api/v1/assets/reports/export?report_id=R38&format=xlsx&official=1&campaign_id='.$campaign->id)->assertOk();
+        $this->assertStringContainsString('spreadsheetml', (string) $xlsx->headers->get('content-type'));
     }
 
     public function test_tenant_users_can_be_found_by_staff_number(): void

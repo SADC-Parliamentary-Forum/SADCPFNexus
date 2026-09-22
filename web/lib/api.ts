@@ -2129,6 +2129,7 @@ export const assetsApi = {
     department?: string;
     from?: string;
     to?: string;
+    campaign_id?: number;
   }) => api.get<AssetAssignedToUserReport>("/assets/reports/run", { params }),
   exportGovernedReport: (params: {
     report_id: string;
@@ -2142,6 +2143,7 @@ export const assetsApi = {
     department?: string;
     from?: string;
     to?: string;
+    campaign_id?: number;
   }) => api.get<Blob>("/assets/reports/export", { params, responseType: "blob" }),
   batches: (params?: Record<string, string | number>) =>
     api.get<{ data: AssetAcquisitionBatch[] } & { data?: AssetAcquisitionBatch[] }>("/asset-batches", { params }),

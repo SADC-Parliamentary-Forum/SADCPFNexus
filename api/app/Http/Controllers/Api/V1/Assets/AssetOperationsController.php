@@ -285,6 +285,7 @@ class AssetOperationsController extends Controller
             'department' => ['nullable', 'string', 'max:120'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
+            'campaign_id' => ['nullable', 'integer'],
         ]);
 
         return response()->json($engine->run($request->user(), strtoupper($data['report_id']), $data));
@@ -304,6 +305,7 @@ class AssetOperationsController extends Controller
             'department' => ['nullable', 'string', 'max:120'],
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
+            'campaign_id' => ['nullable', 'integer'],
         ]);
 
         return $engine->export(
