@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
@@ -89,6 +90,20 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($e instanceof ValidationException) {
                 $status = $e->status;
                 $payload = ['message' => $e->getMessage(), 'errors' => $e->errors()];
+            }
+
+            $csrfMessage = strtolower($e->getMessage());
+            if (
+                $e instanceof TokenMismatchException
+                || ($e instanceof HttpExceptionInterface && $e->getStatusCode() === 419)
+                || str_contains($csrfMessage, 'csrf token mismatch')
+                || str_contains($csrfMessage, 'page expired')
+            ) {
+                $status = 419;
+                $payload = [
+                    'message' => 'Your session expired. Please try signing in again.',
+                    'code' => 'csrf_mismatch',
+                ];
             }
 
             if (config('app.debug')) {

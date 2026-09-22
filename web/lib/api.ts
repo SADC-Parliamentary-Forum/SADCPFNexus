@@ -211,7 +211,7 @@ export const authApi = {
     code?: string,
     options?: { portal?: "staff" | "supplier"; captchaToken?: string; honeypot?: string },
   ) => {
-    await ensureCsrfCookie();
+    await ensureCsrfCookie(true);
     const trimmedEmail = email.trim();
     const body: Record<string, string> = {
       email: trimmedEmail,

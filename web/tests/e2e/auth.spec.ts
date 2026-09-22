@@ -183,6 +183,48 @@ test.describe("Supplier portal login", () => {
     await expect(page.getByText(/travel & mission/i)).toHaveCount(0);
   });
 
+  test("login CSRF mismatch shows a friendly retry instead of raw Laravel copy", async ({ page }) => {
+    await page.route("**/api/auth/login", async (route) => {
+      await route.fulfill({
+        status: 419,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "CSRF token mismatch." }),
+      });
+    });
+
+    await page.goto("/login");
+    await page.locator('input[type="email"]').fill("admin@sadcpf.org");
+    await page.locator('input[type="password"]').fill("Admin@2024!");
+    await completeLoginCaptcha(page);
+    await page.locator('button[type="submit"]').click();
+
+    const errorEl = page.getByRole("alert");
+    await expect(errorEl).toBeVisible({ timeout: 8_000 });
+    await expect(errorEl).toContainText(/session expired/i);
+    await expect(errorEl).not.toContainText(/CSRF token mismatch/i);
+  });
+
+  test("supplier login CSRF mismatch shows the same friendly retry", async ({ page }) => {
+    await page.route("**/api/auth/login", async (route) => {
+      await route.fulfill({
+        status: 419,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "CSRF token mismatch." }),
+      });
+    });
+
+    await page.goto("/supplier/login");
+    await page.locator('input[type="email"]').fill("supplier@example.org");
+    await page.locator('input[type="password"]').fill("Supplier@2024!");
+    await completeLoginCaptcha(page);
+    await page.locator('button[type="submit"]').click();
+
+    const errorEl = page.getByRole("alert");
+    await expect(errorEl).toBeVisible({ timeout: 8_000 });
+    await expect(errorEl).toContainText(/session expired/i);
+    await expect(errorEl).not.toContainText(/CSRF token mismatch/i);
+  });
+
   test("staff login page links to the supplier portal", async ({ page }) => {
     await page.goto("/login");
     await expect(page.getByRole("heading", { name: /staff sign in/i })).toBeVisible();
