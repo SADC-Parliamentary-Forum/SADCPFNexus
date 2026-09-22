@@ -23,17 +23,19 @@ class TenantUsersController extends Controller
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'like', $term)
                     ->orWhere('email', 'like', $term)
+                    ->orWhere('employee_number', 'like', $term)
                     ->orWhereHas('department', fn ($d) => $d->where('name', 'like', $term));
             });
         }
 
         $users = $query->where('is_active', true)
             ->orderBy('name')
-            ->get(['id', 'name', 'email', 'job_title', 'department_id'])
+            ->get(['id', 'name', 'email', 'job_title', 'department_id', 'employee_number'])
             ->map(fn (User $u) => [
                 'id' => $u->id,
                 'name' => $u->name,
                 'email' => $u->email,
+                'employee_number' => $u->employee_number,
                 'job_title' => $u->job_title,
                 'department_id' => $u->department_id,
                 'department' => $u->department?->name,

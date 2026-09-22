@@ -12,6 +12,8 @@ use App\Models\AssetTimelineEvent;
 use App\Models\AssetTransfer;
 use App\Models\Attachment;
 use App\Models\User;
+use App\Modules\Assets\Reporting\AssetReportCatalogue;
+use App\Modules\Assets\Services\AssetAssignedToUserReportService;
 use App\Modules\Assets\Services\AssetCheckoutService;
 use App\Modules\Assets\Services\AssetIncidentService;
 use App\Modules\Assets\Services\AssetService;
@@ -248,6 +250,27 @@ class AssetOperationsController extends Controller
                 fpassthru($stream);
             }
         }, $attachment->original_filename);
+    }
+
+    public function reportCatalogue(): JsonResponse
+    {
+        return response()->json(['data' => AssetReportCatalogue::all()]);
+    }
+
+    public function assignedToUserReport(Request $request, AssetAssignedToUserReportService $reports): JsonResponse
+    {
+        $data = $request->validate([
+            'user_id' => ['required', 'integer'],
+            'mode' => ['nullable', 'string', 'max:32'],
+            'as_of' => ['nullable', 'date'],
+        ]);
+
+        return response()->json($reports->run(
+            $request->user(),
+            (int) $data['user_id'],
+            $data['mode'] ?? 'current',
+            $data['as_of'] ?? null,
+        ));
     }
 
     public function reports(Request $request, string $type): JsonResponse

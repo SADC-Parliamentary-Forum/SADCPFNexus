@@ -318,6 +318,7 @@ export interface TenantUserOption {
   id: number;
   name: string;
   email: string;
+  employee_number?: string | null;
   job_title?: string | null;
   department?: string | null;
   department_id?: number | null;
@@ -1933,6 +1934,54 @@ export interface AssetRequest {
   requester?: { id: number; name: string; email: string };
 }
 
+export type AssetReportCatalogueItem = {
+  id: string;
+  family: string;
+  name: string;
+  purpose: string;
+  priority: string;
+  formats: string[];
+  template_version: string;
+};
+
+export type AssetAssignedToUserRow = {
+  assignment_id: number;
+  asset_id: number | null;
+  asset_tag: string | null;
+  description: string | null;
+  class: string | null;
+  make_model: string | null;
+  serial_number: string | null;
+  assignment_type: string;
+  issue_date: string | null;
+  expected_return: string | null;
+  location: string | null;
+  condition: string | null;
+  acknowledgement_status: string;
+  last_verification: string | null;
+  asset_status: string | null;
+  overdue: boolean;
+  purchase_value?: number | null;
+  accumulated_depreciation?: number | null;
+  book_value?: number | null;
+};
+
+export type AssetAssignedToUserReport = {
+  run: {
+    report_id: string;
+    report_run_id: string;
+    template_version: string;
+    parameters: Record<string, string | number>;
+    data_as_of: string;
+    generated_at: string;
+    generated_by: { id: number; name: string; email: string };
+    official: boolean;
+  };
+  custodian: { id: number; name: string; employee_number: string | null; department: string | null };
+  data: AssetAssignedToUserRow[];
+  totals: { count: number; unacknowledged: number; overdue: number };
+};
+
 export const assetsApi = {
   list: (params?: { assigned_to?: string; category?: string; status?: string; search?: string; per_page?: number; page?: number }) =>
     api.get<AssetListResponse>("/assets", { params }),
@@ -2060,6 +2109,10 @@ export const assetsApi = {
   move: (id: number, data: { location_id: number; reason?: string }) =>
     api.post<{ data: Asset }>(`/assets/${id}/move`, data),
   reportPack: (type: string) => api.get<{ data: unknown[] }>(`/assets/reports/${type}`),
+  reportCatalogue: () =>
+    api.get<{ data: AssetReportCatalogueItem[] }>("/assets/report-catalogue"),
+  assignedToUserReport: (params: { user_id: number; mode?: string; as_of?: string }) =>
+    api.get<AssetAssignedToUserReport>("/assets/reports/assigned-to-user", { params }),
   batches: (params?: Record<string, string | number>) =>
     api.get<{ data: AssetAcquisitionBatch[] } & { data?: AssetAcquisitionBatch[] }>("/asset-batches", { params }),
   createBatch: (data: Record<string, unknown>) =>

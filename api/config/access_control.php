@@ -777,6 +777,9 @@ return [
             'READ' => ['assets.view', 'assets.admin', 'assets.manage'],
             'WRITE' => ['assets.manage', 'assets.admin'],
         ]],
+        ['pattern' => 'api/v1/assets/report-catalogue*', 'permissions' => [
+            'READ' => ['assets.view', 'assets.admin', 'assets.manage', 'assets.financials.view'],
+        ]],
         ['pattern' => 'api/v1/assets/reports*', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin', 'assets.manage', 'assets.financials.view'],
         ]],
