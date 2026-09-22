@@ -5,6 +5,8 @@ namespace Tests\Feature\Assets;
 use App\Models\Asset;
 use App\Models\AssetAssignmentHistory;
 use App\Models\AssetCategory;
+use App\Models\AssetDepreciationRun;
+use App\Models\AssetDepreciationRunLine;
 use App\Models\AssetLocation;
 use App\Models\AssetLocationHistory;
 use App\Models\AssetTransfer;
@@ -34,7 +36,9 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertTrue($r01['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R09')['ready']);
         $this->assertTrue(collect($data)->firstWhere('id', 'R11')['ready']);
-        $this->assertFalse(collect($data)->firstWhere('id', 'R21')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R21')['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R29')['ready']);
+        $this->assertFalse(collect($data)->firstWhere('id', 'R31')['ready']);
     }
 
     public function test_assigned_to_user_current_excludes_returned_and_includes_overdue_loan(): void
@@ -318,6 +322,148 @@ class AssetReportCatalogueTest extends TestCase
 
         $xlsx = $http->get('/api/v1/assets/reports/export?report_id=R11&format=xlsx&official=1')->assertOk();
         $this->assertStringContainsString('spreadsheetml', (string) $xlsx->headers->get('content-type'));
+    }
+
+    public function test_finance_must_reports_schedule_exceptions_and_hide_from_non_finance(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $admin] = $this->asAdmin($tenant);
+        $admin->givePermissionTo('assets.financials.view');
+        $category = AssetCategory::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'ICT Equipment',
+            'code' => 'ICT',
+            'useful_life_years' => 4,
+        ]);
+        $scheduled = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'DEP-001',
+            'tag_number' => 'DEP-001',
+            'name' => 'Capital server',
+            'category' => $category->code,
+            'asset_class' => 'capital',
+            'status' => 'active',
+            'purchase_date' => now()->subYears(2),
+            'capitalisation_date' => now()->subYears(2),
+            'purchase_value' => 48000,
+            'salvage_value' => 0,
+            'useful_life_years' => 4,
+            'depreciation_method' => 'straight_line',
+            'accumulated_depreciation' => 24000,
+            'book_value' => 24000,
+            'funding_source' => 'core',
+            'invoice_number' => 'INV-100',
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        $run = AssetDepreciationRun::create([
+            'tenant_id' => $tenant->id,
+            'run_date' => now()->toDateString(),
+            'period_start' => now()->startOfMonth()->toDateString(),
+            'period_end' => now()->endOfMonth()->toDateString(),
+            'status' => 'completed',
+            'run_by' => $admin->id,
+            'asset_count' => 1,
+            'total_depreciation' => 1000,
+        ]);
+        AssetDepreciationRunLine::create([
+            'run_id' => $run->id,
+            'asset_id' => $scheduled->id,
+            'opening_book_value' => 25000,
+            'depreciation_amount' => 1000,
+            'closing_book_value' => 24000,
+            'accumulated_depreciation' => 24000,
+        ]);
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'DEP-ZERO',
+            'tag_number' => 'DEP-ZERO',
+            'name' => 'Zero NBV laptop',
+            'category' => $category->code,
+            'asset_class' => 'capital',
+            'status' => 'active',
+            'purchase_date' => now()->subYears(5),
+            'purchase_value' => 8000,
+            'salvage_value' => 0,
+            'useful_life_years' => 4,
+            'book_value' => 0,
+            'accumulated_depreciation' => 8000,
+            'funding_source' => 'core',
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'DEP-ADD',
+            'tag_number' => 'DEP-ADD',
+            'name' => 'Unmatched acquisition',
+            'category' => $category->code,
+            'asset_class' => 'capital',
+            'status' => 'active',
+            'purchase_date' => now()->subDays(8),
+            'purchase_value' => 15000,
+            'funding_source' => 'grant',
+            'donor_name' => 'EU',
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'DEP-NEG',
+            'tag_number' => 'DEP-NEG',
+            'name' => 'Negative NBV printer',
+            'category' => $category->code,
+            'asset_class' => 'capital',
+            'status' => 'active',
+            'purchase_date' => now()->subYears(1),
+            'purchase_value' => 3000,
+            'book_value' => -50,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'DEP-OUT',
+            'tag_number' => 'DEP-OUT',
+            'name' => 'Disposed still valued',
+            'category' => $category->code,
+            'asset_class' => 'capital',
+            'status' => 'disposed',
+            'purchase_date' => now()->subYears(3),
+            'purchase_value' => 9000,
+            'book_value' => 1200,
+            'useful_life_years' => 4,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+
+        $r21 = $http->getJson('/api/v1/assets/reports/run?report_id=R21')->assertOk();
+        $this->assertSame('Depreciation schedule', $r21->json('title'));
+        $this->assertContains('DEP-001', collect($r21->json('data'))->pluck('asset_tag')->all());
+        $this->assertEquals(1000, (float) collect($r21->json('data'))->firstWhere('asset_tag', 'DEP-001')['depreciation_charge']);
+
+        $r22 = $http->getJson('/api/v1/assets/reports/run?report_id=R22')->assertOk();
+        $this->assertGreaterThanOrEqual(1, (int) $r22->json('totals.classes'));
+
+        $r23 = $http->getJson('/api/v1/assets/reports/run?report_id=R23')->assertOk();
+        $this->assertContains('DEP-ZERO', collect($r23->json('data'))->pluck('asset_tag')->all());
+
+        $r25 = $http->getJson('/api/v1/assets/reports/run?report_id=R25&from='.now()->subMonth()->toDateString())->assertOk();
+        $this->assertContains('DEP-ADD', collect($r25->json('data'))->pluck('asset_tag')->all());
+        $this->assertContains('unmatched_procurement', collect($r25->json('exceptions'))->pluck('exception_reason')->all());
+
+        $r27 = $http->getJson('/api/v1/assets/reports/run?report_id=R27')->assertOk();
+        $reasons = collect($r27->json('data'))->pluck('exception_reason')->all();
+        $this->assertContains('negative_nbv', $reasons);
+        $this->assertContains('disposed_but_depreciating', $reasons);
+        $this->assertContains('missing_useful_life', $reasons);
+        $this->assertContains('unposted_batch', $reasons);
+
+        $r29 = $http->getJson('/api/v1/assets/reports/run?report_id=R29')->assertOk();
+        $this->assertContains('grant', collect($r29->json('data'))->pluck('funding_source')->all());
+        $this->assertContains('core', collect($r29->json('data'))->pluck('funding_source')->all());
+
+        $xlsx = $http->get('/api/v1/assets/reports/export?report_id=R21&format=xlsx&official=1')->assertOk();
+        $this->assertStringContainsString('spreadsheetml', (string) $xlsx->headers->get('content-type'));
+
+        $viewer = $this->makeUser('staff', $tenant);
+        $viewer->givePermissionTo('assets.view');
+        $this->asUser($viewer)->getJson('/api/v1/assets/reports/run?report_id=R21')->assertForbidden();
     }
 
     public function test_tenant_users_can_be_found_by_staff_number(): void

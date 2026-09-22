@@ -21,6 +21,7 @@ class AssetReportEngine
         private readonly AssetAssignedToUserReportService $assigned,
         private readonly AssetCustodyReportService $custody,
         private readonly AssetInventoryReportService $inventory,
+        private readonly AssetFinanceReportService $finance,
     ) {}
 
     /**
@@ -37,6 +38,7 @@ class AssetReportEngine
             'R01', 'R02' => $this->assignedPayload($actor, $reportId, $params),
             'R03', 'R04', 'R05', 'R06', 'R08', 'R09' => $this->custody->build($actor, $reportId, $params),
             'R11', 'R12', 'R13', 'R14', 'R15', 'R16', 'R17', 'R18', 'R19' => $this->inventory->build($actor, $reportId, $params),
+            'R21', 'R22', 'R23', 'R25', 'R27', 'R29' => $this->finance->build($actor, $reportId, $params),
             default => abort(404, 'Unknown report.'),
         };
 
