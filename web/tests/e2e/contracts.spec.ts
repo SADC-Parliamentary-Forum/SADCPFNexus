@@ -62,10 +62,13 @@ test.describe("Contracts — reports", () => {
   test("reports desk shows labelled tabs and export actions", async ({ page }) => {
     await expect(page.getByTestId("contract-reports-tabs")).toBeVisible();
     await expect(page.getByTestId("contract-reports-register")).toBeVisible();
+    await expect(page.getByTestId("contract-reports-kpis")).toBeVisible();
+    await expect(page.getByTestId("contract-reports-print")).toBeVisible();
     await expect(page.getByTestId("contract-reports-export-csv")).toBeVisible();
     await expect(page.getByTestId("contract-reports-export-xlsx")).toBeVisible();
     await expect(page.getByTestId("contract-reports-search")).toBeVisible();
     await page.getByTestId("contract-reports-exceptions").click();
+    await expect(page).toHaveURL(/type=exceptions/);
     await expect(page.getByTestId("contract-reports-severity")).toBeVisible();
   });
 });

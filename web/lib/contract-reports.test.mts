@@ -6,11 +6,17 @@ import {
   COLUMN_LABEL_KEYS,
   REPORT_TABS,
   badgeClass,
+  badgeLabelKey,
   columnLabelKey,
   contractHref,
   nextReportTab,
+  nextSort,
+  parseReportTab,
   reportColumns,
+  reportDownloadHref,
+  reportKpis,
   rowMatchesQuery,
+  sortReportRows,
 } from "./contract-reports.ts";
 import { catalogFor, translate } from "./i18n/messages.ts";
 
@@ -52,20 +58,62 @@ test("contract href and tab cycling stay bounded", () => {
   assert.equal(badgeClass("status", "active"), "badge-success");
 });
 
+test("tab parsing, filtered exports, sort and KPIs stay deterministic", () => {
+  assert.equal(parseReportTab("financial"), "financial");
+  assert.equal(parseReportTab("nope"), "register");
+  assert.equal(
+    reportDownloadHref("register", "csv", { status: "active" }),
+    "/api/contracts/reports?type=register&format=csv&status=active",
+  );
+  assert.equal(
+    reportDownloadHref("financial", "pdf"),
+    "/api/contracts/reports?type=financial&format=pdf",
+  );
+  assert.equal(badgeLabelKey("status", "Active"), "contracts.reports.status.active");
+  assert.equal(badgeLabelKey("health", "at_risk"), "contracts.reports.health.at_risk");
+
+  const sorted = sortReportRows(
+    [
+      { reference: "B", current_value: 10 },
+      { reference: "A", current_value: 40 },
+      { reference: "C", current_value: 5 },
+    ],
+    { column: "current_value", direction: "desc" },
+  );
+  assert.deepEqual(sorted.map((row) => row.reference), ["A", "B", "C"]);
+  assert.deepEqual(nextSort(null, "current_value"), { column: "current_value", direction: "desc" });
+  assert.deepEqual(nextSort({ column: "title", direction: "asc" }, "title"), {
+    column: "title",
+    direction: "desc",
+  });
+
+  const kpis = reportKpis("operational", [
+    { expiring_soon: true, expired: false, amendments: 2 },
+    { expiring_soon: false, expired: true, amendments: 1 },
+  ]);
+  assert.equal(kpis.find((item) => item.id === "expiring")?.value, 1);
+  assert.equal(kpis.find((item) => item.id === "expired")?.value, 1);
+  assert.equal(kpis.find((item) => item.id === "amendments")?.value, 3);
+});
+
 test("reports page is a labelled tabbed desk with exports and overflow", () => {
   const page = readFileSync(join(webRoot, "app/(app)/contracts/reports/page.tsx"), "utf8");
   assert.match(page, /role="tablist"/);
   assert.match(page, /data-testid=["']contract-reports-tabs["']/);
   assert.match(page, /data-testid=["']contract-reports-table["']/);
+  assert.match(page, /data-testid=["']contract-reports-kpis["']/);
+  assert.match(page, /data-testid=["']contract-reports-print["']/);
   assert.match(page, /data-testid=\{`contract-reports-export-\$\{format\}`\}/);
   assert.match(page, /contracts\.reports\.exportCsv/);
   assert.match(page, /contracts\.reports\.exportXlsx/);
   assert.match(page, /contracts\.reports\.exportPdf/);
   assert.match(page, /data-testid=["']contract-reports-search["']/);
   assert.match(page, /w-full min-w-0/);
-  assert.match(page, /max-h-\[32rem\]/);
+  assert.match(page, /max-h-\[min\(/);
   assert.match(page, /columnLabelKey/);
   assert.match(page, /useI18n/);
+  assert.match(page, /reportDownloadHref/);
+  assert.match(page, /parseReportTab/);
   assert.doesNotMatch(page, /c\.replace\(\/_\/g/);
   assert.doesNotMatch(page, /className=\{`filter-tab capitalize/);
 });
@@ -78,6 +126,9 @@ test("contract reports catalogue covers EN, FR and PT", () => {
     "contracts.reports.tabExceptions",
     "contracts.reports.exportCsv",
     "contracts.reports.empty",
+    "contracts.reports.emptyFiltered",
+    "contracts.reports.print",
+    "contracts.reports.kpi.currentValue",
     "contracts.reports.col.reference",
     "contracts.reports.col.original_value",
   ];

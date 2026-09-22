@@ -5451,8 +5451,13 @@ export const contractsApi = {
     api.post<{ data: Contract; message: string; certificate: Record<string, unknown> }>(`/contracts/${id}/close`),
   report: (type: "register" | "financial" | "compliance" | "operational", params?: { status?: string }) =>
     api.get<{ data: Record<string, unknown>[]; type: string; count: number }>("/contracts/reports", { params: { type, ...params } }),
-  reportDownloadUrl: (type: string, format: "csv" | "xlsx" | "pdf") =>
-    `/api/contracts/reports?type=${type}&format=${format}`,
+  reportDownloadUrl: (type: string, format: "csv" | "xlsx" | "pdf", params?: { status?: string }) => {
+    const query = new URLSearchParams({ type, format });
+    if (params?.status) {
+      query.set("status", params.status);
+    }
+    return `/api/contracts/reports?${query.toString()}`;
+  },
   analytics: () =>
     api.get<{ data: ContractAnalytics }>("/contracts/reports/analytics"),
   risk: () =>

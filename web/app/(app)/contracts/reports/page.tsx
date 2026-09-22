@@ -1,27 +1,40 @@
 "use client";
 
-import { useMemo, useState, type KeyboardEvent } from "react";
+import { Suspense, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
-import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { EmptyState, ErrorBanner, TableEmpty } from "@/components/ui/EmptyState";
+import { PrintButton } from "@/components/ui/PrintButton";
 import { contractsApi, type ContractExceptionRecord } from "@/lib/api";
 import {
   EXCEPTION_SEVERITIES,
+  OPERATIONAL_HORIZONS,
   REGISTER_STATUSES,
   REPORT_TABS,
   badgeClass,
+  badgeLabelKey,
   columnLabelKey,
   contractHref,
+  humanizeToken,
   isBadgeColumn,
   isBooleanColumn,
   isDateColumn,
   isMoneyColumn,
   isNumericColumn,
   isReportType,
+  matchesOperationalHorizon,
   nextReportTab,
+  nextSort,
+  parseReportTab,
   reportColumns,
+  reportDownloadHref,
+  reportKpis,
   rowMatchesQuery,
+  sortReportRows,
+  type OperationalHorizon,
+  type ReportSort,
   type ReportTabId,
   type ReportType,
 } from "@/lib/contract-reports";
@@ -36,6 +49,20 @@ function displayBoolean(value: unknown, yes: string, no: string): string {
   return value ? yes : no;
 }
 
+function displayBadge(
+  column: string,
+  value: unknown,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string {
+  const raw = String(value ?? "");
+  if (!raw) {
+    return "—";
+  }
+  const key = badgeLabelKey(column, raw);
+  const label = t(key);
+  return label === key ? humanizeToken(raw) : label;
+}
+
 function displayCell(
   column: string,
   value: unknown,
@@ -44,6 +71,9 @@ function displayCell(
 ): string {
   if (isBooleanColumn(column)) {
     return displayBoolean(value, t("contracts.reports.yes"), t("contracts.reports.no"));
+  }
+  if (isBadgeColumn(column)) {
+    return displayBadge(column, value, t);
   }
   if (value == null || value === "") {
     return "—";
@@ -63,15 +93,63 @@ function displayCell(
   return String(value);
 }
 
-export default function ContractReportsPage() {
+function kpiTone(tone?: "neutral" | "warning" | "danger" | "success"): string {
+  if (tone === "danger") return "text-red-700";
+  if (tone === "warning") return "text-amber-800";
+  if (tone === "success") return "text-green-700";
+  return "text-neutral-900";
+}
+
+function ContractReportsDesk() {
   const { t } = useI18n();
-  const [tab, setTab] = useState<ReportTabId>("register");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tabRefs = useRef<Partial<Record<ReportTabId, HTMLButtonElement | null>>>({});
+
+  const tab = parseReportTab(searchParams.get("type"));
+  const status = (REGISTER_STATUSES.includes(searchParams.get("status") as (typeof REGISTER_STATUSES)[number])
+    ? searchParams.get("status")
+    : "all") as (typeof REGISTER_STATUSES)[number];
+  const severity = (EXCEPTION_SEVERITIES.includes(searchParams.get("severity") as (typeof EXCEPTION_SEVERITIES)[number])
+    ? searchParams.get("severity")
+    : "all") as (typeof EXCEPTION_SEVERITIES)[number];
+  const horizon = (OPERATIONAL_HORIZONS.includes(searchParams.get("horizon") as OperationalHorizon)
+    ? searchParams.get("horizon")
+    : "all") as OperationalHorizon;
+
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<(typeof REGISTER_STATUSES)[number]>("all");
-  const [severity, setSeverity] = useState<(typeof EXCEPTION_SEVERITIES)[number]>("all");
+  const [sort, setSort] = useState<ReportSort | null>(null);
 
   const reportType: ReportType = isReportType(tab) ? tab : "register";
   const showExceptions = tab === "exceptions";
+
+  const replaceQuery = (mutate: (params: URLSearchParams) => void) => {
+    const params = new URLSearchParams(searchParams.toString());
+    mutate(params);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  };
+
+  const setTab = (next: ReportTabId) => {
+    setSort(null);
+    replaceQuery((params) => {
+      if (next === "register") {
+        params.delete("type");
+      } else {
+        params.set("type", next);
+      }
+      if (next !== "register") {
+        params.delete("status");
+      }
+      if (next !== "exceptions") {
+        params.delete("severity");
+      }
+      if (next !== "operational") {
+        params.delete("horizon");
+      }
+    });
+  };
 
   const reportQuery = useQuery({
     queryKey: ["contract-report", reportType, status],
@@ -91,35 +169,73 @@ export default function ContractReportsPage() {
     enabled: showExceptions,
   });
 
-  const rows = reportQuery.data?.data ?? [];
+  const rows = useMemo(() => {
+    const data = reportQuery.data?.data ?? [];
+    return tab === "operational"
+      ? data.filter((row) => matchesOperationalHorizon(row, horizon))
+      : data;
+  }, [horizon, reportQuery.data?.data, tab]);
+
   const filteredRows = useMemo(
-    () => rows.filter((row) => rowMatchesQuery(row, search)),
-    [rows, search],
+    () => sortReportRows(rows.filter((row) => rowMatchesQuery(row, search)), sort),
+    [rows, search, sort],
   );
   const columns = reportColumns(filteredRows.length > 0 ? filteredRows : rows);
 
   const exceptions = exceptionQuery.data ?? [];
   const filteredExceptions = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    if (!needle) return exceptions;
-    return exceptions.filter((row) =>
-      `${row.contract?.reference_number ?? ""} ${row.contract?.title ?? ""} ${row.type} ${row.title} ${row.status} ${row.severity}`
-        .toLowerCase()
-        .includes(needle),
-    );
-  }, [exceptions, search]);
+    const visible = !needle
+      ? exceptions
+      : exceptions.filter((row) =>
+          `${row.contract?.reference_number ?? ""} ${row.contract?.title ?? ""} ${row.type} ${row.title} ${row.status} ${row.severity}`
+            .toLowerCase()
+            .includes(needle),
+        );
+    if (!sort) {
+      return visible;
+    }
+    return [...visible].sort((left, right) => {
+      const map: Record<string, unknown> = {
+        severity: left.severity,
+        contract: left.contract?.reference_number,
+        exception_type: left.type,
+        exception_title: left.title,
+        status: left.status,
+      };
+      const other: Record<string, unknown> = {
+        severity: right.severity,
+        contract: right.contract?.reference_number,
+        exception_type: right.type,
+        exception_title: right.title,
+        status: right.status,
+      };
+      const comparison = String(map[sort.column] ?? "").localeCompare(String(other[sort.column] ?? ""), undefined, {
+        sensitivity: "base",
+      });
+      return sort.direction === "desc" ? -comparison : comparison;
+    });
+  }, [exceptions, search, sort]);
 
   const activeTab = REPORT_TABS.find((item) => item.id === tab) ?? REPORT_TABS[0];
   const isLoading = showExceptions ? exceptionQuery.isLoading : reportQuery.isLoading;
   const isError = showExceptions ? exceptionQuery.isError : reportQuery.isError;
   const rowCount = showExceptions ? filteredExceptions.length : filteredRows.length;
+  const hasSourceRows = showExceptions ? exceptions.length > 0 : rows.length > 0;
+  const kpis = reportKpis(tab, rows, exceptions);
+  const currency = typeof rows[0]?.currency === "string" && rows[0].currency ? String(rows[0].currency) : "NAD";
 
   const onTabKey = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
       event.preventDefault();
-      setTab(nextReportTab(tab, event.key === "ArrowRight" ? 1 : -1));
+      const next = nextReportTab(tab, event.key === "ArrowRight" ? 1 : -1);
+      setTab(next);
+      requestAnimationFrame(() => tabRefs.current[next]?.focus());
     }
   };
+
+  const exportHref = (format: "csv" | "xlsx" | "pdf") =>
+    reportDownloadHref(reportType, format, reportType === "register" && status !== "all" ? { status } : undefined);
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -135,7 +251,7 @@ export default function ContractReportsPage() {
           />
         }
         actions={
-          <>
+          <div className="no-print flex flex-wrap items-center gap-2">
             <Link href="/contracts/analytics" className="btn-secondary inline-flex items-center gap-1.5 text-sm">
               <span className="material-symbols-outlined text-[16px]" aria-hidden>insights</span>
               {t("contracts.reports.analytics")}
@@ -144,12 +260,12 @@ export default function ContractReportsPage() {
               <span className="material-symbols-outlined text-[16px]" aria-hidden>shield</span>
               {t("contracts.reports.risk")}
             </Link>
-          </>
+          </div>
         }
       />
 
       <div
-        className="flex flex-wrap gap-2"
+        className="no-print flex flex-wrap gap-2"
         role="tablist"
         aria-label={t("contracts.reports.catalogue")}
         data-testid="contract-reports-tabs"
@@ -163,6 +279,9 @@ export default function ContractReportsPage() {
               type="button"
               role="tab"
               id={`contract-report-tab-${item.id}`}
+              ref={(node) => {
+                tabRefs.current[item.id] = node;
+              }}
               aria-selected={selected}
               aria-controls="contract-report-panel"
               tabIndex={selected ? 0 : -1}
@@ -181,77 +300,159 @@ export default function ContractReportsPage() {
         id="contract-report-panel"
         role="tabpanel"
         aria-labelledby={`contract-report-tab-${tab}`}
-        className="space-y-4"
+        className="space-y-4 print-content"
       >
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-neutral-900">{t(activeTab.labelKey)}</h2>
-            <p className="mt-1 text-sm text-neutral-500">{t(activeTab.hintKey)}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {tab === "register" ? (
-              <label className="text-xs font-semibold text-neutral-600">
-                {t("contracts.reports.status")}
-                <select
-                  value={status}
-                  onChange={(event) => setStatus(event.target.value as (typeof REGISTER_STATUSES)[number])}
-                  className="form-input ml-2 min-w-[8rem] text-sm"
-                  data-testid="contract-reports-status"
-                >
-                  {REGISTER_STATUSES.map((value) => (
-                    <option key={value} value={value}>
-                      {t(`contracts.reports.status.${value}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            {showExceptions ? (
-              <label className="text-xs font-semibold text-neutral-600">
-                {t("contracts.reports.severity")}
-                <select
-                  value={severity}
-                  onChange={(event) => setSeverity(event.target.value as (typeof EXCEPTION_SEVERITIES)[number])}
-                  className="form-input ml-2 min-w-[8rem] text-sm"
-                  data-testid="contract-reports-severity"
-                >
-                  {EXCEPTION_SEVERITIES.map((value) => (
-                    <option key={value} value={value}>
-                      {t(`contracts.reports.severity.${value}`)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : null}
-            <label className="sr-only" htmlFor="contract-reports-search">{t("common.search")}</label>
-            <input
-              id="contract-reports-search"
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={t("contracts.reports.search")}
-              className="form-input max-w-xs text-sm"
-              data-testid="contract-reports-search"
-            />
-            {!showExceptions ? (
-              <div className="flex flex-wrap gap-2">
-                {([
-                  ["csv", "contracts.reports.exportCsv"],
-                  ["xlsx", "contracts.reports.exportXlsx"],
-                  ["pdf", "contracts.reports.exportPdf"],
-                ] as const).map(([format, key]) => (
-                  <a
-                    key={format}
-                    href={contractsApi.reportDownloadUrl(reportType, format)}
-                    className="btn-secondary inline-flex items-center gap-1.5 text-sm"
-                    data-testid={`contract-reports-export-${format}`}
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-neutral-900">{t(activeTab.labelKey)}</h2>
+          <p className="mt-1 text-sm text-neutral-500">{t(activeTab.hintKey)}</p>
+        </div>
+
+        <div
+          className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+          data-testid="contract-reports-kpis"
+        >
+          {kpis.map((kpi) => (
+            <div key={kpi.id} className="card p-4" data-testid={`contract-reports-kpi-${kpi.id}`}>
+              <p className={`text-xl font-bold tabular-nums leading-tight ${kpiTone(kpi.tone)}`}>
+                {kpi.money ? formatCurrency(kpi.value, currency) : kpi.value}
+              </p>
+              <p className="mt-1 text-xs text-neutral-500">{t(kpi.labelKey)}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="no-print card p-4">
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+            <div className="flex flex-wrap items-end gap-3">
+              {tab === "register" ? (
+                <label className="block text-xs font-semibold text-neutral-600" htmlFor="contract-reports-status">
+                  {t("contracts.reports.status")}
+                  <select
+                    id="contract-reports-status"
+                    value={status}
+                    onChange={(event) =>
+                      replaceQuery((params) => {
+                        if (event.target.value === "all") {
+                          params.delete("status");
+                        } else {
+                          params.set("status", event.target.value);
+                        }
+                      })
+                    }
+                    className="form-input mt-1 min-w-[10rem] text-sm"
+                    data-testid="contract-reports-status"
                   >
-                    <span className="material-symbols-outlined text-[16px]" aria-hidden>download</span>
-                    {t(key)}
-                  </a>
-                ))}
+                    {REGISTER_STATUSES.map((value) => (
+                      <option key={value} value={value}>
+                        {t(`contracts.reports.status.${value}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {tab === "operational" ? (
+                <label className="block text-xs font-semibold text-neutral-600" htmlFor="contract-reports-horizon">
+                  {t("contracts.reports.horizon")}
+                  <select
+                    id="contract-reports-horizon"
+                    value={horizon}
+                    onChange={(event) =>
+                      replaceQuery((params) => {
+                        if (event.target.value === "all") {
+                          params.delete("horizon");
+                        } else {
+                          params.set("horizon", event.target.value);
+                        }
+                      })
+                    }
+                    className="form-input mt-1 min-w-[10rem] text-sm"
+                    data-testid="contract-reports-horizon"
+                  >
+                    {OPERATIONAL_HORIZONS.map((value) => (
+                      <option key={value} value={value}>
+                        {t(`contracts.reports.horizon.${value}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              {showExceptions ? (
+                <label className="block text-xs font-semibold text-neutral-600" htmlFor="contract-reports-severity">
+                  {t("contracts.reports.severity")}
+                  <select
+                    id="contract-reports-severity"
+                    value={severity}
+                    onChange={(event) =>
+                      replaceQuery((params) => {
+                        if (event.target.value === "all") {
+                          params.delete("severity");
+                        } else {
+                          params.set("severity", event.target.value);
+                        }
+                      })
+                    }
+                    className="form-input mt-1 min-w-[10rem] text-sm"
+                    data-testid="contract-reports-severity"
+                  >
+                    {EXCEPTION_SEVERITIES.map((value) => (
+                      <option key={value} value={value}>
+                        {t(`contracts.reports.severity.${value}`)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
+              <div className="min-w-[14rem] flex-1">
+                <label className="block text-xs font-semibold text-neutral-600" htmlFor="contract-reports-search">
+                  {t("common.search")}
+                </label>
+                <div className="mt-1 flex gap-2">
+                  <input
+                    id="contract-reports-search"
+                    type="search"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder={t("contracts.reports.search")}
+                    className="form-input text-sm"
+                    data-testid="contract-reports-search"
+                  />
+                  {search ? (
+                    <button
+                      type="button"
+                      className="btn-secondary text-sm"
+                      onClick={() => setSearch("")}
+                      data-testid="contract-reports-clear-search"
+                    >
+                      {t("contracts.reports.clearSearch")}
+                    </button>
+                  ) : null}
+                </div>
               </div>
-            ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span data-testid="contract-reports-print">
+                <PrintButton label={t("contracts.reports.print")} className="text-sm" />
+              </span>
+              {!showExceptions ? (
+                <>
+                  {([
+                    ["csv", "contracts.reports.exportCsv"],
+                    ["xlsx", "contracts.reports.exportXlsx"],
+                    ["pdf", "contracts.reports.exportPdf"],
+                  ] as const).map(([format, key]) => (
+                    <a
+                      key={format}
+                      href={exportHref(format)}
+                      className="btn-secondary inline-flex items-center gap-1.5 text-sm"
+                      data-testid={`contract-reports-export-${format}`}
+                    >
+                      <span className="material-symbols-outlined text-[16px]" aria-hidden>download</span>
+                      {t(key)}
+                    </a>
+                  ))}
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -272,44 +473,66 @@ export default function ContractReportsPage() {
           </div>
         ) : showExceptions ? (
           <div className="card min-w-0 overflow-hidden">
-            <div className="max-h-[32rem] overflow-auto">
+            <div className="max-h-[min(70vh,44rem)] overflow-auto">
               <table className="data-table" data-testid="contract-reports-table">
                 <thead className="sticky top-0 z-10 bg-neutral-50">
                   <tr>
-                    <th>{t("contracts.reports.col.severity")}</th>
-                    <th>{t("contracts.reports.col.contract")}</th>
-                    <th>{t("contracts.reports.col.exception_type")}</th>
-                    <th>{t("contracts.reports.col.exception_title")}</th>
-                    <th>{t("contracts.reports.col.status")}</th>
+                    {(["severity", "contract", "exception_type", "exception_title", "status"] as const).map((column) => (
+                      <th key={column}>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 uppercase tracking-wider"
+                          onClick={() => setSort((current) => nextSort(current, column))}
+                          aria-sort={sort?.column === column ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
+                        >
+                          {t(`contracts.reports.col.${column}`)}
+                          {sort?.column === column ? (
+                            <span className="material-symbols-outlined text-[14px]" aria-hidden>
+                              {sort.direction === "asc" ? "arrow_upward" : "arrow_downward"}
+                            </span>
+                          ) : null}
+                        </button>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filteredExceptions.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="p-0">
-                        <EmptyState icon="report" title="contracts.reports.emptyExceptions" />
-                      </td>
-                    </tr>
+                    <TableEmpty
+                      colSpan={5}
+                      icon="report"
+                      title={hasSourceRows ? "contracts.reports.emptyExceptionsFiltered" : "contracts.reports.emptyExceptions"}
+                    />
                   ) : (
                     filteredExceptions.map((row: ExceptionRow) => {
                       const href = contractHref(row.contract?.id);
                       return (
-                        <tr key={row.id}>
+                        <tr
+                          key={row.id}
+                          className={href ? "cursor-pointer" : undefined}
+                          onClick={href ? () => router.push(href) : undefined}
+                        >
                           <td>
-                            <span className={`badge ${badgeClass("severity", row.severity)}`}>{row.severity}</span>
+                            <span className={`badge ${badgeClass("severity", row.severity)}`}>
+                              {displayBadge("severity", row.severity, t)}
+                            </span>
                           </td>
-                          <td className="font-mono text-xs">
+                          <td className="sticky left-0 z-[1] bg-inherit font-mono text-xs">
                             {href ? (
-                              <Link href={href} className="text-primary hover:underline">
+                              <Link href={href} className="text-primary hover:underline" aria-label={t("contracts.reports.openContract")}>
                                 {row.contract?.reference_number ?? "—"}
                               </Link>
                             ) : (
                               <span className="text-neutral-600">{row.contract?.reference_number ?? "—"}</span>
                             )}
                           </td>
-                          <td className="text-sm capitalize">{row.type.replace(/_/g, " ")}</td>
+                          <td className="text-sm capitalize">{humanizeToken(row.type)}</td>
                           <td className="max-w-sm truncate text-sm text-neutral-800">{row.title}</td>
-                          <td className="text-sm capitalize">{row.status}</td>
+                          <td>
+                            <span className={`badge ${badgeClass("status", row.status)}`}>
+                              {displayBadge("status", row.status, t)}
+                            </span>
+                          </td>
                         </tr>
                       );
                     })
@@ -320,11 +543,14 @@ export default function ContractReportsPage() {
           </div>
         ) : filteredRows.length === 0 ? (
           <div className="card">
-            <EmptyState icon="description" title="contracts.reports.empty" />
+            <EmptyState
+              icon="description"
+              title={hasSourceRows ? "contracts.reports.emptyFiltered" : "contracts.reports.empty"}
+            />
           </div>
         ) : (
           <div className="card min-w-0 overflow-hidden">
-            <div className="max-h-[32rem] overflow-auto">
+            <div className="max-h-[min(70vh,44rem)] overflow-auto">
               <table className="data-table" data-testid="contract-reports-table">
                 <thead className="sticky top-0 z-10 bg-neutral-50">
                   <tr>
@@ -333,7 +559,19 @@ export default function ContractReportsPage() {
                         key={column}
                         className={`whitespace-nowrap ${isMoneyColumn(column) || isNumericColumn(column) ? "text-right" : ""}`}
                       >
-                        {t(columnLabelKey(column))}
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 uppercase tracking-wider"
+                          onClick={() => setSort((current) => nextSort(current, column))}
+                          aria-sort={sort?.column === column ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
+                        >
+                          {t(columnLabelKey(column))}
+                          {sort?.column === column ? (
+                            <span className="material-symbols-outlined text-[14px]" aria-hidden>
+                              {sort.direction === "asc" ? "arrow_upward" : "arrow_downward"}
+                            </span>
+                          ) : null}
+                        </button>
                       </th>
                     ))}
                   </tr>
@@ -342,15 +580,21 @@ export default function ContractReportsPage() {
                   {filteredRows.map((row, index) => {
                     const href = contractHref(row.id);
                     return (
-                      <tr key={typeof row.id === "number" || typeof row.id === "string" ? String(row.id) : index}>
+                      <tr
+                        key={typeof row.id === "number" || typeof row.id === "string" ? String(row.id) : index}
+                        className={href ? "cursor-pointer" : undefined}
+                        onClick={href ? () => router.push(href) : undefined}
+                      >
                         {columns.map((column) => {
                           const value = row[column];
                           const text = displayCell(column, value, row, t);
                           const align = isMoneyColumn(column) || isNumericColumn(column) ? "text-right tabular-nums" : "";
                           if (column === "reference" && href) {
                             return (
-                              <td key={column} className="sticky left-0 z-[1] bg-white font-mono text-xs">
-                                <Link href={href} className="text-primary hover:underline">{text}</Link>
+                              <td key={column} className="sticky left-0 z-[1] bg-inherit font-mono text-xs">
+                                <Link href={href} className="text-primary hover:underline" aria-label={t("contracts.reports.openContract")}>
+                                  {text}
+                                </Link>
                               </td>
                             );
                           }
@@ -372,6 +616,9 @@ export default function ContractReportsPage() {
                                   : "text-neutral-700";
                             return <td key={column} className={`text-right tabular-nums ${tone}`}>{text}</td>;
                           }
+                          if (column === "title") {
+                            return <td key={column} className="max-w-xs text-sm text-neutral-800">{text}</td>;
+                          }
                           return <td key={column} className={`whitespace-nowrap text-sm ${align}`}>{text}</td>;
                         })}
                       </tr>
@@ -384,5 +631,13 @@ export default function ContractReportsPage() {
         )}
       </section>
     </div>
+  );
+}
+
+export default function ContractReportsPage() {
+  return (
+    <Suspense fallback={<div className="card p-6 text-sm text-neutral-500">…</div>}>
+      <ContractReportsDesk />
+    </Suspense>
   );
 }
