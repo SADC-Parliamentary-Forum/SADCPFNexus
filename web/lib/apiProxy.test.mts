@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
+import http from "node:http";
 import test from "node:test";
 import {
   rewriteSetCookie,
   buildUpstreamHeaders,
   resolveApiUpstream,
   applyUpstreamSetCookies,
+  proxyLaravel,
 } from "./apiProxy.ts";
 
 test("rewriteSetCookie drops internal API host so the browser binds the SPA origin", () => {
@@ -54,6 +56,55 @@ test("resolveApiUpstream maps Next /api and /sanctum paths onto the Laravel orig
   assert.equal(api, "http://10.20.30.8/api/v1/auth/login");
   const csrf = resolveApiUpstream("/sanctum/csrf-cookie", "http://10.20.30.8/api/v1");
   assert.equal(csrf, "http://10.20.30.8/sanctum/csrf-cookie");
+});
+
+test("proxyLaravel forwards the browser hop and rewrites upstream Set-Cookie Domain", async () => {
+  const server = http.createServer((req, res) => {
+    assert.equal(req.headers.origin, "https://nexus.sadcpf.org");
+    assert.equal(req.headers["x-forwarded-host"], "nexus.sadcpf.org");
+    assert.equal(req.headers["x-forwarded-proto"], "https");
+    assert.equal(req.headers.cookie, "XSRF-TOKEN=tok");
+    assert.match(req.url ?? "", /\/sanctum\/csrf-cookie$/);
+    res.statusCode = 204;
+    res.setHeader("Set-Cookie", [
+      "XSRF-TOKEN=abc; path=/; domain=10.20.30.8; secure; samesite=lax",
+      "sadc-pf-nexus-session=xyz; path=/; domain=nexus-api.sadcpf.org; httponly; samesite=lax",
+    ]);
+    res.end();
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address() as { port: number };
+  const previous = process.env.API_INTERNAL_URL;
+  process.env.API_INTERNAL_URL = `http://127.0.0.1:${port}/api/v1`;
+  try {
+    const response = await proxyLaravel(
+      new Request("https://nexus.sadcpf.org/sanctum/csrf-cookie", {
+        headers: {
+          origin: "https://nexus.sadcpf.org",
+          host: "nexus.sadcpf.org",
+          cookie: "XSRF-TOKEN=tok",
+          "x-forwarded-proto": "https",
+        },
+      }),
+    );
+    assert.equal(response.status, 204);
+    const cookies = response.headers.getSetCookie();
+    assert.equal(cookies.length, 2);
+    for (const cookie of cookies) {
+      assert.doesNotMatch(cookie, /domain=/i);
+      assert.doesNotMatch(cookie, /10\.20\.30\.8/);
+      assert.doesNotMatch(cookie, /nexus-api\.sadcpf\.org/);
+    }
+  } finally {
+    if (previous === undefined) {
+      delete process.env.API_INTERNAL_URL;
+    } else {
+      process.env.API_INTERNAL_URL = previous;
+    }
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
 });
 
 test("applyUpstreamSetCookies copies every Set-Cookie and strips internal Domain", () => {
