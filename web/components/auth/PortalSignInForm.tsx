@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   authApi,
+  ensureCsrfCookie,
   setAuthCookie,
   setMustResetCookie,
   setSetupCompleteCookie,
@@ -15,6 +16,7 @@ import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { CaptchaGate, EMPTY_CAPTCHA, type CaptchaValue } from "@/components/auth/CaptchaGate";
 import { isSupplierUser, postAuthDestination } from "@/lib/postAuthDestination";
 import { isCsrfMismatch } from "@/lib/csrf";
+import { loginFormErrorMessage, shouldResetLoginCaptcha } from "@/lib/loginFormError";
 
 interface Props {
   portal: "staff" | "supplier";
@@ -92,23 +94,12 @@ export function PortalSignInForm({ portal, emailPlaceholder, prefillEmail }: Pro
 
       window.location.href = destination;
     } catch (err: unknown) {
-      const ax = err as { response?: { status?: number; data?: { message?: string; errors?: Record<string, string[]> } }; status?: number };
-      const data = ax.response?.data;
-      if (isCsrfMismatch(err)) {
-        setError(t("login.csrfExpired"));
+      setError(loginFormErrorMessage(err, t));
+      if (shouldResetLoginCaptcha(err)) {
         setCaptcha(EMPTY_CAPTCHA);
-        return;
       }
-      const msg = data?.message
-        ?? (data?.errors?.captcha_token ? data.errors.captcha_token[0] : null)
-        ?? (data?.errors?.code ? data.errors.code[0] : null)
-        ?? (data?.errors?.email ? data.errors.email[0] : null)
-        ?? (data?.errors?.password ? data.errors.password[0] : null)
-        ?? (ax.response?.status === 422 ? t("login.error") : null)
-        ?? t("login.error");
-      setError(msg);
-      if (data?.errors?.captcha_token) {
-        setCaptcha(EMPTY_CAPTCHA);
+      if (isCsrfMismatch(err)) {
+        void ensureCsrfCookie(true).catch(() => undefined);
       }
     } finally {
       setLoading(false);
@@ -118,7 +109,11 @@ export function PortalSignInForm({ portal, emailPlaceholder, prefillEmail }: Pro
   return (
     <>
       {error && (
-        <div role="alert" className="mb-5 flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+        <div
+          role="alert"
+          data-testid="login-error"
+          className="mb-5 flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
+        >
           <span className="material-symbols-outlined text-[16px] mt-0.5">error_outline</span>
           {error}
         </div>

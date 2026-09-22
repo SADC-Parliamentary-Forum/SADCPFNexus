@@ -19,3 +19,14 @@ test("staff and supplier login share the captcha gate", () => {
   assert.match(gate, /login\.captchaRetry/);
   assert.match(gate, /loadConfig/);
 });
+
+test("login form maps CSRF failures to a friendly retry and resets captcha", () => {
+  const form = readFileSync(join(webRoot, "components/auth/PortalSignInForm.tsx"), "utf8");
+  const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
+  assert.match(form, /loginFormErrorMessage/);
+  assert.match(form, /shouldResetLoginCaptcha/);
+  assert.match(form, /ensureCsrfCookie\(true\)/);
+  assert.match(keys, /"login\.csrfExpired":\s*"Your session expired/);
+  assert.match(keys, /"login\.csrfExpired":\s*"Votre session a expiré/);
+  assert.match(keys, /"login\.csrfExpired":\s*"A sua sessão expirou/);
+});

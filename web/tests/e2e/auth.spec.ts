@@ -83,6 +83,26 @@ test.describe("Login page", () => {
     await expect(page).toHaveURL(/\/forgot-password/);
   });
 
+  test("login CSRF mismatch shows a friendly retry instead of raw Laravel copy", async ({ page }) => {
+    await page.locator('input[type="email"]').fill("admin@sadcpf.org");
+    await page.locator('input[type="password"]').fill("Admin@2024!");
+    await completeLoginCaptcha(page);
+    await page.route("**/api/auth/login", async (route) => {
+      await route.fulfill({
+        status: 419,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "CSRF token mismatch." }),
+      });
+    });
+    await page.locator('button[type="submit"]').click();
+
+    const errorEl = page.getByTestId("login-error");
+    await expect(errorEl).toBeVisible({ timeout: 8_000 });
+    await expect(errorEl).toContainText(/session expired/i);
+    await expect(errorEl).not.toContainText(/CSRF token mismatch/i);
+    await expect(page.locator("body")).not.toContainText(/CSRF token mismatch/i);
+  });
+
   test("request-password link opens and stays on the access form", async ({ page }) => {
     await page.getByRole("link", { name: /request a password/i }).click();
     await page.waitForURL("**/request-password", { timeout: 10_000 });
@@ -181,6 +201,27 @@ test.describe("Supplier portal login", () => {
     await expect(page.getByRole("link", { name: /register your supplier account/i })).toBeVisible();
     await expect(page.getByRole("link", { name: /staff sign in/i }).first()).toBeVisible();
     await expect(page.getByText(/travel & mission/i)).toHaveCount(0);
+  });
+
+  test("supplier login CSRF mismatch shows the same friendly retry", async ({ page }) => {
+    await page.goto("/supplier/login");
+    await page.locator('input[type="email"]').fill("supplier@example.org");
+    await page.locator('input[type="password"]').fill("Supplier@2024!");
+    await completeLoginCaptcha(page);
+    await page.route("**/api/auth/login", async (route) => {
+      await route.fulfill({
+        status: 419,
+        contentType: "application/json",
+        body: JSON.stringify({ message: "CSRF token mismatch." }),
+      });
+    });
+    await page.locator('button[type="submit"]').click();
+
+    const errorEl = page.getByTestId("login-error");
+    await expect(errorEl).toBeVisible({ timeout: 8_000 });
+    await expect(errorEl).toContainText(/session expired/i);
+    await expect(errorEl).not.toContainText(/CSRF token mismatch/i);
+    await expect(page.locator("body")).not.toContainText(/CSRF token mismatch/i);
   });
 
   test("staff login page links to the supplier portal", async ({ page }) => {

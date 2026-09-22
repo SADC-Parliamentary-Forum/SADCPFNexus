@@ -43,7 +43,7 @@ test("login form and API client recover from a stale CSRF cookie", () => {
   const form = readFileSync(join(webRoot, "components/auth/PortalSignInForm.tsx"), "utf8");
   const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
   const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
-  assert.match(form, /login\.csrfExpired/);
+  assert.match(form, /loginFormErrorMessage|login\.csrfExpired/);
   assert.match(form, /isCsrfMismatch/);
   assert.match(api, /shouldRetryCsrf|ensureCsrfCookie\(true\)/);
   assert.match(keys, /"login\.csrfExpired": "Your session expired\. Refresh the page and try again\."/);

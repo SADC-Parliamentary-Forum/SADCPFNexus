@@ -99,19 +99,26 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($e instanceof AuthenticationException) {
                 $status = 401;
             }
-            if ($e instanceof TokenMismatchException) {
-                $status = 419;
-                $payload = [
-                    'message' => 'Your session expired. Refresh the page and try again.',
-                    'code' => 'csrf_mismatch',
-                ];
-            }
             if ($e instanceof HttpExceptionInterface) {
                 $status = $e->getStatusCode();
             }
             if ($e instanceof ValidationException) {
                 $status = $e->status;
                 $payload = ['message' => $e->getMessage(), 'errors' => $e->errors()];
+            }
+
+            $csrfMessage = strtolower($e->getMessage());
+            if (
+                $e instanceof TokenMismatchException
+                || ($e instanceof HttpExceptionInterface && $e->getStatusCode() === 419)
+                || str_contains($csrfMessage, 'csrf token mismatch')
+                || str_contains($csrfMessage, 'page expired')
+            ) {
+                $status = 419;
+                $payload = [
+                    'message' => 'Your session expired. Refresh the page and try again.',
+                    'code' => 'csrf_mismatch',
+                ];
             }
 
             if (config('app.debug')) {

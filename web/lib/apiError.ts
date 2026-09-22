@@ -1,5 +1,7 @@
 import { CSRF_EXPIRED_MESSAGE, isCsrfMismatch } from "./csrf.ts";
 
+export { isCsrfMismatch };
+
 /** First Laravel validation message, then top-level message. Prefer over Error.message (Axios 422). */
 export function apiErrorMessage(err: unknown, fallback: string): string {
   if (isCsrfMismatch(err)) {
