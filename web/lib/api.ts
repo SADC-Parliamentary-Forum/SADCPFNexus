@@ -1942,6 +1942,7 @@ export type AssetReportCatalogueItem = {
   priority: string;
   formats: string[];
   template_version: string;
+  ready?: boolean;
 };
 
 export type AssetAssignedToUserRow = {
@@ -1976,10 +1977,16 @@ export type AssetAssignedToUserReport = {
     generated_at: string;
     generated_by: { id: number; name: string; email: string };
     official: boolean;
+    checksum?: string | null;
   };
-  custodian: { id: number; name: string; employee_number: string | null; department: string | null };
+  title?: string;
+  scope?: Record<string, string | number | null | undefined>;
+  custodian?: { id: number; name: string; employee_number: string | null; department: string | null };
+  columns?: Array<{ key: string; label: string; type?: string }>;
   data: AssetAssignedToUserRow[];
-  totals: { count: number; unacknowledged: number; overdue: number };
+  totals: { count: number; unacknowledged?: number; overdue?: number; [key: string]: number | undefined };
+  exceptions?: Array<AssetAssignedToUserRow & { reason?: string }>;
+  declaration?: string | null;
 };
 
 export const assetsApi = {
@@ -2113,6 +2120,25 @@ export const assetsApi = {
     api.get<{ data: AssetReportCatalogueItem[] }>("/assets/report-catalogue"),
   assignedToUserReport: (params: { user_id: number; mode?: string; as_of?: string }) =>
     api.get<AssetAssignedToUserReport>("/assets/reports/assigned-to-user", { params }),
+  runGovernedReport: (params: {
+    report_id: string;
+    user_id?: number;
+    asset_id?: number;
+    mode?: string;
+    as_of?: string;
+    department?: string;
+  }) => api.get<AssetAssignedToUserReport>("/assets/reports/run", { params }),
+  exportGovernedReport: (params: {
+    report_id: string;
+    format: "pdf" | "xlsx" | "csv";
+    official?: boolean;
+    intent?: "export" | "print";
+    user_id?: number;
+    asset_id?: number;
+    mode?: string;
+    as_of?: string;
+    department?: string;
+  }) => api.get<Blob>("/assets/reports/export", { params, responseType: "blob" }),
   batches: (params?: Record<string, string | number>) =>
     api.get<{ data: AssetAcquisitionBatch[] } & { data?: AssetAcquisitionBatch[] }>("/asset-batches", { params }),
   createBatch: (data: Record<string, unknown>) =>

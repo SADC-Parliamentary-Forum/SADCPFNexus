@@ -15,6 +15,7 @@ import {
   modeI18nKey,
   presentFamilies,
   reportHref,
+  reportNeedsStaff,
   REPORT_MODES,
   familyI18nKey,
   type ReportMode,
@@ -46,6 +47,8 @@ export default function AssetReportsPage() {
   const [asOf, setAsOf] = useState("");
   const [running, setRunning] = useState(false);
   const [report, setReport] = useState<AssetAssignedToUserReport | null>(null);
+  const [selectedId, setSelectedId] = useState("R01");
+  const [exporting, setExporting] = useState<string | null>(null);
 
   useEffect(() => {
     assetsApi.reportCatalogue()
@@ -80,24 +83,57 @@ export default function AssetReportsPage() {
     }
   }
 
-  async function runAssigned() {
-    if (!staff) {
+  async function runAssigned(reportId = selectedId) {
+    if (reportNeedsStaff(reportId) && !staff) {
       setMsg(t("assets.reports.pickStaff"));
       return;
     }
     setRunning(true);
     setMsg(null);
     try {
-      const res = await assetsApi.assignedToUserReport({
-        user_id: staff.id,
-        mode,
+      const res = await assetsApi.runGovernedReport({
+        report_id: reportId,
+        user_id: staff?.id,
+        mode: reportId === "R02" ? "current" : mode,
         as_of: mode === "as_of" && asOf ? asOf : undefined,
       });
+      setSelectedId(reportId);
       setReport(res.data);
     } catch {
       setMsg(t("assets.reports.runFailed"));
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function exportReport(format: "pdf" | "xlsx" | "csv", official = true, intent: "export" | "print" = "export") {
+    if (reportNeedsStaff(selectedId) && !staff) {
+      setMsg(t("assets.reports.pickStaff"));
+      return;
+    }
+    setExporting(`${format}-${intent}`);
+    setMsg(null);
+    try {
+      const res = await assetsApi.exportGovernedReport({
+        report_id: selectedId,
+        format,
+        official,
+        intent,
+        user_id: staff?.id,
+        mode: selectedId === "R02" ? "current" : mode,
+        as_of: mode === "as_of" && asOf ? asOf : undefined,
+      });
+      const blob = res.data as Blob;
+      const type = (blob.type || "").toLowerCase();
+      if (type.includes("json")) {
+        setMsg(t("assets.reports.exportFailed"));
+        return;
+      }
+      downloadBlob(blob, `SADC_PF_${selectedId}_${new Date().toISOString().slice(0, 10)}.${format}`);
+    } catch {
+      setMsg(t("assets.reports.exportFailed"));
+    } finally {
+      setExporting(null);
     }
   }
 
@@ -116,7 +152,7 @@ export default function AssetReportsPage() {
 
       <section id="asset-report-r01" className="card p-5 space-y-4" data-testid="asset-reports-r01">
         <div>
-          <h2 className="text-base font-semibold text-neutral-900">{t("assets.reports.assignedToUser")}</h2>
+          <h2 className="text-base font-semibold text-neutral-900">{report?.title ?? t("assets.reports.assignedToUser")}</h2>
           <p className="mt-1 text-sm text-neutral-500">{t("assets.reports.assignedToUserHint")}</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -160,15 +196,53 @@ export default function AssetReportsPage() {
             </div>
           ) : null}
         </div>
-        <button
-          type="button"
-          className="btn-primary"
-          disabled={running || !staff}
-          onClick={() => void runAssigned()}
-          data-testid="asset-reports-r01-run"
-        >
-          {running ? t("assets.reports.preparing") : t("assets.reports.run")}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={running || (reportNeedsStaff(selectedId) && !staff)}
+            onClick={() => void runAssigned()}
+            data-testid="asset-reports-r01-run"
+          >
+            {running ? t("assets.reports.preparing") : t("assets.reports.run")}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={exporting !== null || (reportNeedsStaff(selectedId) && !staff)}
+            onClick={() => void exportReport("pdf", true, "print")}
+            data-testid="asset-reports-r01-print"
+          >
+            {exporting === "pdf-print" ? t("assets.reports.preparing") : t("assets.reports.printStatement")}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={exporting !== null || (reportNeedsStaff(selectedId) && !staff)}
+            onClick={() => void exportReport("pdf")}
+            data-testid="asset-reports-r01-pdf"
+          >
+            {exporting === "pdf-export" ? t("assets.reports.preparing") : t("assets.reports.exportOfficialPdf")}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={exporting !== null || (reportNeedsStaff(selectedId) && !staff)}
+            onClick={() => void exportReport("xlsx")}
+            data-testid="asset-reports-r01-xlsx"
+          >
+            {exporting === "xlsx-export" ? t("assets.reports.preparing") : t("assets.reports.exportXlsx")}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={exporting !== null || (reportNeedsStaff(selectedId) && !staff)}
+            onClick={() => void exportReport("csv", false)}
+            data-testid="asset-reports-r01-csv"
+          >
+            {exporting === "csv-export" ? t("assets.reports.preparing") : t("assets.reports.exportCsv")}
+          </button>
+        </div>
         {report ? (
           <div className="space-y-3" data-testid="asset-reports-r01-results">
             <p className="text-xs text-neutral-500">
@@ -320,7 +394,18 @@ export default function AssetReportsPage() {
                     <td className="font-mono text-xs">{item.id}</td>
                     <td>
                       {href ? (
-                        <a href={href} className="text-primary font-medium">{item.name}</a>
+                        <button
+                          type="button"
+                          className="text-primary font-medium text-left"
+                          onClick={() => {
+                            setSelectedId(item.id);
+                            if (!reportNeedsStaff(item.id) || staff) {
+                              void runAssigned(item.id);
+                            }
+                          }}
+                        >
+                          {item.name}
+                        </button>
                       ) : (
                         <span className="font-medium text-neutral-900">{item.name}</span>
                       )}

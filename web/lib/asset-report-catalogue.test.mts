@@ -27,14 +27,19 @@ test("catalogue helpers group and filter the ten PRD families", () => {
   assert.deepEqual(filterCatalogue(sample, "Custody").map((row) => row.id), ["R01"]);
   assert.equal(familyI18nKey("Custody"), "assets.reports.familyCustody");
   assert.equal(reportHref("R01"), "#asset-report-r01");
+  assert.equal(reportHref("R09"), "#asset-report-r01");
+  assert.equal(reportHref("R11"), null);
 });
 
 test("reports page keeps register export testids and runs the R01 catalogue", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assets/reports/page.tsx"), "utf8");
   assert.match(page, /assetsApi\.reportCatalogue/);
-  assert.match(page, /assetsApi\.assignedToUserReport/);
+  assert.match(page, /assetsApi\.runGovernedReport/);
+  assert.match(page, /assetsApi\.exportGovernedReport/);
   assert.match(page, /data-testid=["']asset-reports-catalogue["']/);
   assert.match(page, /data-testid=["']asset-reports-r01-run["']/);
+  assert.match(page, /data-testid=["']asset-reports-r01-pdf["']/);
+  assert.match(page, /data-testid=["']asset-reports-r01-xlsx["']/);
   assert.match(page, /data-testid=["']asset-reports-download-csv["']/);
   assert.match(page, /data-testid=["']asset-reports-download-excel["']/);
   assert.match(page, /data-testid=["']asset-reports-status["']/);

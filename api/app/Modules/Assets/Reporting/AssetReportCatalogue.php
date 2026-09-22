@@ -6,6 +6,9 @@ final class AssetReportCatalogue
 {
     public const TEMPLATE_VERSION = '2.0';
 
+    /** @var list<string> */
+    public const READY = ['R01', 'R02', 'R03', 'R04', 'R05', 'R06', 'R08', 'R09'];
+
     /**
      * @return list<array{id:string,family:string,name:string,purpose:string,priority:string,formats:list<string>}>
      */
@@ -75,6 +78,7 @@ final class AssetReportCatalogue
             'priority' => $row[4],
             'formats' => $pdfXlsxCsv,
             'template_version' => self::TEMPLATE_VERSION,
+            'ready' => in_array($row[0], self::READY, true),
         ], $rows);
     }
 

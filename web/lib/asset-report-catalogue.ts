@@ -71,8 +71,14 @@ export function presentFamilies(items: AssetReportCatalogueItem[]): ReportFamily
   return REPORT_FAMILIES.filter((family) => present.has(family));
 }
 
+export const READY_REPORTS = ["R01", "R02", "R03", "R04", "R05", "R06", "R08", "R09"] as const;
+
+export function reportNeedsStaff(id: string): boolean {
+  return id === "R01" || id === "R02" || id === "R08" || id === "R09";
+}
+
 export function reportHref(id: string): string | null {
-  if (id === "R01" || id === "R02") {
+  if (READY_REPORTS.includes(id as (typeof READY_REPORTS)[number])) {
     return "#asset-report-r01";
   }
   return null;

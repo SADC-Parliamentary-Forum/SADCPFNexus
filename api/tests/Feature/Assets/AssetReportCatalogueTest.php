@@ -28,6 +28,9 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertSame('must', $r01['priority']);
         $this->assertContains('pdf', $r01['formats']);
         $this->assertContains('xlsx', $r01['formats']);
+        $this->assertTrue($r01['ready']);
+        $this->assertTrue(collect($data)->firstWhere('id', 'R09')['ready']);
+        $this->assertFalse(collect($data)->firstWhere('id', 'R11')['ready']);
     }
 
     public function test_assigned_to_user_current_excludes_returned_and_includes_overdue_loan(): void
@@ -126,6 +129,90 @@ class AssetReportCatalogueTest extends TestCase
         $this->assertCount(1, $res->json('data'));
         $this->assertSame('Dell Latitude 5520', $res->json('data.0.description'));
         $this->assertSame('inferred', $res->json('data.0.acknowledgement_status'));
+    }
+
+    public function test_governed_engine_runs_custody_reports_and_official_exports(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $staff = $this->makeUser('staff', $tenant);
+        $staff->forceFill(['employee_number' => 'RW-0001', 'name' => 'Ronald Windwaai'])->save();
+        $category = AssetCategory::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'ICT Equipment',
+            'code' => 'ICT',
+            'useful_life_years' => 4,
+        ]);
+        $this->seedAssignedAsset($tenant, $category->code, $staff->id, 'Assigned laptop', 'assigned');
+        $this->seedAssignedAsset($tenant, $category->code, $staff->id, 'Overdue projector', 'loan_out', now()->subDays(20), null, now()->subDays(2), 'temporary_loan');
+        AssetAssignmentHistory::create([
+            'tenant_id' => $tenant->id,
+            'asset_id' => $this->seedAssignedAsset($tenant, $category->code, $staff->id, 'Pending tablet', 'assigned')->id,
+            'assigned_to' => $staff->id,
+            'assignment_type' => 'assigned',
+            'assigned_at' => now()->subDay(),
+            'acknowledged_at' => null,
+        ]);
+        Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'PF-UNASSIGNED',
+            'tag_number' => '00123',
+            'name' => '=HYPERLINK("http://evil","x")',
+            'category' => $category->code,
+            'status' => 'active',
+            'assigned_to' => null,
+            'qr_token' => 'qr_'.bin2hex(random_bytes(6)),
+        ]);
+
+        $r03 = $http->getJson('/api/v1/assets/reports/run?report_id=R03')->assertOk();
+        $this->assertSame('R03', $r03->json('run.report_id'));
+        $this->assertGreaterThanOrEqual(1, (int) $r03->json('totals.count'));
+
+        $r04 = $http->getJson('/api/v1/assets/reports/run?report_id=R04')->assertOk();
+        $tags = collect($r04->json('data'))->pluck('asset_tag')->all();
+        $this->assertTrue(
+            in_array('00123', $tags, true) || in_array('PF-UNASSIGNED', $tags, true),
+            'R04 should include the unassigned active asset, got: '.implode(',', $tags),
+        );
+
+        $r05 = $http->getJson('/api/v1/assets/reports/run?report_id=R05')->assertOk();
+        $this->assertGreaterThanOrEqual(1, (int) $r05->json('totals.count'));
+
+        $r06 = $http->getJson('/api/v1/assets/reports/run?report_id=R06')->assertOk();
+        $this->assertGreaterThanOrEqual(1, (int) $r06->json('totals.count'));
+
+        $r09 = $http->getJson('/api/v1/assets/reports/run?report_id=R09&user_id='.$staff->id)->assertOk();
+        $this->assertSame('Staff clearance', $r09->json('title'));
+        $this->assertNotEmpty($r09->json('declaration'));
+
+        $xlsx = $http->get('/api/v1/assets/reports/export?report_id=R04&format=xlsx&official=1')->assertOk();
+        $this->assertStringContainsString('spreadsheetml', $xlsx->headers->get('content-type'));
+        $tmp = tempnam(sys_get_temp_dir(), 'far');
+        file_put_contents($tmp, $xlsx->streamedContent());
+        $sheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($tmp);
+        $this->assertSame('Report Info', $sheet->getSheet(0)->getTitle());
+        $data = $sheet->getSheetByName('Data');
+        $this->assertNotNull($data);
+        $found = false;
+        foreach ($data->toArray() as $row) {
+            if (in_array("'=HYPERLINK(\"http://evil\",\"x\")", $row, true) || in_array('=HYPERLINK("http://evil","x")', $row, true)) {
+                $found = true;
+                $this->assertTrue(
+                    str_starts_with((string) $row[1], "'=") || $data->getCell('B2')->getDataType() === 's',
+                    'formula-like description must not be a formula',
+                );
+            }
+            if (in_array('00123', $row, true)) {
+                $found = true;
+            }
+        }
+        $this->assertTrue($found);
+        @unlink($tmp);
+
+        $pdf = $http->get('/api/v1/assets/reports/export?report_id=R02&format=pdf&official=1&user_id='.$staff->id)->assertOk();
+        $this->assertStringStartsWith('%PDF', $pdf->streamedContent());
+        $this->assertNotEmpty($pdf->headers->get('X-Report-Checksum'));
+        $this->assertDatabaseHas('audit_logs', ['event' => 'assets.report.exported']);
     }
 
     public function test_tenant_users_can_be_found_by_staff_number(): void
