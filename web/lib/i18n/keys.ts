@@ -1940,6 +1940,17 @@ export const keyEn: Dict = {
   "contracts.reports.health.warning": "Warning",
   "contracts.reports.health.at_risk": "At risk",
   "contracts.reports.health.critical": "Critical",
+  "contracts.reports.orgName": "SADC Parliamentary Forum",
+  "contracts.reports.generatedAt": "Live extract · {date} · {count} rows",
+  "contracts.reports.clearFilters": "Clear filters",
+  "contracts.reports.kpiFilterHint": "Select a figure to filter this extract. Select it again to clear.",
+  "contracts.reports.flag.unsigned": "Unsigned",
+  "contracts.reports.flag.retrospective": "Retrospective",
+  "contracts.reports.flag.legacy": "Legacy",
+  "contracts.reports.flag.unsigned_signature": "Unsigned",
+  "contracts.reports.flag.at_risk": "At risk",
+  "contracts.reports.exceptionType.service_started_before_execution": "Service started before execution",
+  "contracts.reports.exceptionType.auto_renewal_deadline": "Auto-renewal deadline",
 };
 
 export const keyFr: Dict = {
@@ -3881,6 +3892,17 @@ export const keyFr: Dict = {
   "contracts.reports.health.warning": "Avertissement",
   "contracts.reports.health.at_risk": "À risque",
   "contracts.reports.health.critical": "Critique",
+  "contracts.reports.orgName": "Forum parlementaire de la SADC",
+  "contracts.reports.generatedAt": "Extrait en direct · {date} · {count} lignes",
+  "contracts.reports.clearFilters": "Effacer les filtres",
+  "contracts.reports.kpiFilterHint": "Sélectionnez un chiffre pour filtrer cet extrait. Sélectionnez-le à nouveau pour l’annuler.",
+  "contracts.reports.flag.unsigned": "Non signés",
+  "contracts.reports.flag.retrospective": "Rétroactifs",
+  "contracts.reports.flag.legacy": "Hérités",
+  "contracts.reports.flag.unsigned_signature": "Sans signature",
+  "contracts.reports.flag.at_risk": "À risque",
+  "contracts.reports.exceptionType.service_started_before_execution": "Prestation commencée avant exécution",
+  "contracts.reports.exceptionType.auto_renewal_deadline": "Échéance de reconduction automatique",
 };
 
 export const keyPt: Dict = {
@@ -5822,4 +5844,15 @@ export const keyPt: Dict = {
   "contracts.reports.health.warning": "Aviso",
   "contracts.reports.health.at_risk": "Em risco",
   "contracts.reports.health.critical": "Crítico",
+  "contracts.reports.orgName": "Fórum Parlamentar da SADC",
+  "contracts.reports.generatedAt": "Extracto em directo · {date} · {count} linhas",
+  "contracts.reports.clearFilters": "Limpar filtros",
+  "contracts.reports.kpiFilterHint": "Seleccione um valor para filtrar este extracto. Seleccione de novo para limpar.",
+  "contracts.reports.flag.unsigned": "Não assinados",
+  "contracts.reports.flag.retrospective": "Retrospectivos",
+  "contracts.reports.flag.legacy": "Legados",
+  "contracts.reports.flag.unsigned_signature": "Sem assinatura",
+  "contracts.reports.flag.at_risk": "Em risco",
+  "contracts.reports.exceptionType.service_started_before_execution": "Serviço iniciado antes da execução",
+  "contracts.reports.exceptionType.auto_renewal_deadline": "Prazo de renovação automática",
 };

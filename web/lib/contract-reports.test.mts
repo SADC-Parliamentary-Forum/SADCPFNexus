@@ -18,6 +18,13 @@ import {
   reportKpis,
   rowMatchesQuery,
   sortReportRows,
+  parseReportFlag,
+  matchesReportFlag,
+  kpiDrilldown,
+  isKpiActive,
+  columnPriority,
+  columnVisibilityClass,
+  exceptionTypeLabelKey,
 } from "./contract-reports.ts";
 import { catalogFor, translate } from "./i18n/messages.ts";
 
@@ -99,6 +106,29 @@ test("tab parsing, filtered exports, sort and KPIs stay deterministic", () => {
   assert.equal(reportCurrency([{ currency: "NAD" }, { currency: "USD" }]), null);
 });
 
+test("KPI drill-downs, flags and column priority stay shareable", () => {
+  assert.equal(parseReportFlag("unsigned"), "unsigned");
+  assert.equal(parseReportFlag("at_risk"), "at_risk");
+  assert.equal(parseReportFlag("nope"), null);
+  assert.equal(matchesReportFlag({ unsigned: true }, "unsigned"), true);
+  assert.equal(matchesReportFlag({ signature_status: "pending" }, "unsigned_signature"), true);
+  assert.equal(matchesReportFlag({ signature_status: "signed" }, "unsigned_signature"), false);
+  assert.equal(matchesReportFlag({ health: "at_risk" }, "at_risk"), true);
+  assert.equal(matchesReportFlag({ health: "good" }, "at_risk"), false);
+  assert.deepEqual(kpiDrilldown("register", "unsigned"), { flag: "unsigned_signature" });
+  assert.deepEqual(kpiDrilldown("register", "risk"), { flag: "at_risk" });
+  assert.deepEqual(kpiDrilldown("compliance", "legacy"), { flag: "legacy" });
+  assert.deepEqual(kpiDrilldown("operational", "expiring"), { horizon: "expiring" });
+  assert.deepEqual(kpiDrilldown("exceptions", "critical"), { severity: "critical" });
+  assert.equal(kpiDrilldown("financial", "current"), null);
+  assert.equal(isKpiActive("compliance", "unsigned", { flag: "unsigned", horizon: "all", severity: "all" }), true);
+  assert.equal(isKpiActive("operational", "expired", { flag: null, horizon: "expired", severity: "all" }), true);
+  assert.equal(columnPriority("register", "reference"), "always");
+  assert.equal(columnPriority("register", "department"), "lg");
+  assert.equal(columnVisibilityClass("lg"), "hidden lg:table-cell");
+  assert.equal(exceptionTypeLabelKey("service_started_before_execution"), "contracts.reports.exceptionType.service_started_before_execution");
+});
+
 test("reports page is a labelled tabbed desk with exports and overflow", () => {
   const page = readFileSync(join(webRoot, "app/(app)/contracts/reports/page.tsx"), "utf8");
   assert.match(page, /role="tablist"/);
@@ -118,6 +148,10 @@ test("reports page is a labelled tabbed desk with exports and overflow", () => {
   assert.match(page, /reportDownloadHref/);
   assert.match(page, /parseReportTab/);
   assert.match(page, /reportCurrency/);
+  assert.match(page, /data-testid=["']contract-reports-chips["']/);
+  assert.match(page, /data-testid=["']contract-reports-generated["']/);
+  assert.match(page, /kpiDrilldown/);
+  assert.match(page, /columnVisibilityClass/);
   assert.doesNotMatch(page, /c\.replace\(\/_\/g/);
   assert.doesNotMatch(page, /className=\{`filter-tab capitalize/);
 });
@@ -136,6 +170,10 @@ test("contract reports catalogue covers EN, FR and PT", () => {
     "contracts.reports.mixedCurrency",
     "contracts.reports.col.reference",
     "contracts.reports.col.original_value",
+    "contracts.reports.clearFilters",
+    "contracts.reports.generatedAt",
+    "contracts.reports.kpiFilterHint",
+    "contracts.reports.flag.at_risk",
   ];
   for (const key of keys) {
     const en = translate("en", key);

@@ -248,6 +248,162 @@ export function reportCurrency(rows: Record<string, unknown>[]): string | null {
   return currencies.length === 1 ? currencies[0] : null;
 }
 
+export const REPORT_FLAGS = [
+  "unsigned",
+  "retrospective",
+  "legacy",
+  "unsigned_signature",
+  "at_risk",
+] as const;
+export type ReportFlag = (typeof REPORT_FLAGS)[number];
+export type ColumnPriority = "always" | "md" | "lg";
+
+const PRIORITY_COLUMNS: Record<ReportTabId, Record<string, ColumnPriority>> = {
+  register: {
+    reference: "always",
+    title: "always",
+    status: "always",
+    current_value: "always",
+    health: "always",
+    counterparty: "md",
+    signature_status: "md",
+    end_date: "md",
+    type: "lg",
+    department: "lg",
+    currency: "lg",
+    original_value: "lg",
+    start_date: "lg",
+  },
+  financial: {
+    reference: "always",
+    current_value: "always",
+    ceiling_value: "always",
+    variance: "always",
+    department: "md",
+    currency: "md",
+    donor: "lg",
+    original_value: "lg",
+  },
+  compliance: {
+    reference: "always",
+    title: "always",
+    unsigned: "always",
+    status: "always",
+    retrospective: "md",
+    is_legacy: "lg",
+  },
+  operational: {
+    reference: "always",
+    title: "always",
+    days_to_expiry: "always",
+    end_date: "md",
+    expiring_soon: "md",
+    expired: "md",
+    amendments: "lg",
+  },
+  exceptions: {
+    severity: "always",
+    contract: "always",
+    exception_title: "always",
+    exception_type: "md",
+    status: "md",
+  },
+};
+
+export function parseReportFlag(value: string | null | undefined): ReportFlag | null {
+  return REPORT_FLAGS.includes(value as ReportFlag) ? (value as ReportFlag) : null;
+}
+
+export function rowIsAtRisk(row: Record<string, unknown>): boolean {
+  return ["expiring", "warning", "at_risk", "critical"].includes(String(row.health ?? "").toLowerCase());
+}
+
+export function rowIsUnsignedSignature(row: Record<string, unknown>): boolean {
+  const signature = String(row.signature_status ?? "").toLowerCase();
+  return signature !== "" && signature !== "signed";
+}
+
+export function matchesReportFlag(row: Record<string, unknown>, flag: ReportFlag | null): boolean {
+  if (!flag) {
+    return true;
+  }
+  if (flag === "unsigned") {
+    return Boolean(row.unsigned) || rowIsUnsignedSignature(row);
+  }
+  if (flag === "retrospective") {
+    return Boolean(row.retrospective);
+  }
+  if (flag === "legacy") {
+    return Boolean(row.is_legacy);
+  }
+  if (flag === "unsigned_signature") {
+    return rowIsUnsignedSignature(row);
+  }
+  return rowIsAtRisk(row);
+}
+
+export function kpiDrilldown(
+  tab: ReportTabId,
+  kpiId: string,
+): { flag?: ReportFlag; horizon?: OperationalHorizon; severity?: string } | null {
+  if (tab === "register" && kpiId === "unsigned") {
+    return { flag: "unsigned_signature" };
+  }
+  if (tab === "register" && kpiId === "risk") {
+    return { flag: "at_risk" };
+  }
+  if (tab === "compliance" && (kpiId === "unsigned" || kpiId === "retrospective" || kpiId === "legacy")) {
+    return { flag: kpiId === "legacy" ? "legacy" : kpiId };
+  }
+  if (tab === "operational" && (kpiId === "expiring" || kpiId === "expired")) {
+    return { horizon: kpiId };
+  }
+  if (tab === "exceptions" && (kpiId === "critical" || kpiId === "high")) {
+    return { severity: kpiId };
+  }
+  return null;
+}
+
+export function isKpiActive(
+  tab: ReportTabId,
+  kpiId: string,
+  state: { flag: ReportFlag | null; horizon: OperationalHorizon; severity: string },
+): boolean {
+  const drill = kpiDrilldown(tab, kpiId);
+  if (!drill) {
+    return false;
+  }
+  if (drill.flag) {
+    return state.flag === drill.flag;
+  }
+  if (drill.horizon) {
+    return state.horizon === drill.horizon;
+  }
+  if (drill.severity) {
+    return state.severity === drill.severity;
+  }
+  return false;
+}
+
+export function columnPriority(tab: ReportTabId, column: string): ColumnPriority {
+  return PRIORITY_COLUMNS[tab]?.[column] ?? "lg";
+}
+
+export function columnVisibilityClass(priority: ColumnPriority): string {
+  if (priority === "md") {
+    return "hidden md:table-cell";
+  }
+  if (priority === "lg") {
+    return "hidden lg:table-cell";
+  }
+  return "";
+}
+
+export function exceptionTypeLabelKey(type: string): string {
+  const value = type.trim().toLowerCase().replace(/\s+/g, "_");
+  return value ? `contracts.reports.exceptionType.${value}` : type;
+}
+
 export function reportKpis(
   tab: ReportTabId,
   rows: Record<string, unknown>[],
@@ -309,10 +465,8 @@ export function reportKpis(
     ];
   }
 
-  const atRisk = rows.filter((row) =>
-    ["expiring", "warning", "at_risk", "critical"].includes(String(row.health ?? "").toLowerCase()),
-  ).length;
-  const unsigned = rows.filter((row) => String(row.signature_status ?? "").toLowerCase() !== "signed").length;
+  const atRisk = rows.filter((row) => rowIsAtRisk(row)).length;
+  const unsigned = rows.filter((row) => rowIsUnsignedSignature(row)).length;
 
   return [
     { id: "rows", labelKey: "contracts.reports.kpi.contracts", value: count },

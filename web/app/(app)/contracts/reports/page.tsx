@@ -16,17 +16,24 @@ import {
   badgeClass,
   badgeLabelKey,
   columnLabelKey,
+  columnPriority,
+  columnVisibilityClass,
   contractHref,
+  exceptionTypeLabelKey,
   humanizeToken,
   isBadgeColumn,
   isBooleanColumn,
   isDateColumn,
+  isKpiActive,
   isMoneyColumn,
   isNumericColumn,
   isReportType,
+  kpiDrilldown,
   matchesOperationalHorizon,
+  matchesReportFlag,
   nextReportTab,
   nextSort,
+  parseReportFlag,
   parseReportTab,
   reportColumns,
   reportCurrency,
@@ -118,8 +125,9 @@ function ContractReportsDesk() {
   const horizon = (OPERATIONAL_HORIZONS.includes(searchParams.get("horizon") as OperationalHorizon)
     ? searchParams.get("horizon")
     : "all") as OperationalHorizon;
+  const flag = parseReportFlag(searchParams.get("flag"));
+  const search = searchParams.get("q") ?? "";
 
-  const [search, setSearch] = useState("");
   const [sort, setSort] = useState<ReportSort | null>(null);
 
   const reportType: ReportType = isReportType(tab) ? tab : "register";
@@ -149,6 +157,7 @@ function ContractReportsDesk() {
       if (next !== "operational") {
         params.delete("horizon");
       }
+      params.delete("flag");
     });
   };
 
@@ -162,20 +171,22 @@ function ContractReportsDesk() {
   });
 
   const exceptionQuery = useQuery({
-    queryKey: ["contract-exceptions-register", severity],
-    queryFn: () =>
-      contractsApi
-        .exceptionRegister(severity === "all" ? undefined : { severity })
-        .then((r) => r.data.data),
+    queryKey: ["contract-exceptions-register"],
+    queryFn: () => contractsApi.exceptionRegister().then((r) => r.data.data),
     enabled: showExceptions,
   });
 
-  const rows = useMemo(() => {
-    const data = reportQuery.data?.data ?? [];
-    return tab === "operational"
-      ? data.filter((row) => matchesOperationalHorizon(row, horizon))
-      : data;
-  }, [horizon, reportQuery.data?.data, tab]);
+  const extractRows = reportQuery.data?.data ?? [];
+  const rows = useMemo(
+    () =>
+      extractRows.filter((row) => {
+        if (tab === "operational" && !matchesOperationalHorizon(row, horizon)) {
+          return false;
+        }
+        return matchesReportFlag(row, flag);
+      }),
+    [extractRows, flag, horizon, tab],
+  );
 
   const filteredRows = useMemo(
     () => sortReportRows(rows.filter((row) => rowMatchesQuery(row, search)), sort),
@@ -184,11 +195,15 @@ function ContractReportsDesk() {
   const columns = reportColumns(filteredRows.length > 0 ? filteredRows : rows);
 
   const exceptions = exceptionQuery.data ?? [];
+  const scopedExceptions = useMemo(
+    () => exceptions.filter((row) => severity === "all" || row.severity === severity),
+    [exceptions, severity],
+  );
   const filteredExceptions = useMemo(() => {
     const needle = search.trim().toLowerCase();
     const visible = !needle
-      ? exceptions
-      : exceptions.filter((row) =>
+      ? scopedExceptions
+      : scopedExceptions.filter((row) =>
           `${row.contract?.reference_number ?? ""} ${row.contract?.title ?? ""} ${row.type} ${row.title} ${row.status} ${row.severity}`
             .toLowerCase()
             .includes(needle),
@@ -216,15 +231,89 @@ function ContractReportsDesk() {
       });
       return sort.direction === "desc" ? -comparison : comparison;
     });
-  }, [exceptions, search, sort]);
+  }, [scopedExceptions, search, sort]);
 
   const activeTab = REPORT_TABS.find((item) => item.id === tab) ?? REPORT_TABS[0];
   const isLoading = showExceptions ? exceptionQuery.isLoading : reportQuery.isLoading;
   const isError = showExceptions ? exceptionQuery.isError : reportQuery.isError;
   const rowCount = showExceptions ? filteredExceptions.length : filteredRows.length;
-  const hasSourceRows = showExceptions ? exceptions.length > 0 : rows.length > 0;
-  const kpis = reportKpis(tab, rows, exceptions);
-  const currency = reportCurrency(rows);
+  const hasSourceRows = showExceptions ? exceptions.length > 0 : extractRows.length > 0;
+  const kpis = reportKpis(tab, extractRows, exceptions);
+  const currency = reportCurrency(extractRows);
+  const generatedAt = formatDateShort(new Date());
+  const kpiState = { flag, horizon, severity };
+
+  const setSearch = (value: string) => {
+    replaceQuery((params) => {
+      if (!value.trim()) {
+        params.delete("q");
+      } else {
+        params.set("q", value);
+      }
+    });
+  };
+
+  const applyKpi = (kpiId: string) => {
+    const drill = kpiDrilldown(tab, kpiId);
+    if (!drill) {
+      return;
+    }
+    const active = isKpiActive(tab, kpiId, kpiState);
+    replaceQuery((params) => {
+      if (drill.flag) {
+        if (active) {
+          params.delete("flag");
+        } else {
+          params.set("flag", drill.flag);
+        }
+      }
+      if (drill.horizon) {
+        if (active) {
+          params.delete("horizon");
+        } else {
+          params.set("horizon", drill.horizon);
+        }
+      }
+      if (drill.severity) {
+        if (active) {
+          params.delete("severity");
+        } else {
+          params.set("severity", drill.severity);
+        }
+      }
+    });
+  };
+
+  const clearFilters = () => {
+    replaceQuery((params) => {
+      params.delete("status");
+      params.delete("horizon");
+      params.delete("severity");
+      params.delete("flag");
+      params.delete("q");
+    });
+  };
+
+  const chips = [
+    status !== "all" ? { id: "status", label: t(`contracts.reports.status.${status}`) } : null,
+    horizon !== "all" ? { id: "horizon", label: t(`contracts.reports.horizon.${horizon}`) } : null,
+    severity !== "all" ? { id: "severity", label: t(`contracts.reports.severity.${severity}`) } : null,
+    flag ? { id: "flag", label: t(`contracts.reports.flag.${flag}`) } : null,
+    search.trim() ? { id: "q", label: search.trim() } : null,
+  ].filter((chip): chip is { id: string; label: string } => chip !== null);
+
+  const openContract = (href: string | null, event?: { target?: EventTarget | null }) => {
+    if (!href) {
+      return;
+    }
+    if (typeof window !== "undefined" && window.getSelection()?.toString()) {
+      return;
+    }
+    if (event?.target instanceof Element && event.target.closest("a")) {
+      return;
+    }
+    router.push(href);
+  };
 
   const onTabKey = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
@@ -304,25 +393,64 @@ function ContractReportsDesk() {
         className="space-y-4 print-content"
       >
         <div className="min-w-0">
-          <h2 className="text-base font-semibold text-neutral-900">{t(activeTab.labelKey)}</h2>
-          <p className="mt-1 text-sm text-neutral-500">{t(activeTab.hintKey)}</p>
+          <div className="hidden print:block border-b border-neutral-200 pb-3 mb-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+              {t("contracts.reports.orgName")}
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-neutral-900">{t(activeTab.labelKey)}</h2>
+            <p className="mt-1 text-xs text-neutral-500">
+              {t("contracts.reports.generatedAt", { date: generatedAt, count: rowCount })}
+            </p>
+          </div>
+          <h2 className="text-base font-semibold text-neutral-900 print:hidden">{t(activeTab.labelKey)}</h2>
+          <p className="mt-1 text-sm text-neutral-500 print:hidden">{t(activeTab.hintKey)}</p>
+          <p className="mt-1 text-xs text-neutral-400 print:hidden" data-testid="contract-reports-generated">
+            {t("contracts.reports.generatedAt", { date: generatedAt, count: rowCount })}
+          </p>
         </div>
 
         <div
           className="grid grid-cols-2 gap-3 sm:grid-cols-4"
           data-testid="contract-reports-kpis"
         >
-          {kpis.map((kpi) => (
-            <div key={kpi.id} className="card p-4" data-testid={`contract-reports-kpi-${kpi.id}`}>
-              <p className={`text-xl font-bold tabular-nums leading-tight ${kpiTone(kpi.tone)}`}>
-                {kpi.money
-                  ? (currency ? formatCurrency(kpi.value, currency) : t("contracts.reports.mixedCurrency"))
-                  : kpi.value}
-              </p>
-              <p className="mt-1 text-xs text-neutral-500">{t(kpi.labelKey)}</p>
-            </div>
-          ))}
+          {kpis.map((kpi) => {
+            const drillable = Boolean(kpiDrilldown(tab, kpi.id));
+            const active = isKpiActive(tab, kpi.id, kpiState);
+            const body = (
+              <>
+                <p className={`text-xl font-bold tabular-nums leading-tight ${kpiTone(kpi.tone)}`}>
+                  {kpi.money ? (currency ? formatCurrency(kpi.value, currency) : "—") : kpi.value}
+                </p>
+                <p className="mt-1 text-xs text-neutral-500">{t(kpi.labelKey)}</p>
+                {kpi.money && !currency ? (
+                  <p className="mt-0.5 text-[11px] text-neutral-400">{t("contracts.reports.mixedCurrency")}</p>
+                ) : null}
+              </>
+            );
+            if (!drillable) {
+              return (
+                <div key={kpi.id} className="card p-4" data-testid={`contract-reports-kpi-${kpi.id}`}>
+                  {body}
+                </div>
+              );
+            }
+            return (
+              <button
+                key={kpi.id}
+                type="button"
+                data-testid={`contract-reports-kpi-${kpi.id}`}
+                aria-pressed={active}
+                onClick={() => applyKpi(kpi.id)}
+                className={`card p-4 text-left transition-colors hover:border-primary/40 ${
+                  active ? "ring-2 ring-primary/40 border-primary/40" : ""
+                }`}
+              >
+                {body}
+              </button>
+            );
+          })}
         </div>
+        <p className="text-[11px] text-neutral-400 print:hidden">{t("contracts.reports.kpiFilterHint")}</p>
 
         <div className="no-print card p-4">
           <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
@@ -459,7 +587,25 @@ function ContractReportsDesk() {
           </div>
         </div>
 
-        <p className="text-xs font-medium text-neutral-500" data-testid="contract-reports-count">
+        {chips.length > 0 ? (
+          <div className="no-print flex flex-wrap items-center gap-2" data-testid="contract-reports-chips">
+            {chips.map((chip) => (
+              <span key={chip.id} className="inline-flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-700">
+                {chip.label}
+              </span>
+            ))}
+            <button
+              type="button"
+              className="btn-secondary text-xs"
+              onClick={clearFilters}
+              data-testid="contract-reports-clear-filters"
+            >
+              {t("contracts.reports.clearFilters")}
+            </button>
+          </div>
+        ) : null}
+
+        <p className="text-xs font-medium text-neutral-500" data-testid="contract-reports-count" aria-live="polite">
           {t("common.rows", { count: rowCount })}
         </p>
 
@@ -476,12 +622,12 @@ function ContractReportsDesk() {
           </div>
         ) : showExceptions ? (
           <div className="card min-w-0 overflow-hidden">
-            <div className="max-h-[min(70vh,44rem)] overflow-auto">
+            <div className="max-h-[min(70vh,44rem)] overflow-auto print:max-h-none print:overflow-visible">
               <table className="data-table" data-testid="contract-reports-table">
                 <thead className="sticky top-0 z-10 bg-neutral-50">
                   <tr>
                     {(["severity", "contract", "exception_type", "exception_title", "status"] as const).map((column) => (
-                      <th key={column}>
+                      <th key={column} className={columnVisibilityClass(columnPriority("exceptions", column))}>
                         <button
                           type="button"
                           className="inline-flex items-center gap-1 uppercase tracking-wider"
@@ -509,18 +655,27 @@ function ContractReportsDesk() {
                   ) : (
                     filteredExceptions.map((row: ExceptionRow) => {
                       const href = contractHref(row.contract?.id);
+                      const typeKey = exceptionTypeLabelKey(row.type);
+                      const typeLabel = t(typeKey);
                       return (
                         <tr
                           key={row.id}
-                          className={href ? "cursor-pointer" : undefined}
-                          onClick={href ? () => router.push(href) : undefined}
+                          className={href ? "group cursor-pointer" : "group"}
+                          tabIndex={href ? 0 : undefined}
+                          onClick={href ? (event) => openContract(href, event) : undefined}
+                          onKeyDown={href ? (event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              openContract(href);
+                            }
+                          } : undefined}
                         >
-                          <td>
+                          <td className={columnVisibilityClass(columnPriority("exceptions", "severity"))}>
                             <span className={`badge ${badgeClass("severity", row.severity)}`}>
                               {displayBadge("severity", row.severity, t)}
                             </span>
                           </td>
-                          <td className="sticky left-0 z-[1] bg-inherit font-mono text-xs">
+                          <td className="sticky left-0 z-[1] bg-white font-mono text-xs group-hover:bg-neutral-50">
                             {href ? (
                               <Link href={href} className="text-primary hover:underline" aria-label={t("contracts.reports.openContract")}>
                                 {row.contract?.reference_number ?? "—"}
@@ -529,9 +684,11 @@ function ContractReportsDesk() {
                               <span className="text-neutral-600">{row.contract?.reference_number ?? "—"}</span>
                             )}
                           </td>
-                          <td className="text-sm capitalize">{humanizeToken(row.type)}</td>
+                          <td className={`text-sm capitalize ${columnVisibilityClass(columnPriority("exceptions", "exception_type"))}`}>
+                            {typeLabel === typeKey ? humanizeToken(row.type) : typeLabel}
+                          </td>
                           <td className="max-w-sm truncate text-sm text-neutral-800">{row.title}</td>
-                          <td>
+                          <td className={columnVisibilityClass(columnPriority("exceptions", "status"))}>
                             <span className={`badge ${badgeClass("status", row.status)}`}>
                               {displayBadge("status", row.status, t)}
                             </span>
@@ -553,14 +710,14 @@ function ContractReportsDesk() {
           </div>
         ) : (
           <div className="card min-w-0 overflow-hidden">
-            <div className="max-h-[min(70vh,44rem)] overflow-auto">
+            <div className="max-h-[min(70vh,44rem)] overflow-auto print:max-h-none print:overflow-visible">
               <table className="data-table" data-testid="contract-reports-table">
                 <thead className="sticky top-0 z-10 bg-neutral-50">
                   <tr>
                     {columns.map((column) => (
                       <th
                         key={column}
-                        className={`whitespace-nowrap ${isMoneyColumn(column) || isNumericColumn(column) ? "text-right" : ""}`}
+                        className={`whitespace-nowrap ${isMoneyColumn(column) || isNumericColumn(column) ? "text-right" : ""} ${columnVisibilityClass(columnPriority(tab, column))}`}
                       >
                         <button
                           type="button"
@@ -585,16 +742,24 @@ function ContractReportsDesk() {
                     return (
                       <tr
                         key={typeof row.id === "number" || typeof row.id === "string" ? String(row.id) : index}
-                        className={href ? "cursor-pointer" : undefined}
-                        onClick={href ? () => router.push(href) : undefined}
+                        className={href ? "group cursor-pointer" : "group"}
+                        tabIndex={href ? 0 : undefined}
+                        onClick={href ? (event) => openContract(href, event) : undefined}
+                        onKeyDown={href ? (event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            openContract(href);
+                          }
+                        } : undefined}
                       >
                         {columns.map((column) => {
                           const value = row[column];
                           const text = displayCell(column, value, row, t);
                           const align = isMoneyColumn(column) || isNumericColumn(column) ? "text-right tabular-nums" : "";
+                          const visibility = columnVisibilityClass(columnPriority(tab, column));
                           if (column === "reference" && href) {
                             return (
-                              <td key={column} className="sticky left-0 z-[1] bg-inherit font-mono text-xs">
+                              <td key={column} className={`sticky left-0 z-[1] bg-white font-mono text-xs group-hover:bg-neutral-50 ${visibility}`}>
                                 <Link href={href} className="text-primary hover:underline" aria-label={t("contracts.reports.openContract")}>
                                   {text}
                                 </Link>
@@ -603,7 +768,7 @@ function ContractReportsDesk() {
                           }
                           if (isBadgeColumn(column)) {
                             return (
-                              <td key={column}>
+                              <td key={column} className={visibility}>
                                 <span className={`badge ${badgeClass(column, String(value ?? ""))}`}>{text}</span>
                               </td>
                             );
@@ -617,12 +782,12 @@ function ContractReportsDesk() {
                                 : days <= 30
                                   ? "text-amber-800"
                                   : "text-neutral-700";
-                            return <td key={column} className={`text-right tabular-nums ${tone}`}>{text}</td>;
+                            return <td key={column} className={`text-right tabular-nums ${tone} ${visibility}`}>{text}</td>;
                           }
                           if (column === "title") {
-                            return <td key={column} className="max-w-xs text-sm text-neutral-800">{text}</td>;
+                            return <td key={column} className={`max-w-[16rem] whitespace-normal text-sm text-neutral-800 ${visibility}`}>{text}</td>;
                           }
-                          return <td key={column} className={`whitespace-nowrap text-sm ${align}`}>{text}</td>;
+                          return <td key={column} className={`whitespace-nowrap text-sm ${align} ${visibility}`}>{text}</td>;
                         })}
                       </tr>
                     );
@@ -637,9 +802,14 @@ function ContractReportsDesk() {
   );
 }
 
+function ContractReportsFallback() {
+  const { t } = useI18n();
+  return <div className="card p-6 text-sm text-neutral-500">{t("common.loading")}</div>;
+}
+
 export default function ContractReportsPage() {
   return (
-    <Suspense fallback={<div className="card p-6 text-sm text-neutral-500">…</div>}>
+    <Suspense fallback={<ContractReportsFallback />}>
       <ContractReportsDesk />
     </Suspense>
   );
