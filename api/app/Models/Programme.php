@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use App\Models\Concerns\PreparedOnBehalf;
@@ -8,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Programme extends Model
 {
-    use HasFactory, SoftDeletes, PreparedOnBehalf;
+    use HasFactory, PreparedOnBehalf, SoftDeletes;
 
     protected $fillable = [
         'tenant_id', 'created_by', 'approved_by', 'reference_number', 'title', 'status',
@@ -65,60 +66,60 @@ class Programme extends Model
     ];
 
     protected $casts = [
-        'start_date'               => 'date',
-        'end_date'                 => 'date',
-        'submitted_at'             => 'datetime',
-        'approved_at'              => 'datetime',
-        'travel_required'          => 'boolean',
-        'procurement_required'     => 'boolean',
-        'exchange_rate'            => 'decimal:4',
-        'contingency_pct'          => 'decimal:2',
-        'total_budget'             => 'decimal:2',
-        'strategic_alignment'      => 'array',
-        'strategic_pillars'        => 'array',
+        'start_date' => 'date',
+        'end_date' => 'date',
+        'submitted_at' => 'datetime',
+        'approved_at' => 'datetime',
+        'travel_required' => 'boolean',
+        'procurement_required' => 'boolean',
+        'exchange_rate' => 'decimal:4',
+        'contingency_pct' => 'decimal:2',
+        'total_budget' => 'decimal:2',
+        'strategic_alignment' => 'array',
+        'strategic_pillars' => 'array',
         'implementing_departments' => 'array',
-        'responsible_officer_ids'  => 'array',
-        'funding_sources'          => 'array',
-        'supporting_departments'   => 'array',
-        'specific_objectives'      => 'array',
-        'expected_outputs'        => 'array',
-        'target_beneficiaries'     => 'array',
-        'member_states'            => 'array',
-        'travel_services'          => 'array',
-        'media_options'            => 'array',
-        'venue_accommodation_required'  => 'boolean',
-        'venue_conferencing_required'   => 'boolean',
-        'venue_quotation_attached'      => 'boolean',
-        'venue_hotel_quotation_attached'=> 'boolean',
-        'proposed_dsa_rate'             => 'decimal:2',
-        'original_budget_rate'          => 'decimal:2',
-        'proposed_funding_difference'   => 'decimal:2',
-        'estimated_activity_amount'     => 'decimal:2',
-        'secretariat_staff_required'    => 'boolean',
-        'consultants_required'          => 'boolean',
-        'consultants_rate'              => 'decimal:2',
-        'resource_persons_required'     => 'boolean',
-        'resource_persons_rate'         => 'decimal:2',
-        'rapporteurs_required'          => 'boolean',
-        'rapporteurs_rate'              => 'decimal:2',
-        'media_liaison_required'        => 'boolean',
-        'media_liaison_rate'            => 'decimal:2',
-        'local_support_required'        => 'boolean',
-        'local_support_rate'            => 'decimal:2',
-        'interpretation_required'       => 'boolean',
-        'en_fr_required'                => 'boolean',
-        'en_pt_required'                => 'boolean',
-        'fr_pt_required'                => 'boolean',
-        'interpreter_rate'              => 'decimal:2',
+        'responsible_officer_ids' => 'array',
+        'funding_sources' => 'array',
+        'supporting_departments' => 'array',
+        'specific_objectives' => 'array',
+        'expected_outputs' => 'array',
+        'target_beneficiaries' => 'array',
+        'member_states' => 'array',
+        'travel_services' => 'array',
+        'media_options' => 'array',
+        'venue_accommodation_required' => 'boolean',
+        'venue_conferencing_required' => 'boolean',
+        'venue_quotation_attached' => 'boolean',
+        'venue_hotel_quotation_attached' => 'boolean',
+        'proposed_dsa_rate' => 'decimal:2',
+        'original_budget_rate' => 'decimal:2',
+        'proposed_funding_difference' => 'decimal:2',
+        'estimated_activity_amount' => 'decimal:2',
+        'secretariat_staff_required' => 'boolean',
+        'consultants_required' => 'boolean',
+        'consultants_rate' => 'decimal:2',
+        'resource_persons_required' => 'boolean',
+        'resource_persons_rate' => 'decimal:2',
+        'rapporteurs_required' => 'boolean',
+        'rapporteurs_rate' => 'decimal:2',
+        'media_liaison_required' => 'boolean',
+        'media_liaison_rate' => 'decimal:2',
+        'local_support_required' => 'boolean',
+        'local_support_rate' => 'decimal:2',
+        'interpretation_required' => 'boolean',
+        'en_fr_required' => 'boolean',
+        'en_pt_required' => 'boolean',
+        'fr_pt_required' => 'boolean',
+        'interpreter_rate' => 'decimal:2',
         'interpretation_equipment_required' => 'boolean',
-        'translation_required'          => 'boolean',
-        'languages_required'            => 'array',
-        'support_services'              => 'array',
-        'conflict_declared'             => 'boolean',
-        'conflict_declared_at'          => 'datetime',
-        'declaration_confirmed'         => 'boolean',
-        'declaration_confirmed_at'      => 'datetime',
-        'superseded_at'                 => 'datetime',
+        'translation_required' => 'boolean',
+        'languages_required' => 'array',
+        'support_services' => 'array',
+        'conflict_declared' => 'boolean',
+        'conflict_declared_at' => 'datetime',
+        'declaration_confirmed' => 'boolean',
+        'declaration_confirmed_at' => 'datetime',
+        'superseded_at' => 'datetime',
     ];
 
     protected $appends = ['me_status'];
@@ -145,6 +146,7 @@ class Programme extends Model
         if (empty($ids)) {
             return User::query()->whereRaw('1 = 0')->get();
         }
+
         return User::whereIn('id', $ids)->get()->sortBy(fn (User $u) => array_search($u->id, $ids));
     }
 
@@ -171,6 +173,12 @@ class Programme extends Model
     public function procurementItems()
     {
         return $this->hasMany(ProgrammeProcurementItem::class);
+    }
+
+    /** Contracts created from this PIF (PRD §61). */
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class)->orderByDesc('id');
     }
 
     public function attachments()
@@ -237,16 +245,17 @@ class Programme extends Model
             if ($report->closure_status === 'closed' || $report->review_status === MeActivityReport::STATUS_CLOSED) {
                 return 'closed';
             }
+
             return match ($report->review_status) {
                 MeActivityReport::STATUS_NOT_SUBMITTED => $report->intake_confirmed_at
                     ? 'report_pending'
                     : 'intake_pending',
-                MeActivityReport::STATUS_SUBMITTED     => 'report_submitted',
-                MeActivityReport::STATUS_RETURNED      => 'returned_for_correction',
-                MeActivityReport::STATUS_REVIEWED      => 'me_reviewed',
-                MeActivityReport::STATUS_ACCEPTED      => 'accepted',
+                MeActivityReport::STATUS_SUBMITTED => 'report_submitted',
+                MeActivityReport::STATUS_RETURNED => 'returned_for_correction',
+                MeActivityReport::STATUS_REVIEWED => 'me_reviewed',
+                MeActivityReport::STATUS_ACCEPTED => 'accepted',
                 MeActivityReport::STATUS_NOT_REPORTABLE => 'not_reportable',
-                MeActivityReport::STATUS_CANCELLED      => 'cancelled_activity',
+                MeActivityReport::STATUS_CANCELLED => 'cancelled_activity',
                 default => 'link_unavailable',
             };
         }
@@ -258,9 +267,20 @@ class Programme extends Model
         return $wasLinked ? 'linked_record_archived' : 'not_yet_linked';
     }
 
-    public function isDraft(): bool { return $this->status === 'draft'; }
-    public function isSubmitted(): bool { return $this->status === 'submitted'; }
-    public function isApproved(): bool { return $this->status === 'approved'; }
+    public function isDraft(): bool
+    {
+        return $this->status === 'draft';
+    }
+
+    public function isSubmitted(): bool
+    {
+        return $this->status === 'submitted';
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
 
     public function onWorkflowApproved(User $approver): void
     {
@@ -313,17 +333,17 @@ class Programme extends Model
         $prefix = "PIF-{$year}-";
 
         $refs = static::withTrashed()
-            ->where('reference_number', 'like', $prefix . '%')
+            ->where('reference_number', 'like', $prefix.'%')
             ->pluck('reference_number');
 
         $max = 0;
         foreach ($refs as $ref) {
-            if (preg_match('/^PIF-' . preg_quote((string) $year, '/') . '-(\d+)$/', (string) $ref, $m)) {
+            if (preg_match('/^PIF-'.preg_quote((string) $year, '/').'-(\d+)$/', (string) $ref, $m)) {
                 $max = max($max, (int) $m[1]);
             }
         }
 
-        return $prefix . str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
+        return $prefix.str_pad((string) ($max + 1), 3, '0', STR_PAD_LEFT);
     }
 
     /**
@@ -336,7 +356,10 @@ class Programme extends Model
      * approval) — use this helper wherever "approved" is meant to include
      * "approved via an amendment".
      */
-    public function isApprovedOrAmended(): bool { return in_array($this->status, ['approved', 'amended'], true); }
+    public function isApprovedOrAmended(): bool
+    {
+        return in_array($this->status, ['approved', 'amended'], true);
+    }
 
     /**
      * `responsibleOfficer()` serializes as `responsible_officer`, which collides

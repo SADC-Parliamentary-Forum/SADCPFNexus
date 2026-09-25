@@ -1330,6 +1330,7 @@ Route::prefix('v1')->group(function () {
             Route::get('clauses/{clause}/compare', [\App\Http\Controllers\Api\V1\Contracts\ContractClauseController::class, 'compareVersions']);
 
             Route::get('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'show']);
+            Route::patch('{contract}', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'update']);
             Route::get('{contract}/readiness', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'readiness']);
             Route::post('{contract}/generate', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'generate']);
             Route::post('{contract}/deliverables', [\App\Http\Controllers\Api\V1\Contracts\ContractController::class, 'addDeliverable']);

@@ -130,7 +130,7 @@ class NavigationManifestService
                 $children[] = $this->item('Analytics', '/contracts/analytics', 'insights');
                 $children[] = $this->item('Risk', '/contracts/risk', 'warning');
             }
-            if ($holds('contract.manage_template', 'contract.manage_authority')) {
+            if ($holds('contract.manage_template', 'contract.manage_authority', 'contract.manage_clause')) {
                 $children[] = $this->item('Settings', '/contracts/settings', 'settings');
             }
             $items[] = $this->item('Contracts', '/contracts', 'description', children: $children, linkable: true);

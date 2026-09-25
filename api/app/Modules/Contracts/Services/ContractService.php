@@ -12,7 +12,9 @@ use App\Models\Programme;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Read/query surface for the Contract Register.
@@ -233,6 +235,85 @@ class ContractService
 
             return $contract->fresh();
         });
+    }
+
+    /**
+     * Apply a draft field update under optimistic locking (PRD §109).
+     * A stale lock_version is 409 so concurrent editors cannot silently overwrite.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public function updateDraft(Contract $contract, User $user, array $data): Contract
+    {
+        return DB::transaction(function () use ($contract, $user, $data): Contract {
+            /** @var Contract|null $locked */
+            $locked = Contract::query()
+                ->where('tenant_id', $user->tenant_id)
+                ->whereKey($contract->id)
+                ->lockForUpdate()
+                ->first();
+            abort_if($locked === null, 404);
+
+            if (! $this->isDraftEditable($locked)) {
+                throw ValidationException::withMessages([
+                    'status' => ['Only draft contracts can be edited. Create an amendment after execution.'],
+                ]);
+            }
+
+            $expected = (int) $data['lock_version'];
+            if ((int) $locked->lock_version !== $expected) {
+                abort(409, 'Contract was modified by another user. Refresh and retry.');
+            }
+
+            $fields = Arr::only($data, [
+                'title', 'description', 'short_description',
+                'start_date', 'end_date', 'effective_date',
+                'service_start_date', 'service_end_date', 'signature_deadline',
+                'renewal_decision_date', 'notice_period_days', 'renewal_type', 'auto_renew',
+                'rate', 'rate_basis', 'units', 'ceiling_value',
+                'currency', 'budget_currency', 'conversion_reference', 'converted_value',
+                'budget_line', 'tor_reference', 'origin_reference',
+            ]);
+
+            if (isset($data['rate'], $data['units']) && $data['rate'] !== null && $data['units'] !== null) {
+                $value = $this->resolveValue($data);
+                $fields['value'] = $value;
+                $fields['current_value'] = $value;
+                $fields['original_value'] = $value;
+            } elseif (array_key_exists('value', $data) && $data['value'] !== null) {
+                $fields['value'] = $data['value'];
+                $fields['current_value'] = $data['value'];
+                $fields['original_value'] = $data['value'];
+            }
+
+            $start = $fields['start_date'] ?? $locked->start_date?->toDateString();
+            $end = $fields['end_date'] ?? $locked->end_date?->toDateString();
+            if ($start && $end && $end < $start) {
+                throw ValidationException::withMessages([
+                    'end_date' => ['The end date must be on or after the start date.'],
+                ]);
+            }
+
+            $fields['lock_version'] = $expected + 1;
+            $locked->update($fields);
+
+            return $locked->fresh();
+        });
+    }
+
+    public function bumpLockVersion(Contract $contract): void
+    {
+        $contract->increment('lock_version');
+    }
+
+    public function isDraftEditable(Contract $contract): bool
+    {
+        $lifecycle = strtoupper((string) ($contract->contract_status ?? ''));
+        if (in_array($lifecycle, ['DRAFT', 'CHANGES_REQUESTED'], true)) {
+            return true;
+        }
+
+        return strtolower((string) $contract->status) === 'draft';
     }
 
     /**

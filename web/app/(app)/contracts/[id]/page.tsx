@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, type ReactNode } from "react";
 import Link from "next/link";
+import axios from "axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
@@ -9,15 +10,15 @@ import { useToast } from "@/components/ui/Toast";
 import { contractsApi } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
-
-const LIFECYCLE_BADGES: Record<string, string> = {
-  DRAFT: "badge-muted", IN_REVIEW: "badge-warning", CHANGES_REQUESTED: "badge-warning",
-  APPROVAL_PENDING: "badge-warning", APPROVED_FOR_SIGNATURE: "badge-primary",
-  SENT_FOR_SIGNATURE: "badge-primary", PARTIALLY_SIGNED: "badge-primary",
-  FULLY_EXECUTED: "badge-success", ACTIVE: "badge-success", COMPLETED: "badge-primary",
-  CLOSING: "badge-muted", CLOSED: "badge-muted", REJECTED: "badge-danger",
-  TERMINATED: "badge-danger", EXPIRED: "badge-danger",
-};
+import { useI18n } from "@/lib/i18n/LocaleProvider";
+import {
+  ContractField,
+  ContractMoreMenu,
+  ContractStatusBadge,
+  ContractTabBar,
+  contractMenuItemClass,
+  formatContractMoney,
+} from "@/components/contracts/ContractChrome";
 
 type Tab = "overview" | "deliverables" | "financials" | "clauses" | "amendments" | "lifecycle" | "calloffs" | "documents" | "signatures" | "approvals" | "correspondence" | "audit";
 
@@ -26,6 +27,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const contractId = Number(id);
   const qc = useQueryClient();
   const toast = useToast();
+  const { t } = useI18n();
   const user = getStoredUser();
 
   const [tab, setTab] = useState<Tab>("overview");
@@ -123,6 +125,13 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const [personOpen, setPersonOpen] = useState(false);
   const [person, setPerson] = useState({ name: "", role: "", email: "", cv_reference: "" });
   const refreshPersonnel = () => qc.invalidateQueries({ queryKey: ["contract", contractId, "key-personnel"] });
+  const [editing, setEditing] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftDescription, setDraftDescription] = useState("");
+  const [draftStart, setDraftStart] = useState("");
+  const [draftEnd, setDraftEnd] = useState("");
+  const [draftValue, setDraftValue] = useState("");
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: ["contract", contractId] });
@@ -136,8 +145,8 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
   const submitMut = useMutation({ mutationFn: () => contractsApi.submit(contractId), onSuccess: () => { toast.success("Submitted for approval"); refresh(); }, onError: (e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Submission failed") });
 
-  if (isLoading) return <div className="p-8 text-sm text-neutral-500">Loading contract…</div>;
-  if (isError || !contract) return <div className="card p-6 text-center text-sm text-red-600">Failed to load contract.</div>;
+  if (isLoading) return <div className="p-8 text-sm text-neutral-500">{t("contracts.loadingContract")}</div>;
+  if (isError || !contract) return <div className="card p-6 text-center text-sm text-red-600">{t("contracts.loadContractError")}</div>;
 
   const lifecycle = (contract.contract_status ?? contract.status ?? "DRAFT").toUpperCase();
   const canSubmit = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.submit", "contract.create"]));
@@ -151,6 +160,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const canTerminate = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.terminate"]));
   const canSend = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.send"]));
   const canSign = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.sign_internal"]));
+  const canEditDraft = !!user && (isSystemAdmin(user) || hasPermission(user, ["contract.edit_draft", "contract.create"]));
   const inReview = ["IN_REVIEW", "APPROVAL_PENDING"].includes(lifecycle);
   const isDraft = ["DRAFT", "CHANGES_REQUESTED"].includes(lifecycle);
   const readyForSignature = lifecycle === "APPROVED_FOR_SIGNATURE";
@@ -202,66 +212,149 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
     setCommentModal(null); setComment("");
   };
 
+  const saveDraft = () => {
+    if (!draftTitle.trim() || !draftStart || !draftEnd) return;
+    setSavingDraft(true);
+    contractsApi.update(contractId, {
+      lock_version: contract.lock_version ?? 1,
+      title: draftTitle.trim(),
+      description: draftDescription.trim() || null,
+      start_date: draftStart,
+      end_date: draftEnd,
+      value: draftValue === "" ? undefined : Number(draftValue),
+    })
+      .then(() => {
+        toast.success(t("contracts.draftSaved"));
+        setEditing(false);
+        refresh();
+      })
+      .catch((e: unknown) => {
+        const status = axios.isAxiosError(e) ? e.response?.status : undefined;
+        if (status === 409) {
+          toast.error(t("contracts.conflict"));
+          setEditing(false);
+          refresh();
+          return;
+        }
+        toast.error(axios.isAxiosError(e) ? (e.response?.data as { message?: string } | undefined)?.message ?? t("contracts.actionFailed") : t("contracts.actionFailed"));
+      })
+      .finally(() => setSavingDraft(false));
+  };
+
+  const tabItems: { id: Tab; label: string }[] = [
+    { id: "overview", label: t("contracts.tab.overview") },
+    { id: "deliverables", label: t("contracts.tab.deliverables") },
+    { id: "financials", label: t("contracts.tab.financials") },
+    { id: "clauses", label: t("contracts.tab.clauses") },
+    { id: "amendments", label: t("contracts.tab.amendments") },
+    { id: "lifecycle", label: t("contracts.tab.lifecycle") },
+    ...(contract.is_framework ? [{ id: "calloffs" as Tab, label: t("contracts.tab.calloffs") }] : []),
+    { id: "documents", label: t("contracts.tab.documents") },
+    { id: "signatures", label: t("contracts.tab.signatures") },
+    { id: "approvals", label: t("contracts.tab.approvals") },
+    { id: "correspondence", label: t("contracts.tab.correspondence") },
+    { id: "audit", label: t("contracts.tab.audit") },
+  ];
+
+  const moreItems: ReactNode[] = [];
+  if (inReview && canReview) {
+    moreItems.push(
+      <button key="return" type="button" role="menuitem" className={contractMenuItemClass()} onClick={() => { setCommentModal("return"); setComment(""); }}>{t("contracts.actions.return")}</button>,
+    );
+    if (canReject) {
+      moreItems.push(
+        <button key="reject" type="button" role="menuitem" className={contractMenuItemClass(true)} onClick={() => { setCommentModal("reject"); setComment(""); }}>{t("contracts.actions.reject")}</button>,
+      );
+    }
+  }
+  if (inReview && canSubmit) {
+    moreItems.push(
+      <button key="withdraw" type="button" role="menuitem" className={contractMenuItemClass()} onClick={() => act(() => contractsApi.withdraw(contractId), "Withdrawn")}>{t("contracts.actions.withdraw")}</button>,
+    );
+  }
+  if (isExecuted && canAmend) {
+    moreItems.push(
+      <button key="amend" type="button" role="menuitem" className={contractMenuItemClass()} onClick={() => setAmendOpen(true)}>{t("contracts.actions.amend")}</button>,
+    );
+  }
+  if (isExecuted && canClose) {
+    moreItems.push(
+      <button key="close" type="button" role="menuitem" className={contractMenuItemClass()} onClick={() => act(() => contractsApi.close(contractId), "Contract closed")}>{t("contracts.actions.close")}</button>,
+    );
+  }
+  if (isActiveLifecycle && canSuspend) {
+    moreItems.push(
+      <button key="suspend" type="button" role="menuitem" className={contractMenuItemClass()} onClick={() => { setLifecycleModal("suspend"); setLifecycleReason(""); }}>{t("contracts.actions.suspend")}</button>,
+    );
+  }
+  if (isActiveLifecycle && canAmend) {
+    moreItems.push(
+      <button key="extend" type="button" role="menuitem" className={contractMenuItemClass()} onClick={() => { setLifecycleModal("extend"); setLifecycleReason(""); setLcEndDate(""); }}>{t("contracts.actions.extend")}</button>,
+    );
+  }
+  if (isActiveLifecycle && canAmend && contract.renewal_type && contract.renewal_type !== "non_renewable") {
+    moreItems.push(
+      <button key="renew" type="button" role="menuitem" className={contractMenuItemClass()} onClick={() => { setLifecycleModal("renew"); setLifecycleReason(""); setLcStartDate(""); setLcEndDate(""); }}>{t("contracts.actions.renew")}</button>,
+    );
+  }
+  if ((isExecuted || isSuspended) && canTerminate) {
+    moreItems.push(
+      <button key="terminate" type="button" role="menuitem" className={contractMenuItemClass(true)} onClick={() => { setLifecycleModal("terminate"); setLifecycleReason(""); }}>{t("contracts.actions.terminate")}</button>,
+    );
+  }
+  if (isExecuted && canAcceptDeliverable && contract.vendor_id) {
+    moreItems.push(
+      <button key="rate" type="button" role="menuitem" className={contractMenuItemClass()} onClick={() => setPerfOpen(true)}>{t("contracts.actions.rate")}</button>,
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <ModulePageHeader
-          title={contract.title}
-          subtitle={`${contract.reference_number} · ${contract.display_counterparty ?? contract.vendor?.name ?? "—"}`}
-          breadcrumbs={<PageBreadcrumbs items={[{ label: "Contracts", href: "/contracts" }, { label: "Register", href: "/contracts/register" }, { label: contract.reference_number }]} />}
-        />
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`badge ${LIFECYCLE_BADGES[lifecycle] ?? "badge-muted"}`}>{lifecycle.replace(/_/g, " ")}</span>
-          {isDraft && canSubmit && (
-            <button className="btn-primary text-sm disabled:opacity-60" disabled={submitMut.isPending || (readiness && !readiness.ready)} onClick={() => submitMut.mutate()}>
-              Submit for approval
-            </button>
-          )}
-          {inReview && canReview && (
-            <>
-              <button className="btn-primary text-sm" onClick={() => act(() => contractsApi.approveWorkflow(contractId), "Approval recorded")}>Approve</button>
-              <button className="btn-secondary text-sm" onClick={() => { setCommentModal("return"); setComment(""); }}>Return</button>
-              {canReject && <button className="btn-secondary text-sm text-red-600" onClick={() => { setCommentModal("reject"); setComment(""); }}>Reject</button>}
-            </>
-          )}
-          {inReview && canSubmit && (
-            <button className="btn-secondary text-sm" onClick={() => act(() => contractsApi.withdraw(contractId), "Withdrawn")}>Withdraw</button>
-          )}
-          {readyForSignature && canSend && (
-            <button className="btn-primary text-sm" onClick={() => act(() => contractsApi.sendForSignature(contractId), "Sent for signature")}>Send for signature</button>
-          )}
-          {inSignature && canSign && !sadcSigned && (
-            <button className="btn-primary text-sm" onClick={() => act(() => contractsApi.signInternal(contractId), "Signature recorded")}>Sign (SADC PF)</button>
-          )}
-          {isExecuted && canAmend && (
-            <button className="btn-secondary text-sm" onClick={() => setAmendOpen(true)}>Amend</button>
-          )}
-          {isExecuted && canClose && (
-            <button className="btn-secondary text-sm" onClick={() => act(() => contractsApi.close(contractId), "Contract closed")}>Close out</button>
-          )}
-          {isActiveLifecycle && canSuspend && (
-            <button className="btn-secondary text-sm" onClick={() => { setLifecycleModal("suspend"); setLifecycleReason(""); }}>Suspend</button>
-          )}
-          {isSuspended && canSuspend && (
-            <button className="btn-primary text-sm" onClick={() => act(() => contractsApi.resume(contractId), "Contract resumed")}>Resume</button>
-          )}
-          {isActiveLifecycle && canAmend && (
-            <button className="btn-secondary text-sm" onClick={() => { setLifecycleModal("extend"); setLifecycleReason(""); setLcEndDate(""); }}>Extend</button>
-          )}
-          {isActiveLifecycle && canAmend && contract.renewal_type && contract.renewal_type !== "non_renewable" && (
-            <button className="btn-secondary text-sm" onClick={() => { setLifecycleModal("renew"); setLifecycleReason(""); setLcStartDate(""); setLcEndDate(""); }}>Renew</button>
-          )}
-          {(isExecuted || isSuspended) && canTerminate && (
-            <button className="btn-secondary text-sm text-red-600" onClick={() => { setLifecycleModal("terminate"); setLifecycleReason(""); }}>Terminate</button>
-          )}
-          {isExecuted && canAcceptDeliverable && contract.vendor_id && (
-            <button className="btn-secondary text-sm" onClick={() => setPerfOpen(true)}>Rate supplier</button>
-          )}
-          <a href={contractsApi.packDownloadUrl(contractId)} className="btn-secondary text-sm inline-flex items-center gap-1">
-            <span className="material-symbols-outlined text-[16px]">inventory_2</span>Contract pack
-          </a>
-        </div>
-      </div>
+    <div className="w-full min-w-0 space-y-6">
+      <ModulePageHeader
+        title={contract.title}
+        subtitle={`${contract.reference_number} · ${contract.display_counterparty ?? contract.vendor?.name ?? "—"}`}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "contracts.title", href: "/contracts" }, { label: "contracts.register", href: "/contracts/register" }, { label: contract.reference_number }]} />}
+        meta={<ContractStatusBadge status={lifecycle} />}
+        actions={
+          <>
+            {isDraft && canEditDraft && !editing && (
+              <button type="button" className="btn-secondary text-sm" onClick={() => {
+                setDraftTitle(contract.title);
+                setDraftDescription(contract.description ?? "");
+                setDraftStart((contract.start_date ?? "").slice(0, 10));
+                setDraftEnd((contract.end_date ?? "").slice(0, 10));
+                setDraftValue(String(contract.current_value ?? contract.value ?? ""));
+                setEditing(true);
+                setTab("overview");
+              }}>
+                {t("contracts.editDraft")}
+              </button>
+            )}
+            {isDraft && canSubmit && (
+              <button type="button" className="btn-primary text-sm disabled:opacity-60" disabled={submitMut.isPending || (readiness && !readiness.ready)} onClick={() => submitMut.mutate()}>
+                {t("contracts.actions.submit")}
+              </button>
+            )}
+            {inReview && canReview && (
+              <button type="button" className="btn-primary text-sm" onClick={() => act(() => contractsApi.approveWorkflow(contractId), "Approval recorded")}>{t("contracts.actions.approve")}</button>
+            )}
+            {readyForSignature && canSend && (
+              <button type="button" className="btn-primary text-sm" onClick={() => act(() => contractsApi.sendForSignature(contractId), "Sent for signature")}>{t("contracts.actions.send")}</button>
+            )}
+            {inSignature && canSign && !sadcSigned && (
+              <button type="button" className="btn-primary text-sm" onClick={() => act(() => contractsApi.signInternal(contractId), "Signature recorded")}>{t("contracts.actions.sign")}</button>
+            )}
+            {isSuspended && canSuspend && (
+              <button type="button" className="btn-primary text-sm" onClick={() => act(() => contractsApi.resume(contractId), "Contract resumed")}>{t("contracts.actions.resume")}</button>
+            )}
+            <a href={contractsApi.packDownloadUrl(contractId)} className="btn-secondary text-sm inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">inventory_2</span>
+              {t("contracts.actions.pack")}
+            </a>
+            {moreItems.length > 0 && <ContractMoreMenu>{moreItems}</ContractMoreMenu>}
+          </>
+        }
+      />
 
       {openExceptions.length > 0 && (
         <div className="space-y-2">
@@ -273,51 +366,85 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-neutral-200">
-        {(["overview", "deliverables", "financials", "clauses", "amendments", "lifecycle", ...(contract.is_framework ? ["calloffs" as Tab] : []), "documents", "signatures", "approvals", "correspondence", "audit"] as Tab[]).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium capitalize border-b-2 -mb-px ${tab === t ? "border-primary text-primary" : "border-transparent text-neutral-500 hover:text-neutral-700"}`}>
-            {t === "calloffs" ? "Call-offs" : t}
-          </button>
-        ))}
-      </div>
+      <ContractTabBar tabs={tabItems} active={tab} onChange={setTab} />
 
       {tab === "overview" && (
         <div className="grid gap-4 md:grid-cols-2">
           <div className="card p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-neutral-800">Key facts</h3>
+            <h3 className="text-sm font-semibold text-neutral-800">{t("contracts.overview.facts")}</h3>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <dt className="text-neutral-500">Type</dt><dd className="text-neutral-900">{contract.type?.name ?? "—"}</dd>
-              <dt className="text-neutral-500">Origin</dt><dd className="text-neutral-900 capitalize">{contract.origin_type ?? "—"}</dd>
-              <dt className="text-neutral-500">Value</dt><dd className="text-neutral-900 font-semibold">{contract.currency} {Number(contract.current_value ?? contract.value).toLocaleString()}</dd>
-              {contract.budget_currency && (<><dt className="text-neutral-500">Budget currency</dt><dd className="text-neutral-900">{contract.budget_currency}{contract.converted_value != null ? ` · ${Number(contract.converted_value).toLocaleString()}` : ""}{contract.conversion_reference ? ` (${contract.conversion_reference})` : ""}</dd></>)}
-              <dt className="text-neutral-500">Start</dt><dd className="text-neutral-900">{contract.start_date ? formatDateShort(contract.start_date) : "—"}</dd>
-              <dt className="text-neutral-500">End</dt><dd className="text-neutral-900">{contract.end_date ? formatDateShort(contract.end_date) : "—"}</dd>
-              <dt className="text-neutral-500">Signature</dt><dd className="text-neutral-900">{contract.signature_status ?? "—"}</dd>
-              <dt className="text-neutral-500">Health</dt><dd className="text-neutral-900 capitalize">{contract.health_status ?? "normal"}</dd>
+              <dt className="text-neutral-500">{t("contracts.overview.type")}</dt><dd className="text-neutral-900">{contract.type?.name ?? "—"}</dd>
+              <dt className="text-neutral-500">{t("contracts.overview.origin")}</dt>
+              <dd className="text-neutral-900">
+                {contract.programme ? (
+                  <Link href={`/pif/${contract.programme.id}`} className="text-primary hover:underline">
+                    {contract.programme.reference_number} · {contract.programme.title}
+                  </Link>
+                ) : (
+                  <span className="capitalize">{contract.origin_type ?? "—"}</span>
+                )}
+              </dd>
+              <dt className="text-neutral-500">{t("contracts.overview.value")}</dt><dd className="text-neutral-900 font-semibold">{formatContractMoney(contract.currency, contract.current_value ?? contract.value)}</dd>
+              {contract.budget_currency && (<><dt className="text-neutral-500">{t("contracts.overview.budgetCurrency")}</dt><dd className="text-neutral-900">{contract.budget_currency}{contract.converted_value != null ? ` · ${Number(contract.converted_value).toLocaleString()}` : ""}{contract.conversion_reference ? ` (${contract.conversion_reference})` : ""}</dd></>)}
+              <dt className="text-neutral-500">{t("contracts.overview.start")}</dt><dd className="text-neutral-900">{contract.start_date ? formatDateShort(contract.start_date) : "—"}</dd>
+              <dt className="text-neutral-500">{t("contracts.overview.end")}</dt><dd className="text-neutral-900">{contract.end_date ? formatDateShort(contract.end_date) : "—"}</dd>
+              <dt className="text-neutral-500">{t("contracts.overview.signature")}</dt><dd className="text-neutral-900">{contract.signature_status ?? "—"}</dd>
+              <dt className="text-neutral-500">{t("contracts.overview.health")}</dt><dd className="text-neutral-900 capitalize">{contract.health_status ?? "normal"}</dd>
             </dl>
           </div>
           <div className="card p-5 space-y-3">
-            <h3 className="text-sm font-semibold text-neutral-800">Readiness</h3>
+            <h3 className="text-sm font-semibold text-neutral-800">{t("contracts.overview.readiness")}</h3>
             {readiness ? (
               <ul className="space-y-1.5 text-sm">
                 {readiness.checks.map((c) => (
                   <li key={c.key} className="flex items-center gap-2">
-                    <span className={`material-symbols-outlined text-[18px] ${c.passed ? "text-green-600" : c.blocking ? "text-red-600" : "text-amber-600"}`}>
+                    <span className={`material-symbols-outlined text-[18px] ${c.passed ? "text-green-600" : c.blocking ? "text-red-600" : "text-amber-600"}`} aria-hidden="true">
                       {c.passed ? "check_circle" : "cancel"}
                     </span>
-                    <span className={c.passed ? "text-neutral-700" : "text-neutral-900"}>{c.label}{!c.blocking && !c.passed ? " (optional)" : ""}</span>
+                    <span className={c.passed ? "text-neutral-700" : "text-neutral-900"}>{c.label}{!c.blocking && !c.passed ? ` ${t("contracts.overview.optional")}` : ""}</span>
                   </li>
                 ))}
               </ul>
-            ) : <p className="text-sm text-neutral-400">Loading…</p>}
+            ) : <p className="text-sm text-neutral-400">{t("contracts.loading")}</p>}
           </div>
+          {editing && canEditDraft && (
+            <form
+              className="card p-5 space-y-4 md:col-span-2"
+              onSubmit={(ev) => { ev.preventDefault(); saveDraft(); }}
+            >
+              <h3 className="text-sm font-semibold text-neutral-800">{t("contracts.editDraft")}</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <ContractField label={t("contracts.field.title")} htmlFor="draft-title" className="sm:col-span-2">
+                  <input id="draft-title" className="form-input" value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} required />
+                </ContractField>
+                <ContractField label={t("contracts.field.description")} htmlFor="draft-description" className="sm:col-span-2">
+                  <textarea id="draft-description" className="form-input min-h-[5rem]" value={draftDescription} onChange={(e) => setDraftDescription(e.target.value)} />
+                </ContractField>
+                <ContractField label={t("contracts.field.startDate")} htmlFor="draft-start">
+                  <input id="draft-start" type="date" className="form-input" value={draftStart} onChange={(e) => setDraftStart(e.target.value)} required />
+                </ContractField>
+                <ContractField label={t("contracts.field.endDate")} htmlFor="draft-end">
+                  <input id="draft-end" type="date" className="form-input" value={draftEnd} onChange={(e) => setDraftEnd(e.target.value)} required />
+                </ContractField>
+                <ContractField label={t("contracts.field.value")} htmlFor="draft-value">
+                  <input id="draft-value" type="number" min={0} step="0.01" className="form-input" value={draftValue} onChange={(e) => setDraftValue(e.target.value)} />
+                </ContractField>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button type="submit" className="btn-primary text-sm disabled:opacity-60" disabled={savingDraft}>
+                  {t("contracts.saveDraft")}
+                </button>
+                <button type="button" className="btn-secondary text-sm" onClick={() => setEditing(false)}>
+                  {t("common.cancel")}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       )}
 
       {tab === "deliverables" && (
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           {(contract.deliverables ?? []).length === 0 ? (
             <div className="p-6 text-sm text-neutral-500">No deliverables recorded.</div>
           ) : (
@@ -367,7 +494,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             </div>
           ) : <div className="card p-6 text-sm text-neutral-500">Loading ledger…</div>}
           {ledgerData && ledgerData.schedules.length > 0 && (
-            <div className="card overflow-hidden">
+            <div className="card overflow-x-auto">
               <table className="data-table">
                 <thead><tr><th>Milestone</th><th>Basis</th><th className="text-right">Amount</th><th>Status</th></tr></thead>
                 <tbody>
@@ -383,7 +510,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </table>
             </div>
           )}
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
             <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Linked invoices</div>
             {(invoiceData ?? []).length === 0 ? (
               <div className="p-4 text-sm text-neutral-500">No invoices linked to this contract.</div>
@@ -410,7 +537,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
       {tab === "clauses" && (
         <div className="space-y-4">
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
             <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Assigned clauses</div>
             {(clauseData ?? []).length === 0 ? (
               <div className="p-4 text-sm text-neutral-500">No clauses assigned.</div>
@@ -450,7 +577,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       )}
 
       {tab === "amendments" && (
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           {(contract.amendments ?? []).length === 0 ? (
             <div className="p-6 text-sm text-neutral-500">No amendments.</div>
           ) : (
@@ -485,7 +612,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             {contract.auto_renew && <span className="ml-2 badge badge-warning">Auto-renews</span>}
             <span className="ml-2 text-neutral-500">· Renewals: {contract.renewals_count ?? 0}</span>
           </div>
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
             <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Extensions</div>
             {(contract.extensions ?? []).length === 0 ? (
               <div className="p-4 text-sm text-neutral-500">No extensions.</div>
@@ -507,7 +634,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </table>
             )}
           </div>
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
             <div className="px-4 py-2 border-b border-neutral-100 text-sm font-semibold text-neutral-800">Renewals</div>
             {(contract.renewals ?? []).length === 0 ? (
               <div className="p-4 text-sm text-neutral-500">No renewals.</div>
@@ -542,7 +669,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             </div>
           )}
 
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
             <div className="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
               <span className="text-sm font-semibold text-neutral-800">Key personnel</span>
               <button className="btn-secondary text-xs" onClick={() => setPersonOpen(true)}>Add personnel</button>
@@ -592,7 +719,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             )}
           </div>
 
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
             <div className="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
               <span className="text-sm font-semibold text-neutral-800">Disputes</span>
               <button className="btn-secondary text-xs" onClick={() => setDisputeOpen(true)}>Raise dispute</button>
@@ -649,7 +776,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
           )}
-          <div className="card overflow-hidden">
+          <div className="card overflow-x-auto">
             <div className="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
               <span className="text-sm font-semibold text-neutral-800">Call-offs</span>
               {canAmend && (
@@ -688,7 +815,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
         };
         return (
         <div className="space-y-4">
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           {(contract.document_versions ?? []).length === 0 ? (
             <div className="p-6 text-sm text-neutral-500">No generated documents yet.</div>
           ) : (
@@ -742,7 +869,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       })()}
 
       {tab === "signatures" && (
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           {(contract.signatories ?? []).length === 0 ? (
             <div className="p-6 text-sm text-neutral-500">Not yet sent for signature.</div>
           ) : (
@@ -776,7 +903,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       )}
 
       {tab === "correspondence" && (
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           <div className="px-4 py-2 border-b border-neutral-100 flex items-center justify-between">
             <span className="text-sm font-semibold text-neutral-800">Linked correspondence</span>
             <button className="btn-secondary text-xs" onClick={() => setCorrOpen(true)}>Create correspondence</button>
@@ -804,7 +931,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       )}
 
       {tab === "audit" && (
-        <div className="card overflow-hidden">
+        <div className="card overflow-x-auto">
           {(auditData ?? []).length === 0 ? (
             <div className="p-6 text-sm text-neutral-500">No audit events yet.</div>
           ) : (

@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Stepper } from "@/components/ui/Stepper";
 import { useToast } from "@/components/ui/Toast";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 import {
-  contractsApi, vendorsApi, procurementApi,
+  contractsApi, vendorsApi, procurementApi, programmeApi,
   type ContractType, type Vendor,
 } from "@/lib/api";
 
@@ -18,20 +19,29 @@ type Party = "individual" | "organisation";
 interface Deliverable { name: string; due_date?: string; responsible_party?: string }
 interface Obligation { obligation: string; responsible_party: string }
 
-const STEPS = [
-  { label: "Origin" },
-  { label: "Counterparty" },
-  { label: "Details & Dates" },
-  { label: "Financials" },
-  { label: "Scope" },
-  { label: "Review" },
+const ORIGINS: { id: Origin; icon: string }[] = [
+  { id: "procurement", icon: "shopping_cart" },
+  { id: "pif", icon: "assignment" },
+  { id: "framework", icon: "account_tree" },
+  { id: "standalone", icon: "edit_note" },
+  { id: "legacy", icon: "history" },
 ];
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
-export default function ContractCreatePage() {
+function ContractCreateInner() {
   const router = useRouter();
   const toast = useToast();
+  const { t } = useI18n();
+  const searchParams = useSearchParams();
+  const steps = [
+    { label: t("contracts.create.step.origin") },
+    { label: t("contracts.create.step.counterparty") },
+    { label: t("contracts.create.step.details") },
+    { label: t("contracts.create.step.financials") },
+    { label: t("contracts.create.step.scope") },
+    { label: t("contracts.create.step.review") },
+  ];
 
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -41,6 +51,7 @@ export default function ContractCreatePage() {
   const [origin, setOrigin] = useState<Origin>("standalone");
   const [originReference, setOriginReference] = useState("");
   const [procurementRequestId, setProcurementRequestId] = useState<number | "">("");
+  const [programmeId, setProgrammeId] = useState<number | "">("");
   const [awardReference, setAwardReference] = useState("");
 
   const [partyType, setPartyType] = useState<Party>("individual");
@@ -107,6 +118,16 @@ export default function ContractCreatePage() {
   type AwardOpt = { id: number; reference_number: string; title: string };
   const awarded: AwardOpt[] = ((awardedData as { data?: AwardOpt[] })?.data ?? []);
 
+  const { data: pifListData } = useQuery({
+    queryKey: ["programmes-contract-origin"],
+    queryFn: () => programmeApi.list({ per_page: 100 }).then((r) => r.data).catch(() => ({ data: [] })),
+    enabled: origin === "pif",
+  });
+  type PifOpt = { id: number; reference_number: string; title: string; status: string };
+  const pifs: PifOpt[] = ((pifListData as { data?: PifOpt[] })?.data ?? []).filter((p) =>
+    ["approved", "amended", "active", "completed"].includes(p.status),
+  );
+
   const { data: templateData } = useQuery({
     queryKey: ["contract-templates"],
     queryFn: () => contractsApi.listTemplates().then((r) => r.data.data).catch(() => []),
@@ -122,10 +143,17 @@ export default function ContractCreatePage() {
   );
 
   useEffect(() => {
-    if (partyType === "organisation") setTypeDefaultsForOrg();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [partyType]);
-  function setTypeDefaultsForOrg() { /* placeholder for future org-specific defaults */ }
+    const request = searchParams.get("request");
+    if (request) {
+      setOrigin("procurement");
+      setProcurementRequestId(Number(request));
+    }
+    const pif = searchParams.get("pif");
+    if (pif) {
+      setOrigin("pif");
+      setProgrammeId(Number(pif));
+    }
+  }, [searchParams]);
 
   const prefillFromAward = async () => {
     if (!procurementRequestId) return;
@@ -137,15 +165,43 @@ export default function ContractCreatePage() {
       if (d.value) setFlatValue(String(d.value));
       if (d.currency) setCurrency(String(d.currency));
       if (d.vendor_id) { setPartyType("organisation"); setVendorId(Number(d.vendor_id)); }
-      toast.success("Prefilled from procurement award");
+      toast.success(t("contracts.origin.prefilled"));
     } catch {
-      toast.error("Could not prefill from that award");
+      toast.error(t("contracts.origin.prefillFailed"));
     }
   };
 
+  const prefillFromPif = async (id?: number) => {
+    const pid = id ?? programmeId;
+    if (!pid) return;
+    try {
+      const { data } = await contractsApi.prefill("pif", Number(pid));
+      const d = data.data as Record<string, unknown>;
+      if (d.title) setTitle(String(d.title));
+      if (d.award_reference) setAwardReference(String(d.award_reference));
+      if (d.rate) setRate(String(d.rate));
+      if (d.currency) setCurrency(String(d.currency));
+      toast.success(t("contracts.origin.prefilledPif"));
+    } catch {
+      toast.error(t("contracts.origin.prefillFailedPif"));
+    }
+  };
+
+  useEffect(() => {
+    if (origin !== "pif" || !programmeId || !searchParams.get("pif")) return;
+    void prefillFromPif(Number(programmeId));
+    // Prefill once when arriving from a PIF with ?pif=
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [origin, programmeId]);
+
   const canNext = (): boolean => {
     switch (step) {
-      case 1: return origin !== "standalone" || originReference.trim().length > 0;
+      case 1:
+        if (origin === "legacy") return false;
+        if (origin === "standalone") return originReference.trim().length > 0;
+        if (origin === "procurement") return !!procurementRequestId;
+        if (origin === "pif") return !!programmeId;
+        return true;
       case 2: return partyType === "organisation" ? !!vendorId : (!!firstName.trim() && !!surname.trim());
       case 3: return !!title.trim() && !!typeId && !!startDate && !!endDate;
       case 4: return computedValue > 0;
@@ -164,6 +220,7 @@ export default function ContractCreatePage() {
         origin_type: origin,
         origin_reference: origin === "standalone" ? originReference : undefined,
         procurement_request_id: origin === "procurement" && procurementRequestId ? Number(procurementRequestId) : undefined,
+        programme_id: origin === "pif" && programmeId ? Number(programmeId) : undefined,
         award_reference: awardReference || undefined,
         type_id: typeId ? Number(typeId) : undefined,
         counterparty_type: partyType,
@@ -195,27 +252,27 @@ export default function ContractCreatePage() {
 
       if (templateVersionId) {
         try { await contractsApi.generate(id, Number(templateVersionId)); }
-        catch { toast.error("Contract created, but document generation needs attention"); }
+        catch { toast.error(t("contracts.create.generateWarn")); }
       }
 
-      toast.success("Contract created");
+      toast.success(t("contracts.create.created"));
       router.push(`/contracts/${id}`);
     } catch (e: unknown) {
-      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to create contract.");
+      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t("contracts.create.failed"));
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="w-full min-w-0 space-y-6 max-w-3xl">
       <ModulePageHeader
-        title="New Contract"
-        subtitle="Prepare a contract from approved institutional data"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Contracts", href: "/contracts" }, { label: "New" }]} />}
+        title="contracts.createTitle"
+        subtitle="contracts.createSubtitle"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "contracts.title", href: "/contracts" }, { label: "contracts.new" }]} />}
       />
 
-      <div className="card p-5">
-        <Stepper steps={STEPS} currentStep={step} onStepSelect={(i) => setStep(i + 1)} />
+      <div className="card p-5 overflow-x-auto">
+        <Stepper steps={steps} currentStep={step} onStepSelect={(i) => setStep(i + 1)} />
       </div>
 
       {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</div>}
@@ -223,33 +280,64 @@ export default function ContractCreatePage() {
       <div className="card p-6 space-y-5">
         {step === 1 && (
           <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-neutral-800">Contract origin</h2>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {(["procurement", "pif", "framework", "standalone", "legacy"] as Origin[]).map((o) => (
-                <button key={o} type="button" onClick={() => setOrigin(o)}
-                  className={`filter-tab capitalize ${origin === o ? "active" : ""}`}>{o}</button>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("contracts.create.originTitle")}</h2>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {ORIGINS.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => setOrigin(o.id)}
+                  className={`card p-4 text-left transition-shadow ${origin === o.id ? "ring-2 ring-primary border-primary" : "hover:border-primary/40"}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="material-symbols-outlined text-primary mt-0.5" aria-hidden="true">{o.icon}</span>
+                    <span>
+                      <span className="block text-sm font-semibold text-neutral-900">{t(`contracts.origin.${o.id}`)}</span>
+                      <span className="mt-0.5 block text-xs text-neutral-500">{t(`contracts.origin.${o.id}Hint`)}</span>
+                    </span>
+                  </div>
+                </button>
               ))}
             </div>
             {origin === "procurement" && (
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-neutral-600">Awarded procurement request</label>
-                <div className="flex gap-2">
-                  <select className="form-input" value={procurementRequestId} onChange={(e) => setProcurementRequestId(e.target.value ? Number(e.target.value) : "")}>
-                    <option value="">Select award…</option>
+                <label className="text-xs font-semibold text-neutral-600">{t("contracts.origin.selectAward")}</label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <select className="form-input w-full" value={procurementRequestId} onChange={(e) => setProcurementRequestId(e.target.value ? Number(e.target.value) : "")}>
+                    <option value="">{t("contracts.origin.selectAwardPlaceholder")}</option>
                     {awarded.map((a) => (<option key={a.id} value={a.id}>{a.reference_number} — {a.title}</option>))}
                   </select>
-                  <button type="button" className="btn-secondary whitespace-nowrap" disabled={!procurementRequestId} onClick={prefillFromAward}>Prefill</button>
+                  <button type="button" className="btn-secondary whitespace-nowrap" disabled={!procurementRequestId} onClick={prefillFromAward}>{t("contracts.origin.prefill")}</button>
+                </div>
+              </div>
+            )}
+            {origin === "pif" && (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-neutral-600">{t("contracts.origin.selectPif")}</label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  {pifs.length > 0 ? (
+                    <select className="form-input w-full" value={programmeId} onChange={(e) => setProgrammeId(e.target.value ? Number(e.target.value) : "")}>
+                      <option value="">{t("contracts.origin.selectPifPlaceholder")}</option>
+                      {pifs.map((p) => (<option key={p.id} value={p.id}>{p.reference_number} — {p.title}</option>))}
+                    </select>
+                  ) : (
+                    <input className="form-input w-full" type="number" min={1} placeholder={t("contracts.origin.selectPifPlaceholder")} value={programmeId} onChange={(e) => setProgrammeId(e.target.value ? Number(e.target.value) : "")} />
+                  )}
+                  <button type="button" className="btn-secondary whitespace-nowrap" disabled={!programmeId} onClick={() => prefillFromPif()}>{t("contracts.origin.prefill")}</button>
                 </div>
               </div>
             )}
             {origin === "standalone" && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Reason no procurement/PIF reference exists <span className="text-red-500">*</span></label>
-                <textarea className="form-input h-20 resize-none" value={originReference} onChange={(e) => setOriginReference(e.target.value)} placeholder="Explain why this contract is standalone…" />
+                <label className="text-xs font-semibold text-neutral-600">{t("contracts.origin.standaloneReason")} <span className="text-red-500">*</span></label>
+                <textarea className="form-input h-20 resize-none w-full" value={originReference} onChange={(e) => setOriginReference(e.target.value)} />
               </div>
             )}
             {origin === "legacy" && (
-              <p className="text-sm text-amber-600">For historical contracts, use <Link href="/contracts/register" className="underline">Import legacy contract</Link> instead.</p>
+              <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                {t("contracts.origin.legacyCta")}{" "}
+                <Link href="/contracts/register" className="underline">{t("contracts.importLegacy")}</Link>
+              </p>
             )}
           </div>
         )}
@@ -257,9 +345,9 @@ export default function ContractCreatePage() {
         {step === 2 && (
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-neutral-800">Counterparty</h2>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {(["individual", "organisation"] as Party[]).map((p) => (
-                <button key={p} type="button" onClick={() => setPartyType(p)} className={`filter-tab capitalize ${partyType === p ? "active" : ""}`}>{p}</button>
+                <button key={p} type="button" onClick={() => setPartyType(p)} className={`filter-tab ${partyType === p ? "active" : ""}`}>{t(`contracts.party.${p}`)}</button>
               ))}
             </div>
             {partyType === "organisation" ? (
@@ -272,12 +360,12 @@ export default function ContractCreatePage() {
                 <p className="text-xs text-neutral-400">Bank details are managed via the supplier record and require a separate verification workflow.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">First name <span className="text-red-500">*</span></label><input className="form-input" value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
-                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Surname <span className="text-red-500">*</span></label><input className="form-input" value={surname} onChange={(e) => setSurname(e.target.value)} /></div>
-                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Email</label><input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Phone</label><input className="form-input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-                <div className="space-y-1 col-span-2"><label className="text-xs font-semibold text-neutral-600">Profession</label><input className="form-input" value={profession} onChange={(e) => setProfession(e.target.value)} /></div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">First name <span className="text-red-500">*</span></label><input className="form-input w-full" value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
+                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Surname <span className="text-red-500">*</span></label><input className="form-input w-full" value={surname} onChange={(e) => setSurname(e.target.value)} /></div>
+                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Email</label><input className="form-input w-full" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Phone</label><input className="form-input w-full" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                <div className="space-y-1 sm:col-span-2"><label className="text-xs font-semibold text-neutral-600">Profession</label><input className="form-input w-full" value={profession} onChange={(e) => setProfession(e.target.value)} /></div>
               </div>
             )}
           </div>
@@ -291,14 +379,14 @@ export default function ContractCreatePage() {
               <label className="text-xs font-semibold text-neutral-600">Contract type <span className="text-red-500">*</span></label>
               <select className="form-input" value={typeId} onChange={(e) => setTypeId(e.target.value ? Number(e.target.value) : "")}>
                 <option value="">Select type…</option>
-                {types.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
+                {types.map((row) => (<option key={row.id} value={row.id}>{row.name}</option>))}
               </select>
             </div>
             <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Short description</label><textarea className="form-input h-20 resize-none" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Start date <span className="text-red-500">*</span></label><input type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">End date <span className="text-red-500">*</span></label><input type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Signature deadline</label><input type="date" className="form-input" value={signatureDeadline} onChange={(e) => setSignatureDeadline(e.target.value)} /></div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Start date <span className="text-red-500">*</span></label><input type="date" className="form-input w-full" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">End date <span className="text-red-500">*</span></label><input type="date" className="form-input w-full" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Signature deadline</label><input type="date" className="form-input w-full" value={signatureDeadline} onChange={(e) => setSignatureDeadline(e.target.value)} /></div>
             </div>
           </div>
         )}
@@ -307,12 +395,12 @@ export default function ContractCreatePage() {
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-neutral-800">Financial structure</h2>
             <p className="text-xs text-neutral-500">Enter a rate and units and Nexus calculates the total, or enter a flat value.</p>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Rate</label><input type="number" min="0" step="0.01" className="form-input" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Units</label><input type="number" min="0" step="0.5" className="form-input" value={units} onChange={(e) => setUnits(e.target.value)} /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">or Flat value</label><input type="number" min="0" step="0.01" className="form-input" value={flatValue} disabled={!!(rate && units)} onChange={(e) => setFlatValue(e.target.value)} /></div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Rate</label><input type="number" min="0" step="0.01" className="form-input w-full" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Units</label><input type="number" min="0" step="0.5" className="form-input w-full" value={units} onChange={(e) => setUnits(e.target.value)} /></div>
+              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">or Flat value</label><input type="number" min="0" step="0.01" className="form-input w-full" value={flatValue} disabled={!!(rate && units)} onChange={(e) => setFlatValue(e.target.value)} /></div>
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Currency</label>
                 {currencies.length > 0 ? (
                   <select className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
@@ -355,9 +443,9 @@ export default function ContractCreatePage() {
               </div>
               {deliverables.length === 0 && <p className="text-xs text-neutral-400">No deliverables yet.</p>}
               {deliverables.map((d, i) => (
-                <div key={i} className="grid grid-cols-3 gap-2">
-                  <input className="form-input col-span-2" placeholder="Deliverable name" value={d.name} onChange={(e) => setDeliverables((arr) => arr.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
-                  <input type="date" className="form-input" value={d.due_date ?? ""} onChange={(e) => setDeliverables((arr) => arr.map((x, j) => j === i ? { ...x, due_date: e.target.value } : x))} />
+                <div key={i} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <input className="form-input w-full sm:col-span-2" placeholder="Deliverable name" value={d.name} onChange={(e) => setDeliverables((arr) => arr.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+                  <input type="date" className="form-input w-full" value={d.due_date ?? ""} onChange={(e) => setDeliverables((arr) => arr.map((x, j) => j === i ? { ...x, due_date: e.target.value } : x))} />
                 </div>
               ))}
             </div>
@@ -368,9 +456,9 @@ export default function ContractCreatePage() {
               </div>
               {obligations.length === 0 && <p className="text-xs text-neutral-400">No obligations yet.</p>}
               {obligations.map((o, i) => (
-                <div key={i} className="grid grid-cols-3 gap-2">
-                  <input className="form-input col-span-2" placeholder="Obligation" value={o.obligation} onChange={(e) => setObligations((arr) => arr.map((x, j) => j === i ? { ...x, obligation: e.target.value } : x))} />
-                  <select className="form-input" value={o.responsible_party} onChange={(e) => setObligations((arr) => arr.map((x, j) => j === i ? { ...x, responsible_party: e.target.value } : x))}>
+                <div key={i} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <input className="form-input w-full sm:col-span-2" placeholder="Obligation" value={o.obligation} onChange={(e) => setObligations((arr) => arr.map((x, j) => j === i ? { ...x, obligation: e.target.value } : x))} />
+                  <select className="form-input w-full" value={o.responsible_party} onChange={(e) => setObligations((arr) => arr.map((x, j) => j === i ? { ...x, responsible_party: e.target.value } : x))}>
                     <option value="counterparty">Counterparty</option>
                     <option value="sadcpf">SADC PF</option>
                   </select>
@@ -387,10 +475,10 @@ export default function ContractCreatePage() {
               <label className="text-xs font-semibold text-neutral-600">Generate from template (optional)</label>
               <select className="form-input" value={templateVersionId} onChange={(e) => setTemplateVersionId(e.target.value ? Number(e.target.value) : "")}>
                 <option value="">Do not generate yet</option>
-                {templateOptions.map((t) => (<option key={t.id} value={t.id}>{t.label}</option>))}
+                {templateOptions.map((opt) => (<option key={opt.id} value={opt.id}>{opt.label}</option>))}
               </select>
             </div>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+            <dl className="grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
               <dt className="text-neutral-500">Title</dt><dd className="text-neutral-900 font-medium">{title || "—"}</dd>
               <dt className="text-neutral-500">Origin</dt><dd className="text-neutral-900 capitalize">{origin}</dd>
               <dt className="text-neutral-500">Counterparty</dt><dd className="text-neutral-900">{partyType === "organisation" ? (vendors.find((v) => v.id === vendorId)?.name ?? "—") : `${firstName} ${surname}`.trim() || "—"}</dd>
@@ -403,15 +491,23 @@ export default function ContractCreatePage() {
       </div>
 
       <div className="flex items-center justify-between">
-        <button type="button" className="btn-secondary" disabled={step === 1} onClick={() => setStep((s) => Math.max(1, s - 1))}>Back</button>
-        {step < STEPS.length ? (
-          <button type="button" className="btn-primary disabled:opacity-60" disabled={!canNext()} onClick={() => setStep((s) => s + 1)}>Continue</button>
+        <button type="button" className="btn-secondary" disabled={step === 1} onClick={() => setStep((s) => Math.max(1, s - 1))}>{t("common.back")}</button>
+        {step < steps.length ? (
+          <button type="button" className="btn-primary disabled:opacity-60" disabled={!canNext()} onClick={() => setStep((s) => s + 1)}>{t("contracts.create.continue")}</button>
         ) : (
           <button type="button" className="btn-primary disabled:opacity-60" disabled={submitting} onClick={submit}>
-            {submitting ? "Creating…" : "Create contract"}
+            {submitting ? t("contracts.create.creating") : t("contracts.createTitle")}
           </button>
         )}
       </div>
     </div>
+  );
+}
+
+export default function ContractCreatePage() {
+  return (
+    <Suspense fallback={null}>
+      <ContractCreateInner />
+    </Suspense>
   );
 }

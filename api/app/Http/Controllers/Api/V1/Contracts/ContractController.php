@@ -349,6 +349,53 @@ class ContractController extends Controller
         return response()->json(['message' => 'Contract created.', 'data' => $contract->load(['type', 'vendor', 'counterparty', 'deliverables', 'obligations'])], 201);
     }
 
+    /** Draft field update with optimistic locking (PRD §109). */
+    public function update(Request $request, Contract $contract): JsonResponse
+    {
+        $this->ensurePermission($request, ['contract.edit_draft', 'contract.create'], ['Procurement Officer']);
+        $this->contracts->find($contract->id, $request->user());
+
+        $data = $request->validate([
+            'lock_version' => ['required', 'integer', 'min:0'],
+            'title' => ['sometimes', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'short_description' => ['nullable', 'string', 'max:500'],
+            'start_date' => ['sometimes', 'date'],
+            'end_date' => ['sometimes', 'date'],
+            'effective_date' => ['nullable', 'date'],
+            'service_start_date' => ['nullable', 'date'],
+            'service_end_date' => ['nullable', 'date'],
+            'signature_deadline' => ['nullable', 'date'],
+            'renewal_decision_date' => ['nullable', 'date'],
+            'notice_period_days' => ['nullable', 'integer', 'min:0'],
+            'renewal_type' => ['nullable', 'string', 'in:non_renewable,renewable_once,renewable_multiple,automatic,subject_to_approval'],
+            'auto_renew' => ['nullable', 'boolean'],
+            'rate' => ['nullable', 'numeric', 'min:0'],
+            'rate_basis' => ['nullable', 'string', 'max:30'],
+            'units' => ['nullable', 'numeric', 'min:0'],
+            'value' => ['nullable', 'numeric', 'min:0'],
+            'ceiling_value' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'string', 'max:10'],
+            'budget_currency' => ['nullable', 'string', 'max:10'],
+            'conversion_reference' => ['nullable', 'string', 'max:255'],
+            'converted_value' => ['nullable', 'numeric', 'min:0'],
+            'budget_line' => ['nullable', 'string', 'max:255'],
+            'tor_reference' => ['nullable', 'string', 'max:255'],
+            'origin_reference' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $updated = $this->contracts->updateDraft($contract, $request->user(), $data);
+
+        AuditLog::record('contract.updated', [
+            'auditable_type' => Contract::class,
+            'auditable_id' => $updated->id,
+            'new_values' => ['title' => $updated->title, 'lock_version' => $updated->lock_version],
+            'tags' => ['contract'],
+        ]);
+
+        return response()->json(['message' => 'Draft updated.', 'data' => $updated]);
+    }
+
     /** Prepopulate wizard fields from an approved Procurement award or PIF. */
     public function prefill(Request $request): JsonResponse
     {
@@ -418,6 +465,8 @@ class ContractController extends Controller
             'sort_order' => (int) $contract->deliverables()->max('sort_order') + 1,
         ]));
 
+        $this->contracts->bumpLockVersion($contract);
+
         return response()->json(['message' => 'Deliverable added.', 'data' => $deliverable], 201);
     }
 
@@ -437,6 +486,8 @@ class ContractController extends Controller
             'contract_id' => $contract->id,
             'status' => 'open',
         ]));
+
+        $this->contracts->bumpLockVersion($contract);
 
         return response()->json(['message' => 'Obligation added.', 'data' => $obligation], 201);
     }
