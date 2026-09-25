@@ -1,0 +1,4 @@
+Leave Basic
+                                                Leave Basic Report
+SRHR03            Dr Magadza         SICK_LVE                60.0000       60.0000     0.0000      0.0000   60.0000
+2078-300          Ms D Engelbrecht   ANN_LVE                 20.0000       12.0023     1.6667      0.0000   13.6690

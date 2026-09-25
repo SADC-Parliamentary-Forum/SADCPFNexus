@@ -275,6 +275,10 @@ return [
                 'timesheets.manage-import-templates', 'timesheets.admin', 'hr.admin',
             ],
         ]],
+        ['pattern' => 'api/v1/hr/imports*', 'permissions' => [
+            'READ' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import'],
+            'WRITE' => ['hr.admin', 'hr.edit', 'leave.admin', 'leave.balance.import'],
+        ]],
         ['pattern' => 'api/v1/hr/timesheets*', 'permissions' => [
             'READ' => [
                 'hr.view', 'hr.admin', 'timesheets.view', 'timesheets.view-own',
