@@ -1674,6 +1674,10 @@ Route::prefix('v1')->group(function () {
         Route::get('assets/checkouts', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'checkoutsIndex']);
         Route::get('assets/transfers', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'transfersIndex']);
         Route::get('assets/incidents', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'incidentsIndex']);
+        Route::get('assets/report-catalogue', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'reportCatalogue']);
+        Route::get('assets/reports/assigned-to-user', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'assignedToUserReport']);
+        Route::get('assets/reports/run', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'runGovernedReport']);
+        Route::get('assets/reports/export', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'exportGovernedReport']);
         Route::get('assets/reports/{type}', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'reports']);
         Route::post('asset-categories/{assetCategory}/subcategories', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'storeSubcategory']);
         Route::get('asset-categories/{assetCategory}/subcategories', [\App\Http\Controllers\Api\V1\Assets\AssetOperationsController::class, 'listSubcategories']);
