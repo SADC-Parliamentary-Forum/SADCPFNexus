@@ -40,9 +40,11 @@ class ContractReportTest extends TestCase
         [$http, $officer] = $this->asProcurementOfficer($this->tenant);
         $this->seedContracts($officer->id);
 
-        $http->getJson('/api/v1/contracts/reports?type=register')->assertOk()
+        $res = $http->getJson('/api/v1/contracts/reports?type=register')->assertOk()
             ->assertJsonPath('type', 'register')
             ->assertJsonCount(2, 'data');
+        $this->assertIsInt($res->json('data.0.id'));
+        $this->assertNotEmpty($res->json('data.0.reference'));
 
         $csv = $http->get('/api/v1/contracts/reports?type=register&format=csv');
         $csv->assertOk();
