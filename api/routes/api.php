@@ -1140,6 +1140,12 @@ Route::prefix('v1')->group(function () {
         Route::prefix('hr')->group(function () {
             Route::get('summary', [\App\Http\Controllers\Api\V1\Hr\HrSummaryController::class, 'summary']);
 
+            Route::get('imports', [\App\Http\Controllers\Api\V1\Hr\HrVipImportController::class, 'index']);
+            Route::post('imports', [\App\Http\Controllers\Api\V1\Hr\HrVipImportController::class, 'store']);
+            Route::get('imports/{hrVipImportBatch}', [\App\Http\Controllers\Api\V1\Hr\HrVipImportController::class, 'show']);
+            Route::get('imports/{hrVipImportBatch}/preview', [\App\Http\Controllers\Api\V1\Hr\HrVipImportController::class, 'preview']);
+            Route::post('imports/{hrVipImportBatch}/commit', [\App\Http\Controllers\Api\V1\Hr\HrVipImportController::class, 'commit']);
+
             // Payslip salary confirmation (HR only)
             Route::post('payslips/{payslip}/confirm', [\App\Http\Controllers\Api\V1\Hr\PayslipConfirmationController::class, 'confirm']);
 

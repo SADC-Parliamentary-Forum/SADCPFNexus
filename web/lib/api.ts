@@ -3430,6 +3430,23 @@ export const leaveApi = {
   bulkImportTemplateUrl: "/leave/requests/bulk-import/template",
 };
 
+export type HrVipImportBatch = {
+  id: number;
+  batch_number: string;
+  status: string;
+  preview?: Record<string, unknown>;
+  commit_summary?: Record<string, unknown>;
+};
+
+export const hrVipImportApi = {
+  upload: (form: FormData) =>
+    api.post<{ message: string; data: HrVipImportBatch }>("/hr/imports", form),
+  preview: (id: number) =>
+    api.get<{ data: Record<string, unknown> }>(`/hr/imports/${id}/preview`),
+  commit: (id: number) =>
+    api.post<{ message: string; data: HrVipImportBatch }>(`/hr/imports/${id}/commit`),
+};
+
 export interface LilAccrual {
   id: string;
   code: string;
