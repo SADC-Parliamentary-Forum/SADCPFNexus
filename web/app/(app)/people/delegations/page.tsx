@@ -133,6 +133,12 @@ export default function Page() {
             ))}
           </select>
         </label>
+        {(peopleQuery.data ?? []).length === 0 && !peopleQuery.isLoading ? (
+          <p className="sm:col-span-2 text-xs text-amber-700">
+            No people available to select — the People &amp; Authority directory is empty. Go to{" "}
+            <Link href="/people/directory" className="underline">Staff Directory</Link> and use &quot;Populate from staff accounts&quot; first.
+          </p>
+        ) : null}
         <label htmlFor="people-delegations-type-setform-f-workflow-approval-signing-prepara" className="block text-xs font-medium text-neutral-600">
           Type
           <select id="people-delegations-type-setform-f-workflow-approval-signing-prepara" className="form-input mt-1" value={form.delegation_type} onChange={(e) => setForm((f) => ({ ...f, delegation_type: e.target.value }))}>

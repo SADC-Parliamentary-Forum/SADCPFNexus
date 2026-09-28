@@ -130,6 +130,18 @@ export default function StaffDirectoryPage() {
     onError: () => setErr("Could not update the person."),
   });
 
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const sync = useMutation({
+    mutationFn: () => peopleAuthorityApi.syncPeopleFromUsers(),
+    onSuccess: (res) => {
+      const { people_created, links_created } = res.data.data;
+      setSyncMessage(`Added ${people_created} new directory entries, linked ${links_created} staff accounts.`);
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
+    },
+    onError: () => setErr("Could not populate the directory from staff accounts."),
+  });
+
   function startEdit(p: DirectoryPerson) {
     if (!p.id) return;
     setEditingId(p.id);
@@ -158,6 +170,15 @@ export default function StaffDirectoryPage() {
       }
       actions={
         <>
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            onClick={() => sync.mutate()}
+            disabled={sync.isPending}
+            title="Create directory entries from existing staff login accounts that aren't in this directory yet"
+          >
+            {sync.isPending ? "Populating…" : "Populate from staff accounts"}
+          </button>
           <Link href="/organogram" className="btn-secondary text-sm">
             Organisation chart
           </Link>
@@ -205,11 +226,18 @@ export default function StaffDirectoryPage() {
             : (
                 <EmptyState
                   icon="contacts"
-                  title={q ? "No matching staff" : "No staff records"}
+                  title={q ? "No matching staff" : "Directory is empty"}
                   description={
                     q
                       ? "Try a different search term."
-                      : "Staff records will appear here once People & Authority is populated."
+                      : "This directory is separate from staff login accounts. Use \"Populate from staff accounts\" above to create directory entries from your existing accounts, add people one at a time below, or run an M365/Azure AD sync under Admin → People → M365 sync."
+                  }
+                  action={
+                    !q ? (
+                      <button type="button" className="btn-primary text-sm" onClick={() => sync.mutate()} disabled={sync.isPending}>
+                        {sync.isPending ? "Populating…" : "Populate from staff accounts"}
+                      </button>
+                    ) : undefined
                   }
                 />
               )
@@ -305,6 +333,12 @@ export default function StaffDirectoryPage() {
           {err && <p className="text-sm text-red-700">{err}</p>}
         </div>
       </form>
+
+      {syncMessage && (
+        <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">
+          {syncMessage}
+        </div>
+      )}
 
       {rows.length > 0 ? (
         <div className="card overflow-hidden">

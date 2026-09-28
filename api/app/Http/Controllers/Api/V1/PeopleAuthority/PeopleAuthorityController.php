@@ -141,6 +141,90 @@ class PeopleAuthorityController extends Controller
         return response()->json(['data' => $this->confidential->profilePayload($person->fresh(), $user)], 201);
     }
 
+    /**
+     * Bootstrap the People & Authority directory from existing staff accounts (`users`).
+     * The directory is a separate table from `users` and nothing populates it automatically
+     * outside manual entry or an M365/Azure AD sync — this gives tenants without M365 configured
+     * a way to get real staff into the directory (and therefore into Staff Directory, Delegations
+     * and Authority Register person pickers) without inventing data.
+     */
+    public function peopleSyncFromUsers(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+        $existingByUserId = PersonUserLink::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->where('status', 'active')
+            ->pluck('user_id')
+            ->all();
+
+        $created = 0;
+        $linked = 0;
+        $skipped = 0;
+
+        User::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->whereNotIn('id', $existingByUserId)
+            ->orderBy('name')
+            ->chunkById(100, function ($users) use ($actor, &$created, &$linked, &$skipped) {
+                foreach ($users as $target) {
+                    $name = trim((string) $target->name);
+                    if ($name === '') {
+                        $skipped++;
+                        continue;
+                    }
+                    [$firstName, $lastName] = $this->splitName($name);
+
+                    $person = null;
+                    if ($target->employee_number) {
+                        $person = Person::query()
+                            ->where('tenant_id', $actor->tenant_id)
+                            ->where('person_number', $target->employee_number)
+                            ->first();
+                    }
+                    if (! $person && $target->email) {
+                        $person = Person::query()
+                            ->where('tenant_id', $actor->tenant_id)
+                            ->whereRaw('LOWER(work_email) = ?', [strtolower($target->email)])
+                            ->first();
+                    }
+
+                    if (! $person) {
+                        $person = Person::create([
+                            'tenant_id' => $actor->tenant_id,
+                            'person_number' => $target->employee_number,
+                            'first_name' => $firstName,
+                            'last_name' => $lastName,
+                            'display_name' => $name,
+                            'person_type' => 'employee',
+                            'employment_status' => $target->is_active ? 'active' : 'inactive',
+                            'work_email' => $target->email,
+                            'directory_visible' => true,
+                            'created_by' => $actor->id,
+                        ]);
+                        $created++;
+                    }
+
+                    $this->linkUser($actor, $person->id, $target->id);
+                    $linked++;
+                }
+            });
+
+        $this->audit->record($actor, 'people.synced_from_users', null, Person::class, null);
+
+        return response()->json(['data' => [
+            'people_created' => $created,
+            'links_created' => $linked,
+            'skipped' => $skipped,
+        ]]);
+    }
+
+    private function splitName(string $name): array
+    {
+        $parts = preg_split('/\s+/', $name, 2) ?: [$name];
+
+        return [$parts[0], $parts[1] ?? $parts[0]];
+    }
+
     public function peopleShow(Request $request, Person $person): JsonResponse
     {
         $this->assertTenant($request, $person->tenant_id);

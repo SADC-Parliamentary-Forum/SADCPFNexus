@@ -31,12 +31,43 @@ function personLabel(p: Record<string, unknown>): string {
   return String(p.preferred_name ?? [p.first_name, p.last_name].filter(Boolean).join(" ") ?? p.name ?? p.id);
 }
 
+// Real module identifiers this app's authority checks are actually keyed against
+// (AuthorityCheckService matches on these strings from each module's own workflow code).
+const AUTHORITY_MODULES = [
+  { value: "travel", label: "Travel" },
+  { value: "leave", label: "Leave" },
+  { value: "imprest", label: "Imprest" },
+  { value: "procurement", label: "Procurement" },
+  { value: "budget", label: "Finance / Budget" },
+  { value: "correspondence", label: "Correspondence" },
+  { value: "risk", label: "Risk" },
+  { value: "contracts", label: "Contracts" },
+  { value: "assets", label: "Assets" },
+  { value: "hr", label: "HR" },
+  { value: "governance", label: "Governance" },
+  { value: "supplier", label: "Supplier" },
+  { value: "stock", label: "Stock" },
+  { value: "salary_advance", label: "Salary Advances" },
+  { value: "workplan", label: "Workplan" },
+] as const;
+
+// Action vocabulary already used across this app's approval workflows (recommend/certify/
+// principal/authorise stages, plus signing flags on AuthorityDefinition).
+const AUTHORITY_ACTIONS = [
+  { value: "recommend", label: "Recommend", isSigning: false },
+  { value: "approve", label: "Approve", isSigning: false },
+  { value: "certify", label: "Certify", isSigning: false },
+  { value: "authorise", label: "Authorise", isSigning: false },
+  { value: "sign", label: "Sign", isSigning: true },
+  { value: "prepare", label: "Prepare", isSigning: false },
+] as const;
+
 export default function Page() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const today = new Date().toISOString().slice(0, 10);
-  const [createForm, setCreateForm] = useState({ code: "", name: "", module: "" });
+  const [createForm, setCreateForm] = useState({ module: "", action: "" });
   const [assignForm, setAssignForm] = useState({
     authority_definition_id: "",
     assignee_type: "Person",
@@ -47,19 +78,33 @@ export default function Page() {
     queryKey: ["people-authority", "people-options"],
     queryFn: async () => asRows((await peopleAuthorityApi.listPeople({ directory: 1, per_page: 100 })).data),
   });
+  const positionsQuery = useQuery({
+    queryKey: ["people-authority", "position-options"],
+    queryFn: async () => asRows((await peopleAuthorityApi.listPositions({ per_page: 100 })).data),
+  });
+  const assigneeOptions = assignForm.assignee_type === "Position" ? (positionsQuery.data ?? []) : (peopleQuery.data ?? []);
+  const assigneeOptionsLoading = assignForm.assignee_type === "Position" ? positionsQuery.isLoading : peopleQuery.isLoading;
+  const assigneeLabel = (r: Record<string, unknown>) =>
+    assignForm.assignee_type === "Position" ? String(r.title ?? r.name ?? r.id) : personLabel(r);
   const create = useMutation({
-    mutationFn: () =>
-      peopleAuthorityApi.createAuthority({
-        code: createForm.code.trim(),
-        name: createForm.name.trim(),
-        module: createForm.module.trim() || undefined,
-      }),
+    mutationFn: () => {
+      const mod = AUTHORITY_MODULES.find((m) => m.value === createForm.module);
+      const act = AUTHORITY_ACTIONS.find((a) => a.value === createForm.action);
+      if (!mod || !act) throw new Error("Module and action are required.");
+      return peopleAuthorityApi.createAuthority({
+        // Derived entirely from the two selections below — never free-typed.
+        code: `${mod.value}_${act.value}`.toUpperCase(),
+        name: `${act.label} ${mod.label}`,
+        module: mod.value,
+        is_signing: act.isSigning,
+      });
+    },
     onSuccess: () => {
-      setCreateForm({ code: "", name: "", module: "" });
+      setCreateForm({ module: "", action: "" });
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "authority-register"] });
     },
-    onError: () => setErr("Could not create the authority. Code and name are required."),
+    onError: () => setErr("Could not create the authority. Select a module and an action."),
   });
   const assign = useMutation({
     mutationFn: () =>
@@ -130,20 +175,46 @@ return (await peopleAuthorityApi.listAuthorities()).data;
           create.mutate();
         }}
       >
-        <label htmlFor="people-authority-code-setcreateform-f-required" className="block text-xs font-medium text-neutral-600">
-          Code
-          <input id="people-authority-code-setcreateform-f-required" className="form-input mt-1" value={createForm.code} onChange={(e) => setCreateForm((f) => ({ ...f, code: e.target.value }))} required />
-        </label>
-        <label htmlFor="people-authority-name-setcreateform-f-required" className="block text-xs font-medium text-neutral-600">
-          Name
-          <input id="people-authority-name-setcreateform-f-required" className="form-input mt-1" value={createForm.name} onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))} required />
-        </label>
-        <label htmlFor="people-authority-module-setcreateform-f" className="block text-xs font-medium text-neutral-600">
+        <label htmlFor="people-authority-module-select" className="block text-xs font-medium text-neutral-600">
           Module
-          <input id="people-authority-module-setcreateform-f" className="form-input mt-1" value={createForm.module} onChange={(e) => setCreateForm((f) => ({ ...f, module: e.target.value }))} />
+          <select
+            id="people-authority-module-select"
+            className="form-input mt-1"
+            value={createForm.module}
+            onChange={(e) => setCreateForm((f) => ({ ...f, module: e.target.value }))}
+            required
+          >
+            <option value="">Select…</option>
+            {AUTHORITY_MODULES.map((m) => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
         </label>
+        <label htmlFor="people-authority-action-select" className="block text-xs font-medium text-neutral-600">
+          Action
+          <select
+            id="people-authority-action-select"
+            className="form-input mt-1"
+            value={createForm.action}
+            onChange={(e) => setCreateForm((f) => ({ ...f, action: e.target.value }))}
+            required
+          >
+            <option value="">Select…</option>
+            {AUTHORITY_ACTIONS.map((a) => (
+              <option key={a.value} value={a.value}>{a.label}</option>
+            ))}
+          </select>
+        </label>
+        <div className="block text-xs font-medium text-neutral-600">
+          Will create
+          <p className="form-input mt-1 flex items-center bg-neutral-50 text-neutral-700">
+            {createForm.module && createForm.action
+              ? `${AUTHORITY_ACTIONS.find((a) => a.value === createForm.action)?.label} ${AUTHORITY_MODULES.find((m) => m.value === createForm.module)?.label}`
+              : "Select a module and action"}
+          </p>
+        </div>
         <div className="sm:col-span-3 flex items-center gap-3">
-          <button type="submit" className="btn-primary text-sm" disabled={create.isPending}>
+          <button type="submit" className="btn-primary text-sm" disabled={create.isPending || !createForm.module || !createForm.action}>
             {create.isPending ? "Saving…" : "Add authority"}
           </button>
         </div>
@@ -167,20 +238,36 @@ return (await peopleAuthorityApi.listAuthorities()).data;
         </label>
         <label htmlFor="people-authority-assignee-type-setassignform-f-person-position" className="block text-xs font-medium text-neutral-600">
           Assignee type
-          <select id="people-authority-assignee-type-setassignform-f-person-position" className="form-input mt-1" value={assignForm.assignee_type} onChange={(e) => setAssignForm((f) => ({ ...f, assignee_type: e.target.value }))}>
+          <select
+            id="people-authority-assignee-type-setassignform-f-person-position"
+            className="form-input mt-1"
+            value={assignForm.assignee_type}
+            onChange={(e) => setAssignForm((f) => ({ ...f, assignee_type: e.target.value, assignee_id: "" }))}
+          >
             <option value="Person">Person</option>
             <option value="Position">Position</option>
           </select>
         </label>
-        <label htmlFor="people-authority-assignee-setassignform-f-required-select" className="block text-xs font-medium text-neutral-600">
-          Assignee
-          <select id="people-authority-assignee-setassignform-f-required-select" className="form-input mt-1" value={assignForm.assignee_id} onChange={(e) => setAssignForm((f) => ({ ...f, assignee_id: e.target.value }))} required>
-            <option value="">Select…</option>
-            {(peopleQuery.data ?? []).map((p) => (
-              <option key={String(p.id)} value={String(p.id)}>{personLabel(p)}</option>
-            ))}
-          </select>
-        </label>
+        <div>
+          <label htmlFor="people-authority-assignee-setassignform-f-required-select" className="block text-xs font-medium text-neutral-600">
+            Assignee
+            <select id="people-authority-assignee-setassignform-f-required-select" className="form-input mt-1" value={assignForm.assignee_id} onChange={(e) => setAssignForm((f) => ({ ...f, assignee_id: e.target.value }))} required>
+              <option value="">{assigneeOptionsLoading ? "Loading…" : "Select…"}</option>
+              {assigneeOptions.map((r) => (
+                <option key={String(r.id)} value={String(r.id)}>{assigneeLabel(r)}</option>
+              ))}
+            </select>
+          </label>
+          {!assigneeOptionsLoading && assigneeOptions.length === 0 ? (
+            <p className="mt-1 text-xs text-amber-700">
+              {assignForm.assignee_type === "Position"
+                ? "No positions defined yet."
+                : (
+                  <>No people available — populate the <Link href="/people/directory" className="underline">Staff Directory</Link> first.</>
+                )}
+            </p>
+          ) : null}
+        </div>
         <label htmlFor="people-authority-effective-from-setassignform-f-required" className="block text-xs font-medium text-neutral-600">
           Effective from
           <input id="people-authority-effective-from-setassignform-f-required" type="date" className="form-input mt-1" value={assignForm.effective_from} onChange={(e) => setAssignForm((f) => ({ ...f, effective_from: e.target.value }))} required />

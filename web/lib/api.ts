@@ -10720,6 +10720,10 @@ export const peopleAuthorityApi = {
     api.get("/people-authority/people", { params }),
   getPerson: (id: number) => api.get(`/people-authority/people/${id}`),
   createPerson: (data: Record<string, unknown>) => api.post("/people-authority/people", data),
+  syncPeopleFromUsers: () =>
+    api.post<{ data: { people_created: number; links_created: number; skipped: number } }>(
+      "/people-authority/people/sync-from-users",
+    ),
   updatePerson: (id: number, data: Record<string, unknown>) => api.put(`/people-authority/people/${id}`, data),
   linkAccount: (id: number, data: Record<string, unknown>) =>
     api.post(`/people-authority/people/${id}/link-account`, data),
