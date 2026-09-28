@@ -18,6 +18,13 @@ class LeaveLedgerEntry extends Model
     public const RESERVATION = 'reservation';
     public const RESERVATION_RELEASE = 'reservation_release';
 
+    /**
+     * Historical transaction already represented in an imported closing-balance snapshot.
+     * Must never be summed by ledger-based balance calculations — it is evidence, not a
+     * fresh deduction (see Nexus_Historical_Import_LLM_Instruction_v3.md §6).
+     */
+    public const HISTORICAL_IMPORT = 'historical_import';
+
     protected $fillable = [
         'tenant_id',
         'user_id',

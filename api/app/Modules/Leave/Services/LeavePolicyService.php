@@ -42,6 +42,7 @@ class LeavePolicyService
             'maternity' => ['name' => 'Maternity Leave', 'cycle' => 'event', 'is_paid' => true],
             'paternity' => ['name' => 'Paternity Leave', 'cycle' => 'two_year_interval', 'is_paid' => true],
             'compassionate' => ['name' => 'Compassionate Leave', 'cycle' => 'calendar_year', 'is_paid' => true],
+            'compensatory' => ['name' => 'Compensatory Leave', 'cycle' => 'credit_expiry', 'is_paid' => true, 'allow_negative_balance' => true],
             'special' => ['name' => 'Special Leave', 'cycle' => 'policy', 'is_paid' => true],
         ];
     }
@@ -102,11 +103,12 @@ class LeavePolicyService
         foreach ($this->defaultTypeDefinitions() as $code => $definition) {
             LeaveType::firstOrCreate(
                 ['tenant_id' => $policy->tenant_id, 'code' => $code],
-                array_merge($definition, [
-                    'policy_version_id' => $policy->id,
+                array_merge([
                     'allow_negative_balance' => false,
                     'allow_half_day' => false,
                     'requires_attachment' => false,
+                ], $definition, [
+                    'policy_version_id' => $policy->id,
                     'is_active' => true,
                 ])
             );

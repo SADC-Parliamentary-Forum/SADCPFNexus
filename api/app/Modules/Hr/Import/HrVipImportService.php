@@ -223,20 +223,25 @@ class HrVipImportService
             ->all();
         $knownSet = array_fill_keys($knownUsers, true);
 
-        $blocking = [];
         $referenced = collect()
             ->merge(collect($staged['leave_balances'] ?? [])->pluck('employee_code'))
             ->merge(collect($staged['leave_transactions'] ?? [])->pluck('employee_code'))
             ->merge(collect($staged['leave_provision'] ?? [])->pluck('employee_code'))
             ->merge(collect($staged['payslips'] ?? [])->pluck('employee_code'))
             ->merge(collect($staged['remuneration'] ?? [])->pluck('employee_code'))
+            ->filter()
             ->unique()
             ->values();
 
+        // A code referenced only in leave/payroll data (a legacy employee absent from the
+        // current master, e.g. SAD016) is NOT a blocking error — it becomes a reviewed legacy
+        // profile on commit (instruction §5: "never discard their history"). Blocking here would
+        // make the whole historical batch unimportable over one absent identity.
         $employeeCodes = $codes->all();
+        $legacyOnly = [];
         foreach ($referenced as $code) {
             if (! in_array($code, $employeeCodes, true)) {
-                $blocking[] = ['employee_code' => $code, 'message' => 'Referenced in leave/payroll but missing from employee master.'];
+                $legacyOnly[] = ['employee_code' => $code, 'message' => 'Not in employee master — will be imported as a reviewed legacy profile.'];
             }
         }
 
@@ -250,12 +255,13 @@ class HrVipImportService
         return [
             'employee_count' => $codes->count(),
             'employees_to_create' => $willCreate,
+            'legacy_profile_candidates' => $legacyOnly,
             'leave_transaction_count' => count($staged['leave_transactions'] ?? []),
             'leave_balance_rows' => count($staged['leave_balances'] ?? []),
             'payslip_count' => count($staged['payslips'] ?? []),
             'asset_count' => Asset::query()->where('tenant_id', $actor->tenant_id)->count(),
-            'blocking_errors' => $blocking,
-            'ready' => $blocking === [] && $codes->count() > 0,
+            'blocking_errors' => [],
+            'ready' => $codes->count() > 0 || $referenced->count() > 0,
         ];
     }
 }
