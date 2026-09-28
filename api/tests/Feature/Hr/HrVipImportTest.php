@@ -318,4 +318,54 @@ class HrVipImportTest extends TestCase
         $this->assertNotNull($compensatory, 'Negative compensatory balances must be preserved, not discarded.');
         $this->assertEqualsWithDelta(-182.0000, (float) $compensatory->balance_carried_forward, 0.0001);
     }
+
+    public function test_leave_provision_snapshot_commits_without_a_leave_request(): void
+    {
+        // Provision movement rows are period-level financial aggregates per employee, not tied
+        // to one approved LeaveRequest — leave_request_id must be nullable for this to commit.
+        $tenant = Tenant::factory()->create();
+        $hr = $this->asHrManager($tenant)[1];
+
+        $service = app(\App\Modules\Hr\Import\HrVipImportService::class);
+        $batch = $service->createBatch($hr);
+        $batch->update([
+            'status' => HrVipImportBatch::STATUS_STAGED,
+            'staged' => [
+                'employees' => [['employee_code' => '2107-300', 'display_name' => 'Mr S Kurasha']],
+                'leave_balances' => [],
+                'leave_transactions' => [],
+                'leave_history' => [],
+                'leave_provision' => [
+                    [
+                        'employee_code' => '2107-300',
+                        'display_name' => 'Mr S Kurasha',
+                        'entitlement' => 30.0,
+                        'balance_bf' => 13.0,
+                        'accrued' => 2.5,
+                        'taken' => 5.0,
+                        'leave_movement' => -2.5,
+                        'termination_payout_rate' => 4223.47,
+                        'termination_payout' => -10558.67,
+                        'normal_payout_rate' => 0.0,
+                        'normal_payout' => 0.0,
+                        'balance_cf' => 10.5,
+                    ],
+                ],
+                'payslips' => [],
+                'remuneration' => [],
+                'twelve_month' => [],
+            ],
+        ]);
+
+        $summary = $service->commit($batch, $hr)->commit_summary;
+
+        $this->assertSame(1, $summary['leave_provision'] ?? null);
+        $user = User::query()->where('tenant_id', $tenant->id)->where('employee_number', '2107-300')->first();
+        $this->assertDatabaseHas('leave_payroll_impacts', [
+            'tenant_id' => $tenant->id,
+            'user_id' => $user->id,
+            'leave_type' => 'provision',
+            'leave_request_id' => null,
+        ]);
+    }
 }

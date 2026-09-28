@@ -143,12 +143,23 @@ class HrVipImportCommitService
                 LeaveRequest::create([
                     'tenant_id' => $actor->tenant_id,
                     'requester_id' => $userId,
-                    // reference_number is NOT NULL — prefer the source's own reference (far more
-                    // traceable for a historical import) and only generate one when absent.
-                    'reference_number' => $reference ?: ('LVE-HIST-'.Str::upper(Str::random(8))),
+                    // reference_number is NOT NULL and UNIQUE. The source ref_no alone is not
+                    // guaranteed unique per row here — instruction §9/§10: split leave segments
+                    // legitimately reuse the same source reference across different date ranges
+                    // ("eight employee/reference groups have different date segments under the
+                    // same reference"). Appending the segment's own from_date keeps it unique per
+                    // segment while staying deterministic (safe to recompute on retry); the
+                    // ledger entry below keeps the unmodified source reference for reconciliation.
+                    'reference_number' => $reference
+                        ? sprintf('%s-%s', $reference, $tx['from_date'])
+                        : sprintf('LVE-HIST-%s-%s', $tx['employee_code'], Str::upper(Str::random(6))),
                     'leave_type' => $leaveType,
                     'start_date' => $tx['from_date'],
                     'end_date' => $tx['to_date'],
+                    // days_requested is a plain integer column on this legacy table (unlike
+                    // leave_ledger_entries.amount / leave_type_balances.taken, which are the
+                    // full-precision decimal(12,4) sources of truth for this historical row).
+                    'days_requested' => (int) round((float) $tx['taken_days']),
                     'status' => 'approved',
                     'reason' => $tx['reason'] ?? 'Imported from Sage VIP (historical)',
                     'submitted_at' => $tx['from_date'],
