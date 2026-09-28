@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
@@ -8,7 +8,7 @@ import { RegisterShell } from "@/components/registers/RegisterShell";
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FormField } from "@/components/ui/FormSection";
-import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
+import { DEFAULT_PAGE_SIZE, getListData, getLastPage, getTotal } from "@/lib/listPagination";
 
 type DirectoryPerson = {
   id?: number;
@@ -63,52 +63,38 @@ function numberOf(p: DirectoryPerson): string {
   return p.person_number ?? p.employee_number ?? "-";
 }
 
-function normalizeList(payload: unknown): DirectoryPerson[] {
-  if (Array.isArray(payload)) return payload as DirectoryPerson[];
-  if (payload && typeof payload === "object") {
-    const obj = payload as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data as DirectoryPerson[];
-    if (obj.data && typeof obj.data === "object") {
-      const nested = obj.data as Record<string, unknown>;
-      if (Array.isArray(nested.data)) return nested.data as DirectoryPerson[];
-      if (Array.isArray(nested.people)) return nested.people as DirectoryPerson[];
-    }
-    if (Array.isArray(obj.people)) return obj.people as DirectoryPerson[];
-  }
-  return [];
-}
-
 export default function StaffDirectoryPage() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [page, setPage] = useState(1);
   const [err, setErr] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q.trim()), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["people-authority", "staff-directory"],
+    queryKey: ["people-authority", "staff-directory", debouncedQ, page],
     queryFn: async () => {
-      return (await peopleAuthorityApi.listPeople({ directory: true })).data;
+      return (
+        await peopleAuthorityApi.listPeople({
+          directory: true,
+          page,
+          per_page: DEFAULT_PAGE_SIZE,
+          ...(debouncedQ ? { q: debouncedQ } : {}),
+        })
+      ).data;
     },
+    placeholderData: (previous) => previous,
   });
 
-  const people = useMemo(() => normalizeList(data), [data]);
-
-  const filtered = useMemo(() => {
-    const term = q.trim().toLowerCase();
-    if (!term) return people;
-    return people.filter((p) => {
-      const hay = [displayName(p), emailOf(p), numberOf(p), deptLabel(p), positionLabel(p)]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(term);
-    });
-  }, [people, q]);
-
-  const pageCount = clientPageCount(filtered.length, DEFAULT_PAGE_SIZE);
-  const rows = slicePage(filtered, page, DEFAULT_PAGE_SIZE);
+  const rows = useMemo(() => getListData<DirectoryPerson>(data), [data]);
+  const pageCount = useMemo(() => getLastPage(data), [data]);
+  const total = useMemo(() => getTotal(data, rows.length), [data, rows.length]);
 
   const payload = () => ({
     first_name: form.first_name.trim(),
@@ -199,7 +185,7 @@ export default function StaffDirectoryPage() {
       loading={isLoading}
       page={page}
       pageCount={pageCount}
-      total={filtered.length}
+      total={total}
       onPageChange={setPage}
       empty={
         !isLoading && (isError || rows.length === 0)

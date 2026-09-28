@@ -53,7 +53,9 @@ class PeopleAuthorityController extends Controller
 
     public function peopleIndex(Request $request): JsonResponse
     {
-        $q = Person::query()->where('tenant_id', $request->user()->tenant_id);
+        $q = Person::query()
+            ->with(['organisationalUnit', 'employmentRecord', 'activePositionAssignment.position'])
+            ->where('tenant_id', $request->user()->tenant_id);
         if ($request->boolean('directory')) {
             $q->where('directory_visible', true);
         }
@@ -63,11 +65,12 @@ class PeopleAuthorityController extends Controller
                 $w->where('first_name', 'like', $like)
                     ->orWhere('last_name', 'like', $like)
                     ->orWhere('work_email', 'like', $like)
-                    ->orWhere('display_name', 'like', $like);
+                    ->orWhere('display_name', 'like', $like)
+                    ->orWhere('person_number', 'like', $like);
             });
         }
 
-        $rows = $q->orderBy('last_name')->paginate($request->integer('per_page', 50));
+        $rows = $q->orderBy('last_name')->paginate(min($request->integer('per_page', 50), 200));
         $rows->getCollection()->transform(fn (Person $p) => $this->confidential->directoryPayload($p));
 
         return response()->json($rows);

@@ -2,7 +2,9 @@
 
 namespace App\Models\PeopleAuthority;
 
+use App\Models\Position;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PositionAssignment extends Model
 {
@@ -28,4 +30,14 @@ class PositionAssignment extends Model
         'start_at' => 'date',
         'end_at' => 'date',
     ];
+
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class, 'position_id');
+    }
+
+    public function person(): BelongsTo
+    {
+        return $this->belongsTo(Person::class, 'person_id');
+    }
 }

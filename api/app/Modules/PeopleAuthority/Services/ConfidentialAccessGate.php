@@ -31,14 +31,30 @@ class ConfidentialAccessGate
 
     public function directoryPayload(Person $person): array
     {
+        $assignedPosition = $person->relationLoaded('activePositionAssignment')
+            ? $person->activePositionAssignment
+            : null;
+
         return [
             'id' => $person->id,
+            'first_name' => $person->first_name,
+            'last_name' => $person->last_name,
             'display_name' => $person->display_name ?: trim($person->first_name.' '.$person->last_name),
             'preferred_name' => $person->preferred_name,
+            'person_number' => $person->person_number,
+            'employee_number' => $person->relationLoaded('employmentRecord')
+                ? $person->employmentRecord?->employee_number
+                : null,
             'work_email' => $person->work_email,
             'work_phone' => $person->work_phone,
             'office_location' => $person->office_location,
             'primary_unit_id' => $person->primary_unit_id,
+            'department' => $person->relationLoaded('organisationalUnit') && $person->organisationalUnit
+                ? ['id' => $person->organisationalUnit->id, 'name' => $person->organisationalUnit->name]
+                : null,
+            'position' => $assignedPosition?->position
+                ? ['id' => $assignedPosition->position->id, 'title' => $assignedPosition->position->title]
+                : null,
             'person_type' => $person->person_type,
             'employment_status' => $person->employment_status,
             'photo_path' => $person->photo_path,

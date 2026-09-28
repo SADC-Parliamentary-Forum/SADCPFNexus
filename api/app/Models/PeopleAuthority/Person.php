@@ -3,6 +3,8 @@
 namespace App\Models\PeopleAuthority;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Person extends Model
@@ -43,4 +45,21 @@ class Person extends Model
         'directory_meta' => 'array',
         'operational_meta' => 'array',
     ];
+
+    public function organisationalUnit(): BelongsTo
+    {
+        return $this->belongsTo(OrganisationalUnit::class, 'primary_unit_id');
+    }
+
+    public function employmentRecord(): HasOne
+    {
+        return $this->hasOne(EmploymentRecord::class, 'person_id')->latestOfMany();
+    }
+
+    public function activePositionAssignment(): HasOne
+    {
+        return $this->hasOne(PositionAssignment::class, 'person_id')
+            ->where('status', 'active')
+            ->latestOfMany('start_at');
+    }
 }
