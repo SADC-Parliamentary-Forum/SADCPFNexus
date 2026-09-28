@@ -1,7 +1,10 @@
 <?php
+
 namespace App\Modules\Programmes\Services;
 
 use App\Models\AuditLog;
+use App\Models\ProcurementItem;
+use App\Models\ProcurementRequest;
 use App\Models\Programme;
 use App\Models\ProgrammeActivity;
 use App\Models\ProgrammeArrivalDeparture;
@@ -10,18 +13,16 @@ use App\Models\ProgrammeDeliverable;
 use App\Models\ProgrammeDocument;
 use App\Models\ProgrammeMilestone;
 use App\Models\ProgrammeProcurementItem;
-use App\Models\ProcurementItem;
-use App\Models\ProcurementRequest;
 use App\Models\TravelMission;
 use App\Models\TravelRequest;
 use App\Models\User;
-use Illuminate\Support\Str;
 use App\Services\NotificationService;
 use App\Services\WorkflowService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Endroid\QrCode\Builder\Builder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
@@ -36,14 +37,14 @@ class ProgrammeService
         app(\App\Modules\AccessControl\Services\AccessScopeResolver::class)
             ->constrainQuery($query, $user, 'created_by', ['module' => 'programme']);
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('reference_number', 'ilike', "%{$filters['search']}%")
-                  ->orWhere('title', 'ilike', "%{$filters['search']}%");
+                    ->orWhere('title', 'ilike', "%{$filters['search']}%");
             });
         }
 
@@ -57,6 +58,13 @@ class ProgrammeService
             'activities', 'milestones', 'deliverables',
             'budgetLines', 'procurementItems',
             'documents', 'arrivalDepartures',
+            'contracts' => fn ($q) => $q
+                ->where('tenant_id', $programme->tenant_id)
+                ->select([
+                    'id', 'tenant_id', 'programme_id', 'reference_number', 'title',
+                    'status', 'contract_status', 'value', 'currency', 'origin_type',
+                    'counterparty_name', 'end_date',
+                ]),
         ]);
     }
 
@@ -66,101 +74,101 @@ class ProgrammeService
         $departments = $this->normalizeDepartments($data);
         $officerIds = $this->normalizeResponsibleOfficerIds($data);
         $this->ensureResponsibleOfficersInTenant($officerIds, $user->tenant_id);
-        $firstOfficerId = !empty($officerIds) ? (int) $officerIds[0] : null;
+        $firstOfficerId = ! empty($officerIds) ? (int) $officerIds[0] : null;
 
         $programme = Programme::create([
-            'tenant_id'                => $user->tenant_id,
-            'created_by'               => $user->id,
-            'reference_number'         => Programme::generateReferenceNumber(),
-            'status'                   => 'draft',
-            'title'                    => $data['title'],
-            'strategic_alignment'      => $data['strategic_alignment'] ?? null,
-            'strategic_pillar'         => $pillars[0] ?? null,
-            'strategic_pillars'        => $pillars,
-            'implementing_department'  => $departments[0] ?? null,
+            'tenant_id' => $user->tenant_id,
+            'created_by' => $user->id,
+            'reference_number' => Programme::generateReferenceNumber(),
+            'status' => 'draft',
+            'title' => $data['title'],
+            'strategic_alignment' => $data['strategic_alignment'] ?? null,
+            'strategic_pillar' => $pillars[0] ?? null,
+            'strategic_pillars' => $pillars,
+            'implementing_department' => $departments[0] ?? null,
             'implementing_departments' => $departments,
-            'supporting_departments'   => $data['supporting_departments'] ?? null,
-            'background'               => $data['background'] ?? null,
-            'overall_objective'        => $data['overall_objective'] ?? null,
-            'specific_objectives'      => $data['specific_objectives'] ?? null,
-            'expected_outputs'        => $data['expected_outputs'] ?? null,
-            'target_beneficiaries'     => $data['target_beneficiaries'] ?? null,
-            'gender_considerations'   => $data['gender_considerations'] ?? null,
-            'primary_currency'         => $data['primary_currency'] ?? 'USD',
-            'base_currency'            => $data['base_currency'] ?? 'USD',
-            'exchange_rate'            => $data['exchange_rate'] ?? 1,
-            'contingency_pct'          => $data['contingency_pct'] ?? 10,
-            'total_budget'             => $data['total_budget'] ?? 0,
-            'funding_source'           => $data['funding_source'] ?? null,
-            'funding_sources'          => $this->normalizeFundingSources($data),
-            'responsible_officer_id'   => $firstOfficerId,
-            'responsible_officer_ids'  => $officerIds,
-            'start_date'               => $data['start_date'] ?? null,
-            'end_date'                 => $data['end_date'] ?? null,
-            'travel_required'          => $data['travel_required'] ?? false,
-            'delegates_count'          => $data['delegates_count'] ?? null,
-            'member_states'            => $data['member_states'] ?? null,
-            'travel_services'          => $data['travel_services'] ?? null,
-            'procurement_required'     => $data['procurement_required'] ?? false,
-            'media_options'            => $data['media_options'] ?? null,
+            'supporting_departments' => $data['supporting_departments'] ?? null,
+            'background' => $data['background'] ?? null,
+            'overall_objective' => $data['overall_objective'] ?? null,
+            'specific_objectives' => $data['specific_objectives'] ?? null,
+            'expected_outputs' => $data['expected_outputs'] ?? null,
+            'target_beneficiaries' => $data['target_beneficiaries'] ?? null,
+            'gender_considerations' => $data['gender_considerations'] ?? null,
+            'primary_currency' => $data['primary_currency'] ?? 'USD',
+            'base_currency' => $data['base_currency'] ?? 'USD',
+            'exchange_rate' => $data['exchange_rate'] ?? 1,
+            'contingency_pct' => $data['contingency_pct'] ?? 10,
+            'total_budget' => $data['total_budget'] ?? 0,
+            'funding_source' => $data['funding_source'] ?? null,
+            'funding_sources' => $this->normalizeFundingSources($data),
+            'responsible_officer_id' => $firstOfficerId,
+            'responsible_officer_ids' => $officerIds,
+            'start_date' => $data['start_date'] ?? null,
+            'end_date' => $data['end_date'] ?? null,
+            'travel_required' => $data['travel_required'] ?? false,
+            'delegates_count' => $data['delegates_count'] ?? null,
+            'member_states' => $data['member_states'] ?? null,
+            'travel_services' => $data['travel_services'] ?? null,
+            'procurement_required' => $data['procurement_required'] ?? false,
+            'media_options' => $data['media_options'] ?? null,
             // Venue
-            'venue_country'                    => $data['venue_country'] ?? null,
-            'venue_city'                        => $data['venue_city'] ?? null,
-            'venue_proposed_hotel'              => $data['venue_proposed_hotel'] ?? null,
-            'venue_accommodation_required'      => $data['venue_accommodation_required'] ?? false,
-            'venue_accommodation_count'         => $data['venue_accommodation_count'] ?? null,
-            'venue_conferencing_required'       => $data['venue_conferencing_required'] ?? false,
-            'venue_conferencing_participants'   => $data['venue_conferencing_participants'] ?? null,
-            'venue_quotation_attached'          => $data['venue_quotation_attached'] ?? false,
-            'venue_hotel_quotation_attached'    => $data['venue_hotel_quotation_attached'] ?? false,
-            'venue_accessibility_requirements'  => $data['venue_accessibility_requirements'] ?? null,
-            'venue_security_considerations'     => $data['venue_security_considerations'] ?? null,
-            'venue_comments'                     => $data['venue_comments'] ?? null,
+            'venue_country' => $data['venue_country'] ?? null,
+            'venue_city' => $data['venue_city'] ?? null,
+            'venue_proposed_hotel' => $data['venue_proposed_hotel'] ?? null,
+            'venue_accommodation_required' => $data['venue_accommodation_required'] ?? false,
+            'venue_accommodation_count' => $data['venue_accommodation_count'] ?? null,
+            'venue_conferencing_required' => $data['venue_conferencing_required'] ?? false,
+            'venue_conferencing_participants' => $data['venue_conferencing_participants'] ?? null,
+            'venue_quotation_attached' => $data['venue_quotation_attached'] ?? false,
+            'venue_hotel_quotation_attached' => $data['venue_hotel_quotation_attached'] ?? false,
+            'venue_accessibility_requirements' => $data['venue_accessibility_requirements'] ?? null,
+            'venue_security_considerations' => $data['venue_security_considerations'] ?? null,
+            'venue_comments' => $data['venue_comments'] ?? null,
             // Budget / participant provisions
-            'proposed_dsa_rate'                  => $data['proposed_dsa_rate'] ?? null,
-            'original_budget_rate'               => $data['original_budget_rate'] ?? null,
-            'dsa_variance_reason'                => $data['dsa_variance_reason'] ?? null,
-            'proposed_participants'              => $data['proposed_participants'] ?? null,
-            'budgeted_participants'              => $data['budgeted_participants'] ?? null,
-            'participants_variance_reason'       => $data['participants_variance_reason'] ?? null,
-            'proposed_funding_difference'        => $data['proposed_funding_difference'] ?? null,
-            'estimated_activity_amount'          => $data['estimated_activity_amount'] ?? null,
+            'proposed_dsa_rate' => $data['proposed_dsa_rate'] ?? null,
+            'original_budget_rate' => $data['original_budget_rate'] ?? null,
+            'dsa_variance_reason' => $data['dsa_variance_reason'] ?? null,
+            'proposed_participants' => $data['proposed_participants'] ?? null,
+            'budgeted_participants' => $data['budgeted_participants'] ?? null,
+            'participants_variance_reason' => $data['participants_variance_reason'] ?? null,
+            'proposed_funding_difference' => $data['proposed_funding_difference'] ?? null,
+            'estimated_activity_amount' => $data['estimated_activity_amount'] ?? null,
             // Consultants
-            'secretariat_staff_required'         => $data['secretariat_staff_required'] ?? false,
-            'secretariat_staff_count'            => $data['secretariat_staff_count'] ?? null,
-            'consultants_required'               => $data['consultants_required'] ?? false,
-            'consultants_count'                  => $data['consultants_count'] ?? null,
-            'consultants_rate'                   => $data['consultants_rate'] ?? null,
-            'resource_persons_required'          => $data['resource_persons_required'] ?? false,
-            'resource_persons_count'             => $data['resource_persons_count'] ?? null,
-            'resource_persons_rate'              => $data['resource_persons_rate'] ?? null,
-            'rapporteurs_required'               => $data['rapporteurs_required'] ?? false,
-            'rapporteurs_count'                  => $data['rapporteurs_count'] ?? null,
-            'rapporteurs_rate'                   => $data['rapporteurs_rate'] ?? null,
-            'media_liaison_required'             => $data['media_liaison_required'] ?? false,
-            'media_liaison_count'                => $data['media_liaison_count'] ?? null,
-            'media_liaison_rate'                 => $data['media_liaison_rate'] ?? null,
-            'local_support_required'             => $data['local_support_required'] ?? false,
-            'local_support_count'                => $data['local_support_count'] ?? null,
-            'local_support_rate'                 => $data['local_support_rate'] ?? null,
-            'personnel_comments'                 => $data['personnel_comments'] ?? null,
+            'secretariat_staff_required' => $data['secretariat_staff_required'] ?? false,
+            'secretariat_staff_count' => $data['secretariat_staff_count'] ?? null,
+            'consultants_required' => $data['consultants_required'] ?? false,
+            'consultants_count' => $data['consultants_count'] ?? null,
+            'consultants_rate' => $data['consultants_rate'] ?? null,
+            'resource_persons_required' => $data['resource_persons_required'] ?? false,
+            'resource_persons_count' => $data['resource_persons_count'] ?? null,
+            'resource_persons_rate' => $data['resource_persons_rate'] ?? null,
+            'rapporteurs_required' => $data['rapporteurs_required'] ?? false,
+            'rapporteurs_count' => $data['rapporteurs_count'] ?? null,
+            'rapporteurs_rate' => $data['rapporteurs_rate'] ?? null,
+            'media_liaison_required' => $data['media_liaison_required'] ?? false,
+            'media_liaison_count' => $data['media_liaison_count'] ?? null,
+            'media_liaison_rate' => $data['media_liaison_rate'] ?? null,
+            'local_support_required' => $data['local_support_required'] ?? false,
+            'local_support_count' => $data['local_support_count'] ?? null,
+            'local_support_rate' => $data['local_support_rate'] ?? null,
+            'personnel_comments' => $data['personnel_comments'] ?? null,
             // Interpretation
-            'interpretation_required'            => $data['interpretation_required'] ?? false,
-            'en_fr_required'                     => $data['en_fr_required'] ?? false,
-            'en_fr_interpreters_count'           => $data['en_fr_interpreters_count'] ?? null,
-            'en_pt_required'                     => $data['en_pt_required'] ?? false,
-            'en_pt_interpreters_count'           => $data['en_pt_interpreters_count'] ?? null,
-            'fr_pt_required'                     => $data['fr_pt_required'] ?? false,
-            'fr_pt_interpreters_count'           => $data['fr_pt_interpreters_count'] ?? null,
-            'interpreter_rate'                   => $data['interpreter_rate'] ?? null,
-            'interpreter_source'                 => $data['interpreter_source'] ?? null,
-            'interpreter_source_other_note'      => $data['interpreter_source_other_note'] ?? null,
-            'interpretation_equipment_required'  => $data['interpretation_equipment_required'] ?? false,
-            'translation_required'               => $data['translation_required'] ?? false,
-            'languages_required'                 => $data['languages_required'] ?? null,
-            'interpretation_comments'            => $data['interpretation_comments'] ?? null,
-            'support_services'                   => $data['support_services'] ?? null,
-            'support_services_other_note'        => $data['support_services_other_note'] ?? null,
+            'interpretation_required' => $data['interpretation_required'] ?? false,
+            'en_fr_required' => $data['en_fr_required'] ?? false,
+            'en_fr_interpreters_count' => $data['en_fr_interpreters_count'] ?? null,
+            'en_pt_required' => $data['en_pt_required'] ?? false,
+            'en_pt_interpreters_count' => $data['en_pt_interpreters_count'] ?? null,
+            'fr_pt_required' => $data['fr_pt_required'] ?? false,
+            'fr_pt_interpreters_count' => $data['fr_pt_interpreters_count'] ?? null,
+            'interpreter_rate' => $data['interpreter_rate'] ?? null,
+            'interpreter_source' => $data['interpreter_source'] ?? null,
+            'interpreter_source_other_note' => $data['interpreter_source_other_note'] ?? null,
+            'interpretation_equipment_required' => $data['interpretation_equipment_required'] ?? false,
+            'translation_required' => $data['translation_required'] ?? false,
+            'languages_required' => $data['languages_required'] ?? null,
+            'interpretation_comments' => $data['interpretation_comments'] ?? null,
+            'support_services' => $data['support_services'] ?? null,
+            'support_services_other_note' => $data['support_services_other_note'] ?? null,
         ]);
 
         $this->syncSubRecords($programme, $data);
@@ -169,9 +177,9 @@ class ProgrammeService
 
         AuditLog::record('programme.created', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'new_values'     => ['reference' => $programme->reference_number, 'title' => $programme->title],
-            'tags'           => 'programme',
+            'auditable_id' => $programme->id,
+            'new_values' => ['reference' => $programme->reference_number, 'title' => $programme->title],
+            'tags' => 'programme',
         ]);
 
         return $this->get($programme);
@@ -182,99 +190,99 @@ class ProgrammeService
         // Amendment drafts ('amendment_draft') are edited through the same update()
         // flow as ordinary drafts — the amendment workflow (Task 16) reuses this
         // method so amendment content can be revised before submit-amendment/approve.
-        if (!$programme->isDraft() && $programme->status !== 'amendment_draft') {
+        if (! $programme->isDraft() && $programme->status !== 'amendment_draft') {
             throw ValidationException::withMessages(['status' => 'Only draft programmes can be edited.']);
         }
 
         $officerIds = (array_key_exists('responsible_officer_ids', $data) || array_key_exists('responsible_officer_id', $data))
             ? $this->normalizeResponsibleOfficerIds($data) : [];
-        if (!empty($officerIds)) {
+        if (! empty($officerIds)) {
             $this->ensureResponsibleOfficersInTenant($officerIds, $user->tenant_id);
         }
-        $firstOfficerId = !empty($officerIds) ? (int) $officerIds[0] : null;
+        $firstOfficerId = ! empty($officerIds) ? (int) $officerIds[0] : null;
 
         $updatePayload = array_filter([
-            'title'                   => $data['title'] ?? null,
-            'strategic_alignment'     => $data['strategic_alignment'] ?? null,
-            'supporting_departments'  => $data['supporting_departments'] ?? null,
-            'background'              => $data['background'] ?? null,
-            'overall_objective'       => $data['overall_objective'] ?? null,
-            'specific_objectives'     => $data['specific_objectives'] ?? null,
-            'expected_outputs'        => $data['expected_outputs'] ?? null,
-            'target_beneficiaries'    => $data['target_beneficiaries'] ?? null,
-            'gender_considerations'   => $data['gender_considerations'] ?? null,
-            'primary_currency'        => $data['primary_currency'] ?? null,
-            'base_currency'           => $data['base_currency'] ?? null,
-            'exchange_rate'           => $data['exchange_rate'] ?? null,
-            'contingency_pct'          => $data['contingency_pct'] ?? null,
-            'total_budget'            => $data['total_budget'] ?? null,
-            'funding_source'          => $data['funding_source'] ?? null,
-            'start_date'              => $data['start_date'] ?? null,
-            'end_date'                => $data['end_date'] ?? null,
-            'travel_required'         => $data['travel_required'] ?? null,
-            'delegates_count'         => $data['delegates_count'] ?? null,
-            'member_states'           => $data['member_states'] ?? null,
-            'travel_services'         => $data['travel_services'] ?? null,
-            'procurement_required'    => $data['procurement_required'] ?? null,
-            'media_options'            => $data['media_options'] ?? null,
+            'title' => $data['title'] ?? null,
+            'strategic_alignment' => $data['strategic_alignment'] ?? null,
+            'supporting_departments' => $data['supporting_departments'] ?? null,
+            'background' => $data['background'] ?? null,
+            'overall_objective' => $data['overall_objective'] ?? null,
+            'specific_objectives' => $data['specific_objectives'] ?? null,
+            'expected_outputs' => $data['expected_outputs'] ?? null,
+            'target_beneficiaries' => $data['target_beneficiaries'] ?? null,
+            'gender_considerations' => $data['gender_considerations'] ?? null,
+            'primary_currency' => $data['primary_currency'] ?? null,
+            'base_currency' => $data['base_currency'] ?? null,
+            'exchange_rate' => $data['exchange_rate'] ?? null,
+            'contingency_pct' => $data['contingency_pct'] ?? null,
+            'total_budget' => $data['total_budget'] ?? null,
+            'funding_source' => $data['funding_source'] ?? null,
+            'start_date' => $data['start_date'] ?? null,
+            'end_date' => $data['end_date'] ?? null,
+            'travel_required' => $data['travel_required'] ?? null,
+            'delegates_count' => $data['delegates_count'] ?? null,
+            'member_states' => $data['member_states'] ?? null,
+            'travel_services' => $data['travel_services'] ?? null,
+            'procurement_required' => $data['procurement_required'] ?? null,
+            'media_options' => $data['media_options'] ?? null,
             // Venue
-            'venue_country'                    => $data['venue_country'] ?? null,
-            'venue_city'                        => $data['venue_city'] ?? null,
-            'venue_proposed_hotel'              => $data['venue_proposed_hotel'] ?? null,
-            'venue_accommodation_required'      => $data['venue_accommodation_required'] ?? null,
-            'venue_accommodation_count'         => $data['venue_accommodation_count'] ?? null,
-            'venue_conferencing_required'       => $data['venue_conferencing_required'] ?? null,
-            'venue_conferencing_participants'   => $data['venue_conferencing_participants'] ?? null,
-            'venue_quotation_attached'          => $data['venue_quotation_attached'] ?? null,
-            'venue_hotel_quotation_attached'    => $data['venue_hotel_quotation_attached'] ?? null,
-            'venue_accessibility_requirements'  => $data['venue_accessibility_requirements'] ?? null,
-            'venue_security_considerations'     => $data['venue_security_considerations'] ?? null,
-            'venue_comments'                     => $data['venue_comments'] ?? null,
+            'venue_country' => $data['venue_country'] ?? null,
+            'venue_city' => $data['venue_city'] ?? null,
+            'venue_proposed_hotel' => $data['venue_proposed_hotel'] ?? null,
+            'venue_accommodation_required' => $data['venue_accommodation_required'] ?? null,
+            'venue_accommodation_count' => $data['venue_accommodation_count'] ?? null,
+            'venue_conferencing_required' => $data['venue_conferencing_required'] ?? null,
+            'venue_conferencing_participants' => $data['venue_conferencing_participants'] ?? null,
+            'venue_quotation_attached' => $data['venue_quotation_attached'] ?? null,
+            'venue_hotel_quotation_attached' => $data['venue_hotel_quotation_attached'] ?? null,
+            'venue_accessibility_requirements' => $data['venue_accessibility_requirements'] ?? null,
+            'venue_security_considerations' => $data['venue_security_considerations'] ?? null,
+            'venue_comments' => $data['venue_comments'] ?? null,
             // Budget / participant provisions
-            'proposed_dsa_rate'                  => $data['proposed_dsa_rate'] ?? null,
-            'original_budget_rate'               => $data['original_budget_rate'] ?? null,
-            'dsa_variance_reason'                => $data['dsa_variance_reason'] ?? null,
-            'proposed_participants'              => $data['proposed_participants'] ?? null,
-            'budgeted_participants'              => $data['budgeted_participants'] ?? null,
-            'participants_variance_reason'       => $data['participants_variance_reason'] ?? null,
-            'proposed_funding_difference'        => $data['proposed_funding_difference'] ?? null,
-            'estimated_activity_amount'          => $data['estimated_activity_amount'] ?? null,
+            'proposed_dsa_rate' => $data['proposed_dsa_rate'] ?? null,
+            'original_budget_rate' => $data['original_budget_rate'] ?? null,
+            'dsa_variance_reason' => $data['dsa_variance_reason'] ?? null,
+            'proposed_participants' => $data['proposed_participants'] ?? null,
+            'budgeted_participants' => $data['budgeted_participants'] ?? null,
+            'participants_variance_reason' => $data['participants_variance_reason'] ?? null,
+            'proposed_funding_difference' => $data['proposed_funding_difference'] ?? null,
+            'estimated_activity_amount' => $data['estimated_activity_amount'] ?? null,
             // Consultants
-            'secretariat_staff_required'         => $data['secretariat_staff_required'] ?? null,
-            'secretariat_staff_count'            => $data['secretariat_staff_count'] ?? null,
-            'consultants_required'               => $data['consultants_required'] ?? null,
-            'consultants_count'                  => $data['consultants_count'] ?? null,
-            'consultants_rate'                   => $data['consultants_rate'] ?? null,
-            'resource_persons_required'          => $data['resource_persons_required'] ?? null,
-            'resource_persons_count'             => $data['resource_persons_count'] ?? null,
-            'resource_persons_rate'              => $data['resource_persons_rate'] ?? null,
-            'rapporteurs_required'               => $data['rapporteurs_required'] ?? null,
-            'rapporteurs_count'                  => $data['rapporteurs_count'] ?? null,
-            'rapporteurs_rate'                   => $data['rapporteurs_rate'] ?? null,
-            'media_liaison_required'             => $data['media_liaison_required'] ?? null,
-            'media_liaison_count'                => $data['media_liaison_count'] ?? null,
-            'media_liaison_rate'                 => $data['media_liaison_rate'] ?? null,
-            'local_support_required'             => $data['local_support_required'] ?? null,
-            'local_support_count'                => $data['local_support_count'] ?? null,
-            'local_support_rate'                 => $data['local_support_rate'] ?? null,
-            'personnel_comments'                 => $data['personnel_comments'] ?? null,
+            'secretariat_staff_required' => $data['secretariat_staff_required'] ?? null,
+            'secretariat_staff_count' => $data['secretariat_staff_count'] ?? null,
+            'consultants_required' => $data['consultants_required'] ?? null,
+            'consultants_count' => $data['consultants_count'] ?? null,
+            'consultants_rate' => $data['consultants_rate'] ?? null,
+            'resource_persons_required' => $data['resource_persons_required'] ?? null,
+            'resource_persons_count' => $data['resource_persons_count'] ?? null,
+            'resource_persons_rate' => $data['resource_persons_rate'] ?? null,
+            'rapporteurs_required' => $data['rapporteurs_required'] ?? null,
+            'rapporteurs_count' => $data['rapporteurs_count'] ?? null,
+            'rapporteurs_rate' => $data['rapporteurs_rate'] ?? null,
+            'media_liaison_required' => $data['media_liaison_required'] ?? null,
+            'media_liaison_count' => $data['media_liaison_count'] ?? null,
+            'media_liaison_rate' => $data['media_liaison_rate'] ?? null,
+            'local_support_required' => $data['local_support_required'] ?? null,
+            'local_support_count' => $data['local_support_count'] ?? null,
+            'local_support_rate' => $data['local_support_rate'] ?? null,
+            'personnel_comments' => $data['personnel_comments'] ?? null,
             // Interpretation
-            'interpretation_required'            => $data['interpretation_required'] ?? null,
-            'en_fr_required'                     => $data['en_fr_required'] ?? null,
-            'en_fr_interpreters_count'           => $data['en_fr_interpreters_count'] ?? null,
-            'en_pt_required'                     => $data['en_pt_required'] ?? null,
-            'en_pt_interpreters_count'           => $data['en_pt_interpreters_count'] ?? null,
-            'fr_pt_required'                     => $data['fr_pt_required'] ?? null,
-            'fr_pt_interpreters_count'           => $data['fr_pt_interpreters_count'] ?? null,
-            'interpreter_rate'                   => $data['interpreter_rate'] ?? null,
-            'interpreter_source'                 => $data['interpreter_source'] ?? null,
-            'interpreter_source_other_note'      => $data['interpreter_source_other_note'] ?? null,
-            'interpretation_equipment_required'  => $data['interpretation_equipment_required'] ?? null,
-            'translation_required'               => $data['translation_required'] ?? null,
-            'languages_required'                 => $data['languages_required'] ?? null,
-            'interpretation_comments'            => $data['interpretation_comments'] ?? null,
-            'support_services'                   => $data['support_services'] ?? null,
-            'support_services_other_note'        => $data['support_services_other_note'] ?? null,
+            'interpretation_required' => $data['interpretation_required'] ?? null,
+            'en_fr_required' => $data['en_fr_required'] ?? null,
+            'en_fr_interpreters_count' => $data['en_fr_interpreters_count'] ?? null,
+            'en_pt_required' => $data['en_pt_required'] ?? null,
+            'en_pt_interpreters_count' => $data['en_pt_interpreters_count'] ?? null,
+            'fr_pt_required' => $data['fr_pt_required'] ?? null,
+            'fr_pt_interpreters_count' => $data['fr_pt_interpreters_count'] ?? null,
+            'interpreter_rate' => $data['interpreter_rate'] ?? null,
+            'interpreter_source' => $data['interpreter_source'] ?? null,
+            'interpreter_source_other_note' => $data['interpreter_source_other_note'] ?? null,
+            'interpretation_equipment_required' => $data['interpretation_equipment_required'] ?? null,
+            'translation_required' => $data['translation_required'] ?? null,
+            'languages_required' => $data['languages_required'] ?? null,
+            'interpretation_comments' => $data['interpretation_comments'] ?? null,
+            'support_services' => $data['support_services'] ?? null,
+            'support_services_other_note' => $data['support_services_other_note'] ?? null,
         ], fn ($v) => $v !== null);
 
         if (array_key_exists('strategic_pillars', $data)) {
@@ -305,8 +313,8 @@ class ProgrammeService
 
         AuditLog::record('programme.updated', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'tags'           => 'programme',
+            'auditable_id' => $programme->id,
+            'tags' => 'programme',
         ]);
 
         return $this->get($programme->fresh());
@@ -338,7 +346,7 @@ class ProgrammeService
 
         $programme->forceFill([
             'budget_availability_status' => $status,
-            'finance_comments'           => array_key_exists('finance_comments', $data)
+            'finance_comments' => array_key_exists('finance_comments', $data)
                 ? $data['finance_comments']
                 : $programme->finance_comments,
         ])->save();
@@ -347,9 +355,9 @@ class ProgrammeService
 
         AuditLog::record('programme.finance_review_updated', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'new_values'     => ['budget_availability_status' => $status],
-            'tags'           => 'programme,budget',
+            'auditable_id' => $programme->id,
+            'new_values' => ['budget_availability_status' => $status],
+            'tags' => 'programme,budget',
         ]);
 
         return $programme->fresh();
@@ -426,30 +434,30 @@ class ProgrammeService
 
     public function submit(Programme $programme, User $user): Programme
     {
-        if (!$programme->isDraft()) {
+        if (! $programme->isDraft()) {
             throw ValidationException::withMessages(['status' => 'Only draft programmes can be submitted.']);
         }
 
         $programme->update([
-            'status'                    => 'submitted',
-            'submitted_at'              => now(),
-            'declaration_confirmed'     => true,
-            'declaration_confirmed_by'  => $user->id,
-            'declaration_confirmed_at'  => now(),
-            'declaration_version'       => config('pif.current_declaration_version'),
+            'status' => 'submitted',
+            'submitted_at' => now(),
+            'declaration_confirmed' => true,
+            'declaration_confirmed_by' => $user->id,
+            'declaration_confirmed_at' => now(),
+            'declaration_version' => config('pif.current_declaration_version'),
         ]);
 
         AuditLog::record('programme.submitted', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'tags'           => 'programme',
+            'auditable_id' => $programme->id,
+            'tags' => 'programme',
         ]);
 
         AuditLog::record('programme.declaration_confirmed', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'new_values'     => ['declaration_version' => config('pif.current_declaration_version')],
-            'tags'           => 'programme',
+            'auditable_id' => $programme->id,
+            'new_values' => ['declaration_version' => config('pif.current_declaration_version')],
+            'tags' => 'programme',
         ]);
 
         // Migrate PIF onto shared Workflow Engine (PRD §80 / §111) — no parallel engine
@@ -491,12 +499,12 @@ class ProgrammeService
     {
         $isAmendment = $programme->status === 'amendment_pending_approval';
 
-        if (!$isAmendment && !$programme->isSubmitted()) {
+        if (! $isAmendment && ! $programme->isSubmitted()) {
             throw ValidationException::withMessages(['status' => 'Only submitted programmes can be approved.']);
         }
 
         $programme->update([
-            'status'      => $isAmendment ? 'amended' : 'approved',
+            'status' => $isAmendment ? 'amended' : 'approved',
             'approved_by' => $approver->id,
             'approved_at' => now(),
         ]);
@@ -505,15 +513,15 @@ class ProgrammeService
             $programme->amendedFrom?->update(['status' => 'superseded', 'superseded_at' => now()]);
             AuditLog::record('programme.superseded', [
                 'auditable_type' => Programme::class,
-                'auditable_id'   => $programme->amended_from_id,
-                'tags'           => 'programme',
+                'auditable_id' => $programme->amended_from_id,
+                'tags' => 'programme',
             ]);
         }
 
         AuditLog::record($isAmendment ? 'programme.amendment_approved' : 'programme.approved', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'tags'           => 'programme',
+            'auditable_id' => $programme->id,
+            'tags' => 'programme',
         ]);
 
         $this->notifyMeOfPifApproval($programme);
@@ -535,7 +543,7 @@ class ProgrammeService
 
     public function createAmendment(Programme $original, User $user): Programme
     {
-        if (!$original->isApprovedOrAmended()) {
+        if (! $original->isApprovedOrAmended()) {
             throw ValidationException::withMessages(['status' => 'Only approved programmes can be amended.']);
         }
 
@@ -572,11 +580,11 @@ class ProgrammeService
         $attributes = $original->only(array_diff($original->getFillable(), $excludedFromClone));
 
         $amendment = Programme::create(array_merge($attributes, [
-            'created_by'        => $user->id,
-            'reference_number'  => "{$original->reference_number}-A{$revisionCount}",
-            'title'             => $original->title,
-            'status'            => 'amendment_draft',
-            'amended_from_id'   => $original->id,
+            'created_by' => $user->id,
+            'reference_number' => "{$original->reference_number}-A{$revisionCount}",
+            'title' => $original->title,
+            'status' => 'amendment_draft',
+            'amended_from_id' => $original->id,
         ]));
 
         foreach ($original->documents as $doc) {
@@ -601,9 +609,9 @@ class ProgrammeService
 
         AuditLog::record('programme.amendment_created', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $amendment->id,
-            'new_values'     => ['amended_from_id' => $original->id],
-            'tags'           => 'programme',
+            'auditable_id' => $amendment->id,
+            'new_values' => ['amended_from_id' => $original->id],
+            'tags' => 'programme',
         ]);
 
         return $amendment->fresh(['documents', 'arrivalDepartures', 'procurementItems']);
@@ -615,12 +623,12 @@ class ProgrammeService
             throw ValidationException::withMessages(['status' => 'Only an amendment draft can be submitted.']);
         }
         $amendment->update([
-            'status'                    => 'amendment_pending_approval',
-            'submitted_at'              => now(),
-            'declaration_confirmed'     => true,
-            'declaration_confirmed_by'  => $user->id,
-            'declaration_confirmed_at'  => now(),
-            'declaration_version'       => config('pif.current_declaration_version'),
+            'status' => 'amendment_pending_approval',
+            'submitted_at' => now(),
+            'declaration_confirmed' => true,
+            'declaration_confirmed_by' => $user->id,
+            'declaration_confirmed_at' => now(),
+            'declaration_version' => config('pif.current_declaration_version'),
         ]);
 
         // Amendments are a fresh approval cycle and must go through the same
@@ -648,7 +656,7 @@ class ProgrammeService
 
     public function diff(Programme $amendment): array
     {
-        if (!$amendment->amended_from_id) {
+        if (! $amendment->amended_from_id) {
             return [];
         }
         $original = $amendment->amendedFrom;
@@ -657,11 +665,12 @@ class ProgrammeService
         $diff = [];
         foreach ($fields as $field) {
             $before = $original->{$field};
-            $after  = $amendment->{$field};
+            $after = $amendment->{$field};
             if ($before != $after) {
                 $diff[$field] = ['before' => $before, 'after' => $after];
             }
         }
+
         return $diff;
     }
 
@@ -693,8 +702,8 @@ class ProgrammeService
                     [
                         'module' => 'programme',
                         'record_id' => $programme->id,
-                        'url' => '/pif/' . $programme->id,
-                        'secure_route' => '/pif/' . $programme->id,
+                        'url' => '/pif/'.$programme->id,
+                        'secure_route' => '/pif/'.$programme->id,
                         'idempotency_key' => 'programme.approved_for_me:'.$programme->id.':user:'.$officer->id,
                     ]
                 );
@@ -723,21 +732,21 @@ class ProgrammeService
 
     public function reject(Programme $programme, string $reason, User $approver): Programme
     {
-        if (!$programme->isSubmitted()) {
+        if (! $programme->isSubmitted()) {
             throw ValidationException::withMessages(['status' => 'Only submitted programmes can be rejected.']);
         }
 
         $programme->update([
-            'status'           => 'rejected',
-            'approved_by'      => $approver->id,
+            'status' => 'rejected',
+            'approved_by' => $approver->id,
             'rejection_reason' => $reason,
         ]);
 
         AuditLog::record('programme.rejected', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'new_values'     => ['reason' => $reason],
-            'tags'           => 'programme',
+            'auditable_id' => $programme->id,
+            'new_values' => ['reason' => $reason],
+            'tags' => 'programme',
         ]);
 
         return $programme->fresh();
@@ -745,7 +754,7 @@ class ProgrammeService
 
     public function delete(Programme $programme): void
     {
-        if (!$programme->isDraft()) {
+        if (! $programme->isDraft()) {
             throw ValidationException::withMessages(['status' => 'Only draft programmes can be deleted.']);
         }
         $programme->delete();
@@ -761,6 +770,7 @@ class ProgrammeService
     public function updateActivity(ProgrammeActivity $activity, array $data): ProgrammeActivity
     {
         $activity->update($data);
+
         return $activity->fresh();
     }
 
@@ -779,6 +789,7 @@ class ProgrammeService
     public function updateMilestone(ProgrammeMilestone $milestone, array $data): ProgrammeMilestone
     {
         $milestone->update($data);
+
         return $milestone->fresh();
     }
 
@@ -797,6 +808,7 @@ class ProgrammeService
     public function updateDeliverable(ProgrammeDeliverable $deliverable, array $data): ProgrammeDeliverable
     {
         $deliverable->update($data);
+
         return $deliverable->fresh();
     }
 
@@ -815,6 +827,7 @@ class ProgrammeService
     public function updateBudgetLine(ProgrammeBudgetLine $line, array $data): ProgrammeBudgetLine
     {
         $line->update($data);
+
         return $line->fresh();
     }
 
@@ -833,6 +846,7 @@ class ProgrammeService
     public function updateProcurementItem(ProgrammeProcurementItem $item, array $data): ProgrammeProcurementItem
     {
         $item->update($data);
+
         return $item->fresh();
     }
 
@@ -854,7 +868,7 @@ class ProgrammeService
      */
     public function sendToProcurement(Programme $programme, array $data, User $user): ProcurementRequest
     {
-        if (!$programme->isApprovedOrAmended()) {
+        if (! $programme->isApprovedOrAmended()) {
             throw ValidationException::withMessages(['status' => 'Only approved programmes can send items to procurement.']);
         }
 
@@ -869,26 +883,26 @@ class ProgrammeService
             $estimatedValue = $items->sum(fn (ProgrammeProcurementItem $item) => (float) $item->estimated_cost);
 
             $procurementRequest = ProcurementRequest::create([
-                'tenant_id'        => $programme->tenant_id,
-                'requester_id'     => $user->id,
-                'programme_id'     => $programme->id,
-                'title'            => $data['request_title'],
-                'description'      => 'Generated from approved PIF ' . $programme->reference_number,
-                'category'         => $data['category'] ?? 'goods',
-                'estimated_value'  => $estimatedValue,
-                'status'           => 'draft',
-                'currency'         => $programme->primary_currency ?? 'USD',
-                'budget_line'      => $programme->reference_number,
+                'tenant_id' => $programme->tenant_id,
+                'requester_id' => $user->id,
+                'programme_id' => $programme->id,
+                'title' => $data['request_title'],
+                'description' => 'Generated from approved PIF '.$programme->reference_number,
+                'category' => $data['category'] ?? 'goods',
+                'estimated_value' => $estimatedValue,
+                'status' => 'draft',
+                'currency' => $programme->primary_currency ?? 'USD',
+                'budget_line' => $programme->reference_number,
             ]);
 
             foreach ($items as $item) {
                 ProcurementItem::create([
                     'procurement_request_id' => $procurementRequest->id,
-                    'description'             => $item->description,
-                    'quantity'                => 1,
-                    'unit'                    => 'item',
-                    'estimated_unit_price'    => $item->estimated_cost,
-                    'total_price'             => $item->estimated_cost,
+                    'description' => $item->description,
+                    'quantity' => 1,
+                    'unit' => 'item',
+                    'estimated_unit_price' => $item->estimated_cost,
+                    'total_price' => $item->estimated_cost,
                 ]);
                 $item->update(['procurement_request_id' => $procurementRequest->id]);
             }
@@ -898,9 +912,9 @@ class ProgrammeService
 
         AuditLog::record('programme.procurement_sent', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'new_values'     => [
-                'procurement_item_ids'   => $data['procurement_item_ids'],
+            'auditable_id' => $programme->id,
+            'new_values' => [
+                'procurement_item_ids' => $data['procurement_item_ids'],
                 'procurement_request_id' => $procurementRequest->id,
             ],
             'tags' => 'programme',
@@ -936,14 +950,14 @@ class ProgrammeService
         $missionId = $data['mission_id'] ?? null;
         if (! $missionId && ! empty($data['mission_title'])) {
             $mission = TravelMission::create([
-                'tenant_id'           => $programme->tenant_id,
-                'title'               => $data['mission_title'],
-                'programme_id'        => $programme->id,
+                'tenant_id' => $programme->tenant_id,
+                'title' => $data['mission_title'],
+                'programme_id' => $programme->id,
                 'destination_country' => $data['destination_country'] ?? $programme->venue_country ?? null,
-                'destination_city'    => $data['destination_city'] ?? $programme->venue_city ?? null,
-                'start_date'          => $data['departure_date'] ?? $programme->start_date ?? null,
-                'end_date'            => $data['return_date'] ?? $programme->end_date ?? null,
-                'created_by'          => $user->id,
+                'destination_city' => $data['destination_city'] ?? $programme->venue_city ?? null,
+                'start_date' => $data['departure_date'] ?? $programme->start_date ?? null,
+                'end_date' => $data['return_date'] ?? $programme->end_date ?? null,
+                'created_by' => $user->id,
             ]);
             $missionId = $mission->id;
         }
@@ -952,25 +966,25 @@ class ProgrammeService
         DB::transaction(function () use ($programme, $data, $user, $travellers, $missionId, &$created) {
             foreach ($travellers as $traveller) {
                 $travel = TravelRequest::create([
-                    'tenant_id'           => $programme->tenant_id,
-                    'requester_id'        => $traveller->id,
-                    'prepared_by'         => $user->id,
+                    'tenant_id' => $programme->tenant_id,
+                    'requester_id' => $traveller->id,
+                    'prepared_by' => $user->id,
                     'prepared_on_behalf_of' => (int) $traveller->id !== (int) $user->id ? $traveller->id : null,
-                    'reference_number'    => 'TRV-' . strtoupper(Str::random(8)),
-                    'purpose'             => $data['purpose'] ?? ('Mission travel — ' . ($programme->title ?? $programme->reference_number)),
-                    'status'              => 'draft',
-                    'departure_date'      => $data['departure_date'] ?? ($programme->start_date?->toDateString() ?? now()->addDays(14)->toDateString()),
-                    'return_date'         => $data['return_date'] ?? ($programme->end_date?->toDateString() ?? now()->addDays(17)->toDateString()),
+                    'reference_number' => 'TRV-'.strtoupper(Str::random(8)),
+                    'purpose' => $data['purpose'] ?? ('Mission travel — '.($programme->title ?? $programme->reference_number)),
+                    'status' => 'draft',
+                    'departure_date' => $data['departure_date'] ?? ($programme->start_date?->toDateString() ?? now()->addDays(14)->toDateString()),
+                    'return_date' => $data['return_date'] ?? ($programme->end_date?->toDateString() ?? now()->addDays(17)->toDateString()),
                     'destination_country' => $data['destination_country'] ?? $programme->venue_country ?? 'Namibia',
-                    'destination_city'    => $data['destination_city'] ?? $programme->venue_city ?? null,
-                    'programme_id'        => $programme->id,
-                    'mission_id'          => $missionId,
-                    'host_organization'   => $programme->funding_source ?? null,
-                    'budget_line_id'      => $programme->budgetLines()->value('id'),
-                    'justification'       => 'Prefill from approved PIF ' . $programme->reference_number,
-                    'currency'            => $programme->primary_currency ?? 'USD',
-                    'cabin_class'         => config('travel.default_cabin_class', 'economy'),
-                    'estimated_dsa'       => $programme->proposed_dsa_rate ?? 0,
+                    'destination_city' => $data['destination_city'] ?? $programme->venue_city ?? null,
+                    'programme_id' => $programme->id,
+                    'mission_id' => $missionId,
+                    'host_organization' => $programme->funding_source ?? null,
+                    'budget_line_id' => $programme->budgetLines()->value('id'),
+                    'justification' => 'Prefill from approved PIF '.$programme->reference_number,
+                    'currency' => $programme->primary_currency ?? 'USD',
+                    'cabin_class' => config('travel.default_cabin_class', 'economy'),
+                    'estimated_dsa' => $programme->proposed_dsa_rate ?? 0,
                 ]);
 
                 $created[] = $travel->load(['requester', 'programme', 'mission']);
@@ -979,11 +993,11 @@ class ProgrammeService
 
         AuditLog::record('programme.travel_sent', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'new_values'     => [
+            'auditable_id' => $programme->id,
+            'new_values' => [
                 'traveller_ids' => $travellerIds,
-                'travel_ids'    => collect($created)->pluck('id')->all(),
-                'mission_id'    => $missionId,
+                'travel_ids' => collect($created)->pluck('id')->all(),
+                'mission_id' => $missionId,
             ],
             'tags' => 'programme,travel',
         ]);
@@ -999,9 +1013,9 @@ class ProgrammeService
 
         AuditLog::record('programme.document_added', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'new_values'     => ['document_id' => $document->id, 'title' => $document->title],
-            'tags'           => 'programme',
+            'auditable_id' => $programme->id,
+            'new_values' => ['document_id' => $document->id, 'title' => $document->title],
+            'tags' => 'programme',
         ]);
 
         return $document;
@@ -1010,6 +1024,7 @@ class ProgrammeService
     public function updateDocument(ProgrammeDocument $document, array $data): ProgrammeDocument
     {
         $document->update($data);
+
         return $document->fresh();
     }
 
@@ -1017,9 +1032,9 @@ class ProgrammeService
     {
         AuditLog::record('programme.document_removed', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $document->programme_id,
-            'new_values'     => ['document_id' => $document->id],
-            'tags'           => 'programme',
+            'auditable_id' => $document->programme_id,
+            'new_values' => ['document_id' => $document->id],
+            'tags' => 'programme',
         ]);
 
         $document->delete();
@@ -1033,9 +1048,9 @@ class ProgrammeService
 
         AuditLog::record('programme.arrival_departure_added', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $programme->id,
-            'new_values'     => ['arrival_departure_id' => $row->id, 'category' => $row->category],
-            'tags'           => 'programme',
+            'auditable_id' => $programme->id,
+            'new_values' => ['arrival_departure_id' => $row->id, 'category' => $row->category],
+            'tags' => 'programme',
         ]);
 
         return $row;
@@ -1044,6 +1059,7 @@ class ProgrammeService
     public function updateArrivalDeparture(ProgrammeArrivalDeparture $row, array $data): ProgrammeArrivalDeparture
     {
         $row->update($data);
+
         return $row->fresh();
     }
 
@@ -1051,9 +1067,9 @@ class ProgrammeService
     {
         AuditLog::record('programme.arrival_departure_removed', [
             'auditable_type' => Programme::class,
-            'auditable_id'   => $row->programme_id,
-            'new_values'     => ['arrival_departure_id' => $row->id],
-            'tags'           => 'programme',
+            'auditable_id' => $row->programme_id,
+            'new_values' => ['arrival_departure_id' => $row->id],
+            'tags' => 'programme',
         ]);
 
         $row->delete();
@@ -1070,9 +1086,9 @@ class ProgrammeService
      */
     private function applyConflictDeclaration(Programme $programme, array $data, User $user): void
     {
-        if (!array_key_exists('conflict_declared', $data)
-            && !array_key_exists('conflict_details', $data)
-            && !array_key_exists('conflict_mitigation', $data)
+        if (! array_key_exists('conflict_declared', $data)
+            && ! array_key_exists('conflict_details', $data)
+            && ! array_key_exists('conflict_mitigation', $data)
         ) {
             return;
         }
@@ -1083,25 +1099,25 @@ class ProgrammeService
             : $wasDeclared;
 
         $payload = [
-            'conflict_declared'   => $nowDeclared,
-            'conflict_details'    => $data['conflict_details'] ?? $programme->conflict_details ?? null,
+            'conflict_declared' => $nowDeclared,
+            'conflict_details' => $data['conflict_details'] ?? $programme->conflict_details ?? null,
             'conflict_mitigation' => $data['conflict_mitigation'] ?? $programme->conflict_mitigation ?? null,
         ];
 
-        if ($nowDeclared && !$wasDeclared) {
+        if ($nowDeclared && ! $wasDeclared) {
             $payload['conflict_declared_by'] = $user->id;
             $payload['conflict_declared_at'] = now();
 
             AuditLog::record('programme.conflict_declared', [
                 'auditable_type' => Programme::class,
-                'auditable_id'   => $programme->id,
-                'tags'           => 'programme',
+                'auditable_id' => $programme->id,
+                'tags' => 'programme',
             ]);
         } elseif ($nowDeclared && $wasDeclared) {
             AuditLog::record('programme.conflict_amended', [
                 'auditable_type' => Programme::class,
-                'auditable_id'   => $programme->id,
-                'tags'           => 'programme',
+                'auditable_id' => $programme->id,
+                'tags' => 'programme',
             ]);
         }
 
@@ -1118,9 +1134,9 @@ class ProgrammeService
     {
         $programme->load(['creator', 'approver', 'responsibleOfficer', 'attachments.uploader', 'conflictDeclaredBy']);
 
-        $verifyUrl = config('app.url') . '/pif/verify/' . $programme->id;
-        $qrResult  = Builder::create()->data($verifyUrl)->size(90)->build();
-        $qrBase64  = base64_encode($qrResult->getString());
+        $verifyUrl = config('app.url').'/pif/verify/'.$programme->id;
+        $qrResult = Builder::create()->data($verifyUrl)->size(90)->build();
+        $qrBase64 = base64_encode($qrResult->getString());
 
         $approvalRequest = $programme->approvalRequest;
         $approvalHistory = $approvalRequest
@@ -1128,11 +1144,11 @@ class ProgrammeService
             : [];
 
         return Pdf::loadView('pdf.programme', [
-            'programme'       => $programme,
-            'attachments'     => $programme->attachments,
+            'programme' => $programme,
+            'attachments' => $programme->attachments,
             'approvalHistory' => $approvalHistory,
-            'qrBase64'        => $qrBase64,
-            'verifyUrl'       => $verifyUrl,
+            'qrBase64' => $qrBase64,
+            'verifyUrl' => $verifyUrl,
         ])->setPaper('a4');
     }
 
@@ -1140,27 +1156,27 @@ class ProgrammeService
 
     private function syncSubRecords(Programme $programme, array $data): void
     {
-        if (!empty($data['activities'])) {
+        if (! empty($data['activities'])) {
             foreach ($data['activities'] as $row) {
                 $programme->activities()->create($row);
             }
         }
-        if (!empty($data['milestones'])) {
+        if (! empty($data['milestones'])) {
             foreach ($data['milestones'] as $row) {
                 $programme->milestones()->create($row);
             }
         }
-        if (!empty($data['deliverables'])) {
+        if (! empty($data['deliverables'])) {
             foreach ($data['deliverables'] as $row) {
                 $programme->deliverables()->create($row);
             }
         }
-        if (!empty($data['budget_lines'])) {
+        if (! empty($data['budget_lines'])) {
             foreach ($data['budget_lines'] as $row) {
                 $programme->budgetLines()->create($row);
             }
         }
-        if (!empty($data['procurement_items'])) {
+        if (! empty($data['procurement_items'])) {
             foreach ($data['procurement_items'] as $row) {
                 $programme->procurementItems()->create($row);
             }
@@ -1173,7 +1189,7 @@ class ProgrammeService
             return;
         }
         $assigned = User::where('id', $userId)->where('tenant_id', $tenantId)->exists();
-        if (!$assigned) {
+        if (! $assigned) {
             throw ValidationException::withMessages([
                 'responsible_officer_id' => ['The selected responsible officer must be a user in your organisation.'],
             ]);
@@ -1188,7 +1204,7 @@ class ProgrammeService
         $ids = array_map('intval', array_values($userIds));
         $found = User::whereIn('id', $ids)->where('tenant_id', $tenantId)->pluck('id')->all();
         $missing = array_diff($ids, $found);
-        if (!empty($missing)) {
+        if (! empty($missing)) {
             throw ValidationException::withMessages([
                 'responsible_officer_ids' => ['One or more selected responsible officers are not in your organisation.'],
             ]);
@@ -1198,56 +1214,60 @@ class ProgrammeService
     /** @return array<int, string> */
     private function normalizePillars(array $data): array
     {
-        if (!empty($data['strategic_pillars']) && is_array($data['strategic_pillars'])) {
+        if (! empty($data['strategic_pillars']) && is_array($data['strategic_pillars'])) {
             return array_values(array_filter(array_map('trim', $data['strategic_pillars'])));
         }
-        if (!empty($data['strategic_pillar'])) {
+        if (! empty($data['strategic_pillar'])) {
             return [trim((string) $data['strategic_pillar'])];
         }
+
         return [];
     }
 
     /** @return array<int, string> */
     private function normalizeDepartments(array $data): array
     {
-        if (!empty($data['implementing_departments']) && is_array($data['implementing_departments'])) {
+        if (! empty($data['implementing_departments']) && is_array($data['implementing_departments'])) {
             return array_values(array_filter(array_map('trim', $data['implementing_departments'])));
         }
-        if (!empty($data['implementing_department'])) {
+        if (! empty($data['implementing_department'])) {
             return [trim((string) $data['implementing_department'])];
         }
+
         return [];
     }
 
     /** @return array<int, int> */
     private function normalizeResponsibleOfficerIds(array $data): array
     {
-        if (!empty($data['responsible_officer_ids']) && is_array($data['responsible_officer_ids'])) {
+        if (! empty($data['responsible_officer_ids']) && is_array($data['responsible_officer_ids'])) {
             return array_values(array_map('intval', array_filter($data['responsible_officer_ids'])));
         }
         if (isset($data['responsible_officer_id']) && $data['responsible_officer_id'] !== null && $data['responsible_officer_id'] !== '') {
             return [(int) $data['responsible_officer_id']];
         }
+
         return [];
     }
 
     /** @return array<int, array{name: string, budget_amount?: float, pays_for?: string}> */
     private function normalizeFundingSources(array $data): array
     {
-        if (empty($data['funding_sources']) || !is_array($data['funding_sources'])) {
+        if (empty($data['funding_sources']) || ! is_array($data['funding_sources'])) {
             return [];
         }
         $out = [];
         foreach ($data['funding_sources'] as $row) {
-            if (empty($row['name']) || !is_string($row['name'])) {
+            if (empty($row['name']) || ! is_string($row['name'])) {
                 continue;
             }
             $out[] = [
-                'name'          => trim($row['name']),
+                'name' => trim($row['name']),
                 'budget_amount' => isset($row['budget_amount']) ? (float) $row['budget_amount'] : null,
-                'pays_for'      => isset($row['pays_for']) ? trim((string) $row['pays_for']) : null,
+                'pays_for' => isset($row['pays_for']) ? trim((string) $row['pays_for']) : null,
             ];
         }
+
         return $out;
     }
 }

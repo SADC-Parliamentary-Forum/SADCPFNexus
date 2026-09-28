@@ -101,4 +101,26 @@ class ContractClauseTest extends TestCase
         $po->getJson('/api/v1/contracts/clauses')->assertOk()
             ->assertJsonFragment(['key' => 'termination_sadcpf', 'clause_type' => 'mandatory_locked']);
     }
+
+    public function test_clause_library_admin_requires_manage_clause(): void
+    {
+        $payload = [
+            'key' => 'insurance_cover', 'title' => 'Insurance cover', 'clause_type' => 'optional',
+            'body' => 'The supplier shall maintain adequate professional indemnity insurance for the term.',
+        ];
+
+        $this->assertTrue($this->makeProcurementOfficer($this->tenant)->hasPermissionTo('contract.manage_clause'));
+
+        [$staff] = $this->asStaff($this->tenant);
+        $staff->postJson('/api/v1/contracts/clauses', $payload)->assertForbidden();
+
+        $templatesOnly = $this->makeUser('staff', $this->tenant);
+        $templatesOnly->givePermissionTo('contract.manage_template');
+        $this->asUser($templatesOnly)->postJson('/api/v1/contracts/clauses', $payload)->assertForbidden();
+
+        [$po] = $this->asProcurementOfficer($this->tenant);
+        $id = $po->postJson('/api/v1/contracts/clauses', $payload)
+            ->assertCreated()->json('data.id');
+        $this->assertNotNull(ContractClause::find($id));
+    }
 }

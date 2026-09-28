@@ -145,6 +145,13 @@ test("staff cannot open the supplier portal", () => {
   assert.equal(canAccessRoute(staff, "/supplier/rfqs"), false);
 });
 
+test("contract.manage_clause unlocks contract settings without template admin", () => {
+  const clauseAdmin = { roles: ["Procurement Officer"], permissions: ["contract.manage_clause"] };
+  const viewer = { roles: ["staff"], permissions: ["contract.view"] };
+  assert.equal(canAccessRoute(clauseAdmin, "/contracts/settings"), true);
+  assert.equal(canAccessRoute(viewer, "/contracts/settings"), false);
+});
+
 test("scan and handover routes are reachable without opening the full register", () => {
   const scanOnly = { roles: ["staff"], permissions: ["assets.scan"] };
   assert.equal(canAccessRoute(scanOnly, "/assets/scan"), true);

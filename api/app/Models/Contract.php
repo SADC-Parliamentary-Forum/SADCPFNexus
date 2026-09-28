@@ -40,7 +40,7 @@ class Contract extends Model
         'template_version_id', 'current_document_version_id',
         'status', 'contract_status', 'signature_status', 'health_status', 'is_legacy',
         'signed_at', 'terminated_at', 'termination_reason', 'closed_at',
-        'created_by',
+        'created_by', 'lock_version',
     ];
 
     protected $casts = [
@@ -71,6 +71,7 @@ class Contract extends Model
         'framework_ceiling' => 'decimal:2',
         'is_legacy' => 'boolean',
         'scope' => 'array',
+        'lock_version' => 'integer',
     ];
 
     protected $appends = ['is_expired', 'is_expiring_soon', 'display_counterparty'];
@@ -86,6 +87,9 @@ class Contract extends Model
             }
             if (empty($c->status)) {
                 $c->status = 'draft';
+            }
+            if ($c->lock_version === null) {
+                $c->lock_version = 1;
             }
             if ($c->original_value === null) {
                 $c->original_value = $c->value;

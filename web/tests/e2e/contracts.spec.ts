@@ -44,7 +44,8 @@ test.describe("Contracts — register", () => {
     await expect(table.or(empty).first()).toBeVisible({ timeout: 10_000 });
   });
 
-  test("register exposes a New Contract action", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /New Contract/i }).first()).toBeVisible();
+  test("register exposes search and status filters", async ({ page }) => {
+    await expect(page.getByRole("searchbox").or(page.getByLabel(/search/i)).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /^(All|Tous|Todos)$/ }).first()).toBeVisible();
   });
 });

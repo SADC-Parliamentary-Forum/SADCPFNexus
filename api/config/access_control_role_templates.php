@@ -336,7 +336,8 @@ return [
             // They administer the lifecycle but never self-approve or sign institutionally.
             'contract.view', 'contract.view_all', 'contract.create', 'contract.edit_draft', 'contract.submit',
             'contract.generate_document', 'contract.send', 'contract.manage_external_signature',
-            'contract.create_amendment', 'contract.manage_template', 'contract.report', 'contract.audit_view',
+            'contract.create_amendment', 'contract.manage_template', 'contract.manage_clause',
+            'contract.report', 'contract.audit_view',
         ],
         'inherits' => [],
         'legacy_roles' => ['Procurement Officer'],

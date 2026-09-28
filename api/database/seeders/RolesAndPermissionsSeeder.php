@@ -182,7 +182,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'contract.review', 'contract.approve', 'contract.reject', 'contract.generate_document', 'contract.send',
             'contract.sign_internal', 'contract.manage_external_signature', 'contract.accept_deliverable',
             'contract.create_amendment', 'contract.approve_amendment', 'contract.suspend', 'contract.terminate',
-            'contract.close', 'contract.manage_template', 'contract.manage_authority', 'contract.report', 'contract.audit_view',
+            'contract.close', 'contract.manage_template', 'contract.manage_clause', 'contract.manage_authority', 'contract.report', 'contract.audit_view',
         ];
 
         foreach ($permissions as $perm) {
