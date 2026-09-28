@@ -27,6 +27,8 @@ export interface NexusPickerProps<T> {
   clearLabel?: string;
   /** Max options rendered from a fetch result (defaults to 8, matching AssetAssigneePicker). */
   maxOptions?: number;
+  /** data-testid applied to the search input, for E2E tests. */
+  dataTestId?: string;
 }
 
 export function NexusPicker<T>({
@@ -45,6 +47,7 @@ export function NexusPicker<T>({
   placeholder,
   clearLabel,
   maxOptions = 8,
+  dataTestId,
 }: NexusPickerProps<T>) {
   const { t } = useI18n();
   const selectedLabel = value ? getLabel(value) : "";
@@ -102,6 +105,7 @@ export function NexusPicker<T>({
         placeholder={placeholder ?? t("common.search")}
         value={query}
         disabled={disabled}
+        data-testid={dataTestId}
         autoComplete="off"
         role="combobox"
         aria-expanded={open}

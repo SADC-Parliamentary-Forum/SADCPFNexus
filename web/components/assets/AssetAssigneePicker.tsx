@@ -35,6 +35,7 @@ export function AssetAssigneePicker({
         disabled={disabled}
         required={required}
         placeholder={t("assets.searchAssignee")}
+        dataTestId="asset-assignee-picker"
         fetchOptions={async (search) => {
           const r = await tenantUsersApi.list({ search: search || undefined });
           return r.data.data ?? [];
