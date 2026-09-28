@@ -27,6 +27,7 @@ export const ADMIN_SIDEBAR_CHILDREN = [
   { label: "Document Register", href: "/admin/documents", icon: "folder_managed" },
   { label: "Ledger Verification", href: "/admin/ledger", icon: "verified_user" },
   { label: "Data Scope & RLS", href: "/admin/data-scope", icon: "database" },
+  { label: "Data Import Centre", href: "/admin/data-import-centre", icon: "upload_file" },
   { label: "Weekly Summary", href: "/admin/weekly-summary", icon: "calendar_month" },
   { label: "Correspondence Settings", href: "/admin/correspondence", icon: "mark_email_read" },
 ] as const;
@@ -59,4 +60,5 @@ export const ADMIN_HUB_CARDS: HubCard[] = [
   { href: "/settings/hr", title: "HR settings", purpose: "Leave types and HR policy.", icon: "tune", section: "tools" },
   { href: "/admin/timesheet-projects", title: "Timesheet projects", purpose: "Projects staff can charge time to.", icon: "task_alt", section: "tools" },
   { href: "/admin/data-scope", title: "Data scope & RLS", purpose: "Row-level access diagnostics.", icon: "database", section: "tools" },
+  { href: "/admin/data-import-centre", title: "Data Import Centre", purpose: "Every bulk data upload destination, in one place.", icon: "upload_file", section: "tools" },
 ];
