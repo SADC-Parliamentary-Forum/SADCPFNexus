@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { travelApi } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
@@ -22,12 +23,14 @@ type ToilRow = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
+  awaiting_employee_confirmation: "Awaiting employee confirmation",
   pending_supervisor: "Pending supervisor",
   pending_hr: "Pending HR",
   credited: "Credited",
   rejected: "Rejected",
   expired: "Expired",
   extended: "Extended (SG)",
+  amendment_review: "Amended — HR review required",
   candidate: "Pending supervisor",
   ot_authorised: "Pending supervisor",
   duty_confirmed: "Pending HR",
@@ -108,6 +111,11 @@ export default function TravelToilPage() {
         subtitle="travel.toil.subtitle"
         breadcrumbs={
           <PageBreadcrumbs items={[{ label: "nav.travel", href: "/travel" }, { label: "travel.toil.title" }]} />
+        }
+        actions={
+          <Link href="/travel/toil/mine" className="btn-secondary text-sm">
+            {t("travel.toil.mine.title")}
+          </Link>
         }
       />
       {loading ? (

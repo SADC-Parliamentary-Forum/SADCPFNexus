@@ -590,6 +590,8 @@ Route::prefix('v1')->group(function () {
             Route::get('dsa-rates', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'dsaRatesIndex']);
             Route::post('dsa-rates', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'dsaRatesStore']);
             Route::get('toil', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilIndex']);
+            Route::get('toil/mine', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilMine']);
+            Route::post('toil/{candidate}/confirm', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilConfirm']);
             Route::post('toil/{candidate}/authorise-ot', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilAuthoriseOt']);
             Route::post('toil/{candidate}/confirm-duty', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilConfirmDuty']);
             Route::post('toil/{candidate}/hr-validate', [\App\Http\Controllers\Api\V1\Travel\TravelController::class, 'toilHrValidate']);

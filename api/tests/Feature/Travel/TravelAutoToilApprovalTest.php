@@ -26,7 +26,7 @@ class TravelAutoToilApprovalTest extends TestCase
         $this->assertSame(8.0, (float) config('travel.toil_hours_per_day'));
     }
 
-    public function test_auto_calc_creates_pending_supervisor_candidate_without_leave(): void
+    public function test_auto_calc_creates_candidate_awaiting_employee_confirmation_without_leave(): void
     {
         $tenant = Tenant::factory()->create();
         $staff = $this->makeUser('staff', $tenant);
@@ -58,7 +58,7 @@ class TravelAutoToilApprovalTest extends TestCase
         $candidates = TravelToilCandidate::where('travel_request_id', $travel->id)->get();
         $this->assertGreaterThan(0, $candidates->count());
         $this->assertTrue($candidates->every(
-            fn (TravelToilCandidate $c) => $c->status === TravelToilCandidate::STATUS_PENDING_SUPERVISOR
+            fn (TravelToilCandidate $c) => $c->status === TravelToilCandidate::STATUS_AWAITING_EMPLOYEE_CONFIRMATION
         ));
         $this->assertSame($leaveBefore, LeaveRequest::count());
         $this->assertSame($accrualBefore, OvertimeAccrual::count());
@@ -66,6 +66,24 @@ class TravelAutoToilApprovalTest extends TestCase
         $this->assertTrue(
             Notification::where('user_id', $staff->id)->where('trigger', 'travel.toil_candidate')->exists()
         );
+        // Supervisor/HR are not notified until the employee confirms — an
+        // unconfirmed weekend crossing must not surface as an approval task yet.
+        $this->assertFalse(
+            Notification::where('user_id', $supervisor->id)
+                ->where('trigger', 'travel.toil_approval_required')
+                ->exists()
+        );
+        $this->assertFalse(
+            Notification::where('user_id', $hr->id)
+                ->where('trigger', 'travel.toil_approval_required')
+                ->exists()
+        );
+
+        $firstCandidate = $candidates->first();
+        $this->asUser($staff)->postJson("/api/v1/travel/toil/{$firstCandidate->id}/confirm", [
+            'confirmation' => 'worked',
+        ])->assertOk()->assertJsonPath('data.status', TravelToilCandidate::STATUS_PENDING_SUPERVISOR);
+
         $this->assertTrue(
             Notification::where('user_id', $supervisor->id)
                 ->where('trigger', 'travel.toil_approval_required')
@@ -76,6 +94,56 @@ class TravelAutoToilApprovalTest extends TestCase
                 ->where('trigger', 'travel.toil_approval_required')
                 ->exists()
         );
+    }
+
+    public function test_employee_declining_auto_rejects_without_supervisor_step(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $staff = $this->makeUser('staff', $tenant);
+        $travel = TravelRequest::factory()->approved()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $staff->id,
+        ]);
+        $candidate = TravelToilCandidate::create([
+            'tenant_id' => $tenant->id,
+            'travel_request_id' => $travel->id,
+            'user_id' => $staff->id,
+            'candidate_date' => now()->toDateString(),
+            'hours' => 8,
+            'reason' => 'weekend',
+            'status' => TravelToilCandidate::STATUS_AWAITING_EMPLOYEE_CONFIRMATION,
+        ]);
+
+        $this->asUser($staff)->postJson("/api/v1/travel/toil/{$candidate->id}/confirm", [
+            'confirmation' => 'did_not_work',
+            'comment' => 'Stayed at the hotel, no official activity.',
+        ])->assertOk()->assertJsonPath('data.status', TravelToilCandidate::STATUS_REJECTED);
+
+        $this->assertNull($candidate->fresh()->overtime_accrual_id);
+    }
+
+    public function test_another_employee_cannot_confirm_someone_elses_candidate(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $staff = $this->makeUser('staff', $tenant);
+        $other = $this->makeUser('staff', $tenant);
+        $travel = TravelRequest::factory()->approved()->create([
+            'tenant_id' => $tenant->id,
+            'requester_id' => $staff->id,
+        ]);
+        $candidate = TravelToilCandidate::create([
+            'tenant_id' => $tenant->id,
+            'travel_request_id' => $travel->id,
+            'user_id' => $staff->id,
+            'candidate_date' => now()->toDateString(),
+            'hours' => 8,
+            'reason' => 'weekend',
+            'status' => TravelToilCandidate::STATUS_AWAITING_EMPLOYEE_CONFIRMATION,
+        ]);
+
+        $this->asUser($other)->postJson("/api/v1/travel/toil/{$candidate->id}/confirm", [
+            'confirmation' => 'worked',
+        ])->assertForbidden();
     }
 
     public function test_leave_credited_only_after_supervisor_and_hr_approve(): void

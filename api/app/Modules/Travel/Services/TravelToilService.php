@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Models\CalendarEntry;
 use App\Models\Department;
 use App\Models\OvertimeAccrual;
+use App\Models\TenantSetting;
 use App\Models\TravelRequest;
 use App\Models\TravelToilCandidate;
 use App\Models\User;
@@ -46,8 +47,8 @@ class TravelToilService
             throw new \RuntimeException('auto_create_leave_from_travel must remain false');
         }
 
-        $minDate = Carbon::parse($travel->departure_date);
-        $maxDate = Carbon::parse($travel->return_date);
+        $minDate = Carbon::parse($travel->actual_departure_date ?? $travel->departure_date);
+        $maxDate = Carbon::parse($travel->actual_return_date ?? $travel->return_date);
 
         $naHolidayDates = CalendarEntry::where('tenant_id', $travel->tenant_id)
             ->where('type', CalendarEntry::TYPE_SADC_HOLIDAY)
@@ -83,7 +84,7 @@ class TravelToilService
                     'user_id'   => $travel->requester_id,
                     'hours'     => $hours,
                     'reason'    => $reason,
-                    'status'    => TravelToilCandidate::STATUS_PENDING_SUPERVISOR,
+                    'status'    => TravelToilCandidate::STATUS_AWAITING_EMPLOYEE_CONFIRMATION,
                 ]
             );
 
@@ -105,11 +106,88 @@ class TravelToilService
             'tags'           => 'travel,toil',
         ]);
 
-        if (count($createdOrFound) > 0) {
-            $this->notifyCandidateStakeholders($travel, $user, count($createdOrFound));
+        if ($newlyCreated > 0) {
+            $this->notifyEmployeeConfirmationRequired($travel, $user, $newlyCreated);
         }
 
         return $createdOrFound;
+    }
+
+    /**
+     * A travel amendment changed departure/return dates after TOIL candidates were
+     * already generated. Non-credited candidates outside the new range are safe to
+     * discard (nothing has been paid out yet); generation is re-run to pick up any
+     * newly in-range dates. Already-credited candidates are never silently rewritten —
+     * they're flagged for HR review instead, per the "HR review required, not silent
+     * rewrite" rule.
+     */
+    public function reconcileForAmendment(TravelRequest $travel): void
+    {
+        if (! $travel->returned_at) {
+            // Mission hasn't closed yet; no candidates could exist from generateForTravel's
+            // markReturned trigger, so there's nothing to reconcile.
+            return;
+        }
+
+        $minDate = Carbon::parse($travel->actual_departure_date ?? $travel->departure_date)->toDateString();
+        $maxDate = Carbon::parse($travel->actual_return_date ?? $travel->return_date)->toDateString();
+
+        $candidates = TravelToilCandidate::where('travel_request_id', $travel->id)->get();
+
+        $outOfRange = fn (TravelToilCandidate $c) => $c->candidate_date->toDateString() < $minDate
+            || $c->candidate_date->toDateString() > $maxDate;
+
+        foreach ($candidates as $candidate) {
+            if (in_array($candidate->status, [
+                TravelToilCandidate::STATUS_CREDITED,
+                TravelToilCandidate::STATUS_EXTENDED,
+            ], true)) {
+                $candidate->update([
+                    'status' => TravelToilCandidate::STATUS_AMENDMENT_REVIEW,
+                    'amendment_review_reason' => 'Travel dates amended after this TOIL day was already credited (was '
+                        . $candidate->candidate_date->toDateString() . '). Original credit left untouched — review required.',
+                ]);
+                continue;
+            }
+
+            if (in_array($candidate->status, TravelToilCandidate::TERMINAL_STATUSES, true)) {
+                continue; // rejected/expired — leave as-is, nothing to reconcile.
+            }
+
+            if ($outOfRange($candidate)) {
+                $candidate->delete();
+            }
+        }
+
+        $this->notifyAmendmentReview($travel, $candidates);
+
+        $this->generateForTravel($travel);
+    }
+
+    private function notifyAmendmentReview(TravelRequest $travel, \Illuminate\Support\Collection $candidates): void
+    {
+        $flagged = $candidates->filter(fn ($c) => $c->status === TravelToilCandidate::STATUS_AMENDMENT_REVIEW);
+        if ($flagged->isEmpty()) {
+            return;
+        }
+
+        $hrUsers = User::role(['HR Manager', 'HR Administrator'])
+            ->where('tenant_id', $travel->tenant_id)
+            ->where('is_active', true)
+            ->get();
+
+        if ($hrUsers->isEmpty()) {
+            return;
+        }
+
+        $this->notificationService->dispatchToMany($hrUsers, 'travel.toil_amendment_review_required', [
+            'reference' => $travel->reference_number,
+            'count' => (string) $flagged->count(),
+        ], [
+            'module' => 'travel',
+            'record_id' => $travel->id,
+            'url' => '/travel/toil',
+        ]);
     }
 
     public function generateCatchUp(): int
@@ -181,6 +259,80 @@ class TravelToilService
     }
 
     /**
+     * Employee confirms what actually happened on a detected non-working day.
+     * "did_not_work" auto-rejects — a trip crossing a weekend does not by itself
+     * earn TOIL. "worked"/"travelled" moves the candidate into supervisor review,
+     * i.e. today's original flow starts here instead of at generation time.
+     */
+    public function confirmByEmployee(
+        TravelToilCandidate $candidate,
+        User $user,
+        string $confirmation,
+        ?string $comment = null,
+    ): TravelToilCandidate {
+        if ($candidate->user_id !== $user->id) {
+            abort(403, 'Only the traveller may confirm this TOIL candidate.');
+        }
+
+        if (! $candidate->awaitsEmployee()) {
+            throw ValidationException::withMessages([
+                'status' => 'This TOIL candidate is not awaiting employee confirmation.',
+            ]);
+        }
+
+        if (! in_array($confirmation, [
+            TravelToilCandidate::EMPLOYEE_CONFIRMATION_WORKED,
+            TravelToilCandidate::EMPLOYEE_CONFIRMATION_TRAVELLED,
+            TravelToilCandidate::EMPLOYEE_CONFIRMATION_DID_NOT_WORK,
+        ], true)) {
+            throw ValidationException::withMessages([
+                'confirmation' => 'Invalid confirmation value.',
+            ]);
+        }
+
+        if ($confirmation === TravelToilCandidate::EMPLOYEE_CONFIRMATION_DID_NOT_WORK) {
+            $candidate->update([
+                'employee_confirmed_at'  => now(),
+                'employee_confirmation'  => $confirmation,
+                'employee_comment'       => $comment,
+                'status'                 => TravelToilCandidate::STATUS_REJECTED,
+                'rejection_reason'       => 'Employee confirmed no qualifying duty was performed.',
+            ]);
+
+            AuditLog::record('travel.toil_employee_declined', [
+                'auditable_type' => TravelToilCandidate::class,
+                'auditable_id'   => $candidate->id,
+                'new_values'     => ['confirmation' => $confirmation, 'leave_credited' => false],
+                'tags'           => 'travel,toil',
+            ]);
+
+            return $candidate->fresh();
+        }
+
+        $candidate->update([
+            'employee_confirmed_at' => now(),
+            'employee_confirmation' => $confirmation,
+            'employee_comment'      => $comment,
+            'status'                => TravelToilCandidate::STATUS_PENDING_SUPERVISOR,
+        ]);
+
+        AuditLog::record('travel.toil_employee_confirmed', [
+            'auditable_type' => TravelToilCandidate::class,
+            'auditable_id'   => $candidate->id,
+            'new_values'     => ['confirmation' => $confirmation],
+            'tags'           => 'travel,toil',
+        ]);
+
+        $traveller = $candidate->user;
+        $travel = $candidate->travelRequest;
+        if ($traveller && $travel) {
+            $this->notifyCandidateStakeholders($travel, $traveller, 1);
+        }
+
+        return $candidate->fresh();
+    }
+
+    /**
      * Supervisor confirms actual duty performed → pending HR validation.
      */
     public function confirmDuty(TravelToilCandidate $candidate, User $user): TravelToilCandidate
@@ -227,7 +379,7 @@ class TravelToilService
         }
 
         return DB::transaction(function () use ($candidate, $user) {
-            $expiryDays = (int) config('travel.toil_expiry_days', 30);
+            $expiryDays = $this->tenantToilExpiryDays($candidate->tenant_id);
             $accrualDate = Carbon::parse($candidate->candidate_date)->startOfDay();
             $expiresAt = $accrualDate->copy()->addDays($expiryDays)->toDateString();
 
@@ -337,7 +489,7 @@ class TravelToilService
         }
 
         $expiresAt = $newExpiry
-            ?? now()->addDays((int) config('travel.toil_expiry_days', 30))->toDateString();
+            ?? now()->addDays($this->tenantToilExpiryDays($candidate->tenant_id))->toDateString();
 
         $candidate->update([
             'status'           => TravelToilCandidate::STATUS_EXTENDED,
@@ -365,9 +517,20 @@ class TravelToilService
         return $candidate->fresh();
     }
 
-    /**
-     * @param  list<TravelToilCandidate>  $ignored
-     */
+    private function notifyEmployeeConfirmationRequired(TravelRequest $travel, User $traveller, int $count): void
+    {
+        $this->notificationService->dispatch($traveller, 'travel.toil_candidate', [
+            'name' => $traveller->name,
+            'reference' => $travel->reference_number,
+            'traveller' => $traveller->name,
+            'count' => (string) $count,
+        ], [
+            'module' => 'travel',
+            'record_id' => $travel->id,
+            'url' => '/travel/toil/mine',
+        ]);
+    }
+
     private function notifyCandidateStakeholders(TravelRequest $travel, User $traveller, int $count): void
     {
         $meta = [
@@ -380,10 +543,6 @@ class TravelToilService
             'traveller' => $traveller->name,
             'count' => (string) $count,
         ];
-
-        $this->notificationService->dispatch($traveller, 'travel.toil_candidate', array_merge($vars, [
-            'name' => $traveller->name,
-        ]), $meta);
 
         $recipients = $this->approvalRecipients($traveller, $travel->tenant_id);
         if ($recipients->isNotEmpty()) {
@@ -459,6 +618,13 @@ class TravelToilService
         }
 
         return $dept?->supervisor;
+    }
+
+    private function tenantToilExpiryDays(int $tenantId): int
+    {
+        $value = TenantSetting::forTenant($tenantId)['toil_expiry_days'] ?? null;
+
+        return is_numeric($value) ? (int) $value : (int) config('travel.toil_expiry_days', 30);
     }
 
     private function assertStatus(TravelToilCandidate $candidate, array $allowed): void

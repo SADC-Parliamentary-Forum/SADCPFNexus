@@ -21,21 +21,31 @@ class SettingsController extends Controller
         'letterhead_website'  => 'www.sadcpf.org',
     ];
 
+    private function defaultsWithComputed(): array
+    {
+        return array_merge($this->defaults, [
+            'toil_expiry_days' => (int) config('travel.toil_expiry_days', 30),
+        ]);
+    }
+
     public function index(Request $request): JsonResponse
     {
         $stored = TenantSetting::forTenant($request->user()->tenant_id);
-        return response()->json(array_merge($this->defaults, $stored));
+        return response()->json(array_merge($this->defaultsWithComputed(), $stored));
     }
 
     public function update(Request $request): JsonResponse
     {
         abort_unless($request->user()->isSystemAdmin(), 403, 'Insufficient privileges.');
         $tenantId = $request->user()->tenant_id;
-        $allowed = array_keys($this->defaults);
+        $allowed = array_keys($this->defaultsWithComputed());
+        if ($request->has('toil_expiry_days')) {
+            $request->validate(['toil_expiry_days' => ['integer', 'min:1', 'max:365']]);
+        }
         foreach ($request->only($allowed) as $key => $value) {
             TenantSetting::setForTenant($tenantId, $key, $value);
         }
         $stored = TenantSetting::forTenant($tenantId);
-        return response()->json(array_merge($this->defaults, $stored));
+        return response()->json(array_merge($this->defaultsWithComputed(), $stored));
     }
 }

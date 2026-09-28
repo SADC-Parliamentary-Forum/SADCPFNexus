@@ -1582,7 +1582,22 @@ export default function TravelDetailPage() {
               <button
                 type="button"
                 disabled={actionLoading}
-                onClick={() => runPostApproval("Mark returned", () => travelApi.markReturned(request.id))}
+                onClick={async () => {
+                  const actualReturn = await prompt({
+                    title: "Mark returned",
+                    message: `Planned return was ${request.return_date}. If the actual return date differed (e.g. flight delay/early return), enter it here — this is used to detect Leave in Lieu days accurately. Leave blank to use the planned date.`,
+                    label: "Actual return date",
+                    inputType: "date",
+                  });
+                  if (actualReturn === undefined || actualReturn === null) return;
+                  const trimmed = actualReturn.trim();
+                  await runPostApproval("Mark returned", () =>
+                    travelApi.markReturned(
+                      request.id,
+                      trimmed ? { actual_return_date: trimmed } : undefined,
+                    ),
+                  );
+                }}
                 className="btn-secondary py-2 px-3 text-xs"
               >
                 Mark returned

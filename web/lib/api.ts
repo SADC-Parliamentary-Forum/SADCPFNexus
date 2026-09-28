@@ -1613,6 +1613,15 @@ export interface TravelAmendment {
   created_at?: string;
 }
 
+export interface TravelToilMineRow {
+  id: number;
+  candidate_date: string;
+  hours: number;
+  reason: "weekend" | "public_holiday" | "both" | null;
+  status: string;
+  travel_request?: { id: number; reference_number: string };
+}
+
 // ─── Generic Attachment ────────────────────────────────────────────────────
 
 export interface ModuleAttachment {
@@ -1728,8 +1737,8 @@ export const travelApi = {
     api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/confirm-funds`, remarks ? { remarks } : {}),
   markBooked: (id: number, data?: { emergency_commit?: boolean; emergency_reason?: string }) =>
     api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/mark-booked`, data ?? {}),
-  markReturned: (id: number) =>
-    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/mark-returned`),
+  markReturned: (id: number, data?: { actual_departure_date?: string; actual_return_date?: string }) =>
+    api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/mark-returned`, data ?? {}),
   completeRetirement: (id: number) =>
     api.post<{ data: TravelRequest; message: string }>(`/travel/requests/${id}/complete-retirement`),
   requestAmendment: (id: number, data: { changes: Record<string, unknown>; reason?: string }) =>
@@ -1750,6 +1759,9 @@ export const travelApi = {
     api.post<{ data: unknown; message: string }>("/travel/dsa-rates", data),
   listToil: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<unknown>>("/travel/toil", { params }),
+  listMyToil: () => api.get<TravelToilMineRow[]>("/travel/toil/mine"),
+  toilConfirm: (id: number, payload: { confirmation: "worked" | "travelled" | "did_not_work"; comment?: string }) =>
+    api.post(`/travel/toil/${id}/confirm`, payload),
   toilAuthoriseOt: (id: number) => api.post(`/travel/toil/${id}/authorise-ot`),
   toilConfirmDuty: (id: number) => api.post(`/travel/toil/${id}/confirm-duty`),
   toilHrValidate: (id: number) => api.post(`/travel/toil/${id}/hr-validate`),
@@ -7644,6 +7656,7 @@ export interface SystemSettings {
   letterhead_phone?: string;
   letterhead_fax?: string;
   letterhead_website?: string;
+  toil_expiry_days?: number;
 }
 
 export interface AdminEmailChannel {

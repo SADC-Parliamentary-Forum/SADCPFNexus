@@ -376,7 +376,16 @@ class TravelController extends Controller
 
     public function markReturned(Request $request, TravelRequest $travelRequest): JsonResponse
     {
-        $travel = $this->travelService->markReturned($travelRequest, $request->user());
+        $data = $request->validate([
+            'actual_departure_date' => ['nullable', 'date'],
+            'actual_return_date' => ['nullable', 'date'],
+        ]);
+        $travel = $this->travelService->markReturned(
+            $travelRequest,
+            $request->user(),
+            $data['actual_departure_date'] ?? null,
+            $data['actual_return_date'] ?? null,
+        );
         return response()->json(['message' => 'Travel marked returned. TOIL candidates generated if applicable.', 'data' => $travel]);
     }
 
@@ -478,6 +487,32 @@ class TravelController extends Controller
             $q->where('status', $status);
         }
         return response()->json($q->paginate($request->integer('per_page', 20)));
+    }
+
+    public function toilMine(Request $request): JsonResponse
+    {
+        $q = TravelToilCandidate::with(['travelRequest'])
+            ->where('user_id', $request->user()->id)
+            ->where('status', TravelToilCandidate::STATUS_AWAITING_EMPLOYEE_CONFIRMATION)
+            ->orderBy('candidate_date');
+        return response()->json($q->get());
+    }
+
+    public function toilConfirm(Request $request, TravelToilCandidate $candidate): JsonResponse
+    {
+        $data = $request->validate([
+            'confirmation' => ['required', 'string', 'in:worked,travelled,did_not_work'],
+            'comment' => ['nullable', 'string', 'max:2000'],
+        ]);
+        return response()->json([
+            'message' => 'Confirmation recorded.',
+            'data' => $this->toilService->confirmByEmployee(
+                $candidate,
+                $request->user(),
+                $data['confirmation'],
+                $data['comment'] ?? null,
+            ),
+        ]);
     }
 
     public function toilAuthoriseOt(Request $request, TravelToilCandidate $candidate): JsonResponse

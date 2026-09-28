@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TravelToilCandidate extends Model
 {
+    /** Awaiting the traveller's own confirmation of what actually happened on this date. */
+    public const STATUS_AWAITING_EMPLOYEE_CONFIRMATION = 'awaiting_employee_confirmation';
+
     /** Awaiting supervisor confirmation of actual duty performed. */
     public const STATUS_PENDING_SUPERVISOR = 'pending_supervisor';
 
@@ -17,6 +20,13 @@ class TravelToilCandidate extends Model
     public const STATUS_REJECTED = 'rejected';
     public const STATUS_EXPIRED = 'expired';
     public const STATUS_EXTENDED = 'extended';
+
+    /** Already credited when a travel amendment changed the mission dates; HR must review, not auto-adjust. */
+    public const STATUS_AMENDMENT_REVIEW = 'amendment_review';
+
+    public const EMPLOYEE_CONFIRMATION_WORKED = 'worked';
+    public const EMPLOYEE_CONFIRMATION_TRAVELLED = 'travelled';
+    public const EMPLOYEE_CONFIRMATION_DID_NOT_WORK = 'did_not_work';
 
     /** @deprecated Use STATUS_PENDING_SUPERVISOR */
     public const STATUS_CANDIDATE = self::STATUS_PENDING_SUPERVISOR;
@@ -46,17 +56,20 @@ class TravelToilCandidate extends Model
         'duty_confirmed_at', 'duty_confirmed_by', 'hr_validated_at', 'hr_validated_by',
         'credited_at', 'overtime_accrual_id', 'expires_at', 'sg_extended_at',
         'sg_extended_by', 'sg_extend_reason', 'rejection_reason',
+        'employee_confirmed_at', 'employee_confirmation', 'employee_comment',
+        'amendment_review_reason',
     ];
 
     protected $casts = [
-        'candidate_date'    => 'date',
-        'expires_at'        => 'date',
-        'hours'             => 'decimal:1',
-        'ot_authorised_at'  => 'datetime',
-        'duty_confirmed_at' => 'datetime',
-        'hr_validated_at'   => 'datetime',
-        'credited_at'       => 'datetime',
-        'sg_extended_at'    => 'datetime',
+        'candidate_date'        => 'date',
+        'expires_at'            => 'date',
+        'hours'                 => 'decimal:1',
+        'ot_authorised_at'      => 'datetime',
+        'duty_confirmed_at'     => 'datetime',
+        'hr_validated_at'       => 'datetime',
+        'credited_at'           => 'datetime',
+        'sg_extended_at'        => 'datetime',
+        'employee_confirmed_at' => 'datetime',
     ];
 
     public function travelRequest(): BelongsTo
@@ -77,6 +90,11 @@ class TravelToilCandidate extends Model
     public function isOpen(): bool
     {
         return ! in_array($this->status, self::TERMINAL_STATUSES, true);
+    }
+
+    public function awaitsEmployee(): bool
+    {
+        return $this->status === self::STATUS_AWAITING_EMPLOYEE_CONFIRMATION;
     }
 
     public function awaitsSupervisor(): bool

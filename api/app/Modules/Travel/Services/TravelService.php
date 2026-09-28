@@ -725,8 +725,12 @@ class TravelService
         return $travel->fresh();
     }
 
-    public function markReturned(TravelRequest $travel, User $user): TravelRequest
-    {
+    public function markReturned(
+        TravelRequest $travel,
+        User $user,
+        ?string $actualDepartureDate = null,
+        ?string $actualReturnDate = null,
+    ): TravelRequest {
         if (! $travel->isApproved()) {
             throw ValidationException::withMessages(['status' => 'Only approved travel can be marked returned.']);
         }
@@ -735,9 +739,11 @@ class TravelService
         $due = $this->addWorkingDays(Carbon::parse($travel->return_date)->startOfDay(), $workingDays);
 
         $travel->update([
-            'returned_at'        => now(),
-            'retirement_status'  => 'pending',
-            'retirement_due_at'  => $due->toDateString(),
+            'returned_at'            => now(),
+            'retirement_status'      => 'pending',
+            'retirement_due_at'      => $due->toDateString(),
+            'actual_departure_date'  => $actualDepartureDate ?? $travel->departure_date,
+            'actual_return_date'     => $actualReturnDate ?? $travel->return_date,
         ]);
 
         $this->toilService->generateForTravel($travel);
@@ -956,6 +962,7 @@ class TravelService
             'departure_date', 'return_date', 'destination_country', 'destination_city',
             'purpose', 'justification', 'cabin_class', 'route_justification',
         ])->all();
+        $datesChanged = array_key_exists('departure_date', $allowed) || array_key_exists('return_date', $allowed);
         $travel->update(array_merge($allowed, ['status' => 'approved']));
         $amendment->update(['status' => 'approved']);
 
@@ -964,6 +971,10 @@ class TravelService
             'auditable_id'   => $travel->id,
             'tags'           => 'travel',
         ]);
+
+        if ($datesChanged) {
+            $this->toilService->reconcileForAmendment($travel->fresh());
+        }
 
         return $travel->fresh();
     }

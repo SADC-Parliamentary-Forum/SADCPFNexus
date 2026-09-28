@@ -294,6 +294,10 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/travel/missions", permission: ["travel.view", "travel.admin"] },
   { path: "/travel/calendar", permission: ["travel.view", "travel.admin"] },
   { path: "/travel/dashboards", permission: ["travel.view", "travel.admin", "travel.finance-review", "travel.admin-review"] },
+  // Own Leave-in-Lieu confirmation queue: any traveller can confirm their own
+  // detected TOIL days, not just supervisors/HR — must be matched before the
+  // broader /travel/toil approval-queue entry below.
+  { path: "/travel/toil/mine", permission: ["travel.view", "travel.create", "travel.request.read.self"] },
   { path: "/travel/toil", permission: ["travel.review-toil", "travel.admin", "hr.admin", "leave.approve"] },
   { path: "/travel/queues/finance", permission: ["travel.finance-review", "travel.admin", "finance.approve"] },
   { path: "/travel/queues/director-finance", permission: ["travel.director-finance-confirm", "travel.admin"] },

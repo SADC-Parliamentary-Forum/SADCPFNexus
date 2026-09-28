@@ -19,6 +19,7 @@ const DEFAULTS: SystemSettings = {
   letterhead_phone: "+264 61 287 2158",
   letterhead_fax: "+264 61 254 642",
   letterhead_website: "www.sadcpf.org",
+  toil_expiry_days: 30,
 };
 
 type CredentialRow = {
@@ -161,6 +162,30 @@ export default function AdminSettingsPage() {
               <div className="col-span-2">
                 <label htmlFor="admin-settings-website" className="block text-xs font-semibold text-neutral-700 mb-1">Website</label>
                 <input id="admin-settings-website" className="form-input" value={settings.letterhead_website ?? ""} onChange={(e) => setSettings({ ...settings, letterhead_website: e.target.value })} />
+              </div>
+            </div>
+          </div>
+
+          <div className="card p-6 space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50">
+                <span className="material-symbols-outlined text-violet-700 text-[18px]">event_available</span>
+              </div>
+              <h2 className="text-sm font-semibold text-neutral-900">Leave in Lieu (Travel TOIL)</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="admin-settings-toil-expiry" className="block text-xs font-semibold text-neutral-700 mb-1">TOIL expiry (days after credit)</label>
+                <input
+                  id="admin-settings-toil-expiry"
+                  type="number"
+                  min={1}
+                  max={365}
+                  className="form-input"
+                  value={settings.toil_expiry_days ?? 30}
+                  onChange={(e) => setSettings({ ...settings, toil_expiry_days: Number(e.target.value) })}
+                />
+                <p className="mt-1 text-xs text-neutral-500">Credited Leave in Lieu days lapse this many days after HR credits them, unless the Secretary General extends a specific case.</p>
               </div>
             </div>
           </div>

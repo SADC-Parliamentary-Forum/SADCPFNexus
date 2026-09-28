@@ -13,6 +13,7 @@ class TravelRequest extends Model
     protected $fillable = [
         'tenant_id', 'requester_id', 'approved_by', 'reference_number',
         'purpose', 'status', 'departure_date', 'return_date',
+        'actual_departure_date', 'actual_return_date',
         'destination_country', 'destination_city', 'estimated_dsa',
         'actual_dsa', 'currency', 'justification', 'rejection_reason',
         'workplan_event_id', 'submitted_at', 'approved_at',
@@ -46,6 +47,8 @@ class TravelRequest extends Model
     protected $casts = [
         'departure_date'                 => 'date',
         'return_date'                    => 'date',
+        'actual_departure_date'          => 'date',
+        'actual_return_date'             => 'date',
         'submitted_at'                   => 'datetime',
         'approved_at'                    => 'datetime',
         'personal_cost_acknowledged_at'  => 'datetime',
