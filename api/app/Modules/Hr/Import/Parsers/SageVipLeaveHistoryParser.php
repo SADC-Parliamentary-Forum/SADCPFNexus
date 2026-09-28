@@ -28,7 +28,7 @@ final class SageVipLeaveHistoryParser
                 continue;
             }
             if (! preg_match(
-                '/^(.+?)\s+([A-Z0-9_]+(?:\s+-\s+.+)?)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*$/',
+                '/^(.+?)\s+([A-Z0-9_]+(?:\s+-\s+.+)?)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s*$/',
                 $line,
                 $m
             )) {

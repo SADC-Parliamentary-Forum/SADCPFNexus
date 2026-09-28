@@ -12,6 +12,7 @@ class HrVipImportFile extends Model
         'role',
         'original_filename',
         'storage_path',
+        'file_hash',
         'mime',
         'size_bytes',
     ];

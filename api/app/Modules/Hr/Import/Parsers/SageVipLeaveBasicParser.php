@@ -21,10 +21,15 @@ final class SageVipLeaveBasicParser
      */
     public function parseText(string $text): array
     {
+        // Balance/adjustment columns are legitimately negative for some leave types (e.g.
+        // COPEN_LV compensatory carry-over) — a plain [\d.]+ class silently drops every row
+        // containing a negative value, discarding the exact rows the source instruction
+        // requires preserved as evidence.
+        $num = '(-?[\d.]+)';
         $rows = [];
         foreach (preg_split('/\R/', $text) ?: [] as $line) {
             if (! preg_match(
-                '/^(SRHR\d+|\d{4}-\d{3})\s+(.+?)\s+([A-Z0-9_]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*$/',
+                '/^(SRHR\d+|\d{4}-\d{3})\s+(.+?)\s+([A-Z0-9_]+)\s+'.$num.'\s+'.$num.'\s+'.$num.'\s+'.$num.'\s+'.$num.'\s*$/',
                 trim($line),
                 $m
             )) {

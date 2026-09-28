@@ -45,9 +45,9 @@ class LeaveLedgerEntry extends Model
     ];
 
     protected $casts = [
-        'amount' => 'decimal:2',
+        'amount' => 'decimal:4',
         'effective_date' => 'date',
-        'balance_after' => 'decimal:2',
+        'balance_after' => 'decimal:4',
     ];
 
     public function user(): BelongsTo

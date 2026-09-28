@@ -8,6 +8,7 @@ use App\Models\LeaveBalance;
 use App\Models\LeaveLedgerEntry;
 use App\Models\LeavePayrollImpact;
 use App\Models\LeaveRequest;
+use App\Models\LeaveTypeBalance;
 use App\Models\Payslip;
 use App\Models\User;
 use App\Modules\Leave\Services\LeavePolicyService;
@@ -188,12 +189,39 @@ class HrVipImportCommitService
                 if (! $userId) {
                     continue;
                 }
-                if (str_contains(strtoupper($bal['leave_code']), 'ANN')) {
+                $rawCode = (string) $bal['leave_code'];
+                $leaveType = $this->normaliseLeaveType($rawCode);
+                $leaveTypeModel = $this->leavePolicy->leaveType($actor->tenant_id, $leaveType);
+
+                // Full-precision, per-type snapshot — every leave type from the source report,
+                // not just annual, and never rounded to a whole day.
+                LeaveTypeBalance::updateOrCreate(
+                    ['tenant_id' => $actor->tenant_id, 'user_id' => $userId, 'leave_type' => $leaveType, 'period_year' => $year],
+                    [
+                        'leave_type_id' => $leaveTypeModel?->id,
+                        'entitlement' => $bal['entitlement'],
+                        'balance_brought_forward' => $bal['balance_bf'],
+                        'accrued' => $bal['accrued'],
+                        'taken' => $bal['taken'],
+                        'balance_carried_forward' => $bal['balance_cf'],
+                        'source' => 'hr_vip_import',
+                        'imported_at' => now(),
+                    ],
+                );
+                $balanceRows++;
+
+                // The legacy leave_balances table (annual + sick only, integer precision) is kept
+                // in sync for any existing code still reading it directly, rounded only there.
+                if ($leaveType === 'annual') {
                     LeaveBalance::updateOrCreate(
                         ['user_id' => $userId, 'period_year' => $year],
-                        ['annual_balance_days' => (int) round((float) $bal['balance_cf'])],
+                        ['annual_balance_days' => (float) $bal['balance_cf']],
                     );
-                    $balanceRows++;
+                } elseif ($leaveType === 'sick') {
+                    LeaveBalance::updateOrCreate(
+                        ['user_id' => $userId, 'period_year' => $year],
+                        ['sick_leave_used_days' => (float) $bal['taken']],
+                    );
                 }
             }
 
@@ -203,16 +231,22 @@ class HrVipImportCommitService
                 if (! $userId) {
                     continue;
                 }
-                LeavePayrollImpact::create([
-                    'tenant_id' => $actor->tenant_id,
-                    'user_id' => $userId,
-                    'leave_type' => 'provision',
-                    'start_date' => $periodStart,
-                    'end_date' => $periodEndDate,
-                    'pay_treatment' => 'provision_snapshot',
-                    'status' => 'imported',
-                    'payload' => $prov,
-                ]);
+                // updateOrCreate on the natural key (tenant+user+period) rather than create():
+                // re-running the same import must not stack duplicate provision snapshots.
+                LeavePayrollImpact::updateOrCreate(
+                    [
+                        'tenant_id' => $actor->tenant_id,
+                        'user_id' => $userId,
+                        'leave_type' => 'provision',
+                        'start_date' => $periodStart,
+                        'end_date' => $periodEndDate,
+                    ],
+                    [
+                        'pay_treatment' => 'provision_snapshot',
+                        'status' => 'imported',
+                        'payload' => $prov,
+                    ],
+                );
                 $provisionRows++;
             }
 

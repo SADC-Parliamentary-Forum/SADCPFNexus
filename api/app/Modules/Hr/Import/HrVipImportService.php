@@ -72,21 +72,39 @@ class HrVipImportService
             'twelve_month' => [],
         ];
 
-        DB::transaction(function () use ($batch, $files, &$parsed): void {
+        // Roles that are legitimately reference attachments with no structured rows to parse —
+        // everything else must actually yield rows, or the filename-based guess was wrong.
+        $attachmentRoles = ['attachment', 'payslip_definition', 'twelve_month_pdf_attachment', 'payslip_xlsx_attachment'];
+
+        DB::transaction(function () use ($batch, $files, &$parsed, $attachmentRoles): void {
             foreach ($files as $upload) {
                 $role = $this->detectRole($upload->getClientOriginalName());
                 $path = $upload->store('hr-vip-imports/'.$batch->id, 'local');
+                $full = Storage::disk('local')->path($path);
+
+                $rowsParsed = 0;
+                if (! in_array($role, $attachmentRoles, true)) {
+                    $before = $this->countParsedRows($parsed);
+                    $this->parseInto($role, $full, $parsed);
+                    $rowsParsed = $this->countParsedRows($parsed) - $before;
+                }
+
+                // The filename matched a known pattern but the content didn't parse into any
+                // rows — do not silently trust the filename (instruction: "a filename ... is not
+                // proof that ... values exist"). Flag for manual classification instead.
+                $effectiveRole = (! in_array($role, $attachmentRoles, true) && $rowsParsed === 0)
+                    ? 'needs_manual_classification'
+                    : $role;
+
                 HrVipImportFile::create([
                     'import_batch_id' => $batch->id,
-                    'role' => $role,
+                    'role' => $effectiveRole,
                     'original_filename' => $upload->getClientOriginalName(),
                     'storage_path' => $path,
+                    'file_hash' => hash_file('sha256', $full) ?: null,
                     'mime' => $upload->getMimeType(),
                     'size_bytes' => $upload->getSize() ?: 0,
                 ]);
-
-                $full = Storage::disk('local')->path($path);
-                $this->parseInto($role, $full, $parsed);
             }
         });
 
@@ -145,6 +163,14 @@ class HrVipImportService
         ]);
 
         return $batch->fresh(['files']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $parsed
+     */
+    private function countParsedRows(array $parsed): int
+    {
+        return array_sum(array_map('count', $parsed));
     }
 
     /**

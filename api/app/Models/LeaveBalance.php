@@ -18,6 +18,8 @@ class LeaveBalance extends Model
     protected function casts(): array
     {
         return [
+            'annual_balance_days' => 'decimal:4',
+            'sick_leave_used_days' => 'decimal:4',
             'lil_hours_available' => 'decimal:1',
         ];
     }
