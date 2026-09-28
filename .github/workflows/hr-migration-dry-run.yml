@@ -1,0 +1,72 @@
+name: HR historical migration — dry run (production, rolled back)
+
+# Manually-triggered rehearsal of the HR historical wipe+import against the
+# real production database, entirely inside a DB transaction that is always
+# rolled back (see api/app/Console/Commands/HrHistoricalMigrationDryRun.php).
+# No isolated staging environment exists for this app; this is the
+# documented substitute for one.
+#
+# Real source files (PII, banking data) never pass through this workflow or
+# GitHub's infrastructure — they must already be placed by an operator at
+# api/storage/app/hr-vip-dry-run-source/ on the production server itself
+# (gitignored, never committed). This workflow only SSHs in and runs the
+# artisan command, capturing its sanitized stdout (aggregate counts and
+# employee codes only — never names, banking details, or salaries) as the
+# run log.
+#
+# Secret: DEPLOY_SSH_PRIVATE_KEY (same one deploy-production.yml uses).
+on:
+  workflow_dispatch:
+    inputs:
+      tenant_id:
+        description: Tenant id to rehearse against
+        required: true
+      actor_user_id:
+        description: 'User id to act as (optional — defaults to the tenant system admin)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    name: SSH as sadcpf-nexus and run dry-run command
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - name: Validate tenant_id is numeric
+        run: |
+          set -euo pipefail
+          if ! echo "${{ inputs.tenant_id }}" | grep -Eq '^[1-9][0-9]*$'; then
+            echo "Refused: tenant_id must be a positive integer."
+            exit 1
+          fi
+
+      - name: Run dry-run over SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          TENANT_ID: ${{ inputs.tenant_id }}
+          ACTOR_USER_ID: ${{ inputs.actor_user_id }}
+        run: |
+          set -euo pipefail
+          test -n "${SSH_PRIVATE_KEY:-}" || { echo "Missing secret DEPLOY_SSH_PRIVATE_KEY"; exit 1; }
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          ssh-keyscan -H 194.163.156.4 >> "$HOME/.ssh/known_hosts"
+
+          ACTOR_FLAG=""
+          if [ -n "$ACTOR_USER_ID" ]; then
+            ACTOR_FLAG="--actor-user-id=$(printf '%q' "$ACTOR_USER_ID")"
+          fi
+
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=60 \
+            sadcpf-nexus@194.163.156.4 \
+            "cd /home/sadcpf-nexus/htdocs/nexus.sadcpf.org/app/api && php artisan hr:dry-run-migration --tenant=$(printf '%q' "$TENANT_ID") $ACTOR_FLAG"
+          rm -f "$HOME/.ssh/id_ed25519"

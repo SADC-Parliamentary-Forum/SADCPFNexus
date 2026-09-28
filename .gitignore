@@ -57,6 +57,10 @@ web/playwright/.auth/
 api/bootstrap/cache/*.php
 api/storage/app/public/*
 !api/storage/app/public/.gitkeep
+
+# Real Sage VIP source files (PII, banking data) for the HR migration dry-run —
+# must never be committed. See app/Console/Commands/HrHistoricalMigrationDryRun.php.
+api/storage/app/hr-vip-dry-run-source/
 api/storage/framework/cache/*
 !api/storage/framework/cache/.gitignore
 api/storage/framework/sessions/*
@@ -117,3 +121,6 @@ run-tests.sh
 
 # Local git worktrees
 .worktrees/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
