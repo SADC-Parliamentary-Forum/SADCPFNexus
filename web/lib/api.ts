@@ -3438,6 +3438,19 @@ export type HrVipImportBatch = {
   commit_summary?: Record<string, unknown>;
 };
 
+export interface WorkingDaysResult {
+  calendar_days: number;
+  weekend_days: number;
+  public_holidays_excluded: number;
+  working_days: number;
+  holidays: Array<{ name: string; date: string }>;
+}
+
+export const workingDaysApi = {
+  calculate: (params: { start_date: string; end_date: string; day_part?: string; country_code?: string }) =>
+    api.post<{ data: WorkingDaysResult }>("/calendar/working-days", params),
+};
+
 export const hrVipImportApi = {
   upload: (form: FormData) =>
     api.post<{ message: string; data: HrVipImportBatch }>("/hr/imports", form),

@@ -1,21 +1,23 @@
 "use client";
 
 import { type ApprovalRequest, type ApprovalHistory, type ApprovalStep } from "@/lib/api";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 interface Props {
     request?: ApprovalRequest;
 }
 
-const ACTION_LABELS: Record<string, string> = {
-    approve:   "Approved",
-    reject:    "Rejected",
-    return:    "Returned for Correction",
-    withdraw:  "Withdrawn",
-    delegate:  "Delegated",
-    resubmit:  "Resubmitted",
-};
-
 export function ApprovalTimeline({ request }: Props) {
+    const { t } = useI18n();
+    const ACTION_LABELS: Record<string, string> = {
+        approve: t("approval.action.approve"),
+        reject: t("approval.action.reject"),
+        return: t("approval.action.return"),
+        withdraw: t("approval.action.withdraw"),
+        delegate: t("approval.action.delegate"),
+        resubmit: t("approval.action.resubmit"),
+    };
+
     if (!request || !request.workflow) return null;
 
     const steps        = request.workflow.steps || [];

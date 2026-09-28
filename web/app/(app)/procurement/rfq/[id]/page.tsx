@@ -11,13 +11,16 @@ import {
   quoteAttachmentsApi,
   quotesApi,
   supplierCategoriesApi,
+  vendorsApi,
   type CreateQuotePayload,
   type ProcurementAttachment,
   type ProcurementQuote,
   type ProcurementRequest,
+  type Vendor,
 } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
+import { NexusPicker } from "@/components/ui/NexusPicker";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -29,6 +32,7 @@ type Assessment = "pending" | "pass" | "fail";
 
 type QuoteForm = {
   vendor_name: string;
+  vendor_id: number | null;
   quoted_amount: string;
   currency: string;
   quote_date: string;
@@ -40,6 +44,7 @@ type QuoteForm = {
 
 const emptyQuoteForm = (currency: string): QuoteForm => ({
   vendor_name: "",
+  vendor_id: null,
   quoted_amount: "",
   currency,
   quote_date: "",
@@ -205,6 +210,7 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
       const isAssessing = !!editingQuote;
       const payload: CreateQuotePayload & { coi_declared?: boolean; coi_has_conflict?: boolean; coi_notes?: string } = {
         vendor_name: quoteForm.vendor_name.trim(),
+        vendor_id: quoteForm.vendor_id,
         quoted_amount: Number(quoteForm.quoted_amount),
         currency: quoteForm.currency || currency,
         quote_date: quoteForm.quote_date || undefined,
@@ -483,6 +489,7 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
                         setEditingQuote(quote);
                         setQuoteForm({
                           vendor_name: quote.vendor_name,
+                          vendor_id: quote.vendor_id ?? null,
                           quoted_amount: String(quote.quoted_amount),
                           currency: quote.currency ?? currency,
                           quote_date: quote.quote_date ? quote.quote_date.split("T")[0] : "",
@@ -545,9 +552,35 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
           <div className="card w-full max-w-lg p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-base font-bold">{editingQuote ? "Assess Quote" : "Record Quote"}</h2>
             {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+            <NexusPicker<Vendor>
+              id="quote-supplier-picker"
+              label="Supplier"
+              value={quoteForm.vendor_id ? { id: quoteForm.vendor_id, name: quoteForm.vendor_name } as Vendor : null}
+              onSelect={(vendor) =>
+                setQuoteForm((current) => ({
+                  ...current,
+                  vendor_id: vendor?.id ?? null,
+                  vendor_name: vendor ? vendor.name : current.vendor_name,
+                }))
+              }
+              fetchOptions={async (search) => {
+                const res = await vendorsApi.list({ search: search || undefined, per_page: 10 });
+                return res.data.data ?? [];
+              }}
+              getId={(v) => v.id}
+              getLabel={(v) => v.name}
+              placeholder="Search registered suppliers…"
+              hint="Not registered yet? Type their name below instead."
+            />
             <label htmlFor="quote-supplier-name" className="block text-xs font-semibold text-neutral-700">
-              Supplier name
-              <input id="quote-supplier-name" className="form-input mt-1.5" value={quoteForm.vendor_name} onChange={(e) => setQuoteForm((current) => ({ ...current, vendor_name: e.target.value }))} />
+              Supplier name {quoteForm.vendor_id ? "(from selection)" : "(not yet registered)"}
+              <input
+                id="quote-supplier-name"
+                className="form-input mt-1.5"
+                value={quoteForm.vendor_name}
+                disabled={Boolean(quoteForm.vendor_id)}
+                onChange={(e) => setQuoteForm((current) => ({ ...current, vendor_name: e.target.value }))}
+              />
             </label>
             <div className="grid gap-3 md:grid-cols-3">
               <label htmlFor="quote-amount" className="block text-xs font-semibold text-neutral-700">

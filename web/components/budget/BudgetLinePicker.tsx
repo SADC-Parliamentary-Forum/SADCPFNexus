@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   budgetApi,
   type BudgetAvailability,
   type OrgBudgetLine,
 } from "@/lib/api";
+import { NexusPicker } from "@/components/ui/NexusPicker";
 
 function unwrapLines(payload: unknown): OrgBudgetLine[] {
   if (!payload || typeof payload !== "object") return [];
@@ -46,32 +47,28 @@ export default function BudgetLinePicker({
   className = "",
   showAvailability = true,
 }: BudgetLinePickerProps) {
-  const selectId = useId();
-  const [lines, setLines] = useState<OrgBudgetLine[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<OrgBudgetLine | null>(null);
   const [availability, setAvailability] = useState<BudgetAvailability | null>(null);
 
+  // Resolve the initial selected line object from its id (NexusPicker needs the
+  // full object, not just the id the external contract passes).
   useEffect(() => {
+    if (!value) {
+      setSelected(null);
+      return;
+    }
+    if (selected?.id === value) return;
     let cancelled = false;
-    setLoading(true);
-    budgetApi
-      .lines({ active_only: true, per_page: 200 })
-      .then((res) => {
-        if (cancelled) return;
-        setLines(unwrapLines(res.data));
-        setError(null);
-      })
-      .catch(() => {
-        if (!cancelled) setError("Failed to load budget lines.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+    budgetApi.lines({ active_only: true, per_page: 200 }).then((res) => {
+      if (cancelled) return;
+      const match = unwrapLines(res.data).find((l) => l.id === value) ?? null;
+      setSelected(match);
+    });
     return () => {
       cancelled = true;
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   useEffect(() => {
     if (!value || !showAvailability) {
@@ -92,33 +89,26 @@ export default function BudgetLinePicker({
     };
   }, [value, amount, showAvailability]);
 
-  const selected = useMemo(() => lines.find((l) => l.id === value) ?? null, [lines, value]);
-
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <label htmlFor={selectId} className="block text-xs font-semibold text-neutral-700">
-        {label}
-        {required ? <span className="text-red-500"> *</span> : null}
-      </label>
-      <select
-        id={selectId}
-        className="form-input w-full"
-        disabled={disabled || loading}
-        value={value ?? ""}
-        onChange={(e) => {
-          const id = e.target.value ? Number(e.target.value) : null;
-          const line = lines.find((l) => l.id === id) ?? null;
-          onChange(id, line);
+      <NexusPicker<OrgBudgetLine>
+        id="budget-line-picker"
+        label={label}
+        required={required}
+        disabled={disabled}
+        value={selected}
+        onSelect={(line) => {
+          setSelected(line);
+          onChange(line?.id ?? null, line);
         }}
-      >
-        <option value="">{loading ? "Loading lines…" : "Select budget line"}</option>
-        {lines.map((line) => (
-          <option key={line.id} value={line.id}>
-            {lineLabel(line)}
-          </option>
-        ))}
-      </select>
-      {error && <p className="text-xs text-red-600">{error}</p>}
+        placeholder="Search code, name, category…"
+        fetchOptions={async (search) => {
+          const res = await budgetApi.lines({ active_only: true, per_page: 50, ...(search ? { q: search } : {}) });
+          return unwrapLines(res.data);
+        }}
+        getId={(l) => l.id}
+        getLabel={(l) => lineLabel(l)}
+      />
       {showAvailability && availability && (
         <div
           className={`rounded-lg border px-3 py-2 text-xs ${

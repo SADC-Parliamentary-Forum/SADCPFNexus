@@ -13,6 +13,8 @@ import { getListData } from "@/lib/listPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Stepper } from "@/components/ui/Stepper";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { NexusPicker } from "@/components/ui/NexusPicker";
+import { NexusMoneyInput } from "@/components/ui/NexusMoneyInput";
 
 // ─── Funding items with icons ─────────────────────────────────────────────────
 const FUNDING_ITEMS: { item: string; icon: string }[] = [
@@ -674,23 +676,27 @@ function TravelCreatePageInner() {
 
           {canPrepareForOthers && (
             <div className="space-y-1.5 rounded-lg border border-blue-100 bg-blue-50/60 p-3" data-testid="travel-on-behalf-picker">
-              <label htmlFor="travel-create-traveller" className="block text-xs font-medium text-neutral-700">
-                Traveller (prepare on behalf)
-              </label>
-              <select id="travel-create-traveller"
-                className="form-input"
-                value={form.prepared_on_behalf_of}
-                onChange={(e) => updateField("prepared_on_behalf_of", e.target.value)}
-              >
-                <option value="">Myself — I am the traveller</option>
-                {travellers
-                  .filter((t) => t.id !== user?.id)
-                  .map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}{t.email ? ` (${t.email})` : ""}
-                    </option>
-                  ))}
-              </select>
+              <NexusPicker<{ id: number; name: string; email?: string }>
+                id="travel-create-traveller"
+                label="Traveller (prepare on behalf)"
+                value={
+                  form.prepared_on_behalf_of
+                    ? travellers.find((t) => String(t.id) === form.prepared_on_behalf_of) ?? null
+                    : null
+                }
+                onSelect={(t) => updateField("prepared_on_behalf_of", t ? String(t.id) : "")}
+                fetchOptions={async (search) => {
+                  const eligible = travellers.filter((t) => t.id !== user?.id);
+                  if (!search) return eligible;
+                  const q = search.toLowerCase();
+                  return eligible.filter((t) => t.name.toLowerCase().includes(q) || t.email?.toLowerCase().includes(q));
+                }}
+                getId={(t) => t.id}
+                getLabel={(t) => t.name}
+                getSecondaryLabel={(t) => t.email}
+                placeholder="Myself — I am the traveller (search to prepare for someone else)"
+                clearLabel="Myself — I am the traveller"
+              />
               <p className="text-[11px] text-neutral-500">
                 Prepared by you. Traveller attribution will show on the request.
               </p>
@@ -1055,34 +1061,20 @@ function TravelCreatePageInner() {
 
                   {/* Amount inputs */}
                   <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label htmlFor={`travel-create-forum-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">
-                        Forum ({form.currency})
-                      </label>
-                      <input id={`travel-create-forum-${i}`}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-right outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                        placeholder="0.00"
-                        value={row.forum_amount}
-                        onChange={(e) => updateFundingRow(i, "forum_amount", e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor={`travel-create-host-${i}`} className="block text-[10px] font-medium text-neutral-500 mb-1">
-                        Host ({form.currency})
-                      </label>
-                      <input id={`travel-create-host-${i}`}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="w-full rounded-lg border border-neutral-200 bg-white dark:bg-neutral-900 px-2.5 py-2 text-sm text-right outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-                        placeholder="0.00"
-                        value={row.host_amount}
-                        onChange={(e) => updateFundingRow(i, "host_amount", e.target.value)}
-                      />
-                    </div>
+                    <NexusMoneyInput
+                      id={`travel-create-forum-${i}`}
+                      label="Forum"
+                      currency={form.currency}
+                      value={row.forum_amount === "" ? null : Number(row.forum_amount)}
+                      onValueChange={(v) => updateFundingRow(i, "forum_amount", v === null ? "" : String(v))}
+                    />
+                    <NexusMoneyInput
+                      id={`travel-create-host-${i}`}
+                      label="Host"
+                      currency={form.currency}
+                      value={row.host_amount === "" ? null : Number(row.host_amount)}
+                      onValueChange={(v) => updateFundingRow(i, "host_amount", v === null ? "" : String(v))}
+                    />
                   </div>
                   <div className="flex flex-wrap gap-3 text-[10px] text-neutral-600" data-testid="funding-payor-matrix">
                     {([

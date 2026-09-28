@@ -708,6 +708,11 @@ Route::prefix('v1')->group(function () {
             Route::get('requests/{leaveRequest}/attachments/{attachment}/download', [\App\Http\Controllers\Api\V1\Leave\LeaveAttachmentController::class, 'download']);
         });
 
+        // Shared calendar/working-days calculation (any module's date-range picker)
+        Route::prefix('calendar')->group(function () {
+            Route::post('working-days', [\App\Http\Controllers\Api\V1\Shared\CalendarController::class, 'workingDays']);
+        });
+
         // Procurement Module
         Route::prefix('procurement')->group(function () {
             // Feature-only committee evaluations (distinct from tender board /evaluations).
