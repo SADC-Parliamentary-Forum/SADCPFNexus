@@ -1613,6 +1613,48 @@ export interface TravelAmendment {
   created_at?: string;
 }
 
+export interface PayrollImportLine {
+  id: number;
+  employee_number: string;
+  period: string | null;
+  gross: number | string;
+  deductions: number | string;
+  net: number | string;
+  external_ref: string | null;
+}
+
+export interface PayrollImportBatch {
+  id: number;
+  reference: string;
+  driver: string;
+  status: "draft" | "staged" | "exported" | string;
+  period: string | null;
+  line_count: number;
+  lines_count?: number;
+  staged_at?: string | null;
+  created_at?: string;
+  lines?: PayrollImportLine[];
+}
+
+export interface PayrollImportLineInput {
+  employee_number: string;
+  period?: string;
+  gross?: number;
+  deductions?: number;
+  net?: number;
+  external_ref?: string;
+}
+
+export const payrollImportApi = {
+  list: (params?: Record<string, string | number>) =>
+    api.get<PaginatedResponse<PayrollImportBatch>>("/finance/payroll/imports", { params }),
+  show: (id: number) => api.get<{ data: PayrollImportBatch }>(`/finance/payroll/imports/${id}`),
+  create: (payload: { period?: string; reference?: string; lines: PayrollImportLineInput[] }) =>
+    api.post<{ message: string; data: PayrollImportBatch }>("/finance/payroll/imports", payload),
+  stage: (id: number) =>
+    api.post<{ message: string; data: PayrollImportBatch }>(`/finance/payroll/imports/${id}/stage`),
+};
+
 export interface TravelToilMineRow {
   id: number;
   candidate_date: string;
