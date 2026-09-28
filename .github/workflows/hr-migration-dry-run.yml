@@ -7,12 +7,14 @@ name: HR historical migration — dry run (production, rolled back)
 # documented substitute for one.
 #
 # Real source files (PII, banking data) never pass through this workflow or
-# GitHub's infrastructure — they must already be placed by an operator at
-# api/storage/app/hr-vip-dry-run-source/ on the production server itself
-# (gitignored, never committed). This workflow only SSHs in and runs the
-# artisan command, capturing its sanitized stdout (aggregate counts and
-# employee codes only — never names, banking details, or salaries) as the
-# run log.
+# GitHub's infrastructure — a system admin stages them first via the app
+# itself at /hr/imports/dry-run-source (no SSH needed for that step; see
+# HrDryRunSourceController), which writes them straight to
+# api/storage/app/hr-vip-dry-run-source/ on the production server
+# (gitignored, never committed). This workflow only SSHs in to RUN the
+# artisan command against files already there, capturing its sanitized
+# stdout (aggregate counts and employee codes only — never names, banking
+# details, or salaries) as the run log.
 #
 # Secret: DEPLOY_SSH_PRIVATE_KEY (same one deploy-production.yml uses).
 on:

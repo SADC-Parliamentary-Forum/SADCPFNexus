@@ -96,6 +96,11 @@ export default function HistoricalLeavePayrollImportPage() {
             ]}
           />
         }
+        actions={
+          <Link href="/hr/imports/dry-run-source" className="btn-secondary text-sm">
+            Dry-run source files
+          </Link>
+        }
       />
 
       <FormSection

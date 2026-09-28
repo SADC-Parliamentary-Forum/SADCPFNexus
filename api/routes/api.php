@@ -1151,6 +1151,13 @@ Route::prefix('v1')->group(function () {
             Route::get('imports/{hrVipImportBatch}/preview', [\App\Http\Controllers\Api\V1\Hr\HrVipImportController::class, 'preview']);
             Route::post('imports/{hrVipImportBatch}/commit', [\App\Http\Controllers\Api\V1\Hr\HrVipImportController::class, 'commit']);
 
+            // Dry-run source staging (system admin only) — upload the real historical
+            // migration source files through the app instead of needing SSH access.
+            Route::get('dry-run-source', [\App\Http\Controllers\Api\V1\Hr\HrDryRunSourceController::class, 'index']);
+            Route::post('dry-run-source', [\App\Http\Controllers\Api\V1\Hr\HrDryRunSourceController::class, 'store']);
+            Route::delete('dry-run-source', [\App\Http\Controllers\Api\V1\Hr\HrDryRunSourceController::class, 'clear']);
+            Route::delete('dry-run-source/{filename}', [\App\Http\Controllers\Api\V1\Hr\HrDryRunSourceController::class, 'destroy']);
+
             // Payslip salary confirmation (HR only)
             Route::post('payslips/{payslip}/confirm', [\App\Http\Controllers\Api\V1\Hr\PayslipConfirmationController::class, 'confirm']);
 

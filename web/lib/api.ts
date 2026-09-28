@@ -3460,6 +3460,21 @@ export const hrVipImportApi = {
     api.post<{ message: string; data: HrVipImportBatch }>(`/hr/imports/${id}/commit`),
 };
 
+export interface HrDryRunSourceFile {
+  name: string;
+  size_bytes: number;
+  uploaded_at: string;
+}
+
+export const hrDryRunSourceApi = {
+  list: () => api.get<{ data: HrDryRunSourceFile[] }>("/hr/dry-run-source"),
+  upload: (form: FormData) =>
+    api.post<{ message: string; data: { stored: string[]; rejected: string[] } }>("/hr/dry-run-source", form),
+  remove: (filename: string) =>
+    api.delete<{ message: string }>(`/hr/dry-run-source/${encodeURIComponent(filename)}`),
+  clear: () => api.delete<{ message: string }>("/hr/dry-run-source"),
+};
+
 export interface LilAccrual {
   id: string;
   code: string;
