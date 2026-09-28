@@ -143,6 +143,9 @@ class HrVipImportCommitService
                 LeaveRequest::create([
                     'tenant_id' => $actor->tenant_id,
                     'requester_id' => $userId,
+                    // reference_number is NOT NULL — prefer the source's own reference (far more
+                    // traceable for a historical import) and only generate one when absent.
+                    'reference_number' => $reference ?: ('LVE-HIST-'.Str::upper(Str::random(8))),
                     'leave_type' => $leaveType,
                     'start_date' => $tx['from_date'],
                     'end_date' => $tx['to_date'],
@@ -199,11 +202,11 @@ class HrVipImportCommitService
                     ['tenant_id' => $actor->tenant_id, 'user_id' => $userId, 'leave_type' => $leaveType, 'period_year' => $year],
                     [
                         'leave_type_id' => $leaveTypeModel?->id,
-                        'entitlement' => $bal['entitlement'],
-                        'balance_brought_forward' => $bal['balance_bf'],
-                        'accrued' => $bal['accrued'],
-                        'taken' => $bal['taken'],
-                        'balance_carried_forward' => $bal['balance_cf'],
+                        'entitlement' => $bal['entitlement'] ?? 0,
+                        'balance_brought_forward' => $bal['balance_bf'] ?? 0,
+                        'accrued' => $bal['accrued'] ?? 0,
+                        'taken' => $bal['taken'] ?? 0,
+                        'balance_carried_forward' => $bal['balance_cf'] ?? 0,
                         'source' => 'hr_vip_import',
                         'imported_at' => now(),
                     ],
