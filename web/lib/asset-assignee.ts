@@ -5,6 +5,7 @@ export type AssigneeDepartment = string | { name?: string | null } | null | unde
 export type AssigneeFields = {
   name?: string | null;
   email?: string | null;
+  employee_number?: string | null;
   department?: AssigneeDepartment;
 };
 
@@ -37,5 +38,7 @@ export function tenantUserFromAsset(asset: Pick<Asset, "assigned_user" | "depart
 }
 
 export function formatAssigneeLabel(user: AssigneeFields): string {
-  return [user.name, user.email, assigneeDepartmentName(user)].filter(Boolean).join(" · ");
+  const staff = user.employee_number?.trim();
+  const name = staff && user.name ? `${user.name} (${staff})` : user.name;
+  return [name, user.email, assigneeDepartmentName(user)].filter(Boolean).join(" · ");
 }

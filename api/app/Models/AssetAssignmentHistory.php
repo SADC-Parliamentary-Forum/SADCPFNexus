@@ -38,6 +38,11 @@ class AssetAssignmentHistory extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function assignedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
+    }
+
     public function custodianLocation(): BelongsTo
     {
         return $this->belongsTo(AssetLocation::class, 'custodian_location_id');

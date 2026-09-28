@@ -132,7 +132,7 @@ export function AssetAssigneePicker({
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-neutral-900 truncate">{u.name}</p>
                     <p className="text-xs text-neutral-500 truncate">
-                      {[u.email, dept].filter(Boolean).join(" · ") || t("assets.notAssigned")}
+                      {[u.employee_number, u.email, dept].filter(Boolean).join(" · ") || t("assets.notAssigned")}
                     </p>
                   </div>
                 </button>

@@ -160,6 +160,23 @@ test.describe("Asset register print, export, and view (admin)", () => {
     expect(resp.ok()).toBeTruthy();
     expect((resp.headers()["content-type"] ?? "")).toMatch(/csv|octet-stream|text\/plain/i);
   });
+
+  test("report centre lists the catalogue and runs assigned-to-user", async ({ page }) => {
+    skipWithoutAuth("admin");
+    await page.goto("/assets/reports");
+    await waitForApp(page);
+    await skipIfAccessDenied(page, "assets reports");
+    await expect(page.getByTestId("asset-reports-catalogue")).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator("[data-report-id]")).toHaveCount(52);
+    await expect(page.getByTestId("asset-reports-r01")).toBeVisible();
+    await page.getByTestId("asset-assignee-picker").fill("SADCPF-002");
+    const option = page.locator('[role="option"]').filter({ hasText: /Demo Staff|SADCPF-002/ }).first();
+    await expect(option).toBeVisible({ timeout: 10_000 });
+    await option.click();
+    await page.getByTestId("asset-reports-r01-run").click();
+    await expect(page.getByTestId("asset-reports-r01-results")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("asset-reports-r01-results")).toContainText(/Dell Latitude|AST-LAP-001|inferred/i);
+  });
 });
 
 test.describe("Public QR page", () => {

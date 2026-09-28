@@ -12,6 +12,10 @@ test("formatAssigneeLabel joins full name, email and department", () => {
     "Boemo Sekgoma · sg@sadcpf.org · Office of the SG",
   );
   assert.equal(formatAssigneeLabel({ name: "Shared store" }), "Shared store");
+  assert.equal(
+    formatAssigneeLabel({ name: "Ronald Windwaai", employee_number: "RW-0001", email: "rw@sadcpf.org" }),
+    "Ronald Windwaai (RW-0001) · rw@sadcpf.org",
+  );
 });
 
 test("assigneeDepartmentName reads string or nested department", () => {

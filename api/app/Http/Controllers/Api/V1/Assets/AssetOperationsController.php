@@ -12,8 +12,10 @@ use App\Models\AssetTimelineEvent;
 use App\Models\AssetTransfer;
 use App\Models\Attachment;
 use App\Models\User;
+use App\Modules\Assets\Reporting\AssetReportCatalogue;
 use App\Modules\Assets\Services\AssetCheckoutService;
 use App\Modules\Assets\Services\AssetIncidentService;
+use App\Modules\Assets\Services\AssetReportEngine;
 use App\Modules\Assets\Services\AssetService;
 use App\Modules\Assets\Services\AssetTimelineService;
 use App\Modules\Assets\Services\AssetTransferService;
@@ -248,6 +250,72 @@ class AssetOperationsController extends Controller
                 fpassthru($stream);
             }
         }, $attachment->original_filename);
+    }
+
+    public function reportCatalogue(): JsonResponse
+    {
+        return response()->json(['data' => AssetReportCatalogue::all()]);
+    }
+
+    public function assignedToUserReport(Request $request, AssetReportEngine $engine): JsonResponse
+    {
+        $data = $request->validate([
+            'user_id' => ['nullable', 'integer'],
+            'staff_number' => ['nullable', 'string', 'max:64'],
+            'employee_number' => ['nullable', 'string', 'max:64'],
+            'mode' => ['nullable', 'string', 'max:32'],
+            'as_of' => ['nullable', 'date'],
+        ]);
+        $data['report_id'] = 'R01';
+
+        return response()->json($engine->run($request->user(), 'R01', $data));
+    }
+
+    public function runGovernedReport(Request $request, AssetReportEngine $engine): JsonResponse
+    {
+        $data = $request->validate([
+            'report_id' => ['required', 'string', 'max:8'],
+            'user_id' => ['nullable', 'integer'],
+            'staff_number' => ['nullable', 'string', 'max:64'],
+            'employee_number' => ['nullable', 'string', 'max:64'],
+            'asset_id' => ['nullable', 'integer'],
+            'mode' => ['nullable', 'string', 'max:32'],
+            'as_of' => ['nullable', 'date'],
+            'department' => ['nullable', 'string', 'max:120'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+            'campaign_id' => ['nullable', 'integer'],
+        ]);
+
+        return response()->json($engine->run($request->user(), strtoupper($data['report_id']), $data));
+    }
+
+    public function exportGovernedReport(Request $request, AssetReportEngine $engine): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $data = $request->validate([
+            'report_id' => ['required', 'string', 'max:8'],
+            'format' => ['required', 'in:pdf,xlsx,csv'],
+            'official' => ['nullable', 'boolean'],
+            'intent' => ['nullable', 'in:export,print'],
+            'user_id' => ['nullable', 'integer'],
+            'staff_number' => ['nullable', 'string', 'max:64'],
+            'employee_number' => ['nullable', 'string', 'max:64'],
+            'asset_id' => ['nullable', 'integer'],
+            'mode' => ['nullable', 'string', 'max:32'],
+            'as_of' => ['nullable', 'date'],
+            'department' => ['nullable', 'string', 'max:120'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date'],
+            'campaign_id' => ['nullable', 'integer'],
+        ]);
+
+        return $engine->export(
+            $request->user(),
+            strtoupper($data['report_id']),
+            $data,
+            $data['format'],
+            $request->boolean('official'),
+        );
     }
 
     public function reports(Request $request, string $type): JsonResponse
