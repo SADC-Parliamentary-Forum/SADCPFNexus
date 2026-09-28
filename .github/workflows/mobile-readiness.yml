@@ -1,0 +1,134 @@
+name: Mobile Release Readiness
+
+# Static Android/iOS store-readiness checklist, complementary to mobile.yml (which
+# builds/tests the app). This workflow never fails the job — it is report-only by
+# design: findings are printed as warning annotations and a job summary table so
+# operators see them before submitting to Play Store / App Store, without blocking
+# the CI gate that deploy-production.yml waits on.
+#
+# Covers the same ground as the android-release-engineer / ios-release-engineer /
+# mobile-security-auditor review checklists, automated for every push/PR that
+# touches mobile/.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-readiness.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - '.github/workflows/mobile-readiness.yml'
+  workflow_dispatch:
+
+jobs:
+  android-readiness:
+    name: Android readiness checklist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Android release config
+        working-directory: mobile
+        run: |
+          set +e
+          GRADLE=android/app/build.gradle.kts
+          {
+            echo "## Android release readiness"
+            echo
+            echo "| Check | Result |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          appId=$(sed -n 's/.*applicationId *= *"\([^"]*\)".*/\1/p' "$GRADLE" | head -1)
+          if [ -z "$appId" ] || [[ "$appId" == *com.example* ]]; then
+            echo "::warning::Android applicationId is missing or a placeholder ($appId)"
+            echo "| applicationId | ⚠️ missing/placeholder ($appId) |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| applicationId | ✅ $appId |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if grep -q 'signingConfigs' "$GRADLE" && grep -q 'create("release")' "$GRADLE"; then
+            echo "| Release signing config present | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::No release signingConfigs block found in $GRADLE"
+            echo "| Release signing config present | ❌ |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if grep -q 'signingConfigs.getByName("debug")' "$GRADLE"; then
+            echo "::warning::Release build type silently falls back to debug signing when SADC_KEYSTORE_* is unset. Confirm those secrets are set before any Play Store submission."
+            echo "| Falls back to debug signing if keystore secrets absent | ⚠️ yes — verify SADC_KEYSTORE_* before submitting |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if grep -q 'flutter build appbundle' ../.github/workflows/mobile.yml 2>/dev/null || grep -q 'flutter build appbundle' .github/workflows/mobile.yml 2>/dev/null; then
+            echo "| CI produces an AAB (Play required format) | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::No 'flutter build appbundle' step found in mobile.yml — Play Store requires AAB, not APK."
+            echo "| CI produces an AAB (Play required format) | ❌ |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          flutterVersion=$(sed -n "s/.*flutter-version: *'\([0-9.]*\)'.*/\1/p" ../.github/workflows/mobile.yml 2>/dev/null | head -1)
+          echo "| Flutter version pinned in CI (16KB page-size support needs 3.24+) | ${flutterVersion:-unknown} |" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+  ios-readiness:
+    name: iOS readiness checklist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check iOS release config
+        working-directory: mobile
+        run: |
+          set +e
+          PLIST=ios/Runner/Info.plist
+          PBXPROJ=ios/Runner.xcodeproj/project.pbxproj
+          {
+            echo "## iOS release readiness"
+            echo
+            echo "| Check | Result |"
+            echo "|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          bundleId=$(sed -n 's/.*PRODUCT_BUNDLE_IDENTIFIER = \([^;]*\);.*/\1/p' "$PBXPROJ" | head -1)
+          if [ -z "$bundleId" ] || [[ "$bundleId" == *com.example* ]]; then
+            echo "::warning::iOS bundle identifier is missing or a placeholder ($bundleId)"
+            echo "| Bundle identifier | ⚠️ missing/placeholder ($bundleId) |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Bundle identifier | ✅ $bundleId |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if find ios -iname '*.xcprivacy' | grep -q .; then
+            echo "| Privacy manifest (PrivacyInfo.xcprivacy) | ✅ present |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::No PrivacyInfo.xcprivacy manifest found under mobile/ios. Apple requires this for apps using required-reason APIs (e.g. UserDefaults, file timestamps) — check current App Store Connect guidance before submission."
+            echo "| Privacy manifest (PrivacyInfo.xcprivacy) | ❌ missing |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Usage-description keys for plugins that need them, cross-checked against pubspec.yaml.
+          declare -A checks=(
+            [mobile_scanner]=NSCameraUsageDescription
+            [local_auth]=NSFaceIDUsageDescription
+            [geolocator]=NSLocationWhenInUseUsageDescription
+            [image_picker]=NSPhotoLibraryUsageDescription
+          )
+          for pkg in "${!checks[@]}"; do
+            key="${checks[$pkg]}"
+            if grep -qE "^\s*${pkg}:" ../pubspec.yaml 2>/dev/null || grep -qE "^\s*${pkg}:" pubspec.yaml 2>/dev/null; then
+              if grep -q "$key" "$PLIST"; then
+                echo "| $pkg → $key | ✅ present |" >> "$GITHUB_STEP_SUMMARY"
+              else
+                echo "::warning::pubspec depends on $pkg but Info.plist is missing $key — App Store will reject or the feature will crash at runtime."
+                echo "| $pkg → $key | ❌ missing |" >> "$GITHUB_STEP_SUMMARY"
+              fi
+            fi
+          done
+
+          if [ -f ios/Runner/Runner.entitlements ]; then
+            echo "| Entitlements file present | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Entitlements file present | ℹ️ none (expected if no special capabilities are used) |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit 0
