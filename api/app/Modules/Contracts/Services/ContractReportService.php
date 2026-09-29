@@ -35,6 +35,7 @@ class ContractReportService
         }
 
         return $q->get()->map(fn (Contract $c) => [
+            'id' => $c->id,
             'reference' => $c->reference_number,
             'title' => $c->title,
             'type' => optional($c->type)->name,
@@ -55,6 +56,7 @@ class ContractReportService
     public function financial(User $user): Collection
     {
         return $this->base($user)->get()->map(fn (Contract $c) => [
+            'id' => $c->id,
             'reference' => $c->reference_number,
             'department' => optional($c->department)->name,
             'donor' => $c->donor,
@@ -75,6 +77,7 @@ class ContractReportService
                 && ! in_array($c->lifecycle(), ['FULLY_EXECUTED', 'ACTIVE', 'COMPLETED', 'CLOSED'], true);
 
             return [
+                'id' => $c->id,
                 'reference' => $c->reference_number,
                 'title' => $c->title,
                 'is_legacy' => (bool) $c->is_legacy,
@@ -91,6 +94,7 @@ class ContractReportService
         $days = (int) now()->diffInDays(now());
 
         return $this->base($user)->get()->map(fn (Contract $c) => [
+            'id' => $c->id,
             'reference' => $c->reference_number,
             'title' => $c->title,
             'end_date' => optional($c->end_date)->toDateString(),
