@@ -22,6 +22,7 @@ use App\Modules\Contracts\Services\ContractRenewalService;
 use App\Modules\Contracts\Services\ContractService;
 use App\Modules\Contracts\Services\ContractSignatureService;
 use App\Modules\Contracts\Services\ContractWorkflowService;
+use App\Modules\Correspondence\Services\MailMergeService;
 use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,7 @@ class ContractController extends Controller
         private readonly ContractPackService $pack,
         private readonly ContractDiffService $diff,
         private readonly \App\Modules\Contracts\Services\ContractAuthorityService $authority,
+        private readonly MailMergeService $mailMerge,
     ) {}
 
     /**
@@ -717,6 +719,116 @@ class ContractController extends Controller
         return response()->json(['message' => 'Correspondence draft created and linked to the contract.', 'data' => $correspondence], 201);
     }
 
+    /**
+     * Governed letter templates that back contract lifecycle notices. Kept in
+     * sync with database/migrations/2026_09_29_100000_seed_contract_notice_letter_templates.php
+     * so a tenant onboarded after that migration ran can still self-heal here.
+     */
+    private const CONTRACT_NOTICE_TEMPLATES = [
+        [
+            'code' => 'CONTRACT_TERMINATION_NOTICE',
+            'name' => 'Contract Termination Notice',
+            'subject_template' => 'Notice of Termination — Contract {{contract_number}}',
+            'body_template' => "This serves as formal notice that Contract {{contract_number}} ({{contract_title}}) with {{counterparty_name}} is terminated effective {{effective_date}}.\n\nReason for termination: {{reason}}\n\nThis notice is generated automatically upon contract termination in Nexus and should be reviewed before dispatch.",
+        ],
+        [
+            'code' => 'CONTRACT_AMENDMENT_NOTICE',
+            'name' => 'Contract Amendment Notice',
+            'subject_template' => 'Notice of Amendment — Contract {{contract_number}}, Amendment {{amendment_reference}}',
+            'body_template' => "This serves as notice that Contract {{contract_number}} ({{contract_title}}) with {{counterparty_name}} has been amended under reference {{amendment_reference}}.\n\nReason for amendment: {{reason}}\n\nRevised contract value: {{revised_value}}\n\nThis notice is generated automatically upon a material contract amendment in Nexus and should be reviewed before dispatch.",
+        ],
+    ];
+
+    /**
+     * Self-heals the two contract notice templates for a tenant that did not
+     * exist when the seeding migration ran. Idempotent via insertOrIgnore
+     * against the (tenant_id, code) unique index.
+     */
+    private function ensureContractNoticeTemplatesExist(int $tenantId): void
+    {
+        $now = now();
+        foreach (self::CONTRACT_NOTICE_TEMPLATES as $template) {
+            \Illuminate\Support\Facades\DB::table('correspondence_letter_templates')->insertOrIgnore([
+                'tenant_id' => $tenantId,
+                'created_by' => null,
+                'name' => $template['name'],
+                'code' => $template['code'],
+                'subject_template' => $template['subject_template'],
+                'body_template' => $template['body_template'],
+                'is_active' => true,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+    }
+
+    /**
+     * Auto-generates a Correspondence draft from a governed letter template when a
+     * contract lifecycle action occurs (termination, material amendment). Never
+     * throws — a notice-generation failure must not block the underlying lifecycle
+     * action; it is logged and silently skipped instead.
+     */
+    private function generateContractNotice(Contract $contract, string $templateCode, array $extraFields, \App\Models\User $actor, string $priority): void
+    {
+        try {
+            $this->ensureContractNoticeTemplatesExist((int) $contract->tenant_id);
+
+            $template = \App\Models\CorrespondenceLetterTemplate::where('tenant_id', $contract->tenant_id)
+                ->where('code', $templateCode)
+                ->where('is_active', true)
+                ->first();
+
+            if (! $template) {
+                return;
+            }
+
+            $counterpartyName = $contract->display_counterparty;
+            if (! $counterpartyName) {
+                $counterparty = $contract->counterparty;
+                $counterpartyName = $counterparty?->full_legal_name
+                    ?: $counterparty?->organisation
+                    ?: (trim(($counterparty?->first_name ?? '').' '.($counterparty?->surname ?? '')) ?: 'the counterparty');
+            }
+
+            $fields = array_merge([
+                'contract_number' => $contract->reference_number,
+                'contract_title' => $contract->title,
+                'counterparty_name' => $counterpartyName,
+            ], $extraFields);
+
+            $rendered = $this->mailMerge->preview($template, $fields);
+
+            \App\Models\Correspondence::create([
+                'tenant_id' => $contract->tenant_id,
+                'created_by' => $actor->id,
+                'contract_id' => $contract->id,
+                'department_id' => $contract->department_id,
+                'title' => $rendered['title'],
+                'subject' => $rendered['subject'],
+                'body' => $rendered['body'],
+                'type' => 'contract_notice',
+                'priority' => $priority,
+                'direction' => 'outgoing',
+                'confidentiality' => 'general_official',
+                'response_required' => false,
+                'status' => 'draft',
+            ]);
+
+            AuditLog::record('contract.notice_generated', [
+                'auditable_type' => Contract::class,
+                'auditable_id' => $contract->id,
+                'new_values' => ['template_code' => $templateCode],
+                'tags' => ['contract', 'correspondence', 'notice'],
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Contract notice generation failed', [
+                'contract_id' => $contract->id,
+                'template_code' => $templateCode,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
     // ── Financials, deliverables, amendments, close-out (WS5) ────────────────
 
     public function ledger(Request $request, Contract $contract): JsonResponse
@@ -853,6 +965,14 @@ class ContractController extends Controller
             'new_values' => ['amendment' => $amendment->reference_number, 'revised_value' => $revised, 'material' => $isMaterial],
             'tags' => ['contract', 'amendment'],
         ]);
+
+        if ($isMaterial) {
+            $this->generateContractNotice($contract, 'CONTRACT_AMENDMENT_NOTICE', [
+                'reason' => $data['reason'],
+                'amendment_reference' => $amendment->reference_number,
+                'revised_value' => number_format($revised, 2),
+            ], $request->user(), 'normal');
+        }
 
         return response()->json([
             'message' => 'Amendment created.',
@@ -1318,6 +1438,11 @@ class ContractController extends Controller
             'new_values' => ['status' => 'terminated', 'type' => $data['type']],
             'tags' => ['contract', 'lifecycle'],
         ]);
+
+        $this->generateContractNotice($contract, 'CONTRACT_TERMINATION_NOTICE', [
+            'reason' => $data['reason'],
+            'effective_date' => $data['effective_date'] ?? now()->toDateString(),
+        ], $request->user(), 'high');
 
         return response()->json(['message' => 'Contract terminated.', 'data' => $contract->fresh(), 'termination' => $termination]);
     }
