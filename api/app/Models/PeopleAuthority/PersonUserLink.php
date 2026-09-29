@@ -2,7 +2,9 @@
 
 namespace App\Models\PeopleAuthority;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PersonUserLink extends Model
 {
@@ -23,4 +25,14 @@ class PersonUserLink extends Model
         'linked_at' => 'datetime',
         'unlinked_at' => 'datetime',
     ];
+
+    public function person(): BelongsTo
+    {
+        return $this->belongsTo(Person::class, 'person_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

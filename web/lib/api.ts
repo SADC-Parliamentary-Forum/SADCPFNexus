@@ -10807,6 +10807,8 @@ export const peopleAuthorityApi = {
     api.post<{ data: { people_created: number; links_created: number; skipped: number } }>(
       "/people-authority/people/sync-from-users",
     ),
+  removeSupplierLinks: () =>
+    api.post<{ data: { removed: number } }>("/people-authority/people/remove-supplier-links"),
   updatePerson: (id: number, data: Record<string, unknown>) => api.put(`/people-authority/people/${id}`, data),
   linkAccount: (id: number, data: Record<string, unknown>) =>
     api.post(`/people-authority/people/${id}/link-account`, data),

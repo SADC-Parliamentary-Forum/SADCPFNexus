@@ -2467,6 +2467,7 @@ Route::prefix('v1')->group(function () {
             Route::middleware('can:people.view-profile')->get('people/{person}/profile', [$pa, 'peopleProfile']);
             Route::middleware('can:people.manage')->post('people', [$pa, 'peopleStore']);
             Route::middleware('can:people.manage')->post('people/sync-from-users', [$pa, 'peopleSyncFromUsers']);
+            Route::middleware('can:people.manage')->post('people/remove-supplier-links', [$pa, 'peopleRemoveSupplierLinks']);
             Route::middleware('can:people.manage')->put('people/{person}', [$pa, 'peopleUpdate']);
             Route::middleware('can:people.manage')->post('people/{person}/link-account', [$pa, 'linkAccount']);
             Route::post('people/{person}/change-requests', [$pa, 'changeRequestStore']);

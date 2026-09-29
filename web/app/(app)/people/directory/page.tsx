@@ -7,6 +7,7 @@ import { peopleAuthorityApi } from "@/lib/api";
 import { RegisterShell } from "@/components/registers/RegisterShell";
 import { PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { FormField } from "@/components/ui/FormSection";
 import { DEFAULT_PAGE_SIZE, getListData, getLastPage, getTotal } from "@/lib/listPagination";
 
@@ -65,6 +66,7 @@ function numberOf(p: DirectoryPerson): string {
 
 export default function StaffDirectoryPage() {
   const qc = useQueryClient();
+  const { confirm } = useConfirm();
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
   const [page, setPage] = useState(1);
@@ -142,6 +144,32 @@ export default function StaffDirectoryPage() {
     onError: () => setErr("Could not populate the directory from staff accounts."),
   });
 
+  const removeSuppliers = useMutation({
+    mutationFn: () => peopleAuthorityApi.removeSupplierLinks(),
+    onSuccess: (res) => {
+      const { removed } = res.data.data;
+      setSyncMessage(
+        removed > 0
+          ? `Removed ${removed} supplier-portal account(s) from the staff directory.`
+          : "No supplier-portal accounts were found in the staff directory.",
+      );
+      setErr(null);
+      qc.invalidateQueries({ queryKey: ["people-authority", "staff-directory"] });
+    },
+    onError: () => setErr("Could not remove supplier accounts from the directory."),
+  });
+
+  async function handleRemoveSuppliers() {
+    const ok = await confirm({
+      title: "Remove supplier accounts from staff directory?",
+      message:
+        "This removes any directory entry that is linked to a Supplier or Supplier Finance User account. Removed entries are soft-deleted and can be restored if this was a mistake. It does not affect supplier records anywhere else in the system.",
+      confirmText: "Remove supplier accounts",
+      variant: "danger",
+    });
+    if (ok) removeSuppliers.mutate();
+  }
+
   function startEdit(p: DirectoryPerson) {
     if (!p.id) return;
     setEditingId(p.id);
@@ -178,6 +206,15 @@ export default function StaffDirectoryPage() {
             title="Create directory entries from existing staff login accounts that aren't in this directory yet"
           >
             {sync.isPending ? "Populating…" : "Populate from staff accounts"}
+          </button>
+          <button
+            type="button"
+            className="btn-secondary text-sm"
+            onClick={handleRemoveSuppliers}
+            disabled={removeSuppliers.isPending}
+            title="Remove any directory entry linked to a Supplier or Supplier Finance User account"
+          >
+            {removeSuppliers.isPending ? "Removing…" : "Remove supplier accounts"}
           </button>
           <Link href="/organogram" className="btn-secondary text-sm">
             Organisation chart

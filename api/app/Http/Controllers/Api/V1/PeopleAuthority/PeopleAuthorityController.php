@@ -164,11 +164,12 @@ class PeopleAuthorityController extends Controller
         User::query()
             ->where('tenant_id', $actor->tenant_id)
             ->whereNotIn('id', $existingByUserId)
+            ->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', ['Supplier', 'Supplier Finance User']))
             ->orderBy('name')
             ->chunkById(100, function ($users) use ($actor, &$created, &$linked, &$skipped) {
                 foreach ($users as $target) {
                     $name = trim((string) $target->name);
-                    if ($name === '') {
+                    if ($name === '' || $target->isSupplier()) {
                         $skipped++;
                         continue;
                     }
@@ -216,6 +217,37 @@ class PeopleAuthorityController extends Controller
             'links_created' => $linked,
             'skipped' => $skipped,
         ]]);
+    }
+
+    /**
+     * Removes people from the staff directory who are only there because a
+     * supplier-portal account (Supplier / Supplier Finance User role) was
+     * pulled in by peopleSyncFromUsers before it excluded those roles.
+     * Soft-deletes the Person record (recoverable) and marks the link inactive.
+     */
+    public function peopleRemoveSupplierLinks(Request $request): JsonResponse
+    {
+        $actor = $request->user();
+
+        $links = PersonUserLink::query()
+            ->where('tenant_id', $actor->tenant_id)
+            ->where('status', 'active')
+            ->whereHas('user', fn ($q) => $q->whereHas('roles', fn ($r) => $r->whereIn('name', ['Supplier', 'Supplier Finance User'])))
+            ->with('person')
+            ->get();
+
+        $removed = 0;
+        foreach ($links as $link) {
+            $link->update(['status' => 'inactive', 'unlinked_at' => now()]);
+            if ($link->person && ! $link->person->trashed()) {
+                $link->person->delete();
+                $removed++;
+            }
+        }
+
+        $this->audit->record($actor, 'people.removed_supplier_links', null, Person::class, null);
+
+        return response()->json(['data' => ['removed' => $removed]]);
     }
 
     private function splitName(string $name): array

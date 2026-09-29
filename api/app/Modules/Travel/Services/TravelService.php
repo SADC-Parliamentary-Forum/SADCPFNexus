@@ -963,6 +963,22 @@ class TravelService
             'purpose', 'justification', 'cabin_class', 'route_justification',
         ])->all();
         $datesChanged = array_key_exists('departure_date', $allowed) || array_key_exists('return_date', $allowed);
+
+        // If the actual departure/return date was never independently recorded (still
+        // equal to the pre-amendment planned date — the default markReturned() applies),
+        // an amendment correcting the planned date should carry the actual date along with
+        // it. A genuinely recorded actual date (e.g. a real flight delay) is left alone.
+        if ($datesChanged) {
+            if (array_key_exists('departure_date', $allowed)
+                && $travel->actual_departure_date?->toDateString() === $travel->departure_date?->toDateString()) {
+                $allowed['actual_departure_date'] = $allowed['departure_date'];
+            }
+            if (array_key_exists('return_date', $allowed)
+                && $travel->actual_return_date?->toDateString() === $travel->return_date?->toDateString()) {
+                $allowed['actual_return_date'] = $allowed['return_date'];
+            }
+        }
+
         $travel->update(array_merge($allowed, ['status' => 'approved']));
         $amendment->update(['status' => 'approved']);
 
