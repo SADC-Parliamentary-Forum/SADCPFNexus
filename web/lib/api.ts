@@ -5495,6 +5495,14 @@ export const contractsApi = {
     api.post<{ data: unknown; message: string }>(`/contracts/${id}/generate`, { template_version_id }),
   listTemplates: () =>
     api.get<{ data: ContractTemplateSummary[] }>("/contracts/templates"),
+  getTemplate: (id: number) =>
+    api.get<{ data: ContractTemplateSummary }>(`/contracts/templates/${id}`),
+  createTemplate: (data: { name: string; contract_type_id?: number; counterparty_type?: string; description?: string; body: string; variables?: Record<string, unknown>; version?: string }) =>
+    api.post<{ message: string; data: ContractTemplateSummary }>("/contracts/templates", data),
+  addTemplateVersion: (templateId: number, data: { version: string; body: string; variables?: Record<string, unknown> }) =>
+    api.post<{ message: string; data: ContractTemplateVersionSummary }>(`/contracts/templates/${templateId}/versions`, data),
+  activateTemplateVersion: (templateId: number, versionId: number) =>
+    api.post<{ message: string; data: ContractTemplateSummary }>(`/contracts/templates/${templateId}/versions/${versionId}/activate`),
   importLegacy: (data: {
     title: string; value: number; start_date: string; end_date: string;
     vendor_id?: number; counterparty_name?: string; type_id?: number; currency?: string;
