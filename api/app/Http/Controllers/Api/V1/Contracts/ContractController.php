@@ -23,6 +23,7 @@ use App\Modules\Contracts\Services\ContractService;
 use App\Modules\Contracts\Services\ContractSignatureService;
 use App\Modules\Contracts\Services\ContractWorkflowService;
 use App\Modules\Correspondence\Services\MailMergeService;
+use App\Modules\Procurement\Support\DocumentTextExtractor;
 use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -51,6 +52,7 @@ class ContractController extends Controller
         private readonly ContractDiffService $diff,
         private readonly \App\Modules\Contracts\Services\ContractAuthorityService $authority,
         private readonly MailMergeService $mailMerge,
+        private readonly DocumentTextExtractor $documentText,
     ) {}
 
     /**
@@ -186,8 +188,10 @@ class ContractController extends Controller
 
     /**
      * AI-assisted extraction of legacy contract metadata from pasted text or an
-     * uploaded plain-text document. Returns UNVERIFIED suggestions for human
-     * review before import (PRD §103/§129); nothing is persisted here.
+     * uploaded document (plain text, PDF, DOCX, or image — scanned PDFs/images
+     * fall back to OCR via App\Modules\Procurement\Support\DocumentTextExtractor).
+     * Returns UNVERIFIED suggestions for human review before import (PRD
+     * §103/§129); nothing is persisted here.
      */
     public function extract(Request $request): JsonResponse
     {
@@ -195,15 +199,30 @@ class ContractController extends Controller
 
         $data = $request->validate([
             'text' => ['nullable', 'string', 'max:200000'],
-            'file' => ['nullable', 'file', 'mimetypes:text/plain', 'max:5120'],
+            'file' => ['nullable', 'file', 'max:10240', 'mimetypes:text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png,image/gif,image/webp'],
         ]);
 
         $text = $data['text'] ?? '';
+        $extractionNotice = null;
+
         if ($text === '' && $request->hasFile('file')) {
-            $text = (string) file_get_contents($request->file('file')->getRealPath());
+            $file = $request->file('file');
+            $result = $this->documentText->extract(
+                (string) file_get_contents($file->getRealPath()),
+                (string) $file->getMimeType(),
+                (string) $file->getClientOriginalName(),
+            );
+            $text = (string) ($result['text'] ?? '');
+
+            if (trim($text) === '' && ($result['method'] ?? '') === DocumentTextExtractor::METHOD_PDF_NO_TEXT) {
+                $extractionNotice = 'This PDF has no selectable text. Paste the contract text instead, or upload a PDF/Word file with selectable text.';
+            }
         }
+
         if (trim($text) === '') {
-            throw ValidationException::withMessages(['text' => ['Paste the contract text or upload a plain-text document to extract from.']]);
+            throw ValidationException::withMessages([
+                'text' => [$extractionNotice ?? 'Paste the contract text or upload a document to extract from.'],
+            ]);
         }
 
         return response()->json(['data' => app(\App\Modules\Contracts\Services\ContractExtractionService::class)->extract($text)]);
