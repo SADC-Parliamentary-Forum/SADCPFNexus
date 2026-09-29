@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Stepper } from "@/components/ui/Stepper";
 import { useToast } from "@/components/ui/Toast";
+import { VendorPicker } from "@/components/ui/VendorPicker";
 import {
   contractsApi, vendorsApi, procurementApi,
   type ContractType, type Vendor,
@@ -264,11 +265,13 @@ export default function ContractCreatePage() {
             </div>
             {partyType === "organisation" ? (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Supplier <span className="text-red-500">*</span></label>
-                <select className="form-input" value={vendorId} onChange={(e) => setVendorId(e.target.value ? Number(e.target.value) : "")}>
-                  <option value="">Select supplier…</option>
-                  {vendors.map((v) => (<option key={v.id} value={v.id}>{v.name}</option>))}
-                </select>
+                <VendorPicker
+                  id="contracts-create-supplier"
+                  label="Supplier"
+                  required
+                  value={vendors.find((v) => v.id === vendorId) ?? null}
+                  onSelect={(v) => setVendorId(v ? v.id : "")}
+                />
                 <p className="text-xs text-neutral-400">Bank details are managed via the supplier record and require a separate verification workflow.</p>
               </div>
             ) : (
