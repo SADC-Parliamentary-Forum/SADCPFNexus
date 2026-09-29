@@ -1,11 +1,12 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { EmployeePicker } from "@/components/ui/EmployeePicker";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { assignmentsApi, tenantUsersApi, adminApi, type AssignmentType, type AssignmentPriority, type TenantUserOption, type Department } from "@/lib/api";
+import { assignmentsApi, adminApi, type AssignmentType, type AssignmentPriority, type TenantUserOption, type Department } from "@/lib/api";
 
 export default function CreateAssignmentPage() {
   const router = useRouter();
@@ -27,13 +28,7 @@ export default function CreateAssignmentPage() {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const { data: usersRes } = useQuery({
-    queryKey: ["tenant-users"],
-    queryFn: () => tenantUsersApi.list(),
-    staleTime: 60_000,
-  });
-  const users: TenantUserOption[] = (usersRes?.data as any)?.data ?? usersRes?.data ?? [];
+  const [assignedUser, setAssignedUser] = useState<TenantUserOption | null>(null);
 
   const { data: deptsRes } = useQuery({
     queryKey: ["admin-departments"],
@@ -169,15 +164,16 @@ export default function CreateAssignmentPage() {
         {/* Assignee + Department */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="assignments-create-assign-to" className="block text-sm font-medium text-neutral-700 mb-1">Assign To</label>
-            <select id="assignments-create-assign-to" value={form.assigned_to} onChange={(e) => set("assigned_to", e.target.value)} className="form-input">
-              <option value="">— Select staff member —</option>
-              {users.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}{u.job_title ? ` — ${u.job_title}` : ""}
-                </option>
-              ))}
-            </select>
+            <EmployeePicker
+              id="assignments-create-assign-to"
+              label="Assign To"
+              value={assignedUser}
+              onSelect={(u) => {
+                setAssignedUser(u);
+                set("assigned_to", u ? String(u.id) : "");
+              }}
+              placeholder="Search staff by name or email…"
+            />
             {errors.assigned_to && <p className="mt-1 text-xs text-red-500">{errors.assigned_to}</p>}
           </div>
           <div>
