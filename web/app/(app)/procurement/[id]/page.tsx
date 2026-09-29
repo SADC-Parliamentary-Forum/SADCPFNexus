@@ -908,13 +908,23 @@ export default function ProcurementDetailPage({ params }: { params: Promise<{ id
               <span className="material-symbols-outlined text-[14px]">receipt_long</span>
               Create Purchase Order
             </Link>
-            <Link
-              href={`/procurement/contracts?request=${request.id}`}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
-            >
-              <span className="material-symbols-outlined text-[14px]">description</span>
-              Create Contract
-            </Link>
+            {request.contract_id ? (
+              <Link
+                href={`/contracts/${request.contract_id}`}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-700 text-white hover:bg-green-800 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">description</span>
+                View Contract {request.contract?.reference_number ?? ""}
+              </Link>
+            ) : (
+              <Link
+                href={`/procurement/contracts?request=${request.id}`}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">description</span>
+                Create Contract
+              </Link>
+            )}
           </div>
         </div>
       )}

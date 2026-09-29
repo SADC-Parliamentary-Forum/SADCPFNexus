@@ -59,6 +59,7 @@ class ProcurementController extends Controller
             'approvalRequest.history.user',
             'budgetReservations',
             'programme',
+            'contract:id,reference_number,title,contract_status',
         ]);
         $procurementRequest->setAttribute(
             'budget_confirmed',

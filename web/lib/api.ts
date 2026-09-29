@@ -3711,6 +3711,8 @@ export interface ProcurementRequest {
   purchase_order?: PurchaseOrder | null;
   po_link?: { id: number; display_reference: string; status: string } | null;
   converted_to_po?: boolean;
+  contract_id?: number | null;
+  contract?: { id: number; reference_number: string; title: string; contract_status: string } | null;
   budgetReservations?: BudgetReservation[];
   budget_confirmed?: boolean | number;
 }

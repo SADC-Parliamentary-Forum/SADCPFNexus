@@ -14,7 +14,7 @@ class ProcurementRequest extends Model
     use HasFactory, PreparedOnBehalf, SoftDeletes;
 
     protected $fillable = [
-        'tenant_id', 'requester_id', 'approved_by', 'reference_number',
+        'tenant_id', 'requester_id', 'approved_by', 'reference_number', 'contract_id',
         'title', 'description', 'category', 'estimated_value', 'currency',
         'procurement_method', 'suggested_method', 'policy_profile_key', 'policy_snapshot',
         'method_override_reason', 'method_override_by', 'method_override_at',
@@ -86,6 +86,11 @@ class ProcurementRequest extends Model
     public function purchaseOrder()
     {
         return $this->hasOne(PurchaseOrder::class);
+    }
+
+    public function contract()
+    {
+        return $this->belongsTo(Contract::class);
     }
 
     protected $appends = ['po_link', 'converted_to_po'];

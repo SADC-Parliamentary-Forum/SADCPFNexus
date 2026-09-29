@@ -165,6 +165,11 @@ class ContractService
                 'status' => 'draft',
             ]);
 
+            if (! empty($data['procurement_request_id'])) {
+                ProcurementRequest::where('id', $data['procurement_request_id'])
+                    ->update(['contract_id' => $contract->id]);
+            }
+
             // Individual counterparty detail snapshot.
             if ($counterpartyType === 'individual' && ! empty($data['counterparty'])) {
                 $cp = $data['counterparty'];
