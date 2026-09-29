@@ -58,7 +58,7 @@
                                         elseif ($id === 'model') { $text = $label['model'] ? 'Model: '.$label['model'] : null; }
                                         elseif ($id === 'serial') { $text = $label['serial'] ? 'S/N: '.$label['serial'] : null; }
                                         elseif ($id === 'location') { $text = $label['location'] ? 'Location: '.$label['location'] : null; }
-                                        elseif ($id === 'custodian') { $text = $label['custodian'] ? 'Custodian: '.$label['custodian'] : null; }
+                                        elseif ($id === 'custodian') { $text = $label['custodian'] ? 'Assigned to: '.$label['custodian'] : null; }
                                         elseif ($id === 'owner') { $text = !empty($label['owner']) ? 'Owner: '.$label['owner'] : 'Owner: SADC Parliamentary Forum'; }
                                         elseif ($id === 'recovery') {
                                             $bits = array_filter([
