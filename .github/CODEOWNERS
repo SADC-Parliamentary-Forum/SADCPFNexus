@@ -1,0 +1,6 @@
+# Default reviewer for everything in the repo.
+# Add team handles (e.g. @SADC-Parliamentary-Forum/<team>) per path as the team grows.
+*                    @ronaldwindwaai
+
+# CI, deploy and security workflows
+/.github/            @ronaldwindwaai

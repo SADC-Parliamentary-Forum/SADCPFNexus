@@ -1,0 +1,29 @@
+name: Feature request
+description: Propose a new capability or an improvement
+labels: ["enhancement"]
+body:
+  - type: input
+    id: module
+    attributes:
+      label: Module
+      placeholder: e.g. Contracts, Travel, Leave, Procurement
+    validations:
+      required: true
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      placeholder: As a <role>, I want <capability>, so that <benefit>.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: input
+    id: policy
+    attributes:
+      label: Policy / PRD reference (optional)
+      placeholder: e.g. PRD §74, Admin Rules clause
