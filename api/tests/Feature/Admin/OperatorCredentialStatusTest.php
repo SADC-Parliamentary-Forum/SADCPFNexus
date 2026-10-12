@@ -74,6 +74,17 @@ class OperatorCredentialStatusTest extends TestCase
         }
     }
 
+    public function test_stub_certificate_driver_is_not_reported_as_configured(): void
+    {
+        config(['people_authority.certificate_driver' => 'stub']);
+
+        $status = collect(app(OperatorCredentialStatusService::class)->status())
+            ->firstWhere('key', 'people_certificate');
+
+        $this->assertFalse($status['configured']);
+        $this->assertTrue($status['details']['stub_default']);
+    }
+
     public function test_admin_endpoint_returns_credential_status(): void
     {
         $tenant = Tenant::factory()->create();

@@ -138,10 +138,10 @@ test("leave create blocks segments whose end date is before the start date", () 
 
   assert.match(source, /function hasInvalidDateRange/);
   assert.match(source, /dateValidationError/);
-  assert.match(source, /Segment \$\{invalidIndex \+ 1\} ends before it starts/);
+  assert.match(source, /t\("leave\.create\.segmentInvalid", \{ n: invalidIndex \+ 1 \}\)/);
   assert.match(source, /min=\{segment\.start_date \|\| undefined\}/);
   assert.match(source, /aria-invalid=\{hasInvalidDateRange\(segment\) \|\| undefined\}/);
-  assert.match(source, /End date cannot be before start date\./);
+  assert.match(source, /t\("leave\.create\.endBeforeStart"\)/);
   assert.match(source, /const canSubmit = completeForPreview && !dateValidationError/);
 });
 
@@ -822,7 +822,9 @@ test("UX-074 LIL chrome uses Leave in Lieu wording", () => {
   const leave = readFileSync(join(webRoot, "app/(app)/leave/page.tsx"), "utf8");
   const detail = readFileSync(join(webRoot, "app/(app)/leave/[id]/page.tsx"), "utf8");
   const balances = readFileSync(join(webRoot, "app/(app)/hr/leave/balances/page.tsx"), "utf8");
-  assert.match(leave, /Leave in Lieu/);
+  const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
+  assert.match(leave, /leave\.type\.\$\{code\}/);
+  assert.match(keys, /"leave\.type\.lil": "Leave in Lieu"/);
   assert.doesNotMatch(leave, /LIL linkings/);
   assert.match(detail, /Leave in Lieu Accrual Linkings/);
   assert.match(balances, /Leave in Lieu Used \/ Avail/);

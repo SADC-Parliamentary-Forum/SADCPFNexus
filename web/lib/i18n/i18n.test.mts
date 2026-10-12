@@ -488,3 +488,52 @@ test("language switcher remains available without logout", () => {
   assert.match(provider, /setLocale/);
   assert.doesNotMatch(provider, /\blogout\b/);
 });
+
+// Pages migrated to the catalog (issue #156). Add a page here once its copy is fully keyed;
+// the test then blocks hardcoded English from creeping back in.
+const I18N_MIGRATED_PAGES = [
+  "app/(app)/leave/page.tsx",
+  "app/(app)/leave/create/page.tsx",
+  "app/(app)/leave/calendar/page.tsx",
+  "app/(app)/leave/settings/page.tsx",
+  "app/(app)/leave/toil/page.tsx",
+];
+
+test("migrated pages keep user-facing copy in the EN, FR and PT catalogs", () => {
+  const hardcoded = [
+    // JSX text on its own line, e.g. `            Save draft`
+    /^\s+[A-Z][A-Za-z’']*(?: [A-Za-z’'…]+)*[.…]?\s*$/m,
+    // copy-bearing props given a string literal
+    /\b(?:title|subtitle|placeholder|aria-label|label|description|hint|message|confirmText|caption)="[A-Z]/,
+    // literal error / toast text
+    /\b(?:set\w*Error|success|error)\("[A-Z]/,
+  ];
+  for (const rel of I18N_MIGRATED_PAGES) {
+    const source = readFileSync(join(webRoot, rel), "utf8");
+    assert.match(source, /useI18n/, `${rel} should use useI18n`);
+    for (const pattern of hardcoded) {
+      const hit = source.match(pattern);
+      assert.equal(hit, null, `${rel} has hardcoded copy: ${hit?.[0].trim()}`);
+    }
+    for (const [, key] of source.matchAll(/\bt\(\s*"([a-z][\w]*(?:\.[\w]+)+)"/g)) {
+      for (const locale of LOCALES) {
+        assert.ok(key in catalogFor(locale), `${rel}: ${key} missing from ${locale} catalog`);
+      }
+    }
+  }
+});
+
+test("leave hub cards and dynamic leave keys resolve in every locale", () => {
+  const hub = readFileSync(join(webRoot, "lib/leaveHub.ts"), "utf8");
+  const cardKeys = [...hub.matchAll(/(?:title|purpose):\s*"([a-z][\w.]+)"/g)].map((m) => m[1]);
+  assert.ok(cardKeys.length >= 16, "every hub card title and purpose is an i18n key");
+  const dynamic = [
+    ...["annual", "sick", "lil", "special", "maternity", "paternity"].map((c) => `leave.type.${c}`),
+    ...["standard", "finance_first", "director_principal"].map((m) => `leave.settings.mode.${m}`),
+  ];
+  for (const key of [...cardKeys, ...dynamic]) {
+    for (const locale of LOCALES) {
+      assert.ok(key in catalogFor(locale), `${key} missing from ${locale} catalog`);
+    }
+  }
+});

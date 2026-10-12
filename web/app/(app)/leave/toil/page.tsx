@@ -6,6 +6,7 @@ import api from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDateShort } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type ToilCredit = {
   id: number;
@@ -25,6 +26,12 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export default function LeaveToilPage() {
+  const { t } = useI18n();
+  const statusLabel = (status: string) => {
+    const key = `leave.toil.status.${status}`;
+    const label = t(key);
+    return label === key ? status.replace(/_/g, " ") : label;
+  };
   const [credits, setCredits] = useState<ToilCredit[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +50,7 @@ export default function LeaveToilPage() {
       .catch(() => {
         if (cancelled) return;
         setCredits([]);
-        setError("Failed to load TOIL credits.");
+        setError(t("leave.toil.loadError"));
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -58,18 +65,18 @@ export default function LeaveToilPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="TOIL / Leave-in-Lieu Credits"
-        subtitle="Expiry monitoring — overdue credits are expired by the daily job."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Leave", href: "/leave" }, { label: "TOIL credits" }]} />}
+        title={t("leave.toil.title")}
+        subtitle={t("leave.toil.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: t("nav.leave"), href: "/leave" }, { label: t("leave.toil.breadcrumb") }]} />}
         actions={
           <>
             <Link href="/leave/queues/certify" className="btn-secondary text-sm">
               <span className="material-symbols-outlined text-[18px]">fact_check</span>
-              Certification queue
+              {t("leave.common.certQueue")}
             </Link>
             <Link href="/leave/create" className="btn-primary text-sm">
               <span className="material-symbols-outlined text-[18px]">add</span>
-              Apply leave
+              {t("leave.common.apply")}
             </Link>
           </>
         }
@@ -85,7 +92,7 @@ export default function LeaveToilPage() {
       {expiring.length > 0 && (
         <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <span className="material-symbols-outlined text-[18px]">schedule</span>
-          {expiring.length} credit{expiring.length === 1 ? "" : "s"} expire within 30 days.
+          {t(expiring.length === 1 ? "leave.toil.expiringOne" : "leave.toil.expiringMany", { count: expiring.length })}
         </div>
       )}
 
@@ -99,11 +106,11 @@ export default function LeaveToilPage() {
         ) : credits.length === 0 ? (
           <EmptyState
             icon="schedule"
-            title="No TOIL credits"
-            description="Credits appear here after overtime or leave-in-lieu is approved."
+            title={t("leave.toil.empty")}
+            description={t("leave.toil.emptyHint")}
             action={
               <Link href="/leave" className="btn-secondary text-sm">
-                Back to leave register
+                {t("leave.common.backToRegister")}
               </Link>
             }
           />
@@ -112,11 +119,11 @@ export default function LeaveToilPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>Balance (days)</th>
-                  <th>Expires</th>
-                  <th>Days left</th>
-                  <th>Status</th>
+                  <th>{t("leave.col.reference")}</th>
+                  <th>{t("leave.toil.colBalance")}</th>
+                  <th>{t("leave.toil.colExpires")}</th>
+                  <th>{t("leave.toil.colDaysLeft")}</th>
+                  <th>{t("leave.col.status")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -133,7 +140,7 @@ export default function LeaveToilPage() {
                       </td>
                       <td>
                         <span className={`badge capitalize ${STATUS_BADGE[status] ?? "badge-muted"}`}>
-                          {status.replace(/_/g, " ")}
+                          {statusLabel(status)}
                         </span>
                       </td>
                     </tr>

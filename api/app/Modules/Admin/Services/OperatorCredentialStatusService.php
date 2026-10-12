@@ -285,7 +285,7 @@ final class OperatorCredentialStatusService
         return [
             'key' => 'people_certificate',
             'label' => 'Certificate signature driver',
-            'configured' => $configured || $driver === 'stub',
+            'configured' => $configured,
             'driver' => $driver,
             'secret_source' => 'env',
             'guidance' => 'Default stub. For HSM gateway set PEOPLE_AUTHORITY_CERTIFICATE_DRIVER=pkcs11_http plus HTTP_URL/TOKEN. No private keys stored in Nexus.',

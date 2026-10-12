@@ -7,14 +7,12 @@ import { formatDate } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
-const MODES = [
-  { value: "standard", label: "Standard (HOD → HR → SG)" },
-  { value: "finance_first", label: "Finance-first (Finance → HR → SG)" },
-  { value: "director_principal", label: "Director-principal (HOD → HR → Director → SG)" },
-];
+const MODES = ["standard", "finance_first", "director_principal"] as const;
 
 export default function LeaveSettingsPage() {
+  const { t } = useI18n();
   const [policies, setPolicies] = useState<LeavePolicyVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,7 +32,7 @@ export default function LeaveSettingsPage() {
       const res = await leaveApi.listPolicies();
       setPolicies(res.data.data ?? []);
     } catch {
-      setError("Failed to load leave policy versions. HR Manager / HR Administrator required.");
+      setError(t("leave.settings.loadError"));
     } finally {
       setLoading(false);
     }
@@ -65,7 +63,7 @@ export default function LeaveSettingsPage() {
       });
       await load();
     } catch {
-      setError("Could not create policy version. Provide a change reason and HR admin access.");
+      setError(t("leave.settings.saveError"));
     } finally {
       setSaving(false);
     }
@@ -76,15 +74,15 @@ export default function LeaveSettingsPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Leave workflow settings"
-        subtitle="Configure Finance-first and Director-principal routing. Versions are immutable — create a new version to change mode."
+        title={t("leave.settings.title")}
+        subtitle={t("leave.settings.subtitle")}
         breadcrumbs={
-          <PageBreadcrumbs items={[{ label: "Leave", href: "/leave" }, { label: "Workflow settings" }]} />
+          <PageBreadcrumbs items={[{ label: t("nav.leave"), href: "/leave" }, { label: t("leave.settings.breadcrumb") }]} />
         }
         actions={
           <Link href="/leave" className="btn-secondary text-sm">
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            Back
+            {t("common.back")}
           </Link>
         }
       />
@@ -99,38 +97,38 @@ export default function LeaveSettingsPage() {
         <div className="h-40 animate-pulse rounded-xl bg-neutral-100" />
       ) : (
         <>
-          <FormSection title="Active policy" icon="verified">
+          <FormSection title={t("leave.settings.activePolicy")} icon="verified">
             {active ? (
               <dl className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <dt className="text-neutral-500">Version</dt>
+                  <dt className="text-neutral-500">{t("leave.settings.version")}</dt>
                   <dd className="font-medium">{active.version}</dd>
                 </div>
                 <div>
-                  <dt className="text-neutral-500">Mode</dt>
+                  <dt className="text-neutral-500">{t("leave.settings.mode")}</dt>
                   <dd className="font-medium">{active.workflow_mode ?? "standard"}</dd>
                 </div>
                 <div>
-                  <dt className="text-neutral-500">Principal review</dt>
-                  <dd className="font-medium">{active.admin_review_required ? "Director" : "Off"}</dd>
+                  <dt className="text-neutral-500">{t("leave.settings.principalReview")}</dt>
+                  <dd className="font-medium">{active.admin_review_required ? t("leave.settings.principalDirector") : t("leave.settings.off")}</dd>
                 </div>
                 <div>
-                  <dt className="text-neutral-500">Effective from</dt>
+                  <dt className="text-neutral-500">{t("leave.settings.effectiveFrom")}</dt>
                   <dd className="font-medium">
                     {active.effective_from ? formatDate(active.effective_from) : "—"}
                   </dd>
                 </div>
               </dl>
             ) : (
-              <EmptyState icon="policy" title="No active policy yet" className="min-h-0 py-6" />
+              <EmptyState icon="policy" title={t("leave.settings.noActive")} className="min-h-0 py-6" />
             )}
           </FormSection>
 
-          <FormSection title="Create new policy version" icon="add_circle" description="Activating a version retires the previous active policy.">
+          <FormSection title={t("leave.settings.createTitle")} icon="add_circle" description={t("leave.settings.createHint")}>
             <form onSubmit={createVersion} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="leave-settings-version" className="mb-1 block text-xs font-semibold text-neutral-700">Version</label>
+                <label htmlFor="leave-settings-version" className="mb-1 block text-xs font-semibold text-neutral-700">{t("leave.settings.version")}</label>
                 <input id="leave-settings-version"
                   className="form-input"
                   value={form.version}
@@ -140,7 +138,7 @@ export default function LeaveSettingsPage() {
                 />
               </div>
               <div>
-                <label htmlFor="leave-settings-effective-from" className="mb-1 block text-xs font-semibold text-neutral-700">Effective from</label>
+                <label htmlFor="leave-settings-effective-from" className="mb-1 block text-xs font-semibold text-neutral-700">{t("leave.settings.effectiveFrom")}</label>
                 <input id="leave-settings-effective-from"
                   type="date"
                   className="form-input"
@@ -150,7 +148,7 @@ export default function LeaveSettingsPage() {
                 />
               </div>
               <div className="col-span-2">
-                <label htmlFor="leave-settings-workflow-mode" className="mb-1 block text-xs font-semibold text-neutral-700">Workflow mode</label>
+                <label htmlFor="leave-settings-workflow-mode" className="mb-1 block text-xs font-semibold text-neutral-700">{t("leave.settings.workflowMode")}</label>
                 <select id="leave-settings-workflow-mode"
                   className="form-input"
                   value={form.workflow_mode}
@@ -162,9 +160,9 @@ export default function LeaveSettingsPage() {
                     })
                   }
                 >
-                  {MODES.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
+                  {MODES.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {t(`leave.settings.mode.${mode}`)}
                     </option>
                   ))}
                 </select>
@@ -178,11 +176,11 @@ export default function LeaveSettingsPage() {
                     disabled={form.workflow_mode === "director_principal"}
                     className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                   />
-                  Principal review required (Director)
+                  {t("leave.settings.principalRequired")}
                 </label>
               </div>
               <div className="col-span-2">
-                <label htmlFor="leave-settings-change-reason" className="mb-1 block text-xs font-semibold text-neutral-700">Change reason</label>
+                <label htmlFor="leave-settings-change-reason" className="mb-1 block text-xs font-semibold text-neutral-700">{t("leave.settings.changeReason")}</label>
                 <textarea id="leave-settings-change-reason"
                   className="form-input resize-none"
                   rows={2}
@@ -193,14 +191,14 @@ export default function LeaveSettingsPage() {
               </div>
             </div>
             <button type="submit" className="btn-primary" disabled={saving}>
-              {saving ? "Saving…" : "Activate new version"}
+              {saving ? t("leave.settings.saving") : t("leave.settings.activate")}
             </button>
             </form>
           </FormSection>
 
-          <FormSection title="Version history" icon="history">
+          <FormSection title={t("leave.settings.history")} icon="history">
             {policies.length === 0 ? (
-              <p className="text-sm text-neutral-500">No versions recorded.</p>
+              <p className="text-sm text-neutral-500">{t("leave.settings.noVersions")}</p>
             ) : (
               <ul className="divide-y divide-neutral-100 text-sm">
                 {policies.map((p) => (
@@ -208,7 +206,7 @@ export default function LeaveSettingsPage() {
                     <span>
                       {p.version} · {p.workflow_mode ?? "standard"}
                       {p.is_active ? (
-                        <span className="badge-success ml-2">active</span>
+                        <span className="badge-success ml-2">{t("leave.settings.active")}</span>
                       ) : null}
                     </span>
                     <span className="text-neutral-500">

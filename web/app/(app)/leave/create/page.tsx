@@ -15,7 +15,6 @@ import { unwrapEntity } from "@/lib/unwrapEntity";
 import { formatDateShort } from "@/lib/utils";
 import {
   categorizeLeaveBalances,
-  formatLeaveDays,
   leaveTypeName,
   leaveTypeOptionLabel,
   prefillLeaveEndDate,
@@ -24,6 +23,7 @@ import {
 import { LeaveBalanceStrip } from "@/components/leave/LeaveBalanceStrip";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 type SegmentDraft = LeaveSegmentInput & { uid: string };
 
@@ -53,6 +53,11 @@ function hasInvalidDateRange(segment: Pick<SegmentDraft, "start_date" | "end_dat
 }
 
 function LeaveCreatePageInner() {
+  const { t } = useI18n();
+  const daysText = (n: number) => {
+    const count = Math.round(Number(n) * 100) / 100;
+    return t(Math.abs(count) === 1 ? "leave.create.dayOne" : "leave.create.dayMany", { count });
+  };
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = Number(searchParams.get("edit") ?? "");
@@ -80,7 +85,7 @@ function LeaveCreatePageInner() {
       leaveApi.listToil().then((res) => setToilCredits(res.data.data)),
       leaveApi.getBalances().then((res) => setBalances(res.data as LeaveBalancesPayload)),
     ])
-      .catch(() => setPreviewError("Leave settings could not be loaded."))
+      .catch(() => setPreviewError(t("leave.create.lookupError")))
       .finally(() => setLoadingLookups(false));
   }, []);
 
@@ -124,13 +129,13 @@ function LeaveCreatePageInner() {
           ]);
         }
       })
-      .catch(() => setSubmitError("This draft could not be loaded."));
+      .catch(() => setSubmitError(t("leave.create.draftLoadError")));
   }, [editing, editId]);
 
   const dateValidationError = useMemo(() => {
     const invalidIndex = segments.findIndex(hasInvalidDateRange);
-    return invalidIndex >= 0 ? `Segment ${invalidIndex + 1} ends before it starts.` : null;
-  }, [segments]);
+    return invalidIndex >= 0 ? t("leave.create.segmentInvalid", { n: invalidIndex + 1 }) : null;
+  }, [segments, t]);
 
   const completeForPreview = useMemo(
     () => segments.every((segment) => segment.leave_type && segment.start_date && segment.end_date),
@@ -155,7 +160,7 @@ function LeaveCreatePageInner() {
           const errors = error?.response?.data?.errors;
           const first = errors ? Object.values(errors).flat()[0] : null;
           setPreview(null);
-          setPreviewError(String(first ?? error?.response?.data?.message ?? "Preview failed."));
+          setPreviewError(String(first ?? error?.response?.data?.message ?? t("leave.create.previewFailed")));
         });
     }, 350);
 
@@ -249,7 +254,7 @@ function LeaveCreatePageInner() {
       const response = (error as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } })
         ?.response?.data;
       const first = response?.errors ? Object.values(response.errors).flat()[0] : null;
-      setSubmitError(String(first ?? response?.message ?? "Leave request could not be saved."));
+      setSubmitError(String(first ?? response?.message ?? t("leave.create.saveFailed")));
       setSubmitting(false);
     }
   };
@@ -259,11 +264,11 @@ function LeaveCreatePageInner() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title={editing ? "Edit leave request" : "New leave request"}
-        subtitle="Choose the type, then the dates."
+        title={editing ? t("leave.create.titleEdit") : t("leave.create.titleNew")}
+        subtitle={t("leave.create.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
-            items={[{ label: "Leave", href: "/leave" }, { label: editing ? "Edit request" : "New request" }]}
+            items={[{ label: t("nav.leave"), href: "/leave" }, { label: editing ? t("leave.create.breadcrumbEdit") : t("leave.list.newRequest") }]}
           />
         }
       />
@@ -274,7 +279,7 @@ function LeaveCreatePageInner() {
         </div>
       )}
 
-      <FormSection title="What kind of leave?" icon="category">
+      <FormSection title={t("leave.create.kind")} icon="category">
         <LeaveBalanceStrip
           compact
           cards={balanceCards}
@@ -282,7 +287,7 @@ function LeaveCreatePageInner() {
           year={balances?.period_year}
         />
         {segments.length === 1 ? (
-          <FormField label="Leave type" required className="mt-4">
+          <FormField label={t("leave.create.leaveType")} required className="mt-4">
             <select
               className="form-input"
               value={primaryType ?? "annual"}
@@ -297,11 +302,11 @@ function LeaveCreatePageInner() {
             </select>
           </FormField>
         ) : (
-          <p className="mt-3 text-xs text-neutral-500">Pick the type on each period below.</p>
+          <p className="mt-3 text-xs text-neutral-500">{t("leave.create.pickPerPeriod")}</p>
         )}
       </FormSection>
 
-      <FormSection title="Leave period" icon="date_range">
+      <FormSection title={t("leave.create.period")} icon="date_range">
         <div className="space-y-4">
           {segments.map((segment, index) => {
             const singleDay = Boolean(segment.start_date && segment.start_date === segment.end_date);
@@ -313,20 +318,20 @@ function LeaveCreatePageInner() {
               >
                 {segments.length > 1 ? (
                   <div className="mb-4 flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-neutral-800">Period {index + 1}</p>
+                    <p className="text-sm font-semibold text-neutral-800">{t("leave.create.periodN", { n: index + 1 })}</p>
                     <button
                       type="button"
                       onClick={() => removeSegment(segment.uid)}
                       className="text-xs font-semibold text-neutral-500 hover:text-red-600"
                     >
-                      Remove
+                      {t("leave.create.remove")}
                     </button>
                   </div>
                 ) : null}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   {segments.length > 1 ? (
-                    <FormField label="Leave type" required className="sm:col-span-2">
+                    <FormField label={t("leave.create.leaveType")} required className="sm:col-span-2">
                       <select
                         className="form-input"
                         value={segment.leave_type}
@@ -342,7 +347,7 @@ function LeaveCreatePageInner() {
                     </FormField>
                   ) : null}
 
-                  <FormField label="From" required>
+                  <FormField label={t("leave.create.from")} required>
                     <input
                       type="date"
                       className="form-input"
@@ -352,9 +357,9 @@ function LeaveCreatePageInner() {
                   </FormField>
 
                   <FormField
-                    label="To"
+                    label={t("leave.create.to")}
                     required
-                    error={hasInvalidDateRange(segment) ? "End date cannot be before start date." : undefined}
+                    error={hasInvalidDateRange(segment) ? t("leave.create.endBeforeStart") : undefined}
                   >
                     <input
                       type="date"
@@ -378,7 +383,7 @@ function LeaveCreatePageInner() {
                         }
                         className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
                       />
-                      Half day
+                      {t("leave.create.halfDay")}
                     </label>
                     {halfDay ? (
                       <select
@@ -387,17 +392,17 @@ function LeaveCreatePageInner() {
                         onChange={(event) =>
                           updateSegment(segment.uid, { day_part: event.target.value as SegmentDraft["day_part"] })
                         }
-                        aria-label="Half-day part"
+                        aria-label={t("leave.create.halfDayPart")}
                       >
-                        <option value="morning">Morning</option>
-                        <option value="afternoon">Afternoon</option>
+                        <option value="morning">{t("leave.create.morning")}</option>
+                        <option value="afternoon">{t("leave.create.afternoon")}</option>
                       </select>
                     ) : null}
                   </div>
                 ) : null}
 
                 {segment.leave_type === "lil" ? (
-                  <FormField label="TOIL credit" className="mt-4" hint="Leave in lieu draws down an available credit.">
+                  <FormField label={t("leave.create.toilCredit")} className="mt-4" hint={t("leave.create.toilHint")}>
                     <select
                       className="form-input"
                       value={segment.source_id ?? ""}
@@ -408,11 +413,14 @@ function LeaveCreatePageInner() {
                         })
                       }
                     >
-                      <option value="">Select available TOIL credit</option>
+                      <option value="">{t("leave.create.toilSelect")}</option>
                       {availableToilCredits.map((credit) => (
                         <option key={credit.id} value={credit.id}>
-                          {credit.credit_reference} — {numberText(credit.remaining_balance)} days, expires{" "}
-                          {credit.expiry_date ? formatDateShort(credit.expiry_date) : "not set"}
+                          {t("leave.create.toilOption", {
+                            ref: credit.credit_reference ?? "",
+                            days: numberText(credit.remaining_balance),
+                            date: credit.expiry_date ? formatDateShort(credit.expiry_date) : t("leave.create.notSet"),
+                          })}
                         </option>
                       ))}
                     </select>
@@ -421,9 +429,9 @@ function LeaveCreatePageInner() {
 
                 {segment.leave_type === "sick" ? (
                   <FormField
-                    label="Medical certificate"
+                    label={t("leave.create.medicalCert")}
                     className="mt-4"
-                    hint="HR may ask for a certificate depending on the number of days."
+                    hint={t("leave.create.medicalHint")}
                   >
                     <select
                       className="form-input"
@@ -432,11 +440,11 @@ function LeaveCreatePageInner() {
                         updateSegment(segment.uid, { document_status: event.target.value || null })
                       }
                     >
-                      <option value="">Not recorded yet</option>
-                      <option value="not_required">Not required</option>
-                      <option value="complete">Provided</option>
-                      <option value="restricted">Provided — restricted</option>
-                      <option value="missing">Missing</option>
+                      <option value="">{t("leave.create.cert.none")}</option>
+                      <option value="not_required">{t("leave.create.cert.not_required")}</option>
+                      <option value="complete">{t("leave.create.cert.complete")}</option>
+                      <option value="restricted">{t("leave.create.cert.restricted")}</option>
+                      <option value="missing">{t("leave.create.cert.missing")}</option>
                     </select>
                   </FormField>
                 ) : null}
@@ -445,25 +453,27 @@ function LeaveCreatePageInner() {
           })}
 
           <button type="button" onClick={addSegment} className="btn-secondary text-sm py-1 px-2">
-            Add another period
+            {t("leave.create.addPeriod")}
           </button>
 
           {preview ? (
             <p className="text-sm text-neutral-600">
-              {formatLeaveDays(Number(preview.total_working_days ?? 0))}
-              {holidaysExcluded > 0 ? ` · ${holidaysExcluded} ${holidaysExcluded === 1 ? "holiday" : "holidays"} excluded` : ""}
+              {daysText(Number(preview.total_working_days ?? 0))}
+              {holidaysExcluded > 0
+                ? t(holidaysExcluded === 1 ? "leave.create.holidaysOne" : "leave.create.holidaysMany", { count: holidaysExcluded })
+                : ""}
               {segments.length > 1
                 ? ` · ${preview.segments.map((row) => leaveTypeName(row.leave_type, leaveTypes)).join(", ")}`
                 : ""}
             </p>
           ) : completeForPreview ? null : (
-            <p className="text-sm text-neutral-400">Working days appear after both dates are set.</p>
+            <p className="text-sm text-neutral-400">{t("leave.create.daysPending")}</p>
           )}
         </div>
       </FormSection>
 
-      <FormSection title="While you are away" icon="description">
-        <FormField label="Reason">
+      <FormSection title={t("leave.create.away")} icon="description">
+        <FormField label={t("leave.col.reason")}>
           <textarea
             rows={2}
             className="form-input resize-none"
@@ -474,14 +484,14 @@ function LeaveCreatePageInner() {
 
         {showAwayDetails ? (
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <FormField label="Contact number">
+            <FormField label={t("leave.create.contact")}>
               <input
                 className="form-input"
                 value={contactNumber}
                 onChange={(event) => setContactNumber(event.target.value)}
               />
             </FormField>
-            <FormField label="Address while on leave">
+            <FormField label={t("leave.create.address")}>
               <input
                 className="form-input"
                 value={leaveAddress}
@@ -495,10 +505,10 @@ function LeaveCreatePageInner() {
                 onChange={(event) => setHandoverRequired(event.target.checked)}
                 className="h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
               />
-              Handover required
+              {t("leave.create.handoverRequired")}
             </label>
             {handoverRequired ? (
-              <FormField label="Handover notes" className="sm:col-span-2">
+              <FormField label={t("leave.create.handoverNotes")} className="sm:col-span-2">
                 <textarea
                   rows={2}
                   className="form-input resize-none"
@@ -514,14 +524,14 @@ function LeaveCreatePageInner() {
             className="btn-secondary text-sm py-1 px-2 mt-3"
             onClick={() => setShowAwayDetails(true)}
           >
-            Add contact and handover
+            {t("leave.create.addAway")}
           </button>
         )}
       </FormSection>
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-neutral-200 pt-4">
         <p className="text-sm text-neutral-600">
-          {preview ? formatLeaveDays(Number(preview.total_working_days ?? 0)) : "Set the dates to submit"}
+          {preview ? daysText(Number(preview.total_working_days ?? 0)) : t("leave.create.setDates")}
         </p>
         <div className="flex gap-3">
           <button
@@ -530,7 +540,7 @@ function LeaveCreatePageInner() {
             onClick={() => void submit(true)}
             className="btn-secondary disabled:opacity-50"
           >
-            Save draft
+            {t("leave.create.saveDraft")}
           </button>
           <button
             type="button"
@@ -538,7 +548,7 @@ function LeaveCreatePageInner() {
             onClick={() => void submit(false)}
             className="btn-primary disabled:opacity-50"
           >
-            {submitting ? "Submitting…" : "Submit"}
+            {submitting ? t("leave.create.submitting") : t("common.submit")}
           </button>
         </div>
       </div>

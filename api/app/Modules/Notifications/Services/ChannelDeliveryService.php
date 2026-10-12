@@ -221,12 +221,13 @@ class ChannelDeliveryService
             return $delivery->fresh();
         }
 
-        // No device is a soft suppress — must not roll back in-app/email delivery.
-        if ($result['code'] === 'no_device') {
+        // No device / no configured provider is a soft suppress — must not roll back in-app/email
+        // delivery, and must not be counted as sent.
+        if (in_array($result['code'], ['no_device', PushDeliveryService::CODE_NOT_CONFIGURED], true)) {
             $delivery->update([
                 'status' => 'suppressed',
                 'suppressed' => true,
-                'suppression_reason' => 'no_device',
+                'suppression_reason' => $result['code'],
                 'attempt_count' => $attemptNumber,
                 'provider' => $result['provider'],
             ]);
@@ -424,6 +425,7 @@ class ChannelDeliveryService
             $items = NotificationDigestItem::query()->where('digest_id', $digest->id)->get();
             if ($items->isEmpty()) {
                 $digest->update(['status' => 'empty']);
+
                 continue;
             }
 

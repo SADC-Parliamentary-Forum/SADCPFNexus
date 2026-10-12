@@ -9,9 +9,14 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * Phase 2 push device registration + Null/FCM-generic HTTP provider (stub default).
+ *
+ * The null provider and an unconfigured FCM provider never report ok=true: nothing
+ * reaches a device, so callers record the delivery as suppressed, not sent.
  */
 class PushDeliveryService
 {
+    public const CODE_NOT_CONFIGURED = 'provider_not_configured';
+
     public function register(User $user, string $token, string $platform = 'android', ?string $deviceName = null, ?string $appVersion = null): DeviceToken
     {
         $row = DeviceToken::updateOrCreate(
@@ -76,12 +81,12 @@ class PushDeliveryService
 
         if ($provider === 'null') {
             return [
-                'ok' => true,
+                'ok' => false,
                 'provider' => 'null',
-                'message_id' => 'null-push-'.uniqid(),
+                'message_id' => null,
                 'temporary' => false,
-                'code' => 'stub_accepted',
-                'summary' => 'Null push provider accepted (stub default)',
+                'code' => self::CODE_NOT_CONFIGURED,
+                'summary' => 'Push provider is null (stub default); nothing was sent',
             ];
         }
 
@@ -94,12 +99,12 @@ class PushDeliveryService
             $fcm = app(\App\Services\FcmService::class);
             if (! $fcm->isConfigured()) {
                 return [
-                    'ok' => true,
+                    'ok' => false,
                     'provider' => 'fcm_null_fallback',
-                    'message_id' => 'fcm-unconfigured-'.uniqid(),
+                    'message_id' => null,
                     'temporary' => false,
-                    'code' => 'provider_not_configured',
-                    'summary' => 'FCM not configured — stub acceptance (no live send)',
+                    'code' => self::CODE_NOT_CONFIGURED,
+                    'summary' => 'FCM not configured; nothing was sent',
                 ];
             }
 

@@ -4,9 +4,7 @@ namespace Tests\Feature\Notifications;
 
 use App\Models\DeviceToken;
 use App\Models\Notification;
-use App\Models\Notifications\NotificationAckCampaign;
 use App\Models\Notifications\NotificationAckRecipient;
-use App\Models\Notifications\NotificationBroadcast;
 use App\Models\Notifications\NotificationChannelDelivery;
 use App\Models\Notifications\NotificationCoalesceBucket;
 use App\Models\Notifications\NotificationExternalToken;
@@ -15,7 +13,6 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Notifications\Services\AckCampaignService;
 use App\Modules\Notifications\Services\BroadcastService;
-use App\Modules\Notifications\Services\ChannelDeliveryService;
 use App\Modules\Notifications\Services\CoalescingService;
 use App\Modules\Notifications\Services\ExternalPortalService;
 use App\Modules\Notifications\Services\FailoverMailService;
@@ -106,8 +103,32 @@ class NotificationsPhase2Phase3Test extends TestCase
             ->first();
 
         $this->assertNotNull($delivery);
-        $this->assertSame('sent', $delivery->status);
+        // Null provider sends nothing, so the delivery is suppressed rather than counted as sent.
+        $this->assertSame('suppressed', $delivery->status);
+        $this->assertSame('provider_not_configured', $delivery->suppression_reason);
         $this->assertSame('null', $delivery->provider);
+        $this->assertNull($delivery->sent_at);
+    }
+
+    public function test_push_with_unconfigured_fcm_is_not_reported_as_sent(): void
+    {
+        Config::set('notifications.push_provider', 'fcm');
+        Config::set('notifications.fcm_http_url', null);
+
+        $tenant = Tenant::factory()->create();
+        $user = $this->makeUser('staff', $tenant);
+        $push = app(PushDeliveryService::class);
+        $push->register($user, 'tok-fcm');
+
+        if (app(\App\Services\FcmService::class)->isConfigured()) {
+            $this->markTestSkipped('FCM credentials are configured in this environment.');
+        }
+
+        $result = $push->send($user, 'Title', 'Body');
+
+        $this->assertFalse($result['ok']);
+        $this->assertSame('provider_not_configured', $result['code']);
+        $this->assertNull($result['message_id']);
     }
 
     public function test_ack_campaign_activate_acknowledge_and_report(): void
