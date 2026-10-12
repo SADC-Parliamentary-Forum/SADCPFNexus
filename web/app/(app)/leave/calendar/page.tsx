@@ -8,24 +8,26 @@ import { formatDateShort } from "@/lib/utils";
 import { LEAVE_TYPE_COLORS } from "@/lib/leaveHub";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
-function monthBounds(d = new Date()) {
+function monthBounds(d = new Date(), localeTag = "en-GB") {
   const from = new Date(d.getFullYear(), d.getMonth(), 1);
   const to = new Date(d.getFullYear(), d.getMonth() + 1, 0);
   const iso = (x: Date) => x.toISOString().slice(0, 10);
   return {
     from: iso(from),
     to: iso(to),
-    label: from.toLocaleString("en-GB", { month: "long", year: "numeric" }),
+    label: from.toLocaleString(localeTag, { month: "long", year: "numeric" }),
     year: from.getFullYear(),
     month: from.getMonth(),
   };
 }
 
 export default function LeaveTeamCalendarPage() {
+  const { t, localeTag } = useI18n();
   const [cursor, setCursor] = useState(() => new Date());
   const [view, setView] = useState<"grid" | "list">("grid");
-  const bounds = useMemo(() => monthBounds(cursor), [cursor]);
+  const bounds = useMemo(() => monthBounds(cursor, localeTag), [cursor, localeTag]);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["leave-team-calendar", bounds.from, bounds.to],
@@ -65,6 +67,14 @@ export default function LeaveTeamCalendarPage() {
     return map;
   }, [rows, bounds.month, bounds.year]);
 
+  // 2023-01-01 was a Sunday; format seven consecutive days in the active locale.
+  const weekdays = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) =>
+        new Date(2023, 0, 1 + i).toLocaleDateString(localeTag, { weekday: "short" }),
+      ),
+    [localeTag],
+  );
   const firstDow = new Date(bounds.year, bounds.month, 1).getDay();
   const daysInMonth = new Date(bounds.year, bounds.month + 1, 0).getDate();
   const cells: Array<{ day: number | null; key: string }> = [];
@@ -84,15 +94,15 @@ export default function LeaveTeamCalendarPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Team Leave Calendar"
+        title={t("leave.calendar.title")}
         subtitle={
           <>
-            {medicalMasked ? "Medical leave types are masked for non-HR viewers. " : null}
-            Approved leave overlapping {bounds.label}.
+            {medicalMasked ? t("leave.calendar.medicalMasked") : null}
+            {t("leave.calendar.overlapping", { month: bounds.label })}
           </>
         }
         breadcrumbs={
-          <PageBreadcrumbs items={[{ label: "Leave", href: "/leave" }, { label: "Team calendar" }]} />
+          <PageBreadcrumbs items={[{ label: t("nav.leave"), href: "/leave" }, { label: t("leave.calendar.breadcrumb") }]} />
         }
         actions={
           <>
@@ -101,35 +111,35 @@ export default function LeaveTeamCalendarPage() {
               className={view === "grid" ? "btn-primary text-sm" : "btn-secondary text-sm"}
               onClick={() => setView("grid")}
             >
-              Month grid
+              {t("leave.calendar.monthGrid")}
             </button>
             <button
               type="button"
               className={view === "list" ? "btn-primary text-sm" : "btn-secondary text-sm"}
               onClick={() => setView("list")}
             >
-              List
+              {t("leave.calendar.list")}
             </button>
             <button type="button" className="btn-secondary text-sm" onClick={() => void downloadRegister()}>
               <span className="material-symbols-outlined text-[18px]">download</span>
-              Export CSV
+              {t("leave.common.exportCsv")}
             </button>
             <button
               type="button"
               className="btn-secondary text-sm"
               onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
             >
-              Previous
+              {t("common.previous")}
             </button>
             <button type="button" className="btn-secondary text-sm" onClick={() => setCursor(new Date())}>
-              This month
+              {t("leave.calendar.thisMonth")}
             </button>
             <button
               type="button"
               className="btn-secondary text-sm"
               onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
             >
-              Next
+              {t("common.next")}
             </button>
           </>
         }
@@ -146,9 +156,9 @@ export default function LeaveTeamCalendarPage() {
       {isError && (
         <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           <span className="material-symbols-outlined text-[18px]">error_outline</span>
-          <span className="flex-1">Failed to load team calendar (requires HOD / HR access).</span>
+          <span className="flex-1">{t("leave.calendar.loadError")}</span>
           <button type="button" className="btn-secondary text-xs" onClick={() => void refetch()}>
-            Retry
+            {t("common.retry")}
           </button>
         </div>
       )}
@@ -161,12 +171,12 @@ export default function LeaveTeamCalendarPage() {
                 key={code}
                 className={`inline-flex items-center rounded-full border px-2 py-0.5 capitalize ${LEAVE_TYPE_COLORS[code]}`}
               >
-                {code === "lil" ? "Leave in lieu" : code}
+                {t(`leave.type.${code}`)}
               </span>
             ))}
           </div>
         <div className="card grid grid-cols-7 gap-px overflow-hidden border border-neutral-200 bg-neutral-200 p-px">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          {weekdays.map((d) => (
             <div
               key={d}
               className="bg-neutral-50 px-2 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-500"
@@ -188,7 +198,7 @@ export default function LeaveTeamCalendarPage() {
                       className={`truncate rounded px-1.5 py-0.5 text-[11px] ${LEAVE_TYPE_COLORS[row.color_key ?? row.leave_type ?? ""] ?? "bg-primary/10 text-primary"}`}
                     >
                       {row.requester?.name?.split(" ")[0]} · {row.display_label ?? row.leave_type}
-                      {row.is_masked ? " — private" : ""}
+                      {row.is_masked ? t("leave.private") : ""}
                     </li>
                   ))}
                   {dayRows.length > 3 && (
@@ -207,11 +217,11 @@ export default function LeaveTeamCalendarPage() {
           {rows.length === 0 ? (
             <EmptyState
               icon="calendar_month"
-              title="No approved leave in this period"
-              description="Try another month or check the leave register."
+              title={t("leave.calendar.empty")}
+              description={t("leave.calendar.emptyHint")}
               action={
                 <Link href="/leave" className="btn-secondary text-sm">
-                  Leave register
+                  {t("leave.common.register")}
                 </Link>
               }
             />
@@ -220,10 +230,10 @@ export default function LeaveTeamCalendarPage() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Staff</th>
-                    <th>Type</th>
-                    <th>Dates</th>
-                    <th>Days</th>
+                    <th>{t("leave.col.staff")}</th>
+                    <th>{t("leave.col.type")}</th>
+                    <th>{t("leave.col.dates")}</th>
+                    <th>{t("leave.col.days")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -235,7 +245,7 @@ export default function LeaveTeamCalendarPage() {
                       </td>
                       <td className="capitalize text-neutral-700">
                         {row.display_label ?? row.leave_type}
-                        {row.is_masked ? " — private" : ""}
+                        {row.is_masked ? t("leave.private") : ""}
                       </td>
                       <td className="whitespace-nowrap text-xs text-neutral-600">
                         {formatDateShort(row.start_date)} – {formatDateShort(row.end_date)}

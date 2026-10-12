@@ -29,44 +29,37 @@ import { Badge } from "@/components/ui/Badge";
 import { Select } from "@/components/ui/Select";
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
-
-const TYPE_LABELS: Record<string, string> = {
-  annual: "Annual",
-  sick: "Sick",
-  lil: "Leave in Lieu",
-  special: "Special",
-  maternity: "Maternity",
-  paternity: "Paternity",
-};
+import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const STATUS_CONFIG: Record<string, { label: string; cls: string }> = {
-  approved: { label: "Approved", cls: "badge-success" },
-  submitted: { label: "Submitted", cls: "badge-warning" },
-  rejected: { label: "Rejected", cls: "badge-danger" },
-  draft: { label: "Draft", cls: "badge-muted" },
-  cancelled: { label: "Cancelled", cls: "badge-muted" },
-  withdrawn: { label: "Withdrawn", cls: "badge-muted" },
-  returned_for_correction: { label: "Returned", cls: "badge-warning" },
+  approved: { label: "leave.status.approved", cls: "badge-success" },
+  submitted: { label: "leave.status.submitted", cls: "badge-warning" },
+  rejected: { label: "leave.status.rejected", cls: "badge-danger" },
+  draft: { label: "leave.status.draft", cls: "badge-muted" },
+  cancelled: { label: "leave.status.cancelled", cls: "badge-muted" },
+  withdrawn: { label: "leave.status.withdrawn", cls: "badge-muted" },
+  returned_for_correction: { label: "leave.status.returned_for_correction", cls: "badge-warning" },
 };
 
 const FILTER_TABS = [
-  { key: "all", label: "All" },
-  { key: "draft", label: "Draft" },
-  { key: "submitted", label: "Submitted" },
-  { key: "approved", label: "Approved" },
-  { key: "rejected", label: "Rejected" },
-  { key: "returned_for_correction", label: "Returned" },
+  { key: "all", label: "leave.filter.all" },
+  { key: "draft", label: "leave.status.draft" },
+  { key: "submitted", label: "leave.status.submitted" },
+  { key: "approved", label: "leave.status.approved" },
+  { key: "rejected", label: "leave.status.rejected" },
+  { key: "returned_for_correction", label: "leave.status.returned_for_correction" },
 ] as const;
 
 type FilterKey = (typeof FILTER_TABS)[number]["key"];
 
 const HUB_SECTIONS: { id: LeaveHubSection; title: string; description: string }[] = [
-  { id: "queues", title: "Work queues", description: "Recommend, certify, and apply." },
-  { id: "views", title: "Registers & views", description: "Your requests, team calendar, and HR register." },
-  { id: "tools", title: "Credits & policy", description: "TOIL credits and workflow settings." },
+  { id: "queues", title: "leave.hub.queues.title", description: "leave.hub.queues.description" },
+  { id: "views", title: "leave.hub.views.title", description: "leave.hub.views.description" },
+  { id: "tools", title: "leave.hub.tools.title", description: "leave.hub.tools.description" },
 ];
 
 function FeatureCard({ card }: { card: LeaveHubCard }) {
+  const { t } = useI18n();
   return (
     <Link
       href={card.href}
@@ -74,8 +67,8 @@ function FeatureCard({ card }: { card: LeaveHubCard }) {
     >
       <span className="material-symbols-outlined mt-0.5 text-primary">{card.icon}</span>
       <span>
-        <span className="block text-sm font-semibold text-neutral-900">{card.title}</span>
-        <span className="mt-0.5 block text-xs text-neutral-500">{card.purpose}</span>
+        <span className="block text-sm font-semibold text-neutral-900">{t(card.title)}</span>
+        <span className="mt-0.5 block text-xs text-neutral-500">{t(card.purpose)}</span>
       </span>
     </Link>
   );
@@ -108,6 +101,12 @@ export default function LeavePage() {
 }
 
 function LeavePageInner() {
+  const { t } = useI18n();
+  const typeLabel = (code: string) => {
+    const key = `leave.type.${code}`;
+    const label = t(key);
+    return label === key ? code : label;
+  };
   const searchParams = useSearchParams();
   const queue = searchParams.get("queue") || undefined;
   const user = getStoredUser();
@@ -195,14 +194,14 @@ function LeavePageInner() {
         requester: r.requester?.name ?? "",
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "type", header: "Type" },
-        { key: "status", header: "Status" },
-        { key: "start_date", header: "Start" },
-        { key: "end_date", header: "End" },
-        { key: "days", header: "Days" },
-        { key: "reason", header: "Reason" },
-        { key: "requester", header: "Requester" },
+        { key: "reference", header: t("leave.col.reference") },
+        { key: "type", header: t("leave.col.type") },
+        { key: "status", header: t("leave.col.status") },
+        { key: "start_date", header: t("leave.col.start") },
+        { key: "end_date", header: t("leave.col.end") },
+        { key: "days", header: t("leave.col.days") },
+        { key: "reason", header: t("leave.col.reason") },
+        { key: "requester", header: t("leave.col.requester") },
       ],
     );
   };
@@ -210,9 +209,9 @@ function LeavePageInner() {
   const handleDelete = async (row: LeaveRequest) => {
     if (
       !(await confirm({
-        title: "Delete draft",
-        message: `Permanently remove draft ${row.reference_number}? This cannot be undone.`,
-        confirmText: "Delete",
+        title: t("leave.list.deleteDraftTitle"),
+        message: t("leave.list.deleteDraftMsg", { ref: row.reference_number }),
+        confirmText: t("common.delete"),
         variant: "danger",
       }))
     ) {
@@ -222,11 +221,11 @@ function LeavePageInner() {
     setActionError(null);
     try {
       await leaveApi.delete(row.id);
-      success("Draft deleted.");
+      success(t("leave.list.draftDeleted"));
       selection.clear();
       await queryClient.invalidateQueries({ queryKey: ["leave", "list"] });
     } catch {
-      setActionError("Failed to delete draft.");
+      setActionError(t("leave.list.deleteFailed"));
     } finally {
       setActionId(null);
     }
@@ -237,9 +236,9 @@ function LeavePageInner() {
     if (ids.length === 0) return;
     if (
       !(await confirm({
-        title: "Delete drafts",
-        message: `Permanently delete ${ids.length} selected draft(s)? This cannot be undone.`,
-        confirmText: "Delete",
+        title: t("leave.list.deleteDraftsTitle"),
+        message: t("leave.list.deleteDraftsMsg", { count: ids.length }),
+        confirmText: t("common.delete"),
         variant: "danger",
       }))
     ) {
@@ -250,10 +249,10 @@ function LeavePageInner() {
     try {
       await Promise.all(ids.map((id) => leaveApi.delete(id)));
       selection.clear();
-      success("Selected drafts deleted.");
+      success(t("leave.list.draftsDeleted"));
       await queryClient.invalidateQueries({ queryKey: ["leave", "list"] });
     } catch {
-      setActionError("Some deletions failed.");
+      setActionError(t("leave.list.someDeleteFailed"));
     } finally {
       setBulkLoading(false);
     }
@@ -262,9 +261,9 @@ function LeavePageInner() {
   const handleWithdraw = async (row: LeaveRequest) => {
     if (
       !(await confirm({
-        title: "Withdraw request",
-        message: `Withdraw ${row.reference_number} from the approval workflow?`,
-        confirmText: "Withdraw",
+        title: t("leave.list.withdrawTitle"),
+        message: t("leave.list.withdrawMsg", { ref: row.reference_number }),
+        confirmText: t("leave.list.withdraw"),
         variant: "danger",
       }))
     ) {
@@ -274,10 +273,10 @@ function LeavePageInner() {
     setActionError(null);
     try {
       await leaveApi.withdraw(row.id);
-      success("Request withdrawn.");
+      success(t("leave.list.withdrawn"));
       await queryClient.invalidateQueries({ queryKey: ["leave", "list"] });
     } catch {
-      setActionError("Failed to withdraw request.");
+      setActionError(t("leave.list.withdrawFailed"));
     } finally {
       setActionId(null);
     }
@@ -285,15 +284,15 @@ function LeavePageInner() {
 
   return (
     <RegisterShell
-      title={queue === "recommend" ? "Recommend inbox" : "Leave"}
+      title={queue === "recommend" ? t("leave.list.recommendTitle") : t("nav.leave")}
         subtitle={
           queue === "recommend"
-            ? "Requests waiting for your recommendation."
-            : "Your remaining days by leave type, then requests, calendar, and queues."
+            ? t("leave.list.recommendSubtitle")
+            : t("leave.list.subtitle")
         }
       breadcrumbs={
         <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-500">
-          <span className="text-neutral-700">Leave</span>
+          <span className="text-neutral-700">{t("nav.leave")}</span>
         </div>
       }
       density={density}
@@ -313,11 +312,11 @@ function LeavePageInner() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("leave.common.exportCsv")}
           </button>
           <Link href="/leave/create" className="btn-primary text-sm">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New request
+            {t("leave.list.newRequest")}
           </Link>
         </div>
       }
@@ -325,7 +324,7 @@ function LeavePageInner() {
         <>
 {(isError || actionError) && (
             <ErrorBanner
-              message={actionError ?? "Failed to load leave requests."}
+              message={actionError ?? t("leave.list.loadError")}
               onRetry={isError ? () => void refetch() : undefined}
               onDismiss={isError ? undefined : () => setActionError(null)}
             />
@@ -337,7 +336,7 @@ function LeavePageInner() {
                 const cards = visibleCards.filter((card) => card.section === section.id);
                 if (cards.length === 0) return null;
                 return (
-                  <FormSection key={section.id} title={section.title} description={section.description} dense>
+                  <FormSection key={section.id} title={t(section.title)} description={t(section.description)} dense>
                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                       {cards.map((card) => (
                         <FeatureCard key={`${card.section}-${card.href}-${card.title}`} card={card} />
@@ -358,25 +357,25 @@ function LeavePageInner() {
                 type="search"
                 icon="search"
                 className="bg-white"
-                placeholder="Search reference, reason, type…"
+                placeholder={t("leave.list.searchPlaceholder")}
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
                   setPage(1);
                 }}
-                aria-label="Search leave requests"
+                aria-label={t("leave.list.searchAria")}
               />
             </div>
             <Select
               className="w-full sm:w-44 sm:hidden"
-              aria-label="Filter by status"
+              aria-label={t("leave.list.filterAria")}
               value={filter}
               onChange={(e) => {
                 setFilter(e.target.value as FilterKey);
                 selection.clear();
                 setPage(1);
               }}
-              options={FILTER_TABS.map((t) => ({ value: t.key, label: t.label }))}
+              options={FILTER_TABS.map((tab) => ({ value: tab.key, label: t(tab.label) }))}
             />
           </div>
           <div className="hidden flex-wrap gap-2 sm:flex">
@@ -391,7 +390,7 @@ function LeavePageInner() {
                 }}
                 className={`filter-tab ${filter === tab.key ? "active" : ""}`}
               >
-                {tab.label}
+                {t(tab.label)}
               </button>
             ))}
           </div>
@@ -406,7 +405,7 @@ function LeavePageInner() {
             className="inline-flex items-center gap-1 rounded-lg bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-[14px]">delete</span>
-            {bulkLoading ? "Deleting…" : "Delete selected"}
+            {bulkLoading ? t("leave.list.deleting") : t("leave.list.deleteSelected")}
           </button>
         </BulkSelectionBar>
       }
@@ -415,16 +414,16 @@ function LeavePageInner() {
           <div className="card">
             <EmptyState
               icon="event_available"
-              title="No leave requests found"
+              title={t("leave.list.empty")}
               description={
                 filter === "all" && !search
-                  ? "Submit your first leave application."
-                  : "No rows match the current filters."
+                  ? t("leave.list.emptyFirst")
+                  : t("leave.list.emptyFiltered")
               }
               action={
                 <Link href="/leave/create" className="btn-primary inline-flex text-sm">
                   <span className="material-symbols-outlined text-[18px]">add</span>
-                  Apply for Leave
+                  {t("leave.hub.apply.title")}
                 </Link>
               }
             />
@@ -437,29 +436,29 @@ function LeavePageInner() {
             items={paged}
             getKey={(req) => req.id}
             title={(req) => req.reference_number}
-            subtitle={(req) => TYPE_LABELS[req.leave_type] ?? req.leave_type}
+            subtitle={(req) => typeLabel(req.leave_type)}
             badge={(req) => {
               const s = STATUS_CONFIG[req.status] ?? { label: req.status, cls: "badge-muted" };
               const variant =
                 s.cls.includes("success") ? "success" :
                 s.cls.includes("warning") ? "warning" :
                 s.cls.includes("danger") ? "danger" : "muted";
-              return <Badge variant={variant}>{s.label}</Badge>;
+              return <Badge variant={variant}>{t(s.label)}</Badge>;
             }}
             fields={(req) => [
-              { label: "Dates", value: `${formatDateShort(req.start_date)} → ${formatDateShort(req.end_date)}` },
-              { label: "Days", value: req.days_requested },
-              { label: "Reason", value: req.reason || "—" },
+              { label: t("leave.col.dates"), value: `${formatDateShort(req.start_date)} → ${formatDateShort(req.end_date)}` },
+              { label: t("leave.col.days"), value: req.days_requested },
+              { label: t("leave.col.reason"), value: req.reason || "—" },
             ]}
             actions={(req) => (
               <Link href={`/leave/${req.id}`} className="btn-secondary text-xs py-1 px-2">
-                View
+                {t("leave.list.view")}
               </Link>
             )}
           />
           <div className="hidden overflow-x-auto md:block">
             <table className="data-table w-full">
-              <caption className="sr-only">Leave requests register</caption>
+              <caption className="sr-only">{t("leave.list.caption")}</caption>
               <thead>
                 <tr>
                   <th className={selectionColumnClass.th}>
@@ -470,15 +469,15 @@ function LeavePageInner() {
                       }
                       onChange={selection.toggleAllSelectable}
                       disabled={selection.selectableIds.length === 0 || bulkLoading}
-                      label="Select all drafts"
+                      label={t("leave.list.selectAllDrafts")}
                     />
                   </th>
-                  <th>Reference</th>
-                  <th>Type</th>
-                  <th>Dates</th>
-                  <th>Days</th>
-                  <th>Reason</th>
-                  <th>Status</th>
+                  <th>{t("leave.col.reference")}</th>
+                  <th>{t("leave.col.type")}</th>
+                  <th>{t("leave.col.dates")}</th>
+                  <th>{t("leave.col.days")}</th>
+                  <th>{t("leave.col.reason")}</th>
+                  <th>{t("leave.col.status")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -494,12 +493,12 @@ function LeavePageInner() {
                           checked={selection.isSelected(req.id)}
                           onChange={() => selection.toggle(req.id)}
                           disabled={!canDelete || bulkLoading}
-                          title={canDelete ? undefined : "Only drafts can be deleted"}
-                          label={`Select ${req.reference_number}`}
+                          title={canDelete ? undefined : t("leave.list.onlyDrafts")}
+                          label={t("leave.list.selectRow", { ref: req.reference_number })}
                         />
                       </td>
                       <td className="font-mono text-xs text-neutral-600">{req.reference_number}</td>
-                      <td className="text-sm">{TYPE_LABELS[req.leave_type] ?? req.leave_type}</td>
+                      <td className="text-sm">{typeLabel(req.leave_type)}</td>
                       <td className="whitespace-nowrap text-xs text-neutral-600">
                         {formatDateShort(req.start_date)} → {formatDateShort(req.end_date)}
                       </td>
@@ -513,13 +512,13 @@ function LeavePageInner() {
                             s.cls.includes("success") ? "success" :
                             s.cls.includes("warning") ? "warning" :
                             s.cls.includes("danger") ? "danger" : "muted";
-                          return <Badge variant={variant as "success" | "warning" | "danger" | "muted"}>{s.label}</Badge>;
+                          return <Badge variant={variant as "success" | "warning" | "danger" | "muted"}>{t(s.label)}</Badge>;
                         })()}
                       </td>
                       <td>
                         <div className="flex flex-wrap items-center gap-2">
                           <Link href={`/leave/${req.id}`} className="btn-secondary text-xs py-1 px-2">
-                            View
+                            {t("leave.list.view")}
                           </Link>
                           {canDelete && (
                             <>
@@ -527,7 +526,7 @@ function LeavePageInner() {
                                 href={`/leave/create?edit=${req.id}`}
                                 className="btn-secondary text-xs py-1 px-2"
                               >
-                                Edit
+                                {t("common.edit")}
                               </Link>
                               <button
                                 type="button"
@@ -535,7 +534,7 @@ function LeavePageInner() {
                                 onClick={() => void handleDelete(req)}
                                 className="btn-secondary text-xs py-1 px-2 text-red-600 disabled:opacity-50"
                               >
-                                Delete
+                                {t("common.delete")}
                               </button>
                             </>
                           )}
@@ -546,7 +545,7 @@ function LeavePageInner() {
                               onClick={() => void handleWithdraw(req)}
                               className="btn-secondary text-xs py-1 px-2 text-amber-700 disabled:opacity-50"
                             >
-                              Withdraw
+                              {t("leave.list.withdraw")}
                             </button>
                           )}
                         </div>

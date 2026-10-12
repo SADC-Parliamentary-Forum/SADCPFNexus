@@ -1176,7 +1176,7 @@ test("leave create form shows remaining days by type and labelled fields", () =>
   assert.match(source, /leaveTypeOptionLabel/);
   assert.match(source, /leaveApi\.getBalances/);
   assert.match(source, /FormField/);
-  assert.match(source, /Leave period|What kind of leave/);
+  assert.match(source, /leave\.create\.period|leave\.create\.kind/);
   assert.match(source, /searchParams|edit=/);
   assert.match(source, /prefillLeaveEndDate/);
   assert.doesNotMatch(source, /Server preview/);

@@ -10,7 +10,9 @@ export type LeaveHubSection = "queues" | "views" | "tools";
 
 export type LeaveHubCard = {
   href: string;
+  /** i18n key (lib/i18n/keys.ts) */
   title: string;
+  /** i18n key (lib/i18n/keys.ts) */
   purpose: string;
   icon: string;
   section: LeaveHubSection;
@@ -19,43 +21,43 @@ export type LeaveHubCard = {
 export const LEAVE_HUB_CARDS: LeaveHubCard[] = [
   {
     href: "/leave/create",
-    title: "Apply for leave",
-    purpose: "Start a draft or submit a request. Balances are shown before you pick dates.",
+    title: "leave.hub.apply.title",
+    purpose: "leave.hub.apply.purpose",
     icon: "add_circle",
     section: "queues",
   },
   {
     href: "/leave?queue=recommend",
-    title: "Recommend inbox",
-    purpose: "Requests waiting for your recommendation.",
+    title: "leave.list.recommendTitle",
+    purpose: "leave.list.recommendSubtitle",
     icon: "thumb_up",
     section: "queues",
   },
   {
     href: "/leave/queues/certify",
-    title: "Certification queue",
-    purpose: "Recommended requests awaiting HR / administration certification.",
+    title: "leave.common.certQueue",
+    purpose: "leave.hub.certify.purpose",
     icon: "verified",
     section: "queues",
   },
   {
     href: "/leave",
-    title: "My leave requests",
-    purpose: "Drafts, submitted, and decided applications.",
+    title: "leave.hub.mine.title",
+    purpose: "leave.hub.mine.purpose",
     icon: "event_available",
     section: "views",
   },
   {
     href: "/leave/calendar",
-    title: "Team calendar",
-    purpose: "Who is away this month. Medical types stay masked for non-HR viewers.",
+    title: "leave.calendar.breadcrumb",
+    purpose: "leave.hub.calendar.purpose",
     icon: "calendar_month",
     section: "views",
   },
   {
     href: "/hr/leave",
-    title: "HR leave register",
-    purpose: "Institutional register of staff leave.",
+    title: "leave.hub.hrRegister.title",
+    purpose: "leave.hub.hrRegister.purpose",
     icon: "menu_book",
     section: "views",
   },
@@ -68,15 +70,15 @@ export const LEAVE_HUB_CARDS: LeaveHubCard[] = [
   },
   {
     href: "/leave/toil",
-    title: "TOIL / leave in lieu",
-    purpose: "Credits you can attach when applying for leave in lieu.",
+    title: "leave.hub.toil.title",
+    purpose: "leave.hub.toil.purpose",
     icon: "more_time",
     section: "tools",
   },
   {
     href: "/leave/settings",
-    title: "Leave workflow settings",
-    purpose: "Policy versions and approval routing.",
+    title: "leave.settings.title",
+    purpose: "leave.hub.settings.purpose",
     icon: "settings",
     section: "tools",
   },
