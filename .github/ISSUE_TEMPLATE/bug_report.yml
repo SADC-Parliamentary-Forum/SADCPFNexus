@@ -1,0 +1,47 @@
+name: Bug report
+description: Something in Nexus is broken or behaves incorrectly
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: app
+    attributes:
+      label: Which app?
+      options:
+        - Web portal
+        - Mobile app
+        - API / background job
+    validations:
+      required: true
+  - type: input
+    id: module
+    attributes:
+      label: Module
+      placeholder: e.g. Contracts, Travel, Leave, Procurement
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Sign in as <role> (no real passwords here)
+        2. Go to ...
+        3. Click ...
+    validations:
+      required: true
+  - type: input
+    id: reference
+    attributes:
+      label: Record reference (optional)
+      description: Reference number of the affected record. Do not paste personal or financial data.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error message / logs (optional)
+      render: shell
