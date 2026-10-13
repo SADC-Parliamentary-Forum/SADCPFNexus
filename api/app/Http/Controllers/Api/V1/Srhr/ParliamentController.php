@@ -12,7 +12,7 @@ class ParliamentController extends Controller
     private function checkPerm(Request $request, string $permission): void
     {
         $user = $request->user();
-        if (!$user->isSystemAdmin()) {
+        if (! $user->isSystemAdmin()) {
             abort_unless($user->hasPermissionTo($permission, 'sanctum'), 403);
         }
     }
@@ -30,7 +30,7 @@ class ParliamentController extends Controller
             $term = $request->input('search');
             $query->where(function ($q) use ($term) {
                 $q->where('name', 'ilike', "%{$term}%")
-                  ->orWhere('country_name', 'ilike', "%{$term}%");
+                    ->orWhere('country_name', 'ilike', "%{$term}%");
             });
         }
 
@@ -43,6 +43,7 @@ class ParliamentController extends Controller
         }
 
         $perPage = min((int) $request->input('per_page', 50), 200);
+
         return response()->json($query->paginate($perPage));
     }
 
@@ -62,17 +63,17 @@ class ParliamentController extends Controller
         $this->checkPerm($request, 'parliaments.manage');
 
         $data = $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'country_code'  => ['required', 'string', 'size:2'],
-            'country_name'  => ['required', 'string', 'max:128'],
-            'city'          => ['nullable', 'string', 'max:128'],
-            'address'       => ['nullable', 'string'],
-            'contact_name'  => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
+            'country_code' => ['required', 'string', 'size:2'],
+            'country_name' => ['required', 'string', 'max:128'],
+            'city' => ['nullable', 'string', 'max:128'],
+            'address' => ['nullable', 'string'],
+            'contact_name' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:32'],
-            'website_url'   => ['nullable', 'url', 'max:255'],
-            'is_active'     => ['sometimes', 'boolean'],
-            'notes'         => ['nullable', 'string'],
+            'website_url' => ['nullable', 'url:http,https', 'max:255'],
+            'is_active' => ['sometimes', 'boolean'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $parliament = Parliament::create([
@@ -89,20 +90,21 @@ class ParliamentController extends Controller
         abort_unless((int) $parliament->tenant_id === (int) $request->user()->tenant_id, 404);
 
         $data = $request->validate([
-            'name'          => ['sometimes', 'string', 'max:255'],
-            'country_code'  => ['sometimes', 'string', 'size:2'],
-            'country_name'  => ['sometimes', 'string', 'max:128'],
-            'city'          => ['nullable', 'string', 'max:128'],
-            'address'       => ['nullable', 'string'],
-            'contact_name'  => ['nullable', 'string', 'max:255'],
+            'name' => ['sometimes', 'string', 'max:255'],
+            'country_code' => ['sometimes', 'string', 'size:2'],
+            'country_name' => ['sometimes', 'string', 'max:128'],
+            'city' => ['nullable', 'string', 'max:128'],
+            'address' => ['nullable', 'string'],
+            'contact_name' => ['nullable', 'string', 'max:255'],
             'contact_email' => ['nullable', 'email', 'max:255'],
             'contact_phone' => ['nullable', 'string', 'max:32'],
-            'website_url'   => ['nullable', 'url', 'max:255'],
-            'is_active'     => ['sometimes', 'boolean'],
-            'notes'         => ['nullable', 'string'],
+            'website_url' => ['nullable', 'url:http,https', 'max:255'],
+            'is_active' => ['sometimes', 'boolean'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         $parliament->update($data);
+
         return response()->json(['message' => 'Parliament updated.', 'data' => $parliament->fresh()]);
     }
 
@@ -116,6 +118,7 @@ class ParliamentController extends Controller
         }
 
         $parliament->delete();
+
         return response()->json(['message' => 'Parliament deleted.']);
     }
 }

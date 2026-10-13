@@ -45,9 +45,25 @@ export function readStoredUser(): AuthUser | null {
   }
 }
 
+// Personal profile fields are fetched from the API when needed and never kept in browser storage.
+const UNSTORED_PERSONAL_FIELDS = [
+  "nationality",
+  "gender",
+  "marital_status",
+  "date_of_birth",
+  "id_passport_number",
+  "emergency_contact_name",
+  "emergency_contact_relationship",
+  "emergency_contact_phone",
+  "address_line1",
+  "address_line2",
+] as const;
+
 export function writeStoredUser(user: AuthUser | (AuthUser & Record<string, unknown>)): void {
   if (typeof window === "undefined") return;
-  sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+  const stored: Record<string, unknown> = { ...user };
+  for (const field of UNSTORED_PERSONAL_FIELDS) delete stored[field];
+  sessionStorage.setItem(USER_KEY, JSON.stringify(stored));
   localStorage.removeItem(USER_KEY);
 }
 

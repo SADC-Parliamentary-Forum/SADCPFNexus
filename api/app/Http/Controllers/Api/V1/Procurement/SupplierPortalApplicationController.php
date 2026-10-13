@@ -105,7 +105,7 @@ class SupplierPortalApplicationController extends Controller
             'incorporation_date' => ['nullable', 'date'],
             'business_type' => ['nullable', 'string', 'max:80'],
             'postal_address' => ['nullable', 'string', 'max:500'],
-            'website' => ['nullable', 'url', 'max:255'],
+            'website' => ['nullable', 'url:http,https', 'max:255'],
             'address' => ['nullable', 'string', 'max:500'],
             'country' => ['nullable', 'string', 'max:100'],
             'geographic_coverage' => ['nullable', 'array'],

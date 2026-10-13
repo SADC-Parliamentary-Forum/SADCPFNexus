@@ -47,7 +47,7 @@ class SupplierRegistrationController extends Controller
             'contact_name' => ['required', 'string', 'max:255'],
             'contact_email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'contact_phone' => ['required', 'string', 'max:50'],
-            'website' => ['nullable', 'url', 'max:255'],
+            'website' => ['nullable', 'url:http,https', 'max:255'],
             'address' => ['required', 'string', 'max:500'],
             'country' => ['required', 'string', 'max:100'],
             'bank_name' => ['required', 'string', 'max:255'],

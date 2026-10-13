@@ -51,6 +51,29 @@ class SupplierRegistrationTest extends TestCase
         ]);
     }
 
+    public function test_supplier_registration_rejects_non_http_website(): void
+    {
+        $tenant = Tenant::factory()->create(['is_active' => true]);
+        $category = $this->makeSupplierCategory($tenant, ['name' => 'ICT Equipment', 'code' => 'ict_equipment']);
+
+        $this->post('/api/v1/procurement/suppliers/register', [
+            'tenant_id' => $tenant->id,
+            'company_name' => 'Script Supplies',
+            'registration_number' => 'REG-101',
+            'contact_name' => 'Sam Vendor',
+            'contact_email' => 'sam@scriptsupplies.test',
+            'website' => 'ftp://files.scriptsupplies.test',
+            'password' => 'Secret123!',
+            'password_confirmation' => 'Secret123!',
+            'category_ids' => [$category->id],
+            'documents' => [$this->fakePdf('company-profile.pdf')],
+        ], ['Accept' => 'application/json'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['website']);
+
+        $this->assertDatabaseMissing('vendors', ['name' => 'Script Supplies']);
+    }
+
     public function test_supplier_registration_allows_more_than_three_categories(): void
     {
         $tenant = Tenant::factory()->create(['is_active' => true]);

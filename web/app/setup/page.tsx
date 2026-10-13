@@ -14,6 +14,7 @@ import { useTheme } from "@/components/providers/ThemeProvider";
 import { cn } from "@/lib/utils";
 import { readStoredUser, writeStoredUser } from "@/lib/session";
 import { attachCanvasPassiveFalseTouchListeners } from "@/lib/attachCanvasPassiveFalseTouchListeners";
+import { createFilePreviewUrl } from "@/lib/filePreview";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -700,7 +701,7 @@ function Step3Photo({
     if (f.size > 5 * 1024 * 1024) { setErr("Image must be under 5 MB."); return; }
     setErr(null);
     setPhotoFile(f);
-    setPreview(URL.createObjectURL(f));
+    setPreview(createFilePreviewUrl(f));
   }
 
   async function handleUpload() {
@@ -1115,15 +1116,6 @@ export default function SetupWizardPage() {
           name: state.name.trim(),
           email: state.email.trim(),
           phone: state.phone || null,
-          nationality: state.nationality || null,
-          gender: state.gender || null,
-          emergency_contact_name: state.emergencyContactName || null,
-          emergency_contact_relationship: state.nextOfKin || null,
-          emergency_contact_phone: state.emergencyContactPhone || null,
-          address_line1: state.addressLine1 || null,
-          address_line2: state.addressLine2 || null,
-          city: state.city || null,
-          country: state.country || null,
           setup_completed: true,
         });
       }

@@ -11,6 +11,7 @@ import {
   type AppraisalAttachment,
 } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
+import { safeExternalUrl } from "@/lib/safeExternalUrl";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -992,7 +993,13 @@ export default function AppraisalDetailPage() {
                   type="button"
                   onClick={() => {
                     if (!newLinkUrl.trim()) return;
-                    setEvidenceLinks((p) => [...p, { url: newLinkUrl.trim(), title: newLinkTitle.trim() || undefined }]);
+                    const url = safeExternalUrl(newLinkUrl);
+                    if (!url) {
+                      setError("Evidence links must be web addresses starting with http:// or https://.");
+                      return;
+                    }
+                    setError(null);
+                    setEvidenceLinks((p) => [...p, { url, title: newLinkTitle.trim() || undefined }]);
                     setNewLinkUrl(""); setNewLinkTitle("");
                   }}
                   className="btn-secondary py-1.5 px-3 text-xs"
@@ -1004,7 +1011,11 @@ export default function AppraisalDetailPage() {
                 <ul className="mt-2 space-y-1">
                   {evidenceLinks.map((link, i) => (
                     <li key={i} className="flex items-center gap-2 text-xs">
-                      <a href={link.url} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs truncate">{link.title || link.url}</a>
+                      {safeExternalUrl(link.url) ? (
+                        <a href={safeExternalUrl(link.url)!} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs truncate">{link.title || link.url}</a>
+                      ) : (
+                        <span className="text-xs text-neutral-500 truncate">{link.title || link.url}</span>
+                      )}
                       <button type="button" onClick={() => setEvidenceLinks((p) => p.filter((_, idx) => idx !== i))} className="btn-secondary text-xs text-red-600 flex-shrink-0">Remove</button>
                     </li>
                   ))}
@@ -1120,7 +1131,11 @@ export default function AppraisalDetailPage() {
                   <ul className="space-y-1">
                     {evidenceLinks.map((link, i) => (
                       <li key={i}>
-                        <a href={link.url} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs">{link.title || link.url}</a>
+                        {safeExternalUrl(link.url) ? (
+                          <a href={safeExternalUrl(link.url)!} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs">{link.title || link.url}</a>
+                        ) : (
+                          <span className="text-xs text-neutral-500">{link.title || link.url}</span>
+                        )}
                       </li>
                     ))}
                   </ul>
