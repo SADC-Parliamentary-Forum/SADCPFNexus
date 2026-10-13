@@ -34,6 +34,8 @@ const nextConfig: NextConfig = {
   // Produces a self-contained build in .next/standalone — required for the production Docker image
   output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   allowedDevOrigins: ["127.0.0.1", "localhost"],
+  // Don't advertise the framework in an X-Powered-By header.
+  poweredByHeader: false,
   experimental: {
     // Prevent the App Router client-side cache from serving stale pages on navigation/refresh
     staleTimes: {
@@ -59,6 +61,12 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=(self)" },
+        ],
+      },
+      {
+        // HSTS on every response, including static chunks and images.
+        source: "/:path*",
+        headers: [
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
         ],
       },
