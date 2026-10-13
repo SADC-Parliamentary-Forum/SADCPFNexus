@@ -150,6 +150,18 @@ class ProcurementCoiTest extends TestCase
             'assessed_by'       => $staff->id,
             'assessed_at'       => now(),
         ]);
+        // 45 000 is in the RFQ band, which needs three assessed quotations.
+        foreach ([43500, 44000] as $amount) {
+            $req->quotes()->create([
+                'vendor_name'       => "Competitor {$amount}",
+                'quoted_amount'     => $amount,
+                'currency'          => 'NAD',
+                'quote_date'        => now(),
+                'compliance_passed' => true,
+                'assessed_by'       => $staff->id,
+                'assessed_at'       => now(),
+            ]);
+        }
 
         [$http] = $this->asProcurementOfficer($tenant);
 
