@@ -155,6 +155,64 @@ class ProcurementAwardTest extends TestCase
           ->assertJsonPath('data.status', 'awarded');
     }
 
+    public function test_award_uses_tenant_minimum_quotes_setting(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'settings' => ['procurement' => ['minimum_quotes_required' => 2]],
+        ]);
+        $staff  = $this->makeUser('staff', $tenant);
+        $vendor = $this->makeApprovedVendor($tenant);
+        $req    = $this->makeRequestWithValue($tenant, $staff->id, 45000);
+        $quote  = $this->makeQuote($req, $vendor);
+        $this->addCompetingQuotes($req, 1);
+
+        [$http] = $this->asProcurementOfficer($tenant);
+        $this->declareCoiAward($http, $req);
+
+        $http->postJson("/api/v1/procurement/requests/{$req->id}/award", [
+            'quote_id' => $quote->id,
+        ])->assertOk()
+          ->assertJsonPath('data.status', 'awarded');
+    }
+
+    public function test_award_uses_tenant_direct_purchase_limit_setting(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'settings' => ['procurement' => ['direct_purchase_limit' => 50000]],
+        ]);
+        $staff  = $this->makeUser('staff', $tenant);
+        $vendor = $this->makeApprovedVendor($tenant);
+        $req    = $this->makeRequestWithValue($tenant, $staff->id, 45000);
+        $quote  = $this->makeQuote($req, $vendor);
+
+        [$http] = $this->asProcurementOfficer($tenant);
+        $this->declareCoiAward($http, $req);
+
+        $http->postJson("/api/v1/procurement/requests/{$req->id}/award", [
+            'quote_id' => $quote->id,
+        ])->assertOk()
+          ->assertJsonPath('data.status', 'awarded');
+    }
+
+    public function test_raised_minimum_quotes_setting_blocks_award(): void
+    {
+        $tenant = Tenant::factory()->create([
+            'settings' => ['procurement' => ['minimum_quotes_required' => 4]],
+        ]);
+        $staff  = $this->makeUser('staff', $tenant);
+        $vendor = $this->makeApprovedVendor($tenant);
+        $req    = $this->makeApprovedRequest($tenant, $staff->id);
+        $quote  = $this->makeQuote($req, $vendor);
+
+        [$http] = $this->asProcurementOfficer($tenant);
+        $this->declareCoiAward($http, $req);
+
+        $http->postJson("/api/v1/procurement/requests/{$req->id}/award", [
+            'quote_id' => $quote->id,
+        ])->assertUnprocessable()
+          ->assertJsonValidationErrors(['quote_id']);
+    }
+
     private function makeRequestWithValue(Tenant $tenant, int $requesterId, float $value): ProcurementRequest
     {
         $req = ProcurementRequest::create([
