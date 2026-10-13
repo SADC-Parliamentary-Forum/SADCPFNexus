@@ -605,15 +605,16 @@ class ProcurementService
             ]);
         }
 
-        // Enforce minimum quotation count above the direct-purchase threshold.
-        $estimatedValue   = (float) ($request->estimated_value ?? 0);
-        $quotationLimit   = (float) config('procurement.quotation_limit', 100_000);
-        $minQuotes        = (int)   config('procurement.minimum_quotes_required', 3);
-        if ($estimatedValue > $quotationLimit) {
+        // Enforce minimum quotation count above the direct-purchase threshold
+        // (the RFQ band starts there, not at the tender threshold).
+        $estimatedValue      = (float) ($request->estimated_value ?? 0);
+        $directPurchaseLimit = (float) config('procurement.direct_purchase_limit', 10_000);
+        $minQuotes           = (int)   config('procurement.minimum_quotes_required', 3);
+        if ($estimatedValue > $directPurchaseLimit) {
             $receivedQuotes = $request->quotes()->whereNotNull('assessed_at')->count();
             if ($receivedQuotes < $minQuotes) {
                 throw ValidationException::withMessages([
-                    'quote_id' => "At least {$minQuotes} assessed quotations are required for purchases above NAD " . number_format($quotationLimit, 2) . '. Only ' . $receivedQuotes . ' assessed quote(s) received.',
+                    'quote_id' => "At least {$minQuotes} assessed quotations are required for purchases above NAD " . number_format($directPurchaseLimit, 2) . '. Only ' . $receivedQuotes . ' assessed quote(s) received.',
                 ]);
             }
         }

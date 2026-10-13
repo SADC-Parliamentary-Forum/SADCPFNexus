@@ -295,6 +295,48 @@ class InvoiceTest extends TestCase
             ->assertJsonPath('data.status', 'paid');
     }
 
+    public function test_cannot_mark_unapproved_invoice_paid(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asFinanceController($tenant);
+        [$po, , $grn, $vendor] = $this->makeIssuedPO($tenant, $user->id);
+
+        foreach (['received', 'rejected'] as $i => $status) {
+            $invoice = Invoice::create(array_merge($this->invoicePayload($po, $vendor, $grn), [
+                'tenant_id'             => $tenant->id,
+                'reference_number'      => "INV-UNAPPROVED-{$i}",
+                'vendor_invoice_number' => "VND-UNAPPROVED-{$i}",
+                'status'                => $status,
+                'match_status'          => 'variance',
+            ]));
+
+            $http->postJson("/api/v1/procurement/invoices/{$invoice->id}/mark-paid")
+                ->assertUnprocessable()
+                ->assertJsonValidationErrors(['status']);
+
+            $this->assertDatabaseHas('invoices', ['id' => $invoice->id, 'status' => $status]);
+        }
+    }
+
+    public function test_cannot_mark_invoice_paid_twice(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $user] = $this->asFinanceController($tenant);
+        [$po, , $grn, $vendor] = $this->makeIssuedPO($tenant, $user->id);
+
+        $invoice = Invoice::create(array_merge($this->invoicePayload($po, $vendor, $grn), [
+            'tenant_id'        => $tenant->id,
+            'reference_number' => 'INV-PAID-TWICE',
+            'status'           => 'approved_for_payment',
+            'match_status'     => 'matched',
+        ]));
+
+        $http->postJson("/api/v1/procurement/invoices/{$invoice->id}/mark-paid")->assertOk();
+        $http->postJson("/api/v1/procurement/invoices/{$invoice->id}/mark-paid")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['status']);
+    }
+
     // ── Tenant Isolation ──────────────────────────────────────────────────────
 
     public function test_tenant_isolation_on_invoices(): void

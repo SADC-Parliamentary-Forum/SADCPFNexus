@@ -2,7 +2,12 @@
 
 return [
     'default_cabin_class' => env('TRAVEL_DEFAULT_CABIN', 'economy'),
-    'retirement_working_days' => 5,
+    /**
+     * Working days after return within which a mission must be retired.
+     * Internal rule is 5; the acceptance pack cites ADM 6.2.21 as 10 —
+     * set per environment once the authoritative rule is confirmed.
+     */
+    'retirement_working_days' => (int) env('TRAVEL_RETIREMENT_WORKING_DAYS', 5),
     'toil_hours_per_day' => (float) env('TRAVEL_TOIL_HOURS_PER_DAY', 8.0),
     'toil_expiry_days' => (int) env('TRAVEL_TOIL_EXPIRY_DAYS', 30),
     /**

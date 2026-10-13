@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\NotificationService;
 use App\Support\FrontendUrl;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class InvoiceService
@@ -163,6 +164,14 @@ class InvoiceService
 
     public function markPaid(Invoice $invoice, User $user): Invoice
     {
+        if ($invoice->status === 'paid') {
+            throw ValidationException::withMessages(['status' => 'This invoice is already marked as paid.']);
+        }
+        // 'approved' is the legacy status (seeded/older rows); the UI treats both alike.
+        if (! in_array($invoice->status, ['approved_for_payment', 'approved'], true)) {
+            throw ValidationException::withMessages(['status' => 'Only invoices approved for payment can be marked as paid.']);
+        }
+
         $invoice->update([
             'status'      => 'paid',
             'reviewed_by' => $user->id,

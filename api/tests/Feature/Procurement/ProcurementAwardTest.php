@@ -29,8 +29,25 @@ class ProcurementAwardTest extends TestCase
             'rfq_issued_at'   => now()->subHours(12),
         ]);
         $this->reserveBudgetFor($req);
+        // 45 000 is in the RFQ band, which needs three assessed quotations.
+        $this->addCompetingQuotes($req, 2);
 
         return $req;
+    }
+
+    private function addCompetingQuotes(ProcurementRequest $req, int $count): void
+    {
+        for ($i = 1; $i <= $count; $i++) {
+            $req->quotes()->create([
+                'vendor_name'       => "Competitor {$i}",
+                'quoted_amount'     => 43000 + $i * 500,
+                'currency'          => 'NAD',
+                'quote_date'        => now(),
+                'compliance_passed' => true,
+                'assessed_by'       => $req->requester_id,
+                'assessed_at'       => now(),
+            ]);
+        }
     }
 
     private function makeApprovedVendor(Tenant $tenant): Vendor
@@ -99,6 +116,63 @@ class ProcurementAwardTest extends TestCase
             'vendor_id'              => $vendor->id,
             'status'                 => 'draft',
         ]);
+    }
+
+    public function test_rfq_band_award_requires_minimum_assessed_quotations(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $staff  = $this->makeUser('staff', $tenant);
+        $vendor = $this->makeApprovedVendor($tenant);
+        $req    = $this->makeRequestWithValue($tenant, $staff->id, 45000);
+        $quote  = $this->makeQuote($req, $vendor);
+        $this->addCompetingQuotes($req, 1);
+
+        [$http] = $this->asProcurementOfficer($tenant);
+        $this->declareCoiAward($http, $req);
+
+        $http->postJson("/api/v1/procurement/requests/{$req->id}/award", [
+            'quote_id' => $quote->id,
+        ])->assertUnprocessable()
+          ->assertJsonValidationErrors(['quote_id']);
+
+        $this->assertDatabaseHas('procurement_requests', ['id' => $req->id, 'status' => 'approved']);
+    }
+
+    public function test_direct_purchase_award_allows_a_single_quotation(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $staff  = $this->makeUser('staff', $tenant);
+        $vendor = $this->makeApprovedVendor($tenant);
+        $req    = $this->makeRequestWithValue($tenant, $staff->id, 8000);
+        $quote  = $this->makeQuote($req, $vendor, 7800);
+
+        [$http] = $this->asProcurementOfficer($tenant);
+        $this->declareCoiAward($http, $req);
+
+        $http->postJson("/api/v1/procurement/requests/{$req->id}/award", [
+            'quote_id' => $quote->id,
+        ])->assertOk()
+          ->assertJsonPath('data.status', 'awarded');
+    }
+
+    private function makeRequestWithValue(Tenant $tenant, int $requesterId, float $value): ProcurementRequest
+    {
+        $req = ProcurementRequest::create([
+            'tenant_id'       => $tenant->id,
+            'requester_id'    => $requesterId,
+            'title'           => 'Band test purchase',
+            'description'     => 'Quotation band boundary',
+            'category'        => 'goods',
+            'estimated_value' => $value,
+            'currency'        => 'NAD',
+            'status'          => 'approved',
+            'submitted_at'    => now()->subDay(),
+            'approved_at'     => now(),
+            'rfq_issued_at'   => now()->subHours(12),
+        ]);
+        $this->reserveBudgetFor($req);
+
+        return $req;
     }
 
     public function test_cannot_award_a_non_approved_request(): void
