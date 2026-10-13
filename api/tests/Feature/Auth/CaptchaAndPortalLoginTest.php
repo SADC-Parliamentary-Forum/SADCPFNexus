@@ -5,8 +5,10 @@ namespace Tests\Feature\Auth;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Models\Vendor;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class CaptchaAndPortalLoginTest extends TestCase
@@ -100,6 +102,38 @@ class CaptchaAndPortalLoginTest extends TestCase
             'device_name' => 'mobile',
         ])->assertOk()
             ->assertJsonStructure(['token', 'user']);
+    }
+
+    public function test_mobile_login_requires_captcha_when_bypass_disabled(): void
+    {
+        config(['captcha.mobile_login_bypass' => false]);
+        $this->makeStaff('staff@portal.test');
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'staff@portal.test',
+            'password' => 'Password@123',
+            'client_type' => 'mobile',
+            'device_name' => 'mobile',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['captcha_token']);
+    }
+
+    public function test_login_throttle_is_keyed_per_account_across_ips(): void
+    {
+        $limiter = RateLimiter::limiter('login');
+        $keysFor = fn (string $ip, string $email) => collect($limiter(
+            Request::create('/api/v1/auth/login', 'POST', ['email' => $email], [], [], ['REMOTE_ADDR' => $ip])
+        ))->pluck('key')->all();
+
+        $first = $keysFor('203.0.113.10', 'Staff@Portal.test');
+        $second = $keysFor('198.51.100.20', ' staff@portal.test ');
+
+        $this->assertContains('login-account:'.sha1('staff@portal.test'), $first);
+        $this->assertContains('login-account-hour:'.sha1('staff@portal.test'), $first);
+        $this->assertSame(
+            array_values(array_diff($first, ['login-ip:203.0.113.10'])),
+            array_values(array_diff($second, ['login-ip:198.51.100.20'])),
+        );
     }
 
     public function test_staff_portal_rejects_supplier_accounts(): void

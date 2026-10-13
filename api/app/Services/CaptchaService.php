@@ -82,7 +82,7 @@ class CaptchaService
             return;
         }
 
-        if ($allowMobileBypass && $this->isMobileClient($request)) {
+        if ($allowMobileBypass && config('captcha.mobile_login_bypass', true) && $this->isMobileClient($request)) {
             return;
         }
 

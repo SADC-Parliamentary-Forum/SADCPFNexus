@@ -32,4 +32,9 @@ return [
 
     'ttl_seconds' => (int) env('CAPTCHA_TTL_SECONDS', 600),
 
+    // `client_type=mobile` is client-supplied, so this bypass also skips the
+    // captcha for any script that sends it; per-account login throttling is
+    // the compensating control. Set false once the Flutter app solves a captcha.
+    'mobile_login_bypass' => filter_var(env('CAPTCHA_MOBILE_LOGIN_BYPASS', true), FILTER_VALIDATE_BOOLEAN),
+
 ];

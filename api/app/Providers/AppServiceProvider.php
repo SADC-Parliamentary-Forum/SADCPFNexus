@@ -125,10 +125,21 @@ class AppServiceProvider extends ServiceProvider
         // enough to exhaust 5 attempts/min and silently strand the login page
         // behind a "Too Many Attempts" 429 that looked like an unrelated app
         // bug. Keep the strict production limit; widen it for local/testing.
+        //
+        // The per-IP limit alone does not stop guessing one account's password
+        // from many IPs (mobile logins skip the captcha), so each email address
+        // also gets its own per-minute and per-hour budget.
         RateLimiter::for('login', function (Request $request) {
-            $perMinute = app()->environment(['local', 'testing']) ? 60 : 5;
+            $relaxed = app()->environment(['local', 'testing']);
+            $perMinute = $relaxed ? 60 : 5;
+            $perHour = $relaxed ? 1000 : 20;
+            $account = sha1(strtolower(trim((string) $request->input('email'))));
 
-            return Limit::perMinute($perMinute)->by($request->ip());
+            return [
+                Limit::perMinute($perMinute)->by('login-ip:'.$request->ip()),
+                Limit::perMinute($perMinute)->by('login-account:'.$account),
+                Limit::perHour($perHour)->by('login-account-hour:'.$account),
+            ];
         });
 
         ResetPassword::createUrlUsing(function (User $user, string $token): string {
