@@ -2,28 +2,6 @@ import type { NextConfig } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
 const apiInternalUrl = process.env.API_INTERNAL_URL ?? "http://localhost:8000/api/v1";
-const apiOrigin = (() => {
-  try {
-    const parsed = new URL(apiInternalUrl);
-    return parsed.origin;
-  } catch {
-    return "http://localhost:8000";
-  }
-})();
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://hcaptcha.com https://*.hcaptcha.com https://js.hcaptcha.com",
-  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hcaptcha.com https://*.hcaptcha.com",
-  "font-src 'self' https://fonts.gstatic.com data:",
-  "img-src 'self' data: blob: https:",
-  "media-src 'self' blob:",
-  "frame-src 'self' blob: https://challenges.cloudflare.com https://hcaptcha.com https://*.hcaptcha.com https://newassets.hcaptcha.com",
-  `connect-src 'self' ${apiOrigin} https:`,
-].join("; ");
 
 const nextConfig: NextConfig = {
   // Bakes the internal Laravel origin into server code so the cookie-preserving
@@ -52,11 +30,11 @@ const nextConfig: NextConfig = {
 
     return [
       {
-        // HTML pages: never cache (data changes frequently)
+        // HTML pages: never cache. Content-Security-Policy is set per request
+        // (with a script nonce) in proxy.ts. (data changes frequently)
         source: "/((?!_next/static|_next/image|favicon|vendors|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf)).*)",
         headers: [
           { key: "Cache-Control", value: "no-store, must-revalidate" },
-          { key: "Content-Security-Policy", value: contentSecurityPolicy },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },

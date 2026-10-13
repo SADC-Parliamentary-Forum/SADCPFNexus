@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { buildContentSecurityPolicy, createCspNonce } from "@/lib/contentSecurityPolicy";
+
+const isProduction = process.env.NODE_ENV === "production";
 
 const MUST_RESET_COOKIE = "sadcpf_must_reset";
 const SETUP_COMPLETE_COOKIE = "sadcpf_setup_complete";
@@ -94,7 +97,7 @@ function isSupplierAppPath(path: string): boolean {
   return path === "/supplier" || path.startsWith("/supplier/");
 }
 
-export function proxy(request: NextRequest) {
+function authRedirects(request: NextRequest, next: () => NextResponse): NextResponse {
   const isAuth = Boolean(request.cookies.get("sadcpf_authenticated")?.value);
   const mustReset = Boolean(request.cookies.get(MUST_RESET_COOKIE)?.value);
   const setupComplete = Boolean(request.cookies.get(SETUP_COMPLETE_COOKIE)?.value);
@@ -135,12 +138,12 @@ export function proxy(request: NextRequest) {
         ));
       }
     }
-    return NextResponse.next();
+    return next();
   }
 
   if (!isAuth) {
     if (ANON_OK_PATHS.includes(path)) {
-      return NextResponse.next();
+      return next();
     }
     return buildLoginRedirect(request, pathWithSearch);
   }
@@ -156,7 +159,7 @@ export function proxy(request: NextRequest) {
     if (!mustReset) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
-    return NextResponse.next();
+    return next();
   }
 
   if (path === SETUP_PATH) {
@@ -169,7 +172,7 @@ export function proxy(request: NextRequest) {
     if (setupComplete) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
-    return NextResponse.next();
+    return next();
   }
 
   // Allow MFA setup during onboarding so Setup → Security can reach the real page.
@@ -181,53 +184,57 @@ export function proxy(request: NextRequest) {
     if (!setupComplete && !allowDuringSetup && !supplierPortal && !isSupplierAppPath(path)) {
       return NextResponse.redirect(new URL(SETUP_PATH, request.url));
     }
-    return NextResponse.next();
+    return next();
   }
 
-  return NextResponse.next();
+  return next();
+}
+
+/** Paths the auth redirects above apply to (the previous proxy matcher). */
+const AUTH_EXACT_PATHS = [
+  "/",
+  "/login",
+  "/forgot-password",
+  "/request-password",
+  "/activate-account",
+  "/reset-password",
+  "/setup",
+  "/approval",
+];
+
+const AUTH_PREFIXES = [
+  "/external-rfq",
+  ...PROTECTED_PREFIXES,
+];
+
+function needsAuthRedirects(path: string): boolean {
+  return AUTH_EXACT_PATHS.includes(path)
+    || AUTH_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
+export function proxy(request: NextRequest) {
+  if (!isProduction) {
+    return needsAuthRedirects(request.nextUrl.pathname)
+      ? authRedirects(request, () => NextResponse.next())
+      : NextResponse.next();
+  }
+
+  const nonce = createCspNonce();
+  const csp = buildContentSecurityPolicy(nonce, process.env.NEXT_PUBLIC_API_URL);
+  // Next reads the nonce from the request CSP header and stamps it on its own scripts.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
+  const next = () => NextResponse.next({ request: { headers: requestHeaders } });
+
+  const response = needsAuthRedirects(request.nextUrl.pathname) ? authRedirects(request, next) : next();
+  response.headers.set("Content-Security-Policy", csp);
+  return response;
 }
 
 export const config = {
   matcher: [
-    "/",
-    "/login",
-    "/forgot-password",
-    "/request-password",
-    "/activate-account",
-    "/reset-password",
-    "/setup",
-    "/approval",
-    "/external-rfq/:path*",
-    "/dashboard/:path*",
-    "/admin/:path*",
-    "/alerts/:path*",
-    "/analytics/:path*",
-    "/approvals/:path*",
-    "/assets/:path*",
-    "/fleet/:path*",
-    "/assignments/:path*",
-    "/contracts/:path*",
-    "/correspondence/:path*",
-    "/finance/:path*",
-    "/hr/:path*",
-    "/imprest/:path*",
-    "/leave/:path*",
-    "/mande/:path*",
-    "/notifications/:path*",
-    "/organogram/:path*",
-    "/pif/:path*",
-    "/governance/:path*",
-    "/procurement/:path*",
-    "/reports/:path*",
-    "/profile/:path*",
-    "/risk/:path*",
-    "/saam/:path*",
-    "/salary-advances/:path*",
-    "/settings/:path*",
-    "/srhr/:path*",
-    "/stock/:path*",
-    "/supplier/:path*",
-    "/travel/:path*",
-    "/workplan/:path*",
+    // Every page (for the CSP nonce); API proxy routes and static assets excluded.
+    "/((?!api/|sanctum/|_next/static|_next/image|vendors/|favicon\\.ico|.*\\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|js|css|map|txt|xml|json|pdf)$).*)",
   ],
 };
