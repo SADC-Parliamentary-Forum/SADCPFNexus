@@ -8,6 +8,9 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SecurityHeaders
 {
+    private const CONTENT_SECURITY_POLICY = "default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; "
+        ."form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
+
     /**
      * Add HTTP security headers to every response.
      */
@@ -19,6 +22,12 @@ class SecurityHeaders
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+        // The API serves JSON plus a few server-rendered email-approval pages
+        // (inline <style>, a same-origin POST form), so nothing else is allowed.
+        if (! $response->headers->has('Content-Security-Policy')) {
+            $response->headers->set('Content-Security-Policy', self::CONTENT_SECURITY_POLICY);
+        }
 
         // HSTS only in production (requires HTTPS)
         if (app()->environment('production')) {
