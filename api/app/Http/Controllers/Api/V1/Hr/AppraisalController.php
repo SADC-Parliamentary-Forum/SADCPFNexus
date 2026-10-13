@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api\V1\Hr;
 
 use App\Http\Controllers\Controller;
@@ -65,16 +66,16 @@ class AppraisalController extends Controller
         }
 
         $validated = $request->validate([
-            'title'               => 'required|string|max:255',
-            'description'         => 'nullable|string',
-            'period_start'        => 'required|date',
-            'period_end'          => 'required|date|after:period_start',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'period_start' => 'required|date',
+            'period_end' => 'required|date|after:period_start',
             'submission_deadline' => 'nullable|date',
-            'status'              => 'nullable|in:draft,active,closed',
+            'status' => 'nullable|in:draft,active,closed',
         ]);
 
         $cycle = AppraisalCycle::create([
-            'tenant_id'  => $user->tenant_id,
+            'tenant_id' => $user->tenant_id,
             'created_by' => $user->id,
             ...$validated,
             'status' => $validated['status'] ?? 'draft',
@@ -101,12 +102,12 @@ class AppraisalController extends Controller
         }
 
         $validated = $request->validate([
-            'title'               => 'sometimes|string|max:255',
-            'description'         => 'nullable|string',
-            'period_start'        => 'sometimes|date',
-            'period_end'          => 'sometimes|date',
+            'title' => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'period_start' => 'sometimes|date',
+            'period_end' => 'sometimes|date',
             'submission_deadline' => 'nullable|date',
-            'status'              => 'nullable|in:draft,active,closed',
+            'status' => 'nullable|in:draft,active,closed',
         ]);
 
         $appraisalCycle->update($validated);
@@ -136,8 +137,8 @@ class AppraisalController extends Controller
         if (! $this->isHrAdmin($user)) {
             $query->where(function ($q) use ($user) {
                 $q->where('employee_id', $user->id)
-                  ->orWhere('supervisor_id', $user->id)
-                  ->orWhere('hod_id', $user->id);
+                    ->orWhere('supervisor_id', $user->id)
+                    ->orWhere('hod_id', $user->id);
             });
         }
 
@@ -153,6 +154,7 @@ class AppraisalController extends Controller
         }
 
         $perPage = (int) $request->input('per_page', 20);
+
         return response()->json($query->paginate($perPage));
     }
 
@@ -195,19 +197,19 @@ class AppraisalController extends Controller
         }
 
         $validated = $request->validate([
-            'cycle_id'       => 'required|integer|exists:appraisal_cycles,id',
-            'employee_id'    => 'required|integer|exists:users,id',
-            'supervisor_id'  => 'nullable|integer|exists:users,id',
-            'hod_id'         => 'nullable|integer|exists:users,id',
-            'status'         => 'nullable|in:draft,employee_submitted,supervisor_reviewed,hod_reviewed,hr_reviewed,finalized',
+            'cycle_id' => 'required|integer|exists:appraisal_cycles,id',
+            'employee_id' => 'required|integer|exists:users,id',
+            'supervisor_id' => 'nullable|integer|exists:users,id',
+            'hod_id' => 'nullable|integer|exists:users,id',
+            'status' => 'nullable|in:draft,employee_submitted,supervisor_reviewed,hod_reviewed,hr_reviewed,finalized',
             'evidence_links' => 'nullable|array',
-            'evidence_links.*.url'   => 'required_with:evidence_links|string|url|max:2000',
+            'evidence_links.*.url' => 'required_with:evidence_links|string|url:http,https|max:2000',
             'evidence_links.*.title' => 'nullable|string|max:255',
-            'kras'           => 'nullable|array',
-            'kras.*.title'       => 'required_with:kras|string|max:255',
+            'kras' => 'nullable|array',
+            'kras.*.title' => 'required_with:kras|string|max:255',
             'kras.*.description' => 'nullable|string',
-            'kras.*.weight'      => 'nullable|numeric|min:0|max:100',
-            'kras.*.sort_order'  => 'nullable|integer',
+            'kras.*.weight' => 'nullable|numeric|min:0|max:100',
+            'kras.*.sort_order' => 'nullable|integer',
         ]);
 
         $appraisal = DB::transaction(function () use ($validated, $user) {
@@ -216,23 +218,23 @@ class AppraisalController extends Controller
             unset($validated['kras'], $validated['evidence_links']);
 
             $appraisal = Appraisal::create([
-                'tenant_id'       => $user->tenant_id,
-                'cycle_id'        => $validated['cycle_id'],
-                'employee_id'     => $validated['employee_id'],
-                'supervisor_id'   => $validated['supervisor_id'] ?? null,
-                'hod_id'          => $validated['hod_id'] ?? null,
-                'status'          => $validated['status'] ?? 'draft',
-                'evidence_links'  => $evidenceLinks,
+                'tenant_id' => $user->tenant_id,
+                'cycle_id' => $validated['cycle_id'],
+                'employee_id' => $validated['employee_id'],
+                'supervisor_id' => $validated['supervisor_id'] ?? null,
+                'hod_id' => $validated['hod_id'] ?? null,
+                'status' => $validated['status'] ?? 'draft',
+                'evidence_links' => $evidenceLinks,
             ]);
 
             if ($krasData) {
                 foreach ($krasData as $i => $kra) {
                     AppraisalKra::create([
                         'appraisal_id' => $appraisal->id,
-                        'title'        => $kra['title'],
-                        'description'  => $kra['description'] ?? null,
-                        'weight'       => $kra['weight'] ?? 0,
-                        'sort_order'   => $kra['sort_order'] ?? $i,
+                        'title' => $kra['title'],
+                        'description' => $kra['description'] ?? null,
+                        'weight' => $kra['weight'] ?? 0,
+                        'sort_order' => $kra['sort_order'] ?? $i,
                     ]);
                 }
             }
@@ -266,25 +268,25 @@ class AppraisalController extends Controller
         }
 
         $validated = $request->validate([
-            'supervisor_id'        => 'nullable|integer|exists:users,id',
-            'hod_id'               => 'nullable|integer|exists:users,id',
-            'status'               => 'nullable|in:draft,employee_submitted,supervisor_reviewed,hod_reviewed,hr_reviewed,finalized',
-            'hr_comments'          => 'nullable|string',
-            'overall_rating'       => 'nullable|integer|min:1|max:5',
+            'supervisor_id' => 'nullable|integer|exists:users,id',
+            'hod_id' => 'nullable|integer|exists:users,id',
+            'status' => 'nullable|in:draft,employee_submitted,supervisor_reviewed,hod_reviewed,hr_reviewed,finalized',
+            'hr_comments' => 'nullable|string',
+            'overall_rating' => 'nullable|integer|min:1|max:5',
             'overall_rating_label' => 'nullable|string|max:64',
-            'development_plan'     => 'nullable|string',
-            'sg_decision'          => 'nullable|string',
-            'probation_outcome'    => 'nullable|string|max:32',
+            'development_plan' => 'nullable|string',
+            'sg_decision' => 'nullable|string',
+            'probation_outcome' => 'nullable|string|max:32',
             'promotion_recommendation' => 'nullable|boolean',
-            'evidence_links'       => 'nullable|array',
-            'evidence_links.*.url'   => 'required_with:evidence_links|string|url|max:2000',
+            'evidence_links' => 'nullable|array',
+            'evidence_links.*.url' => 'required_with:evidence_links|string|url:http,https|max:2000',
             'evidence_links.*.title' => 'nullable|string|max:255',
-            'kras'                 => 'nullable|array',
-            'kras.*.id'            => 'nullable|integer|exists:appraisal_kras,id',
-            'kras.*.title'         => 'required_with:kras|string|max:255',
-            'kras.*.description'   => 'nullable|string',
-            'kras.*.weight'        => 'nullable|numeric|min:0|max:100',
-            'kras.*.sort_order'    => 'nullable|integer',
+            'kras' => 'nullable|array',
+            'kras.*.id' => 'nullable|integer|exists:appraisal_kras,id',
+            'kras.*.title' => 'required_with:kras|string|max:255',
+            'kras.*.description' => 'nullable|string',
+            'kras.*.weight' => 'nullable|numeric|min:0|max:100',
+            'kras.*.sort_order' => 'nullable|integer',
         ]);
 
         DB::transaction(function () use ($appraisal, $validated) {
@@ -299,18 +301,18 @@ class AppraisalController extends Controller
                         AppraisalKra::where('id', $kraData['id'])
                             ->where('appraisal_id', $appraisal->id)
                             ->update([
-                                'title'       => $kraData['title'],
+                                'title' => $kraData['title'],
                                 'description' => $kraData['description'] ?? null,
-                                'weight'      => $kraData['weight'] ?? 0,
-                                'sort_order'  => $kraData['sort_order'] ?? $i,
+                                'weight' => $kraData['weight'] ?? 0,
+                                'sort_order' => $kraData['sort_order'] ?? $i,
                             ]);
                     } else {
                         AppraisalKra::create([
                             'appraisal_id' => $appraisal->id,
-                            'title'        => $kraData['title'],
-                            'description'  => $kraData['description'] ?? null,
-                            'weight'       => $kraData['weight'] ?? 0,
-                            'sort_order'   => $kraData['sort_order'] ?? $i,
+                            'title' => $kraData['title'],
+                            'description' => $kraData['description'] ?? null,
+                            'weight' => $kraData['weight'] ?? 0,
+                            'sort_order' => $kraData['sort_order'] ?? $i,
                         ]);
                     }
                 }
@@ -348,23 +350,23 @@ class AppraisalController extends Controller
         }
 
         $validated = $request->validate([
-            'self_assessment'     => 'required|string',
+            'self_assessment' => 'required|string',
             'self_overall_rating' => 'required|integer|min:1|max:5',
-            'evidence_links'      => 'nullable|array',
-            'evidence_links.*.url'   => 'required_with:evidence_links|string|url|max:2000',
+            'evidence_links' => 'nullable|array',
+            'evidence_links.*.url' => 'required_with:evidence_links|string|url:http,https|max:2000',
             'evidence_links.*.title' => 'nullable|string|max:255',
-            'kras'                => 'nullable|array',
-            'kras.*.id'           => 'required_with:kras|integer|exists:appraisal_kras,id',
-            'kras.*.self_rating'  => 'nullable|integer|min:1|max:5',
-            'kras.*.self_comments'=> 'nullable|string',
+            'kras' => 'nullable|array',
+            'kras.*.id' => 'required_with:kras|integer|exists:appraisal_kras,id',
+            'kras.*.self_rating' => 'nullable|integer|min:1|max:5',
+            'kras.*.self_comments' => 'nullable|string',
         ]);
 
         DB::transaction(function () use ($appraisal, $validated) {
             $update = [
-                'self_assessment'     => $validated['self_assessment'],
+                'self_assessment' => $validated['self_assessment'],
                 'self_overall_rating' => $validated['self_overall_rating'],
-                'status'              => 'employee_submitted',
-                'submitted_at'        => now(),
+                'status' => 'employee_submitted',
+                'submitted_at' => now(),
             ];
             if (array_key_exists('evidence_links', $validated)) {
                 $update['evidence_links'] = $validated['evidence_links'];
@@ -376,7 +378,7 @@ class AppraisalController extends Controller
                     AppraisalKra::where('id', $kraData['id'])
                         ->where('appraisal_id', $appraisal->id)
                         ->update([
-                            'self_rating'   => $kraData['self_rating'] ?? null,
+                            'self_rating' => $kraData['self_rating'] ?? null,
                             'self_comments' => $kraData['self_comments'] ?? null,
                         ]);
                 }
@@ -415,18 +417,18 @@ class AppraisalController extends Controller
 
         $validated = $request->validate([
             'supervisor_comments' => 'required|string',
-            'supervisor_rating'   => 'required|integer|min:1|max:5',
-            'kras'                => 'nullable|array',
-            'kras.*.id'               => 'required_with:kras|integer|exists:appraisal_kras,id',
-            'kras.*.supervisor_rating'   => 'nullable|integer|min:1|max:5',
+            'supervisor_rating' => 'required|integer|min:1|max:5',
+            'kras' => 'nullable|array',
+            'kras.*.id' => 'required_with:kras|integer|exists:appraisal_kras,id',
+            'kras.*.supervisor_rating' => 'nullable|integer|min:1|max:5',
             'kras.*.supervisor_comments' => 'nullable|string',
         ]);
 
         DB::transaction(function () use ($appraisal, $validated) {
             $appraisal->update([
-                'supervisor_comments'    => $validated['supervisor_comments'],
-                'supervisor_rating'      => $validated['supervisor_rating'],
-                'status'                 => 'supervisor_reviewed',
+                'supervisor_comments' => $validated['supervisor_comments'],
+                'supervisor_rating' => $validated['supervisor_rating'],
+                'status' => 'supervisor_reviewed',
                 'supervisor_reviewed_at' => now(),
             ]);
 
@@ -435,7 +437,7 @@ class AppraisalController extends Controller
                     AppraisalKra::where('id', $kraData['id'])
                         ->where('appraisal_id', $appraisal->id)
                         ->update([
-                            'supervisor_rating'   => $kraData['supervisor_rating'] ?? null,
+                            'supervisor_rating' => $kraData['supervisor_rating'] ?? null,
                             'supervisor_comments' => $kraData['supervisor_comments'] ?? null,
                         ]);
                 }
@@ -475,14 +477,14 @@ class AppraisalController extends Controller
 
         $validated = $request->validate([
             'hod_comments' => 'required|string',
-            'hod_rating'   => 'required|integer|min:1|max:5',
+            'hod_rating' => 'required|integer|min:1|max:5',
         ]);
 
         $appraisal->update([
-            'hod_comments'     => $validated['hod_comments'],
-            'hod_rating'       => $validated['hod_rating'],
-            'status'           => 'hod_reviewed',
-            'hod_reviewed_at'  => now(),
+            'hod_comments' => $validated['hod_comments'],
+            'hod_rating' => $validated['hod_rating'],
+            'status' => 'hod_reviewed',
+            'hod_reviewed_at' => now(),
         ]);
 
         $appraisal->load([
@@ -512,18 +514,18 @@ class AppraisalController extends Controller
         }
 
         $validated = $request->validate([
-            'overall_rating'           => 'required|integer|min:1|max:5',
-            'overall_rating_label'     => 'required|string|max:64',
-            'hr_comments'              => 'nullable|string',
-            'development_plan'         => 'nullable|string',
-            'probation_outcome'        => 'nullable|string|max:32',
+            'overall_rating' => 'required|integer|min:1|max:5',
+            'overall_rating_label' => 'required|string|max:64',
+            'hr_comments' => 'nullable|string',
+            'development_plan' => 'nullable|string',
+            'probation_outcome' => 'nullable|string|max:32',
             'promotion_recommendation' => 'nullable|boolean',
-            'sg_decision'              => 'nullable|string',
+            'sg_decision' => 'nullable|string',
         ]);
 
         $appraisal->update([
             ...$validated,
-            'status'       => 'finalized',
+            'status' => 'finalized',
             'finalized_at' => now(),
         ]);
 
@@ -562,7 +564,7 @@ class AppraisalController extends Controller
         }
 
         $appraisal->update([
-            'employee_acknowledged'    => true,
+            'employee_acknowledged' => true,
             'employee_acknowledged_at' => now(),
         ]);
 

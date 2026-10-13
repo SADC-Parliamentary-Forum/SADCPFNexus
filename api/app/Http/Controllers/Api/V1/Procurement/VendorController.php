@@ -9,13 +9,12 @@ use App\Models\SupplierCategory;
 use App\Models\User;
 use App\Models\UserSession;
 use App\Models\Vendor;
-use App\Models\VendorRating;
-use Illuminate\Validation\ValidationException;
 use App\Modules\Procurement\Services\VendorService;
 use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class VendorController extends Controller
 {
@@ -35,7 +34,7 @@ class VendorController extends Controller
             ->orderBy('name');
 
         if ($request->filled('search')) {
-            $q = '%' . $request->search . '%';
+            $q = '%'.$request->search.'%';
             $query->where(function ($qb) use ($q) {
                 $qb->where('name', 'like', $q)
                     ->orWhere('registration_number', 'like', $q)
@@ -65,8 +64,8 @@ class VendorController extends Controller
         $summaryBase = Vendor::query()->where('tenant_id', $tenantId);
         $payload = $vendors->toArray();
         $payload['summary'] = [
-            'approved'    => (clone $summaryBase)->where('status', Vendor::STATUS_APPROVED)->count(),
-            'pending'     => (clone $summaryBase)->whereIn('status', Vendor::PENDING_REVIEW_STATUSES)->count(),
+            'approved' => (clone $summaryBase)->where('status', Vendor::STATUS_APPROVED)->count(),
+            'pending' => (clone $summaryBase)->whereIn('status', Vendor::PENDING_REVIEW_STATUSES)->count(),
             'blacklisted' => (clone $summaryBase)->whereIn('status', [Vendor::STATUS_DEBARRED, 'blacklisted'])->count(),
         ];
 
@@ -78,52 +77,52 @@ class VendorController extends Controller
         abort_unless($this->canManageVendors($request), 403);
 
         $data = $request->validate([
-            'name'                => ['required', 'string', 'max:300'],
-            'contact_name'        => ['nullable', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:300'],
+            'contact_name' => ['nullable', 'string', 'max:255'],
             'registration_number' => ['nullable', 'string', 'max:100'],
-            'tax_number'          => ['nullable', 'string', 'max:100'],
-            'contact_email'       => ['nullable', 'email'],
-            'email'               => ['nullable', 'email'],
-            'contact_phone'       => ['nullable', 'string', 'max:50'],
-            'phone'               => ['nullable', 'string', 'max:50'],
-            'website'             => ['nullable', 'url', 'max:255'],
-            'address'             => ['nullable', 'string', 'max:500'],
-            'country'             => ['nullable', 'string', 'max:100'],
-            'category'            => ['nullable', 'string', 'max:100'],
-            'payment_terms'       => ['nullable', 'string', 'max:50'],
-            'bank_name'           => ['nullable', 'string', 'max:255'],
-            'bank_account'        => ['nullable', 'string', 'max:100'],
-            'bank_branch'         => ['nullable', 'string', 'max:255'],
-            'is_sme'              => ['sometimes', 'boolean'],
-            'notes'               => ['nullable', 'string', 'max:2000'],
-            'is_approved'         => ['sometimes', 'boolean'],
-            'risk_level'          => ['nullable', 'string', 'max:40'],
-            'category_ids'        => ['required', 'array', 'min:1'],
-            'category_ids.*'      => ['integer', 'exists:supplier_categories,id'],
+            'tax_number' => ['nullable', 'string', 'max:100'],
+            'contact_email' => ['nullable', 'email'],
+            'email' => ['nullable', 'email'],
+            'contact_phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'website' => ['nullable', 'url:http,https', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'string', 'max:100'],
+            'payment_terms' => ['nullable', 'string', 'max:50'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account' => ['nullable', 'string', 'max:100'],
+            'bank_branch' => ['nullable', 'string', 'max:255'],
+            'is_sme' => ['sometimes', 'boolean'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'is_approved' => ['sometimes', 'boolean'],
+            'risk_level' => ['nullable', 'string', 'max:40'],
+            'category_ids' => ['required', 'array', 'min:1'],
+            'category_ids.*' => ['integer', 'exists:supplier_categories,id'],
         ]);
 
         $vendor = Vendor::create([
-            'tenant_id'           => $request->user()->tenant_id,
-            'name'                => $data['name'],
-            'contact_name'        => $data['contact_name'] ?? null,
+            'tenant_id' => $request->user()->tenant_id,
+            'name' => $data['name'],
+            'contact_name' => $data['contact_name'] ?? null,
             'registration_number' => $data['registration_number'] ?? null,
-            'tax_number'          => $data['tax_number'] ?? null,
-            'contact_email'       => $data['contact_email'] ?? $data['email'] ?? null,
-            'contact_phone'       => $data['contact_phone'] ?? $data['phone'] ?? null,
-            'website'             => $data['website'] ?? null,
-            'address'             => $data['address'] ?? null,
-            'country'             => $data['country'] ?? null,
-            'category'            => $data['category'] ?? null,
-            'payment_terms'       => $data['payment_terms'] ?? null,
-            'bank_name'           => $data['bank_name'] ?? null,
-            'bank_account'        => $data['bank_account'] ?? null,
-            'bank_branch'         => $data['bank_branch'] ?? null,
-            'is_sme'              => $data['is_sme'] ?? false,
-            'notes'               => $data['notes'] ?? null,
-            'is_approved'         => $data['is_approved'] ?? false,
-            'status'              => ($data['is_approved'] ?? false) ? Vendor::STATUS_APPROVED : Vendor::STATUS_SUBMITTED,
-            'risk_level'          => $data['risk_level'] ?? null,
-            'submitted_at'        => now(),
+            'tax_number' => $data['tax_number'] ?? null,
+            'contact_email' => $data['contact_email'] ?? $data['email'] ?? null,
+            'contact_phone' => $data['contact_phone'] ?? $data['phone'] ?? null,
+            'website' => $data['website'] ?? null,
+            'address' => $data['address'] ?? null,
+            'country' => $data['country'] ?? null,
+            'category' => $data['category'] ?? null,
+            'payment_terms' => $data['payment_terms'] ?? null,
+            'bank_name' => $data['bank_name'] ?? null,
+            'bank_account' => $data['bank_account'] ?? null,
+            'bank_branch' => $data['bank_branch'] ?? null,
+            'is_sme' => $data['is_sme'] ?? false,
+            'notes' => $data['notes'] ?? null,
+            'is_approved' => $data['is_approved'] ?? false,
+            'status' => ($data['is_approved'] ?? false) ? Vendor::STATUS_APPROVED : Vendor::STATUS_SUBMITTED,
+            'risk_level' => $data['risk_level'] ?? null,
+            'submitted_at' => now(),
         ]);
         $vendor->syncLegacyFlagsFromStatus();
         $vendor->save();
@@ -163,8 +162,8 @@ class VendorController extends Controller
             \App\Modules\Procurement\Support\VendorPresenter::forStaff($vendor, $user),
             [
                 'recent_quotes' => $quotes,
-                'ratings'       => $ratings,
-                'my_rating'     => $myRating,
+                'ratings' => $ratings,
+                'my_rating' => $myRating,
                 'ratings_count' => $ratings->count(),
             ]
         );
@@ -180,51 +179,51 @@ class VendorController extends Controller
         abort_unless($this->canManageVendors($request), 403);
 
         $data = $request->validate([
-            'name'                => ['sometimes', 'required', 'string', 'max:300'],
-            'contact_name'        => ['nullable', 'string', 'max:255'],
+            'name' => ['sometimes', 'required', 'string', 'max:300'],
+            'contact_name' => ['nullable', 'string', 'max:255'],
             'registration_number' => ['nullable', 'string', 'max:100'],
-            'tax_number'          => ['nullable', 'string', 'max:100'],
-            'contact_email'       => ['nullable', 'email'],
-            'email'               => ['nullable', 'email'],
-            'contact_phone'       => ['nullable', 'string', 'max:50'],
-            'phone'               => ['nullable', 'string', 'max:50'],
-            'website'             => ['nullable', 'url', 'max:255'],
-            'address'             => ['nullable', 'string', 'max:500'],
-            'country'             => ['nullable', 'string', 'max:100'],
-            'category'            => ['nullable', 'string', 'max:100'],
-            'payment_terms'       => ['nullable', 'string', 'max:50'],
-            'bank_name'           => ['nullable', 'string', 'max:255'],
-            'bank_account'        => ['nullable', 'string', 'max:100'],
-            'bank_branch'         => ['nullable', 'string', 'max:255'],
-            'is_sme'              => ['sometimes', 'boolean'],
-            'notes'               => ['nullable', 'string', 'max:2000'],
-            'is_approved'         => ['sometimes', 'boolean'],
-            'is_active'           => ['sometimes', 'boolean'],
-            'risk_level'          => ['nullable', 'string', 'max:40'],
-            'category_ids'        => ['sometimes', 'array', 'min:1'],
-            'category_ids.*'      => ['integer', 'exists:supplier_categories,id'],
+            'tax_number' => ['nullable', 'string', 'max:100'],
+            'contact_email' => ['nullable', 'email'],
+            'email' => ['nullable', 'email'],
+            'contact_phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'website' => ['nullable', 'url:http,https', 'max:255'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'country' => ['nullable', 'string', 'max:100'],
+            'category' => ['nullable', 'string', 'max:100'],
+            'payment_terms' => ['nullable', 'string', 'max:50'],
+            'bank_name' => ['nullable', 'string', 'max:255'],
+            'bank_account' => ['nullable', 'string', 'max:100'],
+            'bank_branch' => ['nullable', 'string', 'max:255'],
+            'is_sme' => ['sometimes', 'boolean'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'is_approved' => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
+            'risk_level' => ['nullable', 'string', 'max:40'],
+            'category_ids' => ['sometimes', 'array', 'min:1'],
+            'category_ids.*' => ['integer', 'exists:supplier_categories,id'],
         ]);
 
         $vendor->fill([
-            'name'                => $data['name'] ?? $vendor->name,
-            'contact_name'        => array_key_exists('contact_name', $data) ? $data['contact_name'] : $vendor->contact_name,
+            'name' => $data['name'] ?? $vendor->name,
+            'contact_name' => array_key_exists('contact_name', $data) ? $data['contact_name'] : $vendor->contact_name,
             'registration_number' => array_key_exists('registration_number', $data) ? $data['registration_number'] : $vendor->registration_number,
-            'tax_number'          => array_key_exists('tax_number', $data) ? $data['tax_number'] : $vendor->tax_number,
-            'contact_email'       => $data['contact_email'] ?? $data['email'] ?? $vendor->contact_email,
-            'contact_phone'       => $data['contact_phone'] ?? $data['phone'] ?? $vendor->contact_phone,
-            'website'             => array_key_exists('website', $data) ? $data['website'] : $vendor->website,
-            'address'             => array_key_exists('address', $data) ? $data['address'] : $vendor->address,
-            'country'             => array_key_exists('country', $data) ? $data['country'] : $vendor->country,
-            'category'            => array_key_exists('category', $data) ? $data['category'] : $vendor->category,
-            'payment_terms'       => array_key_exists('payment_terms', $data) ? $data['payment_terms'] : $vendor->payment_terms,
-            'bank_name'           => array_key_exists('bank_name', $data) ? $data['bank_name'] : $vendor->bank_name,
-            'bank_account'        => array_key_exists('bank_account', $data) ? $data['bank_account'] : $vendor->bank_account,
-            'bank_branch'         => array_key_exists('bank_branch', $data) ? $data['bank_branch'] : $vendor->bank_branch,
-            'is_sme'              => array_key_exists('is_sme', $data) ? $data['is_sme'] : $vendor->is_sme,
-            'notes'               => array_key_exists('notes', $data) ? $data['notes'] : $vendor->notes,
-            'is_approved'         => array_key_exists('is_approved', $data) ? $data['is_approved'] : $vendor->is_approved,
-            'is_active'           => array_key_exists('is_active', $data) ? $data['is_active'] : $vendor->is_active,
-            'risk_level'          => array_key_exists('risk_level', $data) ? $data['risk_level'] : $vendor->risk_level,
+            'tax_number' => array_key_exists('tax_number', $data) ? $data['tax_number'] : $vendor->tax_number,
+            'contact_email' => $data['contact_email'] ?? $data['email'] ?? $vendor->contact_email,
+            'contact_phone' => $data['contact_phone'] ?? $data['phone'] ?? $vendor->contact_phone,
+            'website' => array_key_exists('website', $data) ? $data['website'] : $vendor->website,
+            'address' => array_key_exists('address', $data) ? $data['address'] : $vendor->address,
+            'country' => array_key_exists('country', $data) ? $data['country'] : $vendor->country,
+            'category' => array_key_exists('category', $data) ? $data['category'] : $vendor->category,
+            'payment_terms' => array_key_exists('payment_terms', $data) ? $data['payment_terms'] : $vendor->payment_terms,
+            'bank_name' => array_key_exists('bank_name', $data) ? $data['bank_name'] : $vendor->bank_name,
+            'bank_account' => array_key_exists('bank_account', $data) ? $data['bank_account'] : $vendor->bank_account,
+            'bank_branch' => array_key_exists('bank_branch', $data) ? $data['bank_branch'] : $vendor->bank_branch,
+            'is_sme' => array_key_exists('is_sme', $data) ? $data['is_sme'] : $vendor->is_sme,
+            'notes' => array_key_exists('notes', $data) ? $data['notes'] : $vendor->notes,
+            'is_approved' => array_key_exists('is_approved', $data) ? $data['is_approved'] : $vendor->is_approved,
+            'is_active' => array_key_exists('is_active', $data) ? $data['is_active'] : $vendor->is_active,
+            'risk_level' => array_key_exists('risk_level', $data) ? $data['risk_level'] : $vendor->risk_level,
         ]);
 
         if (array_key_exists('is_approved', $data) || array_key_exists('is_active', $data)) {
@@ -363,9 +362,9 @@ class VendorController extends Controller
         $myRating = $vendor->ratings()->where('rated_by', $request->user()->id)->first();
 
         return response()->json([
-            'data'      => $ratings,
-            'avg'       => $ratings->avg('rating'),
-            'count'     => $ratings->count(),
+            'data' => $ratings,
+            'avg' => $ratings->avg('rating'),
+            'count' => $ratings->count(),
             'my_rating' => $myRating,
         ]);
     }
@@ -415,7 +414,7 @@ class VendorController extends Controller
         }
 
         $data = $request->validate([
-            'reason'    => ['required', 'string', 'max:2000'],
+            'reason' => ['required', 'string', 'max:2000'],
             'reference' => ['nullable', 'string', 'max:100'],
         ]);
 

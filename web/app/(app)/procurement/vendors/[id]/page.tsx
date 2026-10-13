@@ -10,6 +10,7 @@ import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { formatDateShort, formatCurrency } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { SupplierActivityPanel, SupplierChangeRequestsPanel, SupplierRegisterPanel } from "@/components/procurement/Supplier360Panels";
+import { safeExternalUrl } from "@/lib/safeExternalUrl";
 
 function canManageVendors(): boolean {
   return canManageProcurementVendors(getStoredUser());
@@ -1458,9 +1459,13 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
               {vendor.website && infoRow(
                 "language",
                 "Website",
-                <a href={vendor.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate block">
-                  {vendor.website.replace(/^https?:\/\//, "")}
-                </a>
+                safeExternalUrl(vendor.website) ? (
+                  <a href={safeExternalUrl(vendor.website)!} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate block">
+                    {vendor.website.replace(/^https?:\/\//, "")}
+                  </a>
+                ) : (
+                  <span className="truncate block">{vendor.website}</span>
+                )
               )}
               {vendor.tax_number && infoRow("receipt_long", "VAT / Tax No.", vendor.tax_number)}
               {vendor.payment_terms && infoRow("schedule", "Payment Terms", vendor.payment_terms)}

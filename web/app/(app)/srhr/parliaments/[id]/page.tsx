@@ -6,6 +6,7 @@ import Link from "next/link";
 import { parliamentsApi, type Parliament } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { safeExternalUrl } from "@/lib/safeExternalUrl";
 
 export default function ParliamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -77,7 +78,9 @@ export default function ParliamentDetailPage({ params }: { params: Promise<{ id:
             { label: "Email",        value: parliament.contact_email ?? "—" },
             { label: "Phone",        value: parliament.contact_phone ?? "—" },
             { label: "Website",      value: parliament.website_url
-              ? <a href={parliament.website_url} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs">{parliament.website_url}</a>
+              ? safeExternalUrl(parliament.website_url)
+                ? <a href={safeExternalUrl(parliament.website_url)!} target="_blank" rel="noopener noreferrer" className="btn-secondary text-xs">{parliament.website_url}</a>
+                : parliament.website_url
               : "—" },
           ].map((field) => (
             <div key={field.label}>

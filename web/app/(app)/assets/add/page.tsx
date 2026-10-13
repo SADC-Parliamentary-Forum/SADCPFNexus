@@ -8,6 +8,7 @@ import { canManageAssets, getStoredUser } from "@/lib/auth";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { assigneeDepartmentName, formatAssigneeLabel } from "@/lib/asset-assignee";
+import { createFilePreviewUrl } from "@/lib/filePreview";
 
 const STATUSES = ["active", "service_due", "loan_out", "retired"] as const;
 const DEPRECIATION_METHODS = [
@@ -104,9 +105,11 @@ export default function AddAssetPage() {
       setInvoicePreviewUrl(null);
       return;
     }
-    const url = URL.createObjectURL(invoiceFile);
+    const url = createFilePreviewUrl(invoiceFile);
     setInvoicePreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
   }, [invoiceFile]);
 
   const previewAge = useMemo(

@@ -92,7 +92,11 @@ export function PortalSignInForm({ portal, emailPlaceholder, prefillEmail }: Pro
         setSetupCompleteCookie();
       }
 
-      window.location.href = destination;
+      // postAuthDestination already restricts `from` to internal paths; re-check the resolved origin as a backstop.
+      const target = new URL(destination, window.location.origin);
+      window.location.href = target.origin === window.location.origin
+        ? `${target.pathname}${target.search}${target.hash}`
+        : "/dashboard";
     } catch (err: unknown) {
       setError(loginFormErrorMessage(err, t));
       if (shouldResetLoginCaptcha(err)) {
