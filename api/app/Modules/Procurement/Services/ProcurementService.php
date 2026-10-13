@@ -7,6 +7,7 @@ use App\Models\RfqInvitation;
 use App\Models\ProcurementRequest;
 use App\Models\PurchaseOrder;
 use App\Models\SupplierCategory;
+use App\Models\Tenant;
 use App\Models\Vendor;
 use App\Models\User;
 use App\Modules\Budget\Services\BudgetAvailabilityService;
@@ -160,10 +161,20 @@ class ProcurementService
         return $request->fresh();
     }
 
-    public function suggestMethod(float $estimatedValue): string
+    /**
+     * Effective procurement thresholds for a tenant: its saved settings, falling back to
+     * the active policy profile and then config/procurement.php.
+     */
+    public function policyFor(int $tenantId): array
     {
-        $direct = (float) config('procurement.direct_purchase_limit');
-        $rfqMax = (float) config('procurement.quotation_limit');
+        return app(ProcurementSettingsService::class)->effective(Tenant::findOrFail($tenantId));
+    }
+
+    public function suggestMethod(float $estimatedValue, ?int $tenantId = null): string
+    {
+        $policy = $tenantId ? $this->policyFor($tenantId) : null;
+        $direct = (float) ($policy['direct_purchase_limit'] ?? config('procurement.direct_purchase_limit'));
+        $rfqMax = (float) ($policy['quotation_limit'] ?? config('procurement.quotation_limit'));
 
         if ($estimatedValue <= $direct) {
             return 'approved_supplier';
@@ -175,16 +186,18 @@ class ProcurementService
         return 'tender';
     }
 
-    public function policySnapshot(): array
+    public function policySnapshot(?int $tenantId = null): array
     {
+        $policy = $tenantId ? $this->policyFor($tenantId) : [];
+
         return [
-            'direct_purchase_limit'   => (float) config('procurement.direct_purchase_limit'),
-            'quotation_limit'         => (float) config('procurement.quotation_limit'),
-            'tender_threshold'        => (float) config('procurement.tender_threshold'),
-            'minimum_quotes_required' => (int) config('procurement.minimum_quotes_required'),
-            'split_lookback_days'     => (int) config('procurement.split_lookback_days'),
-            'split_enforcement'       => (string) config('procurement.split_enforcement', 'hard'),
-            'profile_key'             => 'sadc_pf_core',
+            'direct_purchase_limit'   => (float) ($policy['direct_purchase_limit'] ?? config('procurement.direct_purchase_limit')),
+            'quotation_limit'         => (float) ($policy['quotation_limit'] ?? config('procurement.quotation_limit')),
+            'tender_threshold'        => (float) ($policy['tender_threshold'] ?? config('procurement.tender_threshold')),
+            'minimum_quotes_required' => (int) ($policy['minimum_quotes_required'] ?? config('procurement.minimum_quotes_required')),
+            'split_lookback_days'     => (int) ($policy['split_lookback_days'] ?? config('procurement.split_lookback_days')),
+            'split_enforcement'       => (string) ($policy['split_enforcement'] ?? config('procurement.split_enforcement', 'hard')),
+            'profile_key'             => (string) ($policy['policy_profile_key'] ?? 'sadc_pf_core'),
             'captured_at'             => now()->toIso8601String(),
         ];
     }
@@ -227,7 +240,7 @@ class ProcurementService
 
     public function assertSplitAuthorisedIfRequired(ProcurementRequest $request): void
     {
-        if ((string) config('procurement.split_enforcement', 'hard') !== 'hard') {
+        if ($this->policyFor((int) $request->tenant_id)['split_enforcement'] !== 'hard') {
             return;
         }
 
@@ -251,8 +264,9 @@ class ProcurementService
      */
     public function detectSplitPurchase(ProcurementRequest $request): ?array
     {
-        $lookbackDays = (int) config('procurement.split_lookback_days', 30);
-        $quotationLimit = (float) config('procurement.quotation_limit', 100_000);
+        $policy = $this->policyFor((int) $request->tenant_id);
+        $lookbackDays = $policy['split_lookback_days'];
+        $quotationLimit = $policy['quotation_limit'];
         $currentValue = (float) ($request->estimated_value ?? 0);
 
         if ($currentValue <= 0 || $currentValue > $quotationLimit) {
@@ -335,15 +349,16 @@ class ProcurementService
             throw ValidationException::withMessages(['status' => 'Only submitted requests can be HOD-approved.']);
         }
 
-        $suggested = $this->suggestMethod((float) ($request->estimated_value ?? 0));
+        $suggested = $this->suggestMethod((float) ($request->estimated_value ?? 0), (int) $request->tenant_id);
+        $snapshot = $this->policySnapshot((int) $request->tenant_id);
 
         $request->update([
             'status'             => 'hod_approved',
             'hod_id'             => $hod->id,
             'hod_reviewed_at'    => now(),
             'suggested_method'   => $suggested,
-            'policy_profile_key' => 'sadc_pf_core',
-            'policy_snapshot'    => $this->policySnapshot(),
+            'policy_profile_key' => $snapshot['profile_key'],
+            'policy_snapshot'    => $snapshot,
         ]);
 
         AuditLog::record('procurement.hod_approved', [
@@ -366,7 +381,7 @@ class ProcurementService
         }
 
         $method = $data['procurement_method'];
-        $suggested = $request->suggested_method ?: $this->suggestMethod((float) ($request->estimated_value ?? 0));
+        $suggested = $request->suggested_method ?: $this->suggestMethod((float) ($request->estimated_value ?? 0), (int) $request->tenant_id);
         $overrideReason = $data['method_override_reason'] ?? null;
 
         if ($method !== $suggested && blank($overrideReason)) {
@@ -607,9 +622,11 @@ class ProcurementService
 
         // Enforce minimum quotation count above the direct-purchase threshold
         // (the RFQ band starts there, not at the tender threshold).
+        // Thresholds and the minimum come from the tenant's procurement settings.
+        $policy              = $this->policyFor((int) $request->tenant_id);
         $estimatedValue      = (float) ($request->estimated_value ?? 0);
-        $directPurchaseLimit = (float) config('procurement.direct_purchase_limit', 10_000);
-        $minQuotes           = (int)   config('procurement.minimum_quotes_required', 3);
+        $directPurchaseLimit = $policy['direct_purchase_limit'];
+        $minQuotes           = $policy['minimum_quotes_required'];
         if ($estimatedValue > $directPurchaseLimit) {
             $receivedQuotes = $request->quotes()->whereNotNull('assessed_at')->count();
             if ($receivedQuotes < $minQuotes) {
@@ -717,7 +734,7 @@ class ProcurementService
 
         // Enforce tender-method requirement above the tender threshold.
         $estimatedValue    = (float) ($request->estimated_value ?? 0);
-        $tenderThreshold   = (float) config('procurement.tender_threshold', 100_000);
+        $tenderThreshold   = $this->policyFor((int) $request->tenant_id)['tender_threshold'];
         $procurementMethod = $request->procurement_method ?? 'quotation';
         if ($estimatedValue >= $tenderThreshold && $procurementMethod !== 'tender') {
             throw ValidationException::withMessages([
