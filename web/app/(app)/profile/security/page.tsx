@@ -3,6 +3,7 @@
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import QRCode from "react-qr-code";
 import { profileApi, profileSessionsApi, twoFactorApi, weeklySummaryApi, type UserSession, type WeeklySummaryPreference } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { readStoredUser, writeStoredUser } from "@/lib/session";
@@ -461,16 +462,11 @@ export default function ProfileSecurityPage() {
               </li>
             </ol>
 
-            {/* QR Code using Google Charts API */}
+            {/* Rendered locally: the otpauth URL contains the TOTP secret and must not go to a third-party QR service. */}
             <div className="flex flex-col items-center gap-3 p-4 bg-neutral-50 rounded-xl border border-neutral-200">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(mfaSetup.qr_code_url)}`}
-                alt="2FA QR Code"
-                width={180}
-                height={180}
-                className="rounded-lg"
-              />
+              <div className="rounded-lg bg-white p-2">
+                <QRCode value={mfaSetup.qr_code_url} size={164} title="2FA QR Code" />
+              </div>
               <div className="text-center">
                 <p className="text-[10px] text-neutral-400 uppercase tracking-wide mb-1">Manual Entry Key</p>
                 <code className="text-xs font-mono text-neutral-700 bg-white border border-neutral-200 px-2 py-1 rounded select-all">
