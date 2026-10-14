@@ -36,13 +36,6 @@ function money(value: number | string | null | undefined): string {
   return Number(value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function custodyOf(asset: Asset, t: (key: string) => string): string {
-  if (asset.assigned_user?.name) return asset.assigned_user.name;
-  if (asset.location?.name) return asset.location.name;
-  if (asset.status === "available" || !asset.assigned_to) return t("assets.dash.available");
-  return t("assets.notAssigned");
-}
-
 function formatDuration(seconds: number | null | undefined): string {
   if (seconds == null) return "—";
   const days = Math.floor(seconds / 86400);
@@ -165,12 +158,16 @@ export default function AssetViewPage() {
             <Field label={t("assets.view.fieldStatus")} value={STATUS_LABELS[asset.status] ?? asset.status} />
             <Field label={t("assets.view.fieldCategory")} value={asset.category} />
             <Field label={t("assets.handover.owner")} value={asset.owner_name || custody.owner || t("assets.handover.ownerValue")} />
-            <Field label={t("assets.assignedTo")} value={custodyOf(asset, t)} />
-            <Field label={t("assets.assigneeEmail")} value={asset.assigned_user?.email ?? "—"} />
-            <Field
-              label={t("assets.assigneeDepartment")}
-              value={assigneeDepartmentName(asset.assigned_user) ?? asset.department ?? "—"}
-            />
+            {asset.assigned_user?.name && (
+              <>
+                <Field label={t("assets.assignedTo")} value={asset.assigned_user.name} />
+                <Field label={t("assets.assigneeEmail")} value={asset.assigned_user.email ?? "—"} />
+                <Field
+                  label={t("assets.assigneeDepartment")}
+                  value={assigneeDepartmentName(asset.assigned_user) ?? asset.department ?? "—"}
+                />
+              </>
+            )}
             <Field label={t("assets.view.fieldSerial")} value={asset.serial_number ?? "—"} />
             <Field label={t("assets.view.fieldTag")} value={asset.tag_number ?? "—"} />
             <Field label={t("assets.view.fieldPurchaseDate")} value={formatDateShort(asset.purchase_date)} />
