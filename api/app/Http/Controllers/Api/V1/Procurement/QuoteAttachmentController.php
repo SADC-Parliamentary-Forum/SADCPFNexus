@@ -6,10 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\ProcurementQuote;
 use App\Models\ProcurementRequest;
-use Illuminate\Http\JsonResponse;
+use App\Support\AttachmentFiles;
 use App\Support\UploadContentSniffer;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class QuoteAttachmentController extends Controller
@@ -27,13 +27,13 @@ class QuoteAttachmentController extends Controller
     {
         $this->ensureCanAccess($request, $procurementRequest, $quote);
 
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'super-admin', 'Secretary General'])) {
+        if (! $request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'super-admin', 'Secretary General'])) {
             abort(403);
         }
 
         $request->validate([
             'file' => ['required', 'file', 'max:25600'],
-            'document_type' => ['nullable', 'string', 'in:' . implode(',', [
+            'document_type' => ['nullable', 'string', 'in:'.implode(',', [
                 Attachment::DOCUMENT_TYPE_QUOTE_RECEIVED,
                 Attachment::DOCUMENT_TYPE_OTHER,
             ])],
@@ -41,17 +41,15 @@ class QuoteAttachmentController extends Controller
 
         $file = $request->file('file');
         $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store('attachments/procurement-quotes/' . $quote->id, ['disk' => 'local']);
-
-        $attachment = $quote->attachments()->create([
+        $attachment = AttachmentFiles::store($file, 'attachments/procurement-quotes/'.$quote->id, fn (string $path) => $quote->attachments()->create([
             'tenant_id' => $procurementRequest->tenant_id,
             'uploaded_by' => $request->user()->id,
             'document_type' => $request->input('document_type', Attachment::DOCUMENT_TYPE_QUOTE_RECEIVED),
             'original_filename' => $file->getClientOriginalName(),
             'storage_path' => $path,
-            'mime_type'         => $mime,
+            'mime_type' => $mime,
             'size_bytes' => $file->getSize(),
-        ]);
+        ]));
 
         $attachment->load('uploader:id,name');
 
@@ -62,7 +60,7 @@ class QuoteAttachmentController extends Controller
     {
         $this->ensureCanAccess($request, $procurementRequest, $quote);
 
-        if (!$request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'super-admin', 'Secretary General'])) {
+        if (! $request->user()->hasAnyRole(['Procurement Officer', 'Finance Controller', 'System Admin', 'super-admin', 'Secretary General'])) {
             abort(403);
         }
 
@@ -70,11 +68,7 @@ class QuoteAttachmentController extends Controller
             abort(404);
         }
 
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
-        }
-
-        $attachment->delete();
+        AttachmentFiles::delete($attachment);
 
         return response()->json(['message' => 'Attachment deleted.']);
     }
@@ -87,21 +81,7 @@ class QuoteAttachmentController extends Controller
             abort(404);
         }
 
-        if (!$attachment->storage_path || !Storage::disk('local')->exists($attachment->storage_path)) {
-            return response()->json(['message' => 'File not found.'], 404);
-        }
-
-        return response()->streamDownload(
-            function () use ($attachment) {
-                $stream = Storage::disk('local')->readStream($attachment->storage_path);
-                if (is_resource($stream)) {
-                    fpassthru($stream);
-                    fclose($stream);
-                }
-            },
-            $attachment->original_filename,
-            ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
-        );
+        return AttachmentFiles::download($attachment);
     }
 
     private function ensureCanAccess(Request $request, ProcurementRequest $procurementRequest, ProcurementQuote $quote): void

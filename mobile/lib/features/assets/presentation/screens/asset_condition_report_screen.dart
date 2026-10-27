@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
-import '../../../../core/offline/draft_database.dart';
 import '../../../../core/offline/draft_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 
@@ -131,13 +130,11 @@ class _AssetConditionReportScreenState
   /// offline-draft pattern used by the other draft-capable request forms.
   Future<bool> _saveDraftOnFailure(Map<String, dynamic> payload) async {
     try {
-      final db = ref.read(draftDatabaseProvider);
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-            type: 'condition_report',
-            title: payload['subject'] as String? ?? 'Condition report',
-            payload: jsonEncode(payload),
-            createdAt: DateTime.now(),
-          ));
+      await ref.read(draftStoreProvider).save(
+          type: 'condition_report',
+          title: payload['subject'] as String? ?? 'Condition report',
+          payload: jsonEncode(payload),
+        );
       return true;
     } catch (_) {
       return false;

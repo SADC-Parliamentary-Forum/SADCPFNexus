@@ -33,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: "My Work Hub", href: "/my-work", icon: "work" },
       { label: "Procurement Evaluations", href: "/my-work/procurement-evaluations", icon: "fact_check" },
     ] },
+  { label: "Needs my action", href: "/my-actions", icon: "pending_actions", i18nKey: "nav.my_actions" },
   { label: "Approvals", href: "/approvals", icon: "fact_check", i18nKey: "nav.approvals" },
   { label: "Alerts & Notifications", href: "/notifications", icon: "notifications_active", i18nKey: "nav.notifications" },
   {

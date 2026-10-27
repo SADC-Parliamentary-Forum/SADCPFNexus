@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Api\V1\Workplan;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\WorkplanEvent;
-use Illuminate\Http\JsonResponse;
+use App\Support\AttachmentFiles;
 use App\Support\UploadContentSniffer;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class WorkplanAttachmentController extends Controller
@@ -17,6 +17,7 @@ class WorkplanAttachmentController extends Controller
     {
         $this->ensureEventTenant($event);
         $attachments = $event->attachments()->with('uploader:id,name')->orderByDesc('created_at')->get();
+
         return response()->json(['data' => $attachments]);
     }
 
@@ -24,25 +25,26 @@ class WorkplanAttachmentController extends Controller
     {
         $this->ensureEventTenant($event);
         $request->validate([
-            'file'          => ['required', 'file', 'max:25600'], // 25 MB
-            'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::WORKPLAN_DOCUMENT_TYPES)],
+            'file' => ['required', 'file', 'max:25600'], // 25 MB
+            'document_type' => ['nullable', 'string', 'in:'.implode(',', Attachment::WORKPLAN_DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
         $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store(
-            'attachments/workplan_events/' . $event->id,
-            ['disk' => 'local']
+        $attachment = AttachmentFiles::store(
+            $file,
+            'attachments/workplan_events/'.$event->id,
+            fn (string $path) => $event->attachments()->create([
+                'tenant_id' => $event->tenant_id,
+                'uploaded_by' => $request->user()->id,
+                'document_type' => $request->input('document_type', Attachment::DOCUMENT_TYPE_WORKPLAN),
+                'original_filename' => $file->getClientOriginalName(),
+                'storage_path' => $path,
+                'mime_type' => $mime,
+                'size_bytes' => $file->getSize(),
+            ])
         );
-        $attachment = $event->attachments()->create([
-            'tenant_id'         => $event->tenant_id,
-            'uploaded_by'       => $request->user()->id,
-            'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_WORKPLAN),
-            'original_filename' => $file->getClientOriginalName(),
-            'storage_path'      => $path,
-            'mime_type'         => $mime,
-            'size_bytes'        => $file->getSize(),
-        ]);
         $attachment->load('uploader:id,name');
+
         return response()->json(['message' => 'Attachment uploaded.', 'data' => $attachment], 201);
     }
 
@@ -52,10 +54,8 @@ class WorkplanAttachmentController extends Controller
         if ($attachment->attachable_type !== WorkplanEvent::class || (int) $attachment->attachable_id !== (int) $event->id) {
             abort(404);
         }
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
-        }
-        $attachment->delete();
+        AttachmentFiles::delete($attachment);
+
         return response()->json(['message' => 'Attachment deleted.']);
     }
 
@@ -65,22 +65,8 @@ class WorkplanAttachmentController extends Controller
         if ($attachment->attachable_type !== WorkplanEvent::class || (int) $attachment->attachable_id !== (int) $event->id) {
             abort(404);
         }
-        if (! $attachment->storage_path || ! Storage::disk('local')->exists($attachment->storage_path)) {
-            return response()->json(['message' => 'File not found.'], 404);
-        }
-        return response()->streamDownload(
-            function () use ($attachment) {
-                $stream = Storage::disk('local')->readStream($attachment->storage_path);
-                if (is_resource($stream)) {
-                    fpassthru($stream);
-                    fclose($stream);
-                }
-            },
-            $attachment->original_filename,
-            [
-                'Content-Type' => $attachment->mime_type ?: 'application/octet-stream',
-            ]
-        );
+
+        return AttachmentFiles::download($attachment);
     }
 
     private function ensureEventTenant(WorkplanEvent $event): void

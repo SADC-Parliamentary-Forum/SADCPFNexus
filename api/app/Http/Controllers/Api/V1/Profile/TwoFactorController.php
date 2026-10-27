@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\UserSession;
 use App\Support\PasswordPolicy;
+use App\Support\SecondFactor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -18,7 +19,7 @@ class TwoFactorController extends Controller
 
     public function __construct()
     {
-        $this->google2fa = new Google2FA();
+        $this->google2fa = new Google2FA;
     }
 
     /**
@@ -28,8 +29,10 @@ class TwoFactorController extends Controller
     public function status(Request $request): JsonResponse
     {
         $user = $request->user();
+
         return response()->json([
             'enabled' => (bool) $user->mfa_enabled,
+            'recovery_codes_remaining' => $user->mfa_enabled ? SecondFactor::remainingRecoveryCodes($user) : 0,
         ]);
     }
 
@@ -64,7 +67,7 @@ class TwoFactorController extends Controller
         );
 
         return response()->json([
-            'secret'      => $secret,
+            'secret' => $secret,
             'qr_code_url' => $qrCodeUrl,
         ]);
     }
@@ -81,13 +84,13 @@ class TwoFactorController extends Controller
 
         $user = $request->user();
 
-        if (!$user->mfa_secret) {
+        if (! $user->mfa_secret) {
             return response()->json(['message' => 'No 2FA setup in progress. Call /enable first.'], 422);
         }
 
         $valid = $this->google2fa->verifyKey($user->mfa_secret, $data['code']);
 
-        if (!$valid) {
+        if (! $valid) {
             AuditLog::record('auth.mfa_setup_failed', [
                 'auditable_type' => \App\Models\User::class,
                 'auditable_id' => $user->id,
@@ -98,6 +101,7 @@ class TwoFactorController extends Controller
         }
 
         $user->update(['mfa_enabled' => true]);
+        $recoveryCodes = SecondFactor::regenerateRecoveryCodes($user);
 
         AuditLog::record('auth.mfa_registered', [
             'auditable_type' => \App\Models\User::class,
@@ -105,17 +109,25 @@ class TwoFactorController extends Controller
             'tags' => 'auth',
         ]);
 
-        return response()->json(['message' => '2FA enabled successfully.', 'enabled' => true]);
+        return response()->json([
+            'message' => '2FA enabled successfully.',
+            'enabled' => true,
+            // Shown once; only hashes are stored.
+            'recovery_codes' => $recoveryCodes,
+        ]);
     }
 
     /**
      * POST /profile/2fa/disable
-     * Disables 2FA after verifying the user's password.
+     * Disables 2FA after verifying the password AND a current authenticator
+     * code (or an unused recovery code) — a stolen session plus password
+     * alone must not be enough to remove the second factor.
      */
     public function disable(Request $request): JsonResponse
     {
         $data = $request->validate([
             'password' => ['required', 'string'],
+            'code' => ['required', 'string', 'max:32'],
         ]);
 
         $user = $request->user();
@@ -124,7 +136,17 @@ class TwoFactorController extends Controller
             throw ValidationException::withMessages(['password' => ['Incorrect password.']]);
         }
 
-        $user->update(['mfa_enabled' => false, 'mfa_secret' => null]);
+        if ($user->mfa_enabled && SecondFactor::verify($user, (string) $data['code']) === null) {
+            AuditLog::record('auth.mfa.failed', [
+                'auditable_type' => \App\Models\User::class,
+                'auditable_id' => $user->id,
+                'tags' => 'auth',
+            ]);
+
+            throw ValidationException::withMessages(['code' => ['Invalid authenticator or recovery code.']]);
+        }
+
+        $user->update(['mfa_enabled' => false, 'mfa_secret' => null, 'mfa_recovery_codes' => null]);
         $this->revokeOtherAccess($request);
 
         AuditLog::record('auth.mfa_disabled', [
@@ -134,6 +156,41 @@ class TwoFactorController extends Controller
         ]);
 
         return response()->json(['message' => '2FA disabled.', 'enabled' => false]);
+    }
+
+    /**
+     * POST /profile/2fa/recovery-codes
+     * Replaces all recovery codes. Requires the password and a current
+     * authenticator code (not a recovery code).
+     */
+    public function regenerateRecoveryCodes(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'password' => ['required', 'string'],
+            'code' => ['required', 'string', 'digits:6'],
+        ]);
+
+        $user = $request->user();
+
+        if (! $user->mfa_enabled) {
+            return response()->json(['message' => '2FA is not enabled.'], 422);
+        }
+        if (! PasswordPolicy::check((string) $data['password'], $user->password)) {
+            throw ValidationException::withMessages(['password' => ['Incorrect password.']]);
+        }
+        if (! SecondFactor::verifyTotp($user, (string) $data['code'])) {
+            throw ValidationException::withMessages(['code' => ['Invalid or expired verification code.']]);
+        }
+
+        $codes = SecondFactor::regenerateRecoveryCodes($user);
+
+        AuditLog::record('auth.mfa_recovery_codes_regenerated', [
+            'auditable_type' => \App\Models\User::class,
+            'auditable_id' => $user->id,
+            'tags' => 'auth',
+        ]);
+
+        return response()->json(['recovery_codes' => $codes]);
     }
 
     /**
@@ -148,13 +205,11 @@ class TwoFactorController extends Controller
 
         $user = $request->user();
 
-        if (!$user->mfa_enabled || !$user->mfa_secret) {
+        if (! $user->mfa_enabled || ! $user->mfa_secret) {
             return response()->json(['message' => '2FA is not enabled.', 'valid' => false], 422);
         }
 
-        $valid = $this->google2fa->verifyKey($user->mfa_secret, $data['code']);
-
-        if (!$valid) {
+        if (! SecondFactor::verifyTotp($user, (string) $data['code'])) {
             AuditLog::record('auth.mfa.failed', [
                 'auditable_type' => \App\Models\User::class,
                 'auditable_id' => $user->id,

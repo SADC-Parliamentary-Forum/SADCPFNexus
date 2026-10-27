@@ -45,22 +45,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up PHP ${{ matrix.php }}
-        uses: shivammathur/setup-php@v2
+      - uses: ./.github/actions/setup-api
         with:
           php-version: ${{ matrix.php }}
           extensions: pdo, pdo_pgsql, pgsql, bcmath, mbstring, xml, ctype, json, gd, zip
-          coverage: none
-
-      - name: Cache Composer packages
-        uses: actions/cache@v4
-        with:
-          path: api/vendor
-          key: composer-${{ matrix.php }}-${{ hashFiles('api/composer.lock') }}
-          restore-keys: composer-${{ matrix.php }}-
-
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Prepare environment files
         run: |
@@ -99,22 +87,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up PHP 8.4
-        uses: shivammathur/setup-php@v2
+      - uses: ./.github/actions/setup-api
         with:
-          php-version: '8.4'
-          extensions: mbstring, xml, ctype, json
-          coverage: none
-
-      - name: Cache Composer packages
-        uses: actions/cache@v4
-        with:
-          path: api/vendor
-          key: composer-lint-${{ hashFiles('api/composer.lock') }}
-          restore-keys: composer-lint-
-
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+          cache-key-prefix: composer-lint
 
       # Full-tree pint --test currently reports 700+ pre-existing style issues.
       # Enforce style on PHP files changed in this PR (or push range) only.
@@ -146,15 +121,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up PHP 8.4
-        uses: shivammathur/setup-php@v2
+      - uses: ./.github/actions/setup-api
         with:
-          php-version: '8.4'
-          extensions: mbstring, xml, ctype, json
-          coverage: none
-
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+          cache: 'false'
 
       - name: Audit for vulnerabilities
         run: composer audit

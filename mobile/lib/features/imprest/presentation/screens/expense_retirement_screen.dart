@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
-import '../../../../../core/offline/draft_database.dart';
 import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/router/safe_back.dart';
 import '../../../../../core/theme/app_theme.dart';
@@ -158,13 +157,11 @@ class _ExpenseRetirementScreenState
   Future<bool> _saveDraftOnFailure(
       String requestId, Map<String, dynamic> payload) async {
     try {
-      final db = ref.read(draftDatabaseProvider);
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-            type: 'expense_retirement',
-            title: 'Retirement: Imprest #$requestId',
-            payload: jsonEncode(payload),
-            createdAt: DateTime.now(),
-          ));
+      await ref.read(draftStoreProvider).save(
+          type: 'expense_retirement',
+          title: 'Retirement: Imprest #$requestId',
+          payload: jsonEncode(payload),
+        );
       return true;
     } catch (_) {
       return false;

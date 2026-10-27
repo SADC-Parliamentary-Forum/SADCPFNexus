@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ActionQueuePanel } from "@/components/workqueue/ActionQueuePanel";
 
 type NavItem = { label: string; href: string | null; children?: Array<{ label: string; href: string | null }> };
 
@@ -32,6 +33,8 @@ export default function MyWorkPage() {
         subtitle="Feature-only tasks and assigned work from your effective permissions."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "My Work" }]} />}
       />
+
+      <ActionQueuePanel />
 
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>

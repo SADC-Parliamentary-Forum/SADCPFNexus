@@ -1,3 +1,4 @@
+import { readApiSource } from "./apiSourceForTests.mts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
@@ -189,7 +190,7 @@ test("batch QR payload becomes image srcs keyed by asset id", () => {
 
 test("print page loads QR codes in batches instead of one request per row", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assets/print/page.tsx"), "utf8");
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
   assert.match(api, /qrBatch:\s*\(ids/);
   assert.match(api, /\/assets\/qr-batch/);
   assert.match(page, /assetsApi\.qrBatch/);
@@ -236,7 +237,7 @@ test("asset register offers select, print, excel, and quick labels", () => {
 });
 
 test("assetsApi can download an Excel register export", () => {
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
   assert.match(api, /registerExport:\s*\(params/);
   assert.match(api, /\/assets\/register-export/);
   assert.match(api, /responseType:\s*["']blob["']/);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
@@ -74,6 +74,12 @@ export default function ContractCreatePage() {
   const [obligations, setObligations] = useState<Obligation[]>([]);
 
   const [templateVersionId, setTemplateVersionId] = useState<number | "">("");
+
+  // One key per form session: a create retried after a lost response returns
+  // the first contract instead of creating a duplicate.
+  const createKeyRef = useRef(
+    typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  );
 
   const computedValue = useMemo(() => {
     if (rate && units) return Number(rate) * Number(units);
@@ -191,7 +197,7 @@ export default function ContractCreatePage() {
         obligations: obligations.filter((o) => o.obligation.trim()).length ? obligations.filter((o) => o.obligation.trim()) : undefined,
       };
 
-      const res = await contractsApi.create(payload as never);
+      const res = await contractsApi.create(payload as never, `${createKeyRef.current}:create`);
       const id = res.data.data.id;
 
       if (templateVersionId) {

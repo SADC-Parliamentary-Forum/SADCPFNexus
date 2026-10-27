@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
-import '../../../../../core/offline/draft_database.dart';
 import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../core/utils/date_format.dart';
@@ -89,14 +88,12 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
     final payload = _buildPayload();
     if (payload.isEmpty) return;
     try {
-      final db = ref.read(draftDatabaseProvider);
       final title = 'Leave: $_leaveType';
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-        type: 'leave',
-        title: title,
-        payload: jsonEncode(payload),
-        createdAt: DateTime.now(),
-      ));
+      await ref.read(draftStoreProvider).save(
+          type: 'leave',
+          title: title,
+          payload: jsonEncode(payload),
+        );
     } catch (_) {
       // Best-effort; nothing actionable if this fails while backgrounded.
     }
@@ -542,14 +539,12 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
       return;
     }
     try {
-      final db = ref.read(draftDatabaseProvider);
       final title = 'Leave: $_leaveType';
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-        type: 'leave',
-        title: title,
-        payload: jsonEncode(payload),
-        createdAt: DateTime.now(),
-      ));
+      await ref.read(draftStoreProvider).save(
+          type: 'leave',
+          title: title,
+          payload: jsonEncode(payload),
+        );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Draft saved. Sync from Offline Drafts when ready.'), backgroundColor: AppColors.success),
@@ -579,8 +574,7 @@ class _LeaveRequestFormScreenState extends ConsumerState<LeaveRequestFormScreen>
       if (!mounted) return;
       if (widget.draftId != null) {
         try {
-          final db = ref.read(draftDatabaseProvider);
-          await (db.delete(db.draftEntries)..where((t) => t.id.equals(widget.draftId!))).go();
+          await ref.read(draftStoreProvider).deleteOwned(widget.draftId!);
         } catch (_) {}
       }
       setState(() => _submitting = false);

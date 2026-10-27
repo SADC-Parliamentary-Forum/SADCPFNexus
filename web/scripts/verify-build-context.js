@@ -14,9 +14,15 @@ const checks = [
   {
     file: "lib/api.ts",
     includes: [
+      'export * from "@/lib/api/cookies";',
+      "export const setupApi = {",
+    ],
+  },
+  {
+    file: "lib/api/cookies.ts",
+    includes: [
       "export function setSetupCompleteCookie(): void {",
       "export function clearSetupCompleteCookie(): void {",
-      "export const setupApi = {",
     ],
   },
   {

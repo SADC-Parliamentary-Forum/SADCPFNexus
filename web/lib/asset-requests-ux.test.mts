@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
@@ -32,7 +33,7 @@ test("legacy new-request routes redirect onto the list popup", () => {
 });
 
 test("assetRequestsApi can load and update a single request", () => {
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
   assert.match(api, /get:\s*\(id:\s*number\)\s*=>[\s\S]{0,80}\/asset-requests\/\$\{id\}/);
   assert.match(api, /update:\s*\(id:\s*number/);
 });

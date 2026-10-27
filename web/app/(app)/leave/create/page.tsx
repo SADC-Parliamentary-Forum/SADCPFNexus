@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   leaveApi,
@@ -24,6 +24,7 @@ import { LeaveBalanceStrip } from "@/components/leave/LeaveBalanceStrip";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useFormDraft } from "@/lib/useFormDraft";
 
 type SegmentDraft = LeaveSegmentInput & { uid: string };
 
@@ -78,6 +79,26 @@ function LeaveCreatePageInner() {
   const [loadingLookups, setLoadingLookups] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Autosave new requests locally; once created, retries update/submit the same
+  // request instead of creating another one.
+  const draftValue = useMemo(
+    () => ({ segments, reason, leaveAddress, contactNumber, handoverRequired, handoverNotes }),
+    [segments, reason, leaveAddress, contactNumber, handoverRequired, handoverNotes],
+  );
+  const draft = useFormDraft("leave.create", draftValue, { enabled: !editing });
+  const createdIdRef = useRef<number | null>(null);
+  const restoreDraft = () => {
+    const v = draft.restore();
+    if (!v) return;
+    setSegments(v.segments?.length ? v.segments : [blankSegment()]);
+    setReason(v.reason ?? "");
+    setLeaveAddress(v.leaveAddress ?? "");
+    setContactNumber(v.contactNumber ?? "");
+    setHandoverRequired(Boolean(v.handoverRequired));
+    setHandoverNotes(v.handoverNotes ?? "");
+    if (v.leaveAddress || v.contactNumber || v.handoverRequired) setShowAwayDetails(true);
+  };
 
   useEffect(() => {
     Promise.all([
@@ -242,10 +263,13 @@ function LeaveCreatePageInner() {
         start_date: segments[0]?.start_date,
         end_date: segments[0]?.end_date,
       };
-      const res = editing
-        ? await leaveApi.update(editId, header)
-        : await leaveApi.create({ ...header, segments: toPayloadSegments() });
+      const existingId = editing ? editId : createdIdRef.current;
+      const res = existingId
+        ? await leaveApi.update(existingId, header)
+        : await leaveApi.create({ ...header, segments: toPayloadSegments() }, `${draft.operationKey}:create`);
       const created = res.data.data;
+      createdIdRef.current = created.id;
+      draft.clear();
       if (!asDraft) {
         await leaveApi.submit(created.id);
       }
@@ -272,6 +296,15 @@ function LeaveCreatePageInner() {
           />
         }
       />
+
+      {draft.restorable && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800" role="status">
+          <span className="material-symbols-outlined text-[16px]">history</span>
+          <span className="flex-1">{t("leave.create.draftFound", { when: new Date(draft.restorable.savedAt).toLocaleString() })}</span>
+          <button type="button" className="btn-primary px-3 py-1.5 text-xs" onClick={restoreDraft}>{t("leave.create.draftRestore")}</button>
+          <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={draft.discard}>{t("leave.create.draftDiscard")}</button>
+        </div>
+      )}
 
       {(previewError || submitError || dateValidationError) && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

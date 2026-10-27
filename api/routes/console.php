@@ -112,3 +112,13 @@ Schedule::command('notifications:process-deliveries --digest=weekly')->weeklyOn(
 Schedule::command('notifications:process-deliveries --maintenance')->hourly()->withoutOverlapping();
 
 Schedule::command('assets:notify-lifecycle-alerts')->dailyAt('07:40')->withoutOverlapping();
+
+// Expired Idempotency-Key replay records (EnforceIdempotencyKey keeps them 48h).
+Schedule::command('model:prune', ['--model' => [\App\Models\IdempotencyRecord::class]])->dailyAt('03:20')->withoutOverlapping();
+
+// Scheduler heartbeat for ops:health and the admin operations console. If this
+// stops updating, scheduled reminders/accruals/outbox processing have stopped too.
+Schedule::call(fn () => \App\Modules\AdminConsole\Services\OperationalHealthService::recordHeartbeat())
+    ->everyMinute()
+    ->name('ops-scheduler-heartbeat')
+    ->withoutOverlapping();

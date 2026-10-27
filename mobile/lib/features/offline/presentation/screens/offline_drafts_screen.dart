@@ -1,13 +1,12 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart' hide Column;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
 import '../../../../../core/offline/draft_database.dart';
 import '../../../../../core/offline/draft_provider.dart';
-import '../../../../../core/offline/draft_sync_outcome.dart';
+import '../../../../../core/offline/draft_sync_engine.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../../../../features/stock/data/stocktake_draft_queue.dart';
 import '../../../../../shared/widgets/stitch_card.dart';
@@ -25,6 +24,7 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
   bool _syncing = false;
   List<DraftEntry> _drafts = [];
   List<StocktakeDraftLine> _stocktakeQueue = [];
+  int _quarantined = 0;
   bool _loading = true;
   String? _error;
   DateTime? _lastSync;
@@ -41,15 +41,15 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
       _error = null;
     });
     try {
-      final db = ref.read(draftDatabaseProvider);
-      final list = await (db.select(db.draftEntries)
-            ..where((t) => t.syncedAt.isNull())
-            ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
-          .get();
+      // Only the signed-in account's drafts; never another user's.
+      final store = ref.read(draftStoreProvider);
+      final list = await store.listForCurrentOwner();
+      final quarantined = await store.quarantinedCount();
       final stocktakeQueue = await StocktakeDraftQueue.load();
       if (!mounted) return;
       setState(() {
         _drafts = list;
+        _quarantined = quarantined;
         _stocktakeQueue = stocktakeQueue;
         _loading = false;
       });
@@ -75,113 +75,19 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
       return;
     }
     setState(() => _syncing = true);
-    final dio = ref.read(apiClientProvider).dio;
-    final db = ref.read(draftDatabaseProvider);
-    int synced = 0;
-    int failed = 0;
-    for (final draft in List<DraftEntry>.from(_drafts)) {
-      try {
-        final payload = jsonDecode(draft.payload) as Map<String, dynamic>?;
-        if (payload == null) {
-          failed++;
-          continue;
-        }
-        String endpoint;
-        Map<String, dynamic> requestBody = payload;
-        switch (draft.type.toLowerCase()) {
-          case 'travel':
-            endpoint = '/travel/requests';
-            break;
-          case 'leave':
-            endpoint = '/leave/requests';
-            break;
-          case 'imprest':
-            endpoint = '/imprest/requests';
-            break;
-          case 'procurement':
-            endpoint = '/procurement/requests';
-            break;
-          case 'salary_advance':
-            endpoint = '/finance/advances';
-            requestBody = {
-              'advance_type': _purposeToAdvanceType(
-                  payload['purpose']?.toString() ?? 'Other'),
-              'amount': payload['amount'],
-              'currency': 'NAD',
-              'repayment_months': payload['repayment_months'] ?? 3,
-              'purpose': payload['purpose'] ?? 'Other',
-              'justification': 'Offline salary advance draft submission.',
-            };
-            break;
-          case 'pif':
-            endpoint = '/programmes';
-            requestBody = {
-              'title': payload['title'],
-              'background': payload['background'],
-              'overall_objective': payload['overall_objective'],
-              'primary_currency': 'NAD',
-              'total_budget': _sumBudgetLines(payload['budget_lines']),
-              'funding_source': 'SADC PF',
-              'member_states': payload['location'] == null ||
-                      payload['location'].toString().isEmpty
-                  ? []
-                  : [payload['location'].toString()],
-              'budget_lines': payload['budget_lines'] ?? [],
-            };
-            break;
-          case 'incident':
-            endpoint = '/hr/incidents';
-            break;
-          case 'expense_retirement':
-            final requestId = payload['request_id'];
-            if (requestId == null) {
-              failed++;
-              continue;
-            }
-            endpoint = '/imprest/requests/$requestId/retire';
-            requestBody = Map<String, dynamic>.from(payload)
-              ..remove('request_id');
-            break;
-          case 'asset_request':
-            endpoint = '/asset-requests';
-            break;
-          case 'condition_report':
-            endpoint = '/support/tickets';
-            break;
-          case 'overtime_claim':
-            endpoint = '/hr/timesheets';
-            break;
-          case 'assignment':
-            endpoint = '/assignments';
-            break;
-          default:
-            failed++;
-            continue;
-        }
-        final response =
-            await dio.post<Map<String, dynamic>>(endpoint, data: requestBody);
-        final createdId = response.data?['data']?['id'];
-        if (draft.type.toLowerCase() == 'salary_advance' && createdId != null) {
-          await dio.post('/finance/advances/$createdId/submit');
-        } else if (draft.type.toLowerCase() == 'pif' && createdId != null) {
-          await dio.post('/programmes/$createdId/submit');
-        } else if (draft.type.toLowerCase() == 'overtime_claim' && createdId != null) {
-          await dio.post('/hr/timesheets/$createdId/submit');
-        }
-        await (db.delete(db.draftEntries)..where((t) => t.id.equals(draft.id)))
-            .go();
-        synced++;
-        if (mounted) _drafts.removeWhere((d) => d.id == draft.id);
-      } catch (_) {
-        failed++;
-      }
-    }
+    final store = ref.read(draftStoreProvider);
+    final engine = DraftSyncEngine(
+      transport: DioDraftSyncTransport(ref.read(apiClientProvider).dio),
+      store: store,
+    );
+    // Re-read at sync time: the list on screen may predate an account switch.
+    final owned = await store.listForCurrentOwner();
+    final outcome = await engine.syncAll(owned.map(toSyncDraft));
     if (mounted) {
       setState(() {
         _syncing = false;
         _lastSync = DateTime.now();
       });
-      final outcome = DraftSyncOutcome(synced: synced, failed: failed);
       if (!outcome.nothingToDo) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -254,9 +160,7 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
 
   Future<void> _deleteDraft(DraftEntry draft) async {
     try {
-      final db = ref.read(draftDatabaseProvider);
-      await (db.delete(db.draftEntries)..where((t) => t.id.equals(draft.id)))
-          .go();
+      await ref.read(draftStoreProvider).deleteOwned(draft.id);
       if (mounted) setState(() => _drafts.removeWhere((d) => d.id == draft.id));
     } catch (_) {
       if (mounted) {
@@ -461,6 +365,10 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
                       AppColors.success)),
             ],
           ),
+          if (_quarantined > 0) ...[
+            const SizedBox(height: 16),
+            _quarantineBanner(),
+          ],
           const SizedBox(height: 20),
           const Text('SAVED DRAFTS',
               style: TextStyle(
@@ -538,6 +446,51 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
     );
   }
 
+  /// Drafts saved before ownership tracking: their author is unknown, so they
+  /// are never shown or synced for any account — only counted and discardable.
+  Widget _quarantineBanner() => StitchCard(
+        child: Row(
+          children: [
+            const Icon(Icons.lock_outline, color: AppColors.warning, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                '$_quarantined draft(s) from an earlier app version cannot be linked to an account and are hidden.',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+              ),
+            ),
+            TextButton(
+              onPressed: _confirmDiscardQuarantined,
+              child: const Text('Discard'),
+            ),
+          ],
+        ),
+      );
+
+  Future<void> _confirmDiscardQuarantined() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Discard unlinked drafts?'),
+        content: Text(
+            'Permanently delete $_quarantined draft(s) that cannot be linked to an account? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Discard'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await ref.read(draftStoreProvider).discardQuarantined();
+    await _loadDrafts();
+  }
+
   Widget _statCard(String label, String val, Color color) => StitchCard(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Column(
@@ -596,6 +549,20 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
                               color: AppColors.textMuted, fontSize: 10)),
                     ],
                   ),
+                  if (d.serverId != null && d.syncState != 'failed') ...[
+                    const SizedBox(height: 4),
+                    const Text('Created on server — submission will resume on sync.',
+                        style: TextStyle(color: AppColors.info, fontSize: 10)),
+                  ],
+                  if (d.lastError != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      d.serverId != null
+                          ? '${d.lastError} (record already created; sync resumes at submission)'
+                          : d.lastError!,
+                      style: const TextStyle(color: AppColors.danger, fontSize: 10),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -625,24 +592,4 @@ class _OfflineDraftsScreenState extends ConsumerState<OfflineDraftsScreen> {
       ),
     );
   }
-}
-
-String _purposeToAdvanceType(String purpose) {
-  const map = {
-    'Personal Emergency': 'other',
-    'Medical Expenses': 'medical',
-    'Education': 'school',
-    'Home Repair': 'other',
-    'Other': 'other',
-  };
-  return map[purpose] ?? 'other';
-}
-
-double _sumBudgetLines(dynamic rawLines) {
-  if (rawLines is! List) return 0;
-  return rawLines.fold<double>(0, (sum, item) {
-    if (item is! Map) return sum;
-    final amount = double.tryParse('${item['amount']}') ?? 0;
-    return sum + amount;
-  });
 }

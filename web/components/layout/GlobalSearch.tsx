@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { accessApi, type AccessEffectivePayload, type AuthUser } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { accessApi, recordSearchApi, type AccessEffectivePayload, type AuthUser, type RecordSearchHit } from "@/lib/api";
 import { canAccessRouteWithEffective, getStoredUser } from "@/lib/auth";
 import { accountProfilePath } from "@/lib/postAuthDestination";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
@@ -57,9 +58,31 @@ const SEARCH_INDEX: SearchResult[] = [
   { id: "h-leave-types", label: "Leave Types & Entitlements",description: "Annual, sick, maternity leave rules",  href: "/hr",                  category: "Help",        icon: "help_outline",          keywords: "annual sick maternity paternity leave entitlement balance" },
 ];
 
-const CATEGORY_ORDER = ["Actions", "Modules", "Admin", "Account", "Help"];
+const CATEGORY_ORDER = ["Records", "Actions", "Modules", "Admin", "Account", "Help"];
+
+// Server record hits (already filtered to records the user can open).
+const RECORD_MODULE: Record<RecordSearchHit["module"], { label: string; icon: string }> = {
+  travel: { label: "Travel request", icon: "flight_takeoff" },
+  leave: { label: "Leave request", icon: "event_available" },
+  procurement: { label: "Procurement request", icon: "shopping_cart" },
+  programmes: { label: "Programme", icon: "account_tree" },
+  suppliers: { label: "Supplier", icon: "storefront" },
+  correspondence: { label: "Correspondence", icon: "mail" },
+};
+
+function recordToResult(hit: RecordSearchHit): SearchResult {
+  const meta = RECORD_MODULE[hit.module] ?? { label: hit.module, icon: "description" };
+  return {
+    id: `rec-${hit.module}-${hit.id}`,
+    label: hit.title || hit.reference || `${meta.label} #${hit.id}`,
+    description: [meta.label, hit.reference, hit.status?.replace(/_/g, " ")].filter(Boolean).join(" · "),
+    href: hit.path,
+    category: "Records",
+    icon: meta.icon,
+  };
+}
 const CATEGORY_COLOR: Record<string, string> = {
-  Actions: "text-primary", Modules: "text-neutral-600", Admin: "text-primary",
+  Records: "text-primary", Actions: "text-primary", Modules: "text-neutral-600", Admin: "text-primary",
   Account: "text-teal-600", Help: "text-amber-600",
 };
 
@@ -127,17 +150,27 @@ export function GlobalSearch() {
     return () => clearTimeout(id);
   }, [query]);
 
+  const recordQuery = debouncedQuery.trim();
+  const { data: recordHits } = useQuery({
+    queryKey: ["search", "records", recordQuery],
+    queryFn: () => recordSearchApi.search(recordQuery).then((r) => r.data.data),
+    enabled: open && recordQuery.length >= 2,
+    staleTime: 30_000,
+  });
+
   // Results — only recomputed when debounced query changes
   const results: SearchResult[] = useMemo(() => {
     const q = debouncedQuery.trim();
     if (q.length < 1) return [];
-    return accessibleIndex
+    const navigation = accessibleIndex
       .map((r) => ({ r, score: scoreResult(r, q, t(r.label)) }))
       .filter((x) => x.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, MAX_RESULTS)
       .map((x) => x.r);
-  }, [accessibleIndex, debouncedQuery, t]);
+    const records = q.length >= 2 ? (recordHits ?? []).slice(0, MAX_RESULTS).map(recordToResult) : [];
+    return [...records, ...navigation];
+  }, [accessibleIndex, debouncedQuery, recordHits, t]);
 
   // Group by category (preserving order)
   const grouped: { category: string; items: SearchResult[] }[] = useMemo(() => {

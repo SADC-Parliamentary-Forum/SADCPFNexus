@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
@@ -14,7 +15,7 @@ test("lifecycle reports page loads Phase 2 analytics, not a deferred subtitle", 
 });
 
 test("lifecycle API exposes analytics and internal journeys", () => {
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
   assert.match(api, /\/lifecycle\/analytics/);
   assert.match(api, /\/lifecycle\/journeys/);
   assert.match(api, /internal_open/);

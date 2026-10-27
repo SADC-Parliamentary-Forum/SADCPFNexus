@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
-import '../../../../../core/offline/draft_database.dart';
 import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/theme/app_theme.dart';
 
@@ -173,14 +172,11 @@ class _OvertimeClaimFormScreenState
       ],
     };
     try {
-      final db = ref.read(draftDatabaseProvider);
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-            type: 'overtime_claim',
-            title:
-                'Overtime: ${workDate.toIso8601String().split('T').first}',
-            payload: jsonEncode(payload),
-            createdAt: DateTime.now(),
-          ));
+      await ref.read(draftStoreProvider).save(
+          type: 'overtime_claim',
+          title: 'Overtime: ${workDate.toIso8601String().split('T').first}',
+          payload: jsonEncode(payload),
+        );
       return true;
     } catch (_) {
       return false;

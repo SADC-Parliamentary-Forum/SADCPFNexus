@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_theme.dart';
+import '../../../core/auth/feature_access.dart';
 
 /// Unwraps Laravel list payloads (`{ data: [...] }` or bare arrays).
 List<Map<String, dynamic>> extractListData(dynamic payload) {
@@ -180,8 +181,7 @@ bool canIssueProcurementRfq({
   required List<String> permissions,
   required List<String> roles,
 }) {
-  const adminRoles = ['System Admin', 'System Administrator', 'super-admin'];
-  if (roles.any(adminRoles.contains)) return true;
+  if (hasSystemAdminRole(roles)) return true;
   const allowed = {
     'procurement.create',
     'procurement.approve',

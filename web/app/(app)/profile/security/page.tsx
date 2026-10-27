@@ -4,6 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import QRCode from "react-qr-code";
+import { isCompleteSecondFactor, normalizeSecondFactorInput } from "@/lib/secondFactorInput";
 import { profileApi, profileSessionsApi, twoFactorApi, weeklySummaryApi, type UserSession, type WeeklySummaryPreference } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { readStoredUser, writeStoredUser } from "@/lib/session";
@@ -41,6 +42,13 @@ export default function ProfileSecurityPage() {
   const [mfaSetup, setMfaSetup] = useState<{ secret: string; qr_code_url: string } | null>(null);
   const [totpCode, setTotpCode] = useState("");
   const [disablePassword, setDisablePassword] = useState("");
+  const [disableCode, setDisableCode] = useState("");
+  // Recovery codes are returned once (on activation / regeneration) and never again.
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const [recoveryRemaining, setRecoveryRemaining] = useState<number | null>(null);
+  const [showRegenModal, setShowRegenModal] = useState(false);
+  const [regenPassword, setRegenPassword] = useState("");
+  const [regenCode, setRegenCode] = useState("");
   const [mfaActionLoading, setMfaActionLoading] = useState(false);
   const [profileHref, setProfileHref] = useState("/profile");
 
@@ -106,6 +114,7 @@ export default function ProfileSecurityPage() {
     twoFactorApi.status()
       .then((res) => {
         setMfaEnabled(res.data.enabled);
+        setRecoveryRemaining(res.data.recovery_codes_remaining ?? null);
         setForceMfaBanner(
           requiresPrivilegedMfaSetup({
             roles: stored?.roles,
@@ -168,7 +177,9 @@ export default function ProfileSecurityPage() {
     if (totpCode.length !== 6) return;
     setMfaActionLoading(true);
     try {
-      await twoFactorApi.confirm(totpCode);
+      const res = await twoFactorApi.confirm(totpCode);
+      setRecoveryCodes(res.data.recovery_codes ?? null);
+      setRecoveryRemaining(res.data.recovery_codes?.length ?? null);
       setMfaEnabled(true);
       setForceMfaBanner(false);
       setMfaJustEnabled(true);
@@ -189,19 +200,51 @@ export default function ProfileSecurityPage() {
   };
 
   const handleDisable2FA = async () => {
-    if (!disablePassword) return;
+    if (!disablePassword || !isCompleteSecondFactor(disableCode)) return;
     setMfaActionLoading(true);
     try {
-      await twoFactorApi.disable(disablePassword);
+      await twoFactorApi.disable(disablePassword, disableCode);
       setMfaEnabled(false);
+      setRecoveryRemaining(null);
       setShowDisableModal(false);
       setDisablePassword("");
+      setDisableCode("");
       success("2FA has been disabled.");
     } catch (err: unknown) {
-      const ax = err as { response?: { data?: { errors?: { password?: string[] }; message?: string } } };
-      success(ax.response?.data?.errors?.password?.[0] ?? ax.response?.data?.message ?? "Incorrect password.", "error");
+      const ax = err as { response?: { data?: { errors?: { password?: string[]; code?: string[] }; message?: string } } };
+      const errors = ax.response?.data?.errors;
+      success(errors?.password?.[0] ?? errors?.code?.[0] ?? ax.response?.data?.message ?? "Could not disable 2FA.", "error");
     } finally {
       setMfaActionLoading(false);
+    }
+  };
+
+  const handleRegenerateRecoveryCodes = async () => {
+    if (!regenPassword || !/^\d{6}$/.test(regenCode)) return;
+    setMfaActionLoading(true);
+    try {
+      const res = await twoFactorApi.regenerateRecoveryCodes(regenPassword, regenCode);
+      setRecoveryCodes(res.data.recovery_codes);
+      setRecoveryRemaining(res.data.recovery_codes.length);
+      setShowRegenModal(false);
+      setRegenPassword("");
+      setRegenCode("");
+    } catch (err: unknown) {
+      const ax = err as { response?: { data?: { errors?: { password?: string[]; code?: string[] }; message?: string } } };
+      const errors = ax.response?.data?.errors;
+      success(errors?.password?.[0] ?? errors?.code?.[0] ?? ax.response?.data?.message ?? "Could not regenerate recovery codes.", "error");
+    } finally {
+      setMfaActionLoading(false);
+    }
+  };
+
+  const handleCopyRecoveryCodes = async () => {
+    if (!recoveryCodes) return;
+    try {
+      await navigator.clipboard.writeText(recoveryCodes.join("\n"));
+      success("Recovery codes copied.");
+    } catch {
+      success("Copy failed — select and copy the codes manually.", "error");
     }
   };
 
@@ -402,7 +445,7 @@ export default function ProfileSecurityPage() {
             {mfaEnabled ? (
               <button
                 type="button"
-                onClick={() => { setDisablePassword(""); setShowDisableModal(true); }}
+                onClick={() => { setDisablePassword(""); setDisableCode(""); setShowDisableModal(true); }}
                 className="btn-secondary text-xs py-1 px-2 flex-shrink-0 text-red-600"
               >
                 Disable
@@ -429,6 +472,26 @@ export default function ProfileSecurityPage() {
           <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">
             <span className="material-symbols-outlined text-[15px]">check_circle</span>
             Your account is protected with two-factor authentication.
+          </div>
+        )}
+
+        {mfaEnabled && (
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 p-3">
+            <div>
+              <p className="text-xs font-semibold text-neutral-900">Recovery codes</p>
+              <p className="text-xs text-neutral-500">
+                {recoveryRemaining === null
+                  ? "One-time codes for signing in if you lose your authenticator."
+                  : `${recoveryRemaining} unused one-time code(s) remaining.`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setRegenPassword(""); setRegenCode(""); setShowRegenModal(true); }}
+              className="btn-secondary text-xs py-1 px-2 flex-shrink-0"
+            >
+              Generate new codes
+            </button>
           </div>
         )}
       </div>
@@ -530,7 +593,7 @@ export default function ProfileSecurityPage() {
               </div>
             </div>
             <p className="text-sm text-neutral-600">
-              Confirm your password to disable 2FA. You will no longer be required to enter a code on login.
+              Confirm your password and a current authenticator code (or a recovery code) to disable 2FA. You will no longer be required to enter a code on login.
             </p>
             <div>
               <label htmlFor="profile-security-password" className="block text-xs font-semibold text-neutral-700 mb-1">Password</label>
@@ -543,10 +606,21 @@ export default function ProfileSecurityPage() {
                 autoComplete="current-password"
               />
             </div>
+            <div>
+              <label htmlFor="profile-security-disable-code" className="block text-xs font-semibold text-neutral-700 mb-1">Authenticator or recovery code</label>
+              <input id="profile-security-disable-code"
+                type="text"
+                className="form-input font-mono"
+                placeholder="000000"
+                value={disableCode}
+                onChange={(e) => setDisableCode(normalizeSecondFactorInput(e.target.value))}
+                autoComplete="one-time-code"
+              />
+            </div>
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => { setShowDisableModal(false); setDisablePassword(""); }}
+                onClick={() => { setShowDisableModal(false); setDisablePassword(""); setDisableCode(""); }}
                 disabled={mfaActionLoading}
                 className="btn-secondary flex-1 py-2.5 text-sm justify-center"
               >
@@ -555,7 +629,7 @@ export default function ProfileSecurityPage() {
               <button
                 type="button"
                 onClick={handleDisable2FA}
-                disabled={!disablePassword || mfaActionLoading}
+                disabled={!disablePassword || !isCompleteSecondFactor(disableCode) || mfaActionLoading}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40 transition-colors shadow-sm"
               >
                 {mfaActionLoading ? (
@@ -563,6 +637,50 @@ export default function ProfileSecurityPage() {
                 ) : null}
                 Disable 2FA
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Regenerate recovery codes */}
+      {showRegenModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="profile-security-regen-title" className="rounded-2xl bg-white p-6 max-w-sm w-full shadow-2xl border border-neutral-100 space-y-4">
+            <h3 id="profile-security-regen-title" className="text-base font-bold text-neutral-900">Generate new recovery codes</h3>
+            <p className="text-sm text-neutral-600">Your current recovery codes will stop working. Confirm your password and a current authenticator code.</p>
+            <div>
+              <label htmlFor="profile-security-regen-password" className="block text-xs font-semibold text-neutral-700 mb-1">Password</label>
+              <input id="profile-security-regen-password" type="password" className="form-input" value={regenPassword}
+                onChange={(e) => setRegenPassword(e.target.value)} autoComplete="current-password" />
+            </div>
+            <div>
+              <label htmlFor="profile-security-regen-code" className="block text-xs font-semibold text-neutral-700 mb-1">Authenticator code</label>
+              <input id="profile-security-regen-code" type="text" inputMode="numeric" maxLength={6} className="form-input font-mono" placeholder="000000"
+                value={regenCode} onChange={(e) => setRegenCode(e.target.value.replace(/\D/g, ""))} autoComplete="one-time-code" />
+            </div>
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setShowRegenModal(false)} disabled={mfaActionLoading} className="btn-secondary flex-1 py-2.5 text-sm justify-center">Cancel</button>
+              <button type="button" onClick={handleRegenerateRecoveryCodes} disabled={!regenPassword || regenCode.length !== 6 || mfaActionLoading}
+                className="btn-primary flex-1 py-2.5 text-sm justify-center disabled:opacity-40">Generate</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* One-time display of recovery codes */}
+      {recoveryCodes && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="profile-security-codes-title" className="rounded-2xl bg-white p-6 max-w-sm w-full shadow-2xl border border-neutral-100 space-y-4">
+            <h3 id="profile-security-codes-title" className="text-base font-bold text-neutral-900">Save your recovery codes</h3>
+            <p className="text-sm text-neutral-600">
+              Each code signs you in once if you lose access to your authenticator. Store them somewhere safe — they will not be shown again.
+            </p>
+            <ul className="grid grid-cols-2 gap-2 rounded-xl border border-neutral-200 bg-neutral-50 p-3 font-mono text-sm text-neutral-800 select-all">
+              {recoveryCodes.map((code) => <li key={code}>{code}</li>)}
+            </ul>
+            <div className="flex gap-3">
+              <button type="button" onClick={handleCopyRecoveryCodes} className="btn-secondary flex-1 py-2.5 text-sm justify-center">Copy</button>
+              <button type="button" onClick={() => setRecoveryCodes(null)} className="btn-primary flex-1 py-2.5 text-sm justify-center">I have saved them</button>
             </div>
           </div>
         </div>

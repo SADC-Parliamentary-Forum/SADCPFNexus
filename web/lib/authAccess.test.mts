@@ -160,3 +160,13 @@ test("scan and handover routes are reachable without opening the full register",
   assert.equal(canAccessRoute(selfService, "/assets/handovers"), false);
   assert.equal(canAccessRoute(selfService, "/assets/mine"), true);
 });
+
+test("route rules: the most specific prefix wins regardless of declaration order", async () => {
+  const { findRouteAccessRule } = await import("./authAccess.ts");
+  assert.equal(findRouteAccessRule("/hr/payslips")?.path, "/hr/payslips");
+  assert.equal(findRouteAccessRule("/hr/payslips/42")?.path, "/hr/payslips");
+  assert.equal(findRouteAccessRule("/hr/timesheets/payroll/run")?.path, "/hr/timesheets/payroll");
+  assert.equal(findRouteAccessRule("/hr/anything-else")?.path, "/hr");
+  // A prefix only matches on a path-segment boundary.
+  assert.notEqual(findRouteAccessRule("/hrx")?.path, "/hr");
+});

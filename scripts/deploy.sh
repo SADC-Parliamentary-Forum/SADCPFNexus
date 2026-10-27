@@ -129,6 +129,9 @@ docker exec sadcpf_php composer install --no-dev --optimize-autoloader --no-inte
 
 log "Running pending migrations"
 docker exec sadcpf_php php artisan migrate --force
+# The php/queue/scheduler entrypoints refuse to start against pending
+# migrations; confirm the schema is current before restarting them.
+docker exec sadcpf_php php artisan schema:check
 
 log "Reseeding roles/permissions + workflows (idempotent, no demo/user data touched)"
 docker exec sadcpf_php php artisan db:seed --class="Database\\Seeders\\RolesAndPermissionsSeeder" --force

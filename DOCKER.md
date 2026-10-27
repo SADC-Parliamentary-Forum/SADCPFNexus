@@ -27,9 +27,11 @@
 docker-compose up --build -d
 ```
 
-- The **php** container entrypoint runs on start: ensures `api/.env` exists, runs `composer install` if needed, `key:generate` if needed, then migrations and seeding (roles, demo tenant, users, travel/leave/imprest/procurement/finance/HR demo data). There is no separate api-setup service; php does not wait on a long-running step, so the stack comes up without blocking.
+- The **php** container entrypoint runs on start: ensures `api/.env` exists, runs `composer install` if needed, `key:generate` if needed, then — **outside production only** — migrations and demo seeding (roles, demo tenant, users, travel/leave/imprest/procurement/finance/HR demo data). A failed migration now stops the container instead of being ignored, and the app refuses to start while migrations are pending (`php artisan schema:check`). Control with `AUTO_MIGRATE` / `AUTO_SEED` (both default `true` outside production, `false` in production; `AUTO_SEED=true` is refused in production).
+- The **queue** and **scheduler** containers wait for a current schema and never migrate. The **scheduler** runs `php artisan schedule:work` (reminders, accruals, notification outbox, report dispatch — see `api/routes/console.php`).
+- Fast password hashing (`BCRYPT_ROUNDS=4`) is set only in `docker-compose.dev.yml`; production uses the default cost (12).
 - The **web** container builds from `docker/web/Dockerfile` (target `dev`). `node_modules` are installed **inside the image** at build time — the container does not run `npm install` on every start. The host `./web` folder is volume-mounted so all source changes are reflected instantly.
-- **Postgres** is on port 5432, **Redis** on 6380 (host), **API** via nginx on **8000**, **Web** (Next.js) on **3000**.
+- **Postgres** is on port 5432, **Redis** on 6380 (host), **API** via nginx on **8000**, **Web** (Next.js) on **3000** — all bound to `127.0.0.1`. To reach the web dev server from another device (e.g. a phone), set `WEB_BIND=0.0.0.0` locally; never on the production host.
 
 ## Hot-reload (HMR) in Docker on Windows
 
@@ -93,6 +95,31 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 If the checkout is inconsistent, the `web` build now fails early with explicit messages
 showing which expected setup/auth export or import is missing.
+
+### Migrations in production
+
+Production containers never migrate or seed on start. `scripts/deploy.sh` runs
+`php artisan migrate --force` then `php artisan schema:check` before restarting
+`php`/`queue`, and aborts if either fails. If the `php` container is down (for
+example it refused to start because migrations are pending), run the one-shot
+migration job, which exits non-zero on any failure:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm migrate
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+### Scheduler in production
+
+The `scheduler` service is behind the `scheduler` Compose profile in production.
+Before enabling it, confirm no host crontab already runs `schedule:run` (two
+runners would send every reminder twice) and expect the first run to send any
+backlog of due reminders. Then set `COMPOSE_PROFILES=scheduler` in the server
+environment (so deploys keep it running) and start it:
+
+```bash
+COMPOSE_PROFILES=scheduler docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d scheduler
+```
 
 ## URLs
 
@@ -172,7 +199,7 @@ After adding new migrations (e.g. `work_assignments` for HR assignments), run:
 docker-compose exec php php artisan migrate --force
 ```
 
-Or restart the stack so the php entrypoint runs migrations on start.
+Or restart the stack so the php entrypoint runs migrations on start (local/dev only; production uses the deploy script or the `migrate` job above).
 
 ## PHP 8.4 required
 

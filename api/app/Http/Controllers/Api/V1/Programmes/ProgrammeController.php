@@ -1,9 +1,11 @@
 <?php
+
 namespace App\Http\Controllers\Api\V1\Programmes;
 
 use App\Http\Controllers\Controller;
 use App\Models\Programme;
 use App\Modules\Programmes\Services\ProgrammeService;
+use App\Modules\Programmes\Services\ProgrammeTimelineService;
 use App\Services\WorkflowService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +36,7 @@ class ProgrammeController extends Controller
         if ($request->has($field)) {
             return $request->input($field);
         }
+
         return $programme?->{$field};
     }
 
@@ -46,6 +49,7 @@ class ProgrammeController extends Controller
     private function resultingArray(Request $request, ?Programme $programme, string $field): array
     {
         $value = $this->resulting($request, $programme, $field);
+
         return is_array($value) ? $value : [];
     }
 
@@ -60,36 +64,34 @@ class ProgrammeController extends Controller
     {
         return [
             // Venue
-            'venue_country'                     => ['nullable', 'string', 'max:255'],
-            'venue_city'                         => ['nullable', 'string', 'max:255'],
-            'venue_proposed_hotel'               => ['nullable', 'string', 'max:255'],
-            'venue_accommodation_required'       => ['nullable', 'boolean'],
-            'venue_accommodation_count'          => [
-                Rule::requiredIf(fn () =>
-                    ($request->has('venue_accommodation_required') || $request->has('venue_accommodation_count'))
+            'venue_country' => ['nullable', 'string', 'max:255'],
+            'venue_city' => ['nullable', 'string', 'max:255'],
+            'venue_proposed_hotel' => ['nullable', 'string', 'max:255'],
+            'venue_accommodation_required' => ['nullable', 'boolean'],
+            'venue_accommodation_count' => [
+                Rule::requiredIf(fn () => ($request->has('venue_accommodation_required') || $request->has('venue_accommodation_count'))
                     && $this->resultingBool($request, $programme, 'venue_accommodation_required')
                     && empty($this->resulting($request, $programme, 'venue_accommodation_count'))),
                 'nullable', 'integer', 'min:1',
             ],
-            'venue_conferencing_required'        => ['nullable', 'boolean'],
-            'venue_conferencing_participants'    => [
-                Rule::requiredIf(fn () =>
-                    ($request->has('venue_conferencing_required') || $request->has('venue_conferencing_participants'))
+            'venue_conferencing_required' => ['nullable', 'boolean'],
+            'venue_conferencing_participants' => [
+                Rule::requiredIf(fn () => ($request->has('venue_conferencing_required') || $request->has('venue_conferencing_participants'))
                     && $this->resultingBool($request, $programme, 'venue_conferencing_required')
                     && empty($this->resulting($request, $programme, 'venue_conferencing_participants'))),
                 'nullable', 'integer', 'min:1',
             ],
-            'venue_quotation_attached'           => ['nullable', 'boolean'],
-            'venue_hotel_quotation_attached'     => ['nullable', 'boolean'],
-            'venue_accessibility_requirements'   => ['nullable', 'string'],
-            'venue_security_considerations'      => ['nullable', 'string'],
-            'venue_comments'                     => ['nullable', 'string'],
+            'venue_quotation_attached' => ['nullable', 'boolean'],
+            'venue_hotel_quotation_attached' => ['nullable', 'boolean'],
+            'venue_accessibility_requirements' => ['nullable', 'string'],
+            'venue_security_considerations' => ['nullable', 'string'],
+            'venue_comments' => ['nullable', 'string'],
             // Budget / participant provisions (Finance-only fields intentionally excluded)
-            'proposed_dsa_rate'                  => ['nullable', 'numeric', 'min:0'],
-            'original_budget_rate'               => ['nullable', 'numeric', 'min:0'],
-            'dsa_variance_reason'                => [
+            'proposed_dsa_rate' => ['nullable', 'numeric', 'min:0'],
+            'original_budget_rate' => ['nullable', 'numeric', 'min:0'],
+            'dsa_variance_reason' => [
                 Rule::requiredIf(function () use ($request, $programme) {
-                    if (!$request->has('proposed_dsa_rate') && !$request->has('original_budget_rate') && !$request->has('dsa_variance_reason')) {
+                    if (! $request->has('proposed_dsa_rate') && ! $request->has('original_budget_rate') && ! $request->has('dsa_variance_reason')) {
                         return false;
                     }
                     $proposed = $this->resulting($request, $programme, 'proposed_dsa_rate');
@@ -100,15 +102,16 @@ class ProgrammeController extends Controller
                     if ((float) $proposed === (float) $original) {
                         return false;
                     }
+
                     return empty($this->resulting($request, $programme, 'dsa_variance_reason'));
                 }),
                 'nullable', 'string',
             ],
-            'proposed_participants'              => ['nullable', 'integer', 'min:0'],
-            'budgeted_participants'               => ['nullable', 'integer', 'min:0'],
-            'participants_variance_reason'       => [
+            'proposed_participants' => ['nullable', 'integer', 'min:0'],
+            'budgeted_participants' => ['nullable', 'integer', 'min:0'],
+            'participants_variance_reason' => [
                 Rule::requiredIf(function () use ($request, $programme) {
-                    if (!$request->has('proposed_participants') && !$request->has('budgeted_participants') && !$request->has('participants_variance_reason')) {
+                    if (! $request->has('proposed_participants') && ! $request->has('budgeted_participants') && ! $request->has('participants_variance_reason')) {
                         return false;
                     }
                     $proposed = $this->resulting($request, $programme, 'proposed_participants');
@@ -119,99 +122,92 @@ class ProgrammeController extends Controller
                     if ((int) $proposed === (int) $budgeted) {
                         return false;
                     }
+
                     return empty($this->resulting($request, $programme, 'participants_variance_reason'));
                 }),
                 'nullable', 'string',
             ],
-            'proposed_funding_difference'        => ['nullable', 'numeric', 'min:0'],
-            'estimated_activity_amount'          => ['nullable', 'numeric', 'min:0'],
+            'proposed_funding_difference' => ['nullable', 'numeric', 'min:0'],
+            'estimated_activity_amount' => ['nullable', 'numeric', 'min:0'],
             // Consultants
-            'secretariat_staff_required'         => ['nullable', 'boolean'],
-            'secretariat_staff_count'            => ['nullable', 'integer', 'min:0'],
-            'consultants_required'               => ['nullable', 'boolean'],
-            'consultants_count'                  => ['nullable', 'integer', 'min:0'],
-            'consultants_rate'                   => ['nullable', 'numeric', 'min:0'],
-            'resource_persons_required'          => ['nullable', 'boolean'],
-            'resource_persons_count'             => ['nullable', 'integer', 'min:0'],
-            'resource_persons_rate'              => ['nullable', 'numeric', 'min:0'],
-            'rapporteurs_required'               => ['nullable', 'boolean'],
-            'rapporteurs_count'                  => ['nullable', 'integer', 'min:0'],
-            'rapporteurs_rate'                   => ['nullable', 'numeric', 'min:0'],
-            'media_liaison_required'             => ['nullable', 'boolean'],
-            'media_liaison_count'                => ['nullable', 'integer', 'min:0'],
-            'media_liaison_rate'                 => ['nullable', 'numeric', 'min:0'],
-            'local_support_required'             => ['nullable', 'boolean'],
-            'local_support_count'                => ['nullable', 'integer', 'min:0'],
-            'local_support_rate'                 => ['nullable', 'numeric', 'min:0'],
-            'personnel_comments'                 => ['nullable', 'string'],
+            'secretariat_staff_required' => ['nullable', 'boolean'],
+            'secretariat_staff_count' => ['nullable', 'integer', 'min:0'],
+            'consultants_required' => ['nullable', 'boolean'],
+            'consultants_count' => ['nullable', 'integer', 'min:0'],
+            'consultants_rate' => ['nullable', 'numeric', 'min:0'],
+            'resource_persons_required' => ['nullable', 'boolean'],
+            'resource_persons_count' => ['nullable', 'integer', 'min:0'],
+            'resource_persons_rate' => ['nullable', 'numeric', 'min:0'],
+            'rapporteurs_required' => ['nullable', 'boolean'],
+            'rapporteurs_count' => ['nullable', 'integer', 'min:0'],
+            'rapporteurs_rate' => ['nullable', 'numeric', 'min:0'],
+            'media_liaison_required' => ['nullable', 'boolean'],
+            'media_liaison_count' => ['nullable', 'integer', 'min:0'],
+            'media_liaison_rate' => ['nullable', 'numeric', 'min:0'],
+            'local_support_required' => ['nullable', 'boolean'],
+            'local_support_count' => ['nullable', 'integer', 'min:0'],
+            'local_support_rate' => ['nullable', 'numeric', 'min:0'],
+            'personnel_comments' => ['nullable', 'string'],
             // Interpretation
-            'interpretation_required'            => ['nullable', 'boolean'],
-            'en_fr_required'                     => ['nullable', 'boolean'],
-            'en_fr_interpreters_count'           => [
-                Rule::requiredIf(fn () =>
-                    ($request->has('en_fr_required') || $request->has('en_fr_interpreters_count'))
+            'interpretation_required' => ['nullable', 'boolean'],
+            'en_fr_required' => ['nullable', 'boolean'],
+            'en_fr_interpreters_count' => [
+                Rule::requiredIf(fn () => ($request->has('en_fr_required') || $request->has('en_fr_interpreters_count'))
                     && $this->resultingBool($request, $programme, 'en_fr_required')
                     && empty($this->resulting($request, $programme, 'en_fr_interpreters_count'))),
                 'nullable', 'integer', 'min:1',
             ],
-            'en_pt_required'                     => ['nullable', 'boolean'],
-            'en_pt_interpreters_count'           => [
-                Rule::requiredIf(fn () =>
-                    ($request->has('en_pt_required') || $request->has('en_pt_interpreters_count'))
+            'en_pt_required' => ['nullable', 'boolean'],
+            'en_pt_interpreters_count' => [
+                Rule::requiredIf(fn () => ($request->has('en_pt_required') || $request->has('en_pt_interpreters_count'))
                     && $this->resultingBool($request, $programme, 'en_pt_required')
                     && empty($this->resulting($request, $programme, 'en_pt_interpreters_count'))),
                 'nullable', 'integer', 'min:1',
             ],
-            'fr_pt_required'                     => ['nullable', 'boolean'],
-            'fr_pt_interpreters_count'           => [
-                Rule::requiredIf(fn () =>
-                    ($request->has('fr_pt_required') || $request->has('fr_pt_interpreters_count'))
+            'fr_pt_required' => ['nullable', 'boolean'],
+            'fr_pt_interpreters_count' => [
+                Rule::requiredIf(fn () => ($request->has('fr_pt_required') || $request->has('fr_pt_interpreters_count'))
                     && $this->resultingBool($request, $programme, 'fr_pt_required')
                     && empty($this->resulting($request, $programme, 'fr_pt_interpreters_count'))),
                 'nullable', 'integer', 'min:1',
             ],
-            'interpreter_rate'                   => ['nullable', 'numeric', 'min:0'],
-            'interpreter_source'                 => ['nullable', 'string', Rule::in(['internal', 'supplier', 'partner', 'other'])],
-            'interpreter_source_other_note'      => [
-                Rule::requiredIf(fn () =>
-                    ($request->has('interpreter_source') || $request->has('interpreter_source_other_note'))
+            'interpreter_rate' => ['nullable', 'numeric', 'min:0'],
+            'interpreter_source' => ['nullable', 'string', Rule::in(['internal', 'supplier', 'partner', 'other'])],
+            'interpreter_source_other_note' => [
+                Rule::requiredIf(fn () => ($request->has('interpreter_source') || $request->has('interpreter_source_other_note'))
                     && $this->resulting($request, $programme, 'interpreter_source') === 'other'
                     && empty($this->resulting($request, $programme, 'interpreter_source_other_note'))),
                 'nullable', 'string',
             ],
-            'interpretation_equipment_required'  => ['nullable', 'boolean'],
-            'translation_required'               => ['nullable', 'boolean'],
-            'languages_required'                 => [
-                Rule::requiredIf(fn () =>
-                    ($request->has('translation_required') || $request->has('languages_required'))
+            'interpretation_equipment_required' => ['nullable', 'boolean'],
+            'translation_required' => ['nullable', 'boolean'],
+            'languages_required' => [
+                Rule::requiredIf(fn () => ($request->has('translation_required') || $request->has('languages_required'))
                     && $this->resultingBool($request, $programme, 'translation_required')
                     && empty($this->resulting($request, $programme, 'languages_required'))),
                 'nullable', 'array',
             ],
-            'languages_required.*'               => ['string', 'max:100'],
-            'interpretation_comments'            => ['nullable', 'string'],
+            'languages_required.*' => ['string', 'max:100'],
+            'interpretation_comments' => ['nullable', 'string'],
             // Support services
-            'support_services'                   => ['nullable', 'array'],
-            'support_services.*'                 => ['string'],
-            'support_services_other_note'        => [
-                Rule::requiredIf(fn () =>
-                    ($request->has('support_services') || $request->has('support_services_other_note'))
+            'support_services' => ['nullable', 'array'],
+            'support_services.*' => ['string'],
+            'support_services_other_note' => [
+                Rule::requiredIf(fn () => ($request->has('support_services') || $request->has('support_services_other_note'))
                     && in_array('other', $this->resultingArray($request, $programme, 'support_services'), true)
                     && empty($this->resulting($request, $programme, 'support_services_other_note'))),
                 'nullable', 'string',
             ],
             // Conflict of interest — conflict_declared_by/at deliberately absent (server-side only)
-            'conflict_declared'                  => ['nullable', 'boolean'],
-            'conflict_details'                   => [
-                Rule::requiredIf(fn () =>
-                    ($request->has('conflict_declared') || $request->has('conflict_details'))
+            'conflict_declared' => ['nullable', 'boolean'],
+            'conflict_details' => [
+                Rule::requiredIf(fn () => ($request->has('conflict_declared') || $request->has('conflict_details'))
                     && $this->resultingBool($request, $programme, 'conflict_declared')
                     && empty($this->resulting($request, $programme, 'conflict_details'))),
                 'nullable', 'string',
             ],
-            'conflict_mitigation'                => [
-                Rule::requiredIf(fn () =>
-                    ($request->has('conflict_declared') || $request->has('conflict_mitigation'))
+            'conflict_mitigation' => [
+                Rule::requiredIf(fn () => ($request->has('conflict_declared') || $request->has('conflict_mitigation'))
                     && $this->resultingBool($request, $programme, 'conflict_declared')
                     && empty($this->resulting($request, $programme, 'conflict_mitigation'))),
                 'nullable', 'string',
@@ -222,6 +218,7 @@ class ProgrammeController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only(['status', 'search', 'per_page']);
+
         return response()->json($this->service->list($filters, $request->user()));
     }
 
@@ -230,52 +227,64 @@ class ProgrammeController extends Controller
         return response()->json($this->service->get($programme));
     }
 
+    /**
+     * GET /programmes/{programme}/timeline — the programme's lifecycle plus
+     * linked records the caller can see in their own modules.
+     */
+    public function timeline(Request $request, Programme $programme, ProgrammeTimelineService $timeline): JsonResponse
+    {
+        abort_unless($timeline->canView($request->user(), $programme), 404);
+
+        return response()->json(['data' => $timeline->forProgramme($request->user(), $programme)]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'title'                     => ['required', 'string', 'max:500'],
-            'strategic_pillar'          => ['nullable', 'string', 'max:255'],
-            'strategic_pillars'         => ['nullable', 'array'],
-            'strategic_pillars.*'       => ['string', 'max:255'],
-            'implementing_department'   => ['nullable', 'string', 'max:255'],
-            'implementing_departments'  => ['nullable', 'array'],
-            'implementing_departments.*'=> ['string', 'max:255'],
-            'background'                => ['nullable', 'string'],
-            'overall_objective'         => ['nullable', 'string'],
-            'primary_currency'          => ['nullable', 'string', 'size:3'],
-            'base_currency'             => ['nullable', 'string', 'size:3'],
-            'exchange_rate'             => ['nullable', 'numeric', 'min:0'],
-            'contingency_pct'            => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'total_budget'               => ['nullable', 'numeric', 'min:0'],
-            'funding_source'            => ['nullable', 'string', 'max:255'],
-            'funding_sources'           => ['nullable', 'array'],
-            'funding_sources.*.name'    => ['required', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:500'],
+            'strategic_pillar' => ['nullable', 'string', 'max:255'],
+            'strategic_pillars' => ['nullable', 'array'],
+            'strategic_pillars.*' => ['string', 'max:255'],
+            'implementing_department' => ['nullable', 'string', 'max:255'],
+            'implementing_departments' => ['nullable', 'array'],
+            'implementing_departments.*' => ['string', 'max:255'],
+            'background' => ['nullable', 'string'],
+            'overall_objective' => ['nullable', 'string'],
+            'primary_currency' => ['nullable', 'string', 'size:3'],
+            'base_currency' => ['nullable', 'string', 'size:3'],
+            'exchange_rate' => ['nullable', 'numeric', 'min:0'],
+            'contingency_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'total_budget' => ['nullable', 'numeric', 'min:0'],
+            'funding_source' => ['nullable', 'string', 'max:255'],
+            'funding_sources' => ['nullable', 'array'],
+            'funding_sources.*.name' => ['required', 'string', 'max:255'],
             'funding_sources.*.budget_amount' => ['nullable', 'numeric', 'min:0'],
-            'funding_sources.*.pays_for'=> ['nullable', 'string', 'max:1000'],
-            'responsible_officer_id'    => ['nullable', 'integer', 'exists:users,id'],
-            'responsible_officer_ids'   => ['nullable', 'array'],
+            'funding_sources.*.pays_for' => ['nullable', 'string', 'max:1000'],
+            'responsible_officer_id' => ['nullable', 'integer', 'exists:users,id'],
+            'responsible_officer_ids' => ['nullable', 'array'],
             'responsible_officer_ids.*' => ['integer', 'exists:users,id'],
-            'start_date'                => ['nullable', 'date'],
-            'end_date'                  => ['nullable', 'date', 'after_or_equal:start_date'],
-            'travel_required'           => ['nullable', 'boolean'],
-            'delegates_count'            => ['nullable', 'integer', 'min:0'],
-            'procurement_required'      => ['nullable', 'boolean'],
-            'strategic_alignment'       => ['nullable', 'array'],
-            'supporting_departments'    => ['nullable', 'array'],
-            'specific_objectives'       => ['nullable', 'array'],
-            'expected_outputs'         => ['nullable', 'array'],
-            'target_beneficiaries'     => ['nullable', 'array'],
-            'member_states'             => ['nullable', 'array'],
-            'travel_services'          => ['nullable', 'array'],
-            'media_options'             => ['nullable', 'array'],
-            'activities'                => ['nullable', 'array'],
-            'milestones'                => ['nullable', 'array'],
-            'deliverables'              => ['nullable', 'array'],
-            'budget_lines'              => ['nullable', 'array'],
-            'procurement_items'         => ['nullable', 'array'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'travel_required' => ['nullable', 'boolean'],
+            'delegates_count' => ['nullable', 'integer', 'min:0'],
+            'procurement_required' => ['nullable', 'boolean'],
+            'strategic_alignment' => ['nullable', 'array'],
+            'supporting_departments' => ['nullable', 'array'],
+            'specific_objectives' => ['nullable', 'array'],
+            'expected_outputs' => ['nullable', 'array'],
+            'target_beneficiaries' => ['nullable', 'array'],
+            'member_states' => ['nullable', 'array'],
+            'travel_services' => ['nullable', 'array'],
+            'media_options' => ['nullable', 'array'],
+            'activities' => ['nullable', 'array'],
+            'milestones' => ['nullable', 'array'],
+            'deliverables' => ['nullable', 'array'],
+            'budget_lines' => ['nullable', 'array'],
+            'procurement_items' => ['nullable', 'array'],
         ] + $this->sectionRules($request, null));
 
         $programme = $this->service->create($data, $request->user());
+
         return response()->json(['message' => 'Programme created.', 'data' => $programme], 201);
     }
 
@@ -287,36 +296,37 @@ class ProgrammeController extends Controller
         }
 
         $data = $request->validate([
-            'title'                     => ['sometimes', 'string', 'max:500'],
-            'strategic_pillar'          => ['nullable', 'string', 'max:255'],
-            'strategic_pillars'         => ['nullable', 'array'],
-            'strategic_pillars.*'       => ['string', 'max:255'],
-            'implementing_department'   => ['nullable', 'string', 'max:255'],
-            'implementing_departments'  => ['nullable', 'array'],
-            'implementing_departments.*'=> ['string', 'max:255'],
-            'background'                => ['nullable', 'string'],
-            'overall_objective'         => ['nullable', 'string'],
-            'primary_currency'          => ['nullable', 'string', 'size:3'],
-            'base_currency'             => ['nullable', 'string', 'size:3'],
-            'exchange_rate'             => ['nullable', 'numeric', 'min:0'],
-            'contingency_pct'            => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'total_budget'               => ['nullable', 'numeric', 'min:0'],
-            'funding_source'            => ['nullable', 'string', 'max:255'],
-            'funding_sources'           => ['nullable', 'array'],
-            'funding_sources.*.name'    => ['required', 'string', 'max:255'],
+            'title' => ['sometimes', 'string', 'max:500'],
+            'strategic_pillar' => ['nullable', 'string', 'max:255'],
+            'strategic_pillars' => ['nullable', 'array'],
+            'strategic_pillars.*' => ['string', 'max:255'],
+            'implementing_department' => ['nullable', 'string', 'max:255'],
+            'implementing_departments' => ['nullable', 'array'],
+            'implementing_departments.*' => ['string', 'max:255'],
+            'background' => ['nullable', 'string'],
+            'overall_objective' => ['nullable', 'string'],
+            'primary_currency' => ['nullable', 'string', 'size:3'],
+            'base_currency' => ['nullable', 'string', 'size:3'],
+            'exchange_rate' => ['nullable', 'numeric', 'min:0'],
+            'contingency_pct' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'total_budget' => ['nullable', 'numeric', 'min:0'],
+            'funding_source' => ['nullable', 'string', 'max:255'],
+            'funding_sources' => ['nullable', 'array'],
+            'funding_sources.*.name' => ['required', 'string', 'max:255'],
             'funding_sources.*.budget_amount' => ['nullable', 'numeric', 'min:0'],
-            'funding_sources.*.pays_for'=> ['nullable', 'string', 'max:1000'],
-            'responsible_officer_id'    => ['nullable', 'integer', 'exists:users,id'],
-            'responsible_officer_ids'    => ['nullable', 'array'],
+            'funding_sources.*.pays_for' => ['nullable', 'string', 'max:1000'],
+            'responsible_officer_id' => ['nullable', 'integer', 'exists:users,id'],
+            'responsible_officer_ids' => ['nullable', 'array'],
             'responsible_officer_ids.*' => ['integer', 'exists:users,id'],
-            'start_date'                => ['nullable', 'date'],
-            'end_date'                  => ['nullable', 'date'],
-            'travel_required'           => ['nullable', 'boolean'],
-            'delegates_count'            => ['nullable', 'integer', 'min:0'],
-            'procurement_required'      => ['nullable', 'boolean'],
+            'start_date' => ['nullable', 'date'],
+            'end_date' => ['nullable', 'date'],
+            'travel_required' => ['nullable', 'boolean'],
+            'delegates_count' => ['nullable', 'integer', 'min:0'],
+            'procurement_required' => ['nullable', 'boolean'],
         ] + $this->sectionRules($request, $programme));
 
         $programme = $this->service->update($programme, $data, $request->user());
+
         return response()->json(['message' => 'Programme updated.', 'data' => $programme]);
     }
 
@@ -339,12 +349,14 @@ class ProgrammeController extends Controller
         ]);
 
         $programme = $this->service->updateFinanceReview($programme, $data);
+
         return response()->json(['message' => 'Finance review updated.', 'data' => $programme]);
     }
 
     public function destroy(Programme $programme): JsonResponse
     {
         $this->service->delete($programme);
+
         return response()->json(['message' => 'Programme deleted.']);
     }
 
@@ -355,6 +367,7 @@ class ProgrammeController extends Controller
         ]);
 
         $result = $this->service->submit($programme, $request->user());
+
         return response()->json(['message' => 'Programme submitted.', 'data' => $result]);
     }
 
@@ -376,11 +389,12 @@ class ProgrammeController extends Controller
         ]);
 
         $approvalRequest = $programme->approvalRequest;
-        if (!$approvalRequest) {
+        if (! $approvalRequest) {
             if ($programme->created_by && (int) $programme->created_by === (int) $request->user()->id) {
                 abort(403, 'You cannot approve your own request.');
             }
             $result = $this->service->approve($programme, $request->user());
+
             return response()->json(['message' => 'Programme approved.', 'data' => $result]);
         }
 
@@ -394,7 +408,7 @@ class ProgrammeController extends Controller
 
         return response()->json([
             'message' => 'Decision recorded.',
-            'data'    => $this->service->get($programme->fresh()),
+            'data' => $this->service->get($programme->fresh()),
         ]);
     }
 
@@ -403,11 +417,12 @@ class ProgrammeController extends Controller
         $data = $request->validate(['reason' => ['required', 'string', 'max:1000']]);
 
         $approvalRequest = $programme->approvalRequest;
-        if (!$approvalRequest) {
+        if (! $approvalRequest) {
             if ($programme->created_by && (int) $programme->created_by === (int) $request->user()->id) {
                 abort(403, 'You cannot reject your own request.');
             }
             $result = $this->service->reject($programme, $data['reason'], $request->user());
+
             return response()->json(['message' => 'Programme rejected.', 'data' => $result]);
         }
 
@@ -415,13 +430,14 @@ class ProgrammeController extends Controller
 
         return response()->json([
             'message' => 'Programme rejected.',
-            'data'    => $this->service->get($programme->fresh()),
+            'data' => $this->service->get($programme->fresh()),
         ]);
     }
 
     public function amend(Request $request, Programme $programme): JsonResponse
     {
         $amendment = $this->service->createAmendment($programme, $request->user());
+
         return response()->json(['message' => 'Amendment created.', 'data' => $amendment], 201);
     }
 
@@ -432,6 +448,7 @@ class ProgrammeController extends Controller
         ]);
 
         $amendment = $this->service->submitAmendment($programme, $request->user());
+
         return response()->json(['message' => 'Amendment submitted.', 'data' => $amendment]);
     }
 
@@ -443,40 +460,43 @@ class ProgrammeController extends Controller
     public function pdf(Programme $programme)
     {
         $pdf = $this->service->generatePdf($programme);
+
         return $pdf->stream("PIF-{$programme->reference_number}.pdf");
     }
 
     public function sendToProcurement(Request $request, Programme $programme): JsonResponse
     {
         $data = $request->validate([
-            'procurement_item_ids'   => ['required', 'array', 'min:1'],
+            'procurement_item_ids' => ['required', 'array', 'min:1'],
             'procurement_item_ids.*' => ['integer', 'exists:programme_procurement_items,id'],
-            'request_title'          => ['required', 'string', 'max:255'],
-            'category'               => ['nullable', 'string', Rule::in(['goods', 'services', 'works'])],
+            'request_title' => ['required', 'string', 'max:255'],
+            'category' => ['nullable', 'string', Rule::in(['goods', 'services', 'works'])],
         ]);
 
         $procurementRequest = $this->service->sendToProcurement($programme, $data, $request->user());
+
         return response()->json(['message' => 'Procurement request created.', 'data' => $procurementRequest]);
     }
 
     public function sendToTravel(Request $request, Programme $programme): JsonResponse
     {
         $data = $request->validate([
-            'traveller_ids'   => ['required', 'array', 'min:1'],
+            'traveller_ids' => ['required', 'array', 'min:1'],
             'traveller_ids.*' => ['integer', 'exists:users,id'],
-            'purpose'         => ['nullable', 'string', 'max:500'],
-            'departure_date'  => ['nullable', 'date'],
-            'return_date'     => ['nullable', 'date', 'after_or_equal:departure_date'],
+            'purpose' => ['nullable', 'string', 'max:500'],
+            'departure_date' => ['nullable', 'date'],
+            'return_date' => ['nullable', 'date', 'after_or_equal:departure_date'],
             'destination_country' => ['nullable', 'string', 'max:100'],
-            'destination_city'    => ['nullable', 'string', 'max:100'],
-            'mission_id'      => ['nullable', 'integer', 'exists:travel_missions,id'],
-            'mission_title'   => ['nullable', 'string', 'max:255'],
+            'destination_city' => ['nullable', 'string', 'max:100'],
+            'mission_id' => ['nullable', 'integer', 'exists:travel_missions,id'],
+            'mission_title' => ['nullable', 'string', 'max:255'],
         ]);
 
         $requests = $this->service->sendToTravel($programme, $data, $request->user());
+
         return response()->json([
-            'message' => count($requests) . ' draft travel requisition(s) created.',
-            'data'    => $requests,
+            'message' => count($requests).' draft travel requisition(s) created.',
+            'data' => $requests,
         ], 201);
     }
 }

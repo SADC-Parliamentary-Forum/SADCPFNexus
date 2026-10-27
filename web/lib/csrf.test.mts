@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { CSRF_EXPIRED_MESSAGE, isCsrfMismatch, shouldRetryCsrf } from "./csrf.ts";
 import { apiErrorMessage } from "./apiError.ts";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 test("isCsrfMismatch detects Laravel 419 and CSRF copy", () => {
   assert.equal(isCsrfMismatch({ response: { status: 419, data: { message: "CSRF token mismatch." } } }), true);
@@ -41,7 +42,7 @@ test("apiErrorMessage hides raw CSRF token mismatch", () => {
 test("login form and API client recover from a stale CSRF cookie", () => {
   const webRoot = join(process.cwd());
   const form = readFileSync(join(webRoot, "components/auth/PortalSignInForm.tsx"), "utf8");
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
   const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
   assert.match(form, /loginFormErrorMessage|login\.csrfExpired/);
   assert.match(form, /isCsrfMismatch/);

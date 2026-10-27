@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
-import '../../../../../core/offline/draft_database.dart';
 import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/theme/app_theme.dart';
 
@@ -78,13 +77,11 @@ class _AssetRequestScreenState extends ConsumerState<AssetRequestScreen> {
   /// offline-draft pattern used by the other draft-capable request forms.
   Future<bool> _saveDraftOnFailure(String justification) async {
     try {
-      final db = ref.read(draftDatabaseProvider);
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-            type: 'asset_request',
-            title: 'Asset request',
-            payload: jsonEncode({'justification': justification}),
-            createdAt: DateTime.now(),
-          ));
+      await ref.read(draftStoreProvider).save(
+          type: 'asset_request',
+          title: 'Asset request',
+          payload: jsonEncode({'justification': justification}),
+        );
       return true;
     } catch (_) {
       return false;

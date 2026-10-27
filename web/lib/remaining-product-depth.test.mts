@@ -3,6 +3,7 @@ import test from "node:test";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { formatDateShort } from "./utils.ts";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
@@ -121,7 +122,7 @@ test("lifecycle sidebar is a short primary set with hub cards for specialist des
 });
 
 test("lifecycle API client exposes onboarding and separation endpoints", () => {
-  const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const source = readApiSource(webRoot);
   const lifecycle = source.slice(source.indexOf("export const lifecycleApi"), source.indexOf("export interface LifecycleCaseSummary") > 0 ? source.length : source.indexOf("export interface LifecycleCaseSummary"));
   assert.match(source, /export const lifecycleApi/);
   assert.match(source, /initiateOnboarding/);
@@ -587,7 +588,7 @@ test("canReviewWeeklySummaries allows supervisors and SG, not plain staff", asyn
 });
 
 test("weekly reports API exposes a gated review-queue endpoint", () => {
-  const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const source = readApiSource(webRoot);
   const weekly = source.slice(source.indexOf("export const weeklyReportsApi"), source.indexOf("// ── M&E"));
   assert.match(weekly, /reviewQueue/);
   assert.match(weekly, /\/weekly-summaries\/review-queue/);
@@ -860,7 +861,7 @@ test("weekly summaries trends page uses labelled chrome and the trends API", () 
 });
 
 test("travel API exposes destination catalog list and create endpoints", () => {
-  const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const source = readApiSource(webRoot);
   assert.match(source, /listDestinations:\s*\(\)\s*=>/);
   assert.match(source, /\/travel\/destinations/);
   assert.match(source, /createCountry:/);

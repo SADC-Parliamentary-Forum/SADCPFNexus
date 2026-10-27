@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/auth/auth_providers.dart';
-import '../../../../../core/offline/draft_database.dart';
 import '../../../../../core/offline/draft_provider.dart';
 
 class ReportNewIncidentScreen extends ConsumerStatefulWidget {
@@ -103,13 +102,11 @@ class _ReportNewIncidentScreenState
       'severity': _severity.toLowerCase(),
     };
     try {
-      final db = ref.read(draftDatabaseProvider);
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-            type: 'incident',
-            title: 'Incident: $subject',
-            payload: jsonEncode(payload),
-            createdAt: DateTime.now(),
-          ));
+      await ref.read(draftStoreProvider).save(
+          type: 'incident',
+          title: 'Incident: $subject',
+          payload: jsonEncode(payload),
+        );
     } catch (_) {
       // Best-effort; nothing actionable if local persistence also fails.
     }

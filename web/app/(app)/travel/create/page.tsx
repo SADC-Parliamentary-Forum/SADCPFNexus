@@ -15,6 +15,7 @@ import { Stepper } from "@/components/ui/Stepper";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { NexusPicker } from "@/components/ui/NexusPicker";
 import { NexusMoneyInput } from "@/components/ui/NexusMoneyInput";
+import { useFormDraft } from "@/lib/useFormDraft";
 
 // ─── Funding items with icons ─────────────────────────────────────────────────
 const FUNDING_ITEMS: { item: string; icon: string }[] = [
@@ -294,6 +295,12 @@ function TravelCreatePageInner() {
     prepared_on_behalf_of: "",
   });
 
+  // Autosave new requests locally (files are not stored and must be re-attached),
+  // and remember the server id once created so a retry updates it instead of
+  // creating a second request.
+  const draft = useFormDraft("travel.create", form, { enabled: !editId });
+  const createdIdRef = useRef<number | null>(null);
+
   const requiredDocTypes = (): string[] => {
     const required: string[] = [...REQUIRED_ON_SUBMIT];
     if (form.programme_id) required.push("approved_pif");
@@ -533,13 +540,14 @@ function TravelCreatePageInner() {
       }
 
       const payload = buildPayload();
-      let createdId = editId;
+      const existingId = editId ?? createdIdRef.current;
+      let createdId = existingId;
 
-      if (editId) {
-        const { data } = await travelApi.update(editId, payload);
-        createdId = data.data?.id ?? editId;
+      if (existingId) {
+        const { data } = await travelApi.update(existingId, payload);
+        createdId = data.data?.id ?? existingId;
       } else {
-        const { data } = await travelApi.create(payload);
+        const { data } = await travelApi.create(payload, `${draft.operationKey}:create`);
         createdId = data.data?.id ?? (data as { id?: number }).id ?? null;
       }
 
@@ -547,6 +555,9 @@ function TravelCreatePageInner() {
         setSubmitError("Travel request was saved but no id was returned.");
         return;
       }
+      // The server now holds the request; the local autosave is no longer needed.
+      createdIdRef.current = createdId;
+      draft.clear();
 
       try {
         for (const doc of pendingDocs) {
@@ -615,6 +626,11 @@ function TravelCreatePageInner() {
       router.push(asDraft ? `/travel/${createdId}` : "/travel");
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      if (axiosErr?.response?.data?.message?.includes("Idempotency-Key was already used")) {
+        // A previous attempt reached the server (its response was lost) and the form changed since.
+        setSubmitError("This request may already have been saved from an earlier attempt. Check My travel requests before submitting again.");
+        return;
+      }
       const first = axiosErr?.response?.data?.errors
         ? Object.values(axiosErr.response.data.errors).flat()[0]
         : undefined;
@@ -656,6 +672,28 @@ function TravelCreatePageInner() {
           />
         }
       />
+
+      {draft.restorable && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800" role="status">
+          <span className="material-symbols-outlined text-[16px]">history</span>
+          <span className="flex-1">
+            You have an unsaved travel request from {new Date(draft.restorable.savedAt).toLocaleString()}. Attached files are not kept and must be re-added.
+          </span>
+          <button
+            type="button"
+            className="btn-primary px-3 py-1.5 text-xs"
+            onClick={() => {
+              const restored = draft.restore();
+              if (restored) setForm(restored);
+            }}
+          >
+            Restore
+          </button>
+          <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={draft.discard}>
+            Discard
+          </button>
+        </div>
+      )}
 
       <div className="card p-4">
         <Stepper

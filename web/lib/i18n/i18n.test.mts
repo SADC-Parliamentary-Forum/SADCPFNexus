@@ -1,3 +1,4 @@
+import { readApiSource } from "../apiSourceForTests.mts";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
@@ -152,7 +153,7 @@ test("label template save stays visible and reports validation errors", () => {
 });
 
 test("API client sends Accept-Language from the stored locale", () => {
-  const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const source = readApiSource(webRoot);
   assert.match(source, /Accept-Language/);
   assert.match(source, /readStoredLocale/);
 });
@@ -337,7 +338,7 @@ test("risk KRI BCP and control-testing use labelled pickers instead of raw ids",
   const kri = readFileSync(join(webRoot, "app/(app)/risk/kri/page.tsx"), "utf8");
   const bcp = readFileSync(join(webRoot, "app/(app)/risk/bcp/page.tsx"), "utf8");
   const testing = readFileSync(join(webRoot, "app/(app)/risk/control-testing/page.tsx"), "utf8");
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
   assert.doesNotMatch(kri, /placeholder="Risk ID"/);
   assert.doesNotMatch(kri, /placeholder="Objective ID"/);
   assert.match(kri, /data-testid=\{`kri-risk-select-\$\{kri\.id\}`\}/);

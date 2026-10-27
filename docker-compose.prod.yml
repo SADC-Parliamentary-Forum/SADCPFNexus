@@ -14,8 +14,17 @@
 #   nexus-api.sadcpf.org  → http://127.0.0.1:6000  (nginx / Laravel API)
 #
 # NOTE: Docker Compose merges (not replaces) port arrays across files.
-# All ports in docker-compose.yml are already bound to 127.0.0.1 for safety.
+# All ports in docker-compose.yml are bound to 127.0.0.1 (web via WEB_BIND,
+# default 127.0.0.1 — never set WEB_BIND on the production host).
 # This overlay adds the CloudPanel proxy ports (6000, 7000).
+#
+# Deployment order (see DOCKER.md "Production deployment"):
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres redis
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm migrate
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# The php/queue/scheduler containers refuse to start against a schema with
+# pending migrations, and never seed demo data in production.
 
 services:
 
@@ -54,8 +63,28 @@ services:
   # (must not use a mapping here — that would replace DB_HOST / CONTAINER_ROLE).
   queue:
     environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
       - APP_URL=${APP_URL:-https://nexus-api.sadcpf.org}
       - FRONTEND_URL=${FRONTEND_URL:-https://nexus.sadcpf.org}
+
+  # Opt-in on the production host until ops confirms no host crontab already
+  # runs `schedule:run` (two runners would send every reminder twice) and has
+  # reviewed the first run's reminder backlog. Enable with:
+  #   COMPOSE_PROFILES=scheduler docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d scheduler
+  # (set COMPOSE_PROFILES=scheduler in the server environment so deploys keep it running).
+  scheduler:
+    profiles: ["scheduler"]
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - APP_URL=${APP_URL:-https://nexus-api.sadcpf.org}
+      - FRONTEND_URL=${FRONTEND_URL:-https://nexus.sadcpf.org}
+
+  migrate:
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
 
   # ── MeiliSearch — production mode ────────────────────────────────────────────
   meilisearch:
