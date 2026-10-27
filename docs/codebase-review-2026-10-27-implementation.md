@@ -403,4 +403,10 @@ overlay (the documented deploy always uses the overlay).
 - Baseline run (before most changes were loaded): 1,309 passed, 0 failed, then exhausted PHP's 512 MB memory limit in dompdf; the remaining ~740 tests did not run.
 - Post-change full run (`php -d memory_limit=2G artisan test`, fresh DB): 393 passed, 0 failed, then **stopped by the host because the machine ran low on memory**. It was not restarted. The remaining ~1,650 tests have **not** been run against the final code.
 - Every suite touching changed code was run separately on fresh databases and passes (listed per stage above).
-- **Before merging, run the full API suite in CI or on a machine with more memory** (`php -d memory_limit=2G artisan test`).
+- **CI (PR #175), 2026-10-27:** the full API suite (`php artisan test --stop-on-failure`, PHP 8.4, PostgreSQL 15)
+  **passed** on `6304168e` (the review changes) and again on `06bbe583` (dependency patches). All 21 PR checks pass,
+  including Playwright E2E (auth/staff/admin), `next build`, Flutter tests, the Android debug build and the
+  security/dependency audits.
+- CI initially failed only on dependency audits (pre-existing advisories, also failing on `main`): fixed in
+  `06bbe583` by upgrading phpoffice/phpspreadsheet 5.10.0, next 16.4.3, zod 4.6.7 and follow-redirects 1.16.2.
+  The Next.js upgrade resolves decision 8 and unblocks `next build`.

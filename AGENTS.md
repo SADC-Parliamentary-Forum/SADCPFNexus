@@ -32,7 +32,7 @@ PostgreSQL data (including seeded demo data) persists across sessions. DB role `
 ### Known pre-existing test issues (verified 2026-10-27)
 - The two previously listed failures (`ExternalWorkplanAuthTest::test_workplan_view_alone…`, mobile `formatSaCurrency` NAD) now pass.
 - Web `npm run test:unit`: 12 static UI-convention checks fail on `HEAD` as well (e.g. `native window.alert…`, `operational … gold chrome`, Procurement sidebar child count).
-- `next build` compiles, then exits with `SecurityFatalError` because the installed Next.js 16.4.0 has a published advisory — upgrade Next.js to unblock builds.
+- `next build` refuses to run on a Next.js version with a published security advisory (`SecurityFatalError`); keep `next` patched (16.4.3 as of 2026-10-27).
 - A single-process `php artisan test` over the whole suite can exhaust a 512 MB `memory_limit` in dompdf-heavy tests; run with `php -d memory_limit=2G artisan test`.
 - `RefreshDatabase` re-running `migrate:fresh` on an already-populated test DB can exceed PostgreSQL's default `max_locks_per_transaction` (~600 tables); raise it (e.g. 1024) or use a freshly created empty test database.
 
