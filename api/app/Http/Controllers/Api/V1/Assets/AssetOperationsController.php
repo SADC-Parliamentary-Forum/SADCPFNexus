@@ -88,12 +88,39 @@ class AssetOperationsController extends Controller
     {
         $query = AssetCheckout::query()
             ->where('tenant_id', $request->user()->tenant_id)
-            ->with(['asset:id,asset_code,tag_number,name,status', 'borrower:id,name']);
-        if ($request->boolean('open')) {
-            $query->whereNull('returned_at');
+            ->with(['asset:id,asset_code,tag_number,name,status', 'borrower:id,name,email']);
+
+        // status: open | overdue | returned | all. The legacy `open=1` flag maps to "open".
+        $status = $request->input('status', $request->boolean('open') ? 'open' : 'all');
+        match ($status) {
+            'open' => $query->whereNull('returned_at'),
+            'overdue' => $query->whereNull('returned_at')
+                ->whereNotNull('expected_return_at')
+                ->where('expected_return_at', '<', now()),
+            'returned' => $query->whereNotNull('returned_at'),
+            default => null,
+        };
+
+        $search = trim((string) $request->input('search', ''));
+        if ($search !== '') {
+            $term = '%'.$search.'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('purpose', 'ilike', $term)
+                    ->orWhereHas('asset', fn ($a) => $a->where(function ($a) use ($term) {
+                        $a->where('name', 'ilike', $term)
+                            ->orWhere('tag_number', 'ilike', $term)
+                            ->orWhere('asset_code', 'ilike', $term)
+                            ->orWhere('serial_number', 'ilike', $term);
+                    }))
+                    ->orWhereHas('borrower', fn ($b) => $b->where(function ($b) use ($term) {
+                        $b->where('name', 'ilike', $term)->orWhere('email', 'ilike', $term);
+                    }));
+            });
         }
 
-        return response()->json($query->orderByDesc('id')->paginate($request->integer('per_page', 50)));
+        $perPage = min(max($request->integer('per_page', 50), 1), 100);
+
+        return response()->json($query->orderByDesc('id')->paginate($perPage));
     }
 
     public function initiateTransfer(Request $request, Asset $asset): JsonResponse

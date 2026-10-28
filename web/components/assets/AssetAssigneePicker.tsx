@@ -13,6 +13,7 @@ export function AssetAssigneePicker({
   disabled,
   required,
   hint,
+  includeInvited = true,
 }: {
   id: string;
   label: string;
@@ -21,6 +22,8 @@ export function AssetAssigneePicker({
   disabled?: boolean;
   required?: boolean;
   hint?: string;
+  /** List invited (not yet activated) users too; off where the action needs an active account. */
+  includeInvited?: boolean;
 }) {
   const { t } = useI18n();
   const department = assigneeDepartmentName(value);
@@ -39,7 +42,7 @@ export function AssetAssigneePicker({
         placeholder={t("assets.searchAssignee")}
         dataTestId="asset-assignee-picker"
         fetchOptions={async (search) => {
-          const r = await tenantUsersApi.list({ search: search || undefined, include_invited: true });
+          const r = await tenantUsersApi.list({ search: search || undefined, include_invited: includeInvited });
           return r.data.data ?? [];
         }}
         getId={(u) => u.id}

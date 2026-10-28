@@ -5,6 +5,7 @@ namespace Tests\Feature\Assets;
 use App\Models\Asset;
 use App\Models\AssetAssignmentHistory;
 use App\Models\AssetCategory;
+use App\Models\AssetCheckout;
 use App\Models\AssetConditionAssessment;
 use App\Models\AssetHandover;
 use App\Models\AssetHandoverLine;
@@ -566,6 +567,61 @@ class AssetIssuanceHandoverTest extends TestCase
             'purpose' => 'Loan while reserved',
         ])->assertStatus(422);
         $this->assertSame($handoverId, $asset->fresh()->reserved_handover_id);
+    }
+
+    public function test_checkout_list_filters_by_status_and_searches_asset_and_borrower(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $borrower = $this->makeUser('staff', $tenant);
+        $borrower->forceFill(['name' => 'Thabo Borrower'])->save();
+        $this->seedCategory($tenant);
+        $batchId = $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Projector lot', 'qty' => 2, 'category' => 'ICT', 'subcategory_code' => 'LT',
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-batches/{$batchId}/create-assets", ['name' => 'Epson Projector'])->assertOk();
+        [$late, $back] = Asset::query()->where('acquisition_batch_id', $batchId)->orderBy('id')->get()->all();
+
+        foreach ([$late, $back] as $asset) {
+            $http->postJson("/api/v1/assets/{$asset->id}/checkout", [
+                'borrower_id' => $borrower->id,
+                'purpose' => 'Regional workshop',
+                'expected_return_at' => now()->addDays(3)->toDateString(),
+            ])->assertCreated();
+        }
+        $http->postJson("/api/v1/assets/{$back->id}/return-checkout", ['condition_in' => 'good'])->assertOk();
+        AssetCheckout::query()->where('asset_id', $late->id)->update(['expected_return_at' => now()->subDays(2)]);
+
+        $ids = fn (string $query) => array_column($http->getJson('/api/v1/assets/checkouts?'.$query)->assertOk()->json('data'), 'asset_id');
+
+        $this->assertSame([$late->id], $ids('status=open'));
+        $this->assertSame([$late->id], $ids('open=1'));
+        $this->assertSame([$late->id], $ids('status=overdue'));
+        $this->assertSame([$back->id], $ids('status=returned'));
+        $this->assertCount(2, $ids('status=all'));
+        $this->assertCount(2, $ids('status=all&search=thabo'));
+        $this->assertCount(2, $ids('search=EPSON'));
+        $this->assertSame([], $ids('search=no-such-thing'));
+    }
+
+    public function test_batch_list_search_matches_reference_item_and_supplier(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $this->seedCategory($tenant);
+        $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Dell Latitude laptops', 'qty' => 1, 'category' => 'ICT', 'supplier_name' => 'Acme Traders',
+        ])->assertCreated();
+        $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Office chairs', 'qty' => 1, 'category' => 'ICT',
+        ])->assertCreated();
+
+        $names = fn (string $q) => array_column($http->getJson('/api/v1/asset-batches?search='.$q)->assertOk()->json('data'), 'description');
+
+        $this->assertSame(['Dell Latitude laptops'], $names('dell'));
+        $this->assertSame(['Dell Latitude laptops'], $names('acme'));
+        $this->assertSame(['Office chairs'], $names('CHAIR'));
+        $this->assertCount(2, $http->getJson('/api/v1/asset-batches')->assertOk()->json('data'));
     }
 
     public function test_transfer_dispute_keeps_current_custodian(): void
