@@ -1954,6 +1954,7 @@ export interface Asset {
   } | null;
   location_id?: number | null;
   location?: { id: number; name: string; code?: string } | null;
+  legacy_location?: string | null;
   home_location_id?: number | null;
   ownership_type?: string | null;
   condition?: string | null;
@@ -1974,6 +1975,9 @@ export interface Asset {
   qr_path?: string | null;
   qr_url?: string | null;
   serial_number?: string | null;
+  manufacturer?: string | null;
+  model?: string | null;
+  serial_duplicate_override?: boolean;
   tag_number?: string | null;
   label_status?: string | null;
   acknowledgement_at?: string | null;
@@ -2000,7 +2004,7 @@ export interface AssetRequest {
 }
 
 export const assetsApi = {
-  list: (params?: { assigned_to?: string; category?: string; status?: string; search?: string; per_page?: number; page?: number }) =>
+  list: (params?: { assigned_to?: string; category?: string; status?: string; search?: string; serial?: "missing" | "present"; per_page?: number; page?: number }) =>
     api.get<AssetListResponse>("/assets", { params }),
   assignedToMe: (params?: { per_page?: number; page?: number }) =>
     api.get<AssetListResponse>("/assets/assigned-to-me", { params }),
@@ -2022,7 +2026,17 @@ export const assetsApi = {
     useful_life_years?: number;
     salvage_value?: number;
     depreciation_method?: string;
+    serial_number?: string | null;
+    manufacturer?: string | null;
+    model?: string | null;
+    allow_serial_duplicate?: boolean;
   }) => api.put<Asset>(`/assets/${id}`, data),
+  updateIdentifiers: (id: number, data: {
+    serial_number?: string | null;
+    manufacturer?: string | null;
+    model?: string | null;
+    allow_serial_duplicate?: boolean;
+  }) => api.patch<Asset>(`/assets/${id}/identifiers`, data),
   create: (data: {
     asset_code: string;
     name: string;
@@ -2040,6 +2054,10 @@ export const assetsApi = {
     useful_life_years?: number;
     salvage_value?: number;
     depreciation_method?: string;
+    serial_number?: string;
+    manufacturer?: string;
+    model?: string;
+    allow_serial_duplicate?: boolean;
   }) => api.post<Asset>("/assets", data),
   capitalise: (id: number, data: {
     asset_code?: string;

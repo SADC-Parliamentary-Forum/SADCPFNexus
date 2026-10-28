@@ -9,6 +9,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { assigneeDepartmentName, formatAssigneeLabel, tenantUserFromAsset } from "@/lib/asset-assignee";
 import { createFilePreviewUrl } from "@/lib/filePreview";
+import { AssetIdentifierFields, EMPTY_IDENTIFIERS, isSerialConflict, type AssetIdentifiers } from "@/components/assets/AssetIdentifierFields";
 
 const STATUSES = ["active", "service_due", "loan_out", "retired"] as const;
 const DEPRECIATION_METHODS = [
@@ -85,6 +86,9 @@ export default function EditAssetPage() {
   const [usefulLifeYears, setUsefulLifeYears] = useState("");
   const [salvageValue, setSalvageValue] = useState("");
   const [depreciationMethod, setDepreciationMethod] = useState<string>("straight_line");
+  const [identifiers, setIdentifiers] = useState<AssetIdentifiers>(EMPTY_IDENTIFIERS);
+  const [serialConflict, setSerialConflict] = useState(false);
+  const [allowSerialDuplicate, setAllowSerialDuplicate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [allowed, setAllowed] = useState<boolean | null>(null);
@@ -121,6 +125,11 @@ export default function EditAssetPage() {
         setUsefulLifeYears(a.useful_life_years != null ? String(a.useful_life_years) : "");
         setSalvageValue(a.salvage_value != null ? String(a.salvage_value) : "");
         setDepreciationMethod(a.depreciation_method ?? "straight_line");
+        setIdentifiers({
+          serial_number: a.serial_number ?? "",
+          manufacturer: a.manufacturer ?? "",
+          model: a.model ?? "",
+        });
       })
       .catch(() => {
         setError("Failed to load asset.");
@@ -206,6 +215,10 @@ export default function EditAssetPage() {
         useful_life_years: ul ?? undefined,
         salvage_value: salvageValue === "" ? undefined : Number(salvageValue),
         depreciation_method: depreciationMethod || "straight_line",
+        serial_number: identifiers.serial_number.trim() || null,
+        manufacturer: identifiers.manufacturer.trim() || null,
+        model: identifiers.model.trim() || null,
+        allow_serial_duplicate: allowSerialDuplicate || undefined,
       });
       if (invoiceFile) {
         await assetsApi.uploadInvoice(id, invoiceFile);
@@ -213,6 +226,10 @@ export default function EditAssetPage() {
       router.push("/assets");
       router.refresh();
     } catch (err: unknown) {
+      if (isSerialConflict(err)) {
+        setSerialConflict(true);
+        setCurrentStep(1);
+      }
       const data =
         err && typeof err === "object" && "response" in err
           ? (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }).response?.data
@@ -384,6 +401,22 @@ export default function EditAssetPage() {
                 </select>
               </div>
             </div>
+            <AssetIdentifierFields
+              idPrefix="edit-asset"
+              value={identifiers}
+              onChange={(next) => {
+                setIdentifiers(next);
+                setSerialConflict(false);
+                setAllowSerialDuplicate(false);
+              }}
+              disabled={submitting}
+              serialConflict={serialConflict}
+              allowDuplicate={allowSerialDuplicate}
+              onAllowDuplicateChange={setAllowSerialDuplicate}
+              inputClassName={inputCls}
+              labelClassName={labelCls}
+              showReprintNote
+            />
             <AssetAssigneePicker
               id="assigned_to"
               label="Assigned to"
@@ -529,6 +562,8 @@ export default function EditAssetPage() {
                 { label: "Name", value: name || "—" },
                 { label: "Category", value: categories.find((c) => c.code === category)?.name ?? category },
                 { label: "Status", value: status.replace("_", " ") },
+                { label: "Serial number", value: identifiers.serial_number.trim() || "—" },
+                { label: "Make / model", value: [identifiers.manufacturer.trim(), identifiers.model.trim()].filter(Boolean).join(" ") || "—" },
                 { label: "Assigned to", value: assignedUser ? formatAssigneeLabel(assignedUser) : "—" },
                 { label: "Invoice number", value: invoiceNumber || "—" },
                 { label: "Purchase value", value: pv != null ? `$${pv.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "—" },
