@@ -303,6 +303,51 @@ class AssetIssuanceHandoverTest extends TestCase
         ])->assertStatus(422);
     }
 
+    public function test_invited_user_can_be_person_target_and_is_listed_only_on_request(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $this->seedCategory($tenant);
+        $invited = $this->makeUser('staff', $tenant);
+        $invited->forceFill([
+            'name' => 'Thandi Invited',
+            'is_active' => false,
+            'account_status' => User::STATUS_INVITED,
+        ])->save();
+
+        // Asset assignee pickers opt in; other directory consumers stay active-only.
+        $this->assertNotContains($invited->id, array_column($http->getJson('/api/v1/tenant-users')->json('data'), 'id'));
+        $listed = $http->getJson('/api/v1/tenant-users?include_invited=1&search=thandi')->assertOk()->json('data');
+        $this->assertSame([$invited->id], array_column($listed, 'id'));
+        $this->assertSame(User::STATUS_INVITED, $listed[0]['account_status']);
+
+        $batchId = $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Lot', 'qty' => 1, 'category' => 'ICT', 'subcategory_code' => 'LT',
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-batches/{$batchId}/create-assets", ['name' => 'Laptop'])->assertOk();
+        $asset = Asset::query()->where('acquisition_batch_id', $batchId)->first();
+
+        $http->postJson('/api/v1/asset-handovers', [
+            'type' => 'issue',
+            'custody_target_type' => 'person',
+            'to_user_id' => $invited->id,
+            'asset_ids' => [$asset->id],
+        ])->assertCreated();
+    }
+
+    public function test_asset_register_search_is_case_insensitive(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $this->seedCategory($tenant);
+        $batchId = $http->postJson('/api/v1/asset-batches', [
+            'description' => 'Lot', 'qty' => 1, 'category' => 'ICT', 'subcategory_code' => 'LT',
+        ])->json('data.id');
+        $http->postJson("/api/v1/asset-batches/{$batchId}/create-assets", ['name' => 'Dell Latitude'])->assertOk();
+
+        $this->assertCount(1, $http->getJson('/api/v1/assets?search=dell latitude')->assertOk()->json('data'));
+    }
+
     public function test_public_qr_still_redacts_and_financials_remain_sod(): void
     {
         $tenant = Tenant::factory()->create();

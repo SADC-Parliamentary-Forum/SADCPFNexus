@@ -321,11 +321,14 @@ export interface TenantUserOption {
   job_title?: string | null;
   department?: string | null;
   department_id?: number | null;
+  account_status?: string | null;
 }
 
 export const tenantUsersApi = {
-  list: (params?: { search?: string }) =>
-    api.get<{ data: TenantUserOption[] }>("/tenant-users", { params }),
+  list: (params?: { search?: string; include_invited?: boolean }) =>
+    api.get<{ data: TenantUserOption[] }>("/tenant-users", {
+      params: params ? { ...params, include_invited: params.include_invited ? 1 : undefined } : undefined,
+    }),
 };
 
 // ─── Calendar (Public Holidays, UN Days) ─────────────────────────────────────

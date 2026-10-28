@@ -64,10 +64,10 @@ class AssetController extends Controller
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('asset_code', 'like', "%{$search}%")
-                    ->orWhere('tag_number', 'like', "%{$search}%")
-                    ->orWhere('serial_number', 'like', "%{$search}%");
+                $q->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('asset_code', 'ilike', "%{$search}%")
+                    ->orWhere('tag_number', 'ilike', "%{$search}%")
+                    ->orWhere('serial_number', 'ilike', "%{$search}%");
             });
         }
 
@@ -469,10 +469,10 @@ class AssetController extends Controller
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('asset_code', 'like', "%{$search}%")
-                    ->orWhere('tag_number', 'like', "%{$search}%")
-                    ->orWhere('serial_number', 'like', "%{$search}%");
+                $q->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('asset_code', 'ilike', "%{$search}%")
+                    ->orWhere('tag_number', 'ilike', "%{$search}%")
+                    ->orWhere('serial_number', 'ilike', "%{$search}%");
             });
         }
     }
