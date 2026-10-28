@@ -250,10 +250,10 @@ Run the exact same `REVIEW_PROMPT` through Codex. First write the prompt to a ra
 Then pipe it via stdin and capture visible output with `tee`:
 
 ```bash
-codex exec --full-auto - < /tmp/review-prompt-<random>.txt | tee /tmp/code-review-turbo-codex-<random>.txt
+codex exec --sandbox read-only - < /tmp/review-prompt-<random>.txt | tee /tmp/code-review-turbo-codex-<random>.txt
 ```
 
-The `--full-auto` flag prevents Codex from prompting for approval on shell commands, such as EXPLAIN queries. The `-` tells Codex to read the prompt from stdin. Use the saved Codex output file during cross-reference.
+`--sandbox read-only` lets Codex read the repository and run read-only commands, but not write files or reach the network. Do not use `--full-auto`: the prompt contains the PR diff, which is untrusted input, and `--full-auto` would let instructions hidden in it run commands with write access on the reviewer's machine. If a finding needs a database EXPLAIN, verify it yourself in Step 4. The `-` tells Codex to read the prompt from stdin. Use the saved Codex output file during cross-reference.
 
 ## Step 4: Cross-Reference and Validate
 
