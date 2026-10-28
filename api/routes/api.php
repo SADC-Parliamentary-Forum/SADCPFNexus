@@ -1752,6 +1752,7 @@ Route::prefix('v1')->group(function () {
         Route::get('assets/{asset}/custody-history', [\App\Http\Controllers\Api\V1\Assets\AssetHandoverController::class, 'custodyHistory']);
         Route::get('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'show']);
         Route::put('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'update']);
+        Route::patch('assets/{asset}/identifiers', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'updateIdentifiers']);
         Route::delete('assets/{asset}', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'destroy']);
         Route::get('assets/{asset}/qr', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'qr']);
         Route::post('assets/{asset}/invoice', [\App\Http\Controllers\Api\V1\Assets\AssetController::class, 'uploadInvoice']);

@@ -117,9 +117,14 @@ export default function AssetLabelsPage() {
           subtitle={t("assets.labels.subtitle")}
           breadcrumbs={<PageBreadcrumbs items={[{ label: "assets.labels.title" }]} />}
           actions={
-            <Link href="/assets/labels/templates" className="btn-secondary">
-              {t("assets.labels.editTemplates")}
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/assets/serials" className="btn-secondary" data-testid="labels-capture-serials">
+                {t("assets.serials.openCapture")}
+              </Link>
+              <Link href="/assets/labels/templates" className="btn-secondary">
+                {t("assets.labels.editTemplates")}
+              </Link>
+            </div>
           }
         />
       </div>
