@@ -321,11 +321,14 @@ export interface TenantUserOption {
   job_title?: string | null;
   department?: string | null;
   department_id?: number | null;
+  account_status?: string | null;
 }
 
 export const tenantUsersApi = {
-  list: (params?: { search?: string }) =>
-    api.get<{ data: TenantUserOption[] }>("/tenant-users", { params }),
+  list: (params?: { search?: string; include_invited?: boolean }) =>
+    api.get<{ data: TenantUserOption[] }>("/tenant-users", {
+      params: params ? { ...params, include_invited: params.include_invited ? 1 : undefined } : undefined,
+    }),
 };
 
 // ─── Calendar (Public Holidays, UN Days) ─────────────────────────────────────
@@ -1915,8 +1918,17 @@ export interface AssetCategory {
   useful_life_years?: number | null;
 }
 
+export interface AssetSubcategory {
+  id: number;
+  asset_category_id: number;
+  code: string;
+  name: string;
+}
+
 export const assetCategoriesApi = {
   list: () => api.get<{ data: AssetCategory[] }>("/asset-categories"),
+  subcategories: (categoryId: number) =>
+    api.get<{ data: AssetSubcategory[] }>(`/asset-categories/${categoryId}/subcategories`),
   create: (data: { name: string; code: string; sort_order?: number; useful_life_years?: number | null }) =>
     api.post<{ data: AssetCategory; message: string }>("/asset-categories", data),
   update: (id: number, data: { name?: string; code?: string; sort_order?: number; useful_life_years?: number | null }) =>
@@ -2293,7 +2305,7 @@ export const assetLifecycleApi = {
   numbering: () => api.get<{ data: Record<string, unknown> }>("/asset-settings/numbering"),
   updateNumbering: (data: Record<string, unknown>) =>
     api.put<{ data: Record<string, unknown> }>("/asset-settings/numbering", data),
-  checkouts: (params?: { open?: boolean; per_page?: number }) =>
+  checkouts: (params?: { open?: boolean; status?: "open" | "overdue" | "returned" | "all"; search?: string; per_page?: number; page?: number }) =>
     api.get<{ data: Array<Record<string, unknown>> }>("/assets/checkouts", { params }),
   transfers: (params?: { per_page?: number }) =>
     api.get<{ data: Array<Record<string, unknown>> }>("/assets/transfers", { params }),

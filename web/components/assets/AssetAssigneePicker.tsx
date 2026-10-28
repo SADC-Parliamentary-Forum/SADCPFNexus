@@ -13,6 +13,7 @@ export function AssetAssigneePicker({
   disabled,
   required,
   hint,
+  includeInvited = true,
 }: {
   id: string;
   label: string;
@@ -21,9 +22,13 @@ export function AssetAssigneePicker({
   disabled?: boolean;
   required?: boolean;
   hint?: string;
+  /** List invited (not yet activated) users too; off where the action needs an active account. */
+  includeInvited?: boolean;
 }) {
   const { t } = useI18n();
   const department = assigneeDepartmentName(value);
+  const withInvited = (label: string, u: TenantUserOption) =>
+    u.account_status === "invited" ? `${label} (${t("assets.assigneeInvited")})` : label;
 
   return (
     <div className="space-y-2">
@@ -37,11 +42,11 @@ export function AssetAssigneePicker({
         placeholder={t("assets.searchAssignee")}
         dataTestId="asset-assignee-picker"
         fetchOptions={async (search) => {
-          const r = await tenantUsersApi.list({ search: search || undefined });
+          const r = await tenantUsersApi.list({ search: search || undefined, include_invited: includeInvited });
           return r.data.data ?? [];
         }}
         getId={(u) => u.id}
-        getLabel={(u) => formatAssigneeLabel(u)}
+        getLabel={(u) => withInvited(formatAssigneeLabel(u), u)}
         renderOption={(u) => {
           const dept = assigneeDepartmentName(u);
           return (
@@ -50,7 +55,7 @@ export function AssetAssigneePicker({
                 {(u.name || "?").slice(0, 1).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-neutral-900 truncate">{u.name}</p>
+                <p className="text-sm font-medium text-neutral-900 truncate">{withInvited(u.name, u)}</p>
                 <p className="text-xs text-neutral-500 truncate">
                   {[u.email, dept].filter(Boolean).join(" · ") || t("assets.notAssigned")}
                 </p>
@@ -61,7 +66,8 @@ export function AssetAssigneePicker({
       />
       {value ? (
         <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2 text-xs text-neutral-700">
-          <p className="font-medium text-neutral-900">{value.name}</p>
+          <p className="font-medium text-neutral-900">{withInvited(value.name, value)}</p>
+          {value.account_status === "invited" ? <p className="text-amber-700">{t("assets.assigneeInvitedHint")}</p> : null}
           {value.email ? <p>{t("assets.assigneeEmail")}: {value.email}</p> : null}
           {department ? <p>{t("assets.assigneeDepartment")}: {department}</p> : null}
           {!required ? (

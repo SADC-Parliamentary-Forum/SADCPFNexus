@@ -497,6 +497,10 @@ const I18N_MIGRATED_PAGES = [
   "app/(app)/leave/calendar/page.tsx",
   "app/(app)/leave/settings/page.tsx",
   "app/(app)/leave/toil/page.tsx",
+  "app/(app)/assets/kits/page.tsx",
+  "app/(app)/assets/operations/page.tsx",
+  "app/(app)/assets/batches/page.tsx",
+  "app/(app)/assets/checkouts/page.tsx",
 ];
 
 test("migrated pages keep user-facing copy in the EN, FR and PT catalogs", () => {

@@ -703,7 +703,10 @@ class AssetHandoverService
         if (! $target) {
             throw ValidationException::withMessages(['to_user_id' => 'Recipient must belong to the same organisation.']);
         }
-        if (! $target->accountAllowsAuthentication() || ! $target->is_active) {
+        // Invited users have not activated yet but are not deactivated: custody
+        // can be prepared for them and they accept it after their first sign-in.
+        $invited = $target->account_status === User::STATUS_INVITED;
+        if (! $invited && (! $target->accountAllowsAuthentication() || ! $target->is_active)) {
             throw ValidationException::withMessages(['to_user_id' => 'Deactivated or separated staff cannot be a new custodian.']);
         }
     }

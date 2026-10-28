@@ -18,11 +18,24 @@ class AssetBatchController extends Controller
     public function index(Request $request): JsonResponse
     {
         $this->assertView($request->user());
-        $rows = AssetAcquisitionBatch::query()
+        $query = AssetAcquisitionBatch::query()
             ->where('tenant_id', $request->user()->tenant_id)
-            ->withCount('items')
-            ->orderByDesc('id')
-            ->paginate((int) $request->input('per_page', 25));
+            ->withCount('items');
+
+        $search = trim((string) $request->input('search', ''));
+        if ($search !== '') {
+            $term = '%'.$search.'%';
+            $query->where(function ($q) use ($term) {
+                $q->where('reference', 'ilike', $term)
+                    ->orWhere('description', 'ilike', $term)
+                    ->orWhere('category', 'ilike', $term)
+                    ->orWhere('supplier_name', 'ilike', $term)
+                    ->orWhere('invoice_number', 'ilike', $term);
+            });
+        }
+
+        $perPage = min(max((int) $request->input('per_page', 25), 1), 100);
+        $rows = $query->orderByDesc('id')->paginate($perPage);
 
         $rows->getCollection()->transform(function (AssetAcquisitionBatch $batch) {
             return $this->batches->present($batch);

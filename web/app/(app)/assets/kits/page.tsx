@@ -1,43 +1,52 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { assetsApi, type Asset, type AssetKit } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { SearchField } from "@/components/ui/SearchField";
+import { AssetMultiPicker } from "@/components/assets/AssetMultiPicker";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function AssetKitsPage() {
   const { t } = useI18n();
   const [kits, setKits] = useState<AssetKit[]>([]);
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [kitSearch, setKitSearch] = useState("");
   const [name, setName] = useState("");
-  const [selected, setSelected] = useState<number[]>([]);
+  const [selected, setSelected] = useState<Map<number, Asset>>(new Map());
+  const [reloadKey, setReloadKey] = useState(0);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function load() {
-    const [kitRes, assetRes] = await Promise.all([
-      assetsApi.kits(),
-      assetsApi.list({ per_page: 100 }),
-    ]);
+  async function loadKits() {
+    const kitRes = await assetsApi.kits();
     setKits(kitRes.data.data ?? []);
-    setAssets(assetRes.data.data ?? []);
   }
 
   useEffect(() => {
-    load().catch(() => setError(t("assets.loadFailed")));
+    loadKits().catch(() => setError(t("assets.loadFailed")));
   }, [t]);
+
+  const filteredKits = useMemo(() => {
+    const term = kitSearch.trim().toLowerCase();
+    if (!term) return kits;
+    return kits.filter((kit) =>
+      [kit.name, ...(kit.items ?? []).flatMap((item) => [item.tag_number, item.name])]
+        .some((v) => (v ?? "").toLowerCase().includes(term)),
+    );
+  }, [kits, kitSearch]);
 
   async function create(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
     try {
-      await assetsApi.createKit({ name: name.trim(), asset_ids: selected });
+      await assetsApi.createKit({ name: name.trim(), asset_ids: [...selected.keys()] });
       setName("");
-      setSelected([]);
-      await load();
+      setSelected(new Map());
+      await loadKits();
+      setReloadKey((n) => n + 1);
     } catch (err) {
       setError(apiErrorMessage(err, t("assets.assignFailed")));
     } finally {
@@ -54,25 +63,20 @@ export default function AssetKitsPage() {
       />
       {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
       <form onSubmit={create} className="card space-y-3 p-4" data-testid="kit-create-form">
-        <label className="block text-sm">
+        <label htmlFor="kit-name-field" className="block text-sm">
           {t("assets.kits.name")}
-          <input className="form-input mt-1" value={name} onChange={(e) => setName(e.target.value)} required data-testid="kit-name" />
+          <input id="kit-name-field" className="form-input mt-1" value={name} onChange={(e) => setName(e.target.value)} required data-testid="kit-name" />
         </label>
-        <fieldset>
+        <fieldset className="space-y-2">
           <legend className="text-sm font-medium">{t("assets.handover.selectAssets")}</legend>
-          <div className="mt-2 max-h-48 overflow-auto space-y-1">
-            {assets.map((asset) => (
-              <label key={asset.id} className="flex items-center gap-2 text-sm" data-testid={`kit-asset-${asset.id}`}>
-                <input
-                  type="checkbox"
-                  checked={selected.includes(asset.id)}
-                  onChange={(e) => setSelected((cur) => e.target.checked ? [...cur, asset.id] : cur.filter((id) => id !== asset.id))}
-                />
-                <span className="font-mono text-xs">{asset.tag_number || asset.asset_code}</span>
-                <span>{asset.name}</span>
-              </label>
-            ))}
-          </div>
+          <AssetMultiPicker
+            selected={selected}
+            onChange={setSelected}
+            reloadKey={reloadKey}
+            testId="kit-assets"
+            searchTestId="kit-asset-search"
+            optionTestIdPrefix="kit-asset-"
+          />
         </fieldset>
         <button type="submit" className="btn-primary" disabled={busy || !name.trim()} data-testid="kit-create">{t("assets.kits.create")}</button>
       </form>
@@ -80,7 +84,9 @@ export default function AssetKitsPage() {
         <EmptyState title="assets.kits.empty" />
       ) : (
         <div className="space-y-3">
-          {kits.map((kit) => (
+          <SearchField value={kitSearch} onChange={setKitSearch} placeholder={t("assets.kits.searchKits")} testId="kit-search" />
+          {filteredKits.length === 0 ? <p className="text-sm text-neutral-500">{t("common.noResults")}</p> : null}
+          {filteredKits.map((kit) => (
             <article key={kit.id} className="card p-4" data-testid={`kit-${kit.id}`}>
               <h2 className="font-semibold">{kit.name}</h2>
               <ul className="mt-2 text-sm text-neutral-700">

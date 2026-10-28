@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 import api from "@/lib/api";
 import { assetsApi, type Asset } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { AssetPicker } from "@/components/assets/AssetPicker";
 
 type AssetOption = { id: number; asset_code: string; name: string; status: string; book_value?: number };
 type Disposal = {
@@ -40,7 +41,7 @@ export default function AssetDisposalPage() {
 function AssetDisposalPageInner() {
   const searchParams = useSearchParams();
   const [rows, setRows] = useState<Disposal[]>([]);
-  const [assets, setAssets] = useState<AssetOption[]>([]);
+  const [pickedAsset, setPickedAsset] = useState<Asset | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [selected, setSelected] = useState<Disposal | null>(null);
@@ -67,20 +68,8 @@ function AssetDisposalPageInner() {
     setRows(list);
   }
 
-  async function loadAssets() {
-    try {
-      const r = await api.get<{ data: AssetOption[] }>("/assets", { params: { per_page: 100 } });
-      const body = r.data as { data?: AssetOption[] };
-      const list = Array.isArray(body.data) ? body.data : [];
-      setAssets(list.filter((a) => !["retired", "disposed", "sold", "written_off", "scrapped", "donated_out"].includes(a.status)));
-    } catch {
-      setAssets([]);
-    }
-  }
-
   useEffect(() => {
     load().catch(() => setRows([]));
-    loadAssets();
   }, []);
 
   useEffect(() => {
@@ -91,10 +80,7 @@ function AssetDisposalPageInner() {
     assetsApi.get(Number(assetId)).then((res) => {
       const asset = res.data as Asset;
       if (!asset?.id) return;
-      setAssets((prev) => (prev.some((row) => row.id === asset.id) ? prev : [
-        { id: asset.id, asset_code: asset.asset_code, name: asset.name, status: asset.status },
-        ...prev,
-      ]));
+      setPickedAsset(asset);
     }).catch(() => undefined);
   }, [searchParams]);
 
@@ -113,6 +99,7 @@ function AssetDisposalPageInner() {
       setMsg("Disposal request created.");
       setShowCreate(false);
       setForm({ asset_id: "", reason: "obsolete", method: "scrap", justification: "", estimated_value: "" });
+      setPickedAsset(null);
       await load();
     } catch (error: unknown) {
       setErr(error instanceof Error ? error.message : "Failed to create disposal.");
@@ -165,22 +152,18 @@ function AssetDisposalPageInner() {
         <form onSubmit={createDisposal}>
           <FormSection title="Create disposal request" icon="delete_forever" dense>
             <div className="space-y-3">
-          <FormField label="Asset" htmlFor="disposal-asset" required>
-            <select
-              id="disposal-asset"
-              className="form-input w-full"
-              required
-              value={form.asset_id}
-              onChange={(e) => setForm({ ...form, asset_id: e.target.value })}
-            >
-              <option value="">Select asset…</option>
-              {assets.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.asset_code} — {a.name}
-                </option>
-              ))}
-            </select>
-          </FormField>
+          <AssetPicker
+            id="disposal-asset"
+            label="Asset"
+            value={pickedAsset}
+            onSelect={(asset) => {
+              setPickedAsset(asset);
+              setForm((current) => ({ ...current, asset_id: asset ? String(asset.id) : "" }));
+            }}
+            status="live"
+            required
+            dataTestId="disposal-asset"
+          />
           <div className="grid gap-3 md:grid-cols-2">
             <FormField label="Reason" htmlFor="disposal-reason">
               <select id="disposal-reason" className="form-input w-full" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}>
