@@ -31,7 +31,7 @@ class AssetOperationsController extends Controller
         'invoice', 'quotation', 'po', 'delivery_note', 'warranty', 'procurement_approval',
         'inspection', 'maintenance_report', 'repair_invoice', 'insurance', 'police_report',
         'disposal_approval', 'transfer_acknowledgement', 'photo_primary', 'photo_front',
-        'photo_rear', 'photo_serial', 'photo_damage', 'photo_verification', 'photo_repair', 'other',
+        'photo_rear', 'photo_serial', 'photo_damage', 'photo_verification', 'photo_repair', 'photo_label', 'other',
     ];
 
     public function __construct(
@@ -265,12 +265,13 @@ class AssetOperationsController extends Controller
         if ($attachment->attachable_type !== Asset::class || (int) $attachment->attachable_id !== (int) $asset->id) {
             abort(404);
         }
-        if (! $attachment->storage_path || ! Storage::disk('local')->exists($attachment->storage_path)) {
+        $disk = Storage::disk($attachment->getStorageDisk());
+        if (! $attachment->storage_path || ! $disk->exists($attachment->storage_path)) {
             return response()->json(['message' => 'File not found.'], 404);
         }
 
-        return response()->streamDownload(function () use ($attachment) {
-            $stream = Storage::disk('local')->readStream($attachment->storage_path);
+        return response()->streamDownload(function () use ($attachment, $disk) {
+            $stream = $disk->readStream($attachment->storage_path);
             if (is_resource($stream)) {
                 fpassthru($stream);
             }

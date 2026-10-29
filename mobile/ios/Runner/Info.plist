@@ -46,7 +46,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Nexus uses the camera to scan asset QR labels so you can look up the current register record.</string>
+	<string>Nexus uses the camera to scan asset QR labels and to photograph labels stuck on devices as evidence.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Nexus uses Face ID to unlock the app quickly and securely without re-entering your password.</string>
 </dict>

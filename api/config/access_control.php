@@ -769,6 +769,10 @@ return [
         ['pattern' => 'api/v1/assets/{asset}/timeline', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin', 'assets.manage', 'assets.scan'],
         ]],
+        ['pattern' => 'api/v1/assets/{asset}/label-evidence*', 'permissions' => [
+            'READ' => ['assets.print', 'assets.view', 'assets.scan', 'assets.admin', 'assets.manage'],
+            'WRITE' => ['assets.print', 'assets.admin', 'assets.manage'],
+        ]],
         ['pattern' => 'api/v1/assets/{asset}/documents', 'permissions' => [
             'READ' => ['assets.view', 'assets.admin', 'assets.manage'],
             'WRITE' => ['assets.manage', 'assets.admin', 'assets.edit'],

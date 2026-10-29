@@ -11,12 +11,15 @@ import { useRowSelection } from "@/lib/useRowSelection";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { openPdfBlob } from "@/lib/openPdfBlob";
 
+const LABEL_STATES = ["never_printed", "printed", "applied", "reprint_required"];
+
 export default function AssetLabelsPage() {
   const { t } = useI18n();
   const [templates, setTemplates] = useState<AssetLabelTemplate[]>([]);
   const [templateId, setTemplateId] = useState<number | "">("");
   const [assets, setAssets] = useState<Asset[]>([]);
   const [reprint, setReprint] = useState<Asset[]>([]);
+  const [awaitingPhoto, setAwaitingPhoto] = useState<Asset[]>([]);
   const [search, setSearch] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,10 +40,28 @@ export default function AssetLabelsPage() {
       setTemplates([]);
       setError(t("assets.labels.loadTemplatesFailed"));
     });
+    loadQueues();
+  }, [t]);
+
+  // Arriving from a scan's "Print label" action: show and select that asset.
+  useEffect(() => {
+    const id = Number(new URLSearchParams(window.location.search).get("asset") || 0);
+    if (!id) return;
+    assetsApi.get(id).then((r) => {
+      setSearch(r.data.tag_number || r.data.asset_code || "");
+      selection.setSelected(new Set([id]));
+    }).catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function loadQueues() {
     assetLabelsApi.reprintQueue().then((r) => {
       setReprint((r.data as { data?: Asset[] }).data ?? []);
     }).catch(() => setReprint([]));
-  }, [t]);
+    assetLabelsApi.awaitingPhoto({ per_page: 100 }).then((r) => {
+      setAwaitingPhoto(r.data.data ?? []);
+    }).catch(() => setAwaitingPhoto([]));
+  }
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -92,6 +113,7 @@ export default function AssetLabelsPage() {
       const url = await openPdfBlob(blob, `asset-labels-${Date.now()}.pdf`);
       setPdfUrl(url);
       setMsg(isReprint ? t("assets.labels.reprintDone") : t("assets.labels.printDone"));
+      loadQueues();
     } catch (err: unknown) {
       let message = t("common.error");
       if (err instanceof Error && err.message) message = err.message;
@@ -153,10 +175,10 @@ export default function AssetLabelsPage() {
         >
           {selection.allSelectableSelected ? t("assets.labels.clearSelection") : t("assets.labels.selectAll")}
         </Button>
-        <Button type="button" disabled={printing} onClick={() => printSelected(false)}>
+        <Button type="button" disabled={printing || !templateId} onClick={() => printSelected(false)}>
           {printing ? t("assets.labels.printing") : t("assets.labels.printSelected")}
         </Button>
-        <Button type="button" variant="secondary" disabled={printing} onClick={() => printSelected(true)}>
+        <Button type="button" variant="secondary" disabled={printing || !templateId} onClick={() => printSelected(true)}>
           {t("assets.labels.reprint")}
         </Button>
       </div>
@@ -191,7 +213,11 @@ export default function AssetLabelsPage() {
                 </td>
                 <td>{asset.tag_number || asset.asset_code}</td>
                 <td>{asset.name}</td>
-                <td>{asset.label_status || asset.status}</td>
+                <td>
+                  {asset.label_status && LABEL_STATES.includes(asset.label_status)
+                    ? t(`assets.labels.state.${asset.label_status}`)
+                    : asset.label_status || asset.status}
+                </td>
               </tr>
             ))}
             {assets.length === 0 && <tr><td colSpan={4}>{t("common.noResults")}</td></tr>}
@@ -221,6 +247,23 @@ export default function AssetLabelsPage() {
           </li>
         ))}
         {reprint.length === 0 && <li>{t("common.noResults")}</li>}
+      </ul>
+
+      <div>
+        <h2 className="text-sm font-semibold">{t("assets.labels.awaitingPhoto")}</h2>
+        <p className="text-xs text-neutral-500">{t("assets.labels.awaitingPhotoHint")}</p>
+      </div>
+      <ul className="card divide-y divide-neutral-100 p-4 text-sm" data-testid="labels-awaiting-photo">
+        {awaitingPhoto.map((asset) => (
+          <li key={asset.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+            <span>{asset.tag_number || asset.asset_code} — {asset.name}</span>
+            <Link href={`/assets/${asset.id}?label=photo`} className="btn-secondary px-3 py-1 text-xs">
+              <span className="material-symbols-outlined mr-1 align-middle text-[16px]" aria-hidden="true">photo_camera</span>
+              {t("assets.labels.photograph")}
+            </Link>
+          </li>
+        ))}
+        {awaitingPhoto.length === 0 && <li>{t("common.noResults")}</li>}
       </ul>
 
       {pdfUrl && (

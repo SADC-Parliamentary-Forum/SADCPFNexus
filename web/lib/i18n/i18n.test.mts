@@ -102,6 +102,7 @@ test("shared chrome components translate user-facing copy", () => {
     "app/(app)/assets/operations/page.tsx",
     "app/(app)/assets/serials/page.tsx",
     "components/assets/AssetIdentifierFields.tsx",
+    "components/assets/LabelEvidenceCard.tsx",
     "app/(app)/assets/[id]/page.tsx",
     "app/(app)/audit/engagements/page.tsx",
     "components/audit/AuditChrome.tsx",
@@ -505,6 +506,7 @@ const I18N_MIGRATED_PAGES = [
   "app/(app)/assets/checkouts/page.tsx",
   "app/(app)/assets/serials/page.tsx",
   "components/assets/AssetIdentifierFields.tsx",
+  "components/assets/LabelEvidenceCard.tsx",
 ];
 
 test("migrated pages keep user-facing copy in the EN, FR and PT catalogs", () => {

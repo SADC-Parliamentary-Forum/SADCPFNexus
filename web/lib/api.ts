@@ -2299,6 +2299,7 @@ export interface AssetCustodyPeriod {
 export interface AssetTimelineEvent {
   id: number;
   event_type: string;
+  title?: string | null;
   summary?: string | null;
   occurred_at?: string | null;
   created_at?: string;
@@ -2667,6 +2668,22 @@ export interface AssetLabelTemplate {
   }> | null;
 }
 
+export interface AssetLabelEvidence {
+  asset_id: number;
+  label_status: "never_printed" | "printed" | "applied" | "reprint_required" | string;
+  label: {
+    id: number;
+    label_version: number;
+    status: string;
+    printed_at: string | null;
+    printed_by: { id: number; name: string } | null;
+    applied_at: string | null;
+    applied_by: { id: number; name: string } | null;
+    placement_note: string | null;
+    photo: { attachment_id: number; mime_type: string | null; size_bytes: number | null } | null;
+  } | null;
+}
+
 export const assetLabelsApi = {
   templates: (params?: { include_inactive?: boolean }) =>
     api.get<{ data: AssetLabelTemplate[] }>("/assets/labels/templates", { params }),
@@ -2677,6 +2694,18 @@ export const assetLabelsApi = {
   deleteTemplate: (id: number) => api.delete<{ message: string }>(`/assets/labels/templates/${id}`),
   reprintQueue: (params?: { per_page?: number }) => api.get("/assets/labels/reprint-queue", { params }),
   batches: () => api.get("/assets/labels/batches"),
+  awaitingPhoto: (params?: { search?: string; per_page?: number; page?: number }) =>
+    api.get<PaginatedResponse<Asset>>("/assets/labels/awaiting-photo", { params }),
+  evidence: (assetId: number) =>
+    api.get<{ data: AssetLabelEvidence }>(`/assets/${assetId}/label-evidence`),
+  uploadEvidence: (assetId: number, photo: Blob, note?: string, fileName = "label.jpg") => {
+    const form = new FormData();
+    form.append("photo", photo, fileName);
+    if (note) form.append("placement_note", note);
+    return api.post<{ data: AssetLabelEvidence }>(`/assets/${assetId}/label-evidence`, form);
+  },
+  evidencePhoto: (assetId: number) =>
+    api.get<Blob>(`/assets/${assetId}/label-evidence/photo`, { responseType: "blob" }),
   print: (data: Record<string, unknown>) =>
     api.post("/assets/labels/print", data, { responseType: "blob" }),
 };

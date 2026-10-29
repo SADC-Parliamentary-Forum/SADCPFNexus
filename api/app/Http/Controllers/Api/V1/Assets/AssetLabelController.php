@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Assets;
 
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
+use App\Models\AssetLabel;
 use App\Models\AssetLabelBatch;
 use App\Models\AssetLabelTemplate;
 use App\Models\User;
@@ -11,8 +12,10 @@ use App\Modules\Assets\Services\AssetLabelService;
 use App\Modules\Assets\Support\AssetLabelLayout;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AssetLabelController extends Controller
 {
@@ -90,6 +93,99 @@ class AssetLabelController extends Controller
             ->paginate($request->integer('per_page', 50));
 
         return response()->json($rows);
+    }
+
+    /** Printed labels with no placement photo yet. */
+    public function awaitingPhoto(Request $request): JsonResponse
+    {
+        $search = trim((string) $request->input('search', ''));
+        $rows = Asset::query()
+            ->where('tenant_id', $request->user()->tenant_id)
+            ->where('label_status', 'printed')
+            ->with('location:id,name')
+            ->when($search !== '', fn ($q) => $q->where(function ($q) use ($search) {
+                $q->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('tag_number', 'ilike', "%{$search}%")
+                    ->orWhere('asset_code', 'ilike', "%{$search}%");
+            }))
+            ->orderBy('tag_number')
+            ->paginate(min(max($request->integer('per_page', 50), 1), 100));
+
+        return response()->json($rows);
+    }
+
+    /** The current label of an asset and its placement evidence. */
+    public function evidence(Request $request, Asset $asset): JsonResponse
+    {
+        $this->assertAssetTenant($request, $asset);
+        $label = $this->labels->currentLabel($asset)?->load(['appliedBy:id,name', 'printedBy:id,name', 'appliedPhoto']);
+
+        return response()->json(['data' => $this->presentEvidence($asset, $label)]);
+    }
+
+    public function storeEvidence(Request $request, Asset $asset): JsonResponse
+    {
+        $this->assertAssetTenant($request, $asset);
+        $validated = $request->validate([
+            'photo' => ['required', 'file', 'max:15360'],
+            'placement_note' => ['nullable', 'string', 'max:255'],
+        ]);
+        $label = $this->labels->recordApplied($asset, $request->file('photo'), $validated['placement_note'] ?? null, $request->user());
+
+        return response()->json(['data' => $this->presentEvidence($asset->fresh(), $label)], 201);
+    }
+
+    /** Stream the current label's placement photo (also visible to label printers without register access). */
+    public function evidencePhoto(Request $request, Asset $asset): StreamedResponse|JsonResponse
+    {
+        $this->assertAssetTenant($request, $asset);
+        $photo = $this->labels->currentLabel($asset)?->appliedPhoto;
+        if (! $photo || ! $photo->storage_path) {
+            return response()->json(['message' => 'No placement photo.'], 404);
+        }
+        $disk = Storage::disk($photo->getStorageDisk());
+        if (! $disk->exists($photo->storage_path)) {
+            return response()->json(['message' => 'File not found.'], 404);
+        }
+
+        return $disk->response($photo->storage_path, $photo->original_filename, [
+            'Content-Type' => $photo->mime_type ?: 'image/jpeg',
+            'Cache-Control' => 'private, max-age=300',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    private function assertAssetTenant(Request $request, Asset $asset): void
+    {
+        if ((int) $asset->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function presentEvidence(Asset $asset, ?AssetLabel $label): array
+    {
+        return [
+            'asset_id' => $asset->id,
+            'label_status' => $asset->label_status ?: 'never_printed',
+            'label' => $label ? [
+                'id' => $label->id,
+                'label_version' => $label->label_version,
+                'status' => $label->status,
+                'printed_at' => $label->printed_at?->toIso8601String(),
+                'printed_by' => $label->printedBy?->only(['id', 'name']),
+                'applied_at' => $label->applied_at?->toIso8601String(),
+                'applied_by' => $label->appliedBy?->only(['id', 'name']),
+                'placement_note' => $label->placement_note,
+                'photo' => $label->appliedPhoto ? [
+                    'attachment_id' => $label->appliedPhoto->id,
+                    'mime_type' => $label->appliedPhoto->mime_type,
+                    'size_bytes' => $label->appliedPhoto->size_bytes,
+                ] : null,
+            ] : null,
+        ];
     }
 
     public function batches(Request $request): JsonResponse

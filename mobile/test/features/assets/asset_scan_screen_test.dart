@@ -16,7 +16,7 @@ class _MemoryAuthStorage extends AuthStorage {
   Future<void> clear() async {}
 }
 
-ApiClient _client({required bool authenticatedHit}) {
+ApiClient _client({required bool authenticatedHit, bool canPhotographLabel = false}) {
   final client = ApiClient(
     authStorage: _MemoryAuthStorage(),
     onUnauthorized: () {},
@@ -36,6 +36,14 @@ ApiClient _client({required bool authenticatedHit}) {
                     'id': 12,
                     'asset_tag': 'PF/ICT/LT/001',
                     'name': 'ThinkPad',
+                    if (canPhotographLabel)
+                      'allowed_actions': [
+                        {
+                          'key': 'photograph_label',
+                          'label': 'Photograph label',
+                          'href': '/assets/12?label=photo',
+                        },
+                      ],
                   },
                 },
               ),
@@ -190,6 +198,27 @@ void main() {
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.text('PF/ICT/LT/001'), findsOneWidget);
     expect(find.text('Open register'), findsOneWidget);
+    expect(find.byKey(const Key('scan-photograph-label')), findsNothing);
+  });
+
+  testWidgets('scan offers Photograph label when the label was printed', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWithValue(
+            _client(authenticatedHit: true, canPhotographLabel: true),
+          ),
+        ],
+        child: const MaterialApp(home: AssetScanScreen()),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).first, 'AbCdEfGhIjKlMnOpQrStUvWx');
+    await tester.tap(find.text('Look up'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(find.byKey(const Key('scan-photograph-label')), findsOneWidget);
+    expect(find.text('Photograph label'), findsOneWidget);
   });
 
   testWidgets('guest scan falls back to the public payload', (tester) async {
