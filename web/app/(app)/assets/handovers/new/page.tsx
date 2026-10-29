@@ -199,6 +199,7 @@ function NewHandoverForm() {
             <AssetAssigneePicker
               id="handover-delegate"
               label={t("assets.handover.delegate")}
+              includeInvited={false}
               value={delegateUser}
               onSelect={setDelegateUser}
               hint={t("assets.handover.delegateHint")}
