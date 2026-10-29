@@ -175,10 +175,10 @@ export default function AssetLabelsPage() {
         >
           {selection.allSelectableSelected ? t("assets.labels.clearSelection") : t("assets.labels.selectAll")}
         </Button>
-        <Button type="button" disabled={printing} onClick={() => printSelected(false)}>
+        <Button type="button" disabled={printing || !templateId} onClick={() => printSelected(false)}>
           {printing ? t("assets.labels.printing") : t("assets.labels.printSelected")}
         </Button>
-        <Button type="button" variant="secondary" disabled={printing} onClick={() => printSelected(true)}>
+        <Button type="button" variant="secondary" disabled={printing || !templateId} onClick={() => printSelected(true)}>
           {t("assets.labels.reprint")}
         </Button>
       </div>
