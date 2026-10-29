@@ -402,6 +402,22 @@ class AssetHandoverService
         $handover->paper_signed_at = now();
         $handover->save();
 
+        // The signed paper receipt covers every item the recipient has not disputed. Without
+        // this, a recipient who cannot sign in yet (e.g. still invited) would receive nothing.
+        if ($handover->type !== 'return') {
+            foreach ($handover->lines()->whereNull('recipient_response')->with('asset')->get() as $line) {
+                $line->recipient_response = 'received';
+                $line->line_status = 'received';
+                $line->responded_at = now();
+                $line->responded_by = $actor->id;
+                $line->save();
+                $this->timeline->record($line->asset, 'HANDOVER_LINE_RECEIVED', 'Handover line received (paper receipt '.$receipt.')', $actor, [
+                    'handover_id' => $handover->id,
+                    'paper_receipt_number' => $receipt,
+                ]);
+            }
+        }
+
         return $this->sign($handover, $actor, [
             'comment' => $data['comment'] ?? ('Paper receipt '.$receipt),
             'auth_level' => $data['auth_level'] ?? 'paper',
