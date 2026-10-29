@@ -3,18 +3,25 @@
 namespace App\Modules\Assets\Services;
 
 use App\Models\Asset;
+use App\Models\AssetLabel;
 use App\Models\AssetLabelBatch;
 use App\Models\AssetLabelBatchItem;
 use App\Models\AssetLabelTemplate;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Modules\Assets\Support\AssetLabelLayout;
+use App\Modules\Documents\Services\ModuleDocumentBridge;
+use App\Support\UploadContentSniffer;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class AssetLabelService
 {
+    /** Placement photos: camera images only. */
+    public const PHOTO_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+
     public function __construct(private readonly AssetQrService $qr) {}
 
     /**
@@ -23,7 +30,7 @@ class AssetLabelService
      */
     public function print(User $user, array $assetIds, int $templateId, bool $reprint = false, ?string $reason = null, ?int $importBatchId = null): array
     {
-        if (! $user->isSystemAdmin() && ! $user->hasPermissionTo('assets.print') && ! $user->hasPermissionTo('assets.admin') && ! $user->hasPermissionTo('assets.manage')) {
+        if (! self::canPrint($user)) {
             abort(403, 'Not authorised to print asset labels.');
         }
 
@@ -64,9 +71,9 @@ class AssetLabelService
 
             $recovery = app(AssetRecoveryContactService::class)->current((int) $user->tenant_id);
             foreach ($assets->values() as $i => $asset) {
-                $previous = \App\Models\AssetLabel::query()
+                $previous = AssetLabel::query()
                     ->where('asset_id', $asset->id)
-                    ->where('status', 'current')
+                    ->whereIn('status', AssetLabel::LIVE_STATUSES)
                     ->latest('id')
                     ->first();
                 $version = $previous ? ((int) $previous->label_version) + 1 : 1;
@@ -182,6 +189,94 @@ class AssetLabelService
     private function mmToPt(float $mm): float
     {
         return $mm * 2.83465;
+    }
+
+    public static function canPrint(User $user): bool
+    {
+        return $user->isSystemAdmin()
+            || $user->hasPermissionTo('assets.print')
+            || $user->hasPermissionTo('assets.admin')
+            || $user->hasPermissionTo('assets.manage');
+    }
+
+    /** The label that is (or should be) on the device, if one was ever printed. */
+    public function currentLabel(Asset $asset): ?AssetLabel
+    {
+        return AssetLabel::query()
+            ->where('asset_id', $asset->id)
+            ->whereIn('status', AssetLabel::LIVE_STATUSES)
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * Record that the current label was stuck on the device, with a photo of it in place.
+     * A new photo for the same label version replaces the evidence pointer; earlier
+     * photos stay in the asset's documents and in the audit log.
+     */
+    public function recordApplied(Asset $asset, UploadedFile $photo, ?string $note, User $user): AssetLabel
+    {
+        if (! self::canPrint($user)) {
+            abort(403, 'Not authorised to record label placement.');
+        }
+        if ((int) $asset->tenant_id !== (int) $user->tenant_id) {
+            abort(404);
+        }
+
+        $label = $this->currentLabel($asset);
+        if (! $label) {
+            abort(422, 'Print a label for this asset first.');
+        }
+
+        UploadContentSniffer::assertAllowed($photo, self::PHOTO_MIMES);
+        $note = is_string($note) && trim($note) !== '' ? trim($note) : null;
+
+        return DB::transaction(function () use ($asset, $photo, $note, $user, $label) {
+            $attachment = app(ModuleDocumentBridge::class)->storeAttachment($user, $asset, $photo, [
+                'document_type' => 'photo_label',
+                'title' => 'Label v'.$label->label_version.' placement - '.($asset->tag_number ?: $asset->asset_code),
+                'module' => 'assets',
+            ]);
+
+            $previousAttachmentId = $label->applied_attachment_id;
+            $label->applied_at = now();
+            $label->applied_by = $user->id;
+            $label->applied_attachment_id = $attachment->id;
+            $label->placement_note = $note;
+            $label->save();
+
+            // A label already flagged for reprint stays flagged: the photo shows the outdated label.
+            if ($label->status === 'current') {
+                $asset->label_status = 'applied';
+                $asset->save();
+            }
+
+            app(AssetTimelineService::class)->record(
+                $asset,
+                'LABEL_APPLIED',
+                'Label version '.$label->label_version.' applied - photo captured',
+                $user,
+                array_filter([
+                    'label_version' => $label->label_version,
+                    'attachment_id' => $attachment->id,
+                    'note' => $note,
+                ], fn ($v) => $v !== null)
+            );
+            AuditLog::record('assets.label_applied', [
+                'auditable_type' => AssetLabel::class,
+                'auditable_id' => $label->id,
+                'old_values' => ['applied_attachment_id' => $previousAttachmentId],
+                'new_values' => [
+                    'asset_id' => $asset->id,
+                    'label_version' => $label->label_version,
+                    'applied_attachment_id' => $attachment->id,
+                    'placement_note' => $note,
+                ],
+                'tags' => 'assets',
+            ]);
+
+            return $label->fresh(['appliedBy:id,name', 'printedBy:id,name', 'appliedPhoto']);
+        });
     }
 
     public function markReprintRequired(Asset $asset, string $reason): void

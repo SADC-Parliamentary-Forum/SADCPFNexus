@@ -1717,6 +1717,10 @@ Route::prefix('v1')->group(function () {
         Route::put('assets/labels/templates/{assetLabelTemplate}', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'updateTemplate']);
         Route::delete('assets/labels/templates/{assetLabelTemplate}', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'destroyTemplate']);
         Route::get('assets/labels/reprint-queue', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'reprintQueue']);
+        Route::get('assets/labels/awaiting-photo', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'awaitingPhoto']);
+        Route::get('assets/{asset}/label-evidence', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'evidence']);
+        Route::post('assets/{asset}/label-evidence', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'storeEvidence']);
+        Route::get('assets/{asset}/label-evidence/photo', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'evidencePhoto']);
         Route::get('assets/labels/batches', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'batches']);
         Route::post('assets/labels/print', [\App\Http\Controllers\Api\V1\Assets\AssetLabelController::class, 'print']);
 

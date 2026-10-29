@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
@@ -30,6 +32,8 @@ class _AssetScanScreenState extends ConsumerState<AssetScanScreen> {
   bool _cameraOn = false;
   bool _syncing = false;
   bool _basketBusy = false;
+  bool _labelUploading = false;
+  int _labelProgress = 0;
   String? _error;
   String? _handoverMessage;
   Map<String, dynamic>? _asset;
@@ -183,6 +187,88 @@ class _AssetScanScreenState extends ConsumerState<AssetScanScreen> {
     }
   }
 
+  bool get _canPhotographLabel {
+    final actions = _asset?['allowed_actions'];
+    return !_publicOnly &&
+        actions is List &&
+        actions.any((a) => a is Map && a['key'] == 'photograph_label');
+  }
+
+  /// Returns the note (possibly empty) or null when the user cancels.
+  Future<String?> _askPlacementNote(AppStrings strings) async {
+    final ctrl = TextEditingController();
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(strings.t('Photograph label')),
+          content: TextField(
+            key: const Key('label-photo-note'),
+            controller: ctrl,
+            maxLength: 255,
+            decoration: InputDecoration(
+              labelText: strings.t('Where is the label stuck? (optional)'),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(strings.t('Cancel')),
+            ),
+            FilledButton(
+              key: const Key('label-photo-upload'),
+              onPressed: () => Navigator.of(ctx).pop(ctrl.text.trim()),
+              child: Text(strings.t('Upload photo')),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      ctrl.dispose();
+    }
+  }
+
+  /// Photograph the label stuck on the device and upload it as placement evidence.
+  Future<void> _photographLabel() async {
+    final assetId = (_asset?['id'] as num?)?.toInt();
+    if (assetId == null) return;
+    final strings = AppStrings.of(ref.read(appLanguageProvider));
+    final shot = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      imageQuality: 80,
+      maxWidth: 2000,
+      maxHeight: 2000,
+    );
+    if (shot == null || !mounted) return;
+    final note = await _askPlacementNote(strings);
+    if (note == null || !mounted) return;
+
+    setState(() {
+      _labelUploading = true;
+      _labelProgress = 0;
+    });
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final form = FormData.fromMap({
+        'photo': MultipartFile.fromBytes(await shot.readAsBytes(), filename: shot.name),
+        if (note.isNotEmpty) 'placement_note': note,
+      });
+      await ref.read(apiClientProvider).dio.post(
+        '/assets/$assetId/label-evidence',
+        data: form,
+        onSendProgress: (sent, total) {
+          if (!mounted || total <= 0) return;
+          setState(() => _labelProgress = ((sent / total) * 100).round());
+        },
+      );
+      messenger.showSnackBar(SnackBar(content: Text(strings.t('Label photo saved.'))));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(strings.t('Could not upload the label photo.'))));
+    } finally {
+      if (mounted) setState(() => _labelUploading = false);
+    }
+  }
+
   Future<void> _enqueue(String result) async {
     final asset = _asset;
     final campaignId = int.tryParse(_campaignCtrl.text.trim()) ?? 0;
@@ -296,6 +382,20 @@ class _AssetScanScreenState extends ConsumerState<AssetScanScreen> {
               TextButton(
                 onPressed: () => context.push('/assets/inventory'),
                 child: const Text('Open register'),
+              ),
+            if (_canPhotographLabel)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.icon(
+                  key: const Key('scan-photograph-label'),
+                  onPressed: _labelUploading ? null : _photographLabel,
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: Text(
+                    _labelUploading
+                        ? '${strings.t('Uploading…')} $_labelProgress%'
+                        : strings.t('Photograph label'),
+                  ),
+                ),
               ),
             if (!_publicOnly) ...[
               TextButton(

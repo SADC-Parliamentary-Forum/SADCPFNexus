@@ -7,7 +7,8 @@ import { assetsApi, type Asset, type AssetCustodyPeriod, type AssetTimelineEvent
 import GenericDocumentsPanel from "@/components/ui/GenericDocumentsPanel";
 import { apiErrorMessage } from "@/lib/apiError";
 import { assigneeDepartmentName } from "@/lib/asset-assignee";
-import { canManageAssets, canManageHandovers, getStoredUser } from "@/lib/auth";
+import { canManageAssets, canManageHandovers, canPrintAssetLabels, getStoredUser } from "@/lib/auth";
+import { LabelEvidenceCard } from "@/components/assets/LabelEvidenceCard";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
@@ -61,6 +62,8 @@ export default function AssetViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(false);
+  const [canPrint, setCanPrint] = useState(false);
+  const [labelFocus, setLabelFocus] = useState(false);
   const [timeline, setTimeline] = useState<AssetTimelineEvent[]>([]);
   const [custody, setCustody] = useState<{ owner: string; history: AssetCustodyPeriod[] }>({
     owner: "SADC Parliamentary Forum",
@@ -75,7 +78,13 @@ export default function AssetViewPage() {
 
   useEffect(() => {
     setCanEdit(canManageAssets(getStoredUser()));
+    setCanPrint(canPrintAssetLabels(getStoredUser()));
+    setLabelFocus(new URLSearchParams(window.location.search).get("label") === "photo");
   }, []);
+
+  function reloadTimeline() {
+    void assetsApi.timeline(numericId).then((r) => setTimeline(r.data.data ?? [])).catch(() => undefined);
+  }
 
   useEffect(() => {
     if (!Number.isFinite(numericId) || numericId <= 0) {
@@ -181,6 +190,13 @@ export default function AssetViewPage() {
             <Field label={t("assets.view.fieldAge")} value={asset.age_display ?? "—"} />
             <Field label={t("assets.parent.title")} value={parentLabel} />
           </div>
+          <LabelEvidenceCard
+            assetId={asset.id}
+            assetTag={asset.tag_number || asset.asset_code}
+            canCapture={canPrint}
+            focusRequested={labelFocus}
+            onChanged={reloadTimeline}
+          />
           {canManageHandovers(getStoredUser()) && (
             <form
               className="card flex flex-wrap items-end gap-2 p-4"
@@ -282,7 +298,7 @@ export default function AssetViewPage() {
               <ol className="space-y-2 text-sm">
                 {timeline.map((ev) => (
                   <li key={ev.id} className="flex justify-between gap-3 border-b border-neutral-100 py-2">
-                    <span>{ev.summary || ev.event_type}</span>
+                    <span>{ev.title || ev.summary || ev.event_type}</span>
                     <span className="text-xs text-neutral-500">{ev.occurred_at || ev.created_at}</span>
                   </li>
                 ))}
@@ -297,6 +313,7 @@ export default function AssetViewPage() {
               { value: "police_report", label: "Police report" },
               { value: "photo_primary", label: "Primary photo" },
               { value: "photo_serial", label: "Serial plate" },
+              { value: "photo_label", label: "Label placement" },
               { value: "photo_damage", label: "Damage" },
               { value: "other", label: "Other" },
             ]}
