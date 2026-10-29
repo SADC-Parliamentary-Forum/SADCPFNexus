@@ -6,6 +6,7 @@ import { assetLabelsApi, type AssetLabelEvidence } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { formatDateShort } from "@/lib/utils";
+import { createFilePreviewUrl, previewableFileType } from "@/lib/filePreview";
 
 const MAX_EDGE_PX = 2000;
 const ACCEPTED = ["image/jpeg", "image/png", "image/webp"];
@@ -108,14 +109,22 @@ export function LabelEvidenceCard({
     if (!file) return;
     setError("");
     setNotice("");
-    if (file.type && !file.type.startsWith("image/")) {
+    // Only allow-listed image types; the preview is re-typed so it can never render as a page.
+    const type = previewableFileType(file);
+    if (!type || !ACCEPTED.includes(type)) {
       setError(t("assets.labelEvidence.notImage"));
       return;
     }
     setPreparing(true);
     const blob = await shrinkPhoto(file);
     setPreparing(false);
-    setDraft({ blob, url: URL.createObjectURL(blob) });
+    const photo = new File([blob], file.name, { type: ACCEPTED.includes(blob.type) ? blob.type : type });
+    const url = createFilePreviewUrl(photo);
+    if (!url) {
+      setError(t("assets.labelEvidence.notImage"));
+      return;
+    }
+    setDraft({ blob: photo, url });
   }
 
   async function save() {
