@@ -8,6 +8,7 @@ use App\Models\AssetHandover;
 use App\Models\AssetLocation;
 use App\Models\AssetSubcategory;
 use App\Models\Tenant;
+use App\Models\User;
 use Tests\TestCase;
 
 class AssetPhase2OpsTest extends TestCase
@@ -251,6 +252,33 @@ class AssetPhase2OpsTest extends TestCase
         $asset->refresh();
         $this->assertSame($recipient->id, (int) $asset->assigned_to);
         $this->assertSame('PF-PAPER-1', AssetHandover::find($id)->paper_receipt_number);
+    }
+
+    public function test_invited_recipient_gets_custody_from_a_manager_paper_receipt(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asAdmin($tenant);
+        $invited = $this->makeUser('staff', $tenant);
+        $invited->forceFill(['is_active' => false, 'account_status' => User::STATUS_INVITED])->save();
+        $asset = $this->makeAvailableAsset($tenant);
+
+        $created = $http->postJson('/api/v1/asset-handovers', [
+            'type' => 'issue',
+            'custody_target_type' => 'person',
+            'to_user_id' => $invited->id,
+            'asset_ids' => [$asset->id],
+        ])->assertCreated();
+        $id = $created->json('data.id');
+        $http->postJson("/api/v1/asset-handovers/{$id}/send")->assertOk();
+
+        // The recipient cannot sign in yet, so the manager records the signed paper receipt.
+        $http->postJson("/api/v1/asset-handovers/{$id}/paper-sign", [
+            'paper_receipt_number' => 'PF-PAPER-INV-1',
+        ])->assertOk()->assertJsonPath('data.status', 'accepted');
+
+        $asset->refresh();
+        $this->assertSame($invited->id, (int) $asset->assigned_to);
+        $this->assertSame('accepted', AssetHandover::find($id)->lines()->value('line_status'));
     }
 
     public function test_staff_without_asset_manage_cannot_create_kits(): void
