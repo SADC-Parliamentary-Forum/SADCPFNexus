@@ -6,6 +6,7 @@ use App\Models\Asset;
 use App\Models\AssetCategory;
 use App\Models\AssetTimelineEvent;
 use App\Models\Tenant;
+use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -172,6 +173,38 @@ class AssetSerialCaptureTest extends TestCase
         $this->patchJson('/api/v1/assets/'.$asset->id.'/identifiers', ['serial_number' => 'X12345'])->assertNotFound();
 
         $this->assertNull($asset->fresh()->serial_number);
+    }
+
+    public function test_edit_accepts_invited_assignee_and_resave_keeps_current_assignee(): void
+    {
+        [$tenant, $admin, $asset] = $this->setUpRegister();
+        $invited = $this->makeUser('staff', $tenant);
+        $invited->forceFill(['is_active' => false, 'account_status' => User::STATUS_INVITED])->save();
+        Sanctum::actingAs($admin);
+
+        // The assignee picker lists invited people, so the edit form must accept them.
+        $this->putJson('/api/v1/assets/'.$asset->id, $this->editPayload($asset, ['assigned_to' => $invited->id]))
+            ->assertOk()
+            ->assertJsonPath('assigned_to', $invited->id);
+
+        // Re-saving with the same assignee is not a new assignment, even if they were deactivated since.
+        $invited->forceFill(['account_status' => User::STATUS_SUSPENDED])->save();
+        $this->putJson('/api/v1/assets/'.$asset->id, $this->editPayload($asset->fresh(), [
+            'assigned_to' => $invited->id,
+            'name' => 'Laptop HP ProBook 450',
+        ]))->assertOk()->assertJsonPath('name', 'Laptop HP ProBook 450');
+
+        // A deactivated person still cannot be newly assigned.
+        $other = Asset::create([
+            'tenant_id' => $tenant->id,
+            'asset_code' => 'CE-0099',
+            'name' => 'Spare laptop',
+            'category' => 'it',
+            'status' => 'active',
+        ]);
+        $this->putJson('/api/v1/assets/'.$other->id, $this->editPayload($other, ['assigned_to' => $invited->id]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('assigned_to');
     }
 
     public function test_staff_cannot_set_serial(): void

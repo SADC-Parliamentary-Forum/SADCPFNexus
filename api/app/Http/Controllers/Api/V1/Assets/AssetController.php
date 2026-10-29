@@ -739,7 +739,10 @@ class AssetController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:32', Rule::in($allowedCategories)],
             'status' => ['nullable', 'string', 'in:active,service_due,loan_out,retired'],
-            'assigned_to' => ['nullable', 'integer', $this->tenantActiveUserRule((int) $user->tenant_id)],
+            // Re-saving with the current assignee is not a new assignment, so it is not re-checked.
+            'assigned_to' => (int) $request->input('assigned_to') === (int) $asset->assigned_to
+                ? ['nullable', 'integer']
+                : ['nullable', 'integer', $this->tenantActiveUserRule((int) $user->tenant_id)],
             'issued_at' => ['nullable', 'date'],
             'value' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -966,10 +969,16 @@ class AssetController extends Controller
         ];
     }
 
+    /**
+     * Assignable people: active users, or invited users who have not activated yet
+     * (same policy as handovers, see AssetHandoverService::assertPersonTarget).
+     */
     private function tenantActiveUserRule(int $tenantId): \Illuminate\Validation\Rules\Exists
     {
         return Rule::exists('users', 'id')->where(
-            fn ($q) => $q->where('tenant_id', $tenantId)->where('is_active', true)
+            fn ($q) => $q->where('tenant_id', $tenantId)->where(function ($q) {
+                $q->where('is_active', true)->orWhere('account_status', User::STATUS_INVITED);
+            })
         );
     }
 
