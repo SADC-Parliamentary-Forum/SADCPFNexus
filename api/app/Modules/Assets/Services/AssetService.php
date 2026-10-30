@@ -696,6 +696,39 @@ class AssetService
         }
     }
 
+    /**
+     * Apply serial number / manufacturer / model changes to an asset (not saved).
+     * Only keys present in $data are touched, so partial updates leave other identifiers alone.
+     *
+     * @param  array{serial_number?: string|null, manufacturer?: string|null, model?: string|null, allow_serial_duplicate?: bool|null}  $data
+     * @return array<string, array{0: mixed, 1: mixed}> changed field => [old, new]
+     */
+    public function applyIdentifiers(Asset $asset, array $data, User $user): array
+    {
+        $changes = [];
+        foreach (['serial_number', 'manufacturer', 'model'] as $field) {
+            if (! array_key_exists($field, $data)) {
+                continue;
+            }
+            $value = is_string($data[$field]) ? trim($data[$field]) : null;
+            $value = $value === '' ? null : $value;
+            if ($value === $asset->{$field}) {
+                continue;
+            }
+            if ($field === 'serial_number' && $value !== null) {
+                $allowDuplicate = (bool) ($data['allow_serial_duplicate'] ?? false);
+                $this->assertSerialAllowed((int) $user->tenant_id, $value, $asset->id, $allowDuplicate);
+                if ($allowDuplicate) {
+                    $asset->serial_duplicate_override = true;
+                }
+            }
+            $changes[$field] = [$asset->{$field}, $value];
+            $asset->{$field} = $value;
+        }
+
+        return $changes;
+    }
+
     private function assertSerialAllowed(int $tenantId, string $serial, ?int $ignoreId, bool $allowDuplicate): void
     {
         $exists = Asset::where('tenant_id', $tenantId)

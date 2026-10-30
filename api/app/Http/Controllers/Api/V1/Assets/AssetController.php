@@ -9,6 +9,7 @@ use App\Models\AssetSubcategory;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Modules\Assets\Export\AssetRegisterExportWorkbook;
+use App\Modules\Assets\Services\AssetLabelService;
 use App\Modules\Assets\Services\AssetNumberingService;
 use App\Modules\Assets\Services\AssetQrService;
 use App\Modules\Assets\Services\AssetRegisterClearService;
@@ -33,6 +34,7 @@ class AssetController extends Controller
         private readonly AssetNumberingService $numbering,
         private readonly AssetTimelineService $timeline,
         private readonly AssetRegisterClearService $registerClear,
+        private readonly AssetLabelService $labels,
     ) {}
 
     /**
@@ -62,12 +64,20 @@ class AssetController extends Controller
 
         $this->applyStatusFilter($query, $request->input('status'));
 
+        // ?serial=missing|present — used by the serial capture worklist.
+        $serialFilter = $request->input('serial');
+        if ($serialFilter === 'missing') {
+            $query->where(fn ($q) => $q->whereNull('serial_number')->orWhere('serial_number', ''));
+        } elseif ($serialFilter === 'present') {
+            $query->whereNotNull('serial_number')->where('serial_number', '!=', '');
+        }
+
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('asset_code', 'like', "%{$search}%")
-                    ->orWhere('tag_number', 'like', "%{$search}%")
-                    ->orWhere('serial_number', 'like', "%{$search}%");
+                $q->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('asset_code', 'ilike', "%{$search}%")
+                    ->orWhere('tag_number', 'ilike', "%{$search}%")
+                    ->orWhere('serial_number', 'ilike', "%{$search}%");
             });
         }
 
@@ -143,6 +153,10 @@ class AssetController extends Controller
             'budget_line' => ['nullable', 'string', 'max:128'],
             'condition' => ['nullable', 'string', 'max:64'],
             'department' => ['nullable', 'string', 'max:128'],
+            'serial_number' => ['nullable', 'string', 'max:128'],
+            'manufacturer' => ['nullable', 'string', 'max:128'],
+            'model' => ['nullable', 'string', 'max:128'],
+            'allow_serial_duplicate' => ['nullable', 'boolean'],
         ]);
 
         $purchaseValue = isset($validated['purchase_value']) ? (float) $validated['purchase_value'] : null;
@@ -186,6 +200,10 @@ class AssetController extends Controller
 
         $homeLocation = $validated['home_location_id'] ?? $validated['location_id'] ?? null;
 
+        // Validate the serial (duplicate check) before anything is written.
+        $identifiers = new Asset(['tenant_id' => $user->tenant_id]);
+        $this->assetService->applyIdentifiers($identifiers, $validated, $user);
+
         $asset = Asset::create([
             'tenant_id' => $user->tenant_id,
             'asset_code' => $code,
@@ -220,6 +238,10 @@ class AssetController extends Controller
             'budget_line' => $validated['budget_line'] ?? null,
             'condition' => $validated['condition'] ?? 'good',
             'owner_name' => 'SADC Parliamentary Forum',
+            'serial_number' => $identifiers->serial_number,
+            'manufacturer' => $identifiers->manufacturer,
+            'model' => $identifiers->model,
+            'serial_duplicate_override' => (bool) $identifiers->serial_duplicate_override,
         ]);
 
         $this->generateAndSaveQr($asset);
@@ -469,10 +491,10 @@ class AssetController extends Controller
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('asset_code', 'like', "%{$search}%")
-                    ->orWhere('tag_number', 'like', "%{$search}%")
-                    ->orWhere('serial_number', 'like', "%{$search}%");
+                $q->where('name', 'ilike', "%{$search}%")
+                    ->orWhere('asset_code', 'ilike', "%{$search}%")
+                    ->orWhere('tag_number', 'ilike', "%{$search}%")
+                    ->orWhere('serial_number', 'ilike', "%{$search}%");
             });
         }
     }
@@ -717,7 +739,10 @@ class AssetController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', 'max:32', Rule::in($allowedCategories)],
             'status' => ['nullable', 'string', 'in:active,service_due,loan_out,retired'],
-            'assigned_to' => ['nullable', 'integer', $this->tenantActiveUserRule((int) $user->tenant_id)],
+            // Re-saving with the current assignee is not a new assignment, so it is not re-checked.
+            'assigned_to' => (int) $request->input('assigned_to') === (int) $asset->assigned_to
+                ? ['nullable', 'integer']
+                : ['nullable', 'integer', $this->tenantActiveUserRule((int) $user->tenant_id)],
             'issued_at' => ['nullable', 'date'],
             'value' => ['nullable', 'numeric', 'min:0'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -729,6 +754,10 @@ class AssetController extends Controller
             'salvage_value' => ['nullable', 'numeric', 'min:0'],
             'depreciation_method' => ['nullable', 'string', 'in:straight_line,declining_balance'],
             'department' => ['nullable', 'string', 'max:128'],
+            'serial_number' => ['nullable', 'string', 'max:128'],
+            'manufacturer' => ['nullable', 'string', 'max:128'],
+            'model' => ['nullable', 'string', 'max:128'],
+            'allow_serial_duplicate' => ['nullable', 'boolean'],
         ]);
 
         $purchaseValue = isset($validated['purchase_value']) ? (float) $validated['purchase_value'] : null;
@@ -762,7 +791,12 @@ class AssetController extends Controller
         $asset->useful_life_years = $usefulLife;
         $asset->salvage_value = isset($validated['salvage_value']) ? (float) $validated['salvage_value'] : null;
         $asset->depreciation_method = $method;
+        $identifierChanges = $this->assetService->applyIdentifiers($asset, $validated, $user);
         $asset->save();
+
+        if ($identifierChanges !== []) {
+            $this->recordIdentifierChanges($asset, $identifierChanges, $user);
+        }
 
         if ($asset->asset_code !== $oldAssetCode || empty($asset->qr_token)) {
             $this->qr->generate($asset, $request->user(), (bool) $asset->qr_token);
@@ -776,6 +810,60 @@ class AssetController extends Controller
         }
 
         return response()->json($this->presentAsset($fresh, $user));
+    }
+
+    /**
+     * Record serial number, manufacturer and model only (serial capture worklist).
+     * Same auth as update; keys left out of the request are not touched.
+     */
+    public function updateIdentifiers(Request $request, Asset $asset): JsonResponse
+    {
+        $user = $request->user();
+        if (! $user->isSystemAdmin() && ! $user->hasPermissionTo('assets.admin') && ! $user->hasPermissionTo('assets.manage')) {
+            abort(403, 'Only system administrators or asset managers can edit assets.');
+        }
+        if ((int) $asset->tenant_id !== (int) $user->tenant_id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'serial_number' => ['sometimes', 'nullable', 'string', 'max:128'],
+            'manufacturer' => ['sometimes', 'nullable', 'string', 'max:128'],
+            'model' => ['sometimes', 'nullable', 'string', 'max:128'],
+            'allow_serial_duplicate' => ['nullable', 'boolean'],
+        ]);
+
+        $changes = $this->assetService->applyIdentifiers($asset, $validated, $user);
+        if ($changes !== []) {
+            $asset->save();
+            $this->recordIdentifierChanges($asset, $changes, $user);
+        }
+
+        return response()->json($this->presentAsset($asset, $user));
+    }
+
+    /**
+     * Audit and timeline entry for serial / manufacturer / model edits.
+     *
+     * @param  array<string, array{0: mixed, 1: mixed}>  $changes
+     */
+    private function recordIdentifierChanges(Asset $asset, array $changes, User $user): void
+    {
+        AuditLog::record('assets.identifiers_updated', [
+            'auditable_type' => Asset::class,
+            'auditable_id' => $asset->id,
+            'old_values' => array_map(fn ($c) => $c[0], $changes),
+            'new_values' => array_map(fn ($c) => $c[1], $changes),
+            'tags' => 'assets',
+        ]);
+        $title = isset($changes['serial_number']) ? 'Serial number recorded' : 'Make / model updated';
+        $this->timeline->record($asset, 'IDENTIFIERS_UPDATED', $title, $user, [
+            'fields' => array_keys($changes),
+        ]);
+        // Serial and model are printed on the label, so a printed label is now out of date.
+        if (isset($changes['serial_number']) || isset($changes['model'])) {
+            $this->labels->markReprintRequired($asset, 'SERIAL_OR_MODEL_CHANGED');
+        }
     }
 
     /**
@@ -881,10 +969,16 @@ class AssetController extends Controller
         ];
     }
 
+    /**
+     * Assignable people: active users, or invited users who have not activated yet
+     * (same policy as handovers, see AssetHandoverService::assertPersonTarget).
+     */
     private function tenantActiveUserRule(int $tenantId): \Illuminate\Validation\Rules\Exists
     {
         return Rule::exists('users', 'id')->where(
-            fn ($q) => $q->where('tenant_id', $tenantId)->where('is_active', true)
+            fn ($q) => $q->where('tenant_id', $tenantId)->where(function ($q) {
+                $q->where('is_active', true)->orWhere('account_status', User::STATUS_INVITED);
+            })
         );
     }
 

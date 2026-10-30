@@ -125,11 +125,14 @@ export interface TenantUserOption {
   job_title?: string | null;
   department?: string | null;
   department_id?: number | null;
+  account_status?: string | null;
 }
 
 export const tenantUsersApi = {
-  list: (params?: { search?: string }) =>
-    api.get<{ data: TenantUserOption[] }>("/tenant-users", { params }),
+  list: (params?: { search?: string; include_invited?: boolean }) =>
+    api.get<{ data: TenantUserOption[] }>("/tenant-users", {
+      params: params ? { ...params, include_invited: params.include_invited ? 1 : undefined } : undefined,
+    }),
 };
 
 // ─── Calendar (Public Holidays, UN Days) ─────────────────────────────────────
@@ -1727,8 +1730,17 @@ export interface AssetCategory {
   useful_life_years?: number | null;
 }
 
+export interface AssetSubcategory {
+  id: number;
+  asset_category_id: number;
+  code: string;
+  name: string;
+}
+
 export const assetCategoriesApi = {
   list: () => api.get<{ data: AssetCategory[] }>("/asset-categories"),
+  subcategories: (categoryId: number) =>
+    api.get<{ data: AssetSubcategory[] }>(`/asset-categories/${categoryId}/subcategories`),
   create: (data: { name: string; code: string; sort_order?: number; useful_life_years?: number | null }) =>
     api.post<{ data: AssetCategory; message: string }>("/asset-categories", data),
   update: (id: number, data: { name?: string; code?: string; sort_order?: number; useful_life_years?: number | null }) =>
@@ -1754,6 +1766,7 @@ export interface Asset {
   } | null;
   location_id?: number | null;
   location?: { id: number; name: string; code?: string } | null;
+  legacy_location?: string | null;
   home_location_id?: number | null;
   ownership_type?: string | null;
   condition?: string | null;
@@ -1774,6 +1787,9 @@ export interface Asset {
   qr_path?: string | null;
   qr_url?: string | null;
   serial_number?: string | null;
+  manufacturer?: string | null;
+  model?: string | null;
+  serial_duplicate_override?: boolean;
   tag_number?: string | null;
   label_status?: string | null;
   acknowledgement_at?: string | null;
@@ -1800,7 +1816,7 @@ export interface AssetRequest {
 }
 
 export const assetsApi = {
-  list: (params?: { assigned_to?: string; category?: string; status?: string; search?: string; per_page?: number; page?: number }) =>
+  list: (params?: { assigned_to?: string; category?: string; status?: string; search?: string; serial?: "missing" | "present"; per_page?: number; page?: number }) =>
     api.get<AssetListResponse>("/assets", { params }),
   assignedToMe: (params?: { per_page?: number; page?: number }) =>
     api.get<AssetListResponse>("/assets/assigned-to-me", { params }),
@@ -1822,7 +1838,17 @@ export const assetsApi = {
     useful_life_years?: number;
     salvage_value?: number;
     depreciation_method?: string;
+    serial_number?: string | null;
+    manufacturer?: string | null;
+    model?: string | null;
+    allow_serial_duplicate?: boolean;
   }) => api.put<Asset>(`/assets/${id}`, data),
+  updateIdentifiers: (id: number, data: {
+    serial_number?: string | null;
+    manufacturer?: string | null;
+    model?: string | null;
+    allow_serial_duplicate?: boolean;
+  }) => api.patch<Asset>(`/assets/${id}/identifiers`, data),
   create: (data: {
     asset_code: string;
     name: string;
@@ -1840,6 +1866,10 @@ export const assetsApi = {
     useful_life_years?: number;
     salvage_value?: number;
     depreciation_method?: string;
+    serial_number?: string;
+    manufacturer?: string;
+    model?: string;
+    allow_serial_duplicate?: boolean;
   }) => api.post<Asset>("/assets", data),
   capitalise: (id: number, data: {
     asset_code?: string;
@@ -2081,6 +2111,7 @@ export interface AssetCustodyPeriod {
 export interface AssetTimelineEvent {
   id: number;
   event_type: string;
+  title?: string | null;
   summary?: string | null;
   occurred_at?: string | null;
   created_at?: string;
@@ -2105,7 +2136,7 @@ export const assetLifecycleApi = {
   numbering: () => api.get<{ data: Record<string, unknown> }>("/asset-settings/numbering"),
   updateNumbering: (data: Record<string, unknown>) =>
     api.put<{ data: Record<string, unknown> }>("/asset-settings/numbering", data),
-  checkouts: (params?: { open?: boolean; per_page?: number }) =>
+  checkouts: (params?: { open?: boolean; status?: "open" | "overdue" | "returned" | "all"; search?: string; per_page?: number; page?: number }) =>
     api.get<{ data: Array<Record<string, unknown>> }>("/assets/checkouts", { params }),
   transfers: (params?: { per_page?: number }) =>
     api.get<{ data: Array<Record<string, unknown>> }>("/assets/transfers", { params }),
@@ -2449,6 +2480,22 @@ export interface AssetLabelTemplate {
   }> | null;
 }
 
+export interface AssetLabelEvidence {
+  asset_id: number;
+  label_status: "never_printed" | "printed" | "applied" | "reprint_required" | string;
+  label: {
+    id: number;
+    label_version: number;
+    status: string;
+    printed_at: string | null;
+    printed_by: { id: number; name: string } | null;
+    applied_at: string | null;
+    applied_by: { id: number; name: string } | null;
+    placement_note: string | null;
+    photo: { attachment_id: number; mime_type: string | null; size_bytes: number | null } | null;
+  } | null;
+}
+
 export const assetLabelsApi = {
   templates: (params?: { include_inactive?: boolean }) =>
     api.get<{ data: AssetLabelTemplate[] }>("/assets/labels/templates", { params }),
@@ -2459,6 +2506,18 @@ export const assetLabelsApi = {
   deleteTemplate: (id: number) => api.delete<{ message: string }>(`/assets/labels/templates/${id}`),
   reprintQueue: (params?: { per_page?: number }) => api.get("/assets/labels/reprint-queue", { params }),
   batches: () => api.get("/assets/labels/batches"),
+  awaitingPhoto: (params?: { search?: string; per_page?: number; page?: number }) =>
+    api.get<PaginatedResponse<Asset>>("/assets/labels/awaiting-photo", { params }),
+  evidence: (assetId: number) =>
+    api.get<{ data: AssetLabelEvidence }>(`/assets/${assetId}/label-evidence`),
+  uploadEvidence: (assetId: number, photo: Blob, note?: string, fileName = "label.jpg") => {
+    const form = new FormData();
+    form.append("photo", photo, fileName);
+    if (note) form.append("placement_note", note);
+    return api.post<{ data: AssetLabelEvidence }>(`/assets/${assetId}/label-evidence`, form);
+  },
+  evidencePhoto: (assetId: number) =>
+    api.get<Blob>(`/assets/${assetId}/label-evidence/photo`, { responseType: "blob" }),
   print: (data: Record<string, unknown>) =>
     api.post("/assets/labels/print", data, { responseType: "blob" }),
 };

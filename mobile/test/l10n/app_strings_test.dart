@@ -18,6 +18,8 @@ void main() {
       'Scan basket',
       'Add to basket',
       'Start draft handover',
+      'Photograph label',
+      'Upload photo',
     ];
     for (final key in keys) {
       expect(en.t(key), isNotEmpty);

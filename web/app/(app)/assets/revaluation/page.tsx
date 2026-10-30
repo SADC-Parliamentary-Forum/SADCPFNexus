@@ -5,6 +5,8 @@ import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import api from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { AssetPicker } from "@/components/assets/AssetPicker";
+import type { Asset } from "@/lib/api";
 
 type AssetOption = { id: number; asset_code: string; name: string; book_value?: number };
 type Revaluation = {
@@ -20,7 +22,7 @@ type Revaluation = {
 
 export default function AssetRevaluationPage() {
   const [rows, setRows] = useState<Revaluation[]>([]);
-  const [assets, setAssets] = useState<AssetOption[]>([]);
+  const [pickedAsset, setPickedAsset] = useState<Asset | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -38,9 +40,6 @@ export default function AssetRevaluationPage() {
 
   useEffect(() => {
     load().catch(() => setRows([]));
-    api.get<{ data: AssetOption[] }>("/assets", { params: { status: "active", per_page: 100 } })
-      .then((r) => setAssets(Array.isArray((r.data as { data?: AssetOption[] }).data) ? (r.data as { data: AssetOption[] }).data : []))
-      .catch(() => setAssets([]));
   }, []);
 
   async function create(e: FormEvent) {
@@ -55,6 +54,7 @@ export default function AssetRevaluationPage() {
       });
       setMsg("Revaluation requested.");
       setForm({ asset_id: "", proposed_value: "", reason: "", effective_date: new Date().toISOString().slice(0, 10) });
+      setPickedAsset(null);
       await load();
     } catch (error: unknown) {
       setErr(error instanceof Error ? error.message : "Failed to request revaluation.");
@@ -83,15 +83,19 @@ export default function AssetRevaluationPage() {
       <form onSubmit={create} className="card space-y-3 p-4">
         <h2 className="text-lg font-semibold">New revaluation</h2>
         <div className="grid gap-3 md:grid-cols-2">
-          <label htmlFor="assets-revaluation-asset-setform-select-bv" className="block text-sm">
-            Asset
-            <select id="assets-revaluation-asset-setform-select-bv" className="form-input mt-1 w-full" required value={form.asset_id} onChange={(e) => setForm({ ...form, asset_id: e.target.value })}>
-              <option value="">Select…</option>
-              {assets.map((a) => (
-                <option key={a.id} value={a.id}>{a.asset_code} — {a.name} (BV {a.book_value ?? "—"})</option>
-              ))}
-            </select>
-          </label>
+          <AssetPicker
+            id="assets-revaluation-asset-setform-select-bv"
+            label="Asset"
+            value={pickedAsset}
+            onSelect={(asset) => {
+              setPickedAsset(asset);
+              setForm((current) => ({ ...current, asset_id: asset ? String(asset.id) : "" }));
+            }}
+            status="live"
+            required
+            hint={pickedAsset && pickedAsset.book_value != null ? `Current book value: ${pickedAsset.book_value}` : undefined}
+            dataTestId="revaluation-asset"
+          />
           <label htmlFor="assets-revaluation-proposed-value-setform" className="block text-sm">
             Proposed value
             <input id="assets-revaluation-proposed-value-setform" type="number" min="0" step="0.01" required className="form-input mt-1 w-full" value={form.proposed_value} onChange={(e) => setForm({ ...form, proposed_value: e.target.value })} />

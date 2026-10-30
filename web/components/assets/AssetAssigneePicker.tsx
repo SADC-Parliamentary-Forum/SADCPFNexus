@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { tenantUsersApi, type TenantUserOption } from "@/lib/api";
 import { assigneeDepartmentName, formatAssigneeLabel } from "@/lib/asset-assignee";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { NexusPicker } from "@/components/ui/NexusPicker";
+import { getStoredUser, isSystemAdmin } from "@/lib/auth";
+import { AssetQuickUserModal } from "@/components/assets/AssetQuickUserModal";
 
 export function AssetAssigneePicker({
   id,
@@ -13,6 +16,8 @@ export function AssetAssigneePicker({
   disabled,
   required,
   hint,
+  includeInvited = true,
+  allowCreate,
 }: {
   id: string;
   label: string;
@@ -21,9 +26,21 @@ export function AssetAssigneePicker({
   disabled?: boolean;
   required?: boolean;
   hint?: string;
+  /** List invited (not yet activated) users too; off where the action needs an active account. */
+  includeInvited?: boolean;
+  /** Offer "create a user" when the person is not listed; defaults to includeInvited (new users start invited). */
+  allowCreate?: boolean;
 }) {
   const { t } = useI18n();
+  const [canCreateUsers, setCanCreateUsers] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [created, setCreated] = useState<string | null>(null);
+  // Creating accounts follows the admin user policy (system admins only).
+  useEffect(() => setCanCreateUsers(isSystemAdmin(getStoredUser())), []);
+  const offerCreate = (allowCreate ?? includeInvited) && canCreateUsers && !disabled;
   const department = assigneeDepartmentName(value);
+  const withInvited = (label: string, u: TenantUserOption) =>
+    u.account_status === "invited" ? `${label} (${t("assets.assigneeInvited")})` : label;
 
   return (
     <div className="space-y-2">
@@ -37,11 +54,11 @@ export function AssetAssigneePicker({
         placeholder={t("assets.searchAssignee")}
         dataTestId="asset-assignee-picker"
         fetchOptions={async (search) => {
-          const r = await tenantUsersApi.list({ search: search || undefined });
+          const r = await tenantUsersApi.list({ search: search || undefined, include_invited: includeInvited });
           return r.data.data ?? [];
         }}
         getId={(u) => u.id}
-        getLabel={(u) => formatAssigneeLabel(u)}
+        getLabel={(u) => withInvited(formatAssigneeLabel(u), u)}
         renderOption={(u) => {
           const dept = assigneeDepartmentName(u);
           return (
@@ -50,7 +67,7 @@ export function AssetAssigneePicker({
                 {(u.name || "?").slice(0, 1).toUpperCase()}
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-neutral-900 truncate">{u.name}</p>
+                <p className="text-sm font-medium text-neutral-900 truncate">{withInvited(u.name, u)}</p>
                 <p className="text-xs text-neutral-500 truncate">
                   {[u.email, dept].filter(Boolean).join(" · ") || t("assets.notAssigned")}
                 </p>
@@ -61,7 +78,8 @@ export function AssetAssigneePicker({
       />
       {value ? (
         <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-3 py-2 text-xs text-neutral-700">
-          <p className="font-medium text-neutral-900">{value.name}</p>
+          <p className="font-medium text-neutral-900">{withInvited(value.name, value)}</p>
+          {value.account_status === "invited" ? <p className="text-amber-700">{t("assets.assigneeInvitedHint")}</p> : null}
           {value.email ? <p>{t("assets.assigneeEmail")}: {value.email}</p> : null}
           {department ? <p>{t("assets.assigneeDepartment")}: {department}</p> : null}
           {!required ? (
@@ -77,6 +95,29 @@ export function AssetAssigneePicker({
         </div>
       ) : null}
       {hint ? <p className="text-xs text-neutral-500">{hint}</p> : null}
+      {created ? <p role="status" className="text-xs text-green-700">{created}</p> : null}
+      {offerCreate && !value ? (
+        <button
+          type="button"
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary"
+          onClick={() => setCreating(true)}
+          data-testid={`${id}-create-user`}
+        >
+          <span className="material-symbols-outlined text-[16px]" aria-hidden="true">person_add</span>
+          {t("assets.newUser.open")}
+        </button>
+      ) : null}
+      {offerCreate ? (
+        <AssetQuickUserModal
+          open={creating}
+          onClose={() => setCreating(false)}
+          onCreated={(user) => {
+            setCreating(false);
+            setCreated(t("assets.newUser.created", { name: user.name }));
+            onSelect(user);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { apiErrorMessage } from "@/lib/apiError";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
+import { SearchField } from "@/components/ui/SearchField";
 
 function NewHandoverForm() {
   const { t } = useI18n();
@@ -22,8 +23,33 @@ function NewHandoverForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
+  const [assetSearch, setAssetSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<Asset[] | null>(null);
+
   const preset = Number(params.get("assetId") || 0);
   const batchId = Number(params.get("batchId") || 0);
+
+  // Search the whole register (not just the preloaded first page) as the user types.
+  useEffect(() => {
+    const term = assetSearch.trim();
+    if (!term) {
+      setSearchResults(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await assetsApi.list({ search: term, status: type === "issue" ? "available" : undefined, per_page: 100 });
+        if (!cancelled) setSearchResults(res.data.data ?? []);
+      } catch {
+        if (!cancelled) setSearchResults([]);
+      }
+    }, 300);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [assetSearch, type]);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,6 +117,24 @@ function NewHandoverForm() {
     if (batchAssetIds.length) setSelected((cur) => Array.from(new Set([...cur, ...batchAssetIds])));
   }, [batchAssetIds]);
 
+  // While searching, keep already-selected assets pinned above the matches.
+  const shownAssets = useMemo(() => {
+    if (searchResults === null) return assets;
+    const matched = new Set(searchResults.map((a) => a.id));
+    const pinned = assets.filter((a) => selected.includes(a.id) && !matched.has(a.id));
+    return [...pinned, ...searchResults];
+  }, [assets, searchResults, selected]);
+
+  function toggleAsset(asset: Asset, checked: boolean) {
+    if (checked) {
+      // Remember assets picked from a search so they stay listed after the search changes.
+      setAssets((cur) => (cur.some((a) => a.id === asset.id) ? cur : [...cur, asset]));
+      setSelected((cur) => (cur.includes(asset.id) ? cur : [...cur, asset.id]));
+    } else {
+      setSelected((cur) => cur.filter((id) => id !== asset.id));
+    }
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -122,17 +166,17 @@ function NewHandoverForm() {
       />
       {error ? <p role="alert" className="text-sm text-red-700">{error}</p> : null}
       <form onSubmit={submit} className="card space-y-4 p-4" data-testid="handover-create-form">
-        <label className="block text-sm">
+        <label htmlFor="assets-handovers-new-field-1" className="block text-sm">
           {t("assets.handover.type")}
-          <select className="form-input mt-1" value={type} onChange={(e) => setType(e.target.value)}>
+          <select id="assets-handovers-new-field-1" className="form-input mt-1" value={type} onChange={(e) => setType(e.target.value)}>
             <option value="issue">issue</option>
             <option value="transfer">transfer</option>
             <option value="return">return</option>
           </select>
         </label>
-        <label className="block text-sm">
+        <label htmlFor="assets-handovers-new-field-2" className="block text-sm">
           {t("assets.handover.target")}
-          <select className="form-input mt-1" value={target} onChange={(e) => setTarget(e.target.value)}>
+          <select id="assets-handovers-new-field-2" className="form-input mt-1" value={target} onChange={(e) => setTarget(e.target.value)}>
             <option value="person">person</option>
             <option value="department">department</option>
             <option value="location">location</option>
@@ -155,6 +199,7 @@ function NewHandoverForm() {
             <AssetAssigneePicker
               id="handover-delegate"
               label={t("assets.handover.delegate")}
+              includeInvited={false}
               value={delegateUser}
               onSelect={setDelegateUser}
               hint={t("assets.handover.delegateHint")}
@@ -164,13 +209,27 @@ function NewHandoverForm() {
         )}
         <fieldset>
           <legend className="text-sm font-medium">{t("assets.handover.selectAssets")}</legend>
+          <div className="mt-2 space-y-2">
+            <SearchField
+              value={assetSearch}
+              onChange={setAssetSearch}
+              placeholder={t("assets.picker.search")}
+              testId="handover-asset-search"
+            />
+            <p className="text-xs text-neutral-500" data-testid="handover-selected-count">
+              {t("assets.picker.selectedCount", { count: selected.length })}
+            </p>
+          </div>
           <div className="mt-2 max-h-64 overflow-auto space-y-1">
-            {assets.map((asset) => (
+            {searchResults !== null && shownAssets.length === 0 ? (
+              <p className="py-2 text-sm text-neutral-500">{t("common.noResults")}</p>
+            ) : null}
+            {shownAssets.map((asset) => (
               <label key={asset.id} className="flex items-center gap-2 text-sm" data-testid={`handover-asset-${asset.id}`}>
                 <input
                   type="checkbox"
                   checked={selected.includes(asset.id)}
-                  onChange={(e) => setSelected((cur) => e.target.checked ? [...cur, asset.id] : cur.filter((id) => id !== asset.id))}
+                  onChange={(e) => toggleAsset(asset, e.target.checked)}
                 />
                 <span className="font-mono text-xs">{asset.tag_number || asset.asset_code}</span>
                 <span>{asset.name}</span>

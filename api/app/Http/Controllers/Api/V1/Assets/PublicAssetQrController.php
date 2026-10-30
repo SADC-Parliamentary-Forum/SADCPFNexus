@@ -115,6 +115,9 @@ class PublicAssetQrController extends Controller
         }
         if ($user->hasAnyPermission(['assets.print', 'assets.admin', 'assets.manage']) || $user->isSystemAdmin()) {
             $actions[] = ['key' => 'print', 'label' => 'Print label', 'label_key' => 'assets.scan.action.print', 'href' => '/assets/labels?asset='.$asset->id];
+            if (in_array($asset->label_status, ['printed', 'applied', 'reprint_required'], true)) {
+                $actions[] = ['key' => 'photograph_label', 'label' => 'Photograph label', 'label_key' => 'assets.scan.action.photographLabel', 'href' => '/assets/'.$asset->id.'?label=photo'];
+            }
         }
 
         return $actions;

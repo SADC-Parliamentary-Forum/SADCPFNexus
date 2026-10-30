@@ -29,13 +29,21 @@ test.describe("Asset Phase 2 operations (admin)", () => {
     await page.goto("/assets/operations");
     await waitForApp(page);
     await skipIfAccessDenied(page, "asset operations");
-    await expect(page.getByTestId("ops-template-form")).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByTestId("ops-template-name")).toBeVisible();
+    // Operations is split into task tabs; each tab shows its own labelled pickers.
+    await expect(page.getByTestId("ops-tab-issue")).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByTestId("ops-planner-asset")).toBeVisible();
+    await expect(page.locator('input[placeholder="asset ids"]')).toHaveCount(0);
+
+    await page.getByTestId("ops-tab-attest").click();
     await expect(page.getByTestId("ops-attest-assets")).toBeVisible();
     await expect(page.locator("[data-testid^='ops-attest-asset-']").first()).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('input[placeholder="asset ids"]')).toHaveCount(0);
-    await expect(page.getByTestId("ops-planner-asset")).toBeVisible();
+
+    await page.getByTestId("ops-tab-room").click();
     await expect(page.getByTestId("ops-room-location")).toBeVisible();
+
+    await page.getByTestId("ops-tab-gaps").click();
+    await expect(page.getByTestId("ops-template-form")).toBeVisible();
+    await expect(page.getByTestId("ops-template-name")).toBeVisible();
 
     const templateName = `E2E template ${Date.now()}`;
     await page.getByTestId("ops-template-name").fill(templateName);
