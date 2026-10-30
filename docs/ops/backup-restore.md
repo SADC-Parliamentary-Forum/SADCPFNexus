@@ -97,6 +97,16 @@ php artisan db:seed --class=WorkflowSeeder --force
 If no backup exists yet it takes a fresh dump first (and has nothing to compare against).
 It never touches the live database and does **not** tick the checklist below.
 
+## Drill log
+
+| Date (UTC) | Backup used | DB restore | Row check | Gaps found |
+|------------|-------------|------------|-----------|------------|
+| 2026-10-30 09:09 | Nightly-format run of 2026-10-30 (db.dump 5.4 MB, storage 16 MB, MinIO 2.6 MB) | 22 s | PASS — 627/627 tables, 58,324 rows | No offsite copy (`BACKUP_OFFSITE_COMMAND` unset); file archives not restore-tested; full-stack RTO (maintenance, restart, smoke) not measured |
+
+Run via the `ops-backup.yml` workflow ([backup](https://github.com/SADC-Parliamentary-Forum/SADCPFNexus/actions/runs/41031232365),
+[restore-drill](https://github.com/SADC-Parliamentary-Forum/SADCPFNexus/actions/runs/41031320850)). The nightly cron was installed the same day,
+so RPO is now ≤ 24 h, for backups on this host only. These are measurements, not operator sign-off.
+
 ## Drill checklist (operator)
 
 - [ ] Date/time of last successful restore drill
