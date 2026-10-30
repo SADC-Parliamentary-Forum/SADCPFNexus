@@ -4,8 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -13,14 +13,20 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes, HasRoles;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     public const STATUS_INVITED = 'invited';
+
     public const STATUS_PENDING_ACTIVATION = 'pending_activation';
+
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_LOCKED = 'locked';
+
     public const STATUS_SUSPENDED = 'suspended';
+
     public const STATUS_DISABLED = 'disabled';
+
     public const STATUS_OFFBOARDED = 'offboarded';
 
     protected $guard_name = 'sanctum';
@@ -47,6 +53,7 @@ class User extends Authenticatable
         'status_reason',
         'mfa_enabled',
         'mfa_secret',
+        'mfa_recovery_codes',
         'must_reset_password',
         'password_changed_at',
         'setup_completed',
@@ -74,29 +81,34 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'mfa_secret',
+        'mfa_recovery_codes',
     ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
-            'last_login_at'          => 'datetime',
-            'password'          => 'hashed',
-            'is_active'              => 'boolean',
-            'status_changed_at'      => 'datetime',
-            'suspended_at'           => 'datetime',
-            'disabled_at'            => 'datetime',
-            'offboarded_at'          => 'datetime',
-            'invited_at'             => 'datetime',
-            'activated_at'           => 'datetime',
-            'mfa_enabled'            => 'boolean',
-            'must_reset_password'    => 'boolean',
-            'password_changed_at'    => 'datetime',
-            'setup_completed'        => 'boolean',
-            'date_of_birth'     => 'date',
-            'join_date'         => 'date',
-            'skills'            => 'array',
-            'qualifications'    => 'array',
+            'last_login_at' => 'datetime',
+            'password' => 'hashed',
+            'is_active' => 'boolean',
+            'status_changed_at' => 'datetime',
+            'suspended_at' => 'datetime',
+            'disabled_at' => 'datetime',
+            'offboarded_at' => 'datetime',
+            'invited_at' => 'datetime',
+            'activated_at' => 'datetime',
+            'mfa_enabled' => 'boolean',
+            // Encrypted at rest with APP_KEY (see 2026_10_27_110000 migration).
+            'mfa_secret' => 'encrypted',
+            // sha256 hashes of unused one-time recovery codes.
+            'mfa_recovery_codes' => 'encrypted:array',
+            'must_reset_password' => 'boolean',
+            'password_changed_at' => 'datetime',
+            'setup_completed' => 'boolean',
+            'date_of_birth' => 'date',
+            'join_date' => 'date',
+            'skills' => 'array',
+            'qualifications' => 'array',
         ];
     }
 

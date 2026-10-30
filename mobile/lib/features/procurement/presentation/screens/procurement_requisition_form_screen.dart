@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/auth/auth_providers.dart';
-import '../../../../../core/offline/draft_database.dart';
 import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/theme/app_theme.dart';
 import '../../data/procurement_api_helpers.dart';
@@ -186,17 +185,15 @@ class _ProcurementRequisitionFormScreenState
   /// used by the other draft-capable request forms.
   Future<bool> _saveDraftOnFailure() async {
     try {
-      final db = ref.read(draftDatabaseProvider);
       final payload = _buildPayload();
       final title = _titleCtrl.text.trim().isNotEmpty
           ? _titleCtrl.text.trim()
           : 'Procurement requisition draft';
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-            type: 'procurement',
-            title: title,
-            payload: jsonEncode(payload),
-            createdAt: DateTime.now(),
-          ));
+      await ref.read(draftStoreProvider).save(
+          type: 'procurement',
+          title: title,
+          payload: jsonEncode(payload),
+        );
       return true;
     } catch (_) {
       return false;

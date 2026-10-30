@@ -10,7 +10,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
-const apiTs = fs.readFileSync(path.join(root, "lib", "api.ts"), "utf8");
+// The API client is lib/api.ts plus its transport/domain modules in lib/api/.
+const apiDir = path.join(root, "lib", "api");
+const apiTs = [
+  fs.readFileSync(path.join(root, "lib", "api.ts"), "utf8"),
+  ...(fs.existsSync(apiDir)
+    ? fs.readdirSync(apiDir).filter((f) => f.endsWith(".ts")).sort().map((f) => fs.readFileSync(path.join(apiDir, f), "utf8"))
+    : []),
+].join("\n");
 
 const checks = [
   {

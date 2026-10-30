@@ -17,6 +17,7 @@ import { CaptchaGate, EMPTY_CAPTCHA, type CaptchaValue } from "@/components/auth
 import { isSupplierUser, postAuthDestination } from "@/lib/postAuthDestination";
 import { isCsrfMismatch } from "@/lib/csrf";
 import { loginFormErrorMessage, shouldResetLoginCaptcha } from "@/lib/loginFormError";
+import { isCompleteSecondFactor, normalizeSecondFactorInput } from "@/lib/secondFactorInput";
 
 interface Props {
   portal: "staff" | "supplier";
@@ -177,11 +178,10 @@ export function PortalSignInForm({ portal, emailPlaceholder, prefillEmail }: Pro
               id={`${portal}-mfa`}
               type="text"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e) => setCode(normalizeSecondFactorInput(e.target.value))}
               required
               className="form-input tracking-[0.35em] text-center"
               placeholder="000000"
-              inputMode="numeric"
               autoComplete="one-time-code"
             />
             <p className="mt-2 text-xs text-neutral-600">
@@ -194,7 +194,7 @@ export function PortalSignInForm({ portal, emailPlaceholder, prefillEmail }: Pro
 
         <button
           type="submit"
-          disabled={loading || (mfaRequired && code.length !== 6)}
+          disabled={loading || (mfaRequired && !isCompleteSecondFactor(code))}
           className="btn-primary w-full justify-center py-3"
         >
           {loading ? (

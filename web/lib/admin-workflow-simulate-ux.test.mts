@@ -3,6 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { LOCALES, catalogFor, translate } from "./i18n/messages.ts";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
@@ -39,7 +40,7 @@ test("workflow simulate page is module-centric, labelled, and translated", () =>
 });
 
 test("workflow simulate API client exposes the module catalog", () => {
-  const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const source = readApiSource(webRoot);
   assert.match(source, /simulationCatalog:\s*\(\)\s*=>/);
   assert.match(source, /\/workflow-engine\/simulation-catalog/);
   assert.match(source, /requester_user_id\?:/);

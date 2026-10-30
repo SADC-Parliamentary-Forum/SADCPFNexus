@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Api\V1\Srhr;
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\ResearcherReport;
-use Illuminate\Http\JsonResponse;
+use App\Support\AttachmentFiles;
 use App\Support\UploadContentSniffer;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ResearcherReportAttachmentController extends Controller
@@ -22,6 +22,7 @@ class ResearcherReportAttachmentController extends Controller
     {
         $this->ensureTenant($researcherReport);
         $attachments = $researcherReport->attachments()->with('uploader:id,name')->orderByDesc('created_at')->get();
+
         return response()->json(['data' => $attachments]);
     }
 
@@ -30,28 +31,28 @@ class ResearcherReportAttachmentController extends Controller
         $this->ensureTenant($researcherReport);
 
         $request->validate([
-            'file'          => ['required', 'file', 'max:25600'], // 25 MB
-            'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::DOCUMENT_TYPES)],
+            'file' => ['required', 'file', 'max:25600'], // 25 MB
+            'document_type' => ['nullable', 'string', 'in:'.implode(',', Attachment::DOCUMENT_TYPES)],
         ]);
 
         $file = $request->file('file');
         $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store(
-            'attachments/researcher-reports/' . $researcherReport->id,
-            ['disk' => 'local']
+        $attachment = AttachmentFiles::store(
+            $file,
+            'attachments/researcher-reports/'.$researcherReport->id,
+            fn (string $path) => $researcherReport->attachments()->create([
+                'tenant_id' => $researcherReport->tenant_id,
+                'uploaded_by' => $request->user()->id,
+                'document_type' => $request->input('document_type', Attachment::DOCUMENT_TYPE_OTHER),
+                'original_filename' => $file->getClientOriginalName(),
+                'storage_path' => $path,
+                'mime_type' => $mime,
+                'size_bytes' => $file->getSize(),
+            ])
         );
 
-        $attachment = $researcherReport->attachments()->create([
-            'tenant_id'         => $researcherReport->tenant_id,
-            'uploaded_by'       => $request->user()->id,
-            'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_OTHER),
-            'original_filename' => $file->getClientOriginalName(),
-            'storage_path'      => $path,
-            'mime_type'         => $mime,
-            'size_bytes'        => $file->getSize(),
-        ]);
-
         $attachment->load('uploader:id,name');
+
         return response()->json(['message' => 'Attachment uploaded.', 'data' => $attachment], 201);
     }
 
@@ -63,11 +64,8 @@ class ResearcherReportAttachmentController extends Controller
             abort(404);
         }
 
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
-        }
+        AttachmentFiles::delete($attachment);
 
-        $attachment->delete();
         return response()->json(['message' => 'Attachment deleted.']);
     }
 
@@ -79,20 +77,6 @@ class ResearcherReportAttachmentController extends Controller
             abort(404);
         }
 
-        if (!$attachment->storage_path || !Storage::disk('local')->exists($attachment->storage_path)) {
-            return response()->json(['message' => 'File not found.'], 404);
-        }
-
-        return response()->streamDownload(
-            function () use ($attachment) {
-                $stream = Storage::disk('local')->readStream($attachment->storage_path);
-                if (is_resource($stream)) {
-                    fpassthru($stream);
-                    fclose($stream);
-                }
-            },
-            $attachment->original_filename,
-            ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
-        );
+        return AttachmentFiles::download($attachment);
     }
 }

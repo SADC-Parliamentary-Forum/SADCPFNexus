@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
-import '../../../../core/offline/draft_database.dart';
 import '../../../../core/offline/draft_provider.dart';
 import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -107,17 +106,13 @@ class _PifFormScreenState extends ConsumerState<PifFormScreen> with WidgetsBindi
         'budget_lines': _budgetLinePayloads,
       };
 
-      final db = ref.read(draftDatabaseProvider);
-      await db.into(db.draftEntries).insert(
-            DraftEntriesCompanion.insert(
-              type: 'pif',
-              title: _titleController.text.trim().isEmpty
+      await ref.read(draftStoreProvider).save(
+          type: 'pif',
+          title: _titleController.text.trim().isEmpty
                   ? 'PIF draft'
                   : _titleController.text.trim(),
-              payload: jsonEncode(payload),
-              createdAt: DateTime.now(),
-            ),
-          );
+          payload: jsonEncode(payload),
+        );
     } catch (_) {
       // Best-effort; nothing actionable if this fails while backgrounded.
     }
@@ -176,17 +171,13 @@ class _PifFormScreenState extends ConsumerState<PifFormScreen> with WidgetsBindi
         'budget_lines': _budgetLinePayloads,
       };
 
-      final db = ref.read(draftDatabaseProvider);
-      await db.into(db.draftEntries).insert(
-            DraftEntriesCompanion.insert(
-              type: 'pif',
-              title: _titleController.text.trim().isEmpty
+      await ref.read(draftStoreProvider).save(
+          type: 'pif',
+          title: _titleController.text.trim().isEmpty
                   ? 'PIF draft'
                   : _titleController.text.trim(),
-              payload: jsonEncode(payload),
-              createdAt: DateTime.now(),
-            ),
-          );
+          payload: jsonEncode(payload),
+        );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -231,10 +222,7 @@ class _PifFormScreenState extends ConsumerState<PifFormScreen> with WidgetsBindi
         await dio.post('/programmes/$id/submit');
       }
       if (widget.draftId != null) {
-        final db = ref.read(draftDatabaseProvider);
-        await (db.delete(db.draftEntries)
-              ..where((t) => t.id.equals(widget.draftId!)))
-            .go();
+        await ref.read(draftStoreProvider).deleteOwned(widget.draftId!);
       }
       if (!mounted) return;
       context.safePopOrGoHome();

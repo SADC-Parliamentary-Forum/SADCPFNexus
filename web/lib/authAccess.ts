@@ -330,6 +330,8 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
   { path: "/pif/create", permission: ["pif.create", "programme.request.create"] },
   { path: "/pif", permission: ["pif.view", "programme.module.view", "programme.request.create", "governance.view"] },
   { path: "/my-work/procurement-evaluations", permission: ["procurement.evaluation.read.assigned", "procurement.evaluation.score.assigned"] },
+  // Self-scoped: the API only ever returns the caller's own items.
+  { path: "/my-actions" },
   { path: "/my-work", permission: ["my_work.view", "approvals.inbox.view", "procurement.evaluation.read.assigned", "assignment.read.assigned"] },
   { path: "/admin/access", permission: ["admin.roles.view", "roles.view", "roles.manage", "admin.access.simulate", "admin.access.explore"] },
   { path: "/workplan", permission: ["workplan.view", "workplan.create", "calendar.view"] },
@@ -458,6 +460,21 @@ const ROUTE_ACCESS: RouteAccessRule[] = [
 ];
 
 /**
+ * Most specific rule for a path: the longest matching prefix wins, so a rule
+ * such as `/hr/payslips` always takes precedence over `/hr` regardless of the
+ * order the rules are listed in.
+ */
+export function findRouteAccessRule(path: string): RouteAccessRule | undefined {
+  let best: RouteAccessRule | undefined;
+  for (const rule of ROUTE_ACCESS) {
+    if ((path === rule.path || path.startsWith(rule.path + "/")) && (!best || rule.path.length > best.path.length)) {
+      best = rule;
+    }
+  }
+  return best;
+}
+
+/**
  * True if the user can access the given path. Uses admin-only list and permission map.
  * Unknown / unregistered routes deny by default (Access Control Phase 7-8 residual).
  */
@@ -479,7 +496,7 @@ export function canAccessRoute(user: AuthAccessUser | null | undefined, pathOrId
     return true;
   }
 
-  const entry = ROUTE_ACCESS.find((e) => path === e.path || path.startsWith(e.path + "/"));
+  const entry = findRouteAccessRule(path);
   if (!entry) return false; // unknown route: deny-default
   if (systemAdmin && entry.allowSystemAdmin !== false) return true;
   if (systemAdmin && entry.allowSystemAdmin === false) return false;

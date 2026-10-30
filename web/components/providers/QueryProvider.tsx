@@ -1,7 +1,9 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
+import { useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { AuthContext } from "@/lib/auth";
+import { queryIdentityKey, shouldClearQueryCache } from "@/lib/queryIdentity";
 
 export function QueryProvider({ children }: { children: ReactNode }) {
   // useState ensures each browser tab gets its own QueryClient instance
@@ -22,6 +24,19 @@ export function QueryProvider({ children }: { children: ReactNode }) {
         },
       })
   );
+
+  // Private data must never outlive the account it was fetched for: drop the
+  // whole cache on logout, same-tab account switch or role change.
+  const { user } = useContext(AuthContext);
+  const identity = queryIdentityKey(user);
+  const previousIdentity = useRef<string | null>(null);
+  useEffect(() => {
+    if (shouldClearQueryCache(previousIdentity.current, identity)) {
+      queryClient.cancelQueries();
+      queryClient.clear();
+    }
+    previousIdentity.current = identity;
+  }, [identity, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

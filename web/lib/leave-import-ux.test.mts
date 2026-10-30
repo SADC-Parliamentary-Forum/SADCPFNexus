@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
@@ -34,7 +35,7 @@ test("staff leave register and balances link to bulk import", () => {
 });
 
 test("leave API client exposes import preview and template download", () => {
-  const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const source = readApiSource(webRoot);
   assert.match(source, /importTemplate:/);
   assert.match(source, /\/leave\/import\/template/);
   assert.match(source, /\/leave\/import/);

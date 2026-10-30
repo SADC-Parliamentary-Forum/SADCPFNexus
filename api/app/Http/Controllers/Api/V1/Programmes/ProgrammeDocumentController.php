@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Api\V1\Programmes;
 
 use App\Http\Controllers\Controller;
@@ -16,24 +17,26 @@ class ProgrammeDocumentController extends Controller
     private function rules(bool $updating = false, ?ProgrammeDocument $document = null): array
     {
         $required = $updating ? 'sometimes' : 'required';
+
         return [
-            'title'                => [$required, 'string', 'max:255'],
-            'document_type'        => [$required, 'string', 'max:100'],
-            'word_count'           => ['nullable', 'integer', 'min:0'],
+            'title' => [$required, 'string', 'max:255'],
+            'document_type' => [$required, 'string', 'max:100'],
+            'word_count' => ['nullable', 'integer', 'min:0'],
             'translation_required' => ['nullable', 'boolean'],
-            'source_language'      => ['nullable', 'string', 'max:100'],
-            'target_languages'     => [
+            'source_language' => ['nullable', 'string', 'max:100'],
+            'target_languages' => [
                 Rule::requiredIf(function () use ($updating) {
                     if ($updating && ! request()->has('translation_required')) {
                         return false;
                     }
+
                     return (bool) request()->input('translation_required');
                 }),
                 'nullable', 'array',
             ],
-            'target_languages.*'   => ['string', 'max:100'],
-            'owner_user_id'        => ['nullable', 'integer', 'exists:users,id'],
-            'owner_name'           => [
+            'target_languages.*' => ['string', 'max:100'],
+            'owner_user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'owner_name' => [
                 Rule::requiredIf(function () use ($updating, $document) {
                     $resultingOwnerUserId = request()->has('owner_user_id')
                         ? request()->input('owner_user_id')
@@ -41,34 +44,56 @@ class ProgrammeDocumentController extends Controller
                     $resultingOwnerName = request()->has('owner_name')
                         ? request()->input('owner_name')
                         : ($updating && $document ? $document->owner_name : null);
+
                     return empty($resultingOwnerUserId) && empty($resultingOwnerName);
                 }),
                 'nullable', 'string', 'max:255',
             ],
-            'owner_organisation'   => ['nullable', 'string', 'max:255'],
-            'deadline'             => ['nullable', 'date'],
-            'budget_line'          => ['nullable', 'string', 'max:255'],
-            'comments'             => ['nullable', 'string'],
+            'owner_organisation' => ['nullable', 'string', 'max:255'],
+            'deadline' => ['nullable', 'date'],
+            'budget_line' => ['nullable', 'string', 'max:255'],
+            'comments' => ['nullable', 'string'],
         ];
     }
 
     public function store(Request $request, Programme $programme): JsonResponse
     {
+        $this->ensureScope($request, $programme);
         $data = $request->validate($this->rules());
         $document = $this->service->addDocument($programme, $data);
+
         return response()->json(['message' => 'Document added.', 'data' => $document], 201);
     }
 
     public function update(Request $request, Programme $programme, ProgrammeDocument $document): JsonResponse
     {
+        $this->ensureScope($request, $programme, $document);
         $data = $request->validate($this->rules(true, $document));
         $document = $this->service->updateDocument($document, $data);
+
         return response()->json(['message' => 'Document updated.', 'data' => $document]);
     }
 
-    public function destroy(Programme $programme, ProgrammeDocument $document): JsonResponse
+    public function destroy(Request $request, Programme $programme, ProgrammeDocument $document): JsonResponse
     {
+        $this->ensureScope($request, $programme, $document);
         $this->service->deleteDocument($document);
+
         return response()->json(['message' => 'Document deleted.']);
+    }
+
+    /**
+     * The programme must belong to the caller's tenant and the document to
+     * that programme — otherwise a document id from another programme or
+     * tenant could be edited through a programme URL the caller can see.
+     */
+    private function ensureScope(Request $request, Programme $programme, ?ProgrammeDocument $document = null): void
+    {
+        if ((int) $programme->tenant_id !== (int) $request->user()->tenant_id) {
+            abort(404);
+        }
+        if ($document !== null && (int) $document->programme_id !== (int) $programme->id) {
+            abort(404);
+        }
     }
 }

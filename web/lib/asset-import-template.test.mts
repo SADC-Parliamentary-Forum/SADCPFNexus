@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
 test("import page offers a downloadable Excel template for bulk upload", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assets/import/page.tsx"), "utf8");
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
 
   assert.match(page, /assetImportApi\.downloadTemplate/);
   assert.match(page, /assets\.import\.downloadTemplate/);
@@ -35,7 +36,7 @@ test("asset register links importers to bulk upload", () => {
 
 test("import commit allows blob frames and waits for a large register write", () => {
   const csp = readFileSync(join(webRoot, "next.config.ts"), "utf8");
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
   const page = readFileSync(join(webRoot, "app/(app)/assets/import/page.tsx"), "utf8");
   const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
 
@@ -52,7 +53,7 @@ test("import commit allows blob frames and waits for a large register write", ()
 test("import and register pages offer a confirmed clear-register action", () => {
   const page = readFileSync(join(webRoot, "app/(app)/assets/import/page.tsx"), "utf8");
   const button = readFileSync(join(webRoot, "components/assets/ClearAssetRegisterButton.tsx"), "utf8");
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
 
   assert.match(page, /ClearAssetRegisterButton/);
   assert.match(button, /assetsApi\.clearRegister/);

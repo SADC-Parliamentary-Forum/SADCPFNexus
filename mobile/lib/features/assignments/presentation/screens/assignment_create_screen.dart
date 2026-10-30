@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:sadcpf_nexus/core/auth/auth_providers.dart';
-import 'package:sadcpf_nexus/core/offline/draft_database.dart';
 import 'package:sadcpf_nexus/core/offline/draft_provider.dart';
 import 'package:sadcpf_nexus/core/theme/app_theme.dart';
 import 'package:sadcpf_nexus/features/procurement/data/procurement_api_helpers.dart';
@@ -123,13 +122,11 @@ class _AssignmentCreateScreenState
   /// offline-draft pattern used by the other draft-capable request forms.
   Future<bool> _saveDraftOnFailure(Map<String, dynamic> payload) async {
     try {
-      final db = ref.read(draftDatabaseProvider);
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-            type: 'assignment',
-            title: payload['title'] as String? ?? 'Assignment draft',
-            payload: jsonEncode(payload),
-            createdAt: DateTime.now(),
-          ));
+      await ref.read(draftStoreProvider).save(
+          type: 'assignment',
+          title: payload['title'] as String? ?? 'Assignment draft',
+          payload: jsonEncode(payload),
+        );
       return true;
     } catch (_) {
       return false;

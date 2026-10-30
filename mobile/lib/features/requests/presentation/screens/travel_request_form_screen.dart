@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/auth_providers.dart';
-import '../../../../core/offline/draft_database.dart';
 import '../../../../core/offline/draft_provider.dart';
 import '../../../../core/router/safe_back.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -169,16 +168,14 @@ class _TravelRequestFormScreenState
   /// [_saveDraft] but is safe to call outside a user gesture).
   Future<void> _autoSaveDraftOnBackground() async {
     try {
-      final db = ref.read(draftDatabaseProvider);
       final payload = _buildPayload();
       final title =
           _form.missionTitle.isNotEmpty ? _form.missionTitle : 'Travel draft';
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-            type: 'travel',
-            title: title,
-            payload: jsonEncode(payload),
-            createdAt: DateTime.now(),
-          ));
+      await ref.read(draftStoreProvider).save(
+          type: 'travel',
+          title: title,
+          payload: jsonEncode(payload),
+        );
     } catch (_) {
       // Best-effort; nothing actionable if this fails while backgrounded.
     }
@@ -288,10 +285,7 @@ class _TravelRequestFormScreenState
       if (!mounted) return;
       if (widget.draftId != null) {
         try {
-          final db = ref.read(draftDatabaseProvider);
-          await (db.delete(db.draftEntries)
-                ..where((t) => t.id.equals(widget.draftId!)))
-              .go();
+          await ref.read(draftStoreProvider).deleteOwned(widget.draftId!);
         } catch (_) {}
       }
       _showSuccess();
@@ -401,16 +395,14 @@ class _TravelRequestFormScreenState
 
   Future<void> _saveDraft() async {
     try {
-      final db = ref.read(draftDatabaseProvider);
       final payload = _buildPayload();
       final title =
           _form.missionTitle.isNotEmpty ? _form.missionTitle : 'Travel draft';
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-            type: 'travel',
-            title: title,
-            payload: jsonEncode(payload),
-            createdAt: DateTime.now(),
-          ));
+      await ref.read(draftStoreProvider).save(
+          type: 'travel',
+          title: title,
+          payload: jsonEncode(payload),
+        );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

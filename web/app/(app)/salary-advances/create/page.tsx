@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { financeApi, lookupsApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Stepper } from "@/components/ui/Stepper";
+import { useFormDraft } from "@/lib/useFormDraft";
 
 type AdvanceTypeOption = { value: string; label: string; desc?: string; icon?: string };
 
@@ -57,6 +58,25 @@ export default function SalaryAdvanceCreatePage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]           = useState<string | null>(null);
+
+  // Autosave the request locally (never the deduction consent, which must be
+  // given afresh). Once created, a retry submits the same advance instead of
+  // creating another one.
+  const draftValue = useMemo(
+    () => ({ step: Math.min(step, 1), advanceType, amount, purpose, justification }),
+    [step, advanceType, amount, purpose, justification],
+  );
+  const draft = useFormDraft("salary-advance.create", draftValue);
+  const createdIdRef = useRef<number | null>(null);
+  const restoreDraft = () => {
+    const v = draft.restore();
+    if (!v) return;
+    setAdvanceType(v.advanceType ?? "");
+    setAmount(v.amount ?? "");
+    setPurpose(v.purpose ?? "");
+    setJustification(v.justification ?? "");
+    setStep(v.advanceType ? Math.min(Math.max(v.step ?? 0, 0), 1) : 0);
+  };
 
   const defaultCurrency = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
   const currencySymbol  = defaultCurrency === "NAD" ? "N$" : defaultCurrency;
@@ -117,8 +137,13 @@ export default function SalaryAdvanceCreatePage() {
         justification,
         deduction_authority_confirmed:  consented,
       };
-      const { data } = await financeApi.createAdvance(payload);
+      const existingId = createdIdRef.current;
+      const { data } = existingId
+        ? await financeApi.updateAdvance(existingId, payload)
+        : await financeApi.createAdvance(payload, `${draft.operationKey}:create`);
       const id = data.data?.id ?? (data as { id?: number }).id;
+      if (id) createdIdRef.current = id;
+      draft.clear();
       if (!asDraft && id) {
         await financeApi.submitAdvance(id, { deduction_authority_confirmed: true });
       }
@@ -495,6 +520,17 @@ export default function SalaryAdvanceCreatePage() {
           />
         }
       />
+
+      {draft.restorable && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800" role="status">
+          <span className="material-symbols-outlined text-[16px]">history</span>
+          <span className="flex-1">
+            Unsaved request from {new Date(draft.restorable.savedAt).toLocaleString()} found. Consent is not restored and must be given again.
+          </span>
+          <button type="button" className="btn-primary px-3 py-1.5 text-xs" onClick={restoreDraft}>Restore</button>
+          <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={draft.discard}>Discard</button>
+        </div>
+      )}
 
       <div className="card p-5">
         <Stepper

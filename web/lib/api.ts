@@ -1,206 +1,10 @@
-import axios from "axios";
-import { clearStoredUser } from "@/lib/session";
-import { captureClientException } from "@/lib/observability";
-import { MFA_SETUP_PATH } from "@/lib/privilegedMfa";
-import { readStoredLocale } from "@/lib/i18n/messages";
-import { shouldRetryCsrf } from "@/lib/csrf";
+import api, { ensureCsrfCookie } from "@/lib/api/client";
 
-const MUST_RESET_COOKIE = "sadcpf_must_reset";
-const COOKIE_MAX_AGE_DAYS = 7;
-
-export function setMustResetCookie(): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${MUST_RESET_COOKIE}=1; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
-}
-
-export function clearMustResetCookie(): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${MUST_RESET_COOKIE}=; path=/; max-age=0`;
-}
-
-const SETUP_COMPLETE_COOKIE = "sadcpf_setup_complete";
-
-export function setSetupCompleteCookie(): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${SETUP_COMPLETE_COOKIE}=1; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
-}
-
-export function clearSetupCompleteCookie(): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${SETUP_COMPLETE_COOKIE}=; path=/; max-age=0`;
-}
-
-const AUTH_COOKIE = "sadcpf_authenticated";
-
-export function setAuthCookie(): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${AUTH_COOKIE}=1; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
-}
-
-export function clearAuthCookie(): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${AUTH_COOKIE}=; path=/; max-age=0`;
-}
-
-const PORTAL_COOKIE = "sadcpf_portal";
-
-export function setPortalCookie(portal: "staff" | "supplier"): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${PORTAL_COOKIE}=${portal}; path=/; max-age=${COOKIE_MAX_AGE_DAYS * 86400}; SameSite=Lax`;
-}
-
-export function clearPortalCookie(): void {
-  if (typeof document === "undefined") return;
-  document.cookie = `${PORTAL_COOKIE}=; path=/; max-age=0`;
-}
-
-function readXsrfCookie(): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  const match = document.cookie.match(/(?:^|; )XSRF-TOKEN=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : undefined;
-}
-
-const api = axios.create({
-  baseURL: "/api",
-  withCredentials: true,
-  xsrfCookieName: "XSRF-TOKEN",
-  xsrfHeaderName: "X-XSRF-TOKEN",
-  withXSRFToken: true,
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-});
-
-// FormData + default application/json makes axios JSON.stringify the body
-// (File → {}), which Laravel rejects as "The file field is required."
-// Drop Content-Type so the browser sets multipart/form-data with boundary.
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    config.headers["Accept-Language"] = readStoredLocale();
-    const xsrf = readXsrfCookie();
-    if (xsrf) {
-      config.headers["X-XSRF-TOKEN"] = xsrf;
-    }
-  }
-  if (typeof FormData !== "undefined" && config.data instanceof FormData) {
-    const headers = config.headers;
-    if (headers && typeof headers.setContentType === "function") {
-      headers.setContentType(false);
-    } else if (headers) {
-      delete (headers as Record<string, unknown>)["Content-Type"];
-      delete (headers as Record<string, unknown>)["content-type"];
-    }
-  }
-  return config;
-});
-
-// In-memory token cache — avoids synchronous localStorage read on every request
-let csrfBootstrapped = false;
-
-export async function ensureCsrfCookie(force = false): Promise<void> {
-  if (csrfBootstrapped && !force) return;
-  try {
-    await axios.get("/sanctum/csrf-cookie", { withCredentials: true });
-    csrfBootstrapped = true;
-  } catch (error) {
-    csrfBootstrapped = false;
-    throw error;
-  }
-}
-
-// Handle 401 globally — flag prevents concurrent 401s from firing multiple hard reloads
-let _redirecting401 = false;
-let _redirectingMfaSetup = false;
-
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (typeof window !== "undefined") {
-      const status = error.response?.status;
-      const original = error.config as (typeof error.config & { _csrfRetry?: boolean }) | undefined;
-      if (original && shouldRetryCsrf(error, Boolean(original._csrfRetry))) {
-        original._csrfRetry = true;
-        csrfBootstrapped = false;
-        try {
-          await ensureCsrfCookie(true);
-          const xsrf = readXsrfCookie();
-          if (xsrf) {
-            original.headers = original.headers ?? {};
-            original.headers["X-XSRF-TOKEN"] = xsrf;
-          }
-          return api.request(original);
-        } catch {
-          /* fall through to existing handlers */
-        }
-      }
-      const data = error.response?.data as { mfa_setup_required?: boolean; message?: string; code?: string } | undefined;
-
-      // Privileged role without MFA — send user to security setup (API middleware).
-      // Skip background notification polls and any call already on the security page.
-      if (
-        status === 403 &&
-        data?.mfa_setup_required === true &&
-        !_redirectingMfaSetup &&
-        !window.location.pathname.startsWith(MFA_SETUP_PATH)
-      ) {
-        const failedUrl = (error.config?.url ?? "").toString();
-        const isBackgroundNoise =
-          failedUrl.includes("/notifications") ||
-          failedUrl.includes("unread-count");
-        if (!isBackgroundNoise) {
-          _redirectingMfaSetup = true;
-          window.location.href = MFA_SETUP_PATH;
-        }
-        return Promise.reject(error);
-      }
-
-      if (status === 401) {
-        const path = window.location.pathname;
-        // Public auth flows (forgot / request / email-token reset) must stay put
-        // when a background /auth/me 401 fires — otherwise the form never loads.
-        const isPublicAuthPath =
-          path.startsWith("/login") ||
-          path.startsWith("/forgot-password") ||
-          path.startsWith("/request-password") ||
-          path.startsWith("/activate-account") ||
-          path.startsWith("/reset-password") ||
-          path.startsWith("/setup") ||
-          path.startsWith("/approval") ||
-          path === "/supplier/login" ||
-          path === "/supplier/register" ||
-          path === "/supplier/verify-email";
-
-        if (!isPublicAuthPath && !_redirecting401) {
-          _redirecting401 = true;
-          clearStoredUser();
-          clearAuthCookie();
-          clearPortalCookie();
-
-          // Best-effort: invalidate the server-side session so Laravel emits a
-          // Set-Cookie that wipes the httpOnly session cookie. Without this the
-          // proxy could still see a stale session cookie and bounce us back.
-          // Skip when the failing request was already /auth/logout to avoid
-          // recursion.
-          const failedUrl = (error.config?.url ?? "").toString();
-          if (!failedUrl.includes("/auth/logout")) {
-            // Fire-and-forget — don't block the redirect.
-            axios.post("/api/v1/auth/logout", null, { withCredentials: true })
-              .catch(() => { /* ignore — session is already invalid */ });
-          }
-
-          const supplierArea = path === "/supplier" || path.startsWith("/supplier/");
-          window.location.href = data?.code === "session_idle_timeout"
-            ? (supplierArea ? "/supplier/login?reason=idle" : "/login?reason=idle")
-            : (supplierArea ? "/supplier/login" : "/login");
-        }
-      } else if (status && status >= 500) {
-        captureClientException(error, { status, url: error.config?.url });
-      }
-    }
-    return Promise.reject(error);
-  }
-);
+export { ensureCsrfCookie };
+export * from "@/lib/api/cookies";
+export * from "@/lib/api/actionQueue";
+export * from "@/lib/api/programmeTimeline";
+export * from "@/lib/api/recordSearch";
 
 export default api;
 
@@ -1064,10 +868,16 @@ export interface TwoFactorSetup {
 }
 
 export const twoFactorApi = {
-  status: () => api.get<{ enabled: boolean }>("/profile/2fa/status"),
+  status: () => api.get<{ enabled: boolean; recovery_codes_remaining?: number }>("/profile/2fa/status"),
   enable: () => api.post<TwoFactorSetup>("/profile/2fa/enable"),
-  confirm: (code: string) => api.post<{ message: string; enabled: boolean }>("/profile/2fa/confirm", { code }),
-  disable: (password: string) => api.post<{ message: string; enabled: boolean }>("/profile/2fa/disable", { password }),
+  /** Returns one-time recovery codes; they are shown once and never retrievable again. */
+  confirm: (code: string) =>
+    api.post<{ message: string; enabled: boolean; recovery_codes: string[] }>("/profile/2fa/confirm", { code }),
+  /** Requires the password and a current authenticator code (or an unused recovery code). */
+  disable: (password: string, code: string) =>
+    api.post<{ message: string; enabled: boolean }>("/profile/2fa/disable", { password, code }),
+  regenerateRecoveryCodes: (password: string, code: string) =>
+    api.post<{ recovery_codes: string[] }>("/profile/2fa/recovery-codes", { password, code }),
   verify: (code: string) => api.post<{ message: string; valid: boolean }>("/profile/2fa/verify", { code }),
 };
 
@@ -1709,8 +1519,10 @@ export const travelApi = {
   list: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<TravelRequest>>("/travel/requests", { params }),
   get: (id: number) => api.get<TravelRequest>(`/travel/requests/${id}`),
-  create: (data: Omit<Partial<TravelRequest>, "itineraries"> & { itineraries?: Partial<TravelItinerary>[] }) =>
-    api.post<{ data: TravelRequest; message: string }>("/travel/requests", data),
+  /** `idempotencyKey` makes a retried create (e.g. after a lost response) return the first result instead of a duplicate. */
+  create: (data: Omit<Partial<TravelRequest>, "itineraries"> & { itineraries?: Partial<TravelItinerary>[] }, idempotencyKey?: string) =>
+    api.post<{ data: TravelRequest; message: string }>("/travel/requests", data,
+      idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined),
   update: (id: number, data: Omit<Partial<TravelRequest>, "itineraries"> & { itineraries?: Partial<TravelItinerary>[] }) =>
     api.put<{ data: TravelRequest; message: string }>(`/travel/requests/${id}`, data),
   delete: (id: number) => api.delete(`/travel/requests/${id}`),
@@ -3439,8 +3251,10 @@ export const leaveApi = {
   }) => api.post<{ data: LeavePolicyVersion }>("/leave/policies", data),
   preview: (segments: LeaveSegmentInput[]) =>
     api.post<{ data: LeavePreviewResponse }>("/leave/preview", { segments }),
-  create: (data: LeaveCreatePayload) =>
-    api.post<{ data: LeaveRequest; message: string }>("/leave/requests", data),
+  /** `idempotencyKey` makes a retried create return the first result instead of a duplicate. */
+  create: (data: LeaveCreatePayload, idempotencyKey?: string) =>
+    api.post<{ data: LeaveRequest; message: string }>("/leave/requests", data,
+      idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined),
   update: (id: number, data: Partial<LeaveRequest>) =>
     api.put<{ data: LeaveRequest; message: string }>(`/leave/requests/${id}`, data),
   delete: (id: number) => api.delete(`/leave/requests/${id}`),
@@ -3845,8 +3659,10 @@ export const procurementApi = {
   list: (params?: Record<string, string | number | boolean>) =>
     api.get<PaginatedResponse<ProcurementRequest>>("/procurement/requests", { params }),
   get: (id: number) => api.get<ProcurementRequest>(`/procurement/requests/${id}`),
-  create: (data: Partial<ProcurementRequest>) =>
-    api.post<{ data: ProcurementRequest; message: string }>("/procurement/requests", data),
+  /** `idempotencyKey` makes a retried create return the first result instead of a duplicate. */
+  create: (data: Partial<ProcurementRequest>, idempotencyKey?: string) =>
+    api.post<{ data: ProcurementRequest; message: string }>("/procurement/requests", data,
+      idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined),
   update: (id: number, data: Partial<ProcurementRequest>) =>
     api.put<{ data: ProcurementRequest; message: string }>(`/procurement/requests/${id}`, data),
   delete: (id: number) => api.delete(`/procurement/requests/${id}`),
@@ -5571,8 +5387,10 @@ export const contractsApi = {
   }) => api.post<{ data: Contract; message: string }>("/contracts/import", data),
   get: (id: number) =>
     api.get<{ data: Contract }>(`/contracts/${id}`),
-  create: (data: Partial<Contract> & { vendor_id: number; title: string; start_date: string; end_date: string; value: number }) =>
-    api.post<{ data: Contract; message: string }>("/contracts", data),
+  /** `idempotencyKey` makes a retried create return the first result instead of a duplicate. */
+  create: (data: Partial<Contract> & { vendor_id: number; title: string; start_date: string; end_date: string; value: number }, idempotencyKey?: string) =>
+    api.post<{ data: Contract; message: string }>("/contracts", data,
+      idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined),
   activate: (id: number) =>
     api.post<{ data: Contract; message: string }>(`/contracts/${id}/activate`),
   suspend: (id: number, reason: string) =>
@@ -6024,8 +5842,10 @@ export const financeApi = {
   listAdvances: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<SalaryAdvanceRequest>>("/finance/advances", { params }),
   getAdvance: (id: number) => api.get<SalaryAdvanceRequest>(`/finance/advances/${id}`),
-  createAdvance: (data: Partial<SalaryAdvanceRequest> & { advance_type: string; amount: number; purpose: string; justification: string }) =>
-    api.post<{ data: SalaryAdvanceRequest; message: string }>("/finance/advances", data),
+  /** `idempotencyKey` makes a retried create return the first result instead of a duplicate. */
+  createAdvance: (data: Partial<SalaryAdvanceRequest> & { advance_type: string; amount: number; purpose: string; justification: string }, idempotencyKey?: string) =>
+    api.post<{ data: SalaryAdvanceRequest; message: string }>("/finance/advances", data,
+      idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined),
   updateAdvance: (id: number, data: Partial<SalaryAdvanceRequest>) =>
     api.put<{ data: SalaryAdvanceRequest; message: string }>(`/finance/advances/${id}`, data),
   deleteAdvance: (id: number) => api.delete(`/finance/advances/${id}`),
@@ -9495,8 +9315,10 @@ export const riskApi = {
     api.get<PaginatedResponse<Risk>>("/risk/risks", { params }),
   get: (id: number) =>
     api.get<{ data: Risk }>(`/risk/risks/${id}`),
-  create: (data: Partial<Risk>) =>
-    api.post<{ data: Risk; message: string }>("/risk/risks", data),
+  /** `idempotencyKey` makes a retried create return the first result instead of a duplicate. */
+  create: (data: Partial<Risk>, idempotencyKey?: string) =>
+    api.post<{ data: Risk; message: string }>("/risk/risks", data,
+      idempotencyKey ? { headers: { "Idempotency-Key": idempotencyKey } } : undefined),
   update: (id: number, data: Partial<Risk>) =>
     api.put<{ data: Risk; message: string }>(`/risk/risks/${id}`, data),
   delete: (id: number) =>

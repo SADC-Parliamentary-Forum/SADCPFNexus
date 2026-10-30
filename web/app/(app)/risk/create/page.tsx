@@ -5,12 +5,13 @@ import { FormSection } from "@/components/ui/FormSection";
 import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { ApplyMitigationFields, EMPTY_MITIGATION, type MitigationDraft } from "@/components/risk/ApplyMitigationFields";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { riskApi, type RiskObjectiveOption } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useFormDraft } from "@/lib/useFormDraft";
 import {
   asOwnerOptions,
   buildMitigationFormData,
@@ -94,6 +95,25 @@ export default function CreateRiskPage() {
   const [objectives, setObjectives] = useState<RiskObjectiveOption[]>([]);
   const [mitigation, setMitigation] = useState<MitigationDraft>(EMPTY_MITIGATION);
 
+  // Autosave locally (the mitigation file cannot be persisted). Once created, a
+  // retry updates and submits the same risk and does not apply the mitigation twice.
+  const draftValue = useMemo(
+    () => ({
+      form,
+      mitigation: { description: mitigation.description, due_date: mitigation.due_date, treatment_type: mitigation.treatment_type },
+    }),
+    [form, mitigation.description, mitigation.due_date, mitigation.treatment_type],
+  );
+  const draft = useFormDraft("risk.create", draftValue);
+  const createdIdRef = useRef<number | null>(null);
+  const mitigationAppliedRef = useRef(false);
+  const restoreDraft = () => {
+    const v = draft.restore();
+    if (!v) return;
+    if (v.form) setForm((prev) => ({ ...prev, ...v.form }));
+    if (v.mitigation) setMitigation((prev) => ({ ...prev, ...v.mitigation, file: null }));
+  };
+
   function loadOwners() {
     const current = getStoredUser();
     setOwnersLoading(true);
@@ -168,10 +188,15 @@ export default function CreateRiskPage() {
       if (!form.event_description) delete payload.event_description;
       if (!form.consequence) delete payload.consequence;
 
-      const res = await riskApi.create(payload as Parameters<typeof riskApi.create>[0]);
+      const existingId = createdIdRef.current;
+      const res = existingId
+        ? await riskApi.update(existingId, payload as Parameters<typeof riskApi.update>[1])
+        : await riskApi.create(payload as Parameters<typeof riskApi.create>[0], `${draft.operationKey}:create`);
       const created = res.data.data;
+      createdIdRef.current = created.id;
+      draft.clear();
 
-      if (mitigation.description.trim() || mitigation.file) {
+      if (!mitigationAppliedRef.current && (mitigation.description.trim() || mitigation.file)) {
         try {
           await riskApi.applyMitigations(
             buildMitigationFormData({
@@ -183,6 +208,7 @@ export default function CreateRiskPage() {
               documentType: "risk_mitigation_plan",
             }),
           );
+          mitigationAppliedRef.current = true;
         } catch {
           /* Risk is saved; staff can attach the mitigation from the detail page. */
         }
@@ -218,6 +244,15 @@ export default function CreateRiskPage() {
           />
         }
       />
+
+      {draft.restorable && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800" role="status">
+          <span className="material-symbols-outlined text-[16px]">history</span>
+          <span className="flex-1">{t("risk.create.draftFound", { when: new Date(draft.restorable.savedAt).toLocaleString() })}</span>
+          <button type="button" className="btn-primary px-3 py-1.5 text-xs" onClick={restoreDraft}>{t("risk.create.draftRestore")}</button>
+          <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={draft.discard}>{t("risk.create.draftDiscard")}</button>
+        </div>
+      )}
 
       {apiError && (
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center gap-2">

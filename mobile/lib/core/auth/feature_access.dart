@@ -2,7 +2,14 @@
 /// Aligns with web [canAccessRoute] and backend permissions.
 library;
 
-const _adminRoles = ['System Admin', 'System Administrator', 'super-admin'];
+/// System administrator role names — must match `User::isSystemAdmin()` in the
+/// API and `ADMIN_ROLES` in web/lib/authAccess.ts. UI gating only; the API
+/// enforces access.
+const kSystemAdminRoles = ['System Admin', 'System Administrator', 'super-admin', 'admin', 'Admin'];
+
+bool hasSystemAdminRole(List<String> roles) => roles.any(kSystemAdminRoles.contains);
+
+const _adminRoles = kSystemAdminRoles;
 
 final _adminOnlyPaths = [
   '/admin',

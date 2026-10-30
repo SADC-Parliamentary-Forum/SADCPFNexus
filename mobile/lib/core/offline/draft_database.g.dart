@@ -46,9 +46,61 @@ class $DraftEntriesTable extends DraftEntries
   late final GeneratedColumn<DateTime> syncedAt = GeneratedColumn<DateTime>(
       'synced_at', aliasedName, true,
       type: DriftSqlType.dateTime, requiredDuringInsert: false);
+  static const VerificationMeta _ownerKeyMeta =
+      const VerificationMeta('ownerKey');
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, type, title, payload, createdAt, syncedAt];
+  late final GeneratedColumn<String> ownerKey = GeneratedColumn<String>(
+      'owner_key', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _operationIdMeta =
+      const VerificationMeta('operationId');
+  @override
+  late final GeneratedColumn<String> operationId = GeneratedColumn<String>(
+      'operation_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _serverIdMeta =
+      const VerificationMeta('serverId');
+  @override
+  late final GeneratedColumn<String> serverId = GeneratedColumn<String>(
+      'server_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _syncStateMeta =
+      const VerificationMeta('syncState');
+  @override
+  late final GeneratedColumn<String> syncState = GeneratedColumn<String>(
+      'sync_state', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('pending'));
+  static const VerificationMeta _lastErrorMeta =
+      const VerificationMeta('lastError');
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+      'last_error', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _attemptsMeta =
+      const VerificationMeta('attempts');
+  @override
+  late final GeneratedColumn<int> attempts = GeneratedColumn<int>(
+      'attempts', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        type,
+        title,
+        payload,
+        createdAt,
+        syncedAt,
+        ownerKey,
+        operationId,
+        serverId,
+        syncState,
+        lastError,
+        attempts
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -90,6 +142,32 @@ class $DraftEntriesTable extends DraftEntries
       context.handle(_syncedAtMeta,
           syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta));
     }
+    if (data.containsKey('owner_key')) {
+      context.handle(_ownerKeyMeta,
+          ownerKey.isAcceptableOrUnknown(data['owner_key']!, _ownerKeyMeta));
+    }
+    if (data.containsKey('operation_id')) {
+      context.handle(
+          _operationIdMeta,
+          operationId.isAcceptableOrUnknown(
+              data['operation_id']!, _operationIdMeta));
+    }
+    if (data.containsKey('server_id')) {
+      context.handle(_serverIdMeta,
+          serverId.isAcceptableOrUnknown(data['server_id']!, _serverIdMeta));
+    }
+    if (data.containsKey('sync_state')) {
+      context.handle(_syncStateMeta,
+          syncState.isAcceptableOrUnknown(data['sync_state']!, _syncStateMeta));
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(_lastErrorMeta,
+          lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta));
+    }
+    if (data.containsKey('attempts')) {
+      context.handle(_attemptsMeta,
+          attempts.isAcceptableOrUnknown(data['attempts']!, _attemptsMeta));
+    }
     return context;
   }
 
@@ -111,6 +189,18 @@ class $DraftEntriesTable extends DraftEntries
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       syncedAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}synced_at']),
+      ownerKey: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}owner_key']),
+      operationId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}operation_id']),
+      serverId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}server_id']),
+      syncState: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sync_state'])!,
+      lastError: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}last_error']),
+      attempts: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}attempts'])!,
     );
   }
 
@@ -127,13 +217,36 @@ class DraftEntry extends DataClass implements Insertable<DraftEntry> {
   final String payload;
   final DateTime createdAt;
   final DateTime? syncedAt;
+
+  /// `tenantId:userId` of the account that saved the draft. NULL for drafts
+  /// written before v2: those are quarantined (never listed or synced for
+  /// any account) because their author cannot be proven.
+  final String? ownerKey;
+
+  /// Client operation UUID; sent as the Idempotency-Key prefix so a retried
+  /// create/submit is recognised by the server instead of duplicated.
+  final String? operationId;
+
+  /// Server record id once the create call succeeded — resume skips create.
+  final String? serverId;
+
+  /// pending | created | failed
+  final String syncState;
+  final String? lastError;
+  final int attempts;
   const DraftEntry(
       {required this.id,
       required this.type,
       required this.title,
       required this.payload,
       required this.createdAt,
-      this.syncedAt});
+      this.syncedAt,
+      this.ownerKey,
+      this.operationId,
+      this.serverId,
+      required this.syncState,
+      this.lastError,
+      required this.attempts});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -145,6 +258,20 @@ class DraftEntry extends DataClass implements Insertable<DraftEntry> {
     if (!nullToAbsent || syncedAt != null) {
       map['synced_at'] = Variable<DateTime>(syncedAt);
     }
+    if (!nullToAbsent || ownerKey != null) {
+      map['owner_key'] = Variable<String>(ownerKey);
+    }
+    if (!nullToAbsent || operationId != null) {
+      map['operation_id'] = Variable<String>(operationId);
+    }
+    if (!nullToAbsent || serverId != null) {
+      map['server_id'] = Variable<String>(serverId);
+    }
+    map['sync_state'] = Variable<String>(syncState);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    map['attempts'] = Variable<int>(attempts);
     return map;
   }
 
@@ -158,6 +285,20 @@ class DraftEntry extends DataClass implements Insertable<DraftEntry> {
       syncedAt: syncedAt == null && nullToAbsent
           ? const Value.absent()
           : Value(syncedAt),
+      ownerKey: ownerKey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(ownerKey),
+      operationId: operationId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(operationId),
+      serverId: serverId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(serverId),
+      syncState: Value(syncState),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      attempts: Value(attempts),
     );
   }
 
@@ -171,6 +312,12 @@ class DraftEntry extends DataClass implements Insertable<DraftEntry> {
       payload: serializer.fromJson<String>(json['payload']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       syncedAt: serializer.fromJson<DateTime?>(json['syncedAt']),
+      ownerKey: serializer.fromJson<String?>(json['ownerKey']),
+      operationId: serializer.fromJson<String?>(json['operationId']),
+      serverId: serializer.fromJson<String?>(json['serverId']),
+      syncState: serializer.fromJson<String>(json['syncState']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      attempts: serializer.fromJson<int>(json['attempts']),
     );
   }
   @override
@@ -183,6 +330,12 @@ class DraftEntry extends DataClass implements Insertable<DraftEntry> {
       'payload': serializer.toJson<String>(payload),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'syncedAt': serializer.toJson<DateTime?>(syncedAt),
+      'ownerKey': serializer.toJson<String?>(ownerKey),
+      'operationId': serializer.toJson<String?>(operationId),
+      'serverId': serializer.toJson<String?>(serverId),
+      'syncState': serializer.toJson<String>(syncState),
+      'lastError': serializer.toJson<String?>(lastError),
+      'attempts': serializer.toJson<int>(attempts),
     };
   }
 
@@ -192,7 +345,13 @@ class DraftEntry extends DataClass implements Insertable<DraftEntry> {
           String? title,
           String? payload,
           DateTime? createdAt,
-          Value<DateTime?> syncedAt = const Value.absent()}) =>
+          Value<DateTime?> syncedAt = const Value.absent(),
+          Value<String?> ownerKey = const Value.absent(),
+          Value<String?> operationId = const Value.absent(),
+          Value<String?> serverId = const Value.absent(),
+          String? syncState,
+          Value<String?> lastError = const Value.absent(),
+          int? attempts}) =>
       DraftEntry(
         id: id ?? this.id,
         type: type ?? this.type,
@@ -200,6 +359,12 @@ class DraftEntry extends DataClass implements Insertable<DraftEntry> {
         payload: payload ?? this.payload,
         createdAt: createdAt ?? this.createdAt,
         syncedAt: syncedAt.present ? syncedAt.value : this.syncedAt,
+        ownerKey: ownerKey.present ? ownerKey.value : this.ownerKey,
+        operationId: operationId.present ? operationId.value : this.operationId,
+        serverId: serverId.present ? serverId.value : this.serverId,
+        syncState: syncState ?? this.syncState,
+        lastError: lastError.present ? lastError.value : this.lastError,
+        attempts: attempts ?? this.attempts,
       );
   DraftEntry copyWithCompanion(DraftEntriesCompanion data) {
     return DraftEntry(
@@ -209,6 +374,13 @@ class DraftEntry extends DataClass implements Insertable<DraftEntry> {
       payload: data.payload.present ? data.payload.value : this.payload,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+      ownerKey: data.ownerKey.present ? data.ownerKey.value : this.ownerKey,
+      operationId:
+          data.operationId.present ? data.operationId.value : this.operationId,
+      serverId: data.serverId.present ? data.serverId.value : this.serverId,
+      syncState: data.syncState.present ? data.syncState.value : this.syncState,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      attempts: data.attempts.present ? data.attempts.value : this.attempts,
     );
   }
 
@@ -220,14 +392,20 @@ class DraftEntry extends DataClass implements Insertable<DraftEntry> {
           ..write('title: $title, ')
           ..write('payload: $payload, ')
           ..write('createdAt: $createdAt, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('ownerKey: $ownerKey, ')
+          ..write('operationId: $operationId, ')
+          ..write('serverId: $serverId, ')
+          ..write('syncState: $syncState, ')
+          ..write('lastError: $lastError, ')
+          ..write('attempts: $attempts')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, type, title, payload, createdAt, syncedAt);
+  int get hashCode => Object.hash(id, type, title, payload, createdAt, syncedAt,
+      ownerKey, operationId, serverId, syncState, lastError, attempts);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -237,7 +415,13 @@ class DraftEntry extends DataClass implements Insertable<DraftEntry> {
           other.title == this.title &&
           other.payload == this.payload &&
           other.createdAt == this.createdAt &&
-          other.syncedAt == this.syncedAt);
+          other.syncedAt == this.syncedAt &&
+          other.ownerKey == this.ownerKey &&
+          other.operationId == this.operationId &&
+          other.serverId == this.serverId &&
+          other.syncState == this.syncState &&
+          other.lastError == this.lastError &&
+          other.attempts == this.attempts);
 }
 
 class DraftEntriesCompanion extends UpdateCompanion<DraftEntry> {
@@ -247,6 +431,12 @@ class DraftEntriesCompanion extends UpdateCompanion<DraftEntry> {
   final Value<String> payload;
   final Value<DateTime> createdAt;
   final Value<DateTime?> syncedAt;
+  final Value<String?> ownerKey;
+  final Value<String?> operationId;
+  final Value<String?> serverId;
+  final Value<String> syncState;
+  final Value<String?> lastError;
+  final Value<int> attempts;
   const DraftEntriesCompanion({
     this.id = const Value.absent(),
     this.type = const Value.absent(),
@@ -254,6 +444,12 @@ class DraftEntriesCompanion extends UpdateCompanion<DraftEntry> {
     this.payload = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.syncedAt = const Value.absent(),
+    this.ownerKey = const Value.absent(),
+    this.operationId = const Value.absent(),
+    this.serverId = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.attempts = const Value.absent(),
   });
   DraftEntriesCompanion.insert({
     this.id = const Value.absent(),
@@ -262,6 +458,12 @@ class DraftEntriesCompanion extends UpdateCompanion<DraftEntry> {
     required String payload,
     required DateTime createdAt,
     this.syncedAt = const Value.absent(),
+    this.ownerKey = const Value.absent(),
+    this.operationId = const Value.absent(),
+    this.serverId = const Value.absent(),
+    this.syncState = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.attempts = const Value.absent(),
   })  : type = Value(type),
         title = Value(title),
         payload = Value(payload),
@@ -273,6 +475,12 @@ class DraftEntriesCompanion extends UpdateCompanion<DraftEntry> {
     Expression<String>? payload,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? syncedAt,
+    Expression<String>? ownerKey,
+    Expression<String>? operationId,
+    Expression<String>? serverId,
+    Expression<String>? syncState,
+    Expression<String>? lastError,
+    Expression<int>? attempts,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -281,6 +489,12 @@ class DraftEntriesCompanion extends UpdateCompanion<DraftEntry> {
       if (payload != null) 'payload': payload,
       if (createdAt != null) 'created_at': createdAt,
       if (syncedAt != null) 'synced_at': syncedAt,
+      if (ownerKey != null) 'owner_key': ownerKey,
+      if (operationId != null) 'operation_id': operationId,
+      if (serverId != null) 'server_id': serverId,
+      if (syncState != null) 'sync_state': syncState,
+      if (lastError != null) 'last_error': lastError,
+      if (attempts != null) 'attempts': attempts,
     });
   }
 
@@ -290,7 +504,13 @@ class DraftEntriesCompanion extends UpdateCompanion<DraftEntry> {
       Value<String>? title,
       Value<String>? payload,
       Value<DateTime>? createdAt,
-      Value<DateTime?>? syncedAt}) {
+      Value<DateTime?>? syncedAt,
+      Value<String?>? ownerKey,
+      Value<String?>? operationId,
+      Value<String?>? serverId,
+      Value<String>? syncState,
+      Value<String?>? lastError,
+      Value<int>? attempts}) {
     return DraftEntriesCompanion(
       id: id ?? this.id,
       type: type ?? this.type,
@@ -298,6 +518,12 @@ class DraftEntriesCompanion extends UpdateCompanion<DraftEntry> {
       payload: payload ?? this.payload,
       createdAt: createdAt ?? this.createdAt,
       syncedAt: syncedAt ?? this.syncedAt,
+      ownerKey: ownerKey ?? this.ownerKey,
+      operationId: operationId ?? this.operationId,
+      serverId: serverId ?? this.serverId,
+      syncState: syncState ?? this.syncState,
+      lastError: lastError ?? this.lastError,
+      attempts: attempts ?? this.attempts,
     );
   }
 
@@ -322,6 +548,24 @@ class DraftEntriesCompanion extends UpdateCompanion<DraftEntry> {
     if (syncedAt.present) {
       map['synced_at'] = Variable<DateTime>(syncedAt.value);
     }
+    if (ownerKey.present) {
+      map['owner_key'] = Variable<String>(ownerKey.value);
+    }
+    if (operationId.present) {
+      map['operation_id'] = Variable<String>(operationId.value);
+    }
+    if (serverId.present) {
+      map['server_id'] = Variable<String>(serverId.value);
+    }
+    if (syncState.present) {
+      map['sync_state'] = Variable<String>(syncState.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (attempts.present) {
+      map['attempts'] = Variable<int>(attempts.value);
+    }
     return map;
   }
 
@@ -333,7 +577,13 @@ class DraftEntriesCompanion extends UpdateCompanion<DraftEntry> {
           ..write('title: $title, ')
           ..write('payload: $payload, ')
           ..write('createdAt: $createdAt, ')
-          ..write('syncedAt: $syncedAt')
+          ..write('syncedAt: $syncedAt, ')
+          ..write('ownerKey: $ownerKey, ')
+          ..write('operationId: $operationId, ')
+          ..write('serverId: $serverId, ')
+          ..write('syncState: $syncState, ')
+          ..write('lastError: $lastError, ')
+          ..write('attempts: $attempts')
           ..write(')'))
         .toString();
   }
@@ -358,6 +608,12 @@ typedef $$DraftEntriesTableCreateCompanionBuilder = DraftEntriesCompanion
   required String payload,
   required DateTime createdAt,
   Value<DateTime?> syncedAt,
+  Value<String?> ownerKey,
+  Value<String?> operationId,
+  Value<String?> serverId,
+  Value<String> syncState,
+  Value<String?> lastError,
+  Value<int> attempts,
 });
 typedef $$DraftEntriesTableUpdateCompanionBuilder = DraftEntriesCompanion
     Function({
@@ -367,6 +623,12 @@ typedef $$DraftEntriesTableUpdateCompanionBuilder = DraftEntriesCompanion
   Value<String> payload,
   Value<DateTime> createdAt,
   Value<DateTime?> syncedAt,
+  Value<String?> ownerKey,
+  Value<String?> operationId,
+  Value<String?> serverId,
+  Value<String> syncState,
+  Value<String?> lastError,
+  Value<int> attempts,
 });
 
 class $$DraftEntriesTableFilterComposer
@@ -395,6 +657,24 @@ class $$DraftEntriesTableFilterComposer
 
   ColumnFilters<DateTime> get syncedAt => $composableBuilder(
       column: $table.syncedAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get ownerKey => $composableBuilder(
+      column: $table.ownerKey, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get operationId => $composableBuilder(
+      column: $table.operationId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get serverId => $composableBuilder(
+      column: $table.serverId, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get syncState => $composableBuilder(
+      column: $table.syncState, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get attempts => $composableBuilder(
+      column: $table.attempts, builder: (column) => ColumnFilters(column));
 }
 
 class $$DraftEntriesTableOrderingComposer
@@ -423,6 +703,24 @@ class $$DraftEntriesTableOrderingComposer
 
   ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
       column: $table.syncedAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get ownerKey => $composableBuilder(
+      column: $table.ownerKey, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get operationId => $composableBuilder(
+      column: $table.operationId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get serverId => $composableBuilder(
+      column: $table.serverId, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get syncState => $composableBuilder(
+      column: $table.syncState, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+      column: $table.lastError, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get attempts => $composableBuilder(
+      column: $table.attempts, builder: (column) => ColumnOrderings(column));
 }
 
 class $$DraftEntriesTableAnnotationComposer
@@ -451,6 +749,24 @@ class $$DraftEntriesTableAnnotationComposer
 
   GeneratedColumn<DateTime> get syncedAt =>
       $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerKey =>
+      $composableBuilder(column: $table.ownerKey, builder: (column) => column);
+
+  GeneratedColumn<String> get operationId => $composableBuilder(
+      column: $table.operationId, builder: (column) => column);
+
+  GeneratedColumn<String> get serverId =>
+      $composableBuilder(column: $table.serverId, builder: (column) => column);
+
+  GeneratedColumn<String> get syncState =>
+      $composableBuilder(column: $table.syncState, builder: (column) => column);
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<int> get attempts =>
+      $composableBuilder(column: $table.attempts, builder: (column) => column);
 }
 
 class $$DraftEntriesTableTableManager extends RootTableManager<
@@ -485,6 +801,12 @@ class $$DraftEntriesTableTableManager extends RootTableManager<
             Value<String> payload = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
             Value<DateTime?> syncedAt = const Value.absent(),
+            Value<String?> ownerKey = const Value.absent(),
+            Value<String?> operationId = const Value.absent(),
+            Value<String?> serverId = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            Value<int> attempts = const Value.absent(),
           }) =>
               DraftEntriesCompanion(
             id: id,
@@ -493,6 +815,12 @@ class $$DraftEntriesTableTableManager extends RootTableManager<
             payload: payload,
             createdAt: createdAt,
             syncedAt: syncedAt,
+            ownerKey: ownerKey,
+            operationId: operationId,
+            serverId: serverId,
+            syncState: syncState,
+            lastError: lastError,
+            attempts: attempts,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -501,6 +829,12 @@ class $$DraftEntriesTableTableManager extends RootTableManager<
             required String payload,
             required DateTime createdAt,
             Value<DateTime?> syncedAt = const Value.absent(),
+            Value<String?> ownerKey = const Value.absent(),
+            Value<String?> operationId = const Value.absent(),
+            Value<String?> serverId = const Value.absent(),
+            Value<String> syncState = const Value.absent(),
+            Value<String?> lastError = const Value.absent(),
+            Value<int> attempts = const Value.absent(),
           }) =>
               DraftEntriesCompanion.insert(
             id: id,
@@ -509,6 +843,12 @@ class $$DraftEntriesTableTableManager extends RootTableManager<
             payload: payload,
             createdAt: createdAt,
             syncedAt: syncedAt,
+            ownerKey: ownerKey,
+            operationId: operationId,
+            serverId: serverId,
+            syncState: syncState,
+            lastError: lastError,
+            attempts: attempts,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

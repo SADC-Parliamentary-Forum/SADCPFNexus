@@ -25,11 +25,17 @@ PostgreSQL data (including seeded demo data) persists across sessions. DB role `
 - `next dev` regenerates `web/AGENTS.md` and `web/CLAUDE.md` (Next.js 16 agent files) as untracked files — this is expected framework behavior.
 
 ### Mobile (Flutter) — `mobile/`
-- Requires Flutter >= 3.29 / Dart >= 3.7 per the committed `mobile/pubspec.lock` (`drift_flutter` needs Dart >= 3.5). The `flutter-version: 3.22.x` in `.github/workflows/mobile.yml` is stale and cannot resolve the lockfile; use the installed 3.29.3.
+- Requires Flutter >= 3.29 / Dart >= 3.7 per the committed `mobile/pubspec.lock` (`drift_flutter` needs Dart >= 3.5). CI (`.github/workflows/mobile.yml`) pins 3.29.3.
 - After `flutter pub get`, run codegen before analyze/test/run: `dart run build_runner build --delete-conflicting-outputs` (json_serializable, hive, drift).
 - Analyze: `flutter analyze`. Tests: `flutter test`. Run on web: `flutter run -d web-server --web-port <port>` (no Android/iOS toolchain installed).
 
-### Known pre-existing test failures (not environment issues)
-- API: `Tests\Feature\Security\ExternalWorkplanAuthTest::test_workplan_view_alone_cannot_access_external_workplan`.
-- Mobile: `salary_advance_helpers formatSaCurrency formats NAD amounts` (expects `NAD` vs actual `N$`).
-Both are code-level assertion mismatches on this branch; the test harnesses themselves run correctly.
+### Known pre-existing test issues (verified 2026-10-27)
+- The two previously listed failures (`ExternalWorkplanAuthTest::test_workplan_view_alone…`, mobile `formatSaCurrency` NAD) now pass.
+- Web `npm run test:unit`: 12 static UI-convention checks fail on `HEAD` as well (e.g. `native window.alert…`, `operational … gold chrome`, Procurement sidebar child count).
+- `next build` refuses to run on a Next.js version with a published security advisory (`SecurityFatalError`); keep `next` patched (16.4.3 as of 2026-10-27).
+- A single-process `php artisan test` over the whole suite can exhaust a 512 MB `memory_limit` in dompdf-heavy tests; run with `php -d memory_limit=2G artisan test`.
+- `RefreshDatabase` re-running `migrate:fresh` on an already-populated test DB can exceed PostgreSQL's default `max_locks_per_transaction` (~600 tables); raise it (e.g. 1024) or use a freshly created empty test database.
+
+### Operations notes
+- `php artisan schema:check` (exit 0 current / 1 pending / 2 unreachable) gates container start; production migrates via `scripts/deploy.sh` or `docker compose … run --rm migrate`, never on start.
+- `php artisan ops:health` reports scheduler heartbeat, DB, queues, notification backlog and storage (exit 0/1/2). The scheduler service is behind the `scheduler` Compose profile in production.

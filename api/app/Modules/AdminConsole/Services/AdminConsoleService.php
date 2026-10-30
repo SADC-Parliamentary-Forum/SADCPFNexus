@@ -75,11 +75,18 @@ class AdminConsoleService
     public function platformStatus(int $tenantId): array
     {
         $this->ensureSeeded($tenantId);
+        // Measured probes (scheduler heartbeat, DB round-trip, queues, notification
+        // backlog, storage) replace the previously hard-coded database status.
+        $live = app(OperationalHealthService::class)->probes();
         $services = [
             'web' => $this->serviceStatus('Web', 'operational'),
             'api' => $this->serviceStatus('API', 'operational'),
             'authentication' => $this->serviceStatus('Authentication', 'operational'),
-            'database' => $this->serviceStatus('Database', 'operational', ['driver' => DB::getDriverName()]),
+            'database' => $live['database'],
+            'scheduler' => $live['scheduler'],
+            'queue_worker' => $live['queue_worker'],
+            'notification_delivery' => $live['notification_delivery'],
+            'storage' => $live['storage'],
             'workflow' => $this->moduleServiceStatus($tenantId, 'workflow-engine', 'Workflow'),
             'notifications' => $this->integrationServiceStatus($tenantId, 'notification-delivery', 'Notifications'),
             'documents' => $this->moduleServiceStatus($tenantId, 'documents', 'Documents'),

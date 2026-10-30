@@ -19,6 +19,9 @@ import {
 } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import ReadOnlySections from "./ReadOnlySections";
+import { Modal, STATUS_BADGE, STATUS_LABEL, ME_STATUS_LABEL, ME_STATUS_BADGE, ACT_BADGE, MS_BADGE, DEL_BADGE, DECLARATION_TEXT, PROC_BADGE, METHOD_LABEL, ATTACHMENT_TYPE_LABEL, type DetailTab } from "./pifDetailShared";
+import { apiErrorMessage } from "@/lib/apiError";
+import { ProgrammeTimeline } from "@/components/programmes/ProgrammeTimeline";
 import PifFinanceBudgetCertify from "@/components/budget/PifFinanceBudgetCertify";
 import { CreateAssignmentFromSourceModal } from "@/components/assignments/CreateAssignmentFromSourceModal";
 import { SigningModal } from "@/components/saam/SigningModal";
@@ -29,109 +32,6 @@ import { AuditTimeline } from "@/components/audit/AuditTimeline";
 import { useToast } from "@/components/ui/Toast";
 import { personLabel } from "@/lib/pifForm";
 import { TableEmpty, EmptyState } from "@/components/ui/EmptyState";
-
-// ─── Status helpers ───────────────────────────────────────────────────────────
-const STATUS_BADGE: Record<string, string> = {
-  draft: "badge-muted",
-  submitted: "badge-warning",
-  approved: "badge-success",
-  rejected: "badge-danger",
-  active: "badge-primary",
-  on_hold: "badge-warning",
-  completed: "badge-success",
-  financially_closed: "badge-muted",
-  archived: "badge-muted",
-  amended: "badge-success",
-  amendment_draft: "badge-muted",
-  amendment_pending_approval: "badge-warning",
-  superseded: "badge-muted",
-};
-const STATUS_LABEL: Record<string, string> = {
-  draft: "Draft", submitted: "Submitted", approved: "Approved", rejected: "Rejected", active: "Active",
-  on_hold: "On Hold", completed: "Completed", financially_closed: "Fin. Closed", archived: "Archived",
-  amended: "Amended", amendment_draft: "Amendment Draft",
-  amendment_pending_approval: "Amendment Pending Approval", superseded: "Superseded",
-};
-const ME_STATUS_LABEL: Record<string, string> = {
-  not_yet_linked: "Not Yet Linked",
-  linked_record_archived: "Linked Record Archived",
-  report_pending: "Report Pending",
-  report_submitted: "Report Submitted",
-  returned_for_correction: "Returned for Correction",
-  me_reviewed: "M&E Reviewed",
-  accepted: "Accepted",
-  closed: "Closed",
-  link_unavailable: "Link Unavailable",
-};
-const ME_STATUS_BADGE: Record<string, string> = {
-  not_yet_linked: "badge-muted",
-  linked_record_archived: "badge-muted",
-  report_pending: "badge-warning",
-  report_submitted: "badge-primary",
-  returned_for_correction: "badge-danger",
-  me_reviewed: "badge-primary",
-  accepted: "badge-success",
-  closed: "badge-success",
-  link_unavailable: "badge-muted",
-};
-const ACT_BADGE: Record<string, string> = {
-  draft: "badge-muted", approved: "badge-success", in_progress: "badge-primary",
-  completed: "badge-success", postponed: "badge-warning", cancelled: "badge-danger",
-};
-const MS_BADGE: Record<string, string> = {
-  pending: "badge-warning", achieved: "badge-success", missed: "badge-danger",
-};
-const DEL_BADGE: Record<string, string> = {
-  pending: "badge-warning", submitted: "badge-primary", accepted: "badge-success",
-};
-// Hardcoded to match config('pif.declaration_versions.v1') — the server is the
-// source of truth for what was actually agreed (via the stored declaration_version),
-// this is only client-side copy shown before submission.
-const DECLARATION_TEXT =
-  "I confirm that this PIF relates to one activity, the information provided is accurate to the best of my knowledge, required supporting documents have been included, and any known conflict of interest has been disclosed.";
-
-const PROC_BADGE: Record<string, string> = {
-  pending: "badge-warning", ordered: "badge-primary", delivered: "badge-success", cancelled: "badge-danger",
-};
-const METHOD_LABEL: Record<string, string> = {
-  direct_purchase: "Direct Purchase", three_quotations: "3 Quotations", tender: "Tender",
-};
-const ATTACHMENT_TYPE_LABEL: Record<ProgrammeAttachmentType, string> = {
-  concept_note: "Concept Note",
-  memo: "Memo",
-  hotel_quote: "Hotel Quote",
-  transport_quote: "Transport Quote",
-  other: "Other",
-};
-
-type DetailTab = "overview" | "logistics" | "activities" | "milestones" | "budget" | "procurement" | "attachments" | "approval";
-
-// ─── Toast ────────────────────────────────────────────────────────────────────
-function Toast({ msg }: { msg: string }) {
-  return (
-    <div className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
-      <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-      {msg}
-    </div>
-  );
-}
-
-// ─── Modal wrapper ────────────────────────────────────────────────────────────
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-sm font-semibold text-neutral-900">{title}</h2>
-          <button type="button" onClick={onClose} aria-label={`Close ${title}`} className="text-neutral-400 hover:text-neutral-600">
-            <span className="material-symbols-outlined text-[22px]">close</span>
-          </button>
-        </div>
-        <div className="p-6">{children}</div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function PifDetailPage() {
@@ -311,18 +211,6 @@ export default function PifDetailPage() {
   };
 
   // ── Approval actions ───────────────────────────────────────────────────────
-  const getApiError = (err: unknown): string => {
-    const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
-    const msg = ax.response?.data?.message;
-    if (msg) return msg;
-    const errors = ax.response?.data?.errors;
-    if (errors && typeof errors === "object") {
-      const first = Object.values(errors).flat()[0];
-      if (first) return first;
-    }
-    return "";
-  };
-
   const handleSubmitProgramme = async () => {
     if (!programme || !declarationConfirmed) return;
     setSubmitting(true);
@@ -332,7 +220,7 @@ export default function PifDetailPage() {
       setDeclarationConfirmed(false);
       load();
     } catch (err) {
-      showErrorToast(getApiError(err) || "Failed to submit.");
+      showErrorToast(apiErrorMessage(err, "Failed to submit."));
     }
     finally { setSubmitting(false); }
   };
@@ -351,7 +239,7 @@ export default function PifDetailPage() {
         setSignModal(true);
         return;
       }
-      showErrorToast(getApiError(err) || "Failed to approve.");
+      showErrorToast(apiErrorMessage(err, "Failed to approve."));
     }
     finally { setSubmitting(false); }
   };
@@ -368,7 +256,7 @@ export default function PifDetailPage() {
       success("Amendment created.");
       router.push(`/pif/${res.data.data.id}/edit`);
     } catch (err) {
-      showErrorToast(getApiError(err) || "Failed to create amendment.");
+      showErrorToast(apiErrorMessage(err, "Failed to create amendment."));
     } finally {
       setAmending(false);
     }
@@ -384,7 +272,7 @@ export default function PifDetailPage() {
       setRejectReason("");
       load();
     } catch (err) {
-      showErrorToast(getApiError(err) || "Failed to reject.");
+      showErrorToast(apiErrorMessage(err, "Failed to reject."));
     }
     finally { setSubmitting(false); }
   };
@@ -434,6 +322,7 @@ export default function PifDetailPage() {
     { key: "budget", label: "Budget", icon: "payments" },
     { key: "procurement", label: "Procurement", icon: "shopping_cart" },
     { key: "attachments", label: "Attachments", icon: "attach_file" },
+    { key: "timeline", label: "Timeline", icon: "timeline" },
     { key: "approval", label: "Approval", icon: "approval" },
   ];
 
@@ -1352,6 +1241,8 @@ export default function PifDetailPage() {
       )}
 
       {/* ── APPROVAL TAB ─────────────────────────────────────────────────────── */}
+      {tab === "timeline" && programme && <ProgrammeTimeline programmeId={programme.id} />}
+
       {tab === "approval" && (
         <div className="space-y-6">
           {/* Workflow timeline */}

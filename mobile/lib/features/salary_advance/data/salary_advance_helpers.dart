@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/auth/feature_access.dart';
 
 /// Unwraps Laravel list payloads (`{ data: [...] }` or bare arrays).
 List<Map<String, dynamic>> extractSalaryAdvanceList(dynamic payload) {
@@ -129,9 +130,7 @@ const _financeQueueRoles = [
   'Finance Officer',
   'Secretary General',
   'Director',
-  'System Admin',
-  'System Administrator',
-  'super-admin',
+  ...kSystemAdminRoles,
 ];
 
 const _financeQueuePermissions = [

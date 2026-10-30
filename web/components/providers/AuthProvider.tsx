@@ -6,6 +6,7 @@ import { AuthContext, mergeEffectivePermissions } from "@/lib/auth";
 import { authApi, type AuthUser } from "@/lib/api";
 import { clearStoredUser, readStoredUser, writeStoredUser } from "@/lib/session";
 import { clearEffectiveAccessCache, fetchEffectiveAccess } from "@/lib/effectiveAccessCache";
+import { clearAllFormDrafts } from "@/lib/formDraft";
 
 /** Paths where unauthenticated visitors are expected — do not call /auth/me. */
 const SKIP_REFRESH_PATHS = [
@@ -68,6 +69,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     clearStoredUser();
     clearEffectiveAccessCache();
+    // Autosaved form drafts may hold personal data; never leave them on a shared device.
+    clearAllFormDrafts();
     setUser(null);
   };
 

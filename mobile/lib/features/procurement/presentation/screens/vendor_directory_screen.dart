@@ -6,6 +6,7 @@ import '../../../../../core/theme/app_theme.dart';
 import '../../../../../shared/widgets/searchable_list_filter.dart';
 import '../../../../../shared/widgets/stitch_card.dart';
 import '../../../../../shared/widgets/stitch_screen.dart';
+import '../../../../core/auth/feature_access.dart';
 
 class VendorDirectoryScreen extends ConsumerStatefulWidget {
   const VendorDirectoryScreen({super.key});
@@ -122,12 +123,8 @@ class _VendorDirectoryScreenState extends ConsumerState<VendorDirectoryScreen> {
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(authSessionControllerProvider).state;
-    final canManage = session.roles.any((r) => [
-          'Procurement Officer',
-          'System Admin',
-          'Secretary General',
-          'super-admin'
-        ].contains(r));
+    final canManage = hasSystemAdminRole(session.roles) ||
+        session.roles.any(['Procurement Officer', 'Secretary General'].contains);
 
     return StitchScreen(
       title: 'Vendor Directory',

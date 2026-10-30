@@ -10,6 +10,7 @@ import {
   type BudgetLine,
 } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useFormDraft } from "@/lib/useFormDraft";
 
 const STEPS = ["Requisition Details", "Review & Submit"];
 
@@ -70,6 +71,17 @@ export default function ProcurementCreatePage() {
   const [splitJustification, setSplitJustification] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Autosave the text fields locally (staged files cannot be persisted). Once
+  // created, a retry updates and submits the same requisition and does not
+  // re-upload documents that were already attached.
+  const draft = useFormDraft("procurement.create", form);
+  const createdIdRef = useRef<number | null>(null);
+  const uploadedDocIds = useRef<Set<number>>(new Set());
+  const restoreDraft = () => {
+    const v = draft.restore();
+    if (v) setForm((p) => ({ ...p, ...v }));
+  };
+
   useEffect(() => {
     financeApi
       .listBudgets({ per_page: 100 })
@@ -127,7 +139,7 @@ export default function ProcurementCreatePage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await procurementApi.create({
+      const payload = {
         title: form.title,
         description: form.description,
         category: form.category as "goods" | "services" | "works",
@@ -135,13 +147,25 @@ export default function ProcurementCreatePage() {
         budget_line: form.budget_line || undefined,
         required_by_date: form.required_by_date || undefined,
         justification: form.justification || undefined,
-      });
+      };
+      const existingId = createdIdRef.current;
+      const res = existingId
+        ? await procurementApi.update(existingId, payload)
+        : await procurementApi.create(payload, `${draft.operationKey}:create`);
 
       const created = res.data?.data;
-      if (created?.id && stagedDocs.length > 0) {
-        await Promise.allSettled(
-          stagedDocs.map((doc) => procurementRequestAttachmentsApi.upload(created.id, doc.file, doc.docType))
+      if (created?.id) {
+        createdIdRef.current = created.id;
+        draft.clear();
+      }
+      const pendingDocs = stagedDocs.filter((doc) => !uploadedDocIds.current.has(doc.id));
+      if (created?.id && pendingDocs.length > 0) {
+        const results = await Promise.allSettled(
+          pendingDocs.map((doc) => procurementRequestAttachmentsApi.upload(created.id, doc.file, doc.docType))
         );
+        results.forEach((r, i) => {
+          if (r.status === "fulfilled") uploadedDocIds.current.add(pendingDocs[i].id);
+        });
       }
 
       if (!asDraft && created?.id) {
@@ -181,6 +205,17 @@ export default function ProcurementCreatePage() {
         subtitle="Submit the requisition first. Specific items, pricing, and supplier quotations can be finalized later in the procurement process."
         breadcrumbs={<PageBreadcrumbs items={[{ label: "Procurement", href: "/procurement" }, { label: "New Requisition" }]} />}
       />
+
+      {draft.restorable && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800" role="status">
+          <span className="material-symbols-outlined text-[16px]">history</span>
+          <span className="flex-1">
+            Unsaved requisition from {new Date(draft.restorable.savedAt).toLocaleString()} found. Attached files are not kept and must be added again.
+          </span>
+          <button type="button" className="btn-primary px-3 py-1.5 text-xs" onClick={restoreDraft}>Restore</button>
+          <button type="button" className="btn-secondary px-3 py-1.5 text-xs" onClick={draft.discard}>Discard</button>
+        </div>
+      )}
 
       <div className="rounded-xl bg-white dark:bg-neutral-900 border border-neutral-100 shadow-card p-5">
         <div className="flex items-center gap-2">

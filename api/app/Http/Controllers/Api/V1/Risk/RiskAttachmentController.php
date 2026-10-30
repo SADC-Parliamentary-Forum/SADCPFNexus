@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Api\V1\Risk;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
+use App\Models\AuditLog;
 use App\Models\Risk;
-use Illuminate\Http\JsonResponse;
+use App\Support\AttachmentFiles;
 use App\Support\UploadContentSniffer;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RiskAttachmentController extends Controller
@@ -17,6 +18,7 @@ class RiskAttachmentController extends Controller
     {
         $this->ensureCanAccess($request, $risk);
         $attachments = $risk->attachments()->with('uploader:id,name')->orderByDesc('created_at')->get();
+
         return response()->json(['data' => $attachments]);
     }
 
@@ -24,25 +26,22 @@ class RiskAttachmentController extends Controller
     {
         $this->ensureCanAccess($request, $risk);
         $request->validate([
-            'file'          => ['required', 'file', 'max:25600'], // 25 MB
-            'document_type' => ['nullable', 'string', 'in:' . implode(',', Attachment::RISK_DOCUMENT_TYPES)],
+            'file' => ['required', 'file', 'max:25600'], // 25 MB
+            'document_type' => ['nullable', 'string', 'in:'.implode(',', Attachment::RISK_DOCUMENT_TYPES)],
         ]);
         $file = $request->file('file');
         $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store(
-            'attachments/risks/' . $risk->id,
-            ['disk' => 'local']
-        );
-        $attachment = $risk->attachments()->create([
-            'tenant_id'         => $risk->tenant_id,
-            'uploaded_by'       => $request->user()->id,
-            'document_type'     => $request->input('document_type', Attachment::DOCUMENT_TYPE_RISK_EVIDENCE),
+        $attachment = AttachmentFiles::store($file, 'attachments/risks/'.$risk->id, fn (string $path) => $risk->attachments()->create([
+            'tenant_id' => $risk->tenant_id,
+            'uploaded_by' => $request->user()->id,
+            'document_type' => $request->input('document_type', Attachment::DOCUMENT_TYPE_RISK_EVIDENCE),
             'original_filename' => $file->getClientOriginalName(),
-            'storage_path'      => $path,
-            'mime_type'         => $mime,
-            'size_bytes'        => $file->getSize(),
-        ]);
+            'storage_path' => $path,
+            'mime_type' => $mime,
+            'size_bytes' => $file->getSize(),
+        ]));
         $attachment->load('uploader:id,name');
+
         return response()->json(['message' => 'Attachment uploaded.', 'data' => $attachment], 201);
     }
 
@@ -52,10 +51,27 @@ class RiskAttachmentController extends Controller
         if ($attachment->attachable_type !== Risk::class || (int) $attachment->attachable_id !== (int) $risk->id) {
             abort(404);
         }
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
+
+        // Evidence on a risk that has left draft/proposed (Risk::isEditable) is
+        // part of the reviewed record: only risk administrators may remove it,
+        // and the removal is audited. Adding new evidence remains allowed.
+        if (! $risk->isEditable()) {
+            $user = $request->user();
+            if (! $user->isSystemAdmin() && ! $user->hasAnyPermission(['risk.admin'])) {
+                return response()->json([
+                    'message' => 'Evidence on a submitted or approved risk cannot be removed.',
+                ], 422);
+            }
+            AuditLog::record('risk.attachment_removed_after_submission', [
+                'auditable_type' => Risk::class,
+                'auditable_id' => $risk->id,
+                'tags' => 'risk',
+                'new_values' => ['attachment_id' => $attachment->id, 'original_filename' => $attachment->original_filename],
+            ]);
         }
-        $attachment->delete();
+
+        AttachmentFiles::delete($attachment);
+
         return response()->json(['message' => 'Attachment deleted.']);
     }
 
@@ -65,20 +81,8 @@ class RiskAttachmentController extends Controller
         if ($attachment->attachable_type !== Risk::class || (int) $attachment->attachable_id !== (int) $risk->id) {
             abort(404);
         }
-        if (! $attachment->storage_path || ! Storage::disk('local')->exists($attachment->storage_path)) {
-            return response()->json(['message' => 'File not found.'], 404);
-        }
-        return response()->streamDownload(
-            function () use ($attachment) {
-                $stream = Storage::disk('local')->readStream($attachment->storage_path);
-                if (is_resource($stream)) {
-                    fpassthru($stream);
-                    fclose($stream);
-                }
-            },
-            $attachment->original_filename,
-            ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
-        );
+
+        return AttachmentFiles::download($attachment);
     }
 
     private function ensureCanAccess(Request $request, Risk $risk): void

@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
 test("asset register can optionally assign a live asset to a user", () => {
   const register = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
   const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
   const picker = readFileSync(join(webRoot, "components/assets/AssetAssigneePicker.tsx"), "utf8");
 

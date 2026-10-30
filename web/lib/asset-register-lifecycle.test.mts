@@ -3,6 +3,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { canDisposeAssets, canRetireAssets, canAccessRoute, canClearAssetRegister } from "./authAccess.ts";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
@@ -41,7 +42,7 @@ test("disposal and depreciation routes are not open to register viewers", () => 
 test("asset register surfaces dispose, retire, live filter, and depreciation without a sidebar child", () => {
   const register = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
   const disposal = readFileSync(join(webRoot, "app/(app)/assets/disposal/page.tsx"), "utf8");
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
   const sidebar = readFileSync(join(webRoot, "components/layout/Sidebar.tsx"), "utf8");
 
   assert.match(register, /canDisposeAssets/);

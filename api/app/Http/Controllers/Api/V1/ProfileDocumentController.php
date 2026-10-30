@@ -1,13 +1,14 @@
 <?php
+
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attachment;
 use App\Models\User;
-use Illuminate\Http\JsonResponse;
+use App\Support\AttachmentFiles;
 use App\Support\UploadContentSniffer;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProfileDocumentController extends Controller
@@ -21,6 +22,7 @@ class ProfileDocumentController extends Controller
             ->with('uploader:id,name')
             ->orderByDesc('created_at')
             ->get();
+
         return response()->json(['data' => $docs]);
     }
 
@@ -28,26 +30,25 @@ class ProfileDocumentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $request->validate([
-            'file'          => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,jpg,jpeg,png,gif'],
-            'document_type' => ['required', 'string', 'in:' . implode(',', Attachment::PROFILE_DOCUMENT_TYPES)],
-            'title'         => ['nullable', 'string', 'max:255'],
+            'file' => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,jpg,jpeg,png,gif'],
+            'document_type' => ['required', 'string', 'in:'.implode(',', Attachment::PROFILE_DOCUMENT_TYPES)],
+            'title' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user = $request->user();
         $file = $request->file('file');
         $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store('profile-documents/' . $user->id, ['disk' => 'local']);
-
-        $attachment = $user->morphMany(Attachment::class, 'attachable')->create([
-            'tenant_id'         => $user->tenant_id,
-            'uploaded_by'       => $user->id,
-            'document_type'     => $request->input('document_type'),
+        $attachment = AttachmentFiles::store($file, 'profile-documents/'.$user->id, fn (string $path) => $user->morphMany(Attachment::class, 'attachable')->create([
+            'tenant_id' => $user->tenant_id,
+            'uploaded_by' => $user->id,
+            'document_type' => $request->input('document_type'),
             'original_filename' => $request->input('title') ?: $file->getClientOriginalName(),
-            'storage_path'      => $path,
-            'mime_type'         => $mime,
-            'size_bytes'        => $file->getSize(),
-        ]);
+            'storage_path' => $path,
+            'mime_type' => $mime,
+            'size_bytes' => $file->getSize(),
+        ]));
         $attachment->load('uploader:id,name');
+
         return response()->json(['message' => 'Document uploaded.', 'data' => $attachment], 201);
     }
 
@@ -55,13 +56,11 @@ class ProfileDocumentController extends Controller
     public function destroy(Request $request, Attachment $attachment): JsonResponse
     {
         $user = $request->user();
-        if ($attachment->attachable_type !== User::class || (int)$attachment->attachable_id !== $user->id) {
+        if ($attachment->attachable_type !== User::class || (int) $attachment->attachable_id !== $user->id) {
             abort(403);
         }
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
-        }
-        $attachment->delete();
+        AttachmentFiles::delete($attachment);
+
         return response()->json(['message' => 'Document deleted.']);
     }
 
@@ -69,20 +68,11 @@ class ProfileDocumentController extends Controller
     public function download(Request $request, Attachment $attachment): StreamedResponse|JsonResponse
     {
         $user = $request->user();
-        if ($attachment->attachable_type !== User::class || (int)$attachment->attachable_id !== $user->id) {
+        if ($attachment->attachable_type !== User::class || (int) $attachment->attachable_id !== $user->id) {
             abort(403);
         }
-        if (!$attachment->storage_path || !Storage::disk('local')->exists($attachment->storage_path)) {
-            return response()->json(['message' => 'File not found.'], 404);
-        }
-        return response()->streamDownload(
-            function () use ($attachment) {
-                $stream = Storage::disk('local')->readStream($attachment->storage_path);
-                if (is_resource($stream)) { fpassthru($stream); fclose($stream); }
-            },
-            $attachment->original_filename,
-            ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
-        );
+
+        return AttachmentFiles::download($attachment);
     }
 
     // ── Admin: manage any user's profile documents ──────────────────────────
@@ -100,6 +90,7 @@ class ProfileDocumentController extends Controller
             ->with('uploader:id,name')
             ->orderByDesc('created_at')
             ->get();
+
         return response()->json(['data' => $docs]);
     }
 
@@ -112,25 +103,24 @@ class ProfileDocumentController extends Controller
         abort_unless($user->tenant_id === $request->user()->tenant_id, 403);
 
         $request->validate([
-            'file'          => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,jpg,jpeg,png,gif'],
-            'document_type' => ['required', 'string', 'in:' . implode(',', Attachment::PROFILE_DOCUMENT_TYPES)],
-            'title'         => ['nullable', 'string', 'max:255'],
+            'file' => ['required', 'file', 'max:20480', 'mimes:pdf,doc,docx,jpg,jpeg,png,gif'],
+            'document_type' => ['required', 'string', 'in:'.implode(',', Attachment::PROFILE_DOCUMENT_TYPES)],
+            'title' => ['nullable', 'string', 'max:255'],
         ]);
 
         $file = $request->file('file');
         $mime = UploadContentSniffer::assertAllowed($file);
-        $path = $file->store('profile-documents/' . $user->id, ['disk' => 'local']);
-
-        $attachment = $user->morphMany(Attachment::class, 'attachable')->create([
-            'tenant_id'         => $user->tenant_id,
-            'uploaded_by'       => $request->user()->id,
-            'document_type'     => $request->input('document_type'),
+        $attachment = AttachmentFiles::store($file, 'profile-documents/'.$user->id, fn (string $path) => $user->morphMany(Attachment::class, 'attachable')->create([
+            'tenant_id' => $user->tenant_id,
+            'uploaded_by' => $request->user()->id,
+            'document_type' => $request->input('document_type'),
             'original_filename' => $request->input('title') ?: $file->getClientOriginalName(),
-            'storage_path'      => $path,
-            'mime_type'         => $mime,
-            'size_bytes'        => $file->getSize(),
-        ]);
+            'storage_path' => $path,
+            'mime_type' => $mime,
+            'size_bytes' => $file->getSize(),
+        ]));
         $attachment->load('uploader:id,name');
+
         return response()->json(['message' => 'Document uploaded.', 'data' => $attachment], 201);
     }
 
@@ -141,13 +131,11 @@ class ProfileDocumentController extends Controller
             403
         );
         abort_unless($user->tenant_id === $request->user()->tenant_id, 403);
-        if ($attachment->attachable_type !== User::class || (int)$attachment->attachable_id !== $user->id) {
+        if ($attachment->attachable_type !== User::class || (int) $attachment->attachable_id !== $user->id) {
             abort(404);
         }
-        if ($attachment->storage_path && Storage::disk('local')->exists($attachment->storage_path)) {
-            Storage::disk('local')->delete($attachment->storage_path);
-        }
-        $attachment->delete();
+        AttachmentFiles::delete($attachment);
+
         return response()->json(['message' => 'Document deleted.']);
     }
 
@@ -158,19 +146,10 @@ class ProfileDocumentController extends Controller
             403
         );
         abort_unless($user->tenant_id === $request->user()->tenant_id, 403);
-        if ($attachment->attachable_type !== User::class || (int)$attachment->attachable_id !== $user->id) {
+        if ($attachment->attachable_type !== User::class || (int) $attachment->attachable_id !== $user->id) {
             abort(404);
         }
-        if (!$attachment->storage_path || !Storage::disk('local')->exists($attachment->storage_path)) {
-            return response()->json(['message' => 'File not found.'], 404);
-        }
-        return response()->streamDownload(
-            function () use ($attachment) {
-                $stream = Storage::disk('local')->readStream($attachment->storage_path);
-                if (is_resource($stream)) { fpassthru($stream); fclose($stream); }
-            },
-            $attachment->original_filename,
-            ['Content-Type' => $attachment->mime_type ?: 'application/octet-stream']
-        );
+
+        return AttachmentFiles::download($attachment);
     }
 }

@@ -54,7 +54,20 @@ class OutboxService
 
         $runner = function () use ($id, $processInline) {
             if ($processInline || config('queue.default') === 'sync') {
-                app(NotificationDispatchService::class)->consumeOutboxId($id);
+                $consume = fn () => app(NotificationDispatchService::class)->consumeOutboxId($id);
+
+                // During a web request, deliver after the response has been sent so
+                // push/email provider calls never add latency to (or fail) the user's
+                // request. If the process dies first, the row stays pending and the
+                // scheduled notifications:process-outbox command delivers it.
+                if (! app()->runningInConsole() && config('queue.default') !== 'sync') {
+                    app()->terminating($consume);
+
+                    return;
+                }
+
+                $consume();
+
                 return;
             }
 

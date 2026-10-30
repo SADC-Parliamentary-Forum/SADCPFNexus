@@ -2,12 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 const apiRoot = join(process.cwd(), "..", "api");
 
 test("workflow approve client sends confirm_password", () => {
-  const source = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const source = readApiSource(webRoot);
   assert.match(source, /requires_signature\?: boolean/);
   assert.match(source, /confirm_password: confirmPassword/);
   assert.match(source, /decideTask:[\s\S]*confirm_password\?: string/);

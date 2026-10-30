@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../../core/auth/auth_providers.dart';
-import '../../../../../core/offline/draft_database.dart';
 import '../../../../../core/offline/draft_provider.dart';
 import '../../../../../core/theme/app_theme.dart';
 
@@ -95,14 +94,12 @@ class _ImprestRequisitionFormScreenState
   Future<void> _autoSaveDraftOnBackground() async {
     if (_total < 1) return;
     try {
-      final db = ref.read(draftDatabaseProvider);
       final payload = _buildPayload();
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-        type: 'imprest',
-        title: payload['purpose'] as String? ?? 'Imprest draft',
-        payload: jsonEncode(payload),
-        createdAt: DateTime.now(),
-      ));
+      await ref.read(draftStoreProvider).save(
+          type: 'imprest',
+          title: payload['purpose'] as String? ?? 'Imprest draft',
+          payload: jsonEncode(payload),
+        );
     } catch (_) {
       // Best-effort; nothing actionable if this fails while backgrounded.
     }
@@ -149,14 +146,12 @@ class _ImprestRequisitionFormScreenState
       return;
     }
     try {
-      final db = ref.read(draftDatabaseProvider);
       final payload = _buildPayload();
-      await db.into(db.draftEntries).insert(DraftEntriesCompanion.insert(
-        type: 'imprest',
-        title: payload['purpose'] as String? ?? 'Imprest draft',
-        payload: jsonEncode(payload),
-        createdAt: DateTime.now(),
-      ));
+      await ref.read(draftStoreProvider).save(
+          type: 'imprest',
+          title: payload['purpose'] as String? ?? 'Imprest draft',
+          payload: jsonEncode(payload),
+        );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Draft saved. Sync from Offline Drafts when ready.'), backgroundColor: AppColors.success),
@@ -184,8 +179,7 @@ class _ImprestRequisitionFormScreenState
       if (!mounted) return;
       if (widget.draftId != null) {
         try {
-          final db = ref.read(draftDatabaseProvider);
-          await (db.delete(db.draftEntries)..where((t) => t.id.equals(widget.draftId!))).go();
+          await ref.read(draftStoreProvider).deleteOwned(widget.draftId!);
         } catch (_) {}
       }
       setState(() => _submitting = false);

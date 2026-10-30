@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
@@ -20,7 +21,7 @@ test("my assets page lets the custodian accept, decline, or request return", () 
 });
 
 test("asset API client exposes custody handshake fields and endpoints", () => {
-  const api = readFileSync(join(webRoot, "lib/api.ts"), "utf8");
+  const api = readApiSource(webRoot);
   assert.match(api, /custody_state\?:/);
   assert.match(api, /declineAssignment:/);
   assert.match(api, /requestReturn:/);

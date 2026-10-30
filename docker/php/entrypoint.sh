@@ -1,6 +1,31 @@
 #!/bin/sh
 set -e
 
+# Container roles (CONTAINER_ROLE):
+#   app       (default) php-fpm. Dev: migrates on start. Production: refuses to
+#             start until the schema is current — run the migrate role first.
+#   worker    queue worker; waits for a current schema, never migrates.
+#   scheduler Laravel scheduler (schedule:work); waits for a current schema.
+#   migrate   one-shot deployment job: `php artisan migrate --force`, exits
+#             non-zero on failure so the deployment stops.
+#
+# Startup flags (defaults depend on APP_ENV):
+#   AUTO_MIGRATE  run migrations when the app container starts
+#                 (default true outside production, false in production)
+#   AUTO_SEED     run `db:seed` (DatabaseSeeder, includes demo data) after migrating
+#                 (default true outside production; refused in production —
+#                 bootstrap production with `php artisan db:seed --class=ProductionSeeder --force`)
+
+ROLE="${CONTAINER_ROLE:-app}"
+APP_ENV_EFFECTIVE="${APP_ENV:-local}"
+if [ "$APP_ENV_EFFECTIVE" = "production" ]; then
+  AUTO_MIGRATE="${AUTO_MIGRATE:-false}"
+  AUTO_SEED="${AUTO_SEED:-false}"
+else
+  AUTO_MIGRATE="${AUTO_MIGRATE:-true}"
+  AUTO_SEED="${AUTO_SEED:-true}"
+fi
+
 # ── Shared: export env vars so Laravel can read them in all container roles ──
 _export_env() {
   APP_KEY=$(grep '^APP_KEY=' .env 2>/dev/null | cut -d= -f2-)
@@ -10,14 +35,64 @@ _export_env() {
   export REDIS_PASSWORD
 }
 
-# ── CONTAINER_ROLE=worker → queue worker (php service already handles setup) ──
-if [ "${CONTAINER_ROLE:-app}" = "worker" ]; then
+# Wait for the database; exit the container if it never becomes reachable.
+_wait_for_database() {
+  set +e
+  php artisan schema:check --wait=120 >/dev/null
+  status=$?
+  set -e
+  if [ "$status" -eq 2 ]; then
+    echo "[$ROLE] FATAL: database unreachable." >&2
+    exit 1
+  fi
+}
+
+# Block until the schema has no pending migrations; exit non-zero otherwise
+# so the orchestrator surfaces the failure instead of serving an old schema.
+_require_current_schema() {
+  set +e
+  php artisan schema:check --wait=120
+  status=$?
+  set -e
+  if [ "$status" -eq 2 ]; then
+    echo "[$ROLE] FATAL: database unreachable." >&2
+    exit 1
+  fi
+  if [ "$status" -ne 0 ]; then
+    echo "[$ROLE] FATAL: schema is not current. Run the deployment migration job:" >&2
+    echo "  docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm migrate" >&2
+    exit 1
+  fi
+}
+
+if [ "$ROLE" = "worker" ]; then
   _export_env
-  echo "[queue] Starting queue worker..."
-  exec php artisan queue:work --sleep=3 --tries=3 --timeout=90 --max-time=3600
+  _require_current_schema
+  # OutboxService dispatches notification jobs to named queues; a worker without
+  # --queue only drains "default" and would never deliver them.
+  QUEUE_NAMES="${QUEUE_NAMES:-notifications-critical,notifications,default,notifications-digest}"
+  echo "[queue] Starting queue worker (queues: $QUEUE_NAMES)..."
+  exec php artisan queue:work --queue="$QUEUE_NAMES" --sleep=3 --tries=3 --timeout=90 --max-time=3600
 fi
 
-# ── Default role: app (php-fpm + full setup) ─────────────────────────────────
+if [ "$ROLE" = "scheduler" ]; then
+  _export_env
+  _require_current_schema
+  echo "[scheduler] Starting Laravel scheduler..."
+  exec php artisan schedule:work
+fi
+
+if [ "$ROLE" = "migrate" ]; then
+  _export_env
+  _wait_for_database
+  echo "[migrate] Running migrations..."
+  php artisan migrate --force
+  _require_current_schema
+  echo "[migrate] Done."
+  exit 0
+fi
+
+# ── Default role: app (php-fpm + setup) ──────────────────────────────────────
 
 # Ensure .env exists
 if [ ! -f .env ]; then
@@ -34,19 +109,24 @@ if ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
   echo "ERROR: APP_KEY not set in .env after key:generate. Cannot start."
   exit 1
 fi
-# Run migrations and seed from this container (on same network as postgres)
-migrate_ok=0
-for i in 1 2 3 4 5 6 7 8 9 10; do
-  if php artisan migrate --force 2>/dev/null; then
-    migrate_ok=1
-    break
-  fi
-  echo "Waiting for postgres... (attempt $i/10)"
-  sleep 6
-done
-if [ "$migrate_ok" -eq 1 ]; then
-  php artisan db:seed --force 2>/dev/null || true
+
+if [ "$AUTO_SEED" = "true" ] && [ "$APP_ENV_EFFECTIVE" = "production" ]; then
+  echo "[app] FATAL: AUTO_SEED=true is not allowed in production (DatabaseSeeder includes demo data)." >&2
+  echo "  Bootstrap production explicitly: php artisan db:seed --class=ProductionSeeder --force" >&2
+  exit 1
 fi
+
+if [ "$AUTO_MIGRATE" = "true" ]; then
+  _wait_for_database
+  # Errors are no longer suppressed: a failed migration stops the container (set -e).
+  php artisan migrate --force
+  if [ "$AUTO_SEED" = "true" ]; then
+    # Dev demo seeding: report failures loudly but keep the dev stack usable.
+    php artisan db:seed --force || echo "[app] WARNING: db:seed failed — demo data may be incomplete." >&2
+  fi
+fi
+_require_current_schema
+
 # Ensure www-data (PHP-FPM worker) can read all source files and write to storage.
 # Volume files are owned by the host UID; fix on every start so restarts don't break this.
 chmod -R o+rX /var/www/api 2>/dev/null || true

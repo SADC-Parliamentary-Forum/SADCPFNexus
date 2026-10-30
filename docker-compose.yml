@@ -114,7 +114,6 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
       - SESSION_DRIVER=redis
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - BCRYPT_ROUNDS=4
     networks:
       sadcpf:
         ipv4_address: 10.20.30.4
@@ -145,7 +144,6 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
       - SESSION_DRIVER=redis
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
-      - BCRYPT_ROUNDS=4
     volumes:
       - ./api:/var/www/api
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
@@ -156,6 +154,60 @@ services:
       php:
         condition: service_healthy
       redis:
+        condition: service_healthy
+
+  # Laravel scheduler (routes/console.php). Without this service no reminders,
+  # accruals, outbox processing or report dispatch run in Docker deployments.
+  scheduler:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: sadcpf_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/api
+    environment:
+      - CONTAINER_ROLE=scheduler
+      - APP_ENV=${APP_ENV:-local}
+      - DB_HOST=10.20.30.2
+      - REDIS_HOST=10.20.30.3
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
+      - SESSION_DRIVER=redis
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+    volumes:
+      - ./api:/var/www/api
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
+      sadcpf:
+        ipv4_address: 10.20.30.11
+    depends_on:
+      php:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # One-shot deployment migration job (not started by `up`):
+  #   docker compose -f docker-compose.yml -f docker-compose.prod.yml run --rm migrate
+  # Exits non-zero if any migration fails, so the deployment stops before the app starts.
+  migrate:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    profiles: ["deploy"]
+    working_dir: /var/www/api
+    restart: "no"
+    environment:
+      - CONTAINER_ROLE=migrate
+      - APP_ENV=${APP_ENV:-local}
+      - DB_HOST=10.20.30.2
+      - REDIS_HOST=10.20.30.3
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-secret}
+    volumes:
+      - ./api:/var/www/api
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini:ro
+    networks:
+      - sadcpf
+    depends_on:
+      postgres:
         condition: service_healthy
 
   nginx:
@@ -183,7 +235,9 @@ services:
     container_name: sadcpf_web
     restart: unless-stopped
     ports:
-      - "${WEB_PORT:-3000}:3000"
+      # Loopback by default so the dev server is never exposed beyond the host.
+      # Set WEB_BIND=0.0.0.0 locally to reach it from other devices (e.g. a phone).
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-3000}:3000"
     env_file:
       - .env
     environment:

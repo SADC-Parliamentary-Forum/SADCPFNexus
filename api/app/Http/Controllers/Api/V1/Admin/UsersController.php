@@ -385,6 +385,7 @@ class UsersController extends Controller
         $user->forceFill([
             'mfa_enabled' => false,
             'mfa_secret' => null,
+            'mfa_recovery_codes' => null,
         ])->save();
         $this->userService->revokeAllAccess($user);
 

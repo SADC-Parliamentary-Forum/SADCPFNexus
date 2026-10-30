@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/auth/auth_providers.dart';
-import '../../../../core/offline/draft_database.dart';
 import '../../../../core/offline/draft_provider.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../data/salary_advance_helpers.dart';
@@ -92,20 +91,16 @@ class _SalaryAdvanceRequestScreenState
   /// [_saveDraft] but is safe to call outside a user gesture).
   Future<void> _autoSaveDraftOnBackground() async {
     try {
-      final db = ref.read(draftDatabaseProvider);
       final payload = {
         'amount': _requestedAmount,
         'purpose': _purpose,
         'repayment_months': _recoveryMonths,
       };
-      await db.into(db.draftEntries).insert(
-            DraftEntriesCompanion.insert(
-              type: 'salary_advance',
-              title: _purpose,
-              payload: jsonEncode(payload),
-              createdAt: DateTime.now(),
-            ),
-          );
+      await ref.read(draftStoreProvider).save(
+          type: 'salary_advance',
+          title: _purpose,
+          payload: jsonEncode(payload),
+        );
     } catch (_) {
       // Best-effort; nothing actionable if this fails while backgrounded.
     }
@@ -194,20 +189,16 @@ class _SalaryAdvanceRequestScreenState
   Future<void> _saveDraft() async {
     setState(() => _savingDraft = true);
     try {
-      final db = ref.read(draftDatabaseProvider);
       final payload = {
         'amount': _requestedAmount,
         'purpose': _purpose,
         'repayment_months': _recoveryMonths,
       };
-      await db.into(db.draftEntries).insert(
-            DraftEntriesCompanion.insert(
-              type: 'salary_advance',
-              title: _purpose,
-              payload: jsonEncode(payload),
-              createdAt: DateTime.now(),
-            ),
-          );
+      await ref.read(draftStoreProvider).save(
+          type: 'salary_advance',
+          title: _purpose,
+          payload: jsonEncode(payload),
+        );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -250,10 +241,7 @@ class _SalaryAdvanceRequestScreenState
       );
       final id = createRes.data?['data']?['id'];
       if (widget.draftId != null) {
-        final db = ref.read(draftDatabaseProvider);
-        await (db.delete(db.draftEntries)
-              ..where((t) => t.id.equals(widget.draftId!)))
-            .go();
+        await ref.read(draftStoreProvider).deleteOwned(widget.draftId!);
       }
       if (!mounted) return;
       // Navigate to Preview & Sign screen; it will handle the submit step

@@ -11,17 +11,16 @@ use App\Models\User;
 use App\Models\UserSession;
 use App\Services\CaptchaService;
 use App\Support\PasswordPolicy;
+use App\Support\SecondFactor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use RuntimeException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
-use PragmaRX\Google2FA\Google2FA;
+use RuntimeException;
 
 class AuthController extends Controller
 {
@@ -58,9 +57,9 @@ class AuthController extends Controller
 
         AuditLog::record('auth.password_reset_requested', [
             'auditable_type' => $user ? User::class : null,
-            'auditable_id'   => $user?->id,
-            'new_values'     => ['email' => $data['email'], 'sent' => (bool) $user?->accountAllowsAuthentication()],
-            'tags'           => 'auth',
+            'auditable_id' => $user?->id,
+            'new_values' => ['email' => $data['email'], 'sent' => (bool) $user?->accountAllowsAuthentication()],
+            'tags' => 'auth',
         ]);
 
         return response()->json([
@@ -73,9 +72,9 @@ class AuthController extends Controller
         $emailForPolicy = (string) $request->input('email', '');
 
         $data = $request->validate([
-            'token'                 => ['required', 'string'],
-            'email'                 => ['required', 'email'],
-            'password'              => PasswordPolicy::rules(
+            'token' => ['required', 'string'],
+            'email' => ['required', 'email'],
+            'password' => PasswordPolicy::rules(
                 null,
                 ['email' => $emailForPolicy],
             ),
@@ -86,9 +85,9 @@ class AuthController extends Controller
         if (! $candidate?->accountAllowsAuthentication()) {
             AuditLog::record('auth.password_reset_failed', [
                 'auditable_type' => $candidate ? User::class : null,
-                'auditable_id'   => $candidate?->id,
-                'new_values'     => ['reason' => $candidate?->authenticationBlockReason() ?? 'unknown_user'],
-                'tags'           => 'auth',
+                'auditable_id' => $candidate?->id,
+                'new_values' => ['reason' => $candidate?->authenticationBlockReason() ?? 'unknown_user'],
+                'tags' => 'auth',
             ]);
 
             return response()->json(['message' => 'This password reset link is invalid or has expired.'], 422);
@@ -109,8 +108,8 @@ class AuthController extends Controller
 
                 AuditLog::record('auth.password_reset_completed', [
                     'auditable_type' => User::class,
-                    'auditable_id'   => $user->id,
-                    'tags'           => 'auth',
+                    'auditable_id' => $user->id,
+                    'tags' => 'auth',
                 ]);
             }
         );
@@ -118,9 +117,9 @@ class AuthController extends Controller
         if ($status !== Password::PASSWORD_RESET) {
             AuditLog::record('auth.password_reset_failed', [
                 'auditable_type' => User::class,
-                'auditable_id'   => $candidate->id,
-                'new_values'     => ['reason' => $status],
-                'tags'           => 'auth',
+                'auditable_id' => $candidate->id,
+                'new_values' => ['reason' => $status],
+                'tags' => 'auth',
             ]);
 
             return response()->json(['message' => 'This password reset link is invalid or has expired.'], 422);
@@ -138,13 +137,14 @@ class AuthController extends Controller
         }
 
         $request->validate([
-            'email'            => ['required', 'email'],
-            'password'         => ['required', 'string'],
-            'device_name'      => ['nullable', 'string', 'max:255'],
-            'client_type'      => ['nullable', 'string', 'in:browser,mobile'],
-            'portal'           => ['nullable', 'string', 'in:staff,supplier'],
-            'code'             => ['nullable', 'string', 'digits:6'],
-            'captcha_token'    => ['nullable', 'string'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string'],
+            'device_name' => ['nullable', 'string', 'max:255'],
+            'client_type' => ['nullable', 'string', 'in:browser,mobile'],
+            'portal' => ['nullable', 'string', 'in:staff,supplier'],
+            // 6-digit authenticator code, or a one-time recovery code.
+            'code' => ['nullable', 'string', 'max:32'],
+            'captcha_token' => ['nullable', 'string'],
             CaptchaService::HONEYPOT_FIELD => ['nullable', 'string'],
         ]);
 
@@ -152,10 +152,10 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !PasswordPolicy::check((string) $request->password, $user->password)) {
+        if (! $user || ! PasswordPolicy::check((string) $request->password, $user->password)) {
             AuditLog::record('auth.login.failed', [
                 'new_values' => ['email' => $request->email],
-                'tags'       => 'auth',
+                'tags' => 'auth',
             ]);
 
             $this->captcha->consumeBrowserChallenge($request);
@@ -167,9 +167,9 @@ class AuthController extends Controller
         if (! $user->accountAllowsAuthentication()) {
             AuditLog::record('auth.login.blocked', [
                 'auditable_type' => User::class,
-                'auditable_id'   => $user->id,
-                'new_values'     => ['reason' => $user->authenticationBlockReason()],
-                'tags'           => 'auth',
+                'auditable_id' => $user->id,
+                'new_values' => ['reason' => $user->authenticationBlockReason()],
+                'tags' => 'auth',
             ]);
 
             $this->captcha->consumeBrowserChallenge($request);
@@ -190,16 +190,16 @@ class AuthController extends Controller
 
             if ($code === '') {
                 return response()->json([
-                    'message'      => 'Two-factor verification required.',
+                    'message' => 'Two-factor verification required.',
                     'mfa_required' => true,
                 ]);
             }
 
-            if (!$this->verifyTwoFactorCode($user, $code)) {
+            if (! $this->verifyTwoFactorCode($user, $code)) {
                 AuditLog::record('auth.mfa.failed', [
                     'auditable_type' => User::class,
-                    'auditable_id'   => $user->id,
-                    'tags'           => 'auth',
+                    'auditable_id' => $user->id,
+                    'tags' => 'auth',
                 ]);
 
                 $this->captcha->consumeBrowserChallenge($request);
@@ -210,8 +210,8 @@ class AuthController extends Controller
 
             AuditLog::record('auth.mfa.success', [
                 'auditable_type' => User::class,
-                'auditable_id'   => $user->id,
-                'tags'           => 'auth',
+                'auditable_id' => $user->id,
+                'tags' => 'auth',
             ]);
         }
 
@@ -221,28 +221,28 @@ class AuthController extends Controller
         $isMobileClient = $this->isMobileClient($request);
         $canUseSessionAuth = $request->hasSession();
 
-        if ($isMobileClient || !$canUseSessionAuth) {
+        if ($isMobileClient || ! $canUseSessionAuth) {
             $newToken = $user->createToken($request->device_name ?? 'mobile');
 
             UserSession::create([
-                'user_id'        => $user->id,
-                'token_id'       => $newToken->accessToken->id,
-                'session_id'     => null,
-                'auth_type'      => 'token',
-                'ip_address'     => $request->ip(),
-                'user_agent'     => $request->userAgent(),
+                'user_id' => $user->id,
+                'token_id' => $newToken->accessToken->id,
+                'session_id' => null,
+                'auth_type' => 'token',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
                 'last_active_at' => now(),
             ]);
 
             AuditLog::record('auth.login.success', [
                 'auditable_type' => User::class,
-                'auditable_id'   => $user->id,
-                'tags'           => 'auth',
+                'auditable_id' => $user->id,
+                'tags' => 'auth',
             ]);
 
             return response()->json([
                 'token' => $newToken->plainTextToken,
-                'user'  => $this->serializeUser($user),
+                'user' => $this->serializeUser($user),
             ]);
         }
 
@@ -253,22 +253,22 @@ class AuthController extends Controller
 
             UserSession::updateOrCreate(
                 [
-                    'user_id'    => $user->id,
+                    'user_id' => $user->id,
                     'session_id' => $request->session()->getId(),
-                    'auth_type'  => 'browser',
+                    'auth_type' => 'browser',
                 ],
                 [
-                    'token_id'       => null,
-                    'ip_address'     => $request->ip(),
-                    'user_agent'     => $request->userAgent(),
+                    'token_id' => null,
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
                     'last_active_at' => now(),
                 ]
             );
 
             AuditLog::record('auth.login.success', [
                 'auditable_type' => User::class,
-                'auditable_id'   => $user->id,
-                'tags'           => 'auth',
+                'auditable_id' => $user->id,
+                'tags' => 'auth',
             ]);
 
             return response()->json([
@@ -279,24 +279,24 @@ class AuthController extends Controller
             $newToken = $user->createToken($request->device_name ?? 'browser-fallback');
 
             UserSession::create([
-                'user_id'        => $user->id,
-                'token_id'       => $newToken->accessToken->id,
-                'session_id'     => null,
-                'auth_type'      => 'token',
-                'ip_address'     => $request->ip(),
-                'user_agent'     => $request->userAgent(),
+                'user_id' => $user->id,
+                'token_id' => $newToken->accessToken->id,
+                'session_id' => null,
+                'auth_type' => 'token',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
                 'last_active_at' => now(),
             ]);
 
             AuditLog::record('auth.login.success', [
                 'auditable_type' => User::class,
-                'auditable_id'   => $user->id,
-                'tags'           => 'auth',
+                'auditable_id' => $user->id,
+                'tags' => 'auth',
             ]);
 
             return response()->json([
                 'token' => $newToken->plainTextToken,
-                'user'  => $this->serializeUser($user),
+                'user' => $this->serializeUser($user),
             ]);
         }
     }
@@ -315,7 +315,7 @@ class AuthController extends Controller
         }
 
         $data = $request->validate([
-            'password'              => PasswordPolicy::rules($user),
+            'password' => PasswordPolicy::rules($user),
             'password_confirmation' => ['required', 'string'],
         ]);
 
@@ -331,6 +331,7 @@ class AuthController extends Controller
             ->where(function ($query) use ($currentTokenId, $currentSessionId) {
                 if ($currentTokenId) {
                     $query->where('token_id', '!=', $currentTokenId);
+
                     return;
                 }
 
@@ -341,8 +342,8 @@ class AuthController extends Controller
 
         AuditLog::record('auth.password_force_reset', [
             'auditable_type' => User::class,
-            'auditable_id'   => $user->id,
-            'tags'           => 'auth',
+            'auditable_id' => $user->id,
+            'tags' => 'auth',
         ]);
 
         return response()->json(['message' => 'Password updated successfully.']);
@@ -374,8 +375,8 @@ class AuthController extends Controller
 
         AuditLog::record('auth.logout', [
             'auditable_type' => User::class,
-            'auditable_id'   => $user->id,
-            'tags'           => 'auth',
+            'auditable_id' => $user->id,
+            'tags' => 'auth',
         ]);
 
         return response()->json(['message' => 'Logged out successfully']);
@@ -396,8 +397,8 @@ class AuthController extends Controller
 
         AuditLog::record('auth.logout_all', [
             'auditable_type' => User::class,
-            'auditable_id'   => $user->id,
-            'tags'           => 'auth',
+            'auditable_id' => $user->id,
+            'tags' => 'auth',
         ]);
 
         return response()->json(['message' => 'Signed out from all sessions.']);
@@ -409,27 +410,27 @@ class AuthController extends Controller
 
         return response()->json($this->serializeUser($user) + [
             'employee_number' => $user->employee_number,
-            'job_title'       => $user->job_title,
-            'tenant'          => $user->tenant,
-            'department'      => $user->department,
+            'job_title' => $user->job_title,
+            'tenant' => $user->tenant,
+            'department' => $user->department,
         ]);
     }
 
     public function registerDeviceToken(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'token'       => ['required', 'string', 'max:512'],
-            'platform'    => ['nullable', 'string', 'in:android,ios,web'],
+            'token' => ['required', 'string', 'max:512'],
+            'platform' => ['nullable', 'string', 'in:android,ios,web'],
             'device_name' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user = $request->user();
 
         DeviceToken::register(
-            userId:     $user->id,
-            tenantId:   $user->tenant_id,
-            token:      $data['token'],
-            platform:   $data['platform']    ?? 'android',
+            userId: $user->id,
+            tenantId: $user->tenant_id,
+            token: $data['token'],
+            platform: $data['platform'] ?? 'android',
             deviceName: $data['device_name'] ?? null,
         );
 
@@ -647,6 +648,7 @@ class AuthController extends Controller
 
         if ($invitation->status === AccountInvitation::STATUS_PENDING && $invitation->expires_at?->isPast()) {
             $invitation->forceFill(['status' => AccountInvitation::STATUS_EXPIRED])->save();
+
             return null;
         }
 
@@ -677,28 +679,34 @@ class AuthController extends Controller
 
     private function verifyTwoFactorCode(User $user, string $code): bool
     {
-        if (! $user->mfa_secret) {
-            return false;
+        $factor = SecondFactor::verify($user, $code);
+
+        if ($factor === 'recovery') {
+            AuditLog::record('auth.mfa.recovery_code_used', [
+                'auditable_type' => User::class,
+                'auditable_id' => $user->id,
+                'tags' => 'auth',
+            ]);
         }
 
-        return (new Google2FA())->verifyKey($user->mfa_secret, $code);
+        return $factor !== null;
     }
 
     private function serializeUser(User $user): array
     {
         return [
-            'id'                  => $user->id,
-            'name'                => $user->name,
-            'email'               => $user->email,
-            'tenant_id'           => $user->tenant_id,
-            'vendor_id'           => $user->vendor_id,
-            'classification'      => $user->classification,
-            'mfa_enabled'           => (bool) $user->mfa_enabled,
-            'must_reset_password'   => (bool) $user->must_reset_password,
-            'setup_completed'       => (bool) $user->setup_completed || $user->isSupplier(),
-            'idle_timeout_minutes'  => $user->idle_timeout_minutes,
-            'roles'                 => $user->getRoleNames(),
-            'permissions'         => $user->getAllPermissions()->pluck('name'),
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'tenant_id' => $user->tenant_id,
+            'vendor_id' => $user->vendor_id,
+            'classification' => $user->classification,
+            'mfa_enabled' => (bool) $user->mfa_enabled,
+            'must_reset_password' => (bool) $user->must_reset_password,
+            'setup_completed' => (bool) $user->setup_completed || $user->isSupplier(),
+            'idle_timeout_minutes' => $user->idle_timeout_minutes,
+            'roles' => $user->getRoleNames(),
+            'permissions' => $user->getAllPermissions()->pluck('name'),
         ];
     }
 }
