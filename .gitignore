@@ -14,7 +14,8 @@ LOGIN_CREDENTIALS.md
 
 # Tooling configs that may contain personal API keys
 .claude/mcp.json
-.cursor/mcp.json
+.cursor/
+.ignore
 
 # Local brainstorm / visual companion sessions
 .superpowers/
