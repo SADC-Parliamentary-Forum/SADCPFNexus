@@ -16,32 +16,60 @@ These are **planning targets**, not measured SLOs until a restore drill is recor
 3. **Secrets** — CloudPanel / host `.env` files (API + web). Store offline; never commit.
 4. **Compose config** — `docker-compose.yml` + `docker-compose.prod.yml` are in git; server-only overrides are not.
 
-## Nightly backup (example)
+## Nightly backup
 
-`scripts/deploy.sh` already creates a pre-deploy DB dump. For scheduled backups on the VPS (as the app user):
+`scripts/ops/backup.sh` (run on the host as `sadcpf-nexus`) writes one directory per run under
+`~/backups/nexus/<UTC stamp>/`:
+
+| File | Content |
+|------|---------|
+| `db.dump` | `pg_dump -Fc` of the production database (the dump user is the Postgres superuser, so RLS does not hide rows) |
+| `row-counts.tsv` | Exact per-table row counts, taken from the **same exported snapshot** as the dump |
+| `storage.tar.gz` | `api/storage/app` (local-disk uploads) |
+| `minio.tar.gz` | MinIO data volume, only if `sadcpf_minio` is running |
+| `MANIFEST` | Size and sha256 of each file |
+
+Runs older than `RETAIN_DAYS` (default 14) are pruned. `~/backups/nexus/last-success` holds the stamp of the
+latest good run. The pre-deploy dumps from `scripts/deploy.sh` (`~/backups/databases/`) are separate and not pruned.
+
+Settings go in `~/.nexus-backup.env` on the host (never committed):
 
 ```bash
-# Example — adjust paths to match CloudPanel layout
-BACKUP_DIR=~/backups/nexus
-mkdir -p "$BACKUP_DIR"
-STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-docker exec sadcpf_postgres pg_dump -U sadcpf sadcpfnexus | gzip > "$BACKUP_DIR/pg_$STAMP.sql.gz"
-# Retain 14 days
-find "$BACKUP_DIR" -name 'pg_*.sql.gz' -mtime +14 -delete
+BACKUP_ROOT=/home/sadcpf-nexus/backups/nexus
+RETAIN_DAYS=14
+# Offsite copy: any command; the run directory is passed as $1. Unset = local only (logged as a WARNING).
+BACKUP_OFFSITE_COMMAND='rclone copy "$1" offsite:sadcpf-nexus-backups/$(basename "$1")'
 ```
 
-Object storage: use MinIO `mc mirror` or provider snapshot tooling.
+**Offsite is not configured yet.** Until `BACKUP_OFFSITE_COMMAND` is set, every backup lives on the same host as
+the database. Choosing the destination (S3-compatible bucket, second server) is an operator decision.
+
+Run it from GitHub → Actions → **Ops — backup & restore drill** (`.github/workflows/ops-backup.yml`):
+
+| Task | Effect |
+|------|--------|
+| `install-cron` | Installs the nightly entry `30 1 * * *` (server time), logging to `~/backups/nexus/backup.log` |
+| `backup` | Takes a backup now |
+| `restore-drill` | Restores the latest backup into a throwaway database and compares row counts |
+| `status` | Latest run, disk space, recent log lines, installed cron entry |
 
 ## Restore procedure (Postgres)
 
 1. Put the site in maintenance (stop `web` or show maintenance page).
 2. Stop `queue` workers to avoid writes mid-restore.
 3. Restore dump into a **new** database name first when possible; cut over after verification.
-4. Example restore into existing DB (destructive):
+4. Restore into a new database, verify, then swap names (the live database is never overwritten in place):
 
 ```bash
-gunzip -c ~/backups/nexus/pg_YYYYMMDD.sql.gz | docker exec -i sadcpf_postgres psql -U sadcpf sadcpfnexus
+docker exec sadcpf_postgres psql -U sadcpf -d postgres -c "CREATE DATABASE sadcpfnexus_restored OWNER sadcpf;"
+docker exec -i sadcpf_postgres pg_restore -U sadcpf -d sadcpfnexus_restored --no-owner --exit-on-error   < ~/backups/nexus/<STAMP>/db.dump
+# verify (row counts vs <STAMP>/row-counts.tsv), stop php/queue/scheduler, then:
+docker exec sadcpf_postgres psql -U sadcpf -d postgres   -c "ALTER DATABASE sadcpfnexus RENAME TO sadcpfnexus_old;"   -c "ALTER DATABASE sadcpfnexus_restored RENAME TO sadcpfnexus;"
 ```
+
+   Pre-deploy dumps (`~/backups/databases/pre-deploy-*.sql.gz`) are plain SQL: restore those with
+   `gunzip -c … | docker exec -i sadcpf_postgres psql -U sadcpf sadcpfnexus_restored`.
+   Uploaded files: `docker exec -i sadcpf_php tar -C /var/www/api/storage -xzf - < <STAMP>/storage.tar.gz`.
 
 5. Restart `php`, `queue`, `web`.
 6. Smoke: `GET /api/v1/auth/ping`, web login, one list endpoint.
@@ -61,22 +89,13 @@ php artisan app:create-admin
 php artisan db:seed --class=WorkflowSeeder --force
 ```
 
-## Local throwaway drill script
+## Restore drill
 
-From the repository root, with Compose Postgres running (does **not** target production and does **not** tick the checklist below):
-
-```bash
-bash scripts/ops/restore-drill.sh
-```
-
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `POSTGRES_CONTAINER` | `sadcpf_postgres` | Docker container name |
-| `POSTGRES_USER` | `sadcpf` | Database role |
-| `POSTGRES_DB` | `sadcpfnexus` | Source database to dump |
-| `RESTORE_DRILL_DIR` | `/tmp/nexus-restore-drill` | Where the gzipped dump is written |
-
-The script dumps the source database, restores into `sadcpfnexus_restore_drill`, counts `migrations` rows, then drops the throwaway database.
+`scripts/ops/restore-drill.sh` (or the `restore-drill` workflow task) restores the newest `db.dump` into
+`sadcpfnexus_restore_drill`, times the restore, compares every table's row count with that backup's
+`row-counts.tsv`, then drops the throwaway database. It exits 1 on any missing table or differing count.
+If no backup exists yet it takes a fresh dump first (and has nothing to compare against).
+It never touches the live database and does **not** tick the checklist below.
 
 ## Drill checklist (operator)
 
