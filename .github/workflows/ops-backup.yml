@@ -1,0 +1,59 @@
+name: Ops — backup & restore drill (sadcpf-nexus)
+
+# Manual only. SSHes to production as sadcpf-nexus (same key as deploy-production.yml)
+# and runs one of the scripts/ops backup tasks from the deployed checkout:
+#   status        show the latest backup and disk space
+#   backup        take a backup now (scripts/ops/backup.sh)
+#   restore-drill restore the latest backup into a throwaway DB and compare row counts
+#   install-cron  install/replace the nightly 01:30 (server time) backup cron entry
+# The scripts must already be deployed (they arrive with a normal deploy of main).
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Task to run on the production host
+        type: choice
+        options: [status, backup, restore-drill, install-cron]
+        default: status
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: ${{ github.event.inputs.task }}
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+    steps:
+      - name: Run task over SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          TASK: ${{ github.event.inputs.task }}
+        run: |
+          set -euo pipefail
+          test -n "${SSH_PRIVATE_KEY:-}" || { echo "Missing secret DEPLOY_SSH_PRIVATE_KEY"; exit 1; }
+          APP=/home/sadcpf-nexus/htdocs/nexus.sadcpf.org/app
+          case "$TASK" in
+            status)        CMD="bash scripts/ops/backup.sh --status; echo; tail -n 20 \$HOME/backups/nexus/backup.log 2>/dev/null || echo 'no backup.log yet'; echo; crontab -l 2>/dev/null | grep 'scripts/ops/backup.sh' || echo 'no backup cron installed'" ;;
+            backup)        CMD="bash scripts/ops/backup.sh" ;;
+            restore-drill) CMD="bash scripts/ops/restore-drill.sh" ;;
+            install-cron)  CMD="mkdir -p \$HOME/backups/nexus && (crontab -l 2>/dev/null | grep -v 'scripts/ops/backup.sh'; echo \"30 1 * * * cd $APP && bash scripts/ops/backup.sh >> \$HOME/backups/nexus/backup.log 2>&1\") | crontab - && crontab -l | grep 'scripts/ops/backup.sh'" ;;
+            *) echo "Unknown task: $TASK"; exit 1 ;;
+          esac
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          ssh-keyscan -H 194.163.156.4 >> "$HOME/.ssh/known_hosts"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=120 \
+            sadcpf-nexus@194.163.156.4 \
+            "cd $APP && $CMD"
+          rm -f "$HOME/.ssh/id_ed25519"
