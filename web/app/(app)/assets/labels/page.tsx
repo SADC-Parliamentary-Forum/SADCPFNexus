@@ -63,13 +63,30 @@ export default function AssetLabelsPage() {
     }).catch(() => setAwaitingPhoto([]));
   }
 
+  // The register API caps per_page at 100, so walk every page; otherwise
+  // "Select all" (and the printed PDF) silently stops at the first 100 assets.
   useEffect(() => {
-    const handle = window.setTimeout(() => {
-      assetsApi.list({ per_page: 100, search: search.trim() || undefined }).then((r) => {
-        setAssets((r.data as { data?: Asset[] }).data ?? []);
-      }).catch(() => setAssets([]));
+    let cancelled = false;
+    const handle = window.setTimeout(async () => {
+      const term = search.trim() || undefined;
+      const rows: Asset[] = [];
+      try {
+        for (let page = 1; ; page++) {
+          const r = await assetsApi.list({ per_page: 100, page, search: term });
+          const body = r.data as { data?: Asset[]; last_page?: number };
+          rows.push(...(body.data ?? []));
+          if (cancelled) return;
+          if (!body.last_page || page >= body.last_page) break;
+        }
+        setAssets(rows);
+      } catch {
+        if (!cancelled) setAssets([]);
+      }
     }, search ? 200 : 0);
-    return () => window.clearTimeout(handle);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(handle);
+    };
   }, [search]);
 
   useEffect(() => {
