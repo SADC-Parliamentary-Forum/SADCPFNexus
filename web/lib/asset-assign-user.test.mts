@@ -6,6 +6,15 @@ import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
+test("label editor says Assigned to instead of Custodian in every language", () => {
+  const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
+  assert.match(keys, /"assets\.labels\.itemCustodian": "Assigned to"/);
+  assert.match(keys, /"assets\.labels\.sampleCustodian": "Assigned to: J\. Doe"/);
+  assert.match(keys, /"assets\.labels\.itemCustodian": "Attribué à"/);
+  assert.match(keys, /"assets\.labels\.itemCustodian": "Atribuído a"/);
+  assert.doesNotMatch(keys, /"assets\.labels\.[a-zA-Z]+": "[^"]*(Custodian|custodian|dépositaire|Dépositaire|depositário|Depositário)/);
+});
+
 test("asset register can optionally assign a live asset to a user", () => {
   const register = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
   const api = readApiSource(webRoot);
