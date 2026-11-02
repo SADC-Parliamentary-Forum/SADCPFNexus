@@ -6,6 +6,15 @@ import { readApiSource } from "./apiSourceForTests.mts";
 
 const webRoot = join(process.cwd());
 
+test("label editor says Assigned to instead of Custodian in every language", () => {
+  const keys = readFileSync(join(webRoot, "lib/i18n/keys.ts"), "utf8");
+  assert.match(keys, /"assets\.labels\.itemCustodian": "Assigned to"/);
+  assert.match(keys, /"assets\.labels\.sampleCustodian": "Assigned to: J\. Doe"/);
+  assert.match(keys, /"assets\.labels\.itemCustodian": "Attribué à"/);
+  assert.match(keys, /"assets\.labels\.itemCustodian": "Atribuído a"/);
+  assert.doesNotMatch(keys, /"assets\.labels\.[a-zA-Z]+": "[^"]*(Custodian|custodian|dépositaire|Dépositaire|depositário|Depositário)/);
+});
+
 test("asset register can optionally assign a live asset to a user", () => {
   const register = readFileSync(join(webRoot, "app/(app)/assets/page.tsx"), "utf8");
   const api = readApiSource(webRoot);
@@ -16,7 +25,8 @@ test("asset register can optionally assign a live asset to a user", () => {
   assert.match(register, /assets\.assign/);
   assert.match(register, /assigned_user/);
   assert.match(register, /AssetAssigneePicker/);
-  assert.match(register, /assets\.notAssigned/);
+  assert.match(register, /assets\.assignedTo/);
+  assert.doesNotMatch(register, /assets\.notAssigned/);
   assert.match(register, /department:/);
 
   assert.match(picker, /tenantUsersApi\.list\(\{ search:/);
@@ -49,12 +59,16 @@ test("edit-asset form uses the searchable assignee picker", () => {
   assert.match(edit, /id="assigned_to"/);
 });
 
-test("asset view shows assignee name, email and department", () => {
+test("asset view shows assignee name, email and department only when assigned", () => {
   const view = readFileSync(join(webRoot, "app/(app)/assets/[id]/page.tsx"), "utf8");
   assert.match(view, /assets\.assignedTo/);
   assert.match(view, /assets\.assigneeEmail/);
   assert.match(view, /assets\.assigneeDepartment/);
-  assert.match(view, /assigned_user\?\.email/);
+  assert.match(view, /\{asset\.assigned_user\?\.name && \(/);
+  assert.match(view, /assigned_user\.email/);
+  assert.doesNotMatch(view, /assets\.notAssigned/);
+  // Location has its own field rather than appearing under "Assigned to".
+  assert.match(view, /assets\.view\.fieldLocation/);
 });
 
 test("handover e2e selects staff from the searchable assignee picker", () => {
