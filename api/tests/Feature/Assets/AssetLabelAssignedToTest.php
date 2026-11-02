@@ -8,7 +8,7 @@ use Illuminate\Foundation\Testing\TestCase;
 /** Renders the label view only, so it skips the base TestCase's database refresh. */
 class AssetLabelAssignedToTest extends TestCase
 {
-    private function render(?string $assignee): string
+    private function render(?string $assignee, ?string $serial = null, string $field = 'custodian'): string
     {
         $template = new AssetLabelTemplate([
             'page_width_mm' => 210, 'page_height_mm' => 297,
@@ -20,12 +20,12 @@ class AssetLabelAssignedToTest extends TestCase
         return view('pdf.asset_labels', [
             'template' => $template,
             'labels' => [[
-                'asset_tag' => 'SADC-0001', 'name' => 'Laptop', 'model' => null, 'serial' => null,
+                'asset_tag' => 'SADC-0001', 'name' => 'Laptop', 'model' => null, 'serial' => $serial,
                 'location' => null, 'custodian' => $assignee, 'owner' => null,
                 'scan_hint' => null, 'qr_base64' => '',
             ]],
             'batch' => null,
-            'layoutItems' => [['id' => 'custodian', 'visible' => true, 'x_mm' => 1, 'y_mm' => 1, 'w_mm' => 40, 'h_mm' => 4]],
+            'layoutItems' => [['id' => $field, 'visible' => true, 'x_mm' => 1, 'y_mm' => 1, 'w_mm' => 40, 'h_mm' => 4]],
         ])->render();
     }
 
@@ -40,5 +40,11 @@ class AssetLabelAssignedToTest extends TestCase
     public function test_label_omits_the_line_when_nobody_is_assigned(): void
     {
         $this->assertStringNotContainsString('Assigned to:', $this->render(null));
+    }
+
+    public function test_serial_line_always_prints(): void
+    {
+        $this->assertStringContainsString('S/N: 6CGK2X1', $this->render(null, '6CGK2X1', 'serial'));
+        $this->assertStringContainsString('S/N: —', $this->render(null, null, 'serial'));
     }
 }

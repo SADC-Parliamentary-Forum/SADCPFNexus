@@ -20,18 +20,20 @@ final class AssetLabelLayout
         $qrX = max(0.0, $labelW - $qr - 1.5);
         $qrY = min(8.0, max(1.5, $labelH - $qr - 2.0));
 
+        // Serial and location sit directly under the name so they print on every
+        // standard label; the assignee line shows only when it fits.
         $draft = [
             ['id' => 'org', 'x_mm' => 1.5, 'y_mm' => 1.2, 'w_mm' => max(10.0, $labelW - 3), 'h_mm' => 3.4, 'visible' => true],
             ['id' => 'notice', 'x_mm' => 1.5, 'y_mm' => 4.6, 'w_mm' => max(10.0, $labelW - 3), 'h_mm' => 3.0, 'visible' => true],
             ['id' => 'tag', 'x_mm' => 1.5, 'y_mm' => 8.0, 'w_mm' => $textW, 'h_mm' => 4.8, 'visible' => true],
             ['id' => 'name', 'x_mm' => 1.5, 'y_mm' => 12.8, 'w_mm' => $textW, 'h_mm' => 5.4, 'visible' => true],
-            ['id' => 'owner', 'x_mm' => 1.5, 'y_mm' => 18.2, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => true],
-            ['id' => 'recovery', 'x_mm' => 1.5, 'y_mm' => 21.4, 'w_mm' => $textW, 'h_mm' => 4.8, 'visible' => true],
-            ['id' => 'scan_hint', 'x_mm' => 1.5, 'y_mm' => 26.4, 'w_mm' => $textW, 'h_mm' => 3.0, 'visible' => true],
-            ['id' => 'model', 'x_mm' => 1.5, 'y_mm' => 29.4, 'w_mm' => $textW, 'h_mm' => 0, 'visible' => false],
-            ['id' => 'serial', 'x_mm' => 1.5, 'y_mm' => 29.4, 'w_mm' => $textW, 'h_mm' => 0, 'visible' => false],
-            ['id' => 'location', 'x_mm' => 1.5, 'y_mm' => 29.4, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => $labelH >= 40],
-            ['id' => 'custodian', 'x_mm' => 1.5, 'y_mm' => 32.6, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => $labelH >= 44],
+            ['id' => 'owner', 'x_mm' => 1.5, 'y_mm' => 27.8, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => true],
+            ['id' => 'recovery', 'x_mm' => 1.5, 'y_mm' => 31.0, 'w_mm' => $textW, 'h_mm' => 4.8, 'visible' => true],
+            ['id' => 'scan_hint', 'x_mm' => 1.5, 'y_mm' => 35.8, 'w_mm' => $textW, 'h_mm' => 3.0, 'visible' => true],
+            ['id' => 'model', 'x_mm' => 1.5, 'y_mm' => 38.8, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => false],
+            ['id' => 'serial', 'x_mm' => 1.5, 'y_mm' => 18.2, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => true],
+            ['id' => 'location', 'x_mm' => 1.5, 'y_mm' => 21.4, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => true],
+            ['id' => 'custodian', 'x_mm' => 1.5, 'y_mm' => 24.6, 'w_mm' => $textW, 'h_mm' => 3.2, 'visible' => 24.6 + 3.2 <= $labelH],
             ['id' => 'qr', 'x_mm' => $qrX, 'y_mm' => $qrY, 'w_mm' => $qr, 'h_mm' => $qr, 'visible' => true],
         ];
 
@@ -93,12 +95,26 @@ final class AssetLabelLayout
      */
     public static function resolve(AssetLabelTemplate $template): array
     {
-        return self::sanitize(
-            $template->layout,
-            (float) $template->label_width_mm,
-            (float) $template->label_height_mm,
-            (float) $template->qr_mm,
-        );
+        $labelW = (float) $template->label_width_mm;
+        $labelH = (float) $template->label_height_mm;
+        $qrMm = (float) $template->qr_mm;
+        $items = self::sanitize($template->layout, $labelW, $labelH, $qrMm);
+
+        // The serial number always prints, even on templates saved with it hidden or missing.
+        foreach ($items as $i => $item) {
+            if ($item['id'] === 'serial') {
+                $items[$i]['visible'] = true;
+
+                return $items;
+            }
+        }
+        foreach (self::defaultItems($labelW, $labelH, $qrMm) as $item) {
+            if ($item['id'] === 'serial') {
+                $items[] = $item;
+            }
+        }
+
+        return $items;
     }
 
     /**
