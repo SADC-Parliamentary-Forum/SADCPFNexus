@@ -1,0 +1,58 @@
+# Manual asset-register data fixes on production.
+# Runs an artisan command inside the deployed PHP container over the deploy SSH key.
+name: Ops - asset data
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Task to run
+        type: choice
+        options:
+          - backfill-locations-dry-run
+          - backfill-locations-apply
+      tenant:
+        description: Tenant id (blank = the only tenant)
+        required: false
+        default: ''
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: ${{ github.event.inputs.task }}
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 30
+    steps:
+      - name: Run task over SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          TASK: ${{ github.event.inputs.task }}
+          TENANT: ${{ github.event.inputs.tenant }}
+        run: |
+          set -euo pipefail
+          test -n "${SSH_PRIVATE_KEY:-}" || { echo "Missing secret DEPLOY_SSH_PRIVATE_KEY"; exit 1; }
+          [[ "$TENANT" =~ ^[0-9]*$ ]] || { echo "Tenant must be a number"; exit 1; }
+          APP=/home/sadcpf-nexus/htdocs/nexus.sadcpf.org/app
+          ARGS=""
+          if [ -n "$TENANT" ]; then ARGS="--tenant=$TENANT"; fi
+          case "$TASK" in
+            backfill-locations-dry-run) CMD="docker exec sadcpf_php php artisan assets:backfill-locations $ARGS" ;;
+            backfill-locations-apply)   CMD="bash scripts/ops/backup.sh && docker exec sadcpf_php php artisan assets:backfill-locations $ARGS --apply" ;;
+            *) echo "Unknown task: $TASK"; exit 1 ;;
+          esac
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          ssh-keyscan -H 194.163.156.4 >> "$HOME/.ssh/known_hosts"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=120 \
+            sadcpf-nexus@194.163.156.4 \
+            "cd $APP && $CMD"
+          rm -f "$HOME/.ssh/id_ed25519"
