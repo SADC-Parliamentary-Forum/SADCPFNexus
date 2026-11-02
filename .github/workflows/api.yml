@@ -6,15 +6,40 @@ on:
     paths:
       - 'api/**'
       - '.github/workflows/api.yml'
+  # No path filter on PRs: "PHPUnit (PHP 8.4)" is a required check on main, so it must
+  # report on every PR. When the PR does not touch the API it passes without running tests.
   pull_request:
     branches: [main]
-    paths:
-      - 'api/**'
-      - '.github/workflows/api.yml'
+
+permissions:
+  contents: read
+  pull-requests: read
 
 jobs:
+  changes:
+    name: Detect API changes
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.diff.outputs.api }}
+    steps:
+      - id: diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "api=true" >> "$GITHUB_OUTPUT"   # pushes are already path-filtered
+            exit 0
+          fi
+          files=$(gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" -q '.[].filename')
+          if printf '%s\n' "$files" | grep -qE '^(api/|\.github/workflows/api\.yml$|\.github/actions/setup-api/)'; then
+            echo "api=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "api=false" >> "$GITHUB_OUTPUT"
+          fi
+
   test:
     name: PHPUnit (PHP ${{ matrix.php }})
+    needs: changes
     runs-on: ubuntu-latest
 
     strategy:
@@ -42,20 +67,30 @@ jobs:
       run:
         working-directory: api
 
+    # Steps (not the job) are skipped so the required check keeps its expanded matrix name.
     steps:
+      - name: No API changes — tests not needed
+        if: needs.changes.outputs.api != 'true'
+        working-directory: .
+        run: echo "This PR does not touch api/, so PHPUnit is skipped and the check passes."
+
       - uses: actions/checkout@v4
+        if: needs.changes.outputs.api == 'true'
 
       - uses: ./.github/actions/setup-api
+        if: needs.changes.outputs.api == 'true'
         with:
           php-version: ${{ matrix.php }}
           extensions: pdo, pdo_pgsql, pgsql, bcmath, mbstring, xml, ctype, json, gd, zip
 
       - name: Prepare environment files
+        if: needs.changes.outputs.api == 'true'
         run: |
           cp .env.example .env
           cp .env.example .env.testing
 
       - name: Run PHPUnit tests
+        if: needs.changes.outputs.api == 'true'
         run: php artisan test --stop-on-failure
         env:
           APP_ENV: testing
@@ -76,6 +111,8 @@ jobs:
 
   lint:
     name: Laravel Pint (code style)
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
 
     defaults:
@@ -112,6 +149,8 @@ jobs:
 
   security:
     name: Composer security audit
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
 
     defaults:
