@@ -2,7 +2,9 @@
 
 namespace Tests\Unit\Assets;
 
+use App\Models\AssetLabelTemplate;
 use App\Modules\Assets\Support\AssetLabelLayout;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class AssetLabelLayoutTest extends TestCase
@@ -82,6 +84,56 @@ class AssetLabelLayoutTest extends TestCase
         $this->assertCount(1, $clean);
         $this->assertSame(5.0, $clean[0]['x_mm']);
         $this->assertSame(6.0, $clean[0]['y_mm']);
+    }
+
+    /**
+     * @return array<string, array{float, float, float}>
+     */
+    public static function standardSizes(): array
+    {
+        return [
+            'Avery L7161 63.5x46.6' => [63.5, 46.6, 22.0],
+            'Thermal 70x40' => [70.0, 40.0, 18.0],
+        ];
+    }
+
+    #[DataProvider('standardSizes')]
+    public function test_default_shows_serial_and_location_without_overlap(float $w, float $h, float $qr): void
+    {
+        $items = array_column(AssetLabelLayout::defaultItems($w, $h, $qr), null, 'id');
+
+        $this->assertTrue($items['serial']['visible']);
+        $this->assertTrue($items['location']['visible']);
+
+        $text = array_filter($items, fn (array $i) => $i['visible'] && $i['id'] !== 'qr');
+        foreach ($text as $a) {
+            $this->assertLessThanOrEqual($h + 0.01, $a['y_mm'] + $a['h_mm'], $a['id'].' runs off the label');
+            foreach ($text as $b) {
+                if ($a['id'] < $b['id']) {
+                    $overlap = $a['y_mm'] + 0.01 < $b['y_mm'] + $b['h_mm'] && $b['y_mm'] + 0.01 < $a['y_mm'] + $a['h_mm'];
+                    $this->assertFalse($overlap, $a['id'].' overlaps '.$b['id']);
+                }
+            }
+        }
+    }
+
+    public function test_resolve_forces_serial_visible_on_saved_layouts(): void
+    {
+        $base = ['label_width_mm' => 63.5, 'label_height_mm' => 46.6, 'qr_mm' => 22];
+
+        $hidden = new AssetLabelTemplate($base + ['layout' => [
+            ['id' => 'tag', 'x_mm' => 1, 'y_mm' => 8, 'w_mm' => 30, 'h_mm' => 5],
+            ['id' => 'serial', 'x_mm' => 1, 'y_mm' => 18, 'w_mm' => 30, 'h_mm' => 3.2, 'visible' => false],
+        ]]);
+        $serial = array_column(AssetLabelLayout::resolve($hidden), null, 'id')['serial'];
+        $this->assertTrue($serial['visible']);
+
+        $missing = new AssetLabelTemplate($base + ['layout' => [
+            ['id' => 'tag', 'x_mm' => 1, 'y_mm' => 8, 'w_mm' => 30, 'h_mm' => 5],
+        ]]);
+        $items = array_column(AssetLabelLayout::resolve($missing), null, 'id');
+        $this->assertArrayHasKey('serial', $items);
+        $this->assertTrue($items['serial']['visible']);
     }
 
     public function test_qr_stays_square(): void
