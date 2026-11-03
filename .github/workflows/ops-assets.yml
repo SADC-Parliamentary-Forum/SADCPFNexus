@@ -12,6 +12,7 @@ on:
           - backfill-locations-dry-run
           - backfill-locations-apply
           - app-errors
+          - mfa-check
       tenant:
         description: Tenant id (blank = the only tenant)
         required: false
@@ -45,6 +46,8 @@ jobs:
             backfill-locations-apply)   CMD="bash scripts/ops/backup.sh && docker exec sadcpf_php php artisan assets:backfill-locations $ARGS --apply" ;;
             # Read-only: last error entries (first line of each, truncated) from the Laravel log.
             app-errors) CMD="for c in sadcpf_php sadcpf_nginx sadcpf_web; do echo \"== \$c\"; docker logs --since 12h \$c 2>&1 | grep -iE 'error|exception| 500 |auth/login' | tail -n 25 | cut -c1-500; done" ;;
+            # Read-only: per MFA user, whether the stored secret decrypts and verifies (never prints it).
+            mfa-check) CMD="echo PD9waHAKcmVxdWlyZSAnL3Zhci93d3cvYXBpL3ZlbmRvci9hdXRvbG9hZC5waHAnOwokYXBwID0gcmVxdWlyZSAnL3Zhci93d3cvYXBpL2Jvb3RzdHJhcC9hcHAucGhwJzsKJGFwcC0+bWFrZShJbGx1bWluYXRlXENvbnRyYWN0c1xDb25zb2xlXEtlcm5lbDo6Y2xhc3MpLT5ib290c3RyYXAoKTsKJGcgPSBuZXcgUHJhZ21hUlhcR29vZ2xlMkZBXEdvb2dsZTJGQTsKJHVzZXJzID0gQXBwXE1vZGVsc1xVc2VyOjpxdWVyeSgpLT53aGVyZSgnbWZhX2VuYWJsZWQnLCB0cnVlKS0+b3JkZXJCeSgnaWQnKS0+Z2V0KCk7CmVjaG8gJ21mYSB1c2VyczogJy4kdXNlcnMtPmNvdW50KCkuUEhQX0VPTDsKZm9yZWFjaCAoJHVzZXJzIGFzICR1KSB7CiAgICB0cnkgewogICAgICAgICRzID0gJHUtPm1mYV9zZWNyZXQ7CiAgICAgICAgJGxlbiA9IHN0cmxlbigoc3RyaW5nKSAkcyk7CiAgICAgICAgJGctPnZlcmlmeUtleSgoc3RyaW5nKSAkcywgJzAwMDAwMCcpOwogICAgICAgIGVjaG8gInVzZXIgeyR1LT5pZH06IG9rIGxlbj17JGxlbn0iLlBIUF9FT0w7CiAgICB9IGNhdGNoIChUaHJvd2FibGUgJGUpIHsKICAgICAgICBlY2hvICJ1c2VyIHskdS0+aWR9OiAiLmdldF9jbGFzcygkZSkuJzogJy5zdWJzdHIoJGUtPmdldE1lc3NhZ2UoKSwgMCwgMTYwKS5QSFBfRU9MOwogICAgfQp9CnRyeSB7IEFwcFxNb2RlbHNcQXVkaXRMb2c6OnF1ZXJ5KCktPmxpbWl0KDEpLT5nZXQoKTsgZWNobyAiYXVkaXRsb2cgb2tcbiI7IH0gY2F0Y2ggKFRocm93YWJsZSAkZSkgeyBlY2hvICdhdWRpdGxvZyAnLmdldF9jbGFzcygkZSkuJzogJy5zdWJzdHIoJGUtPmdldE1lc3NhZ2UoKSwgMCwgMjAwKS5QSFBfRU9MOyB9Cg== | base64 -d | docker exec -i sadcpf_php php" ;;
             *) echo "Unknown task: $TASK"; exit 1 ;;
           esac
           install -d -m 700 "$HOME/.ssh"
