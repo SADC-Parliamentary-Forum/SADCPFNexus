@@ -44,7 +44,7 @@ jobs:
             backfill-locations-dry-run) CMD="docker exec sadcpf_php php artisan assets:backfill-locations $ARGS" ;;
             backfill-locations-apply)   CMD="bash scripts/ops/backup.sh && docker exec sadcpf_php php artisan assets:backfill-locations $ARGS --apply" ;;
             # Read-only: last error entries (first line of each, truncated) from the Laravel log.
-            app-errors) CMD="docker exec sadcpf_php sh -c 'ls -la storage/logs | tail -n 5; f=\$(ls -t storage/logs/*.log | head -n 1); echo \"== \$f\"; grep -E \"\\.(ERROR|CRITICAL|ALERT|EMERGENCY):\" \"\$f\" | tail -n 15 | cut -c1-600'" ;;
+            app-errors) CMD="for c in sadcpf_php sadcpf_nginx sadcpf_web; do echo \"== \$c\"; docker logs --since 12h \$c 2>&1 | grep -iE 'error|exception| 500 |auth/login' | tail -n 25 | cut -c1-500; done" ;;
             *) echo "Unknown task: $TASK"; exit 1 ;;
           esac
           install -d -m 700 "$HOME/.ssh"
