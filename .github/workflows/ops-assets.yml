@@ -11,6 +11,7 @@ on:
         options:
           - backfill-locations-dry-run
           - backfill-locations-apply
+          - app-errors
       tenant:
         description: Tenant id (blank = the only tenant)
         required: false
