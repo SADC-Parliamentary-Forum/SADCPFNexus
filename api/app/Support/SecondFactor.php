@@ -4,6 +4,8 @@ namespace App\Support;
 
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use PragmaRX\Google2FA\Exceptions\Google2FAException;
 use PragmaRX\Google2FA\Google2FA;
 
 /**
@@ -30,7 +32,7 @@ final class SecondFactor
         }
 
         if (preg_match('/^\d{6}$/', $code) === 1) {
-            return (new Google2FA)->verifyKey($user->mfa_secret, $code) ? 'totp' : null;
+            return self::totpMatches($user, $code) ? 'totp' : null;
         }
 
         return self::consumeRecoveryCode($user, $code) ? 'recovery' : null;
@@ -40,7 +42,26 @@ final class SecondFactor
     {
         return $user->mfa_secret !== null
             && preg_match('/^\d{6}$/', trim($code)) === 1
-            && (new Google2FA)->verifyKey($user->mfa_secret, trim($code));
+            && self::totpMatches($user, trim($code));
+    }
+
+    /**
+     * A stored secret the library rejects (e.g. shorter than 16 base32 chars) can
+     * never match; treat it as a wrong code instead of failing the request, so the
+     * user can still sign in with a recovery code or have an admin reset MFA.
+     */
+    private static function totpMatches(User $user, string $code): bool
+    {
+        try {
+            return (new Google2FA)->verifyKey((string) $user->mfa_secret, $code);
+        } catch (Google2FAException $e) {
+            Log::warning('Unusable MFA secret; TOTP cannot verify until MFA is reset.', [
+                'user_id' => $user->getKey(),
+                'reason' => class_basename($e),
+            ]);
+
+            return false;
+        }
     }
 
     /**
