@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { assetsApi, type Asset } from "@/lib/api";
+import { assetCategoriesApi, assetsApi, type Asset, type AssetCategory } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import {
   chunkIds,
@@ -27,6 +27,8 @@ export default function AssetsPrintPage() {
   const [qrBlobs, setQrBlobs] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [categoryRows, setCategoryRows] = useState<AssetCategory[]>([]);
+  const categoryLabel = (code?: string | null) => categoryRows.find((c) => c.code === code)?.name ?? code ?? "—";
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export default function AssetsPrintPage() {
       window.location.href = "/login";
       return;
     }
+    assetCategoriesApi.list().then((r) => setCategoryRows(r.data.data ?? [])).catch(() => setCategoryRows([]));
     const wanted = parsePrintAssetIds(window.location.search);
     const filters = parsePrintListFilters(window.location.search);
     collectPaginatedRows((page) =>
@@ -140,7 +143,7 @@ export default function AssetsPrintPage() {
               <tr key={asset.id} className="border-b border-neutral-100">
                 <td className="py-2 pr-3 font-mono text-neutral-700">{asset.asset_code}</td>
                 <td className="py-2 pr-3 text-neutral-900">{asset.name}</td>
-                <td className="py-2 pr-3 capitalize text-neutral-700">{asset.category}</td>
+                <td className="py-2 pr-3 text-neutral-700">{categoryLabel(asset.category)}</td>
                 <td className="py-2 pr-3 text-neutral-700">{statusConfig[asset.status] ?? asset.status}</td>
                 <td className="py-2 pr-3 text-neutral-700">{asset.assigned_user?.name ?? "—"}</td>
                 <td className="py-2">
@@ -179,6 +182,13 @@ export default function AssetsPrintPage() {
         .register-print-table td {
           overflow: hidden;
           word-wrap: break-word;
+          /* Full grid so rows (and their QR codes) can be cut apart cleanly. */
+          border: 1px solid #9ca3af;
+          padding-left: 6px;
+          padding-right: 6px;
+        }
+        .register-print-table tr {
+          break-inside: avoid;
         }
         @media print {
           body * { visibility: hidden; }

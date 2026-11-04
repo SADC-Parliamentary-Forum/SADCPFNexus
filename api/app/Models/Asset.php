@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Modules\Assets\Import\AssetCategoryMapper;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -58,6 +59,15 @@ class Asset extends Model
                 $asset->tag_number = null;
             }
         });
+    }
+
+    /**
+     * Store the catalog code ("it"), not a display name or alias ("IT Equipment", "Computer Equipment"),
+     * so one category never splits into several in filters and reports. Unknown (tenant-defined) codes pass through.
+     */
+    public function setCategoryAttribute(?string $value): void
+    {
+        $this->attributes['category'] = $value === null ? null : (AssetCategoryMapper::toCode($value) ?? $value);
     }
 
     public function getQrUrlAttribute(): ?string

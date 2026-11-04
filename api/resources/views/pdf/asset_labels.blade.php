@@ -28,12 +28,23 @@
         .name { font-size: {{ $template->font_pt }}pt; }
         .meta { font-size: 6.5pt; color: #333; }
         .qr img { display: block; }
+        /* Dashed cut guide on each label's edge; the 0.2mm border sits inside the label box. */
+        .cut {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: {{ max(1, (float) $template->label_width_mm - 0.4) }}mm;
+            height: {{ max(1, (float) $template->label_height_mm - 0.4) }}mm;
+            border: 0.2mm dashed #9ca3af;
+        }
     </style>
 </head>
 <body>
 @php
     $perPage = max(1, (int) $template->rows * (int) $template->columns);
     $chunks = array_chunk($labels, $perPage);
+    // Sheets of several labels get cut guides; a one-label roll (thermal) is already separate.
+    $cutLines = $perPage > 1;
     $items = $layoutItems ?? [];
 @endphp
 @foreach ($chunks as $pageIndex => $pageLabels)
@@ -44,6 +55,9 @@
                     @foreach ($row as $label)
                         <td class="cell">
                             <div class="label">
+                                @if($cutLines)
+                                    <div class="cut"></div>
+                                @endif
                                 @foreach ($items as $item)
                                     @if(empty($item['visible']))
                                         @continue

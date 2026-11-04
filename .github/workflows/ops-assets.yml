@@ -11,6 +11,8 @@ on:
         options:
           - backfill-locations-dry-run
           - backfill-locations-apply
+          - backfill-identifiers-dry-run
+          - backfill-identifiers-apply
           - app-errors
           - mfa-check
           - log-tail
@@ -46,6 +48,8 @@ jobs:
           case "$TASK" in
             backfill-locations-dry-run) CMD="docker exec sadcpf_php php artisan assets:backfill-locations $ARGS" ;;
             backfill-locations-apply)   CMD="bash scripts/ops/backup.sh && docker exec sadcpf_php php artisan assets:backfill-locations $ARGS --apply" ;;
+            backfill-identifiers-dry-run) CMD="docker exec sadcpf_php php artisan assets:backfill-identifiers $ARGS" ;;
+            backfill-identifiers-apply)   CMD="bash scripts/ops/backup.sh && docker exec sadcpf_php php artisan assets:backfill-identifiers $ARGS --apply" ;;
             # Read-only: error-looking lines from the last 12h of container output.
             app-errors) CMD="for c in sadcpf_php sadcpf_nginx sadcpf_web; do echo \"== \$c\"; docker logs --since 12h \$c 2>&1 | grep -iE 'error|exception| 500 |auth/login' | tail -n 25 | cut -c1-500; done" ;;
             # Read-only: per MFA user, whether the stored secret decrypts and verifies (never prints it).

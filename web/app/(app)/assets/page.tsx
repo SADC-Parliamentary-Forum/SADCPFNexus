@@ -4,7 +4,7 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { loadPdfLibs } from "@/lib/pdf-libs";
-import { assetsApi, assetRequestsApi, type Asset, type AssetRegisterSummary, type AssetRequest, type TenantUserOption } from "@/lib/api";
+import { assetCategoriesApi, assetsApi, assetRequestsApi, type Asset, type AssetCategory, type AssetRegisterSummary, type AssetRequest, type TenantUserOption } from "@/lib/api";
 import { canDisposeAssets, canManageAssets, canPrintAssetLabels, canRetireAssets, getStoredUser } from "@/lib/auth";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
@@ -673,6 +673,13 @@ export default function AssetsPage() {
   const [rejectAsset, setRejectAsset] = useState<Asset | null>(null);
   const [retiringId, setRetiringId] = useState<number | null>(null);
   const [confirmingReturnId, setConfirmingReturnId] = useState<number | null>(null);
+  const [categoryRows, setCategoryRows] = useState<AssetCategory[]>([]);
+  // Assets store the category code ("it"); show the category's name ("IT Equipment").
+  const categoryLabel = (code?: string | null) => categoryRows.find((c) => c.code === code)?.name ?? code ?? "—";
+
+  useEffect(() => {
+    assetCategoriesApi.list().then((r) => setCategoryRows(r.data.data ?? [])).catch(() => setCategoryRows([]));
+  }, []);
 
   useEffect(() => {
     const user = getStoredUser();
@@ -799,7 +806,7 @@ export default function AssetsPage() {
         body: exportTargets.map((asset) => [
           asset.asset_code,
           asset.name,
-          asset.category,
+          categoryLabel(asset.category),
           statusConfig[asset.status]?.label ?? asset.status,
           asset.assigned_user?.name ?? "",
         ]),
@@ -1121,7 +1128,7 @@ export default function AssetsPage() {
                 }}
               >
                 <option value="all">{t("assets.register.allCategories")}</option>
-                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                {categories.map((c) => <option key={c} value={c}>{categoryLabel(c)}</option>)}
               </select>
             </div>
           )}
@@ -1268,7 +1275,7 @@ export default function AssetsPage() {
                           >
                             {asset.name}
                           </Link>
-                          <p className="text-xs text-neutral-500 mt-1 capitalize">{asset.category}</p>
+                          <p className="text-xs text-neutral-500 mt-1">{categoryLabel(asset.category)}</p>
                           {(asset.current_value != null || asset.value != null) && (
                             <p className="text-xs text-neutral-500 mt-0.5">
                               {t("assets.register.bookValue")}: {Number(asset.current_value ?? asset.value).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

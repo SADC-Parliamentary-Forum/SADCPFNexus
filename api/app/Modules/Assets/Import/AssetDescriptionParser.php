@@ -8,12 +8,16 @@ namespace App\Modules\Assets\Import;
  */
 final class AssetDescriptionParser
 {
+    // Longer names first so "Konica Minolta" wins over "Konica".
     private const MAKES = [
-        'HP', 'Hewlett-Packard', 'Dell', 'Lenovo', 'Apple', 'ASUS', 'Acer', 'Samsung',
-        'Konica', 'Konica Minolta', 'Canon', 'Epson', 'Brother', 'Cisco', 'BMW',
+        'Konica Minolta', 'Hewlett-Packard', 'HP', 'Dell', 'Lenovo', 'Apple', 'ASUS', 'Acer',
+        'Samsung', 'Konica', 'Canon', 'Epson', 'Brother', 'Cisco', 'Xerox', 'Proline', 'BMW',
         'Toyota', 'Nissan', 'Hisense', 'Defy', 'Siemens', 'Siemen', 'Nikon',
         'Logitech', 'Karcher',
     ];
+
+    /** "S/N", "S/N:", "Ser.No.", "Serial Number" etc., also glued to the value ("S/NCNC0G1805"). */
+    private const SERIAL_LABEL = '(?:S\/N|Ser\.?\s*No\.?|Serial(?:\s*(?:Number|No\.?))?)\s*[:#]?\s*';
 
     /**
      * @return array{make: ?string, model: ?string, serial: ?string, asset_name: ?string, confidence: string, flags: list<string>}
@@ -65,9 +69,21 @@ final class AssetDescriptionParser
         ];
     }
 
+    /**
+     * The description with its serial-number segment removed, e.g.
+     * "Dell Laptop S/N 6CGK2X1" -> "Dell Laptop", "HP 15s i5 Laptop - Ser.No. 5CD144HSKY" -> "HP 15s i5 Laptop".
+     */
+    public function withoutSerial(string $text): string
+    {
+        $out = preg_replace('/[\s\-]*\b'.self::SERIAL_LABEL.'[A-Z0-9\-]{5,}\b[.,;]?/i', '', $text) ?? $text;
+        $out = trim(preg_replace('/\s+/', ' ', $out) ?? $out, " \t-");
+
+        return $out !== '' ? $out : trim($text);
+    }
+
     private function extractSerial(string $text): ?string
     {
-        if (preg_match('/\b(?:S\/N|S\/N:|Ser\.?\s*No\.?|Serial(?:\s*Number)?)\s*[:#]?\s*([A-Z0-9\-]{5,})\b/i', $text, $m)) {
+        if (preg_match('/\b'.self::SERIAL_LABEL.'([A-Z0-9\-]{5,})\b/i', $text, $m)) {
             $serial = strtoupper(rtrim($m[1], '.,;'));
             if (in_array($serial, ['N/A', 'NA', 'UNKNOWN', 'NONE', '000000', '0'], true)) {
                 return null;
@@ -103,15 +119,13 @@ final class AssetDescriptionParser
 
     private function extractModel(string $text, ?string $make, ?string $serial): ?string
     {
-        $working = $text;
-        if ($serial) {
-            $working = preg_replace('/\b(?:S\/N|Ser\.?\s*No\.?)[^ ]*\s*'.preg_quote($serial, '/').'/i', '', $working) ?? $working;
-        }
-        $working = trim(preg_replace('/\s+/', ' ', $working) ?? $working);
-        if ($make && preg_match('/\b'.preg_quote($make, '/').'\b\s+(.+)$/i', $working, $m)) {
-            $model = trim($m[1]);
-            $model = preg_replace('/\s+-\s+Laptop.*$/i', '', $model) ?? $model;
-            $model = trim($model, " \t-");
+        $working = $serial ? $this->withoutSerial($text) : trim(preg_replace('/\s+/', ' ', $text) ?? $text);
+        if ($make && preg_match('/\b'.preg_quote($make, '/').'\b[\s\-]+(.+)$/i', $working, $m)) {
+            $model = $this->withoutAssignee(trim($m[1]));
+            // "Dell Laptop" names the kind of item, not a model.
+            if (preg_match('/^(?:laptop|desktop|printer|projector|scanner|monitor)$/i', $model)) {
+                return null;
+            }
             if (mb_strlen($model) < 3 || mb_strlen($model) > 120) {
                 return null;
             }
@@ -120,6 +134,26 @@ final class AssetDescriptionParser
         }
 
         return null;
+    }
+
+    /**
+     * Drops who the item was bought for and the trailing "Laptop" the FAR appends:
+     * "Vostro 5490 - Laptop for Ms. L. Boois" -> "Vostro 5490",
+     * "Elitebook X360 830 G10 I5 13 16GB Laptop - S. Bokosi" -> "Elitebook X360 830 G10 I5 13 16GB".
+     */
+    private function withoutAssignee(string $model): string
+    {
+        $patterns = [
+            '/[\s\-]*\b(?:Laptop\s+)?(?:for\s+)?(?:Mr|Ms|Mrs|Dr|Prof)\b\.?\s*[A-Z].*$/',
+            '/\s+-\s*[A-Z]\.\s*[A-Z][a-z]+$/',
+            '/\s+-\s*[A-Z]{2,3}$/',
+            '/[\s\-]+Laptop$/i',
+        ];
+        foreach ($patterns as $pattern) {
+            $model = preg_replace($pattern, '', $model) ?? $model;
+        }
+
+        return trim($model, " \t-");
     }
 
     private function guessName(string $text): ?string
