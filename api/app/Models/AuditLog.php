@@ -71,7 +71,7 @@ class AuditLog extends Model
         }
 
         $entry = [
-            'tenant_id' => $context['tenant_id'] ?? $user?->tenant_id ?? null,
+            'tenant_id' => $context['tenant_id'] ?? $user?->tenant_id ?? self::auditedUserTenantId($context),
             'user_id' => $context['user_id'] ?? $user?->id ?? null,
             'event' => $event,
             'auditable_type' => $context['auditable_type'] ?? null,
@@ -106,6 +106,22 @@ class AuditLog extends Model
         }
 
         return $log;
+    }
+
+    /**
+     * Events about a user before anyone is signed in (MFA step, password reset) or from
+     * the CLI take the tenant from that user, so they are not left tenantless.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    private static function auditedUserTenantId(array $context): ?int
+    {
+        if (($context['auditable_type'] ?? null) !== User::class || empty($context['auditable_id'])) {
+            return null;
+        }
+        $tenantId = User::query()->whereKey($context['auditable_id'])->value('tenant_id');
+
+        return $tenantId ? (int) $tenantId : null;
     }
 
     /**
