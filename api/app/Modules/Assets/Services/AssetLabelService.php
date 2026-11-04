@@ -10,6 +10,7 @@ use App\Models\AssetLabelTemplate;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Modules\Assets\Support\AssetLabelLayout;
+use App\Modules\Assets\Support\AssetLabelTextFit;
 use App\Modules\Documents\Services\ModuleDocumentBridge;
 use App\Support\UploadContentSniffer;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -132,6 +133,7 @@ class AssetLabelService
                 'labels' => $labels,
                 'batch' => $batch,
                 'layoutItems' => AssetLabelLayout::resolve($template),
+                'textFit' => new AssetLabelTextFit(app('dompdf.wrapper')->getDomPDF()->getFontMetrics()),
             ])->setPaper([0, 0, $this->mmToPt((float) $template->page_width_mm), $this->mmToPt((float) $template->page_height_mm)]);
 
             AuditLog::record('assets.label_printed', [

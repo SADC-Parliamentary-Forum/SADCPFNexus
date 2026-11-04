@@ -20,7 +20,8 @@
             height: {{ $template->label_height_mm }}mm;
             overflow: hidden;
         }
-        .field { position: absolute; overflow: hidden; line-height: 1.15; }
+        /* No per-field clipping: AssetLabelTextFit sizes text to its box, and clipping cut descenders off the last line. */
+        .field { position: absolute; line-height: {{ \App\Modules\Assets\Support\AssetLabelTextFit::LINE_HEIGHT }}; }
         .org { font-size: 7pt; font-weight: bold; letter-spacing: 0.04em; text-transform: uppercase; color: #1a365d; }
         .notice { font-size: 6pt; color: #444; }
         .tag { font-size: 11pt; font-weight: bold; font-family: DejaVu Sans Mono, monospace; }
@@ -74,7 +75,10 @@
                                             <img src="data:image/png;base64,{{ $label['qr_base64'] }}" alt="QR" style="width: {{ $item['w_mm'] }}mm; height: {{ $item['h_mm'] }}mm;">
                                         </div>
                                     @elseif($text)
-                                        <div class="field {{ $class }}" style="left: {{ $item['x_mm'] }}mm; top: {{ $item['y_mm'] }}mm; width: {{ $item['w_mm'] }}mm; height: {{ $item['h_mm'] }}mm;">{{ $text }}</div>
+                                        @php
+                                            $fontPt = isset($textFit) ? $textFit->fontSize($class, $text, (float) $item['w_mm'], (float) $item['h_mm'], (float) $template->font_pt) : null;
+                                        @endphp
+                                        <div class="field {{ $class }}" style="left: {{ $item['x_mm'] }}mm; top: {{ $item['y_mm'] }}mm; width: {{ $item['w_mm'] }}mm; height: {{ $item['h_mm'] }}mm;@if($fontPt) font-size: {{ $fontPt }}pt;@endif">{{ $text }}</div>
                                     @endif
                                 @endforeach
                             </div>
