@@ -17,13 +17,14 @@ on:
           - mfa-check
           - log-tail
           - log-perms
+          - devices-report
       tenant:
         description: Tenant id (blank = the only tenant)
         required: false
         default: ''
 
 concurrency:
-  group: production-deploy
+  group: ops-readonly-report
   cancel-in-progress: false
 
 jobs:
