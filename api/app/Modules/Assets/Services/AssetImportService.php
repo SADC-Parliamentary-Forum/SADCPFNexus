@@ -571,10 +571,14 @@ class AssetImportService
         foreach ($byTag as $tag => $items) {
             $merged = $this->mergeTagGroup($batch, $tag, $items);
             $parsedDesc = $this->descriptions->parse($merged['legacy_description'] ?? null);
-            $make = $merged['make'] ?? $parsedDesc['make'];
-            $model = $merged['model'] ?? $parsedDesc['model'];
-            $serial = $merged['serial_number'] ?? $parsedDesc['serial'];
-            $name = $merged['asset_name'] ?? $parsedDesc['asset_name'] ?? $merged['legacy_description'];
+            // Template cells come through as '' when blank, so fall back on emptiness, not null.
+            $make = ($merged['make'] ?? null) ?: $parsedDesc['make'];
+            $model = ($merged['model'] ?? null) ?: $parsedDesc['model'];
+            $serial = ($merged['serial_number'] ?? null) ?: $parsedDesc['serial'];
+            $name = ($merged['asset_name'] ?? null) ?: ($parsedDesc['asset_name'] ?? $merged['legacy_description']);
+            if (is_string($name) && $name !== '') {
+                $name = $this->descriptions->withoutSerial($name);
+            }
 
             $serialForMatch = is_scalar($serial) && trim((string) $serial) !== ''
                 ? trim((string) $serial)
