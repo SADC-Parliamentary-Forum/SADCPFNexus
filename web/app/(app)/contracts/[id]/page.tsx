@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { ApprovalTimeline } from "@/components/workflow/ApprovalTimeline";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { contractsApi } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
@@ -26,6 +27,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const contractId = Number(id);
   const qc = useQueryClient();
   const toast = useToast();
+  const { prompt } = useConfirm();
   const user = getStoredUser();
 
   const [tab, setTab] = useState<Tab>("overview");
@@ -560,10 +562,10 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       <td className="text-xs text-neutral-500">{p.cv_reference ?? "—"}</td>
                       <td className="text-xs capitalize">{p.status}</td>
                       <td className="text-right">{p.status === "active" && (
-                        <button className="btn-secondary text-xs py-0.5" onClick={() => {
-                          const proposed_name = window.prompt("Replacement name:");
+                        <button className="btn-secondary text-xs py-0.5" onClick={async () => {
+                          const proposed_name = await prompt({ title: "Request replacement", label: "Replacement name", required: true });
                           if (!proposed_name) return;
-                          const reason = window.prompt("Reason for replacement:") ?? "";
+                          const reason = (await prompt({ title: "Request replacement", label: "Reason for replacement" })) ?? "";
                           contractsApi.requestPersonnelReplacement(contractId, p.id, { proposed_name, proposed_role: p.role, reason })
                             .then(() => { toast.success("Replacement requested (pending approval)"); refreshPersonnel(); })
                             .catch((e: unknown) => toast.error((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed"));
@@ -612,8 +614,8 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       <td className="text-sm">{d.legal_involved ? "Yes" : "—"}</td>
                       <td className="text-xs capitalize">{d.status.replace(/_/g, " ")}</td>
                       <td className="text-right">{!["resolved", "closed"].includes(d.status) && (
-                        <button className="btn-secondary text-xs py-0.5" onClick={() => {
-                          const resolution = window.prompt("Resolution note:");
+                        <button className="btn-secondary text-xs py-0.5" onClick={async () => {
+                          const resolution = await prompt({ title: "Resolve dispute", label: "Resolution note" });
                           if (resolution === null) return;
                           contractsApi.updateDispute(contractId, d.id, { status: "resolved", resolution })
                             .then(() => { toast.success("Dispute resolved"); qc.invalidateQueries({ queryKey: ["contract", contractId, "disputes"] }); })
@@ -853,7 +855,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             </select>
             <textarea className="form-input h-24 resize-none" placeholder="Description" value={dispute.description} onChange={(e) => setDispute((p) => ({ ...p, description: e.target.value }))} />
             <input className="form-input" type="number" placeholder="Amount at risk (optional)" value={dispute.amount_at_risk} onChange={(e) => setDispute((p) => ({ ...p, amount_at_risk: e.target.value }))} />
-            <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={dispute.legal_involved} onChange={(e) => setDispute((p) => ({ ...p, legal_involved: e.target.checked }))} /> Legal involved</label>
+            <label htmlFor="contract-dispute-legal-involved" className="flex items-center gap-2 text-sm text-neutral-600"><input id="contract-dispute-legal-involved" type="checkbox" checked={dispute.legal_involved} onChange={(e) => setDispute((p) => ({ ...p, legal_involved: e.target.checked }))} /> Legal involved</label>
             <div className="flex gap-3">
               <button className="btn-secondary flex-1" onClick={() => setDisputeOpen(false)}>Cancel</button>
               <button className="btn-primary flex-1" disabled={!dispute.description.trim()}
@@ -905,8 +907,8 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
               ["compliance_score", "Compliance"], ["communication_score", "Communication"],
             ] as [keyof typeof perf, string][]).map(([key, label]) => (
               <div key={key} className="flex items-center justify-between gap-3">
-                <label className="text-sm text-neutral-700">{label}</label>
-                <select className="form-input w-24" value={perf[key] as number} onChange={(e) => setPerf((p) => ({ ...p, [key]: Number(e.target.value) }))}>
+                <label htmlFor={`contract-perf-${key}`} className="text-sm text-neutral-700">{label}</label>
+                <select id={`contract-perf-${key}`} className="form-input w-24" value={perf[key] as number} onChange={(e) => setPerf((p) => ({ ...p, [key]: Number(e.target.value) }))}>
                   {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
@@ -926,8 +928,8 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             <h3 className="text-base font-bold text-neutral-900 capitalize">{lifecycleModal} contract</h3>
             {lifecycleModal === "terminate" && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Termination type</label>
-                <select className="form-input" value={terminationType} onChange={(e) => setTerminationType(e.target.value)}>
+                <label htmlFor="contract-lifecycle-termination-type" className="text-xs font-semibold text-neutral-600">Termination type</label>
+                <select id="contract-lifecycle-termination-type" className="form-input" value={terminationType} onChange={(e) => setTerminationType(e.target.value)}>
                   {["convenience", "cause", "mutual", "force_majeure", "other"].map((t) => (
                     <option key={t} value={t} className="capitalize">{t.replace(/_/g, " ")}</option>
                   ))}
@@ -936,34 +938,34 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             )}
             {lifecycleModal === "calloff" && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Call-off title <span className="text-red-500">*</span></label>
-                <input className="form-input" value={callOffTitle} onChange={(e) => setCallOffTitle(e.target.value)} />
-                <label className="text-xs font-semibold text-neutral-600 mt-2 block">Value <span className="text-red-500">*</span></label>
-                <input type="number" min="0" step="0.01" className="form-input" value={callOffValue} onChange={(e) => setCallOffValue(e.target.value)} />
+                <label htmlFor="contract-lifecycle-calloff-title" className="text-xs font-semibold text-neutral-600">Call-off title <span className="text-red-500">*</span></label>
+                <input id="contract-lifecycle-calloff-title" className="form-input" value={callOffTitle} onChange={(e) => setCallOffTitle(e.target.value)} />
+                <label htmlFor="contract-lifecycle-calloff-value" className="text-xs font-semibold text-neutral-600 mt-2 block">Value <span className="text-red-500">*</span></label>
+                <input id="contract-lifecycle-calloff-value" type="number" min="0" step="0.01" className="form-input" value={callOffValue} onChange={(e) => setCallOffValue(e.target.value)} />
               </div>
             )}
             {(lifecycleModal === "renew" || lifecycleModal === "calloff") && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">{lifecycleModal === "calloff" ? "Start date" : "New start date"} <span className="text-red-500">*</span></label>
-                <input type="date" className="form-input" value={lcStartDate} onChange={(e) => setLcStartDate(e.target.value)} />
+                <label htmlFor="contract-lifecycle-start-date" className="text-xs font-semibold text-neutral-600">{lifecycleModal === "calloff" ? "Start date" : "New start date"} <span className="text-red-500">*</span></label>
+                <input id="contract-lifecycle-start-date" type="date" className="form-input" value={lcStartDate} onChange={(e) => setLcStartDate(e.target.value)} />
               </div>
             )}
             {(lifecycleModal === "extend" || lifecycleModal === "renew" || lifecycleModal === "calloff") && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">{lifecycleModal === "extend" ? "Proposed end date" : "End date"} <span className="text-red-500">*</span></label>
-                <input type="date" className="form-input" value={lcEndDate} onChange={(e) => setLcEndDate(e.target.value)} />
+                <label htmlFor="contract-lifecycle-end-date" className="text-xs font-semibold text-neutral-600">{lifecycleModal === "extend" ? "Proposed end date" : "End date"} <span className="text-red-500">*</span></label>
+                <input id="contract-lifecycle-end-date" type="date" className="form-input" value={lcEndDate} onChange={(e) => setLcEndDate(e.target.value)} />
               </div>
             )}
             {lifecycleModal === "renew" && (
               <div className="space-y-2">
-                <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={lcProcValidated} onChange={(e) => setLcProcValidated(e.target.checked)} /> Procurement validated</label>
-                <label className="flex items-center gap-2 text-sm text-neutral-600"><input type="checkbox" checked={lcBudgetConfirmed} onChange={(e) => setLcBudgetConfirmed(e.target.checked)} /> Budget confirmed</label>
+                <label htmlFor="contract-lifecycle-proc-validated" className="flex items-center gap-2 text-sm text-neutral-600"><input id="contract-lifecycle-proc-validated" type="checkbox" checked={lcProcValidated} onChange={(e) => setLcProcValidated(e.target.checked)} /> Procurement validated</label>
+                <label htmlFor="contract-lifecycle-budget-confirmed" className="flex items-center gap-2 text-sm text-neutral-600"><input id="contract-lifecycle-budget-confirmed" type="checkbox" checked={lcBudgetConfirmed} onChange={(e) => setLcBudgetConfirmed(e.target.checked)} /> Budget confirmed</label>
               </div>
             )}
             {lifecycleModal !== "calloff" && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Reason {!["renew"].includes(lifecycleModal) && <span className="text-red-500">*</span>}</label>
-                <textarea className="form-input h-20 resize-none" value={lifecycleReason} onChange={(e) => setLifecycleReason(e.target.value)} />
+                <label htmlFor="contract-lifecycle-reason" className="text-xs font-semibold text-neutral-600">Reason {!["renew"].includes(lifecycleModal) && <span className="text-red-500">*</span>}</label>
+                <textarea id="contract-lifecycle-reason" className="form-input h-20 resize-none" value={lifecycleReason} onChange={(e) => setLifecycleReason(e.target.value)} />
               </div>
             )}
             <div className="flex gap-3">
@@ -979,20 +981,20 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
           <div className="card w-full max-w-md p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-base font-bold text-neutral-900">Create amendment</h3>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Type</label>
-              <select className="form-input" value={amendType} onChange={(e) => setAmendType(e.target.value)}>
+              <label htmlFor="contract-amend-type" className="text-xs font-semibold text-neutral-600">Type</label>
+              <select id="contract-amend-type" className="form-input" value={amendType} onChange={(e) => setAmendType(e.target.value)}>
                 {["value", "duration", "scope", "deliverables", "key_personnel", "funding", "administrative", "other"].map((t) => (
                   <option key={t} value={t} className="capitalize">{t.replace(/_/g, " ")}</option>
                 ))}
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Value change (±, optional)</label>
-              <input type="number" step="0.01" className="form-input" value={amendDelta} onChange={(e) => setAmendDelta(e.target.value)} placeholder="e.g. 2000 or -500" />
+              <label htmlFor="contract-amend-delta" className="text-xs font-semibold text-neutral-600">Value change (±, optional)</label>
+              <input id="contract-amend-delta" type="number" step="0.01" className="form-input" value={amendDelta} onChange={(e) => setAmendDelta(e.target.value)} placeholder="e.g. 2000 or -500" />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Reason <span className="text-red-500">*</span></label>
-              <textarea className="form-input h-24 resize-none" value={amendReason} onChange={(e) => setAmendReason(e.target.value)} />
+              <label htmlFor="contract-amend-reason" className="text-xs font-semibold text-neutral-600">Reason <span className="text-red-500">*</span></label>
+              <textarea id="contract-amend-reason" className="form-input h-24 resize-none" value={amendReason} onChange={(e) => setAmendReason(e.target.value)} />
             </div>
             <div className="flex gap-3">
               <button className="btn-secondary flex-1" onClick={() => setAmendOpen(false)}>Cancel</button>

@@ -3,11 +3,12 @@ import test from "node:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-const webRoot = join(process.cwd());
+// Forward slashes on every OS so the /print/ and /certificate/ skips also match on Windows.
+const webRoot = join(process.cwd()).replaceAll("\\", "/");
 
 function walkTsx(dir: string, acc: string[] = []): string[] {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const fullPath = join(dir, entry.name);
+    const fullPath = join(dir, entry.name).replaceAll("\\", "/");
     if (entry.isDirectory()) {
       walkTsx(fullPath, acc);
       continue;
@@ -182,7 +183,7 @@ test("remaining operational details use shared page chrome instead of adhoc h1",
     "procurement/invoices/[id]/page.tsx",
     "procurement/receipts/[id]/page.tsx",
     "procurement/purchase-orders/[id]/page.tsx",
-    "procurement/contracts/[id]/page.tsx",
+    "contracts/[id]/page.tsx",
     "procurement/rfq/[id]/page.tsx",
     "procurement/[id]/page.tsx",
     "procurement/tenders/[id]/page.tsx",
@@ -446,7 +447,8 @@ test("operational non-redirect pages use gold chrome", () => {
     if (!fullPath.endsWith("page.tsx")) continue;
     if (skip.test(fullPath) || fullPath.includes(".print.")) continue;
     const source = readFileSync(fullPath, "utf8");
-    if (source.includes("redirect(")) continue;
+    // Server redirect() or a client-side legacy redirect page has no chrome of its own.
+    if (source.includes("redirect(") || /export default function \w*Redirect\b/.test(source)) continue;
     if (!chrome.some((token) => source.includes(token))) {
       offenders.push(fullPath.replace(webRoot, ""));
     }
@@ -486,7 +488,7 @@ test("remaining operational lists use shared EmptyState chrome", () => {
     "procurement/notices/page.tsx",
     "procurement/planning/page.tsx",
     "procurement/tender-committee/page.tsx",
-    "procurement/contracts/page.tsx",
+    "contracts/register/page.tsx",
     "procurement/exceptions/page.tsx",
     "stock/categories/page.tsx",
     "stock/low-stock/page.tsx",

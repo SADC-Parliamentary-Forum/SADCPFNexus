@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   supplierDocumentRequirementTypesApi,
@@ -20,6 +20,7 @@ const emptyForm = {
 
 export function SupplierDocumentRequirementTypesCard() {
   const queryClient = useQueryClient();
+  const idPrefix = `supplier-doc-req-types-${useId()}`;
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,8 +124,9 @@ export function SupplierDocumentRequirementTypesCard() {
           onChange={(e) => setForm({ ...form, code: e.target.value })}
         />
       </div>
-      <label className="flex items-center gap-2 text-sm">
+      <label htmlFor={`${idPrefix}-mandatory`} className="flex items-center gap-2 text-sm">
         <input
+          id={`${idPrefix}-mandatory`}
           type="checkbox"
           checked={form.mandatory}
           onChange={(e) => setForm({ ...form, mandatory: e.target.checked })}

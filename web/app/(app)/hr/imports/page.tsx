@@ -237,11 +237,11 @@ export default function HistoricalLeavePayrollImportPage() {
           </dl>
           <p className="mt-4 text-sm text-neutral-600">
             Review imported records in{" "}
-            <Link href="/hr/leave/balances" className="text-primary-700 underline">
+            <Link href="/hr/leave/balances" className="font-semibold text-primary-700 hover:opacity-80">
               Leave balances
             </Link>{" "}
             and{" "}
-            <Link href="/hr/files" className="text-primary-700 underline">
+            <Link href="/hr/files" className="font-semibold text-primary-700 hover:opacity-80">
               Employee files
             </Link>
             .

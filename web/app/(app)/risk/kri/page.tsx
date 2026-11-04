@@ -163,9 +163,10 @@ export default function RiskKriPage() {
                       {kri.strategic_objective && <div>Objective: {kri.strategic_objective.code}</div>}
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <label className="space-y-1">
+                      <label htmlFor={`kri-link-risk-${kri.id}`} className="space-y-1">
                         <span className="sr-only">{t("risk.kri.linkRisk")}</span>
                         <select
+                          id={`kri-link-risk-${kri.id}`}
                           className="input input-sm min-w-[12rem]"
                           data-testid={`kri-risk-select-${kri.id}`}
                           value={draft.risk_id}
@@ -184,9 +185,10 @@ export default function RiskKriPage() {
                           ))}
                         </select>
                       </label>
-                      <label className="space-y-1">
+                      <label htmlFor={`kri-link-objective-${kri.id}`} className="space-y-1">
                         <span className="sr-only">{t("risk.kri.linkObjective")}</span>
                         <select
+                          id={`kri-link-objective-${kri.id}`}
                           className="input input-sm min-w-[12rem]"
                           data-testid={`kri-objective-select-${kri.id}`}
                           value={draft.strategic_objective_id}

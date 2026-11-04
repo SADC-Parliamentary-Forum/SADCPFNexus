@@ -85,9 +85,9 @@ export default function PoTemplateDesignerPage() {
       />
       {message && <p className="rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800">{message}</p>}
       <div className="flex flex-wrap items-end gap-3">
-        <label className="text-xs">
+        <label htmlFor="po-template-name" className="text-xs">
           <span className="text-neutral-500 uppercase tracking-wide">{t("po.templates.name")}</span>
-          <input className="form-input mt-1 min-w-[16rem]" value={name} onChange={(e) => setName(e.target.value)} />
+          <input id="po-template-name" className="form-input mt-1 min-w-[16rem]" value={name} onChange={(e) => setName(e.target.value)} />
         </label>
         <button type="button" className="btn-secondary text-sm" data-testid="po-designer-preview" onClick={() => preview("sample")}>{t("po.designer.preview")}</button>
         <button type="button" className="btn-secondary text-sm" data-testid="po-designer-save" disabled={saveMut.isPending || !layout} onClick={() => saveMut.mutate()}>{t("po.designer.saveDraft")}</button>

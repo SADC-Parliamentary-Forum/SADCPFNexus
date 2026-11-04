@@ -39,7 +39,7 @@ export function ProgrammeTimeline({ programmeId }: { programmeId: number }) {
   if (isError || !data) {
     return (
       <div className="card px-5 py-4 text-sm text-red-700" role="alert">
-        Could not load the programme timeline. <button type="button" className="underline" onClick={() => refetch()}>Try again</button>
+        Could not load the programme timeline. <button type="button" className="font-semibold hover:opacity-80" onClick={() => refetch()}>Try again</button>
       </div>
     );
   }

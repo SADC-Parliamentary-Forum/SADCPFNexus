@@ -171,7 +171,7 @@ export default function HrDryRunSourceUploadPage() {
 
       <p className="text-sm text-neutral-600">
         Once files are staged, run the dry-run from{" "}
-        <Link href="https://github.com/SADC-Parliamentary-Forum/SADCPFNexus/actions/workflows/hr-migration-dry-run.yml" className="text-primary-700 underline">
+        <Link href="https://github.com/SADC-Parliamentary-Forum/SADCPFNexus/actions/workflows/hr-migration-dry-run.yml" className="font-semibold text-primary-700 hover:opacity-80">
           GitHub Actions
         </Link>
         .

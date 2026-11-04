@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useId, useState } from "react";
 import {
   tenantUsersApi,
   timesheetImportApi,
@@ -52,6 +52,7 @@ export function TimesheetImportWizard({
   initialBatchId?: number;
 }) {
   const { t } = useI18n();
+  const idPrefix = `timesheet-import-${useId()}`;
   const { prompt } = useConfirm();
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<"single" | "multi">(variant === "admin" ? "multi" : "single");
@@ -279,18 +280,18 @@ export function TimesheetImportWizard({
           {variant === "admin" ? (
             <fieldset className="space-y-2">
               <legend className="text-xs font-semibold uppercase tracking-wide text-neutral-500">{t("timesheet.import.mode")}</legend>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="radio" name="import-mode" checked={mode === "single"} onChange={() => setMode("single")} />
+              <label htmlFor={`${idPrefix}-mode-single`} className="flex items-center gap-2 text-sm">
+                <input id={`${idPrefix}-mode-single`} type="radio" name="import-mode" checked={mode === "single"} onChange={() => setMode("single")} />
                 {t("timesheet.import.modeA")}
               </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="radio" name="import-mode" checked={mode === "multi"} onChange={() => setMode("multi")} />
+              <label htmlFor={`${idPrefix}-mode-multi`} className="flex items-center gap-2 text-sm">
+                <input id={`${idPrefix}-mode-multi`} type="radio" name="import-mode" checked={mode === "multi"} onChange={() => setMode("multi")} />
                 {t("timesheet.import.modeB")}
               </label>
               {mode === "single" ? (
-                <label className="block text-sm">
+                <label htmlFor={`${idPrefix}-employee`} className="block text-sm">
                   <span className="mb-1 block text-neutral-600">{t("timesheet.import.employee")}</span>
-                  <select className="form-input" value={targetUserId} onChange={(e) => setTargetUserId(e.target.value ? Number(e.target.value) : "")}>
+                  <select id={`${idPrefix}-employee`} className="form-input" value={targetUserId} onChange={(e) => setTargetUserId(e.target.value ? Number(e.target.value) : "")}>
                     <option value="">{t("timesheet.import.employee")}</option>
                     {users.map((user) => (
                       <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
@@ -299,8 +300,8 @@ export function TimesheetImportWizard({
                   <span className="mt-1 block text-xs text-neutral-400">{t("timesheet.import.employeeHint")}</span>
                 </label>
               ) : null}
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={importAsVerified} onChange={(e) => setImportAsVerified(e.target.checked)} />
+              <label htmlFor={`${idPrefix}-verified`} className="flex items-center gap-2 text-sm">
+                <input id={`${idPrefix}-verified`} type="checkbox" checked={importAsVerified} onChange={(e) => setImportAsVerified(e.target.checked)} />
                 {t("timesheet.import.verified")}
               </label>
               {importAsVerified ? (
@@ -315,9 +316,10 @@ export function TimesheetImportWizard({
             </fieldset>
           ) : null}
 
-          <label className="block text-sm">
+          <label htmlFor={`${idPrefix}-file`} className="block text-sm">
             <span className="mb-1 block text-neutral-600">{t("timesheet.import.file")}</span>
             <input
+              id={`${idPrefix}-file`}
               type="file"
               accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               data-testid="timesheet-import-file"
@@ -359,9 +361,10 @@ export function TimesheetImportWizard({
         <FormSection title="timesheet.import.filterUnmatched" icon="person_search">
           <div className="space-y-3">
             {unmatched.map((row) => (
-              <label key={row.email} className="grid gap-2 sm:grid-cols-2 text-sm">
+              <label key={row.email} htmlFor={`${idPrefix}-map-${row.email}`} className="grid gap-2 sm:grid-cols-2 text-sm">
                 <span>{row.name ? `${row.name} (${row.email})` : row.email}</span>
                 <select
+                  id={`${idPrefix}-map-${row.email}`}
                   className="form-input"
                   value={employeeMap[row.email] ?? ""}
                   onChange={(e) => setEmployeeMap((prev) => ({ ...prev, [row.email]: e.target.value ? Number(e.target.value) : "" }))}

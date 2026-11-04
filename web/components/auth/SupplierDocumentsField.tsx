@@ -66,7 +66,7 @@ export function SupplierDocumentsField({ documents, onChange, max = 15 }: Props)
           {documents.map((doc) => (
             <li key={doc.id} className="flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 sm:flex-row sm:items-center">
               <p className="min-w-0 flex-1 truncate text-sm text-neutral-800">{doc.file.name}</p>
-              <label className="sr-only" htmlFor={`${doc.id}-type`}>{t("auth.docsType")}</label>
+              <label htmlFor={`${doc.id}-type`} className="sr-only">{t("auth.docsType")}</label>
               <select
                 id={`${doc.id}-type`}
                 className="form-input sm:w-56"
@@ -81,7 +81,7 @@ export function SupplierDocumentsField({ documents, onChange, max = 15 }: Props)
               </select>
               {typeRequiresExpiry(doc.documentType) && (
                 <>
-                  <label className="sr-only" htmlFor={`${doc.id}-expiry`}>{t("auth.docsExpiry")}</label>
+                  <label htmlFor={`${doc.id}-expiry`} className="sr-only">{t("auth.docsExpiry")}</label>
                   <input
                     id={`${doc.id}-expiry`}
                     type="date"

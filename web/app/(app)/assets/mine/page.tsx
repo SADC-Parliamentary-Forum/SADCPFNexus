@@ -2,12 +2,14 @@
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { useCallback, useEffect, useState } from "react";
 import { assetsApi, type Asset, type AssetHandover } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 export default function MyAssetsPage() {
   const { t } = useI18n();
+  const { prompt } = useConfirm();
   const [items, setItems] = useState<Asset[]>([]);
   const [handovers, setHandovers] = useState<AssetHandover[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +130,7 @@ export default function MyAssetsPage() {
   }
 
   async function requestTransfer(asset: Asset) {
-    const raw = window.prompt(t("assets.mine.transferUser"));
+    const raw = await prompt({ title: t("assets.mine.requestTransfer"), label: t("assets.mine.transferUser"), required: true });
     const toUserId = Number(raw);
     if (!toUserId) return;
     setActing(asset.id);
@@ -191,7 +193,7 @@ export default function MyAssetsPage() {
           <h2 className="text-sm font-semibold">{t("assets.mine.pendingHandovers")}</h2>
           <p className="text-xs text-neutral-600">{t("assets.handover.partialHint")}</p>
           {handovers.map((h) => (
-            <a key={h.id} href={`/assets/handovers/${h.id}`} className="block text-sm text-primary underline">
+            <a key={h.id} href={`/assets/handovers/${h.id}`} className="font-semibold block text-sm text-primary hover:opacity-80">
               {h.reference} · {h.status}
             </a>
           ))}

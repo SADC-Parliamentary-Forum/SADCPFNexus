@@ -260,7 +260,7 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
               </div>
               <Link
                 href={`/procurement/${po.source_requisition?.id ?? po.procurement_request?.id}`}
-                className="font-mono text-sm text-primary hover:underline"
+                className="font-semibold font-mono text-sm text-primary hover:opacity-80"
               >
                 {po.source_requisition?.reference ?? po.procurement_request?.reference_number}
               </Link>
@@ -270,8 +270,8 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
 
         {["draft", "returned"].includes(po.status) && canManagePO() && canCustomReference() && !po.lpo_number && (
           <div className="mt-4 pt-4 border-t border-neutral-50 space-y-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={customMode} onChange={(e) => setCustomMode(e.target.checked)} />
+            <label htmlFor="po-detail-custom-ref" className="flex items-center gap-2 text-sm">
+              <input id="po-detail-custom-ref" type="checkbox" checked={customMode} onChange={(e) => setCustomMode(e.target.checked)} />
               {t("po.detail.customRef")}
             </label>
             {customMode && (
@@ -279,8 +279,8 @@ export default function PurchaseOrderDetailPage({ params }: { params: Promise<{ 
                 <input className="form-input" value={customReference} onChange={(e) => setCustomReference(e.target.value)} placeholder="GIZ/PO/2026/017" />
                 <input className="form-input" value={customReason} onChange={(e) => setCustomReason(e.target.value)} placeholder={t("po.detail.customReason")} />
                 {canManageSequence() && (
-                  <label className="flex items-center gap-2 text-xs">
-                    <input type="checkbox" checked={continueSequence} onChange={(e) => setContinueSequence(e.target.checked)} />
+                  <label htmlFor="po-detail-continue-sequence" className="flex items-center gap-2 text-xs">
+                    <input id="po-detail-continue-sequence" type="checkbox" checked={continueSequence} onChange={(e) => setContinueSequence(e.target.checked)} />
                     {t("po.detail.continueSequence")}
                   </label>
                 )}

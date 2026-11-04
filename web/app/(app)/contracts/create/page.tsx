@@ -239,9 +239,9 @@ export default function ContractCreatePage() {
             </div>
             {origin === "procurement" && (
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-neutral-600">Awarded procurement request</label>
+                <label htmlFor="contracts-create-procurement-request" className="text-xs font-semibold text-neutral-600">Awarded procurement request</label>
                 <div className="flex gap-2">
-                  <select className="form-input" value={procurementRequestId} onChange={(e) => setProcurementRequestId(e.target.value ? Number(e.target.value) : "")}>
+                  <select id="contracts-create-procurement-request" className="form-input" value={procurementRequestId} onChange={(e) => setProcurementRequestId(e.target.value ? Number(e.target.value) : "")}>
                     <option value="">Select award…</option>
                     {awarded.map((a) => (<option key={a.id} value={a.id}>{a.reference_number} — {a.title}</option>))}
                   </select>
@@ -251,12 +251,12 @@ export default function ContractCreatePage() {
             )}
             {origin === "standalone" && (
               <div className="space-y-1">
-                <label className="text-xs font-semibold text-neutral-600">Reason no procurement/PIF reference exists <span className="text-red-500">*</span></label>
-                <textarea className="form-input h-20 resize-none" value={originReference} onChange={(e) => setOriginReference(e.target.value)} placeholder="Explain why this contract is standalone…" />
+                <label htmlFor="contracts-create-origin-reason" className="text-xs font-semibold text-neutral-600">Reason no procurement/PIF reference exists <span className="text-red-500">*</span></label>
+                <textarea id="contracts-create-origin-reason" className="form-input h-20 resize-none" value={originReference} onChange={(e) => setOriginReference(e.target.value)} placeholder="Explain why this contract is standalone…" />
               </div>
             )}
             {origin === "legacy" && (
-              <p className="text-sm text-amber-600">For historical contracts, use <Link href="/contracts/register" className="underline">Import legacy contract</Link> instead.</p>
+              <p className="text-sm text-amber-600">For historical contracts, use <Link href="/contracts/register" className="font-semibold hover:opacity-80">Import legacy contract</Link> instead.</p>
             )}
           </div>
         )}
@@ -282,11 +282,11 @@ export default function ContractCreatePage() {
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">First name <span className="text-red-500">*</span></label><input className="form-input" value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
-                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Surname <span className="text-red-500">*</span></label><input className="form-input" value={surname} onChange={(e) => setSurname(e.target.value)} /></div>
-                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Email</label><input className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-                <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Phone</label><input className="form-input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
-                <div className="space-y-1 col-span-2"><label className="text-xs font-semibold text-neutral-600">Profession</label><input className="form-input" value={profession} onChange={(e) => setProfession(e.target.value)} /></div>
+                <div className="space-y-1"><label htmlFor="contracts-create-first-name" className="text-xs font-semibold text-neutral-600">First name <span className="text-red-500">*</span></label><input id="contracts-create-first-name" className="form-input" value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
+                <div className="space-y-1"><label htmlFor="contracts-create-surname" className="text-xs font-semibold text-neutral-600">Surname <span className="text-red-500">*</span></label><input id="contracts-create-surname" className="form-input" value={surname} onChange={(e) => setSurname(e.target.value)} /></div>
+                <div className="space-y-1"><label htmlFor="contracts-create-email" className="text-xs font-semibold text-neutral-600">Email</label><input id="contracts-create-email" className="form-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} /></div>
+                <div className="space-y-1"><label htmlFor="contracts-create-phone" className="text-xs font-semibold text-neutral-600">Phone</label><input id="contracts-create-phone" className="form-input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                <div className="space-y-1 col-span-2"><label htmlFor="contracts-create-profession" className="text-xs font-semibold text-neutral-600">Profession</label><input id="contracts-create-profession" className="form-input" value={profession} onChange={(e) => setProfession(e.target.value)} /></div>
               </div>
             )}
           </div>
@@ -295,19 +295,19 @@ export default function ContractCreatePage() {
         {step === 3 && (
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-neutral-800">Details & dates</h2>
-            <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Title <span className="text-red-500">*</span></label><input className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+            <div className="space-y-1"><label htmlFor="contracts-create-title" className="text-xs font-semibold text-neutral-600">Title <span className="text-red-500">*</span></label><input id="contracts-create-title" className="form-input" value={title} onChange={(e) => setTitle(e.target.value)} /></div>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Contract type <span className="text-red-500">*</span></label>
-              <select className="form-input" value={typeId} onChange={(e) => setTypeId(e.target.value ? Number(e.target.value) : "")}>
+              <label htmlFor="contracts-create-type" className="text-xs font-semibold text-neutral-600">Contract type <span className="text-red-500">*</span></label>
+              <select id="contracts-create-type" className="form-input" value={typeId} onChange={(e) => setTypeId(e.target.value ? Number(e.target.value) : "")}>
                 <option value="">Select type…</option>
                 {types.map((t) => (<option key={t.id} value={t.id}>{t.name}</option>))}
               </select>
             </div>
-            <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Short description</label><textarea className="form-input h-20 resize-none" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
+            <div className="space-y-1"><label htmlFor="contracts-create-description" className="text-xs font-semibold text-neutral-600">Short description</label><textarea id="contracts-create-description" className="form-input h-20 resize-none" value={description} onChange={(e) => setDescription(e.target.value)} /></div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Start date <span className="text-red-500">*</span></label><input type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">End date <span className="text-red-500">*</span></label><input type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Signature deadline</label><input type="date" className="form-input" value={signatureDeadline} onChange={(e) => setSignatureDeadline(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-start-date" className="text-xs font-semibold text-neutral-600">Start date <span className="text-red-500">*</span></label><input id="contracts-create-start-date" type="date" className="form-input" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-end-date" className="text-xs font-semibold text-neutral-600">End date <span className="text-red-500">*</span></label><input id="contracts-create-end-date" type="date" className="form-input" value={endDate} onChange={(e) => setEndDate(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-signature-deadline" className="text-xs font-semibold text-neutral-600">Signature deadline</label><input id="contracts-create-signature-deadline" type="date" className="form-input" value={signatureDeadline} onChange={(e) => setSignatureDeadline(e.target.value)} /></div>
             </div>
           </div>
         )}
@@ -317,38 +317,38 @@ export default function ContractCreatePage() {
             <h2 className="text-sm font-semibold text-neutral-800">Financial structure</h2>
             <p className="text-xs text-neutral-500">Enter a rate and units and Nexus calculates the total, or enter a flat value.</p>
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Rate</label><input type="number" min="0" step="0.01" className="form-input" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Units</label><input type="number" min="0" step="0.5" className="form-input" value={units} onChange={(e) => setUnits(e.target.value)} /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">or Flat value</label><input type="number" min="0" step="0.01" className="form-input" value={flatValue} disabled={!!(rate && units)} onChange={(e) => setFlatValue(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-rate" className="text-xs font-semibold text-neutral-600">Rate</label><input id="contracts-create-rate" type="number" min="0" step="0.01" className="form-input" value={rate} onChange={(e) => setRate(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-units" className="text-xs font-semibold text-neutral-600">Units</label><input id="contracts-create-units" type="number" min="0" step="0.5" className="form-input" value={units} onChange={(e) => setUnits(e.target.value)} /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-flat-value" className="text-xs font-semibold text-neutral-600">or Flat value</label><input id="contracts-create-flat-value" type="number" min="0" step="0.01" className="form-input" value={flatValue} disabled={!!(rate && units)} onChange={(e) => setFlatValue(e.target.value)} /></div>
             </div>
             <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Currency</label>
+              <div className="space-y-1"><label htmlFor="contracts-create-currency" className="text-xs font-semibold text-neutral-600">Currency</label>
                 {currencies.length > 0 ? (
-                  <select className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                  <select id="contracts-create-currency" className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
                     {currencies.map((c) => <option key={c.id} value={c.code}>{c.code} — {c.name}</option>)}
                   </select>
                 ) : (
-                  <input className="form-input" value={currency} maxLength={3} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />
+                  <input id="contracts-create-currency" className="form-input" value={currency} maxLength={3} onChange={(e) => setCurrency(e.target.value.toUpperCase())} />
                 )}
               </div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Budget currency</label><input className="form-input" value={budgetCurrency} maxLength={3} onChange={(e) => setBudgetCurrency(e.target.value.toUpperCase())} placeholder="Optional" /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Conversion reference</label><input className="form-input" value={conversionReference} onChange={(e) => setConversionReference(e.target.value)} placeholder="e.g. rate/source used" /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Converted commitment</label><input className="form-input" type="number" value={convertedValue} onChange={(e) => setConvertedValue(e.target.value)} placeholder="In budget currency" /></div>
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Ceiling</label><input type="number" min="0" step="0.01" className="form-input" value={ceiling} onChange={(e) => setCeiling(e.target.value)} placeholder="Optional" /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-budget-currency" className="text-xs font-semibold text-neutral-600">Budget currency</label><input id="contracts-create-budget-currency" className="form-input" value={budgetCurrency} maxLength={3} onChange={(e) => setBudgetCurrency(e.target.value.toUpperCase())} placeholder="Optional" /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-conversion-reference" className="text-xs font-semibold text-neutral-600">Conversion reference</label><input id="contracts-create-conversion-reference" className="form-input" value={conversionReference} onChange={(e) => setConversionReference(e.target.value)} placeholder="e.g. rate/source used" /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-converted-value" className="text-xs font-semibold text-neutral-600">Converted commitment</label><input id="contracts-create-converted-value" className="form-input" type="number" value={convertedValue} onChange={(e) => setConvertedValue(e.target.value)} placeholder="In budget currency" /></div>
+              <div className="space-y-1"><label htmlFor="contracts-create-ceiling" className="text-xs font-semibold text-neutral-600">Ceiling</label><input id="contracts-create-ceiling" type="number" min="0" step="0.01" className="form-input" value={ceiling} onChange={(e) => setCeiling(e.target.value)} placeholder="Optional" /></div>
             </div>
             <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 text-sm">
               <span className="text-neutral-600">Calculated total value: </span>
               <span className="font-bold text-neutral-900">{currency} {computedValue.toLocaleString()}</span>
             </div>
             <div className="space-y-2 border-t border-neutral-100 pt-3">
-              <label className="flex items-center gap-2 text-sm text-neutral-700">
-                <input type="checkbox" checked={isFramework} onChange={(e) => setIsFramework(e.target.checked)} />
+              <label htmlFor="contracts-create-is-framework" className="flex items-center gap-2 text-sm text-neutral-700">
+                <input id="contracts-create-is-framework" type="checkbox" checked={isFramework} onChange={(e) => setIsFramework(e.target.checked)} />
                 This is a framework agreement (call-offs will draw down against a ceiling)
               </label>
               {isFramework && (
                 <div className="space-y-1">
-                  <label className="text-xs font-semibold text-neutral-600">Framework ceiling</label>
-                  <input type="number" min="0" step="0.01" className="form-input" value={frameworkCeiling} onChange={(e) => setFrameworkCeiling(e.target.value)} placeholder="Maximum draw-down value" />
+                  <label htmlFor="contracts-create-framework-ceiling" className="text-xs font-semibold text-neutral-600">Framework ceiling</label>
+                  <input id="contracts-create-framework-ceiling" type="number" min="0" step="0.01" className="form-input" value={frameworkCeiling} onChange={(e) => setFrameworkCeiling(e.target.value)} placeholder="Maximum draw-down value" />
                 </div>
               )}
             </div>
@@ -393,8 +393,8 @@ export default function ContractCreatePage() {
           <div className="space-y-4">
             <h2 className="text-sm font-semibold text-neutral-800">Template & review</h2>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Generate from template (optional)</label>
-              <select className="form-input" value={templateVersionId} onChange={(e) => setTemplateVersionId(e.target.value ? Number(e.target.value) : "")}>
+              <label htmlFor="contracts-create-template-version" className="text-xs font-semibold text-neutral-600">Generate from template (optional)</label>
+              <select id="contracts-create-template-version" className="form-input" value={templateVersionId} onChange={(e) => setTemplateVersionId(e.target.value ? Number(e.target.value) : "")}>
                 <option value="">Do not generate yet</option>
                 {templateOptions.map((t) => (<option key={t.id} value={t.id}>{t.label}</option>))}
               </select>

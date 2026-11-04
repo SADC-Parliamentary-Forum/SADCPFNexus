@@ -62,8 +62,6 @@ test("authenticated module canvases fill the AppShell column", () => {
     "app/(app)/admin/settings/page.tsx",
     "app/(app)/risk/[id]/page.tsx",
     "app/(app)/salary-advances/[id]/page.tsx",
-    "app/(app)/people/onboarding/page.tsx",
-    "app/(app)/people/offboarding/page.tsx",
     "app/(app)/saam/verify/page.tsx",
     "app/(app)/saam/verify/upload/page.tsx",
   ];

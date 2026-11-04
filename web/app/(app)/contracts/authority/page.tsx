@@ -212,19 +212,19 @@ export default function ContractAuthorityPage() {
         </table>
         <div className="p-4 border-t border-neutral-100 flex flex-wrap items-end gap-2">
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Rule name</label>
-            <input className="form-input" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="e.g. SG signs above 100k" />
+            <label htmlFor="contracts-authority-rule-name" className="text-xs font-semibold text-neutral-600">Rule name</label>
+            <input id="contracts-authority-rule-name" className="form-input" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="e.g. SG signs above 100k" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Action</label>
-            <select className="form-input w-28" value={ruleAction} onChange={(e) => setRuleAction(e.target.value as "approve" | "sign")}>
+            <label htmlFor="contracts-authority-rule-action" className="text-xs font-semibold text-neutral-600">Action</label>
+            <select id="contracts-authority-rule-action" className="form-input w-28" value={ruleAction} onChange={(e) => setRuleAction(e.target.value as "approve" | "sign")}>
               <option value="approve">Approve</option>
               <option value="sign">Sign</option>
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Contract type</label>
-            <select className="form-input" value={ruleTypeId} onChange={(e) => setRuleTypeId(e.target.value)}>
+            <label htmlFor="contracts-authority-rule-type" className="text-xs font-semibold text-neutral-600">Contract type</label>
+            <select id="contracts-authority-rule-type" className="form-input" value={ruleTypeId} onChange={(e) => setRuleTypeId(e.target.value)}>
               <option value="">All types</option>
               {types.map((t) => (
                 <option key={t.id} value={t.id}>
@@ -234,16 +234,16 @@ export default function ContractAuthorityPage() {
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Floor</label>
-            <input className="form-input w-28" type="number" value={ruleFloor} onChange={(e) => setRuleFloor(e.target.value)} placeholder="0" />
+            <label htmlFor="contracts-authority-rule-floor" className="text-xs font-semibold text-neutral-600">Floor</label>
+            <input id="contracts-authority-rule-floor" className="form-input w-28" type="number" value={ruleFloor} onChange={(e) => setRuleFloor(e.target.value)} placeholder="0" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Ceiling</label>
-            <input className="form-input w-28" type="number" value={ruleCeiling} onChange={(e) => setRuleCeiling(e.target.value)} placeholder="none" />
+            <label htmlFor="contracts-authority-rule-ceiling" className="text-xs font-semibold text-neutral-600">Ceiling</label>
+            <input id="contracts-authority-rule-ceiling" className="form-input w-28" type="number" value={ruleCeiling} onChange={(e) => setRuleCeiling(e.target.value)} placeholder="none" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Currency</label>
-            <input
+            <label htmlFor="contracts-authority-rule-currency" className="text-xs font-semibold text-neutral-600">Currency</label>
+            <input id="contracts-authority-rule-currency"
               className="form-input w-20 uppercase"
               maxLength={3}
               value={ruleCurrency}
@@ -252,16 +252,16 @@ export default function ContractAuthorityPage() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Authorised role</label>
-            <input className="form-input" value={ruleRole} onChange={(e) => setRuleRole(e.target.value)} placeholder="Secretary General" />
+            <label htmlFor="contracts-authority-rule-role" className="text-xs font-semibold text-neutral-600">Authorised role</label>
+            <input id="contracts-authority-rule-role" className="form-input" value={ruleRole} onChange={(e) => setRuleRole(e.target.value)} placeholder="Secretary General" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Alternate role</label>
-            <input className="form-input" value={ruleAltRole} onChange={(e) => setRuleAltRole(e.target.value)} placeholder="(optional)" />
+            <label htmlFor="contracts-authority-rule-alt-role" className="text-xs font-semibold text-neutral-600">Alternate role</label>
+            <input id="contracts-authority-rule-alt-role" className="form-input" value={ruleAltRole} onChange={(e) => setRuleAltRole(e.target.value)} placeholder="(optional)" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Policy ref</label>
-            <input className="form-input w-36" value={rulePolicy} onChange={(e) => setRulePolicy(e.target.value)} placeholder="(optional)" />
+            <label htmlFor="contracts-authority-rule-policy" className="text-xs font-semibold text-neutral-600">Policy ref</label>
+            <input id="contracts-authority-rule-policy" className="form-input w-36" value={rulePolicy} onChange={(e) => setRulePolicy(e.target.value)} placeholder="(optional)" />
           </div>
           <button className="btn-primary text-sm" onClick={addRule}>
             Add rule
@@ -328,8 +328,8 @@ export default function ContractAuthorityPage() {
         <div className="p-4 border-t border-neutral-100 space-y-3">
           <div className="flex flex-wrap items-end gap-2">
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Delegator role</label>
-              <input
+              <label htmlFor="contracts-authority-delegator-role" className="text-xs font-semibold text-neutral-600">Delegator role</label>
+              <input id="contracts-authority-delegator-role"
                 className="form-input"
                 value={delDelegatorRole}
                 onChange={(e) => setDelDelegatorRole(e.target.value)}
@@ -337,20 +337,20 @@ export default function ContractAuthorityPage() {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Action</label>
-              <select className="form-input w-28" value={delAction} onChange={(e) => setDelAction(e.target.value)}>
+              <label htmlFor="contracts-authority-delegation-action" className="text-xs font-semibold text-neutral-600">Action</label>
+              <select id="contracts-authority-delegation-action" className="form-input w-28" value={delAction} onChange={(e) => setDelAction(e.target.value)}>
                 <option value="">Any</option>
                 <option value="approve">Approve</option>
                 <option value="sign">Sign</option>
               </select>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Effective from</label>
-              <input className="form-input" type="date" value={delFrom} onChange={(e) => setDelFrom(e.target.value)} />
+              <label htmlFor="contracts-authority-delegation-from" className="text-xs font-semibold text-neutral-600">Effective from</label>
+              <input id="contracts-authority-delegation-from" className="form-input" type="date" value={delFrom} onChange={(e) => setDelFrom(e.target.value)} />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Expires</label>
-              <input className="form-input" type="date" value={delUntil} min={delFrom || undefined} onChange={(e) => setDelUntil(e.target.value)} />
+              <label htmlFor="contracts-authority-delegation-until" className="text-xs font-semibold text-neutral-600">Expires</label>
+              <input id="contracts-authority-delegation-until" className="form-input" type="date" value={delUntil} min={delFrom || undefined} onChange={(e) => setDelUntil(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -363,8 +363,8 @@ export default function ContractAuthorityPage() {
               placeholder="Search staff by name or email…"
             />
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Reason</label>
-              <textarea
+              <label htmlFor="contracts-authority-delegation-reason" className="text-xs font-semibold text-neutral-600">Reason</label>
+              <textarea id="contracts-authority-delegation-reason"
                 className="form-input resize-none"
                 rows={2}
                 value={delReason}
