@@ -136,11 +136,11 @@ export default function ContractTemplatesPage() {
           <div className="p-4 border-t border-neutral-100 space-y-2">
             <h3 className="text-xs font-semibold text-neutral-600">Add a new version</h3>
             <div className="flex flex-wrap items-end gap-2">
-              <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Version</label><input className="form-input w-32" value={versionLabel} onChange={(e) => setVersionLabel(e.target.value)} placeholder="v1.1" /></div>
+              <div className="space-y-1"><label htmlFor="contracts-templates-version-label" className="text-xs font-semibold text-neutral-600">Version</label><input id="contracts-templates-version-label" className="form-input w-32" value={versionLabel} onChange={(e) => setVersionLabel(e.target.value)} placeholder="v1.1" /></div>
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-neutral-600">Body</label>
-              <textarea className="form-input w-full" rows={6} value={versionBody} onChange={(e) => setVersionBody(e.target.value)} placeholder="Template body text..." />
+              <label htmlFor="contracts-templates-version-body" className="text-xs font-semibold text-neutral-600">Body</label>
+              <textarea id="contracts-templates-version-body" className="form-input w-full" rows={6} value={versionBody} onChange={(e) => setVersionBody(e.target.value)} placeholder="Template body text..." />
             </div>
             <button className="btn-primary text-sm" onClick={addVersion}>Add version</button>
           </div>
@@ -152,26 +152,26 @@ export default function ContractTemplatesPage() {
         <div className="px-5 py-3 border-b border-neutral-100"><h2 className="text-sm font-semibold text-neutral-800">New template</h2></div>
         <div className="p-4 space-y-2">
           <div className="flex flex-wrap items-end gap-2">
-            <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Name</label><input className="form-input" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Standard Consultancy Agreement" /></div>
-            <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Contract type</label>
-              <select className="form-input" value={newTypeId} onChange={(e) => setNewTypeId(e.target.value)}>
+            <div className="space-y-1"><label htmlFor="contracts-templates-new-name" className="text-xs font-semibold text-neutral-600">Name</label><input id="contracts-templates-new-name" className="form-input" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Standard Consultancy Agreement" /></div>
+            <div className="space-y-1"><label htmlFor="contracts-templates-new-type" className="text-xs font-semibold text-neutral-600">Contract type</label>
+              <select id="contracts-templates-new-type" className="form-input" value={newTypeId} onChange={(e) => setNewTypeId(e.target.value)}>
                 <option value="">— none —</option>
                 {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
-            <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Counterparty</label>
-              <select className="form-input" value={newCounterparty} onChange={(e) => setNewCounterparty(e.target.value)}>
+            <div className="space-y-1"><label htmlFor="contracts-templates-new-counterparty" className="text-xs font-semibold text-neutral-600">Counterparty</label>
+              <select id="contracts-templates-new-counterparty" className="form-input" value={newCounterparty} onChange={(e) => setNewCounterparty(e.target.value)}>
                 <option value="individual">Individual</option><option value="organisation">Organisation</option><option value="either">Either</option>
               </select>
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Description (optional)</label>
-            <textarea className="form-input w-full" rows={2} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Short description" />
+            <label htmlFor="contracts-templates-new-description" className="text-xs font-semibold text-neutral-600">Description (optional)</label>
+            <textarea id="contracts-templates-new-description" className="form-input w-full" rows={2} value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Short description" />
           </div>
           <div className="space-y-1">
-            <label className="text-xs font-semibold text-neutral-600">Body (first version)</label>
-            <textarea className="form-input w-full" rows={8} value={newBody} onChange={(e) => setNewBody(e.target.value)} placeholder="Template body text..." />
+            <label htmlFor="contracts-templates-new-body" className="text-xs font-semibold text-neutral-600">Body (first version)</label>
+            <textarea id="contracts-templates-new-body" className="form-input w-full" rows={8} value={newBody} onChange={(e) => setNewBody(e.target.value)} placeholder="Template body text..." />
           </div>
           <button className="btn-primary text-sm" onClick={createTemplate}>Create template</button>
         </div>

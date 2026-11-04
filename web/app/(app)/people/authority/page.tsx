@@ -263,7 +263,7 @@ return (await peopleAuthorityApi.listAuthorities()).data;
               {assignForm.assignee_type === "Position"
                 ? "No positions defined yet."
                 : (
-                  <>No people available — populate the <Link href="/people/directory" className="underline">Staff Directory</Link> first.</>
+                  <>No people available — populate the <Link href="/people/directory" className="font-semibold hover:opacity-80">Staff Directory</Link> first.</>
                 )}
             </p>
           ) : null}

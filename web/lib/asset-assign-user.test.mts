@@ -33,8 +33,10 @@ test("asset register can optionally assign a live asset to a user", () => {
   assert.match(picker, /u\.email/);
   assert.match(picker, /department/);
   assert.match(picker, /assets\.searchAssignee/);
-  assert.match(picker, /onFocus/);
-  assert.match(picker, /data-testid="asset-assignee-picker"/);
+  // Opens on focus through the shared picker.
+  assert.match(picker, /NexusPicker/);
+  assert.match(readFileSync(join(webRoot, "components/ui/NexusPicker.tsx"), "utf8"), /onFocus/);
+  assert.match(picker, /dataTestId="asset-assignee-picker"/);
 
   assert.match(api, /assigned_user\?:/);
   assert.match(api, /department\?: string \| null/);

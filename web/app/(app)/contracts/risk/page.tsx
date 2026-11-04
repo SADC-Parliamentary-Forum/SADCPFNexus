@@ -85,7 +85,7 @@ export default function ContractRiskPage() {
                   {r.contracts.map((c) => (
                     <tr key={c.id}>
                       <td className="text-sm font-mono">
-                        <Link href={`/contracts/${c.id}`} className="text-primary hover:underline">{c.reference_number ?? `#${c.id}`}</Link>
+                        <Link href={`/contracts/${c.id}`} className="font-semibold text-primary hover:opacity-80">{c.reference_number ?? `#${c.id}`}</Link>
                       </td>
                       <td className="text-sm max-w-[16rem] truncate">{c.title}</td>
                       <td><LevelBadge level={c.level} /></td>

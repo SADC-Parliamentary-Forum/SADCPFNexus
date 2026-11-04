@@ -96,37 +96,37 @@ export default function AssetSettingsPage() {
             }
           }}
         >
-          <label className="text-sm">{t("assets.settings.recoveryPhone")}
-            <input className="form-input mt-1" required value={recovery.primary_phone} onChange={(e) => setRecovery({ ...recovery, primary_phone: e.target.value })} />
+          <label htmlFor="assets-settings-recovery-phone" className="text-sm">{t("assets.settings.recoveryPhone")}
+            <input id="assets-settings-recovery-phone" className="form-input mt-1" required value={recovery.primary_phone} onChange={(e) => setRecovery({ ...recovery, primary_phone: e.target.value })} />
           </label>
-          <label className="text-sm">{t("assets.settings.recoveryWhatsapp")}
-            <input className="form-input mt-1" value={recovery.whatsapp} onChange={(e) => setRecovery({ ...recovery, whatsapp: e.target.value })} />
+          <label htmlFor="assets-settings-recovery-whatsapp" className="text-sm">{t("assets.settings.recoveryWhatsapp")}
+            <input id="assets-settings-recovery-whatsapp" className="form-input mt-1" value={recovery.whatsapp} onChange={(e) => setRecovery({ ...recovery, whatsapp: e.target.value })} />
           </label>
-          <label className="text-sm">{t("assets.settings.recoveryEmail")}
-            <input className="form-input mt-1" type="email" value={recovery.email} onChange={(e) => setRecovery({ ...recovery, email: e.target.value })} />
+          <label htmlFor="assets-settings-recovery-email" className="text-sm">{t("assets.settings.recoveryEmail")}
+            <input id="assets-settings-recovery-email" className="form-input mt-1" type="email" value={recovery.email} onChange={(e) => setRecovery({ ...recovery, email: e.target.value })} />
           </label>
-          <label className="text-sm">{t("assets.settings.recoveryHours")}
-            <input className="form-input mt-1" value={recovery.office_hours} onChange={(e) => setRecovery({ ...recovery, office_hours: e.target.value })} />
+          <label htmlFor="assets-settings-recovery-hours" className="text-sm">{t("assets.settings.recoveryHours")}
+            <input id="assets-settings-recovery-hours" className="form-input mt-1" value={recovery.office_hours} onChange={(e) => setRecovery({ ...recovery, office_hours: e.target.value })} />
           </label>
-          <label className="text-sm sm:col-span-2">{t("assets.settings.recoveryAddress")}
-            <input className="form-input mt-1" value={recovery.return_address} onChange={(e) => setRecovery({ ...recovery, return_address: e.target.value })} />
+          <label htmlFor="assets-settings-recovery-address" className="text-sm sm:col-span-2">{t("assets.settings.recoveryAddress")}
+            <input id="assets-settings-recovery-address" className="form-input mt-1" value={recovery.return_address} onChange={(e) => setRecovery({ ...recovery, return_address: e.target.value })} />
           </label>
-          <label className="text-sm sm:col-span-2">{t("assets.settings.recoveryInstructions")}
-            <textarea className="form-input mt-1" rows={3} value={recovery.instructions} onChange={(e) => setRecovery({ ...recovery, instructions: e.target.value })} />
+          <label htmlFor="assets-settings-recovery-instructions" className="text-sm sm:col-span-2">{t("assets.settings.recoveryInstructions")}
+            <textarea id="assets-settings-recovery-instructions" className="form-input mt-1" rows={3} value={recovery.instructions} onChange={(e) => setRecovery({ ...recovery, instructions: e.target.value })} />
           </label>
-          <label className="text-sm sm:col-span-2">{t("assets.settings.recoveryReason")}
-            <input className="form-input mt-1" value={recovery.reason} onChange={(e) => setRecovery({ ...recovery, reason: e.target.value })} />
+          <label htmlFor="assets-settings-recovery-reason" className="text-sm sm:col-span-2">{t("assets.settings.recoveryReason")}
+            <input id="assets-settings-recovery-reason" className="form-input mt-1" value={recovery.reason} onChange={(e) => setRecovery({ ...recovery, reason: e.target.value })} />
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={recovery.show_primary_phone} onChange={(e) => setRecovery({ ...recovery, show_primary_phone: e.target.checked })} />
+          <label htmlFor="assets-settings-show-phone" className="flex items-center gap-2 text-sm">
+            <input id="assets-settings-show-phone" type="checkbox" checked={recovery.show_primary_phone} onChange={(e) => setRecovery({ ...recovery, show_primary_phone: e.target.checked })} />
             {t("assets.settings.showPhone")}
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={recovery.show_email} onChange={(e) => setRecovery({ ...recovery, show_email: e.target.checked })} />
+          <label htmlFor="assets-settings-show-email" className="flex items-center gap-2 text-sm">
+            <input id="assets-settings-show-email" type="checkbox" checked={recovery.show_email} onChange={(e) => setRecovery({ ...recovery, show_email: e.target.checked })} />
             {t("assets.settings.showEmail")}
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={recovery.show_whatsapp} onChange={(e) => setRecovery({ ...recovery, show_whatsapp: e.target.checked })} />
+          <label htmlFor="assets-settings-show-whatsapp" className="flex items-center gap-2 text-sm">
+            <input id="assets-settings-show-whatsapp" type="checkbox" checked={recovery.show_whatsapp} onChange={(e) => setRecovery({ ...recovery, show_whatsapp: e.target.checked })} />
             {t("assets.settings.showWhatsapp")}
           </label>
           <div className="sm:col-span-2">

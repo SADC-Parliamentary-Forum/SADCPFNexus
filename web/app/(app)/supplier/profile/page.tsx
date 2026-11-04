@@ -165,7 +165,7 @@ export default function SupplierProfilePage() {
         </div>
 
         <p className="text-sm text-neutral-600">
-          <Link href="/supplier/documents" className="font-medium text-primary-800 hover:underline">
+          <Link href="/supplier/documents" className="font-medium text-primary-800 hover:opacity-80">
             {t("supplier.documents.manage")}
           </Link>
         </p>
@@ -225,7 +225,7 @@ function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: st
       {emailVerified === false && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
           Verify your email before you can submit.
-          <button type="button" className="ml-2 underline" onClick={() => resendMutation.mutate()}>
+          <button type="button" className="font-semibold ml-2 hover:opacity-80" onClick={() => resendMutation.mutate()}>
             Resend verification
           </button>
         </div>

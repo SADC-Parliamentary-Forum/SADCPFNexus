@@ -233,7 +233,7 @@ export default function SupplierDashboardPage() {
                     {action.label}
                   </button>
                 ) : (
-                  <Link href={action.href} className="text-sm font-medium text-primary hover:underline">
+                  <Link href={action.href} className="text-sm font-medium text-primary hover:opacity-80">
                     {action.label}
                   </Link>
                 )}

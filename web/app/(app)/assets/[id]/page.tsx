@@ -212,9 +212,9 @@ export default function AssetViewPage() {
                 }
               }}
             >
-              <label className="text-sm">
+              <label htmlFor="assets-detail-parent" className="text-sm">
                 {t("assets.parent.title")}
-                <select
+                <select id="assets-detail-parent"
                   className="form-input mt-1"
                   value={parentId}
                   onChange={(e) => setParentId(e.target.value)}
@@ -276,7 +276,7 @@ export default function AssetViewPage() {
                         <td>{formatDuration(row.duration_seconds)}</td>
                         <td>
                           {row.certificate_available && row.handover_id ? (
-                            <a className="text-xs font-semibold text-primary underline" href={assetsApi.handoverCertificateUrl(row.handover_id)}>
+                            <a className="text-xs font-semibold text-primary hover:opacity-80" href={assetsApi.handoverCertificateUrl(row.handover_id)}>
                               {row.handover_reference || t("assets.handover.certificate")}
                             </a>
                           ) : (row.handover_reference || "—")}

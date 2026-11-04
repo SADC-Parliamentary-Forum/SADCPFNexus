@@ -1358,7 +1358,7 @@ const OVERCROWDED_SIDEBARS: {
   },
   {
     label: "Procurement",
-    next: "Supplier Portal",
+    next: "Contracts",
     max: 6,
     hubFile: "lib/hubs/procurement.ts",
     page: "app/(app)/procurement/page.tsx",

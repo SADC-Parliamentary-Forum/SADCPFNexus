@@ -468,8 +468,8 @@ test("salary advance exception employee field uses a selectable employee list", 
 
   assert.match(source, /hrFilesApi/);
   assert.match(source, /employeeOptions/);
-  assert.match(source, /list="salary-advance-employee-options"/);
-  assert.match(source, /<datalist id="salary-advance-employee-options">/);
+  assert.match(source, /<select\s+id="sa-exception-employee"/);
+  assert.match(source, /employeeOptions\.map/);
   assert.doesNotMatch(source, /Employee user ID/);
   assert.doesNotMatch(source, /type="number" className="mt-1 input w-full" value=\{exceptionForm\.employee_id\}/);
 });

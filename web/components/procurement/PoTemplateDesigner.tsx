@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import {
   PALETTE,
@@ -31,6 +31,7 @@ export function PoTemplateDesigner({
   onChange: (next: PoLayout) => void;
 }) {
   const { t } = useI18n();
+  const idPrefix = `po-designer-${useId()}`;
   const [selectedId, setSelectedId] = useState<string | null>(layout.elements[0]?.id ?? null);
   const dragRef = useRef<DragState | null>(null);
   const pxPerMmRef = useRef(2.6);
@@ -186,9 +187,10 @@ export function PoTemplateDesigner({
           <>
             <p className="text-sm font-medium text-neutral-900">{sampleLabel(selected)}</p>
             {(["x_mm", "y_mm", "w_mm", "h_mm"] as const).map((key) => (
-              <label key={key} className="block text-xs">
+              <label key={key} htmlFor={`${idPrefix}-${key}`} className="block text-xs">
                 <span className="text-neutral-500 uppercase tracking-wide">{key.replace("_mm", " (mm)")}</span>
                 <input
+                  id={`${idPrefix}-${key}`}
                   className="form-input mt-1"
                   type="number"
                   step={0.5}
@@ -197,9 +199,10 @@ export function PoTemplateDesigner({
                 />
               </label>
             ))}
-            <label className="block text-xs">
+            <label htmlFor={`${idPrefix}-font-size`} className="block text-xs">
               <span className="text-neutral-500 uppercase tracking-wide">{t("po.designer.fontSize")}</span>
               <input
+                id={`${idPrefix}-font-size`}
                 className="form-input mt-1"
                 type="number"
                 min={6}
@@ -208,9 +211,10 @@ export function PoTemplateDesigner({
                 onChange={(e) => commit(updateElement(layout, selected.id, { font_size: Number(e.target.value) }))}
               />
             </label>
-            <label className="block text-xs">
+            <label htmlFor={`${idPrefix}-align`} className="block text-xs">
               <span className="text-neutral-500 uppercase tracking-wide">{t("po.designer.align")}</span>
               <select
+                id={`${idPrefix}-align`}
                 className="form-input mt-1"
                 value={selected.align}
                 onChange={(e) => commit(updateElement(layout, selected.id, { align: e.target.value as PoElement["align"] }))}
@@ -221,9 +225,10 @@ export function PoTemplateDesigner({
               </select>
             </label>
             {(selected.type === "heading" || selected.type === "text") && (
-              <label className="block text-xs">
+              <label htmlFor={`${idPrefix}-text`} className="block text-xs">
                 <span className="text-neutral-500 uppercase tracking-wide">{t("po.designer.text")}</span>
                 <input
+                  id={`${idPrefix}-text`}
                   className="form-input mt-1"
                   value={selected.text ?? ""}
                   onChange={(e) => commit(updateElement(layout, selected.id, { text: e.target.value }))}
@@ -231,9 +236,10 @@ export function PoTemplateDesigner({
               </label>
             )}
             {selected.type === "approval_block" && (
-              <label className="block text-xs">
+              <label htmlFor={`${idPrefix}-approval-layout`} className="block text-xs">
                 <span className="text-neutral-500 uppercase tracking-wide">{t("po.designer.approvalLayout")}</span>
                 <select
+                  id={`${idPrefix}-approval-layout`}
                   className="form-input mt-1"
                   value={selected.layout ?? "horizontal"}
                   onChange={(e) => commit(updateElement(layout, selected.id, { layout: e.target.value as PoElement["layout"] }))}
@@ -250,8 +256,9 @@ export function PoTemplateDesigner({
                 {PO_TABLE_COLUMNS.map((col) => {
                   const checked = (selected.columns ?? []).includes(col);
                   return (
-                    <label key={col} className="flex items-center gap-2 text-xs">
+                    <label key={col} htmlFor={`${idPrefix}-col-${col}`} className="flex items-center gap-2 text-xs">
                       <input
+                        id={`${idPrefix}-col-${col}`}
                         type="checkbox"
                         checked={checked}
                         onChange={() => {
@@ -266,20 +273,20 @@ export function PoTemplateDesigner({
                 })}
               </fieldset>
             )}
-            <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={selected.bold} onChange={(e) => commit(updateElement(layout, selected.id, { bold: e.target.checked }))} />
+            <label htmlFor={`${idPrefix}-bold`} className="flex items-center gap-2 text-xs">
+              <input id={`${idPrefix}-bold`} type="checkbox" checked={selected.bold} onChange={(e) => commit(updateElement(layout, selected.id, { bold: e.target.checked }))} />
               {t("po.designer.bold")}
             </label>
-            <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={selected.border} onChange={(e) => commit(updateElement(layout, selected.id, { border: e.target.checked }))} />
+            <label htmlFor={`${idPrefix}-border`} className="flex items-center gap-2 text-xs">
+              <input id={`${idPrefix}-border`} type="checkbox" checked={selected.border} onChange={(e) => commit(updateElement(layout, selected.id, { border: e.target.checked }))} />
               {t("po.designer.border")}
             </label>
-            <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={selected.locked} onChange={(e) => commit(updateElement(layout, selected.id, { locked: e.target.checked }))} />
+            <label htmlFor={`${idPrefix}-locked`} className="flex items-center gap-2 text-xs">
+              <input id={`${idPrefix}-locked`} type="checkbox" checked={selected.locked} onChange={(e) => commit(updateElement(layout, selected.id, { locked: e.target.checked }))} />
               {t("po.designer.lock")}
             </label>
-            <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" checked={selected.hidden} onChange={(e) => commit(updateElement(layout, selected.id, { hidden: e.target.checked }))} />
+            <label htmlFor={`${idPrefix}-hidden`} className="flex items-center gap-2 text-xs">
+              <input id={`${idPrefix}-hidden`} type="checkbox" checked={selected.hidden} onChange={(e) => commit(updateElement(layout, selected.id, { hidden: e.target.checked }))} />
               {t("po.designer.hide")}
             </label>
             <div className="flex flex-wrap gap-1">

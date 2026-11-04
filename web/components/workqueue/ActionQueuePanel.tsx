@@ -57,7 +57,7 @@ export function ActionQueuePanel({ limit }: { limit?: number }) {
       ) : isError ? (
         <div className="px-5 py-4 text-sm text-red-700" role="alert">
           Could not load your action queue.{" "}
-          <button type="button" className="underline" onClick={() => refetch()}>Try again</button>
+          <button type="button" className="font-semibold hover:opacity-80" onClick={() => refetch()}>Try again</button>
         </div>
       ) : items.length === 0 ? (
         <EmptyState icon="task_alt" title="Nothing is waiting on you" description="Approvals, returned requests and assigned tasks will appear here." />

@@ -133,7 +133,7 @@ export default function ContractSettingsPage() {
                 <td className="text-sm font-medium text-neutral-800">{t.name}</td>
                 <td className="text-xs capitalize text-neutral-500">{t.counterparty_type}</td>
                 <td className="text-sm">
-                  <button className="text-primary text-xs underline" onClick={() => toggleTypeLegal(t)}>{t.requires_legal_review ? "Required" : "Not required"}</button>
+                  <button className="font-semibold text-primary text-xs hover:opacity-80" onClick={() => toggleTypeLegal(t)}>{t.requires_legal_review ? "Required" : "Not required"}</button>
                 </td>
                 <td className="text-sm">{t.is_active ? "Yes" : "No"}</td>
                 <td className="text-right"><button className="btn-secondary text-xs py-0.5" onClick={() => toggleType(t)}>{t.is_active ? "Deactivate" : "Activate"}</button></td>
@@ -142,13 +142,13 @@ export default function ContractSettingsPage() {
           </tbody>
         </table>
         <div className="p-4 border-t border-neutral-100 flex flex-wrap items-end gap-2">
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">New type name</label><input className="form-input" value={typeName} onChange={(e) => setTypeName(e.target.value)} placeholder="e.g. Translation Services Agreement" /></div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Counterparty</label>
-            <select className="form-input" value={typeCounterparty} onChange={(e) => setTypeCounterparty(e.target.value)}>
+          <div className="space-y-1"><label htmlFor="contracts-settings-type-name" className="text-xs font-semibold text-neutral-600">New type name</label><input id="contracts-settings-type-name" className="form-input" value={typeName} onChange={(e) => setTypeName(e.target.value)} placeholder="e.g. Translation Services Agreement" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-type-counterparty" className="text-xs font-semibold text-neutral-600">Counterparty</label>
+            <select id="contracts-settings-type-counterparty" className="form-input" value={typeCounterparty} onChange={(e) => setTypeCounterparty(e.target.value)}>
               <option value="individual">Individual</option><option value="organisation">Organisation</option><option value="either">Either</option>
             </select>
           </div>
-          <label className="flex items-center gap-2 text-sm text-neutral-600 pb-2"><input type="checkbox" checked={typeLegal} onChange={(e) => setTypeLegal(e.target.checked)} /> Requires legal review</label>
+          <label htmlFor="contracts-settings-type-legal" className="flex items-center gap-2 text-sm text-neutral-600 pb-2"><input id="contracts-settings-type-legal" type="checkbox" checked={typeLegal} onChange={(e) => setTypeLegal(e.target.checked)} /> Requires legal review</label>
           <button className="btn-primary text-sm" onClick={addType}>Add type</button>
         </div>
       </div>
@@ -164,7 +164,7 @@ export default function ContractSettingsPage() {
                 <td className="font-mono text-sm">{c.code}</td>
                 <td className="text-sm text-neutral-800">{c.name}</td>
                 <td className="text-sm text-neutral-600">{c.symbol ?? "—"}</td>
-                <td className="text-sm">{c.is_default ? <span className="badge badge-success">Default</span> : <button className="text-primary text-xs underline" onClick={() => makeDefault(c)}>Set default</button>}</td>
+                <td className="text-sm">{c.is_default ? <span className="badge badge-success">Default</span> : <button className="font-semibold text-primary text-xs hover:opacity-80" onClick={() => makeDefault(c)}>Set default</button>}</td>
                 <td className="text-sm">{c.is_active ? "Yes" : "No"}</td>
                 <td className="text-right"><button className="btn-secondary text-xs py-0.5" onClick={() => toggleCurrency(c)}>{c.is_active ? "Deactivate" : "Activate"}</button></td>
               </tr>
@@ -172,9 +172,9 @@ export default function ContractSettingsPage() {
           </tbody>
         </table>
         <div className="p-4 border-t border-neutral-100 flex flex-wrap items-end gap-2">
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Code</label><input className="form-input w-24 uppercase" value={curCode} maxLength={8} onChange={(e) => setCurCode(e.target.value.toUpperCase())} placeholder="KES" /></div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Name</label><input className="form-input" value={curName} onChange={(e) => setCurName(e.target.value)} placeholder="Kenyan Shilling" /></div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Symbol</label><input className="form-input w-24" value={curSymbol} onChange={(e) => setCurSymbol(e.target.value)} placeholder="KSh" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-currency-code" className="text-xs font-semibold text-neutral-600">Code</label><input id="contracts-settings-currency-code" className="form-input w-24 uppercase" value={curCode} maxLength={8} onChange={(e) => setCurCode(e.target.value.toUpperCase())} placeholder="KES" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-currency-name" className="text-xs font-semibold text-neutral-600">Name</label><input id="contracts-settings-currency-name" className="form-input" value={curName} onChange={(e) => setCurName(e.target.value)} placeholder="Kenyan Shilling" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-currency-symbol" className="text-xs font-semibold text-neutral-600">Symbol</label><input id="contracts-settings-currency-symbol" className="form-input w-24" value={curSymbol} onChange={(e) => setCurSymbol(e.target.value)} placeholder="KSh" /></div>
           <button className="btn-primary text-sm" onClick={addCurrency}>Add currency</button>
         </div>
       </div>
@@ -205,17 +205,17 @@ export default function ContractSettingsPage() {
           </tbody>
         </table>
         <div className="p-4 border-t border-neutral-100 flex flex-wrap items-end gap-2">
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Rule name</label><input className="form-input" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="e.g. SG signs above 100k" /></div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Action</label>
-            <select className="form-input w-28" value={ruleAction} onChange={(e) => setRuleAction(e.target.value as "approve" | "sign")}>
+          <div className="space-y-1"><label htmlFor="contracts-settings-rule-name" className="text-xs font-semibold text-neutral-600">Rule name</label><input id="contracts-settings-rule-name" className="form-input" value={ruleName} onChange={(e) => setRuleName(e.target.value)} placeholder="e.g. SG signs above 100k" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-rule-action" className="text-xs font-semibold text-neutral-600">Action</label>
+            <select id="contracts-settings-rule-action" className="form-input w-28" value={ruleAction} onChange={(e) => setRuleAction(e.target.value as "approve" | "sign")}>
               <option value="approve">Approve</option><option value="sign">Sign</option>
             </select>
           </div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Floor</label><input className="form-input w-28" type="number" value={ruleFloor} onChange={(e) => setRuleFloor(e.target.value)} placeholder="0" /></div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Ceiling</label><input className="form-input w-28" type="number" value={ruleCeiling} onChange={(e) => setRuleCeiling(e.target.value)} placeholder="none" /></div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Authorised role</label><input className="form-input" value={ruleRole} onChange={(e) => setRuleRole(e.target.value)} placeholder="Secretary General" /></div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Alternate role</label><input className="form-input" value={ruleAltRole} onChange={(e) => setRuleAltRole(e.target.value)} placeholder="(optional)" /></div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Policy ref</label><input className="form-input w-36" value={rulePolicy} onChange={(e) => setRulePolicy(e.target.value)} placeholder="(optional)" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-rule-floor" className="text-xs font-semibold text-neutral-600">Floor</label><input id="contracts-settings-rule-floor" className="form-input w-28" type="number" value={ruleFloor} onChange={(e) => setRuleFloor(e.target.value)} placeholder="0" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-rule-ceiling" className="text-xs font-semibold text-neutral-600">Ceiling</label><input id="contracts-settings-rule-ceiling" className="form-input w-28" type="number" value={ruleCeiling} onChange={(e) => setRuleCeiling(e.target.value)} placeholder="none" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-rule-role" className="text-xs font-semibold text-neutral-600">Authorised role</label><input id="contracts-settings-rule-role" className="form-input" value={ruleRole} onChange={(e) => setRuleRole(e.target.value)} placeholder="Secretary General" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-rule-alt-role" className="text-xs font-semibold text-neutral-600">Alternate role</label><input id="contracts-settings-rule-alt-role" className="form-input" value={ruleAltRole} onChange={(e) => setRuleAltRole(e.target.value)} placeholder="(optional)" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-rule-policy" className="text-xs font-semibold text-neutral-600">Policy ref</label><input id="contracts-settings-rule-policy" className="form-input w-36" value={rulePolicy} onChange={(e) => setRulePolicy(e.target.value)} placeholder="(optional)" /></div>
           <button className="btn-primary text-sm" onClick={addRule}>Add rule</button>
         </div>
       </div>
@@ -245,11 +245,11 @@ export default function ContractSettingsPage() {
           </tbody>
         </table>
         <div className="p-4 border-t border-neutral-100 flex flex-wrap items-end gap-2">
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Code</label><input className="form-input w-40" value={reqCode} onChange={(e) => setReqCode(e.target.value)} placeholder="tax_clearance" /></div>
-          <div className="space-y-1"><label className="text-xs font-semibold text-neutral-600">Name</label><input className="form-input" value={reqName} onChange={(e) => setReqName(e.target.value)} placeholder="Tax clearance certificate" /></div>
-          <label className="flex items-center gap-2 text-sm text-neutral-600 pb-2"><input type="checkbox" checked={reqExpiry} onChange={(e) => setReqExpiry(e.target.checked)} /> Tracks expiry</label>
-          <label className="flex items-center gap-2 text-sm text-neutral-600 pb-2"><input type="checkbox" checked={reqBlockAct} onChange={(e) => setReqBlockAct(e.target.checked)} /> Blocks activation</label>
-          <label className="flex items-center gap-2 text-sm text-neutral-600 pb-2"><input type="checkbox" checked={reqBlockPay} onChange={(e) => setReqBlockPay(e.target.checked)} /> Blocks payment</label>
+          <div className="space-y-1"><label htmlFor="contracts-settings-requirement-code" className="text-xs font-semibold text-neutral-600">Code</label><input id="contracts-settings-requirement-code" className="form-input w-40" value={reqCode} onChange={(e) => setReqCode(e.target.value)} placeholder="tax_clearance" /></div>
+          <div className="space-y-1"><label htmlFor="contracts-settings-requirement-name" className="text-xs font-semibold text-neutral-600">Name</label><input id="contracts-settings-requirement-name" className="form-input" value={reqName} onChange={(e) => setReqName(e.target.value)} placeholder="Tax clearance certificate" /></div>
+          <label htmlFor="contracts-settings-requirement-expiry" className="flex items-center gap-2 text-sm text-neutral-600 pb-2"><input id="contracts-settings-requirement-expiry" type="checkbox" checked={reqExpiry} onChange={(e) => setReqExpiry(e.target.checked)} /> Tracks expiry</label>
+          <label htmlFor="contracts-settings-requirement-block-activation" className="flex items-center gap-2 text-sm text-neutral-600 pb-2"><input id="contracts-settings-requirement-block-activation" type="checkbox" checked={reqBlockAct} onChange={(e) => setReqBlockAct(e.target.checked)} /> Blocks activation</label>
+          <label htmlFor="contracts-settings-requirement-block-payment" className="flex items-center gap-2 text-sm text-neutral-600 pb-2"><input id="contracts-settings-requirement-block-payment" type="checkbox" checked={reqBlockPay} onChange={(e) => setReqBlockPay(e.target.checked)} /> Blocks payment</label>
           <button className="btn-primary text-sm" onClick={addRequirement}>Add requirement</button>
         </div>
       </div>

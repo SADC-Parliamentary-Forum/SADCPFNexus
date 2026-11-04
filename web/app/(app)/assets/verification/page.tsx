@@ -320,8 +320,8 @@ export default function AssetVerificationPage() {
           <p>{t("assets.verify.expectedLocation")}: {scanned.location ?? "—"}</p>
           <p>{t("assets.verify.expectedCustodian")}: {scanned.custodian ?? "—"}</p>
           <p>{t("assets.verify.expectedCondition")}: {scanned.condition ?? "—"}</p>
-          <label className="block text-sm">{t("assets.verify.photos")}
-            <input className="input mt-1" type="file" accept="image/*" multiple onChange={(e) => setVerifyPhotos(e.target.files)} />
+          <label htmlFor="assets-verification-verify-photos" className="block text-sm">{t("assets.verify.photos")}
+            <input id="assets-verification-verify-photos" className="input mt-1" type="file" accept="image/*" multiple onChange={(e) => setVerifyPhotos(e.target.files)} />
           </label>
           <div className="flex flex-wrap gap-2">
             <Button type="button" size="sm" onClick={() => recordScanResult("verified")}>{t("assets.verify.action.verified")}</Button>
@@ -343,8 +343,8 @@ export default function AssetVerificationPage() {
         <input className="input" value={findForm.serial_number} onChange={(e) => setFindForm({ ...findForm, serial_number: e.target.value })} placeholder={t("assets.verify.findSerial")} />
         <input className="input" value={findForm.found_location} onChange={(e) => setFindForm({ ...findForm, found_location: e.target.value })} placeholder={t("assets.verify.findLocation")} />
         <textarea className="input sm:col-span-2" rows={2} value={findForm.notes} onChange={(e) => setFindForm({ ...findForm, notes: e.target.value })} placeholder={t("assets.verify.findNotes")} />
-        <label className="text-sm sm:col-span-2">{t("assets.verify.photos")}
-          <input className="input mt-1" type="file" accept="image/*" multiple onChange={(e) => setFindPhotos(e.target.files)} />
+        <label htmlFor="assets-verification-find-photos" className="text-sm sm:col-span-2">{t("assets.verify.photos")}
+          <input id="assets-verification-find-photos" className="input mt-1" type="file" accept="image/*" multiple onChange={(e) => setFindPhotos(e.target.files)} />
         </label>
         <div>
           <Button type="submit">{t("assets.verify.recordFind")}</Button>
