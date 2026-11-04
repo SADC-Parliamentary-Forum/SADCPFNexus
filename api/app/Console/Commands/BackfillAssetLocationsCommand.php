@@ -74,6 +74,7 @@ class BackfillAssetLocationsCommand extends Command
                 $this->line("  set {$this->tagOf($asset)} -> {$legacy}");
             }
             AuditLog::record('assets.locations_backfilled', [
+                'tenant_id' => $tenantId,
                 'new_values' => ['tenant_id' => $tenantId, 'count' => $fillable->count()],
                 'tags' => 'assets',
             ]);

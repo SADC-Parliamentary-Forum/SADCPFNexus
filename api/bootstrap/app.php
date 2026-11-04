@@ -125,6 +125,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 ];
             }
 
+            // An unexpected exception's message can carry SQL, hosts or file paths; keep it in the log only.
+            if ($status >= 500 && ! $e instanceof HttpExceptionInterface && ! config('app.debug')) {
+                $payload = [
+                    'message' => 'Server error.',
+                    'request_id' => $request->attributes->get('request_id'),
+                ];
+            }
+
             if (config('app.debug')) {
                 $payload['exception'] = get_class($e);
                 $payload['file'] = $e->getFile();
