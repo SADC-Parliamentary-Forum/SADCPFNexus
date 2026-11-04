@@ -148,8 +148,10 @@ docker exec sadcpf_php php artisan view:clear
 docker exec sadcpf_php php artisan config:cache
 docker exec sadcpf_php php artisan route:cache
 
-log "Restarting php + queue containers"
-$COMPOSE restart php queue
+log "Recreating php + queue containers"
+# `restart` keeps a container's old config, so environment changes in the compose
+# files (e.g. LOG_STACK) never applied; recreating picks them up.
+$COMPOSE up -d --no-deps --force-recreate php queue
 
 # FPM can take >3s after restart before the healthcheck flips to healthy.
 for i in $(seq 1 30); do
@@ -163,13 +165,12 @@ docker ps --filter name=sadcpf_php --format '{{.Status}}' | grep -qi healthy \
 
 # --- 10. Web: rebuild and restart -------------------------------------------
 
-log "Stopping web container for rebuild"
-$COMPOSE stop web
-
+# Build while the old container keeps serving, so the site is only down for the
+# swap (seconds), and a failed build leaves the current site up.
 log "Rebuilding web image (--no-cache) — this can take several minutes"
 $COMPOSE build --no-cache web
 
-log "Starting web container"
+log "Replacing web container"
 $COMPOSE up -d web
 
 sleep 5
