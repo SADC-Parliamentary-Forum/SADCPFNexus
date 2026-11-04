@@ -16,6 +16,7 @@ on:
           - mfa-reset-user-17
           - log-diag
           - log-tail
+          - log-perms
       tenant:
         description: Tenant id (blank = the only tenant)
         required: false
@@ -57,6 +58,8 @@ jobs:
             log-diag) CMD="echo PD9waHAKcmVxdWlyZSAnL3Zhci93d3cvYXBpL3ZlbmRvci9hdXRvbG9hZC5waHAnOwokYXBwID0gcmVxdWlyZSAnL3Zhci93d3cvYXBpL2Jvb3RzdHJhcC9hcHAucGhwJzsKJGFwcC0+bWFrZShJbGx1bWluYXRlXENvbnRyYWN0c1xDb25zb2xlXEtlcm5lbDo6Y2xhc3MpLT5ib290c3RyYXAoKTsKZWNobyAncGhwIHVzZXI6ICcuKGZ1bmN0aW9uX2V4aXN0cygncG9zaXhfZ2V0ZXVpZCcpID8gcG9zaXhfZ2V0cHd1aWQocG9zaXhfZ2V0ZXVpZCgpKVsnbmFtZSddIDogZ2V0X2N1cnJlbnRfdXNlcigpKS4iXG4iOwplY2hvICdsb2dnaW5nLmRlZmF1bHQ9Jy5jb25maWcoJ2xvZ2dpbmcuZGVmYXVsdCcpLiJcbiI7CmVjaG8gJ3N0YWNrIGNoYW5uZWxzPScuanNvbl9lbmNvZGUoY29uZmlnKCdsb2dnaW5nLmNoYW5uZWxzLnN0YWNrLmNoYW5uZWxzJykpLiJcbiI7CmVjaG8gJ3NpbmdsZSBwYXRoPScuY29uZmlnKCdsb2dnaW5nLmNoYW5uZWxzLnNpbmdsZS5wYXRoJykuJyBsZXZlbD0nLmNvbmZpZygnbG9nZ2luZy5jaGFubmVscy5zaW5nbGUubGV2ZWwnKS4iXG4iOwpmb3JlYWNoIChbJ0xPR19DSEFOTkVMJywnTE9HX1NUQUNLJywnTE9HX0xFVkVMJywnU0VOVFJZX0xBUkFWRUxfRFNOJ10gYXMgJGspIHsgJHYgPSBlbnYoJGspOyBlY2hvICIkaz0iLigkaz09PSdTRU5UUllfTEFSQVZFTF9EU04nID8gKCR2ID8gJ3NldCcgOiAndW5zZXQnKSA6IHZhcl9leHBvcnQoJHYsIHRydWUpKS4iXG4iOyB9CiRkaXIgPSBzdG9yYWdlX3BhdGgoJ2xvZ3MnKTsKZWNobyAibG9ncyBkaXIgd3JpdGFibGU9Ii52YXJfZXhwb3J0KGlzX3dyaXRhYmxlKCRkaXIpLCB0cnVlKS4iIG93bmVyPSIuKGZ1bmN0aW9uX2V4aXN0cygncG9zaXhfZ2V0cHd1aWQnKSA/IHBvc2l4X2dldHB3dWlkKGZpbGVvd25lcigkZGlyKSlbJ25hbWUnXSA6IGZpbGVvd25lcigkZGlyKSkuIlxuIjsKZm9yZWFjaCAoZ2xvYigkZGlyLicvKicpIGFzICRmKSB7IGVjaG8gJyAgJy5iYXNlbmFtZSgkZikuJyAnLmZpbGVzaXplKCRmKS4nQiAnLmRhdGUoJ2MnLCBmaWxlbXRpbWUoJGYpKS4nIHc9Jy52YXJfZXhwb3J0KGlzX3dyaXRhYmxlKCRmKSwgdHJ1ZSkuIlxuIjsgfQokcCA9IGNvbmZpZygnbG9nZ2luZy5jaGFubmVscy5zaW5nbGUucGF0aCcpOyAkYmVmb3JlID0gQGZpbGVzaXplKCRwKTsgY2xlYXJzdGF0Y2FjaGUoKTsKSWxsdW1pbmF0ZVxTdXBwb3J0XEZhY2FkZXNcTG9nOjplcnJvcignbG9nLWRpYWcgbWFya2VyICcuZGF0ZSgnYycpKTsKY2xlYXJzdGF0Y2FjaGUoKTsgZWNobyAibWFya2VyOiBzaXplICRiZWZvcmUgLT4gIi5AZmlsZXNpemUoJHApLiJcbiI7Cg== | base64 -d | docker exec -i sadcpf_php php; docker exec sadcpf_php sh -c 'id; ps -o user,comm | head -5'" ;;
             # Read-only: entry headers (first line, truncated) from the last 3 daily Laravel logs.
             log-tail) CMD="docker exec sadcpf_php sh -c 'for f in \$(ls -1 /var/www/api/storage/logs/laravel-*.log | tail -n 3); do echo == \$f; grep -E \"^\[20\" \$f | cut -c1-300 | tail -n 40; done'" ;;
+            # Read-only: log file ownership, and whether the php-fpm user (www-data) can write each one.
+            log-perms) CMD="docker exec sadcpf_php ls -ln /var/www/api/storage/logs; docker exec -u www-data sadcpf_php sh -c 'for f in /var/www/api/storage/logs/*.log; do [ -w \"\$f\" ] && echo \"w  \$f\" || echo \"RO \$f\"; done'; docker exec sadcpf_php sh -c 'grep -rn umask /usr/local/etc/php-fpm.d 2>/dev/null; crontab -l 2>/dev/null | head'" ;;
             *) echo "Unknown task: $TASK"; exit 1 ;;
           esac
           install -d -m 700 "$HOME/.ssh"
