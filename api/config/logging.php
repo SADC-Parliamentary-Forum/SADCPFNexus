@@ -5,6 +5,11 @@ use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
 
+// Queue workers, the scheduler and `docker exec` artisan run as root, while php-fpm
+// runs as www-data. Sharing one file let a root-created daily log lock the web
+// workers out for the rest of that day, so CLI processes log to their own file.
+$logFile = PHP_SAPI === 'cli' ? 'laravel-cli.log' : 'laravel.log';
+
 return [
 
     /*
@@ -60,14 +65,14 @@ return [
 
         'single' => [
             'driver' => 'single',
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('logs/'.$logFile),
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
         ],
 
         'daily' => [
             'driver' => 'daily',
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('logs/'.$logFile),
             'level' => env('LOG_LEVEL', 'debug'),
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
@@ -124,7 +129,7 @@ return [
         ],
 
         'emergency' => [
-            'path' => storage_path('logs/laravel.log'),
+            'path' => storage_path('logs/'.$logFile),
         ],
 
     ],
