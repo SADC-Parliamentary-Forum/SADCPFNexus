@@ -39,6 +39,10 @@ final class AssetLabelLayout
 
         $items = [];
         foreach ($draft as $row) {
+            // Lines below the QR code have the full label width to themselves.
+            if ($row['id'] !== 'qr' && $row['y_mm'] >= $qrY + $qr) {
+                $row['w_mm'] = max(10.0, $labelW - 3);
+            }
             $item = self::normalizeItem($row, $labelW, $labelH);
             if ($item !== null) {
                 $items[] = $item;
