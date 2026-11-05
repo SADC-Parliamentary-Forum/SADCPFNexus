@@ -42,9 +42,14 @@ class AssetLabelAssignedToTest extends TestCase
         $this->assertStringNotContainsString('Assigned to:', $this->render(null));
     }
 
-    public function test_serial_line_always_prints(): void
+    public function test_serial_line_prints_when_the_asset_has_a_serial(): void
     {
         $this->assertStringContainsString('S/N: 6CGK2X1', $this->render(null, '6CGK2X1', 'serial'));
-        $this->assertStringContainsString('S/N: —', $this->render(null, null, 'serial'));
+    }
+
+    public function test_serial_line_is_left_off_when_there_is_no_serial(): void
+    {
+        $this->assertStringNotContainsString('S/N', $this->render(null, null, 'serial'));
+        $this->assertStringNotContainsString('S/N', $this->render(null, '', 'serial'));
     }
 }
