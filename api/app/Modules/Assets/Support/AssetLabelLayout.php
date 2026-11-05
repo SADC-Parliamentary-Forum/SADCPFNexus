@@ -104,7 +104,7 @@ final class AssetLabelLayout
         $qrMm = (float) $template->qr_mm;
         $items = self::sanitize($template->layout, $labelW, $labelH, $qrMm);
 
-        // The serial number always prints, even on templates saved with it hidden or missing.
+        // The serial line is always laid out, even on templates saved with it hidden or missing; it prints only when the asset has a serial.
         foreach ($items as $i => $item) {
             if ($item['id'] === 'serial') {
                 $items[$i]['visible'] = true;
