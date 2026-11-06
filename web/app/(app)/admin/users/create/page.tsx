@@ -52,9 +52,9 @@ const ACTION_COLOR: Record<string, string> = {
   audit: "bg-neutral-100 text-neutral-600",
 };
 
-// Preset role templates — auto-populate module permissions
+// Module-permission previews for catalogue roles, keyed by role name
 const ROLE_PRESETS: Record<string, Record<string, string[]>> = {
-  Administrator: {
+  "System Admin": {
     Dashboard: ["view"], Alerts: ["view"],
     Travel: ["view", "create", "edit", "approve", "admin"], Leave: ["view", "create", "edit", "approve", "admin"],
     Finance: ["view", "create", "edit", "approve", "admin"], Imprest: ["view", "create", "edit", "approve", "admin"],
@@ -73,7 +73,7 @@ const ROLE_PRESETS: Record<string, Record<string, string[]>> = {
     Assets: ["view"], Governance: ["view"],
     SRHR: [], Admin: [],
   },
-  "HR Officer": {
+  "HR and Administration Officer": {
     Dashboard: ["view"], Alerts: ["view"],
     Travel: ["view", "approve"], Leave: ["view", "create", "edit", "approve"],
     Finance: ["view"], Imprest: ["view"],
@@ -82,7 +82,7 @@ const ROLE_PRESETS: Record<string, Record<string, string[]>> = {
     Assets: ["view"], Governance: ["view"],
     SRHR: [], Admin: ["view"],
   },
-  Staff: {
+  "General Employee": {
     Dashboard: ["view"], Alerts: ["view"],
     Travel: ["view", "create"], Leave: ["view", "create"],
     Finance: ["view"], Imprest: ["view", "create"],
@@ -91,16 +91,7 @@ const ROLE_PRESETS: Record<string, Record<string, string[]>> = {
     Assets: ["view"], Governance: ["view"],
     SRHR: [], Admin: [],
   },
-  "Read Only": {
-    Dashboard: ["view"], Alerts: ["view"],
-    Travel: ["view"], Leave: ["view"],
-    Finance: ["view"], Imprest: ["view"],
-    Programmes: ["view"], Workplan: ["view"],
-    HR: ["view"], Reports: ["view"],
-    Assets: ["view"], Governance: ["view"],
-    SRHR: [], Admin: [],
-  },
-  "SRHR Researcher": {
+  "Field Researcher": {
     Dashboard: ["view"], Alerts: ["view"],
     Travel: ["view", "create"], Leave: ["view", "create"],
     Finance: ["view"], Imprest: ["view", "create"],
@@ -167,7 +158,7 @@ export default function AdminUserCreatePage() {
   const [permissions, setPermissions] = useState<ModulePermission[]>(buildDefaultPermissions());
   const [form, setForm] = useState<FormData>({
     name: "", email: "", employee_number: "", job_title: "",
-    department_id: "", phone: "", role: "Staff",
+    department_id: "", phone: "", role: "General Employee",
     classification: "UNCLASSIFIED", mfa_enabled: true, send_invitation: true,
     bio: "", date_of_birth: "", join_date: "",
     nationality: "", gender: "", marital_status: "",
@@ -244,9 +235,7 @@ export default function AdminUserCreatePage() {
 
   const setRole = (role: string) => {
     set("role", role);
-    if (ROLE_PRESETS[role]) {
-      setPermissions(applyPreset(role));
-    }
+    setPermissions(ROLE_PRESETS[role] ? applyPreset(role) : buildDefaultPermissions());
   };
 
   const toggleAction = (module: string, action: string) => {
@@ -585,18 +574,7 @@ export default function AdminUserCreatePage() {
               </div>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
-              {Object.keys(ROLE_PRESETS).map((r) => (
-                <button key={r} type="button" onClick={() => setRole(r)}
-                  className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-all ${form.role === r ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50"}`}>
-                  <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${form.role === r ? "border-primary" : "border-neutral-300"}`}>
-                    {form.role === r && <div className="h-2 w-2 rounded-full bg-primary" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-neutral-900">{r}</p>
-                  </div>
-                </button>
-              ))}
-              {roles.filter((r) => !ROLE_PRESETS[r.name]).map((r) => (
+              {roles.map((r) => (
                 <button key={r.id} type="button" onClick={() => setRole(r.name)}
                   className={`flex items-start gap-3 rounded-xl border p-4 text-left transition-all ${form.role === r.name ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-neutral-200 hover:border-neutral-300"}`}>
                   <div className={`mt-0.5 h-4 w-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${form.role === r.name ? "border-primary" : "border-neutral-300"}`}>

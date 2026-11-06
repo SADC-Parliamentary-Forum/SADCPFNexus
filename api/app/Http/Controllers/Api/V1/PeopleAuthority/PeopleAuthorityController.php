@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\PeopleAuthority;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\PeopleAuthority\AccessReviewCampaign;
 use App\Models\PeopleAuthority\AccessReviewItem;
 use App\Models\PeopleAuthority\ActingAppointment;
@@ -35,9 +36,11 @@ use App\Modules\PeopleAuthority\Services\ConfidentialAccessGate;
 use App\Modules\PeopleAuthority\Services\IdentityAuditService;
 use App\Modules\PeopleAuthority\Services\ReportingRelationshipService;
 use App\Modules\PeopleAuthority\Services\SigningService;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 class PeopleAuthorityController extends Controller
 {
@@ -171,6 +174,7 @@ class PeopleAuthorityController extends Controller
                     $name = trim((string) $target->name);
                     if ($name === '' || $target->isSupplier()) {
                         $skipped++;
+
                         continue;
                     }
                     [$firstName, $lastName] = $this->splitName($name);
@@ -648,9 +652,9 @@ class PeopleAuthorityController extends Controller
         $manager = app(CanonicalRoleManager::class);
 
         return response()->json([
-            'data' => \Spatie\Permission\Models\Role::query()
+            'data' => Role::query()
                 ->where('guard_name', 'sanctum')
-                ->whereIn('name', array_merge($manager->canonicalRoleNames(), CanonicalRoleManager::SYSTEM_ROLES))
+                ->whereIn('name', $manager->assignableRoleNames())
                 ->orderBy('name')
                 ->get(['id', 'name', 'guard_name']),
         ]);
@@ -1276,12 +1280,12 @@ class PeopleAuthorityController extends Controller
 
     private function fallbackDepartmentId(User $user): int
     {
-        $dept = \App\Models\Department::query()->where('tenant_id', $user->tenant_id)->first();
+        $dept = Department::query()->where('tenant_id', $user->tenant_id)->first();
         if ($dept) {
             return $dept->id;
         }
 
-        return \App\Models\Department::create([
+        return Department::create([
             'tenant_id' => $user->tenant_id,
             'name' => 'Secretariat',
             'code' => 'SEC',
@@ -1307,8 +1311,8 @@ class PeopleAuthorityController extends Controller
     {
         // Privacy-safe: no confidential fields in notification body
         try {
-            if (class_exists(\App\Services\NotificationService::class)) {
-                app(\App\Services\NotificationService::class)->notifyUser(
+            if (class_exists(NotificationService::class)) {
+                app(NotificationService::class)->notifyUser(
                     $actor,
                     $trigger,
                     ['message' => $message, 'module' => 'people-authority']
