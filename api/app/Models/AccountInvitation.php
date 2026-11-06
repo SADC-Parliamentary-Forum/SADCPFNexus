@@ -8,9 +8,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class AccountInvitation extends Model
 {
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_ACCEPTED = 'accepted';
+
     public const STATUS_REVOKED = 'revoked';
+
     public const STATUS_EXPIRED = 'expired';
+
     public const STATUS_SUPERSEDED = 'superseded';
 
     protected $fillable = [
@@ -21,14 +25,18 @@ class AccountInvitation extends Model
         'token_hash',
         'status',
         'expires_at',
+        'sent_at',
         'accepted_at',
         'revoked_at',
         'revoked_by_id',
         'superseded_by_id',
     ];
 
+    protected $hidden = ['token_hash'];
+
     protected $casts = [
         'expires_at' => 'datetime',
+        'sent_at' => 'datetime',
         'accepted_at' => 'datetime',
         'revoked_at' => 'datetime',
     ];

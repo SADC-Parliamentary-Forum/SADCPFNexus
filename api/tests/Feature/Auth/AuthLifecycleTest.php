@@ -16,6 +16,7 @@ use Tests\TestCase;
 class AuthLifecycleTest extends TestCase
 {
     private Tenant $tenant;
+
     private User $admin;
 
     protected function setUp(): void
@@ -244,5 +245,52 @@ class AuthLifecycleTest extends TestCase
             'user_id' => $invitee->id,
             'status' => AccountInvitation::STATUS_PENDING,
         ]);
+    }
+
+    public function test_invitation_records_whether_it_was_emailed(): void
+    {
+        $quiet = app(UserService::class)->create([
+            'name' => 'Not Yet Invited',
+            'email' => 'not.yet@sadcpf.org',
+            'role' => 'staff',
+            'send_welcome_email' => false,
+        ], $this->admin);
+        $this->assertNull($quiet->latestAccountInvitation->sent_at);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->postJson('/api/v1/admin/users/'.$quiet->id.'/resend-invitation')
+            ->assertOk();
+        $this->assertNotNull($quiet->fresh()->latestAccountInvitation->sent_at);
+
+        $emailed = app(UserService::class)->create([
+            'name' => 'Invited Now',
+            'email' => 'invited.now@sadcpf.org',
+            'role' => 'staff',
+        ], $this->admin);
+        $this->assertNotNull($emailed->latestAccountInvitation->sent_at);
+    }
+
+    public function test_user_list_and_detail_show_the_latest_invitation_without_its_token(): void
+    {
+        $invitee = app(UserService::class)->create([
+            'name' => 'Listed Invitee',
+            'email' => 'listed.invitee@sadcpf.org',
+            'role' => 'staff',
+            'send_welcome_email' => false,
+        ], $this->admin);
+
+        $list = $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/v1/admin/users?status=invited')
+            ->assertOk();
+        $row = collect($list->json('data'))->firstWhere('id', $invitee->id);
+        $this->assertSame(AccountInvitation::STATUS_PENDING, $row['latest_account_invitation']['status']);
+        $this->assertNull($row['latest_account_invitation']['sent_at']);
+        $this->assertArrayNotHasKey('token_hash', $row['latest_account_invitation']);
+
+        $this->actingAs($this->admin, 'sanctum')
+            ->getJson('/api/v1/admin/users/'.$invitee->id)
+            ->assertOk()
+            ->assertJsonPath('latest_account_invitation.status', AccountInvitation::STATUS_PENDING)
+            ->assertJsonMissingPath('latest_account_invitation.token_hash');
     }
 }
