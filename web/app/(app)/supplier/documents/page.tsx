@@ -12,6 +12,7 @@ import {
 import { apiErrorMessage } from "@/lib/apiError";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { formatDateShort } from "@/lib/utils";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_BADGE: Record<string, string> = {
   needed: "badge-warning",
@@ -32,6 +33,7 @@ const STATUS_KEY: Record<string, string> = {
 export default function SupplierDocumentsPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [typeCode, setTypeCode] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
@@ -72,11 +74,14 @@ export default function SupplierDocumentsPage() {
       setExpiryDate("");
       setError(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
+      toast.success("Document uploaded");
     },
     onError: (err: unknown) => {
-      setError(err instanceof Error && !("response" in err)
+      const message = err instanceof Error && !("response" in err)
         ? err.message
-        : apiErrorMessage(err, t("supplier.documents.uploadError")));
+        : apiErrorMessage(err, t("supplier.documents.uploadError"));
+      setError(message);
+      toast.error("Document not uploaded", message);
     },
   });
 

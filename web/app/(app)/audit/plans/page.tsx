@@ -5,10 +5,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { auditApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { AuditPageShell, AuditRowActions, AuditTable } from "@/components/audit/AuditChrome";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function AuditPlansPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const [title, setTitle] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "plans"],
@@ -20,9 +23,19 @@ export default function AuditPlansPage() {
     mutationFn: (planTitle: string) => auditApi.createPlan({ title: planTitle, fiscal_year: new Date().getFullYear() }),
     onSuccess: () => {
       setTitle("");
+      toast.success("Audit plan created");
       qc.invalidateQueries({ queryKey: ["audit", "plans"] });
     },
+    onError: (err) => toast.error("Audit plan not created", apiErrorMessage(err, "Failed to create the audit plan.")),
   });
+
+  const runAction = (call: () => Promise<unknown>, successTitle: string, errorTitle: string) =>
+    call()
+      .then(() => {
+        toast.success(successTitle);
+        return qc.invalidateQueries({ queryKey: ["audit", "plans"] });
+      })
+      .catch((err) => toast.error(errorTitle, apiErrorMessage(err, "Action failed. Please try again.")));
 
   return (
     <AuditPageShell
@@ -70,17 +83,17 @@ export default function AuditPlansPage() {
             <td className="px-3 py-2.5">
               <AuditRowActions>
                 {r.status === "draft" || r.status === "amended" ? (
-                  <button type="button" className="btn-secondary text-xs" onClick={() => auditApi.submitPlan(Number(r.id)).then(() => qc.invalidateQueries({ queryKey: ["audit", "plans"] }))}>
+                  <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.submitPlan(Number(r.id)), "Audit plan submitted", "Could not submit audit plan")}>
                     {t("audit.plans.submit")}
                   </button>
                 ) : null}
                 {r.status === "pending_approval" ? (
-                  <button type="button" className="btn-secondary text-xs" onClick={() => auditApi.approvePlan(Number(r.id)).then(() => qc.invalidateQueries({ queryKey: ["audit", "plans"] }))}>
+                  <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.approvePlan(Number(r.id)), "Audit plan approved", "Could not approve audit plan")}>
                     {t("audit.plans.approve")}
                   </button>
                 ) : null}
                 {r.status === "approved" ? (
-                  <button type="button" className="btn-secondary text-xs" onClick={() => auditApi.amendPlan(Number(r.id), { amendment_reason: "Scope change" }).then(() => qc.invalidateQueries({ queryKey: ["audit", "plans"] }))}>
+                  <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.amendPlan(Number(r.id), { amendment_reason: "Scope change" }), "Audit plan amended", "Could not amend audit plan")}>
                     {t("audit.plans.amend")}
                   </button>
                 ) : null}

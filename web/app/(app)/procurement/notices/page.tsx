@@ -6,6 +6,8 @@ import { useState } from "react";
 import { noticeBoardApi } from "@/lib/api";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 type Notice = {
   id?: number;
@@ -19,6 +21,7 @@ type Notice = {
 
 export default function StaffNoticeBoardPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [ticks, setTicks] = useState<Record<string, boolean>>({});
   const [templateKey, setTemplateKey] = useState("open_tender");
@@ -44,6 +47,10 @@ export default function StaffNoticeBoardPage() {
     mutationFn: () => noticeBoardApi.saveNewspaperChecklist(selectedId as number, { ticks, template_key: templateKey }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["procurement", "newspaper-pack", selectedId] });
+      toast.success("Publication checklist saved");
+    },
+    onError: (err: unknown) => {
+      toast.error("Checklist not saved", apiErrorMessage(err, "Failed to save the publication checklist."));
     },
   });
 
@@ -51,6 +58,10 @@ export default function StaffNoticeBoardPage() {
     mutationFn: () => noticeBoardApi.newspaperLlmDraft(selectedId as number, { template_key: templateKey }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["procurement", "newspaper-pack", selectedId] });
+      toast.success("Notice draft generated");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not generate notice draft", apiErrorMessage(err, "Failed to generate the notice draft."));
     },
   });
 

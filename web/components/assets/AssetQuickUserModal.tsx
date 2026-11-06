@@ -5,6 +5,7 @@ import { adminApi, type Department, type TenantUserOption, type User } from "@/l
 import { apiErrorMessage } from "@/lib/apiError";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 
 /**
  * Create (invite) a staff member from the asset assignee picker when they are not in the
@@ -20,6 +21,7 @@ export function AssetQuickUserModal({
   onCreated: (user: TenantUserOption) => void;
 }) {
   const { t } = useI18n();
+  const toast = useToast();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [jobTitle, setJobTitle] = useState("");
@@ -61,6 +63,7 @@ export function AssetQuickUserModal({
       };
       const res = await adminApi.createUser(payload);
       const created = res.data.user;
+      toast.success(t("assets.newUser.toast.created"), t("assets.newUser.toast.createdDetail", { name: created.name, email: created.email }));
       onCreated({
         id: created.id,
         name: created.name,
@@ -72,7 +75,9 @@ export function AssetQuickUserModal({
       });
       reset();
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.newUser.failed")));
+      const message = apiErrorMessage(err, t("assets.newUser.failed"));
+      setError(message);
+      toast.error(t("assets.newUser.toast.notCreated"), message);
     } finally {
       setBusy(false);
     }

@@ -5,9 +5,12 @@ import React, { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { mandeApi, type MeSettings } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function MandeSettingsPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "mande.admin");
   const [form, setForm] = useState<MeSettings | null>(null);
@@ -29,8 +32,10 @@ export default function MandeSettingsPage() {
       qc.setQueryData(["mande", "settings"], res.data.data);
       setForm(res.data.data);
       setSavedMsg("Settings saved.");
+      toast.success("Settings saved");
       setTimeout(() => setSavedMsg(null), 2500);
     },
+    onError: (err) => toast.error("Settings not saved", apiErrorMessage(err, "Could not save M&E settings.")),
   });
 
   if (!canAdmin) {

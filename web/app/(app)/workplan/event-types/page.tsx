@@ -5,6 +5,8 @@ import { workplanEventTypesApi, type WorkplanEventType } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const COLOR_OPTIONS = [
   { value: "neutral", label: "Grey" },
@@ -28,6 +30,7 @@ const COLOR_DOT: Record<string, string> = {
 
 export default function WorkplanEventTypesPage() {
   const { confirm } = useConfirm();
+  const toast = useToast();
   const [list, setList] = useState<WorkplanEventType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,10 +96,12 @@ export default function WorkplanEventTypesPage() {
           sort_order: sortOrder ? Number(sortOrder) : undefined,
         });
       }
+      toast.success(editingId ? "Event type updated" : "Event type created", name.trim());
       resetForm();
       loadList();
     } catch (err: unknown) {
       setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to save.");
+      toast.error(editingId ? "Event type not updated" : "Event type not created", apiErrorMessage(err, "Failed to save."));
     } finally {
       setSaving(false);
     }
@@ -113,9 +118,11 @@ export default function WorkplanEventTypesPage() {
     setError(null);
     try {
       await workplanEventTypesApi.delete(et.id);
+      toast.success("Event type deleted", et.name);
       loadList();
     } catch (err: unknown) {
       setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to delete event type.");
+      toast.error("Event type not deleted", apiErrorMessage(err, "Failed to delete event type."));
     }
   };
 

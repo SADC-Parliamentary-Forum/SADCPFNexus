@@ -6,10 +6,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { auditApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { AuditPageShell, AuditRowActions, AuditTable } from "@/components/audit/AuditChrome";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function AuditEngagementsPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const [title, setTitle] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "engagements"],
@@ -21,9 +24,19 @@ export default function AuditEngagementsPage() {
     mutationFn: (engagementTitle: string) => auditApi.createEngagement({ title: engagementTitle }),
     onSuccess: () => {
       setTitle("");
+      toast.success("Engagement created");
       qc.invalidateQueries({ queryKey: ["audit", "engagements"] });
     },
+    onError: (err) => toast.error("Engagement not created", apiErrorMessage(err, "Failed to create the engagement.")),
   });
+
+  const runAction = (call: () => Promise<unknown>, successTitle: string, errorTitle: string) =>
+    call()
+      .then(() => {
+        toast.success(successTitle);
+        return qc.invalidateQueries({ queryKey: ["audit", "engagements"] });
+      })
+      .catch((err) => toast.error(errorTitle, apiErrorMessage(err, "Action failed. Please try again.")));
 
   return (
     <AuditPageShell
@@ -73,13 +86,13 @@ export default function AuditEngagementsPage() {
             <td className="px-3 py-2.5 capitalize">{String(r.status)}</td>
             <td className="px-3 py-2.5">
               <AuditRowActions>
-                <button type="button" className="btn-secondary text-xs" onClick={() => auditApi.declareIndependence(Number(r.id), { status: "cleared" }).then(() => qc.invalidateQueries({ queryKey: ["audit", "engagements"] }))}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.declareIndependence(Number(r.id), { status: "cleared" }), "Independence cleared", "Could not clear independence")}>
                   {t("audit.engagements.clearIndependence")}
                 </button>
-                <button type="button" className="btn-secondary text-xs" onClick={() => auditApi.notifyEngagement(Number(r.id)).then(() => qc.invalidateQueries({ queryKey: ["audit", "engagements"] }))}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.notifyEngagement(Number(r.id)), "Engagement notification sent", "Could not send engagement notification")}>
                   {t("audit.engagements.notify")}
                 </button>
-                <button type="button" className="btn-secondary text-xs" onClick={() => auditApi.startFieldwork(Number(r.id)).then(() => qc.invalidateQueries({ queryKey: ["audit", "engagements"] }))}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.startFieldwork(Number(r.id)), "Fieldwork started", "Could not start fieldwork")}>
                   {t("audit.engagements.fieldwork")}
                 </button>
               </AuditRowActions>

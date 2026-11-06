@@ -6,10 +6,13 @@ import { auditApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { FormSection } from "@/components/ui/FormSection";
 import { AuditPageShell, AuditTable } from "@/components/audit/AuditChrome";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function AuditAppointmentsPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "appointments"],
     queryFn: async () => (await auditApi.listAppointments({ per_page: 50 })).data,
@@ -29,8 +32,10 @@ export default function AuditAppointmentsPage() {
     onSuccess: () => {
       setFirm("");
       setPlenary("");
+      toast.success("Appointment recorded");
       qc.invalidateQueries({ queryKey: ["audit", "appointments"] });
     },
+    onError: (err) => toast.error("Appointment not recorded", apiErrorMessage(err, "Failed to record the appointment.")),
   });
 
   return (

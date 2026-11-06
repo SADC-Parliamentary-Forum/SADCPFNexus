@@ -6,6 +6,8 @@ import { workAssignmentsApi, WorkAssignment, WorkAssignmentUpdate } from "@/lib/
 import { formatDate, formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const UPDATE_TYPE_ICONS: Record<string, string> = {
   progress: "radio_button_unchecked",
@@ -54,6 +56,7 @@ export default function AssignmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { confirm } = useConfirm();
+  const toast = useToast();
   const [assignment, setAssignment] = useState<WorkAssignment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -93,8 +96,9 @@ export default function AssignmentDetailPage() {
     try {
       const res = await workAssignmentsApi.start(assignment.id);
       setAssignment(res.data);
-    } catch {
-      // ignore
+      toast.success("Assignment started");
+    } catch (err) {
+      toast.error("Could not start assignment", apiErrorMessage(err, "Failed to start assignment."));
     } finally {
       setActionLoading(false);
     }
@@ -107,8 +111,9 @@ export default function AssignmentDetailPage() {
       const res = await workAssignmentsApi.complete(assignment.id, completionNotes || undefined);
       setAssignment(res.data);
       setShowCompleteModal(false);
-    } catch {
-      // ignore
+      toast.success("Assignment completed");
+    } catch (err) {
+      toast.error("Could not complete assignment", apiErrorMessage(err, "Failed to complete assignment."));
     } finally {
       setActionLoading(false);
     }
@@ -121,8 +126,9 @@ export default function AssignmentDetailPage() {
     try {
       const res = await workAssignmentsApi.update(assignment.id, { status: "cancelled" });
       setAssignment(res.data);
-    } catch {
-      // ignore
+      toast.success("Assignment cancelled");
+    } catch (err) {
+      toast.error("Could not cancel assignment", apiErrorMessage(err, "Failed to cancel assignment."));
     } finally {
       setActionLoading(false);
     }
@@ -145,9 +151,11 @@ export default function AssignmentDetailPage() {
       setUpdateContent("");
       setHoursLogged("");
       setUpdateType("comment");
+      toast.success("Update submitted");
       await load();
-    } catch {
+    } catch (err) {
       setUpdateError("Failed to submit update.");
+      toast.error("Update not submitted", apiErrorMessage(err, "Failed to submit update."));
     } finally {
       setUpdateSubmitting(false);
     }

@@ -17,6 +17,8 @@ import {
 } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 function asValidDate(value: string): Date | null {
@@ -130,6 +132,8 @@ function ManageTypesModal({
   onClose: () => void;
 }) {
   const { confirm } = useConfirm();
+  const toast = useToast();
+  const singular = title.endsWith("ies") ? `${title.slice(0, -3)}y` : title.replace(/s$/, "");
   const [newName, setNewName] = useState("");
   const [editId, setEditId]   = useState<number | null>(null);
   const [editName, setEditName] = useState("");
@@ -139,21 +143,41 @@ function ManageTypesModal({
   const doCreate = async () => {
     if (!newName.trim()) return;
     setBusy(true); setErr(null);
-    try { await onCreate(newName.trim()); setNewName(""); } catch { setErr("Could not create."); }
+    try {
+      await onCreate(newName.trim());
+      toast.success(`${singular} created`, newName.trim());
+      setNewName("");
+    } catch (e) {
+      setErr("Could not create.");
+      toast.error(`${singular} not created`, apiErrorMessage(e, "Could not create."));
+    }
     finally { setBusy(false); }
   };
 
   const doUpdate = async () => {
     if (editId === null || !editName.trim()) return;
     setBusy(true); setErr(null);
-    try { await onUpdate(editId, editName.trim()); setEditId(null); } catch { setErr("Could not update."); }
+    try {
+      await onUpdate(editId, editName.trim());
+      toast.success(`${singular} updated`, editName.trim());
+      setEditId(null);
+    } catch (e) {
+      setErr("Could not update.");
+      toast.error(`${singular} not updated`, apiErrorMessage(e, "Could not update."));
+    }
     finally { setBusy(false); }
   };
 
   const doDelete = async (id: number) => {
     if (!(await confirm({ title: "Delete item", message: "Delete this item?", variant: "danger" }))) return;
     setBusy(true); setErr(null);
-    try { await onDelete(id); } catch { setErr("Could not delete."); }
+    try {
+      await onDelete(id);
+      toast.success(`${singular} deleted`);
+    } catch (e) {
+      setErr("Could not delete.");
+      toast.error(`${singular} not deleted`, apiErrorMessage(e, "Could not delete."));
+    }
     finally { setBusy(false); }
   };
 
@@ -208,6 +232,7 @@ function ManageTypesModal({
 export default function WorkplanEventDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const id = params?.id != null ? Number(params.id) : NaN;
 
   const [event, setEvent] = useState<WorkplanEvent | null>(null);
@@ -299,9 +324,11 @@ export default function WorkplanEventDetailPage() {
         responsible_user_ids: responsibleUserIds,
       });
       setEditMode(false);
+      toast.success("Event updated");
       loadEvent();
-    } catch {
+    } catch (err) {
       setError("Failed to update.");
+      toast.error("Event not updated", apiErrorMessage(err, "Failed to update."));
     } finally {
       setSaving(false);
     }
@@ -314,8 +341,12 @@ export default function WorkplanEventDetailPage() {
       for (const file of Array.from(e.target.files)) await workplanAttachmentsApi.upload(event.id, file);
       const listRes = await workplanAttachmentsApi.list(event.id);
       setAttachments(listRes.data?.data ?? []);
+      toast.success("File(s) uploaded");
       loadEvent();
-    } catch { setError("Failed to upload file(s)."); }
+    } catch (err) {
+      setError("Failed to upload file(s).");
+      toast.error("File(s) not uploaded", apiErrorMessage(err, "Failed to upload file(s)."));
+    }
     finally { setUploading(false); e.target.value = ""; }
   };
 
@@ -324,7 +355,11 @@ export default function WorkplanEventDetailPage() {
     try {
       await workplanAttachmentsApi.delete(event.id, attachmentId);
       setAttachments((p) => p.filter((a) => a.id !== attachmentId));
-    } catch { setError("Failed to delete attachment."); }
+      toast.success("Attachment deleted");
+    } catch (err) {
+      setError("Failed to delete attachment.");
+      toast.error("Attachment not deleted", apiErrorMessage(err, "Failed to delete attachment."));
+    }
   };
 
   const handleDownloadAttachment = async (a: WorkplanAttachment) => {

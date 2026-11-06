@@ -7,6 +7,8 @@ import RiskDocumentsPanel from "@/components/ui/RiskDocumentsPanel";
 import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const LEVEL_CLS: Record<string, string> = {
   low:      "text-green-700 bg-green-100 border-green-300",
@@ -17,6 +19,7 @@ const LEVEL_CLS: Record<string, string> = {
 
 export default function PolicyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: paramId } = use(params);
+  const toast = useToast();
 
   const [policy, setPolicy]       = useState<Policy | null>(null);
   const [loading, setLoading]     = useState(true);
@@ -184,11 +187,21 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
               try {
                 const r = await policyApi.uploadAttachment(policy.id, file, type);
                 setPolicy((prev) => prev ? { ...prev, attachments: [r.data.data, ...(prev.attachments ?? [])] } : prev);
+                toast.success("Document uploaded");
+              } catch (err) {
+                toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload document."));
+                throw err;
               } finally { setUploading(false); }
             }}
             onDelete={async (id: number) => {
-              await policyApi.deleteAttachment(policy.id, id);
-              setPolicy((prev) => prev ? { ...prev, attachments: (prev.attachments ?? []).filter((a) => a.id !== id) } : prev);
+              try {
+                await policyApi.deleteAttachment(policy.id, id);
+                setPolicy((prev) => prev ? { ...prev, attachments: (prev.attachments ?? []).filter((a) => a.id !== id) } : prev);
+                toast.success("Document deleted");
+              } catch (err) {
+                toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete document."));
+                throw err;
+              }
             }}
             downloadUrl={(id: number) => policyApi.downloadAttachmentUrl(policy.id, id)}
           />

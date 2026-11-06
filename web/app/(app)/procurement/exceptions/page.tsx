@@ -5,16 +5,25 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { procurementWorkbenchApi } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export default function ProcurementExceptionsPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const { data, isLoading, isError } = useQuery({
     queryKey: ["procurement", "exceptions"],
     queryFn: () => procurementWorkbenchApi.exceptions().then((r) => r.data),
   });
   const approve = useMutation({
     mutationFn: (id: number) => procurementWorkbenchApi.approveException(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["procurement", "exceptions"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["procurement", "exceptions"] });
+      toast.success("Exception approved");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not approve exception", apiErrorMessage(err, "Failed to approve the exception."));
+    },
   });
   const rows = (data as { data?: Array<{ id: number; exception_type: string; reason: string; status: string }> })?.data ?? [];
 

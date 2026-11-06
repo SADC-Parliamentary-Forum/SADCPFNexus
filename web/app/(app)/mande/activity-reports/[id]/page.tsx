@@ -17,6 +17,8 @@ import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const STATUS_BADGE: Record<string, string> = {
   not_submitted: "badge-muted",
@@ -65,6 +67,7 @@ export default function ActivityReportDetailPage() {
   const id = Number(params.id);
   const qc = useQueryClient();
   const { confirm } = useConfirm();
+  const toast = useToast();
   const user = getStoredUser();
   const canReview = isSystemAdmin(user) || hasPermission(user, ["mande.review", "mande.admin"]);
   const canCreate = isSystemAdmin(user) || hasPermission(user, ["mande.create", "mande.admin"]);
@@ -140,13 +143,16 @@ export default function ActivityReportDetailPage() {
     },
     onSuccess: () => {
       setActionMsg("Draft saved.");
+      toast.success("Draft saved");
       invalidate();
     },
+    onError: (err) => toast.error("Draft not saved", apiErrorMessage(err, "Could not save the report draft.")),
   });
 
   const submitMut = useMutation({
     mutationFn: () => mandeApi.submitReport(id),
-    onSuccess: () => { setActionMsg("Submitted for review."); invalidate(); },
+    onSuccess: () => { setActionMsg("Submitted for review."); toast.success("Report submitted for review"); invalidate(); },
+    onError: (err) => toast.error("Report not submitted", apiErrorMessage(err, "Could not submit the report.")),
   });
   const returnMut = useMutation({
     mutationFn: () =>
@@ -158,17 +164,21 @@ export default function ActivityReportDetailPage() {
       }),
     onSuccess: () => {
       setActionMsg("Returned for correction.");
+      toast.success("Report returned for correction");
       setReturnNotes("");
       invalidate();
     },
+    onError: (err) => toast.error("Report not returned", apiErrorMessage(err, "Could not return the report.")),
   });
   const acceptMut = useMutation({
     mutationFn: () => mandeApi.acceptReport(id, { review_notes: acceptNotes || undefined }),
-    onSuccess: () => { setActionMsg("Report accepted."); invalidate(); },
+    onSuccess: () => { setActionMsg("Report accepted."); toast.success("Report accepted"); invalidate(); },
+    onError: (err) => toast.error("Report not accepted", apiErrorMessage(err, "Could not accept the report.")),
   });
   const closeMut = useMutation({
     mutationFn: () => mandeApi.closeReport(id),
-    onSuccess: () => { setActionMsg("Report closed."); invalidate(); },
+    onSuccess: () => { setActionMsg("Report closed."); toast.success("Report closed"); invalidate(); },
+    onError: (err) => toast.error("Report not closed", apiErrorMessage(err, "Could not close the report.")),
   });
   const uploadMut = useMutation({
     mutationFn: () => {
@@ -182,13 +192,19 @@ export default function ActivityReportDetailPage() {
       setEvidenceFile(null);
       setEvidenceTitle("");
       setActionMsg("Evidence uploaded.");
+      toast.success("Evidence uploaded");
       invalidate();
     },
+    onError: (err) => toast.error("Evidence not uploaded", apiErrorMessage(err, "Could not upload the evidence file.")),
   });
   const reviewEvidenceMut = useMutation({
     mutationFn: ({ evidenceId, status }: { evidenceId: number; status: "validated" | "rejected" }) =>
       mandeApi.reviewEvidence(id, evidenceId, { review_status: status }),
-    onSuccess: () => invalidate(),
+    onSuccess: (_data, vars) => {
+      toast.success(vars.status === "validated" ? "Evidence validated" : "Evidence rejected");
+      invalidate();
+    },
+    onError: (err) => toast.error("Evidence review not saved", apiErrorMessage(err, "Could not update the evidence review.")),
   });
   const createFollowUpMut = useMutation({
     mutationFn: () =>
@@ -202,23 +218,29 @@ export default function ActivityReportDetailPage() {
       setFollowUpDue("");
       setFollowUpPriority("normal");
       setActionMsg("Follow-up added.");
+      toast.success("Follow-up added");
       invalidate();
     },
+    onError: (err) => toast.error("Follow-up not added", apiErrorMessage(err, "Could not add the follow-up action.")),
   });
   const completeFollowUpMut = useMutation({
     mutationFn: (followUpId: number) =>
       mandeApi.updateFollowUp(id, followUpId, { status: "completed" }),
     onSuccess: () => {
       setActionMsg("Follow-up marked complete.");
+      toast.success("Follow-up marked complete");
       invalidate();
     },
+    onError: (err) => toast.error("Could not complete follow-up", apiErrorMessage(err, "Could not mark the follow-up complete.")),
   });
   const deleteFollowUpMut = useMutation({
     mutationFn: (followUpId: number) => mandeApi.deleteFollowUp(id, followUpId),
     onSuccess: () => {
       setActionMsg("Follow-up deleted.");
+      toast.success("Follow-up deleted");
       invalidate();
     },
+    onError: (err) => toast.error("Follow-up not deleted", apiErrorMessage(err, "Could not delete the follow-up action.")),
   });
 
   const editable = report && ["not_submitted", "returned"].includes(report.review_status);

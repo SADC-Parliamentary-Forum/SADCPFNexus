@@ -5,9 +5,12 @@ import { workplanMeetingTypesApi, type MeetingType } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export default function MeetingTypesPage() {
   const { confirm } = useConfirm();
+  const toast = useToast();
   const [list, setList] = useState<MeetingType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,10 +74,12 @@ export default function MeetingTypesPage() {
           sort_order: sortOrder ? Number(sortOrder) : undefined,
         });
       }
+      toast.success(editingId ? "Meeting type updated" : "Meeting type created", name.trim());
       resetForm();
       loadList();
     } catch (err: unknown) {
       setError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Failed to save.");
+      toast.error(editingId ? "Meeting type not updated" : "Meeting type not created", apiErrorMessage(err, "Failed to save."));
     } finally {
       setSaving(false);
     }
@@ -91,9 +96,11 @@ export default function MeetingTypesPage() {
     setError(null);
     try {
       await workplanMeetingTypesApi.delete(mt.id);
+      toast.success("Meeting type deleted", mt.name);
       loadList();
     } catch (err: unknown) {
       setError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Cannot delete (may be in use).");
+      toast.error("Meeting type not deleted", apiErrorMessage(err, "Cannot delete (may be in use)."));
     }
   };
 

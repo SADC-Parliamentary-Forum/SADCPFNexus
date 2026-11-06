@@ -5,10 +5,12 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { deploymentsApi, parliamentsApi, adminApi, type Parliament } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 function NewDeploymentPageInner() {
   const router       = useRouter();
   const searchParams = useSearchParams();
+  const toast        = useToast();
 
   const [parliaments, setParliaments] = useState<Parliament[]>([]);
   const [users, setUsers]             = useState<{ id: number; name: string; email: string }[]>([]);
@@ -63,6 +65,7 @@ function NewDeploymentPageInner() {
         terms_of_reference: form.terms_of_reference || undefined,
         notes:              form.notes || undefined,
       });
+      toast.success("Deployment created");
       router.push("/srhr/deployments");
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
@@ -70,6 +73,7 @@ function NewDeploymentPageInner() {
         ? Object.values(e.response.data.errors).flat().join("; ")
         : (e.response?.data?.message ?? "Failed to create deployment.");
       setError(msgs);
+      toast.error("Deployment not created", msgs);
     } finally {
       setSaving(false);
     }

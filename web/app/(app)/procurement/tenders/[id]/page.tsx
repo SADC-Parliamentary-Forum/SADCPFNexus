@@ -2,15 +2,27 @@
 
 import { use } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { tendersApi } from "@/lib/api";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
+
+const TENDER_ACTION_DONE: Record<"publish" | "close" | "openBids" | "startEvaluation", string> = {
+  publish: "Tender published",
+  close: "Tender closed",
+  openBids: "Bids opened",
+  startEvaluation: "Evaluation started",
+};
 
 export default function TenderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const tenderId = Number(id);
   const qc = useQueryClient();
+  const router = useRouter();
+  const toast = useToast();
   const [awardQuoteId, setAwardQuoteId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -39,17 +51,17 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
       if (action === "openBids") return tendersApi.openBids(tenderId);
       return tendersApi.startEvaluation(tenderId);
     },
-    onSuccess: () => {
+    onSuccess: (_res, action) => {
       setError(null);
       qc.invalidateQueries({ queryKey: ["procurement", "tender", tenderId] });
       qc.invalidateQueries({ queryKey: ["procurement", "evaluations"] });
       qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
+      toast.success(TENDER_ACTION_DONE[action]);
     },
     onError: (e: unknown) => {
-      setError(
-        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Action failed.",
-      );
+      const message = apiErrorMessage(e, "Action failed.");
+      setError(message);
+      toast.error("Tender action failed", message);
     },
   });
 
@@ -63,18 +75,18 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
     onSuccess: (res) => {
       setMessage("Tender awarded — draft contract created.");
       setError(null);
+      toast.success("Tender awarded", "Draft contract created.");
       qc.invalidateQueries({ queryKey: ["procurement", "tender", tenderId] });
       qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
       const contractId = (res.data.data as { contract?: { id?: number } }).contract?.id;
       if (contractId) {
-        window.location.href = `/procurement/contracts/${contractId}`;
+        router.push(`/procurement/contracts/${contractId}`);
       }
     },
     onError: (e: unknown) => {
-      setError(
-        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Award failed.",
-      );
+      const message = apiErrorMessage(e, "Award failed.");
+      setError(message);
+      toast.error("Tender not awarded", message);
     },
   });
 
@@ -83,14 +95,14 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
     onSuccess: () => {
       setMessage("Tender cancelled.");
       setError(null);
+      toast.success("Tender cancelled");
       qc.invalidateQueries({ queryKey: ["procurement", "tender", tenderId] });
       qc.invalidateQueries({ queryKey: ["procurement", "tenders"] });
     },
     onError: (e: unknown) => {
-      setError(
-        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Cancel failed.",
-      );
+      const message = apiErrorMessage(e, "Cancel failed.");
+      setError(message);
+      toast.error("Tender not cancelled", message);
     },
   });
 
@@ -106,6 +118,10 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
           summary_fingerprint: String(summaryMut.data?.summary ?? "").slice(0, 64),
         })
         .then((r) => r.data.data),
+    onSuccess: () => toast.success("Human review confirmed"),
+    onError: (e: unknown) => {
+      toast.error("Review not confirmed", apiErrorMessage(e, "Confirm failed. Enable AI comparison and ensure bids are opened."));
+    },
   });
 
   if (isLoading || !tender) {

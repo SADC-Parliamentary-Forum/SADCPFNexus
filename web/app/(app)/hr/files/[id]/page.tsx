@@ -11,6 +11,8 @@ import {
 } from "@/lib/api";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const FILE_STATUS_LABELS: Record<string, string> = {
   active: "Active",
@@ -98,6 +100,7 @@ export default function HrFileDetailPage() {
   const router = useRouter();
   const id = params?.id != null ? Number(params.id) : NaN;
   const { confirm } = useConfirm();
+  const toast = useToast();
   const [file, setFile] = useState<FileWithRelations | null>(null);
   const [tab, setTab] = useState<TabId>("summary");
   const [loading, setLoading] = useState(true);
@@ -151,8 +154,10 @@ export default function HrFileDetailPage() {
       await hrFilesApi.update(file.id, { hr_notes: hrNote } as unknown as Partial<typeof file>);
       setHrNoteSaved(true);
       setTimeout(() => setHrNoteSaved(false), 3000);
-    } catch {
+      toast.success("HR notes saved");
+    } catch (err) {
       setError("Failed to save HR notes.");
+      toast.error("HR notes not saved", apiErrorMessage(err, "Failed to save HR notes."));
     } finally {
       setSavingHrNote(false);
     }
@@ -171,9 +176,11 @@ export default function HrFileDetailPage() {
       await hrFilesApi.uploadDocument(file.id, { document_type: docType, title: docTitle.trim() });
       setDocType("");
       setDocTitle("");
+      toast.success("Document added");
       load();
-    } catch {
+    } catch (err) {
       setUploadError("Failed to add document.");
+      toast.error("Document not added", apiErrorMessage(err, "Failed to add document."));
     } finally {
       setUploading(false);
     }
@@ -194,7 +201,10 @@ export default function HrFileDetailPage() {
       setEventTitle("");
       setEventDescription("");
       setEventDate("");
+      toast.success("Timeline event added");
       load();
+    } catch (err) {
+      toast.error("Timeline event not added", apiErrorMessage(err, "Failed to add timeline event."));
     } finally {
       setAddingEvent(false);
     }
@@ -211,9 +221,11 @@ export default function HrFileDetailPage() {
     ) return;
     try {
       await hrFilesApi.deleteDocument(file.id, docId);
+      toast.success("Document deleted");
       load();
-    } catch {
+    } catch (err) {
       setError("Failed to delete document.");
+      toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete document."));
     }
   };
 

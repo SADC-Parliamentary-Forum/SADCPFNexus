@@ -1,6 +1,8 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +24,7 @@ const EMPTY: Partial<StrategicPlan> = {
 export default function StrategicPlanPage() {
   const qc = useQueryClient();
   const { confirm } = useConfirm();
+  const toast = useToast();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "mande.admin");
   const [modal, setModal] = useState<Partial<StrategicPlan> | null>(null);
@@ -39,24 +42,38 @@ export default function StrategicPlanPage() {
         ? mandeApi.updatePlan(payload.id, payload)
         : mandeApi.createPlan(payload),
     onSuccess: () => {
+      toast.success("Strategic plan saved");
       qc.invalidateQueries({ queryKey: ["mande", "strategic-plans"] });
       setModal(null);
     },
+    onError: (err) => toast.error("Strategic plan not saved", apiErrorMessage(err, "Could not save the strategic plan.")),
   });
 
   const archiveMut = useMutation({
     mutationFn: (id: number) => mandeApi.archivePlan(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["mande", "strategic-plans"] }),
+    onSuccess: () => {
+      toast.success("Strategic plan archived");
+      qc.invalidateQueries({ queryKey: ["mande", "strategic-plans"] });
+    },
+    onError: (err) => toast.error("Strategic plan not archived", apiErrorMessage(err, "Could not archive the strategic plan.")),
   });
 
   const activateMut = useMutation({
     mutationFn: (id: number) => mandeApi.activatePlan(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["mande", "strategic-plans"] }),
+    onSuccess: () => {
+      toast.success("Strategic plan activated");
+      qc.invalidateQueries({ queryKey: ["mande", "strategic-plans"] });
+    },
+    onError: (err) => toast.error("Strategic plan not activated", apiErrorMessage(err, "Could not activate the strategic plan.")),
   });
 
   const delMut = useMutation({
     mutationFn: (id: number) => mandeApi.deletePlan(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["mande", "strategic-plans"] }),
+    onSuccess: () => {
+      toast.success("Strategic plan deleted");
+      qc.invalidateQueries({ queryKey: ["mande", "strategic-plans"] });
+    },
+    onError: (err) => toast.error("Strategic plan not deleted", apiErrorMessage(err, "Could not delete the strategic plan.")),
   });
 
   const plans = data ?? [];

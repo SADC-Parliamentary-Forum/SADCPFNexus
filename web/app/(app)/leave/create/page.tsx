@@ -24,6 +24,7 @@ import { LeaveBalanceStrip } from "@/components/leave/LeaveBalanceStrip";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 import { useFormDraft } from "@/lib/useFormDraft";
 
 type SegmentDraft = LeaveSegmentInput & { uid: string };
@@ -55,6 +56,7 @@ function hasInvalidDateRange(segment: Pick<SegmentDraft, "start_date" | "end_dat
 
 function LeaveCreatePageInner() {
   const { t } = useI18n();
+  const toast = useToast();
   const daysText = (n: number) => {
     const count = Math.round(Number(n) * 100) / 100;
     return t(Math.abs(count) === 1 ? "leave.create.dayOne" : "leave.create.dayMany", { count });
@@ -273,12 +275,15 @@ function LeaveCreatePageInner() {
       if (!asDraft) {
         await leaveApi.submit(created.id);
       }
+      toast.success(t(asDraft ? "leave.create.toast.draftSaved" : "leave.create.toast.submitted"));
       router.push(`/leave/${created.id}`);
     } catch (error: unknown) {
       const response = (error as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } })
         ?.response?.data;
       const first = response?.errors ? Object.values(response.errors).flat()[0] : null;
-      setSubmitError(String(first ?? response?.message ?? t("leave.create.saveFailed")));
+      const message = String(first ?? response?.message ?? t("leave.create.saveFailed"));
+      setSubmitError(message);
+      toast.error(t(asDraft ? "leave.create.toast.draftNotSaved" : "leave.create.toast.notSubmitted"), message);
       setSubmitting(false);
     }
   };

@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { budgetApi, type OrgBudgetLine } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function unwrapLines(payload: unknown): OrgBudgetLine[] {
   if (!payload || typeof payload !== "object") return [];
@@ -32,6 +34,7 @@ function unwrapBudgets(payload: unknown): Array<{ id: number; name: string; stat
 
 export default function CreateBudgetChangePage() {
   const router = useRouter();
+  const toast = useToast();
   const [type, setType] = useState("transfer");
   const [title, setTitle] = useState("");
   const [budgetId, setBudgetId] = useState("");
@@ -93,9 +96,13 @@ export default function CreateBudgetChangePage() {
       });
     },
     onSuccess: (res) => {
+      toast.success("Budget change created");
       router.push(`/budget/changes/${res.data.data.id}`);
     },
-    onError: () => setError("Could not create change request."),
+    onError: (err) => {
+      setError("Could not create change request.");
+      toast.error("Budget change not created", apiErrorMessage(err, "Could not create change request."));
+    },
   });
 
   return (

@@ -10,6 +10,7 @@ import { assigneeDepartmentName } from "@/lib/asset-assignee";
 import { canManageAssets, canManageHandovers, canPrintAssetLabels, getStoredUser } from "@/lib/auth";
 import { LabelEvidenceCard } from "@/components/assets/LabelEvidenceCard";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
@@ -48,6 +49,7 @@ function formatDuration(seconds: number | null | undefined): string {
 }
 
 export default function AssetViewPage() {
+  const toast = useToast();
   const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const numericId = Number(id);
@@ -205,8 +207,11 @@ export default function AssetViewPage() {
                 try {
                   const updated = await assetsApi.setParent(asset.id, parentId ? Number(parentId) : null);
                   setAsset((cur) => cur ? { ...cur, parent_asset_id: updated.data.data.parent_asset_id } : cur);
+                  toast.success("Parent asset updated");
                 } catch (err) {
-                  setError(apiErrorMessage(err, t("assets.mine.actionFailed")));
+                  const message = apiErrorMessage(err, t("assets.mine.actionFailed"));
+                  setError(message);
+                  toast.error("Could not update parent asset", message);
                 } finally {
                   setParentBusy(false);
                 }
@@ -238,6 +243,9 @@ export default function AssetViewPage() {
                     const updated = await assetsApi.setParent(asset.id, null);
                     setParentId("");
                     setAsset((cur) => cur ? { ...cur, parent_asset_id: updated.data.data.parent_asset_id } : cur);
+                    toast.success("Parent asset cleared");
+                  } catch (err) {
+                    toast.error("Could not clear parent asset", apiErrorMessage(err, t("assets.mine.actionFailed")));
                   } finally {
                     setParentBusy(false);
                   }
@@ -324,13 +332,21 @@ export default function AssetViewPage() {
               try {
                 const res = await assetsApi.uploadDocument(numericId, file, type);
                 if (res.data.data) setDocs((prev) => [res.data.data, ...prev]);
+                toast.success("Document uploaded");
+              } catch (err) {
+                toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload document."));
               } finally {
                 setUploading(false);
               }
             }}
             onDelete={async (id) => {
-              await assetsApi.deleteDocument(numericId, id);
-              setDocs((prev) => prev.filter((d) => d.id !== id));
+              try {
+                await assetsApi.deleteDocument(numericId, id);
+                setDocs((prev) => prev.filter((d) => d.id !== id));
+                toast.success("Document deleted");
+              } catch (err) {
+                toast.error("Could not delete document", apiErrorMessage(err, "Failed to delete document."));
+              }
             }}
             downloadUrl={(id) => assetsApi.documentDownloadUrl(numericId, id)}
             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"

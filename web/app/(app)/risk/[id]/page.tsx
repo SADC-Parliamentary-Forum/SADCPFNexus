@@ -53,6 +53,16 @@ const CHANGE_TYPE_ICONS: Record<string, { icon: string; color: string }> = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+const WORKFLOW_SUCCESS: Record<string, string> = {
+  submit: "Risk submitted",
+  review: "Risk review started",
+  approve: "Risk approved",
+  escalate: "Risk escalated",
+  close: "Risk closed",
+  archive: "Risk archived",
+  reopen: "Risk reopened",
+};
+
 function getStoredUser(): { roles?: string[]; id?: number } | null {
   return readStoredUser();
 }
@@ -91,6 +101,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
   const { id: paramId } = use(params);
   const { fmt } = useFormatDate();
   const { t } = useI18n();
+  const toast = useToast();
 
   const [risk, setRisk]       = useState<Risk | null>(null);
   const [actions, setActions] = useState<RiskAction[]>([]);
@@ -170,6 +181,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
       else if (modal === "archive")res = await riskApi.archive(risk.id);
       else if (modal === "reopen") res = await riskApi.reopen(risk.id);
       if (res) setRisk(res.data.data);
+      toast.success(WORKFLOW_SUCCESS[modal ?? ""] ?? "Risk updated");
       setModal(null);
       setModalData({});
       // Refresh history
@@ -177,6 +189,7 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.message ?? "Action failed." : "Action failed.";
       setModalError(msg);
+      toast.error(`Could not ${modal ?? "update"} risk`, msg);
     } finally {
       setWorking(false);
     }
@@ -205,8 +218,11 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
       setAttachments(atts.data.data ?? []);
       setActionForm(EMPTY_MITIGATION);
       setShowActionForm(false);
+      toast.success("Mitigation action added");
     } catch (err: unknown) {
-      setError(apiErrorMessage(err, t("risk.mitigation.failed")));
+      const message = apiErrorMessage(err, t("risk.mitigation.failed"));
+      setError(message);
+      toast.error("Mitigation action not added", message);
     } finally {
       setSavingAction(false);
     }
@@ -217,7 +233,10 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
     try {
       const res = await riskApi.completeAction(risk.id, action.id);
       setActions((prev) => prev.map((a) => a.id === action.id ? res.data.data : a));
-    } catch { /* silent */ }
+      toast.success("Action marked complete");
+    } catch (err) {
+      toast.error("Could not complete action", apiErrorMessage(err, "Please try again."));
+    }
   }
 
   if (loading) {
@@ -671,11 +690,21 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
               try {
                 const r = await riskAttachmentsApi.upload(risk.id, file, type);
                 setAttachments((prev) => [r.data.data, ...prev]);
+                toast.success("Document uploaded");
+              } catch (err) {
+                toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload document."));
+                throw err;
               } finally { setUploading(false); }
             }}
             onDelete={async (id: number) => {
-              await riskAttachmentsApi.delete(risk.id, id);
-              setAttachments((prev) => prev.filter((a) => a.id !== id));
+              try {
+                await riskAttachmentsApi.delete(risk.id, id);
+                setAttachments((prev) => prev.filter((a) => a.id !== id));
+                toast.success("Document deleted");
+              } catch (err) {
+                toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete document."));
+                throw err;
+              }
             }}
             downloadUrl={(id: number) => riskAttachmentsApi.downloadUrl(risk.id, id)}
           />
@@ -711,6 +740,9 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
                         try {
                           await policyApi.detachFromRisk(p.id, risk.id);
                           setRelatedPolicies((prev) => prev.filter((x) => x.id !== p.id));
+                          toast.success("Policy unlinked");
+                        } catch (err) {
+                          toast.error("Could not unlink policy", apiErrorMessage(err, "Please try again."));
                         } finally { setUnlinkingId(null); }
                       }}
                       disabled={unlinkingId === p.id}
@@ -755,6 +787,9 @@ export default function RiskDetailPage({ params }: { params: Promise<{ id: strin
                           setRelatedPolicies((prev) => [...prev, p]);
                           setPolicySearch("");
                           setSearchResults([]);
+                          toast.success("Policy linked");
+                        } catch (err) {
+                          toast.error("Could not link policy", apiErrorMessage(err, "Please try again."));
                         } finally { setLinkingId(null); }
                       }}
                       disabled={linkingId === p.id}

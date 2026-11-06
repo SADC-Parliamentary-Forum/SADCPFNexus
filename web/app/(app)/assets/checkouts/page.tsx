@@ -12,6 +12,7 @@ import { SearchField } from "@/components/ui/SearchField";
 import { AssetPicker } from "@/components/assets/AssetPicker";
 import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 
 type Checkout = {
   id: number;
@@ -50,6 +51,7 @@ function daysLate(value: string): number {
 }
 
 export default function AssetCheckoutsPage() {
+  const toast = useToast();
   const { t } = useI18n();
   const [rows, setRows] = useState<Checkout[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,12 +124,16 @@ export default function AssetCheckoutsPage() {
         expected_return_at: expectedReturn || undefined,
         condition_out: conditionOut,
       });
-      setNotice(t("assets.checkout.created", { asset: asset.tag_number || asset.name, name: borrower.name }));
+      const created = t("assets.checkout.created", { asset: asset.tag_number || asset.name, name: borrower.name });
+      setNotice(created);
+      toast.success(t("assets.checkout.toast.checkedOut"), created);
       setNewOpen(false);
       resetNew();
       setReload((n) => n + 1);
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.mine.actionFailed")));
+      const message = apiErrorMessage(err, t("assets.mine.actionFailed"));
+      setError(message);
+      toast.error(t("assets.checkout.toast.notCheckedOut"), message);
     } finally {
       setBusy(false);
     }
@@ -144,11 +150,15 @@ export default function AssetCheckoutsPage() {
         damage_reported: damage,
         notes: returnNotes.trim() || undefined,
       });
-      setNotice(t("assets.checkout.returned", { asset: returning.asset.tag_number || returning.asset.name || "" }));
+      const returned = t("assets.checkout.returned", { asset: returning.asset.tag_number || returning.asset.name || "" });
+      setNotice(returned);
+      toast.success(t("assets.checkout.toast.returned"), returned);
       setReturning(null);
       setReload((n) => n + 1);
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.mine.actionFailed")));
+      const message = apiErrorMessage(err, t("assets.mine.actionFailed"));
+      setError(message);
+      toast.error(t("assets.checkout.toast.notReturned"), message);
     } finally {
       setBusy(false);
     }

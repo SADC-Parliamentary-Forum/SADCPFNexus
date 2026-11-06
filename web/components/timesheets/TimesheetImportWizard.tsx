@@ -14,6 +14,7 @@ import { FormSection } from "@/components/ui/FormSection";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
 const FILTERS = [
@@ -54,6 +55,7 @@ export function TimesheetImportWizard({
   const { t } = useI18n();
   const idPrefix = `timesheet-import-${useId()}`;
   const { prompt } = useConfirm();
+  const toast = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [mode, setMode] = useState<"single" | "multi">(variant === "admin" ? "multi" : "single");
   const [targetUserId, setTargetUserId] = useState<number | "">("");
@@ -147,9 +149,12 @@ export function TimesheetImportWizard({
       const uploaded = res.data.data;
       setBatch(uploaded);
       setMessage(res.data.message);
+      toast.success("Timesheet file uploaded", res.data.message);
       await loadPreview(uploaded.id, "all", 1);
     } catch (err) {
-      setError(apiError(err, t("common.error")));
+      const msg = apiError(err, t("common.error"));
+      setError(msg);
+      toast.error("Could not upload timesheet file", msg);
     } finally {
       setBusy(null);
     }
@@ -163,9 +168,12 @@ export function TimesheetImportWizard({
       const res = await timesheetImportApi.confirm(batch.id, true);
       setBatch(res.data.data);
       setMessage(res.data.message);
+      toast.success("Timesheet import confirmed", res.data.message);
       await loadPreview(batch.id, filter, page);
     } catch (err) {
-      setError(apiError(err, t("common.error")));
+      const msg = apiError(err, t("common.error"));
+      setError(msg);
+      toast.error("Could not confirm import", msg);
     } finally {
       setBusy(null);
     }
@@ -181,9 +189,12 @@ export function TimesheetImportWizard({
     setError(null);
     try {
       await timesheetImportApi.map(batch.id, { employee_maps, apply_to_all: true });
+      toast.success("Employees mapped");
       await loadPreview(batch.id, filter, 1);
     } catch (err) {
-      setError(apiError(err, t("common.error")));
+      const msg = apiError(err, t("common.error"));
+      setError(msg);
+      toast.error("Could not map employees", msg);
     } finally {
       setBusy(null);
     }
@@ -202,8 +213,11 @@ export function TimesheetImportWizard({
       const res = await timesheetImportApi.verify(batch.id, reason);
       setBatch(res.data.data);
       setMessage(res.data.message);
+      toast.success("Import verified", res.data.message);
     } catch (err) {
-      setError(apiError(err, t("common.error")));
+      const msg = apiError(err, t("common.error"));
+      setError(msg);
+      toast.error("Could not verify import", msg);
     } finally {
       setBusy(null);
     }
@@ -223,8 +237,11 @@ export function TimesheetImportWizard({
       const res = await timesheetImportApi.rollback(batch.id, reason);
       setBatch(res.data.data);
       setMessage(res.data.message);
+      toast.success("Import rolled back", res.data.message);
     } catch (err) {
-      setError(apiError(err, t("common.error")));
+      const msg = apiError(err, t("common.error"));
+      setError(msg);
+      toast.error("Could not roll back import", msg);
     } finally {
       setBusy(null);
     }
@@ -244,8 +261,11 @@ export function TimesheetImportWizard({
       const res = await timesheetImportApi.reverse(batch.id, reason);
       setBatch(res.data.data);
       setMessage(res.data.message);
+      toast.success("Import reversed", res.data.message);
     } catch (err) {
-      setError(apiError(err, t("common.error")));
+      const msg = apiError(err, t("common.error"));
+      setError(msg);
+      toast.error("Could not reverse import", msg);
     } finally {
       setBusy(null);
     }

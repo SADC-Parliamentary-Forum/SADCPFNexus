@@ -6,11 +6,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { positionsApi, adminApi, type Position, type Department } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const GRADES = ["A1", "A2", "B1", "B2", "C1", "C2", "D1", "D2"];
 
 export default function PositionsPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [deptFilter, setDeptFilter] = useState<number | "">("");
   const [search, setSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Position | null>(null);
@@ -41,9 +44,11 @@ export default function PositionsPage() {
       qc.invalidateQueries({ queryKey: ["admin-positions"] });
       setDeleteTarget(null);
       setDeleteError("");
+      toast.success("Position deleted");
     },
     onError: (err: any) => {
       setDeleteError(err?.response?.data?.message ?? "Could not delete position.");
+      toast.error("Position not deleted", apiErrorMessage(err, "Could not delete position."));
     },
   });
 

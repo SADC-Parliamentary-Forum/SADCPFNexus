@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { programmeApi, type ProgrammeArrivalDeparture } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 type DraftRow = {
   category: string;
@@ -75,6 +77,7 @@ export default function ArrivalDepartureSection({
   initialRows: ProgrammeArrivalDeparture[];
   onToast: (msg: string) => void;
 }) {
+  const toast = useToast();
   const [rows, setRows] = useState<ProgrammeArrivalDeparture[]>(initialRows);
   const [drafts, setDrafts] = useState<Record<number, DraftRow>>(() =>
     Object.fromEntries(initialRows.map((r) => [r.id, toDraft(r)]))
@@ -91,14 +94,14 @@ export default function ArrivalDepartureSection({
     if (!draft) return;
     const err = validateDraft(draft);
     if (err) {
-      onToast(err);
+      toast.error("Arrival/departure row not saved", err);
       return;
     }
     try {
       const res = await programmeApi.updateArrivalDeparture(programmeId, id, buildPayload(draft));
       setRows((prev) => prev.map((r) => (r.id === id ? res.data.data : r)));
-    } catch {
-      onToast("Failed to save arrival/departure row.");
+    } catch (e) {
+      toast.error("Arrival/departure row not saved", apiErrorMessage(e, "Failed to save arrival/departure row."));
     }
   };
 
@@ -112,8 +115,8 @@ export default function ArrivalDepartureSection({
         return next;
       });
       onToast("Arrival/departure row removed.");
-    } catch {
-      onToast("Failed to remove arrival/departure row.");
+    } catch (e) {
+      toast.error("Arrival/departure row not removed", apiErrorMessage(e, "Failed to remove arrival/departure row."));
     }
   };
 
@@ -121,7 +124,7 @@ export default function ArrivalDepartureSection({
     if (!pending) return;
     const err = validateDraft(pending);
     if (err) {
-      onToast(err);
+      toast.error("Arrival/departure row not added", err);
       return;
     }
     setSaving(true);
@@ -132,8 +135,8 @@ export default function ArrivalDepartureSection({
       setDrafts((prev) => ({ ...prev, [created.id]: toDraft(created) }));
       setPending(null);
       onToast("Arrival/departure row added.");
-    } catch {
-      onToast("Failed to add arrival/departure row.");
+    } catch (e) {
+      toast.error("Arrival/departure row not added", apiErrorMessage(e, "Failed to add arrival/departure row."));
     } finally {
       setSaving(false);
     }

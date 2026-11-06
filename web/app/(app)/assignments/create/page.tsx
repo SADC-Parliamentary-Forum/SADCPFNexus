@@ -7,10 +7,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { assignmentsApi, adminApi, type AssignmentType, type AssignmentPriority, type TenantUserOption, type Department } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function CreateAssignmentPage() {
   const router = useRouter();
   const qc = useQueryClient();
+  const toast = useToast();
 
   const [form, setForm] = useState({
     title: "",
@@ -43,11 +46,13 @@ export default function CreateAssignmentPage() {
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["assignments"] });
       const id = (res.data as any).data?.id ?? (res.data as any).id;
+      toast.success("Assignment created");
       router.push(`/assignments/${id}`);
     },
     onError: (err: any) => {
       const errs = err?.response?.data?.errors ?? {};
       setErrors(errs);
+      toast.error("Assignment not created", apiErrorMessage(err, "Failed to create assignment. Check the form and try again."));
     },
   });
 

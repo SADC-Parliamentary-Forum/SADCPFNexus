@@ -16,6 +16,7 @@ import { isBudgetConfirmed } from "@/lib/procurementBudget";
 import { formatDateShort } from "@/lib/utils";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
 
 function getListData<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -28,6 +29,7 @@ function getListData<T>(payload: unknown): T[] {
 
 export default function ProcurementBudgetPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const user = getStoredUser();
   const canFinance =
     isSystemAdmin(user) ||
@@ -91,9 +93,12 @@ export default function ProcurementBudgetPage() {
       setReservedAmount("");
       setNotes("");
       setFormError(null);
+      toast.success("Budget reserved");
     },
     onError: (err: unknown) => {
-      setFormError(apiErrorMessage(err, "Failed to reserve budget."));
+      const message = apiErrorMessage(err, "Failed to reserve budget.");
+      setFormError(message);
+      toast.error("Budget not reserved", message);
     },
   });
 
@@ -101,6 +106,10 @@ export default function ProcurementBudgetPage() {
     mutationFn: (id: number) => procurementApi.approve(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["procurement", "budget"] });
+      toast.success("Procurement request approved");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not approve request", apiErrorMessage(err, "Failed to approve the request."));
     },
   });
 

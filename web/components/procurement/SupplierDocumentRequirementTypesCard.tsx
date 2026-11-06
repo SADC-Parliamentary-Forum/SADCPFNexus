@@ -6,6 +6,8 @@ import {
   supplierDocumentRequirementTypesApi,
   type SupplierDocumentRequirementType,
 } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const emptyForm = {
   code: "",
@@ -20,6 +22,7 @@ const emptyForm = {
 
 export function SupplierDocumentRequirementTypesCard() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const idPrefix = `supplier-doc-req-types-${useId()}`;
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
@@ -40,15 +43,25 @@ export function SupplierDocumentRequirementTypesCard() {
       setForm(emptyForm);
       setError(null);
       queryClient.invalidateQueries({ queryKey: ["supplier-document-requirement-types"] });
+      toast.success("Document type added");
     },
-    onError: (err: unknown) =>
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Could not create type."),
+    onError: (err: unknown) => {
+      const message = apiErrorMessage(err, "Could not create type.");
+      setError(message);
+      toast.error("Document type not added", message);
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<SupplierDocumentRequirementType> }) =>
       supplierDocumentRequirementTypesApi.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["supplier-document-requirement-types"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-document-requirement-types"] });
+      toast.success("Document type updated");
+    },
+    onError: (err: unknown) => {
+      toast.error("Document type not updated", apiErrorMessage(err, "Could not update the document type."));
+    },
   });
 
   return (

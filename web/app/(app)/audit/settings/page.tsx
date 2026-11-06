@@ -6,10 +6,13 @@ import { auditApi } from "@/lib/api";
 import { FormSection } from "@/components/ui/FormSection";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { AuditPageShell } from "@/components/audit/AuditChrome";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function AuditSettingsPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "settings"],
     queryFn: async () => (await auditApi.settings()).data.data,
@@ -25,7 +28,11 @@ export default function AuditSettingsPage() {
         charter_notes: notes || String((data as { charter_notes?: string })?.charter_notes ?? ""),
         plan_approval_mode: mode || String((data as { plan_approval_mode?: string })?.plan_approval_mode ?? "sg"),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["audit", "settings"] }),
+    onSuccess: () => {
+      toast.success("Audit settings saved");
+      qc.invalidateQueries({ queryKey: ["audit", "settings"] });
+    },
+    onError: (err) => toast.error("Audit settings not saved", apiErrorMessage(err, "Failed to save audit settings.")),
   });
 
   const currentMode = String((data as { plan_approval_mode?: string })?.plan_approval_mode ?? "sg");

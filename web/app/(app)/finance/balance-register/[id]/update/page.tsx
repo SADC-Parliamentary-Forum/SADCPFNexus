@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { bcreApi, type BalanceRegister } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 function fmt2(n: number | string) {
   return Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -21,6 +22,7 @@ const TYPE_OPTIONS = [
 export default function UpdateBalancePage() {
   const { id } = useParams<{ id: string }>();
   const router  = useRouter();
+  const toast = useToast();
 
   const [register, setRegister] = useState<BalanceRegister | null>(null);
   const [loadingReg, setLoadingReg] = useState(true);
@@ -61,9 +63,12 @@ export default function UpdateBalancePage() {
         reference_doc: referenceDoc.trim() || undefined,
         notes:         notes.trim() || undefined,
       });
+      toast.success("Balance updated");
       router.push(`/finance/balance-register/${register.id}`);
     } catch (e: unknown) {
-      setSubmitError(apiErrorMessage(e, "finance.bcre.updateFailed"));
+      const message = apiErrorMessage(e, "finance.bcre.updateFailed");
+      setSubmitError(message);
+      toast.error("Balance not updated", message);
     } finally {
       setSubmitting(false);
     }

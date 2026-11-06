@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { performanceTrackerApi, type PerformanceTracker } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const STATUS_LABELS: Record<string, string> = {
   excellent: "Excellent",
@@ -48,6 +50,7 @@ function formatDate(d: string) {
 export default function PerformanceProfilePage() {
   const params = useParams();
   const router = useRouter();
+  const toast = useToast();
   const id = params?.id != null ? Number(params.id) : NaN;
   const [tracker, setTracker] = useState<PerformanceTracker | null>(null);
   const [loading, setLoading] = useState(true);
@@ -93,8 +96,10 @@ export default function PerformanceProfilePage() {
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch {
+      toast.success("Notes saved");
+    } catch (err) {
       setError("Failed to save notes.");
+      toast.error("Notes not saved", apiErrorMessage(err, "Failed to save notes."));
     } finally {
       setSaving(false);
     }

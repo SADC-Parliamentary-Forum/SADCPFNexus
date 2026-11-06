@@ -5,11 +5,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { fleetApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function FleetVehicleDetailPage() {
   const params = useParams();
   const id = Number(params.id);
   const qc = useQueryClient();
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [gpsToast, setGpsToast] = useState<string | null>(null);
   const [gps, setGps] = useState({ lat: "", lng: "" });
@@ -75,8 +78,12 @@ export default function FleetVehicleDetailPage() {
       setError(null);
       setTrip({ started_at: "", ended_at: "", start_odometer_km: "", end_odometer_km: "", purpose: "", origin: "", destination: "" });
       invalidate();
+      toast.success("Trip logged");
     },
-    onError: () => setError("Could not create trip log."),
+    onError: (err: unknown) => {
+      setError("Could not create trip log.");
+      toast.error("Trip not logged", apiErrorMessage(err, "Could not create trip log."));
+    },
   });
 
   const createFuel = useMutation({
@@ -92,8 +99,12 @@ export default function FleetVehicleDetailPage() {
       setError(null);
       setFuel({ logged_at: "", litres: "", cost_amount: "", odometer_km: "", station: "" });
       invalidate();
+      toast.success("Fuel log added");
     },
-    onError: () => setError("Could not create fuel log."),
+    onError: (err: unknown) => {
+      setError("Could not create fuel log.");
+      toast.error("Fuel log not added", apiErrorMessage(err, "Could not create fuel log."));
+    },
   });
 
   const createService = useMutation({
@@ -111,8 +122,12 @@ export default function FleetVehicleDetailPage() {
     onSuccess: () => {
       setError(null);
       invalidate();
+      toast.success("Service schedule added");
     },
-    onError: () => setError("Could not create service schedule."),
+    onError: (err: unknown) => {
+      setError("Could not create service schedule.");
+      toast.error("Service schedule not added", apiErrorMessage(err, "Could not create service schedule."));
+    },
   });
 
   const updateGps = useMutation({
@@ -125,8 +140,12 @@ export default function FleetVehicleDetailPage() {
       setError(null);
       setGpsToast("Last-known GPS saved (manual override).");
       invalidate();
+      toast.success("GPS location saved");
     },
-    onError: () => setError("Could not save GPS location."),
+    onError: (err: unknown) => {
+      setError("Could not save GPS location.");
+      toast.error("GPS location not saved", apiErrorMessage(err, "Could not save GPS location."));
+    },
   });
 
   const updateTelematics = useMutation({
@@ -138,8 +157,12 @@ export default function FleetVehicleDetailPage() {
       setError(null);
       setGpsToast("Telematics device mapping saved.");
       invalidate();
+      toast.success("Telematics device saved");
     },
-    onError: () => setError("Could not save telematics device id."),
+    onError: (err: unknown) => {
+      setError("Could not save telematics device id.");
+      toast.error("Telematics device not saved", apiErrorMessage(err, "Could not save telematics device id."));
+    },
   });
 
   const mapsHref =

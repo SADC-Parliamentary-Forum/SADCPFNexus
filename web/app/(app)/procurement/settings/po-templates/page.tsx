@@ -7,10 +7,13 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { poTemplatesApi, type PoDocumentTemplate } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export default function PoTemplatesPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "procurement.admin");
   const canPublish = canAdmin || hasPermission(user, "procurement.template.publish");
@@ -29,17 +32,33 @@ export default function PoTemplatesPage() {
       qc.invalidateQueries({ queryKey: ["po-templates"] });
       setName("");
       setMessage(t("po.templates.created"));
+      toast.success("PO template created");
+    },
+    onError: (err: unknown) => {
+      toast.error("PO template not created", apiErrorMessage(err, "Failed to create the PO template."));
     },
   });
 
   const defaultMut = useMutation({
     mutationFn: (id: number) => poTemplatesApi.setDefault(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["po-templates"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["po-templates"] });
+      toast.success("Default PO template set");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not set default template", apiErrorMessage(err, "Failed to set the default PO template."));
+    },
   });
 
   const retireMut = useMutation({
     mutationFn: (id: number) => poTemplatesApi.retire(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["po-templates"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["po-templates"] });
+      toast.success("PO template retired");
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not retire template", apiErrorMessage(err, "Failed to retire the PO template."));
+    },
   });
 
   if (!canAdmin) {

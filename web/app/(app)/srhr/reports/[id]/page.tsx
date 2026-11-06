@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { researcherReportsApi, type ResearcherReport } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
@@ -28,6 +30,7 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
   const { id }     = use(params);
   const router     = useRouter();
   const { confirm } = useConfirm();
+  const toast      = useToast();
   const [report, setReport]               = useState<ResearcherReport | null>(null);
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState<string | null>(null);
@@ -53,8 +56,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
     try {
       const res = await researcherReportsApi.submit(Number(id));
       setReport(res.data.data);
-    } catch {
-      setError("Failed to submit report.");
+      toast.success("Report submitted");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Failed to submit report.");
+      setError(message);
+      toast.error("Report not submitted", message);
     } finally {
       setSubmitting(false);
     }
@@ -66,8 +72,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
     try {
       const res = await researcherReportsApi.acknowledge(Number(id));
       setReport(res.data.data);
-    } catch {
-      setError("Failed to acknowledge report.");
+      toast.success("Report acknowledged");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Failed to acknowledge report.");
+      setError(message);
+      toast.error("Could not acknowledge report", message);
     } finally {
       setAcknowledging(false);
     }
@@ -81,8 +90,11 @@ export default function ReportDetailPage({ params }: { params: Promise<{ id: str
       setReport(res.data.data);
       setShowRevisionModal(false);
       setRevisionNotes("");
-    } catch {
-      setError("Failed to request revision.");
+      toast.success("Revision requested");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Failed to request revision.");
+      setError(message);
+      toast.error("Could not request revision", message);
     } finally {
       setRequestingRevision(false);
     }

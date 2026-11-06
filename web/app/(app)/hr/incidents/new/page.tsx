@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { hrIncidentsApi } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 // ─── Step config ──────────────────────────────────────────────────────────────
 const STEPS = ["Mode & Severity", "Core Details", "Review & Submit"];
@@ -52,6 +53,7 @@ const SEVERITIES = [
 
 export default function NewIncidentPage() {
   const router = useRouter();
+  const toast = useToast();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,10 +94,13 @@ export default function NewIncidentPage() {
         severity,
       });
 
+      toast.success("Incident report submitted");
       router.push("/hr/incidents");
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string } }; message?: string };
-      setError(ax.response?.data?.message ?? ax.message ?? "Failed to submit incident report.");
+      const message = ax.response?.data?.message ?? ax.message ?? "Failed to submit incident report.";
+      setError(message);
+      toast.error("Incident report not submitted", message);
     } finally {
       setSubmitting(false);
     }

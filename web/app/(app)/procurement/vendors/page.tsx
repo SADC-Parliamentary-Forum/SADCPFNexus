@@ -11,6 +11,8 @@ import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, getLastPage, getListData, getTotal } from "@/lib/listPagination";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { EmptyState as SharedEmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const PAYMENT_TERMS = ["Immediate", "Net 15", "Net 30", "Net 45", "Net 60", "Net 90"] as const;
@@ -161,6 +163,7 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
 }) {
   const isEdit = !!vendor;
   const queryClient = useQueryClient();
+  const toast = useToast();
   const firstInputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState<FormTab>("basic");
   const [form, setForm] = useState<VendorFormValues>(defaultForm(vendor));
@@ -181,13 +184,13 @@ function VendorFormModal({ vendor, categories, onClose, onSaved }: {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      toast.success(isEdit ? "Vendor updated" : "Vendor created");
       onSaved();
     },
     onError: (err: unknown) => {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })
-          ?.response?.data?.message ?? "Failed to save vendor.";
+      const msg = apiErrorMessage(err, "Failed to save vendor.");
       setFormError(msg);
+      toast.error(isEdit ? "Vendor not updated" : "Vendor not created", msg);
     },
   });
 
@@ -455,12 +458,17 @@ function DeleteDialog({
   onDeleted: () => void;
 }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const mutation = useMutation({
     mutationFn: () => vendorsApi.destroy(vendor.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      toast.success("Vendor deactivated");
       onDeleted();
+    },
+    onError: (err: unknown) => {
+      toast.error("Vendor not deactivated", apiErrorMessage(err, "Failed to deactivate vendor. Please try again."));
     },
   });
 
@@ -510,6 +518,7 @@ function DeleteDialog({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function VendorsPage() {
+  const toast = useToast();
   const [canManageVendors, setCanManageVendors] = useState(false);
   useEffect(() => {
     setCanManageVendors(canManageProcurementVendors(getStoredUser()));
@@ -562,8 +571,11 @@ export default function VendorsPage() {
       await vendorsApi.changePortalUserPassword(pwVendorId, pwSelectedUser.id, pw, pwConfirm, true);
       setPwSuccess(true);
       setPw(""); setPwConfirm("");
+      toast.success("Portal password reset");
     } catch (e: unknown) {
-      setPwError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to reset password.");
+      const message = apiErrorMessage(e, "Failed to reset password.");
+      setPwError(message);
+      toast.error("Password not reset", message);
     } finally {
       setPwSaving(false);
     }

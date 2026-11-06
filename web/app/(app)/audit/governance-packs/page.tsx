@@ -7,6 +7,8 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormSection } from "@/components/ui/FormSection";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { AuditTable } from "@/components/audit/AuditChrome";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 type PlanProgress = {
   plan_id?: number;
@@ -37,6 +39,7 @@ type GovernancePack = {
 
 export default function AuditGovernancePacksPage() {
   const { t } = useI18n();
+  const toast = useToast();
   const [title, setTitle] = useState("FSC meeting pack");
   const [year, setYear] = useState(String(new Date().getFullYear()));
   const [pack, setPack] = useState<GovernancePack | null>(null);
@@ -48,7 +51,11 @@ export default function AuditGovernancePacksPage() {
         fiscal_year: Number(year),
         audience: "fsc",
       })).data.data as GovernancePack,
-    onSuccess: (row) => setPack(row),
+    onSuccess: (row) => {
+      setPack(row);
+      toast.success("Governance pack generated");
+    },
+    onError: (err) => toast.error("Governance pack not generated", apiErrorMessage(err, "Failed to generate the governance pack.")),
   });
 
   const progress = pack?.payload?.plan_progress ?? [];

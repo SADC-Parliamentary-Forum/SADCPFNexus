@@ -11,6 +11,8 @@ import { formatDateShort, formatCurrency } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { SupplierActivityPanel, SupplierChangeRequestsPanel, SupplierRegisterPanel } from "@/components/procurement/Supplier360Panels";
 import { safeExternalUrl } from "@/lib/safeExternalUrl";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 function canManageVendors(): boolean {
   return canManageProcurementVendors(getStoredUser());
@@ -164,6 +166,7 @@ interface EditModalProps {
 
 function EditModal({ vendor, onClose }: EditModalProps) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [tab, setTab] = useState<EditTab>("basic");
   const [form, setForm] = useState({
     name:                vendor.name                ?? "",
@@ -206,11 +209,13 @@ function EditModal({ vendor, onClose }: EditModalProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendor", vendor.id] });
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      toast.success("Vendor updated");
       onClose();
     },
     onError: (err: unknown) => {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to update vendor.";
+      const msg = apiErrorMessage(err, "Failed to update vendor.");
       setFormError(msg);
+      toast.error("Vendor not updated", msg);
     },
   });
 
@@ -417,12 +422,17 @@ function EditModal({ vendor, onClose }: EditModalProps) {
 function DeactivateDialog({ vendor, onClose }: { vendor: Vendor; onClose: () => void }) {
   const queryClient = useQueryClient();
   const router = useRouter();
+  const toast = useToast();
 
   const mutation = useMutation({
     mutationFn: () => vendorsApi.destroy(vendor.id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vendors"] });
+      toast.success("Vendor deactivated");
       router.push("/procurement/vendors");
+    },
+    onError: (err: unknown) => {
+      toast.error("Vendor not deactivated", apiErrorMessage(err, "Failed to deactivate vendor."));
     },
   });
 
@@ -475,6 +485,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
   const { id } = React.use(params);
   const vendorId = Number(id);
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [showEdit, setShowEdit]               = useState(false);
   const [showDeactivate, setShowDeactivate]   = useState(false);
   const [showReject, setShowReject]           = useState(false);
@@ -513,7 +524,13 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
 
   const approveMutation = useMutation({
     mutationFn: () => vendorsApi.approve(vendorId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
+      toast.success("Vendor approved");
+    },
+    onError: (e: unknown) => {
+      toast.error("Could not approve vendor", apiErrorMessage(e, "Failed to approve vendor."));
+    },
   });
 
   const rejectMutation = useMutation({
@@ -522,9 +539,12 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
       queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
       setShowReject(false);
       setRejectReason("");
+      toast.success("Vendor rejected");
     },
     onError: (e: unknown) => {
-      setRejectError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to reject vendor.");
+      const message = apiErrorMessage(e, "Failed to reject vendor.");
+      setRejectError(message);
+      toast.error("Could not reject vendor", message);
     },
   });
 
@@ -747,10 +767,23 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 readOnly={!canManageVendors()}
                 onUpload={async (file, type) => {
                   setUploading(true);
-                  try { const r = await vendorAttachmentsApi.upload(vendorId, file, type); setAttachments((p) => [r.data.data, ...p]); }
-                  finally { setUploading(false); }
+                  try {
+                    const r = await vendorAttachmentsApi.upload(vendorId, file, type);
+                    setAttachments((p) => [r.data.data, ...p]);
+                    toast.success("Document uploaded");
+                  } catch (err) {
+                    toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload the document."));
+                  } finally { setUploading(false); }
                 }}
-                onDelete={async (id) => { await vendorAttachmentsApi.delete(vendorId, id); setAttachments((p) => p.filter((a) => a.id !== id)); }}
+                onDelete={async (id) => {
+                  try {
+                    await vendorAttachmentsApi.delete(vendorId, id);
+                    setAttachments((p) => p.filter((a) => a.id !== id));
+                    toast.success("Document deleted");
+                  } catch (err) {
+                    toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete the document."));
+                  }
+                }}
                 downloadUrl={(id) => vendorAttachmentsApi.downloadUrl(vendorId, id)}
               />
             </div>
@@ -784,7 +817,12 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
             <p className="text-sm">Branch: {vendor.bank_branch || "—"}</p>
             <p className="text-xs text-neutral-500">Finance verified: {vendor.finance_verified_at ? formatDateShort(vendor.finance_verified_at) : "Not verified"}</p>
             {canManageVendors() && !vendor.finance_verified_at && (
-              <button type="button" className="btn-secondary text-sm" onClick={() => vendorsApi.verifyBanking(vendorId).then(() => queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] }))}>
+              <button type="button" className="btn-secondary text-sm" onClick={() => vendorsApi.verifyBanking(vendorId)
+                .then(() => {
+                  queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
+                  toast.success("Banking details verified");
+                })
+                .catch((err: unknown) => toast.error("Banking not verified", apiErrorMessage(err, "Failed to verify banking details.")))}>
                 Verify banking
               </button>
             )}
@@ -1182,6 +1220,9 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                       setEvalContractId("");
                       setEvalNotes("");
                       refetchEvaluations();
+                      toast.success("Evaluation submitted");
+                    } catch (err) {
+                      toast.error("Evaluation not submitted", apiErrorMessage(err, "Failed to submit the evaluation."));
                     } finally {
                       setEvalSubmitting(false);
                     }
@@ -1421,9 +1462,14 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 <button
                   type="button"
                   onClick={async () => {
-                    await vendorsApi.unblacklist(vendorId);
-                    queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
-                    queryClient.invalidateQueries({ queryKey: ["vendors"] });
+                    try {
+                      await vendorsApi.unblacklist(vendorId);
+                      queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
+                      queryClient.invalidateQueries({ queryKey: ["vendors"] });
+                      toast.success("Vendor removed from blacklist");
+                    } catch (err) {
+                      toast.error("Could not remove from blacklist", apiErrorMessage(err, "Failed to remove the vendor from the blacklist."));
+                    }
                   }}
                   className="flex items-center gap-1.5 rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 hover:bg-green-100 transition-colors"
                 >
@@ -1750,12 +1796,17 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-800 disabled:opacity-60 transition-colors"
                 disabled={!blacklistReason.trim()}
                 onClick={async () => {
-                  await vendorsApi.blacklist(vendorId, blacklistReason, blacklistRef || undefined);
-                  queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
-                  queryClient.invalidateQueries({ queryKey: ["vendors"] });
-                  setShowBlacklist(false);
-                  setBlacklistReason("");
-                  setBlacklistRef("");
+                  try {
+                    await vendorsApi.blacklist(vendorId, blacklistReason, blacklistRef || undefined);
+                    queryClient.invalidateQueries({ queryKey: ["vendor", vendorId] });
+                    queryClient.invalidateQueries({ queryKey: ["vendors"] });
+                    setShowBlacklist(false);
+                    setBlacklistReason("");
+                    setBlacklistRef("");
+                    toast.success("Vendor blacklisted");
+                  } catch (err) {
+                    toast.error("Vendor not blacklisted", apiErrorMessage(err, "Failed to blacklist the vendor."));
+                  }
                 }}
               >
                 <span className="material-symbols-outlined text-[14px]">gpp_bad</span>
@@ -1882,10 +1933,11 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                     setShowPortalPwModal(false);
                     setPortalPassword("");
                     setPortalPasswordConfirm("");
+                    toast.success("Supplier password reset");
                   } catch (e: unknown) {
-                    const msg = (e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data?.message
-                      ?? "Failed to reset supplier password.";
+                    const msg = apiErrorMessage(e, "Failed to reset supplier password.");
                     setPortalPwError(msg);
+                    toast.error("Password not reset", msg);
                   } finally {
                     setPortalPwSaving(false);
                   }

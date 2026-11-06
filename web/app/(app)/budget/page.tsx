@@ -10,6 +10,8 @@ import {
 } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function unwrapLines(payload: unknown): OrgBudgetLine[] {
   if (!payload || typeof payload !== "object") return [];
@@ -29,6 +31,7 @@ function money(n: number): string {
 
 export default function BudgetControlPage() {
   const { t } = useI18n();
+  const toast = useToast();
   const [lines, setLines] = useState<OrgBudgetLine[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -147,8 +150,11 @@ export default function BudgetControlPage() {
               credit: amount,
             });
             setJournalMsg("Journal posted against the budget line GL code. This does not own bank accounts.");
-          } catch {
-            setJournalMsg("Unable to post journal. Finance write access and a balanced amount are required.");
+            toast.success("Journal posted");
+          } catch (err) {
+            const message = "Unable to post journal. Finance write access and a balanced amount are required.";
+            setJournalMsg(message);
+            toast.error("Journal not posted", apiErrorMessage(err, message));
           }
         }}
       >

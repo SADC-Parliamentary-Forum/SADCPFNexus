@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { invoicesApi, purchaseOrdersApi, goodsReceiptsApi, type Invoice, type PurchaseOrder, type GoodsReceiptNote } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csvExport";
@@ -10,6 +11,8 @@ import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   received: { label: "Received", cls: "badge-warning",  icon: "inbox"         },
@@ -34,6 +37,8 @@ const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
 export default function InvoicesPage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const toast = useToast();
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -113,13 +118,13 @@ export default function InvoicesPage() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       setShowModal(false);
-      window.location.href = `/procurement/invoices/${res.data.data.id}`;
+      toast.success("Invoice recorded");
+      router.push(`/procurement/invoices/${res.data.data.id}`);
     },
     onError: (e: unknown) => {
-      setSubmitError(
-        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to record invoice."
-      );
+      const message = apiErrorMessage(e, "Failed to record invoice.");
+      setSubmitError(message);
+      toast.error("Invoice not recorded", message);
     },
   });
 

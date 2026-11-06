@@ -7,6 +7,8 @@ import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Stepper } from "@/components/ui/Stepper";
 import { FormSection } from "@/components/ui/FormSection";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const STEPS = [
   { label: "Request Details" },
@@ -26,6 +28,7 @@ interface FormData {
 
 export default function ImprestCreatePage() {
   const router = useRouter();
+  const toast = useToast();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<FormData>({
@@ -70,8 +73,13 @@ export default function ImprestCreatePage() {
       if (!asDraft && createdId) {
         await imprestApi.submit(createdId);
       }
+      toast.success(asDraft ? "Imprest request saved as draft" : "Imprest request submitted");
       router.push("/imprest");
-    } catch {
+    } catch (err) {
+      toast.error(
+        asDraft ? "Imprest request not saved" : "Imprest request not submitted",
+        apiErrorMessage(err, "Failed to save the imprest request. Please try again."),
+      );
       setSubmitting(false);
     } finally {
       setSubmitting(false);

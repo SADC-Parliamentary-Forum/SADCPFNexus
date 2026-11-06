@@ -21,6 +21,7 @@ import {
 import { formatDateShort } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { NexusPicker } from "@/components/ui/NexusPicker";
+import { useToast } from "@/components/ui/Toast";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -58,6 +59,7 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
   const { id } = use(params);
   const reqId = Number(id);
   const queryClient = useQueryClient();
+  const toast = useToast();
   const quoteFileInputRef = useRef<HTMLInputElement>(null);
   const manager = canManage();
   const [showIssue, setShowIssue] = useState(false);
@@ -178,8 +180,11 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
       await quoteAttachmentsApi.delete(reqId, quoteId, attachmentId);
       await refreshQuotes();
       setError(null);
+      toast.success("Quote attachment deleted");
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to delete quote attachment.");
+      const message = apiErrorMessage(err, "Failed to delete quote attachment.");
+      setError(message);
+      toast.error("Quote attachment not deleted", message);
     } finally {
       setDeletingAttachmentId(null);
     }
@@ -200,9 +205,13 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
       queryClient.invalidateQueries({ queryKey: ["rfq-request", reqId] });
       setShowIssue(false);
       setError(null);
+      toast.success("RFQ issued");
     },
-    onError: (err: unknown) =>
-      setError(apiErrorMessage(err, "Failed to issue RFQ.")),
+    onError: (err: unknown) => {
+      const message = apiErrorMessage(err, "Failed to issue RFQ.");
+      setError(message);
+      toast.error("RFQ not issued", message);
+    },
   });
 
   const saveQuoteMutation = useMutation({
@@ -236,9 +245,17 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
 
       resetQuoteModal();
       setError(uploadFailed ? "Quote saved, but one or more files failed to upload." : null);
+      if (uploadFailed) {
+        toast.warning("Quote saved", "One or more files failed to upload.");
+      } else {
+        toast.success("Quote saved");
+      }
     },
-    onError: (err: unknown) =>
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to save quote."),
+    onError: (err: unknown) => {
+      const message = apiErrorMessage(err, "Failed to save quote.");
+      setError(message);
+      toast.error("Quote not saved", message);
+    },
   });
 
   const awardMutation = useMutation({
@@ -259,9 +276,13 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
       setCoiHasConflict(false);
       setCoiNotes("");
       setError(null);
+      toast.success("Contract awarded");
     },
-    onError: (err: unknown) =>
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to award quote."),
+    onError: (err: unknown) => {
+      const message = apiErrorMessage(err, "Failed to award quote.");
+      setError(message);
+      toast.error("Could not award contract", message);
+    },
   });
 
   if (requestQuery.isLoading) return <div className="w-full min-w-0 card p-6">Loading RFQ...</div>;
@@ -543,6 +564,11 @@ export default function RfqDetailPage({ params }: { params: Promise<{ id: string
 
             const uploadFailed = await uploadQuoteFiles(uploadTargetQuoteId, files);
             setError(uploadFailed ? "One or more quote files failed to upload." : null);
+            if (uploadFailed) {
+              toast.error("Quote files not uploaded", "One or more quote files failed to upload.");
+            } else {
+              toast.success("Quote files uploaded");
+            }
           }}
         />
       )}

@@ -7,10 +7,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supplierPortalApi } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 
 export default function SupplierProfilePage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [website, setWebsite] = useState("");
@@ -66,9 +68,13 @@ export default function SupplierProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["supplier-profile"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
       setError(null);
+      toast.success("Supplier profile saved");
     },
-    onError: (err: unknown) =>
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to update supplier profile."),
+    onError: (err: unknown) => {
+      const message = apiErrorMessage(err, "Failed to update supplier profile.");
+      setError(message);
+      toast.error("Supplier profile not saved", message);
+    },
   });
 
   if (profileQuery.isLoading) return <div className="card p-6">Loading supplier profile...</div>;
@@ -185,6 +191,7 @@ export default function SupplierProfilePage() {
 
 function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: string; emailVerified: boolean }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const declarationsQuery = useQuery({
     queryKey: ["supplier-declarations"],
     queryFn: () => supplierPortalApi.declarations().then((r) => r.data.data),
@@ -199,6 +206,10 @@ function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: st
       queryClient.invalidateQueries({ queryKey: ["supplier-declarations"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-completeness"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
+      toast.success("Declarations accepted");
+    },
+    onError: (err: unknown) => {
+      toast.error("Declarations not accepted", apiErrorMessage(err, "Failed to accept the declarations."));
     },
   });
   const submitMutation = useMutation({
@@ -207,10 +218,18 @@ function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: st
       queryClient.invalidateQueries({ queryKey: ["supplier-profile"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-completeness"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
+      toast.success("Application submitted");
+    },
+    onError: (err: unknown) => {
+      toast.error("Application not submitted", apiErrorMessage(err, "Failed to submit your application."));
     },
   });
   const resendMutation = useMutation({
     mutationFn: () => supplierPortalApi.resendVerification(),
+    onSuccess: () => toast.success("Verification email sent"),
+    onError: (err: unknown) => {
+      toast.error("Verification email not sent", apiErrorMessage(err, "Failed to resend the verification email."));
+    },
   });
 
   const pending = (declarationsQuery.data ?? []).filter((row) => !row.accepted).map((row) => row.id);

@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { peopleRowMatchesQuery } from "@/lib/peopleRowSearch";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { labelledObjectCell } from "@/components/ui/LabelledRecord";
 
@@ -29,6 +31,7 @@ function asRows(payload: unknown): Record<string, unknown>[] {
 
 export default function Page() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState({ document_type: "", document_id: "", document_hash: "" });
@@ -40,15 +43,24 @@ export default function Page() {
         document_hash: form.document_hash.trim(),
       }),
     onSuccess: () => {
+      toast.success("E-sign request created");
       setForm({ document_type: "", document_id: "", document_hash: "" });
       setErr(null);
       qc.invalidateQueries({ queryKey: ["people-authority", "esign"] });
     },
-    onError: () => setErr("Could not create the e-sign request. Type, document id, and hash are required."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not create the e-sign request. Type, document id, and hash are required.");
+      setErr(message);
+      toast.error("E-sign request not created", message);
+    },
   });
   const submit = useMutation({
     mutationFn: (id: number) => peopleAuthorityApi.submitEsign(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["people-authority", "esign"] }),
+    onSuccess: () => {
+      toast.success("E-sign request submitted");
+      qc.invalidateQueries({ queryKey: ["people-authority", "esign"] });
+    },
+    onError: (e) => toast.error("E-sign request not submitted", apiErrorMessage(e, "Could not submit the e-sign request.")),
   });
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["people-authority","esign"],

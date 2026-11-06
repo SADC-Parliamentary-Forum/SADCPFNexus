@@ -11,6 +11,8 @@ import {
 } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 type ModalState =
   | { mode: "proforma"; purchaseOrder: PurchaseOrder }
@@ -30,6 +32,7 @@ const statusConfig: Record<string, string> = {
 
 export default function SupplierInvoicesPage() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [modal, setModal] = useState<ModalState>(null);
   const [vendorInvoiceNumber, setVendorInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split("T")[0]);
@@ -130,17 +133,18 @@ export default function SupplierInvoicesPage() {
       return response;
     },
     onSuccess: async () => {
+      const label = modal?.mode === "proforma" ? "Proforma invoice" : "Final invoice";
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["supplier-invoices"] }),
         queryClient.invalidateQueries({ queryKey: ["supplier-purchase-orders"] }),
       ]);
       resetModal();
+      toast.success(`${label} submitted`);
     },
     onError: (mutationError: unknown) => {
-      setError(
-        (mutationError as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to submit invoice."
-      );
+      const message = apiErrorMessage(mutationError, "Failed to submit invoice.");
+      setError(message);
+      toast.error("Invoice not submitted", message);
     },
   });
 

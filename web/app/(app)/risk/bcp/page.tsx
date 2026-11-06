@@ -17,6 +17,8 @@ import {
 } from "@/lib/api";
 import { TableEmpty, ErrorBanner } from "@/components/ui/EmptyState";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 function riskOptionLabel(risk: Pick<Risk, "id" | "risk_code" | "title">): string {
   const code = risk.risk_code?.trim();
@@ -35,6 +37,7 @@ function policyOptionLabel(policy: Pick<AssetInsurancePolicy, "id" | "policy_num
 export default function RiskBcpPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [riskId, setRiskId] = useState("");
   const [title, setTitle] = useState("");
@@ -85,8 +88,13 @@ export default function RiskBcpPage() {
       setTitle("");
       setNotes("");
       qc.invalidateQueries({ queryKey: ["risk", "bcp-links"] });
+      toast.success("BCP/insurance link created");
     },
-    onError: () => setError("Could not create BCP/insurance link."),
+    onError: (err) => {
+      const message = apiErrorMessage(err, "Could not create BCP/insurance link.");
+      setError(message);
+      toast.error("BCP/insurance link not created", message);
+    },
   });
 
   const createDep = useMutation({
@@ -100,8 +108,13 @@ export default function RiskBcpPage() {
       setError(null);
       setRelatedRiskId("");
       qc.invalidateQueries({ queryKey: ["risk", "dependencies"] });
+      toast.success("Related risk linked");
     },
-    onError: () => setError("Could not link related risk."),
+    onError: (err) => {
+      const message = apiErrorMessage(err, "Could not link related risk.");
+      setError(message);
+      toast.error("Related risk not linked", message);
+    },
   });
 
   const createExercise = useMutation({
@@ -116,15 +129,27 @@ export default function RiskBcpPage() {
       setError(null);
       setExerciseTitle("");
       qc.invalidateQueries({ queryKey: ["risk", "bcp-exercises"] });
+      toast.success("BCP exercise scheduled");
     },
-    onError: () => setError("Could not schedule BCP exercise."),
+    onError: (err) => {
+      const message = apiErrorMessage(err, "Could not schedule BCP exercise.");
+      setError(message);
+      toast.error("BCP exercise not scheduled", message);
+    },
   });
 
   const completeExercise = useMutation({
     mutationFn: (id: number) =>
       riskApi.completeBcpExercise(id, { result: "pass", outcome_notes: "Completed via ops UI" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["risk", "bcp-exercises"] }),
-    onError: () => setError("Could not complete exercise."),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["risk", "bcp-exercises"] });
+      toast.success("BCP exercise completed");
+    },
+    onError: (err) => {
+      const message = apiErrorMessage(err, "Could not complete exercise.");
+      setError(message);
+      toast.error("Could not complete exercise", message);
+    },
   });
 
   const renewPolicy = useMutation({
@@ -141,8 +166,13 @@ export default function RiskBcpPage() {
     onSuccess: () => {
       setError(null);
       qc.invalidateQueries({ queryKey: ["risk", "insurance-renewals"] });
+      toast.success("Insurance policy renewed");
     },
-    onError: () => setError("Could not renew insurance policy."),
+    onError: (err) => {
+      const message = apiErrorMessage(err, "Could not renew insurance policy.");
+      setError(message);
+      toast.error("Insurance policy not renewed", message);
+    },
   });
 
   const links = (linksQuery.data ?? []) as RiskBcpLink[];

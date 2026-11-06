@@ -15,6 +15,8 @@ import {
   registrationPresentation,
   type SupplierTone,
 } from "@/lib/supplierDashboard";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 function StatusCard({
   testId,
@@ -57,13 +59,20 @@ function StatusCard({
 export default function SupplierDashboardPage() {
   const { t } = useI18n();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["supplier-dashboard"],
     queryFn: () => supplierPortalApi.dashboard().then((response) => response.data.data),
   });
   const submitMutation = useMutation({
     mutationFn: () => supplierPortalApi.submitApplication(),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
+      toast.success("Application submitted");
+    },
+    onError: (err: unknown) => {
+      toast.error("Application not submitted", apiErrorMessage(err, "Failed to submit your application."));
+    },
   });
 
   if (isLoading) {

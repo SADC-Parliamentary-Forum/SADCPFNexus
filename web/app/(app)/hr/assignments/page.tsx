@@ -7,6 +7,8 @@ import api, { workAssignmentsApi, WorkAssignment, User } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 type StatsData = { total: number; by_status: Record<string, number>; overdue: number; my_assignments: number };
 
@@ -47,6 +49,7 @@ function statusLabel(status: WorkAssignment["status"]) {
 
 export default function AssignmentsPage() {
   const router = useRouter();
+  const toast = useToast();
   const currentUser = getStoredUser();
 
   const [tab, setTab] = useState<"mine" | "by_me" | "all" | "overdue">("mine");
@@ -146,10 +149,12 @@ export default function AssignmentsPage() {
       });
       setShowModal(false);
       setForm({ title: "", assigned_to: "", description: "", priority: "medium", due_date: "", estimated_hours: "" });
+      toast.success("Assignment created");
       loadAssignments();
       loadStats();
-    } catch {
+    } catch (err) {
       setFormError("Failed to create assignment. Please try again.");
+      toast.error("Assignment not created", apiErrorMessage(err, "Failed to create assignment. Please try again."));
     } finally {
       setSubmitting(false);
     }

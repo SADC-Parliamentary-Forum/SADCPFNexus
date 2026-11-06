@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { programmeApi, type ProgrammeDocument } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 type TenantUser = { id: number; name: string; email: string };
 
@@ -94,6 +96,7 @@ export default function DocumentsSection({
   tenantUsers: TenantUser[];
   onToast: (msg: string) => void;
 }) {
+  const toast = useToast();
   const [rows, setRows] = useState<ProgrammeDocument[]>(initialRows);
   const [drafts, setDrafts] = useState<Record<number, DraftRow>>(() =>
     Object.fromEntries(initialRows.map((r) => [r.id, toDraft(r)]))
@@ -110,14 +113,14 @@ export default function DocumentsSection({
     if (!draft) return;
     const err = validateDraft(draft);
     if (err) {
-      onToast(err);
+      toast.error("Document not saved", err);
       return;
     }
     try {
       const res = await programmeApi.updateDocument(programmeId, id, buildPayload(draft));
       setRows((prev) => prev.map((r) => (r.id === id ? res.data.data : r)));
-    } catch {
-      onToast("Failed to save document row.");
+    } catch (e) {
+      toast.error("Document not saved", apiErrorMessage(e, "Failed to save document row."));
     }
   };
 
@@ -131,8 +134,8 @@ export default function DocumentsSection({
         return next;
       });
       onToast("Document removed.");
-    } catch {
-      onToast("Failed to remove document row.");
+    } catch (e) {
+      toast.error("Document not removed", apiErrorMessage(e, "Failed to remove document row."));
     }
   };
 
@@ -140,7 +143,7 @@ export default function DocumentsSection({
     if (!pending) return;
     const err = validateDraft(pending);
     if (err) {
-      onToast(err);
+      toast.error("Document not added", err);
       return;
     }
     setSaving(true);
@@ -151,8 +154,8 @@ export default function DocumentsSection({
       setDrafts((prev) => ({ ...prev, [created.id]: toDraft(created) }));
       setPending(null);
       onToast("Document added.");
-    } catch {
-      onToast("Failed to add document.");
+    } catch (e) {
+      toast.error("Document not added", apiErrorMessage(e, "Failed to add document."));
     } finally {
       setSaving(false);
     }

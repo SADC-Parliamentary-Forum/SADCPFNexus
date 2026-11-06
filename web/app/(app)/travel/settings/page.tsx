@@ -7,6 +7,8 @@ import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 type DsaRate = {
   id: number;
@@ -120,6 +122,7 @@ function SettingsTable({
 }
 
 export default function TravelSettingsPage() {
+  const toast = useToast();
   const [rates, setRates] = useState<DsaRate[]>([]);
   const [fxRates, setFxRates] = useState<FxRate[]>([]);
   const [sponsoredRates, setSponsoredRates] = useState<SponsoredRate[]>([]);
@@ -189,10 +192,13 @@ export default function TravelSettingsPage() {
         ...(editingId ? { id: editingId } : {}),
       });
       setSuccess(editingId ? "DSA rate updated." : "DSA rate saved.");
+      toast.success(editingId ? "DSA rate updated" : "DSA rate saved");
       await load({ quiet: true });
       resetForm();
-    } catch {
-      setError("Failed to save DSA rate.");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Failed to save DSA rate.");
+      setError(message);
+      toast.error("DSA rate not saved", message);
     } finally {
       setSaving(null);
     }
@@ -206,9 +212,12 @@ export default function TravelSettingsPage() {
     try {
       await travelApi.saveFxRate({ ...fxForm, source: "manual" });
       setSuccess("FX rate saved. The rate is snapshotted onto DSA lines at calculation time.");
+      toast.success("FX rate saved");
       await load({ quiet: true });
-    } catch {
-      setError("Failed to save FX rate.");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Failed to save FX rate.");
+      setError(message);
+      toast.error("FX rate not saved", message);
     } finally {
       setSaving(null);
     }
@@ -222,9 +231,12 @@ export default function TravelSettingsPage() {
     try {
       await travelApi.saveSponsoredRate(sponsoredForm);
       setSuccess("Sponsored deduction rate saved.");
+      toast.success("Sponsored rate saved");
       await load({ quiet: true });
-    } catch {
-      setError("Failed to save sponsored rate.");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Failed to save sponsored rate.");
+      setError(message);
+      toast.error("Sponsored rate not saved", message);
     } finally {
       setSaving(null);
     }

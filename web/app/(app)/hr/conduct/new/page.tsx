@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { conductApi, tenantUsersApi, type TenantUserOption } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 const RECORD_TYPES = [
   { id: "commendation",          label: "Commendation",           icon: "stars",              color: "text-green-700 bg-green-50 border-green-200",   activeColor: "bg-green-600 text-white border-green-600" },
@@ -78,6 +79,7 @@ function UserAutocomplete({
 
 export default function NewConductRecordPage() {
   const router = useRouter();
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -108,11 +110,13 @@ export default function NewConductRecordPage() {
         outcome: outcome || undefined,
         is_confidential: isConfidential,
       });
+      toast.success("Conduct record created");
       router.push("/hr/conduct");
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string };
       const msg = Object.values(ax.response?.data?.errors ?? {}).flat()[0] ?? ax.response?.data?.message ?? "Failed to create record.";
       setError(msg);
+      toast.error("Conduct record not created", msg);
     } finally {
       setSubmitting(false);
     }

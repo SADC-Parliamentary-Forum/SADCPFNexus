@@ -4,6 +4,7 @@ import { useState } from "react";
 import { programmeApi, type Programme } from "@/lib/api";
 import BudgetLinePicker from "@/components/budget/BudgetLinePicker";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_OPTIONS = [
   { value: "not_checked", label: "Not checked" },
@@ -32,6 +33,7 @@ export default function PifFinanceBudgetCertify({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const toast = useToast();
 
   if (!canCertify) return null;
 
@@ -49,19 +51,21 @@ export default function PifFinanceBudgetCertify({
         commitment_amount: needsLine && amount ? Number(amount) : undefined,
       });
       onUpdated(res.data.data ?? res.data);
-      setMessage(
+      const savedMessage =
         needsLine && budgetLineId
           ? "Finance review saved and budget commitment updated."
-          : "Finance review saved.",
-      );
+          : "Finance review saved.";
+      setMessage(savedMessage);
+      toast.success("Finance certification saved", savedMessage);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
-      setError(
+      const failMessage =
         err.response?.data?.message
           ?? err.response?.data?.errors?.amount?.[0]
           ?? err.response?.data?.errors?.budget_line_id?.[0]
-          ?? "Failed to save finance review.",
-      );
+          ?? "Failed to save finance review.";
+      setError(failMessage);
+      toast.error("Finance certification not saved", failMessage);
     } finally {
       setSaving(false);
     }

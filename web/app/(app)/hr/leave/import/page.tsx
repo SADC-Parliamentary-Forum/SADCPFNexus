@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { FormSection } from "@/components/ui/FormSection";
 import { ContentCanvas } from "@/components/ui/ContentCanvas";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { getStoredUser, canAccessRoute } from "@/lib/auth";
 
@@ -25,6 +26,7 @@ function canImportLeave(): boolean {
 
 export default function LeaveImportPage() {
   const { t } = useI18n();
+  const toast = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportResult | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -65,12 +67,16 @@ export default function LeaveImportPage() {
       if (commit && res.data.data.errors.length === 0) {
         setFile(null);
       }
+      if (commit) {
+        toast.success("Leave records imported", res.data.message);
+      }
     } catch (err: unknown) {
       const apiMessage =
         err && typeof err === "object" && "response" in err
           ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
           : null;
       setError(apiMessage || t("common.error"));
+      toast.error(commit ? "Leave records not imported" : "Could not preview import", apiMessage || t("common.error"));
     } finally {
       setBusy(null);
     }

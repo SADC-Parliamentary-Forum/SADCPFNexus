@@ -6,6 +6,8 @@ import { hrApi, type Timesheet } from "@/lib/api";
 import { cn, formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
@@ -62,28 +64,6 @@ const FILTER_TABS = [
   { label: "Rejected",       value: "rejected"  },
 ];
 
-// ─── Toast ─────────────────────────────────────────────────────────────────
-
-interface ToastState { message: string; type: "success" | "error" }
-
-function AppToast({ toast, onClose }: { toast: ToastState | null; onClose: () => void }) {
-  if (!toast) return null;
-  return (
-    <div className={cn(
-      "fixed top-5 right-5 z-50 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-medium text-white shadow-xl",
-      toast.type === "success" ? "bg-green-600" : "bg-red-600"
-    )}>
-      <span className="material-symbols-outlined text-[18px]">
-        {toast.type === "success" ? "check_circle" : "error_outline"}
-      </span>
-      {toast.message}
-      <button type="button" onClick={onClose} aria-label="Dismiss notification" className="ml-2 opacity-70 hover:opacity-100">
-        <span className="material-symbols-outlined text-[16px]">close</span>
-      </button>
-    </div>
-  );
-}
-
 // ─── Export CSV ────────────────────────────────────────────────────────────
 
 function exportWeekCSV(sheets: Timesheet[], weekLabel: string) {
@@ -137,7 +117,7 @@ export default function TeamTimesheetsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<number, boolean>>({});
-  const [toast, setToast] = useState<ToastState | null>(null);
+  const toast = useToast();
   const [showBulkConfirm, setShowBulkConfirm] = useState(false);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
@@ -181,9 +161,9 @@ export default function TeamTimesheetsPage() {
   const weekStart = weekStartDate ? toYMD(weekStartDate) : null;
 
   const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  }, []);
+    if (type === "success") toast.success(message);
+    else toast.error(message);
+  }, [toast]);
 
   const load = useCallback(async () => {
     if (!weekStart) return;
@@ -217,8 +197,8 @@ export default function TeamTimesheetsPage() {
       await hrApi.approveTimesheet(ts.id);
       showToast(`${ts.user?.name ?? "Timesheet"} approved.`);
       await load();
-    } catch {
-      showToast("Failed to approve timesheet.", "error");
+    } catch (err) {
+      toast.error("Could not approve timesheet", apiErrorMessage(err, "Failed to approve timesheet."));
     } finally {
       setActionLoading((prev) => ({ ...prev, [ts.id]: false }));
     }
@@ -230,8 +210,8 @@ export default function TeamTimesheetsPage() {
       await hrApi.rejectTimesheet(ts.id, "Returned for revision.");
       showToast(`${ts.user?.name ?? "Timesheet"} returned for revision.`);
       await load();
-    } catch {
-      showToast("Failed to reject timesheet.", "error");
+    } catch (err) {
+      toast.error("Could not reject timesheet", apiErrorMessage(err, "Failed to reject timesheet."));
     } finally {
       setActionLoading((prev) => ({ ...prev, [ts.id]: false }));
     }
@@ -320,8 +300,6 @@ export default function TeamTimesheetsPage() {
 
   return (
     <div className="w-full min-w-0 space-y-6">
-      <AppToast toast={toast} onClose={() => setToast(null)} />
-
       <ModulePageHeader
         title="Team Timesheets"
         subtitle="Review and approve your team's weekly submissions"

@@ -7,6 +7,8 @@ import { exportToCsv } from "@/lib/csvExport";
 import { ListPagination } from "@/components/ui/ListPagination";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const RECORD_TYPE_LABELS: Record<string, string> = {
   commendation: "Commendation",
@@ -117,6 +119,7 @@ function UserAutocomplete({
 }
 
 export default function ConductPage() {
+  const toast = useToast();
   const [list, setList] = useState<ConductRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -183,9 +186,11 @@ export default function ConductPage() {
       });
       setShowNew(false);
       setNewEmployee(null); setNewRecordType("commendation"); setNewTitle(""); setNewDescription(""); setNewIncidentDate(""); setNewIsConfidential(false);
+      toast.success("Conduct record created");
       loadList();
     } catch (err: unknown) {
       setCreateError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Failed to create record.");
+      toast.error("Conduct record not created", apiErrorMessage(err, "Failed to create record."));
     } finally { setCreating(false); }
   };
 
