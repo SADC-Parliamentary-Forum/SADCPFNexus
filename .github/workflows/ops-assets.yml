@@ -17,6 +17,7 @@ on:
           - mfa-check
           - log-tail
           - log-perms
+          - roles-report
       tenant:
         description: Tenant id (blank = the only tenant)
         required: false
