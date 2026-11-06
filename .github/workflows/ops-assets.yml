@@ -17,6 +17,8 @@ on:
           - mfa-check
           - log-tail
           - log-perms
+          - roles-cleanup-dry-run
+          - roles-cleanup-apply
       tenant:
         description: Tenant id (blank = the only tenant)
         required: false
@@ -58,6 +60,9 @@ jobs:
             log-tail) CMD="docker exec sadcpf_php sh -c 'for f in \$(ls -1 /var/www/api/storage/logs/laravel-*.log | tail -n 3); do echo == \$f; grep -E \"^\[20\" \$f | cut -c1-300 | tail -n 40; done'" ;;
             # Read-only: log file ownership, and whether the php-fpm user (www-data) can write each one.
             log-perms) CMD="docker exec sadcpf_php ls -ln /var/www/api/storage/logs; docker exec -u www-data sadcpf_php sh -c 'for f in /var/www/api/storage/logs/*.log; do [ -w \"\$f\" ] && echo \"w  \$f\" || echo \"RO \$f\"; done'; docker exec sadcpf_php sh -c 'grep -rn umask /usr/local/etc/php-fpm.d 2>/dev/null; crontab -l 2>/dev/null | head'" ;;
+            # Move users off old role names onto the role catalogue and delete unused duplicate roles.
+            roles-cleanup-dry-run) CMD="docker exec sadcpf_php php artisan roles:cleanup" ;;
+            roles-cleanup-apply)   CMD="bash scripts/ops/backup.sh && docker exec sadcpf_php php artisan roles:cleanup --apply" ;;
             *) echo "Unknown task: $TASK"; exit 1 ;;
           esac
           install -d -m 700 "$HOME/.ssh"

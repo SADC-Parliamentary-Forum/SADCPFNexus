@@ -8,6 +8,7 @@ use App\Models\AccountAccessRequest;
 use App\Models\AuditLog;
 use App\Models\User;
 use App\Modules\AccessControl\Services\AccessCutoverService;
+use App\Modules\AccessControl\Services\CanonicalRoleManager;
 use App\Modules\UserManagement\Services\UserService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
@@ -291,6 +292,7 @@ class UsersController extends Controller
         }
 
         $oldRoles = $user->getRoleNames()->values()->all();
+        $roles = app(CanonicalRoleManager::class)->resolveRoleChange($oldRoles, array_values($roles));
         $pending = AccessRoleSyncRequest::query()->create([
             'tenant_id' => $user->tenant_id,
             'user_id' => $user->id,
