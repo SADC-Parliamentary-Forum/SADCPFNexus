@@ -2,25 +2,24 @@
 
 namespace App\Modules\UserManagement\Services;
 
-use App\Models\AuditLog;
 use App\Models\AccountInvitation;
-use App\Models\UserSession;
+use App\Models\AuditLog;
 use App\Models\User;
+use App\Models\UserSession;
+use App\Modules\AccessControl\Services\CanonicalRoleManager;
 use App\Services\NotificationService;
 use App\Support\FrontendUrl;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\PermissionRegistrar;
-use App\Modules\AccessControl\Services\CanonicalRoleManager;
 
 class UserService
 {
-    public function __construct(private readonly NotificationService $notifications)
-    {
-    }
+    public function __construct(private readonly NotificationService $notifications) {}
 
     /**
      * List users within the authenticated user's tenant.
@@ -28,34 +27,34 @@ class UserService
      */
     public function list(array $filters = []): LengthAwarePaginator
     {
-        $query = User::with(['department', 'roles'])
+        $query = User::with(['department', 'roles', 'latestAccountInvitation'])
             ->orderBy('name');
 
-        if (!empty($filters['search'])) {
+        if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'ilike', "%{$filters['search']}%")
-                  ->orWhere('email', 'ilike', "%{$filters['search']}%")
-                  ->orWhere('employee_number', 'ilike', "%{$filters['search']}%");
+                    ->orWhere('email', 'ilike', "%{$filters['search']}%")
+                    ->orWhere('employee_number', 'ilike', "%{$filters['search']}%");
             });
         }
 
-        if (!empty($filters['department_id'])) {
+        if (! empty($filters['department_id'])) {
             $query->where('department_id', $filters['department_id']);
         }
 
-        if (!empty($filters['status'])) {
+        if (! empty($filters['status'])) {
             match ($filters['status']) {
-                'active'   => $query->where('is_active', true)->where('account_status', User::STATUS_ACTIVE),
+                'active' => $query->where('is_active', true)->where('account_status', User::STATUS_ACTIVE),
                 'inactive' => $query->where('is_active', false),
-                'invited'  => $query->where('account_status', User::STATUS_INVITED),
+                'invited' => $query->where('account_status', User::STATUS_INVITED),
                 'suspended' => $query->where('account_status', User::STATUS_SUSPENDED),
                 'disabled' => $query->where('account_status', User::STATUS_DISABLED),
                 'offboarded' => $query->where('account_status', User::STATUS_OFFBOARDED),
-                default    => null,
+                default => null,
             };
         }
 
-        if (!empty($filters['role'])) {
+        if (! empty($filters['role'])) {
             $query->role($filters['role']);
         }
 
@@ -69,45 +68,45 @@ class UserService
     {
         return DB::transaction(function () use ($data, $createdBy): User {
             $user = User::create([
-                'tenant_id'       => $createdBy->tenant_id,
-                'department_id'   => $data['department_id'] ?? null,
-                'name'            => $data['name'],
-                'email'           => strtolower(trim((string) $data['email'])),
-                'password'        => Hash::make(Str::random(64)),
+                'tenant_id' => $createdBy->tenant_id,
+                'department_id' => $data['department_id'] ?? null,
+                'name' => $data['name'],
+                'email' => strtolower(trim((string) $data['email'])),
+                'password' => Hash::make(Str::random(64)),
                 'employee_number' => $data['employee_number'] ?? null,
-                'job_title'       => $data['job_title'] ?? null,
-                'classification'  => $data['classification'] ?? 'UNCLASSIFIED',
-                'mfa_enabled'          => false,
-                'mfa_secret'           => null,
-                'must_reset_password'  => false,
-                'setup_completed'      => false,
-                'is_active'            => false,
-                'account_status'       => User::STATUS_INVITED,
-                'invited_at'           => now(),
-                'status_changed_at'    => now(),
-                'bio'             => $data['bio'] ?? null,
-                'date_of_birth'   => $data['date_of_birth'] ?? null,
-                'join_date'       => $data['join_date'] ?? null,
-                'phone'           => $data['phone'] ?? null,
-                'nationality'     => $data['nationality'] ?? null,
-                'gender'          => $data['gender'] ?? null,
-                'marital_status'  => $data['marital_status'] ?? null,
-                'emergency_contact_name'         => $data['emergency_contact_name'] ?? null,
+                'job_title' => $data['job_title'] ?? null,
+                'classification' => $data['classification'] ?? 'UNCLASSIFIED',
+                'mfa_enabled' => false,
+                'mfa_secret' => null,
+                'must_reset_password' => false,
+                'setup_completed' => false,
+                'is_active' => false,
+                'account_status' => User::STATUS_INVITED,
+                'invited_at' => now(),
+                'status_changed_at' => now(),
+                'bio' => $data['bio'] ?? null,
+                'date_of_birth' => $data['date_of_birth'] ?? null,
+                'join_date' => $data['join_date'] ?? null,
+                'phone' => $data['phone'] ?? null,
+                'nationality' => $data['nationality'] ?? null,
+                'gender' => $data['gender'] ?? null,
+                'marital_status' => $data['marital_status'] ?? null,
+                'emergency_contact_name' => $data['emergency_contact_name'] ?? null,
                 'emergency_contact_relationship' => $data['emergency_contact_relationship'] ?? null,
-                'emergency_contact_phone'        => $data['emergency_contact_phone'] ?? null,
-                'address_line1'   => $data['address_line1'] ?? null,
-                'address_line2'   => $data['address_line2'] ?? null,
-                'city'            => $data['city'] ?? null,
-                'country'         => $data['country'] ?? null,
-                'skills'          => $data['skills'] ?? null,
-                'qualifications'  => $data['qualifications'] ?? null,
+                'emergency_contact_phone' => $data['emergency_contact_phone'] ?? null,
+                'address_line1' => $data['address_line1'] ?? null,
+                'address_line2' => $data['address_line2'] ?? null,
+                'city' => $data['city'] ?? null,
+                'country' => $data['country'] ?? null,
+                'skills' => $data['skills'] ?? null,
+                'qualifications' => $data['qualifications'] ?? null,
             ]);
 
-            if (!empty($data['portfolio_ids'])) {
+            if (! empty($data['portfolio_ids'])) {
                 $user->portfolios()->sync($data['portfolio_ids']);
             }
 
-            if (!empty($data['role'])) {
+            if (! empty($data['role'])) {
                 $roleManager = app(CanonicalRoleManager::class);
                 $role = $roleManager->canonicalize((string) $data['role']);
                 if (! $roleManager->isAssignableRole($role)) {
@@ -127,11 +126,11 @@ class UserService
 
             AuditLog::record('user.invited', [
                 'auditable_type' => User::class,
-                'auditable_id'   => $user->id,
-                'new_values'     => [
-                    'name'       => $user->name,
-                    'email'      => $user->email,
-                    'role'       => $data['role'] ?? null,
+                'auditable_id' => $user->id,
+                'new_values' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $data['role'] ?? null,
                     'invitation_id' => $invitation->id,
                 ],
                 'tags' => 'user_management',
@@ -163,6 +162,8 @@ class UserService
             'token_hash' => $tokenHash,
             'status' => AccountInvitation::STATUS_PENDING,
             'expires_at' => $expiresAt,
+            // Null until it is emailed, so the admin screens can offer "Send invitation".
+            'sent_at' => $sendEmail ? now() : null,
         ]);
 
         if ($sendEmail) {
@@ -221,32 +222,32 @@ class UserService
         $oldValues = $user->only([
             'name', 'email', 'department_id', 'classification', 'job_title', 'is_active', 'account_status', 'bio', 'date_of_birth', 'join_date', 'phone',
             'nationality', 'gender', 'marital_status', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone',
-            'address_line1', 'address_line2', 'city', 'country'
+            'address_line1', 'address_line2', 'city', 'country',
         ]);
         $oldRoles = $user->getRoleNames()->values()->all();
 
         $user->update(array_filter([
-            'name'           => $data['name'] ?? null,
-            'email'          => $data['email'] ?? null,
-            'department_id'  => $data['department_id'] ?? null,
-            'job_title'      => $data['job_title'] ?? null,
+            'name' => $data['name'] ?? null,
+            'email' => $data['email'] ?? null,
+            'department_id' => $data['department_id'] ?? null,
+            'job_title' => $data['job_title'] ?? null,
             'classification' => $data['classification'] ?? null,
-            'bio'            => $data['bio'] ?? null,
-            'date_of_birth'  => $data['date_of_birth'] ?? null,
-            'join_date'      => $data['join_date'] ?? null,
-            'phone'          => $data['phone'] ?? null,
-            'nationality'     => $data['nationality'] ?? null,
-            'gender'          => $data['gender'] ?? null,
-            'marital_status'  => $data['marital_status'] ?? null,
-            'emergency_contact_name'         => $data['emergency_contact_name'] ?? null,
+            'bio' => $data['bio'] ?? null,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'join_date' => $data['join_date'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'nationality' => $data['nationality'] ?? null,
+            'gender' => $data['gender'] ?? null,
+            'marital_status' => $data['marital_status'] ?? null,
+            'emergency_contact_name' => $data['emergency_contact_name'] ?? null,
             'emergency_contact_relationship' => $data['emergency_contact_relationship'] ?? null,
-            'emergency_contact_phone'        => $data['emergency_contact_phone'] ?? null,
-            'address_line1'   => $data['address_line1'] ?? null,
-            'address_line2'   => $data['address_line2'] ?? null,
-            'city'            => $data['city'] ?? null,
-            'country'         => $data['country'] ?? null,
-            'skills'          => $data['skills'] ?? null,
-            'qualifications'  => $data['qualifications'] ?? null,
+            'emergency_contact_phone' => $data['emergency_contact_phone'] ?? null,
+            'address_line1' => $data['address_line1'] ?? null,
+            'address_line2' => $data['address_line2'] ?? null,
+            'city' => $data['city'] ?? null,
+            'country' => $data['country'] ?? null,
+            'skills' => $data['skills'] ?? null,
+            'qualifications' => $data['qualifications'] ?? null,
         ], fn ($v) => $v !== null));
 
         // Handle position_id separately — allows explicitly clearing it to null
@@ -258,7 +259,7 @@ class UserService
             $user->portfolios()->sync($data['portfolio_ids']);
         }
 
-        if (!empty($data['role'])) {
+        if (! empty($data['role'])) {
             $roleManager = app(CanonicalRoleManager::class);
             $role = $roleManager->canonicalize((string) $data['role']);
             if (! $roleManager->isAssignableRole($role)) {
@@ -285,12 +286,12 @@ class UserService
 
         AuditLog::record('user.updated', [
             'auditable_type' => User::class,
-            'auditable_id'   => $user->id,
-            'old_values'     => $oldValues,
-            'new_values'     => $user->fresh()->only([
+            'auditable_id' => $user->id,
+            'old_values' => $oldValues,
+            'new_values' => $user->fresh()->only([
                 'name', 'email', 'department_id', 'classification', 'job_title', 'is_active', 'account_status', 'bio', 'date_of_birth', 'join_date', 'phone',
                 'nationality', 'gender', 'marital_status', 'emergency_contact_name', 'emergency_contact_relationship', 'emergency_contact_phone',
-                'address_line1', 'address_line2', 'city', 'country'
+                'address_line1', 'address_line2', 'city', 'country',
             ]),
             'tags' => 'user_management',
         ]);
@@ -321,18 +322,22 @@ class UserService
             $user = $users->get($id);
             if (! $user) {
                 $skipped[] = ['id' => $id, 'reason' => 'not_found'];
+
                 continue;
             }
             if (! $user->is_active) {
                 $skipped[] = ['id' => $id, 'reason' => 'already_inactive'];
+
                 continue;
             }
             if ($actor->id === $user->id) {
                 $skipped[] = ['id' => $id, 'reason' => 'self'];
+
                 continue;
             }
             if (! $canDelete($user)) {
                 $skipped[] = ['id' => $id, 'reason' => 'forbidden'];
+
                 continue;
             }
 
@@ -342,7 +347,7 @@ class UserService
 
         return [
             'deactivated' => $deactivated,
-            'skipped'     => $skipped,
+            'skipped' => $skipped,
         ];
     }
 
@@ -419,9 +424,9 @@ class UserService
     /**
      * Get a user's audit trail.
      */
-    public function auditTrail(User $user): \Illuminate\Database\Eloquent\Collection
+    public function auditTrail(User $user): Collection
     {
-        return \App\Models\AuditLog::where('auditable_type', User::class)
+        return AuditLog::where('auditable_type', User::class)
             ->where('auditable_id', $user->id)
             ->orderByDesc('created_at')
             ->limit(50)
