@@ -323,6 +323,8 @@ export interface User {
     id: number;
     status: string;
     expires_at: string;
+    /** When it was emailed; null if the account was created without sending it. */
+    sent_at?: string | null;
   } | null;
   mfa_enabled: boolean;
   idle_timeout_minutes?: number | null;
@@ -471,7 +473,7 @@ export const adminApi = {
   listUsers: (params?: Record<string, string | number>) =>
     api.get<PaginatedResponse<User>>("/admin/users", { params }),
   getUser: (id: number) => api.get<User>(`/admin/users/${id}`),
-  createUser: (data: Partial<User> & { password?: string; role?: string; portfolio_ids?: number[] }) =>
+  createUser: (data: Partial<User> & { password?: string; role?: string; portfolio_ids?: number[]; send_welcome_email?: boolean }) =>
     api.post<{ user: User; message: string }>("/admin/users", data),
   updateUser: (id: number, data: Partial<User> & { role?: string; portfolio_ids?: number[] }) =>
     api.put<{ user: User; message: string }>(`/admin/users/${id}`, data),
