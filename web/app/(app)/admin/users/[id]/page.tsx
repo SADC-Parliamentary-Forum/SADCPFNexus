@@ -223,6 +223,7 @@ export default function UserEditPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [roleAliases, setRoleAliases] = useState<Record<string, string[]>>({});
   const [assignedRoles, setAssignedRoles] = useState<string[]>([]);
   const [initialRoles, setInitialRoles] = useState<string[]>([]);
   const [effectivePermissions, setEffectivePermissions] = useState<string[]>([]);
@@ -283,6 +284,7 @@ export default function UserEditPage() {
         }
         if (rolesResult.status === "fulfilled") {
           setAvailableRoles(rolesResult.value.data?.roles ?? []);
+          setRoleAliases(rolesResult.value.data?.aliases ?? {});
         }
         if (profileResult.status === "fulfilled") {
           const profile = profileResult.value.data.data;
@@ -378,6 +380,11 @@ export default function UserEditPage() {
       : [...form.portfolio_ids, pid];
     set("portfolio_ids", ids);
   };
+
+  // Held roles that are neither in the list nor an alias a listed role brings with it.
+  const otherRoles = assignedRoles.filter(
+    (name) => !availableRoles.some((role) => role.name === name || (roleAliases[role.name] ?? []).includes(name)),
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -873,20 +880,24 @@ export default function UserEditPage() {
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {availableRoles.map((role) => (
-                        <label htmlFor="admin-users-detail-setassignedroles-current-current-includes-role-n" key={role.id} className={cn(
+                        <label htmlFor={`admin-users-detail-role-${role.id}`} key={role.id} className={cn(
                           "cursor-pointer flex items-center justify-between p-4 rounded-xl border transition-all",
                           assignedRoles.includes(role.name)
                             ? "border-primary bg-primary/5 ring-1 ring-primary"
                             : "border-neutral-200 bg-white hover:border-neutral-300"
                         )}>
                           <div className="flex items-center gap-3">
-                            <input id="admin-users-detail-setassignedroles-current-current-includes-role-n" type="checkbox" name="roles" value={role.name} checked={assignedRoles.includes(role.name)} onChange={() => setAssignedRoles((current) => current.includes(role.name) ? current.filter((item) => item !== role.name) : [...current, role.name])} className="w-4 h-4 rounded text-primary focus:ring-primary" />
+                            <input id={`admin-users-detail-role-${role.id}`} type="checkbox" name="roles" value={role.name} checked={assignedRoles.includes(role.name)} onChange={() => setAssignedRoles((current) => current.includes(role.name) ? current.filter((item) => item !== role.name) : [...current, role.name])} className="w-4 h-4 rounded text-primary focus:ring-primary" />
                             <span className="text-sm font-bold text-neutral-900">{role.name}</span>
                           </div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">System</span>
                         </label>
                       ))}
                     </div>
+                    {otherRoles.length > 0 && (
+                      <p className="text-xs text-neutral-600" data-testid="user-other-roles">
+                        Also holds {otherRoles.join(", ")}, which {otherRoles.length === 1 ? "is" : "are"} not in the role list. Saving keeps {otherRoles.length === 1 ? "it" : "them"}.
+                      </p>
+                    )}
                     <p className="text-xs text-neutral-500">Selected roles: {assignedRoles.length}. Save Changes applies the role set and revokes stale sessions so access changes take effect on the next login.</p>
                   </div>
                 </section>

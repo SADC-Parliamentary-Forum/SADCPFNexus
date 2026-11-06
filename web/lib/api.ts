@@ -523,7 +523,7 @@ export const adminApi = {
   deletePortfolio: (id: number) => api.delete(`/admin/portfolios/${id}`),
 
   // Roles & Permissions (CRUD; assign role to user via updateUser with role field)
-  listRoles: () => api.get<{ roles: Role[]; permissions: { id: number; name: string }[] }>("/admin/roles"),
+  listRoles: () => api.get<{ roles: Role[]; permissions: { id: number; name: string }[]; aliases?: Record<string, string[]> }>("/admin/roles"),
   getRole: (id: number) => api.get<{ data: Role }>(`/admin/roles/${id}`),
   createRole: (data: { name: string; permissions?: string[] }) =>
     api.post<{ data: Role; message: string }>("/admin/roles", data),

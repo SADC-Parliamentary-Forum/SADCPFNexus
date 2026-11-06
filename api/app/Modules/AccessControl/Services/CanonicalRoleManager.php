@@ -2,10 +2,11 @@
 
 namespace App\Modules\AccessControl\Services;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use Illuminate\Support\Facades\DB;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * The single synchronisation point for the platform role catalogue.
@@ -19,6 +20,17 @@ class CanonicalRoleManager
 {
     public const SYSTEM_ROLES = ['System Admin', 'System Administrator', 'super-admin', 'admin', 'Admin'];
 
+    /** The one administrator role offered for assignment; the other SYSTEM_ROLES names are retired aliases of it. */
+    public const ASSIGNABLE_SYSTEM_ROLE = 'System Admin';
+
+    /** Duplicate or one-off role names that roles:cleanup deletes once nobody holds them. */
+    public const RETIRED_ROLES = ['System Administrator', 'admin', 'Admin', 'Human Resource, Admin and Procurement Officer'];
+
+    /** Old roles that split into more than one catalogue role when people are moved to the catalogue. */
+    public const SPLIT_ROLES = [
+        'Human Resource, Admin and Procurement Officer' => ['HR and Administration Officer', 'Procurement Officer'],
+    ];
+
     public function synchronize(): void
     {
         foreach (['sanctum', 'web'] as $guard) {
@@ -27,7 +39,7 @@ class CanonicalRoleManager
 
         $this->synchronizeCatalogue();
 
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
 
     public function canonicalRoleNames(): array
@@ -35,9 +47,69 @@ class CanonicalRoleManager
         return array_keys(config('access_control.role_templates', []));
     }
 
+    /**
+     * Roles offered in the admin role pickers: the catalogue plus System Admin.
+     *
+     * @return list<string>
+     */
+    public function assignableRoleNames(): array
+    {
+        return array_merge($this->canonicalRoleNames(), [self::ASSIGNABLE_SYSTEM_ROLE]);
+    }
+
     public function isAssignableRole(string $name): bool
     {
-        return in_array($name, array_merge($this->canonicalRoleNames(), self::SYSTEM_ROLES), true);
+        return in_array($name, $this->assignableRoleNames(), true);
+    }
+
+    /**
+     * Catalogue role name => the compatibility aliases attached alongside it.
+     *
+     * @return array<string, list<string>>
+     */
+    public function aliasMap(): array
+    {
+        $map = [];
+        foreach (config('access_control.role_templates', []) as $name => $meta) {
+            $aliases = array_values(array_diff($meta['legacy_roles'] ?? [], [$name]));
+            if ($aliases !== []) {
+                $map[$name] = $aliases;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * The role set to store when an admin changes a user's roles. Newly added roles
+     * bring their compatibility aliases, as on account creation; a removed catalogue
+     * role takes away the aliases that no remaining role still brings.
+     *
+     * @param  list<string>  $old
+     * @param  list<string>  $requested
+     * @return list<string>
+     */
+    public function resolveRoleChange(array $old, array $requested): array
+    {
+        $result = array_values(array_unique($requested));
+        foreach (array_diff($result, $old) as $added) {
+            $result = array_merge($result, $this->assignmentRoleNames($added));
+        }
+        $result = array_values(array_unique($result));
+
+        $aliases = $this->aliasMap();
+        foreach (array_diff($old, $result) as $removed) {
+            foreach ($aliases[$removed] ?? [] as $alias) {
+                $stillBrought = collect($aliases)
+                    ->filter(fn (array $list, string $role) => in_array($role, $result, true) && in_array($alias, $list, true))
+                    ->isNotEmpty();
+                if (! $stillBrought) {
+                    $result = array_values(array_diff($result, [$alias]));
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -69,7 +141,7 @@ class CanonicalRoleManager
             $role->syncPermissions($models);
         }
 
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
 
     public function legacyRoleMap(): array
@@ -88,6 +160,10 @@ class CanonicalRoleManager
             'Internal Auditor' => 'Internal Auditor',
             'Supplier' => 'External Supplier',
             'Supplier Finance User' => 'External Supplier',
+            'System Administrator' => self::ASSIGNABLE_SYSTEM_ROLE,
+            'super-admin' => self::ASSIGNABLE_SYSTEM_ROLE,
+            'admin' => self::ASSIGNABLE_SYSTEM_ROLE,
+            'Admin' => self::ASSIGNABLE_SYSTEM_ROLE,
         ];
     }
 
@@ -215,6 +291,7 @@ class CanonicalRoleManager
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
                 continue;
             }
 

@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Modules\AccessControl\Services\CanonicalRoleManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use App\Modules\AccessControl\Services\CanonicalRoleManager;
 
 class RolesController extends Controller
 {
@@ -18,21 +18,22 @@ class RolesController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        if (!$request->user()->isSystemAdmin()) {
+        if (! $request->user()->isSystemAdmin()) {
             abort(403);
         }
 
         $manager = app(CanonicalRoleManager::class);
         $roles = Role::with('permissions')
             ->where('guard_name', self::GUARD)
-            ->whereIn('name', array_merge($manager->canonicalRoleNames(), CanonicalRoleManager::SYSTEM_ROLES))
+            ->whereIn('name', $manager->assignableRoleNames())
             ->orderBy('name')
             ->get();
         $permissions = Permission::where('guard_name', self::GUARD)->orderBy('name')->get();
 
         return response()->json([
-            'roles'       => $roles,
+            'roles' => $roles,
             'permissions' => $permissions,
+            'aliases' => $manager->aliasMap(),
         ]);
     }
 
@@ -41,7 +42,7 @@ class RolesController extends Controller
      */
     public function show(Request $request, Role $role): JsonResponse
     {
-        if (!$request->user()->isSystemAdmin()) {
+        if (! $request->user()->isSystemAdmin()) {
             abort(403);
         }
 
@@ -55,7 +56,7 @@ class RolesController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        if (!$request->user()->isSystemAdmin()) {
+        if (! $request->user()->isSystemAdmin()) {
             abort(403);
         }
 
@@ -67,7 +68,7 @@ class RolesController extends Controller
      */
     public function syncPermissions(Request $request, Role $role): JsonResponse
     {
-        if (!$request->user()->isSystemAdmin()) {
+        if (! $request->user()->isSystemAdmin()) {
             abort(403);
         }
 
@@ -79,7 +80,7 @@ class RolesController extends Controller
      */
     public function update(Request $request, Role $role): JsonResponse
     {
-        if (!$request->user()->isSystemAdmin()) {
+        if (! $request->user()->isSystemAdmin()) {
             abort(403);
         }
 
@@ -91,7 +92,7 @@ class RolesController extends Controller
      */
     public function destroy(Request $request, Role $role): JsonResponse
     {
-        if (!$request->user()->isSystemAdmin()) {
+        if (! $request->user()->isSystemAdmin()) {
             abort(403);
         }
 
