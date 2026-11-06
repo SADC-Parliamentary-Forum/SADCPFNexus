@@ -6,9 +6,12 @@ import { auditApi, tenantUsersApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { FormSection } from "@/components/ui/FormSection";
 import { AuditPageShell, AuditTable } from "@/components/audit/AuditChrome";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function AuditResourcePage() {
   const { t } = useI18n();
+  const toast = useToast();
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["audit", "capacity"],
     queryFn: async () => (await auditApi.capacity()).data.data,
@@ -22,7 +25,11 @@ export default function AuditResourcePage() {
 
   const createBudget = useMutation({
     mutationFn: () => auditApi.createEffortBudget({ budget_hours: Number(hours), label }),
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      toast.success("Effort budget saved");
+      refetch();
+    },
+    onError: (err) => toast.error("Effort budget not saved", apiErrorMessage(err, "Failed to save the effort budget.")),
   });
 
   const auditors = ((data as { auditors?: Array<Record<string, unknown>> })?.auditors) ?? [];

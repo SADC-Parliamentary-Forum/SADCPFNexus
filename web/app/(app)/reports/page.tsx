@@ -14,6 +14,8 @@ import {
   type ReportDepartment,
 } from "@/lib/api";
 import { getStoredUser, hasPermission } from "@/lib/auth";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 import { formatDateTable } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -265,6 +267,7 @@ function AssetRow({ row }: { row: Record<string, unknown> }) {
 
 export default function ReportsPage() {
   const router = useRouter();
+  const toast = useToast();
   const [activeModule, setActiveModule] = useState<ModuleKey>("travel");
   const [filters, setFilters] = useState<Filters>({
     period_from: "",
@@ -324,13 +327,36 @@ export default function ReportsPage() {
         filters: buildApiParams(filters),
       });
       setScheduleNotice("Scheduled report submitted for approval.");
+      toast.success("Scheduled report submitted", "It has been sent for approval.");
       setScheduleForm({ label: "", frequency: "monthly", format: "csv", recipients: "" });
       const response = await reportsApi.schedules();
       setSchedules(response.data.data ?? []);
       const exports = await reportsApi.exportEvents();
       setExportEvents(exports.data.data ?? []);
+    } catch (err) {
+      const message = apiErrorMessage(err, "Unable to create the scheduled report.");
+      setScheduleNotice(message);
+      toast.error("Scheduled report not created", message);
+    }
+  };
+
+  const changeScheduleStatus = async (id: number, action: "approve" | "pause") => {
+    try {
+      if (action === "approve") await reportsApi.approveSchedule(id);
+      else await reportsApi.pauseSchedule(id);
+      toast.success(action === "approve" ? "Scheduled report approved" : "Scheduled report paused");
+    } catch (err) {
+      toast.error(
+        action === "approve" ? "Could not approve scheduled report" : "Could not pause scheduled report",
+        apiErrorMessage(err, "Please try again."),
+      );
+      return;
+    }
+    try {
+      const response = await reportsApi.schedules();
+      setSchedules(response.data.data ?? []);
     } catch {
-      setScheduleNotice("Unable to create the scheduled report.");
+      // list refresh failure is non-fatal
     }
   };
 
@@ -507,7 +533,7 @@ export default function ReportsPage() {
                   <tr key={String(schedule.id ?? index)}>
                     <td>{String(schedule.label ?? "-")}</td><td>{String(schedule.report_key ?? "-")}</td><td className="capitalize">{String(schedule.frequency ?? "-")}</td>
                     <td><span className="badge badge-muted capitalize">{String(schedule.status ?? "-")}</span></td>
-                    <td>{schedule.status === "requested" ? <button type="button" className="btn-secondary text-xs" onClick={async () => { if (schedule.id) { await reportsApi.approveSchedule(Number(schedule.id)); const response = await reportsApi.schedules(); setSchedules(response.data.data ?? []); } }}>Approve</button> : schedule.status === "active" ? <button type="button" className="btn-secondary text-xs" onClick={async () => { if (schedule.id) { await reportsApi.pauseSchedule(Number(schedule.id)); const response = await reportsApi.schedules(); setSchedules(response.data.data ?? []); } }}>Pause</button> : null}</td>
+                    <td>{schedule.status === "requested" ? <button type="button" className="btn-secondary text-xs" onClick={() => { if (schedule.id) void changeScheduleStatus(Number(schedule.id), "approve"); }}>Approve</button> : schedule.status === "active" ? <button type="button" className="btn-secondary text-xs" onClick={() => { if (schedule.id) void changeScheduleStatus(Number(schedule.id), "pause"); }}>Pause</button> : null}</td>
                   </tr>
                 ))}</tbody>
               </table>

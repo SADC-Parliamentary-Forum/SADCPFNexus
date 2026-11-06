@@ -10,6 +10,7 @@ import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { assigneeDepartmentName, formatAssigneeLabel } from "@/lib/asset-assignee";
 import { createFilePreviewUrl } from "@/lib/filePreview";
 import { AssetIdentifierFields, EMPTY_IDENTIFIERS, isSerialConflict, type AssetIdentifiers } from "@/components/assets/AssetIdentifierFields";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUSES = ["active", "service_due", "loan_out", "retired"] as const;
 const DEPRECIATION_METHODS = [
@@ -57,6 +58,7 @@ function computeDepreciatedValue(
 
 export default function AddAssetPage() {
   const router = useRouter();
+  const toast = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [assignedUser, setAssignedUser] = useState<TenantUserOption | null>(null);
   const [categories, setCategories] = useState<AssetCategory[]>([]);
@@ -185,6 +187,7 @@ export default function AddAssetPage() {
       if (invoiceFile) {
         await assetsApi.uploadInvoice(asset.id, invoiceFile);
       }
+      toast.success("Asset created", `${assetName} (${code}) has been added.`);
       router.push("/assets");
       router.refresh();
     } catch (err: unknown) {
@@ -200,6 +203,7 @@ export default function AddAssetPage() {
         (data?.errors ? Object.values(data.errors).flat().join(" ") : null) ??
         "Failed to create asset. Please try again.";
       setError(msg);
+      toast.error("Asset not created", msg);
     } finally {
       setSubmitting(false);
     }

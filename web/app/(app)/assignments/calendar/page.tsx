@@ -9,6 +9,8 @@ import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function localIso(d: Date) {
   const y = d.getFullYear();
@@ -32,6 +34,7 @@ function monthBounds(d = new Date()) {
 export default function AssignmentsCalendarPage() {
   const queryClient = useQueryClient();
   const { confirm } = useConfirm();
+  const toast = useToast();
   const [cursor, setCursor] = useState(() => new Date());
   const [scope, setScope] = useState<"mine" | "team" | "register">("mine");
   const [icsText, setIcsText] = useState("");
@@ -60,6 +63,10 @@ export default function AssignmentsCalendarPage() {
       queryClient.setQueryData(["assignments-calendar-feed"], next);
       setRevealed(false);
       setCopied(false);
+      toast.success("Subscription link regenerated");
+    },
+    onError: (err) => {
+      toast.error("Could not regenerate subscription link", apiErrorMessage(err, "Failed to regenerate the calendar subscription link."));
     },
   });
 
@@ -325,9 +332,12 @@ export default function AssignmentsCalendarPage() {
               const res = await assignmentsApi.importIcs({ ics });
               setIcsResult(res.data.data as Record<string, unknown>);
               setIcsText("");
+              toast.success("Calendar imported", "Events were added as draft assignments.");
               await queryClient.invalidateQueries({ queryKey: ["assignments-calendar"] });
-            } catch {
+            } catch (err) {
+              const message = apiErrorMessage(err, "ICS import failed. Events are created as drafts only.");
               setIcsError("ICS import failed. Events are created as drafts only.");
+              toast.error("Calendar not imported", message);
             } finally {
               setIcsBusy(false);
             }

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { assignmentsApi, type Assignment } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function defaultDueDate(): string {
   const d = new Date();
@@ -15,6 +17,7 @@ function defaultDueDate(): string {
 
 export default function RecurringAssignmentsPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -39,9 +42,13 @@ export default function RecurringAssignmentsPage() {
     onSuccess: () => {
       setMsg("Instance generated as a separate assignment.");
       setErr(null);
+      toast.success("Assignment generated", "Instance generated as a separate assignment.");
       qc.invalidateQueries({ queryKey: ["assignments"] });
     },
-    onError: () => setErr("Could not generate an instance from this template."),
+    onError: (error) => {
+      setErr("Could not generate an instance from this template.");
+      toast.error("Could not generate assignment", apiErrorMessage(error, "Could not generate an instance from this template."));
+    },
   });
 
   const create = useMutation({
@@ -58,6 +65,7 @@ export default function RecurringAssignmentsPage() {
     onSuccess: () => {
       setMsg("Recurring template created.");
       setErr(null);
+      toast.success("Recurring template created");
       setForm({
         title: "",
         description: "",
@@ -67,7 +75,11 @@ export default function RecurringAssignmentsPage() {
       });
       qc.invalidateQueries({ queryKey: ["assignments", "templates"] });
     },
-    onError: () => setErr("Could not create the template. Title, description, and a future due date are required."),
+    onError: (error) => {
+      const message = "Could not create the template. Title, description, and a future due date are required.";
+      setErr(message);
+      toast.error("Template not created", apiErrorMessage(error, message));
+    },
   });
 
   function onSubmit(e: FormEvent) {

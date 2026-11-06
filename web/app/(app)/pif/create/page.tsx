@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { programmeApi } from "@/lib/api";
 import { PIF_STRATEGIC_PILLARS, DEPARTMENTS } from "@/lib/constants";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
 import { FormSection, FormField } from "@/components/ui/FormSection";
 import { unwrapEntity } from "@/lib/unwrapEntity";
 
@@ -15,6 +16,7 @@ const IMPLEMENTING_DEPARTMENTS = [...DEPARTMENTS] as string[];
 // Minimal draft starter — full sections continue on /pif/[id]/edit.
 export default function PifCreatePage() {
   const router = useRouter();
+  const toast = useToast();
   const [title, setTitle] = useState("");
   const [strategicPillar, setStrategicPillar] = useState("");
   const [implementingDepartment, setImplementingDepartment] = useState("");
@@ -42,6 +44,7 @@ export default function PifCreatePage() {
       if (!newId) {
         throw new Error("Programme created but no id was returned.");
       }
+      toast.success("Programme created", "Draft PIF opened for editing.");
       router.push(`/pif/${newId}/edit`);
     } catch (err: unknown) {
       const ax = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } }; message?: string };
@@ -51,6 +54,7 @@ export default function PifCreatePage() {
         (err instanceof Error ? err.message : null) ??
         "Failed to create programme. Please try again.";
       setError(msg);
+      toast.error("Programme not created", msg);
     } finally {
       setSubmitting(false);
     }

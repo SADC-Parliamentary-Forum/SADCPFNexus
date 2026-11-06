@@ -5,9 +5,11 @@ import { riskApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 
 export default function RiskControlsPage() {
   const { t } = useI18n();
+  const toast = useToast();
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
@@ -25,9 +27,11 @@ export default function RiskControlsPage() {
       await riskApi.createControl({ title: controlTitle, control_type: "preventive", effectiveness: "partial" });
       setTitle("");
       setOk(t("risk.controls.created"));
+      toast.success("Control created", controlTitle);
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(message ?? t("risk.controls.createFailed"));
+      toast.error("Control not created", message ?? t("risk.controls.createFailed"));
     } finally {
       setCreating(false);
     }

@@ -1,6 +1,8 @@
 "use client";
 
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import React, { useState } from "react";
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -10,6 +12,7 @@ import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 
 export default function ProgrammeReviewQueuePage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [notes, setNotes] = useState<Record<number, string>>({});
 
   const { data = [], isLoading, isError } = useQuery({
@@ -20,13 +23,21 @@ export default function ProgrammeReviewQueuePage() {
 
   const clearMut = useMutation({
     mutationFn: (id: number) => mandeApi.clearProgrammeReview(id, { notes: notes[id] || undefined }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["mande", "pm-review-queue"] }),
+    onSuccess: () => {
+      toast.success("Report cleared");
+      qc.invalidateQueries({ queryKey: ["mande", "pm-review-queue"] });
+    },
+    onError: (err) => toast.error("Report not cleared", apiErrorMessage(err, "Could not clear the report.")),
   });
 
   const returnMut = useMutation({
     mutationFn: (id: number) =>
       mandeApi.returnProgrammeReview(id, { notes: notes[id] || "Returned by programme manager" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["mande", "pm-review-queue"] }),
+    onSuccess: () => {
+      toast.success("Report returned");
+      qc.invalidateQueries({ queryKey: ["mande", "pm-review-queue"] });
+    },
+    onError: (err) => toast.error("Report not returned", apiErrorMessage(err, "Could not return the report.")),
   });
 
   return (

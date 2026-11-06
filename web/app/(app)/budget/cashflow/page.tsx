@@ -9,6 +9,8 @@ import {
   type CashflowForecast,
   type CashflowScenario,
 } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function money(n: number): string {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -16,6 +18,7 @@ function money(n: number): string {
 
 export default function BudgetCashflowPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [financialYearId, setFinancialYearId] = useState<string>("");
   const [scenarioId, setScenarioId] = useState<string>("");
   const [createForm, setCreateForm] = useState({
@@ -95,9 +98,14 @@ export default function BudgetCashflowPage() {
       setFormError(null);
       setCreateForm({ name: "", kind: "base", opening_balance: "0", status: "active" });
       setScenarioId(String(res.data.data.id));
+      toast.success("Scenario created");
       qc.invalidateQueries({ queryKey: ["budget", "cashflow"] });
     },
-    onError: () => setFormError("Could not create scenario. Finance write access is required."),
+    onError: (err) => {
+      const message = "Could not create scenario. Finance write access is required.";
+      setFormError(message);
+      toast.error("Scenario not created", apiErrorMessage(err, message));
+    },
   });
 
   const addAdjustment = useMutation({
@@ -111,15 +119,23 @@ export default function BudgetCashflowPage() {
     onSuccess: () => {
       setFormError(null);
       setAdjForm({ period: "", direction: "inflow", amount: "", label: "" });
+      toast.success("Adjustment added");
       qc.invalidateQueries({ queryKey: ["budget", "cashflow"] });
     },
-    onError: () => setFormError("Could not add adjustment."),
+    onError: (err) => {
+      setFormError("Could not add adjustment.");
+      toast.error("Adjustment not added", apiErrorMessage(err, "Could not add adjustment."));
+    },
   });
 
   const deleteAdjustment = useMutation({
     mutationFn: (adjustmentId: number) =>
       budgetApi.deleteCashflowAdjustment(Number(scenarioId), adjustmentId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["budget", "cashflow"] }),
+    onSuccess: () => {
+      toast.success("Adjustment deleted");
+      qc.invalidateQueries({ queryKey: ["budget", "cashflow"] });
+    },
+    onError: (err) => toast.error("Adjustment not deleted", apiErrorMessage(err, "Could not delete adjustment.")),
   });
 
   const inflowsQuery = useQuery({
@@ -155,9 +171,13 @@ export default function BudgetCashflowPage() {
     onSuccess: () => {
       setFormError(null);
       setInflowForm({ source_type: "membership", label: "", period: "", amount: "", status: "planned" });
+      toast.success("Inflow created");
       qc.invalidateQueries({ queryKey: ["budget", "cashflow"] });
     },
-    onError: () => setFormError("Could not create structured inflow."),
+    onError: (err) => {
+      setFormError("Could not create structured inflow.");
+      toast.error("Inflow not created", apiErrorMessage(err, "Could not create structured inflow."));
+    },
   });
 
   const generateBands = useMutation({
@@ -192,10 +212,14 @@ export default function BudgetCashflowPage() {
     },
     onSuccess: () => {
       setFormError(null);
+      toast.success("Scenario overlays generated", "Optimistic and pessimistic scenarios were created.");
       qc.invalidateQueries({ queryKey: ["budget", "cashflow"] });
     },
-    onError: () =>
-      setFormError("Could not generate optimistic/pessimistic overlays. Select a source scenario first."),
+    onError: (err) => {
+      const message = "Could not generate optimistic/pessimistic overlays. Select a source scenario first.";
+      setFormError(message);
+      toast.error("Scenario overlays not generated", apiErrorMessage(err, message));
+    },
   });
 
   const forecast = forecastQuery.data as CashflowForecast | undefined;

@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import api, { minutesApi, type MeetingMinutesRecord } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -19,6 +20,7 @@ export default function MinutesDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const qc = useQueryClient();
+  const toast = useToast();
   const [itemDesc, setItemDesc] = useState("");
   const [itemDeadline, setItemDeadline] = useState("");
   const [itemResponsible, setItemResponsible] = useState("");
@@ -45,8 +47,13 @@ export default function MinutesDetailPage() {
       setMsg("Minutes marked final.");
       setErr(null);
       refresh();
+      toast.success("Minutes finalised");
     },
-    onError: (e: unknown) => setErr(apiErrorMessage(e, "Could not finalise minutes.")),
+    onError: (e: unknown) => {
+      const message = apiErrorMessage(e, "Could not finalise minutes.");
+      setErr(message);
+      toast.error("Could not finalise minutes", message);
+    },
   });
 
   async function addActionItem(e: FormEvent) {
@@ -64,9 +71,12 @@ export default function MinutesDetailPage() {
       setItemDeadline("");
       setItemResponsible("");
       setMsg("Action item added.");
+      toast.success("Action item added");
       refresh();
     } catch (e) {
-      setErr(apiErrorMessage(e, "Could not add action item."));
+      const message = apiErrorMessage(e, "Could not add action item.");
+      setErr(message);
+      toast.error("Action item not added", message);
     }
   }
 

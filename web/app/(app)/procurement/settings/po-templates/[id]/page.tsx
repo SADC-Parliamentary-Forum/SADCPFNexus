@@ -9,6 +9,8 @@ import { poTemplatesApi } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { sanitizePoLayout, type PoLayout } from "@/lib/poTemplateLayout";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 function versionLayout(row: { draft_version?: { layout_json?: unknown } | null; draftVersion?: { layout_json?: unknown } | null; published_version?: { layout_json?: unknown } | null; publishedVersion?: { layout_json?: unknown } | null }): unknown {
   return row.draft_version?.layout_json ?? row.draftVersion?.layout_json ?? row.published_version?.layout_json ?? row.publishedVersion?.layout_json ?? {};
@@ -19,6 +21,7 @@ export default function PoTemplateDesignerPage() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
   const qc = useQueryClient();
+  const toast = useToast();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "procurement.admin");
   const canPublish = canAdmin || hasPermission(user, "procurement.template.publish");
@@ -43,6 +46,10 @@ export default function PoTemplateDesignerPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["po-template", id] });
       setMessage(t("po.designer.saved"));
+      toast.success("PO template draft saved");
+    },
+    onError: (err: unknown) => {
+      toast.error("PO template not saved", apiErrorMessage(err, "Failed to save the PO template draft."));
     },
   });
 
@@ -54,6 +61,10 @@ export default function PoTemplateDesignerPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["po-template", id] });
       setMessage(t("po.designer.published"));
+      toast.success("PO template published");
+    },
+    onError: (err: unknown) => {
+      toast.error("PO template not published", apiErrorMessage(err, "Failed to publish the PO template."));
     },
   });
 

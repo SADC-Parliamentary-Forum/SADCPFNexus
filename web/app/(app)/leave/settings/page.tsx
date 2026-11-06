@@ -8,11 +8,14 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { FormSection } from "@/components/ui/FormSection";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const MODES = ["standard", "finance_first", "director_principal"] as const;
 
 export default function LeaveSettingsPage() {
   const { t } = useI18n();
+  const toast = useToast();
   const [policies, setPolicies] = useState<LeavePolicyVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,9 +64,11 @@ export default function LeaveSettingsPage() {
         admin_review_required: false,
         change_reason: "",
       });
+      toast.success(t("leave.settings.toast.created"));
       await load();
-    } catch {
+    } catch (err) {
       setError(t("leave.settings.saveError"));
+      toast.error(t("leave.settings.toast.notCreated"), apiErrorMessage(err, t("leave.settings.saveError")));
     } finally {
       setSaving(false);
     }

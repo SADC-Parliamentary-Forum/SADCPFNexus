@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { governanceMeetingTypeApi, minutesApi } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { FormField, FormSection } from "@/components/ui/FormSection";
 
@@ -18,6 +19,7 @@ function splitNames(value: string): string[] {
 function RecordMinutesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const toast = useToast();
 
   const [title, setTitle] = useState(searchParams.get("title") ?? "");
   const [meetingDate, setMeetingDate] = useState(searchParams.get("date") ?? "");
@@ -60,9 +62,12 @@ function RecordMinutesPageInner() {
         notes: notes || null,
         workplan_event_id: Number.isFinite(workplanEventId) && workplanEventId > 0 ? workplanEventId : null,
       });
+      toast.success("Minutes recorded");
       router.push(`/governance/minutes/${res.data.data.id}`);
     } catch (err) {
-      setError(apiErrorMessage(err, "Could not record minutes. Check required fields and try again."));
+      const message = apiErrorMessage(err, "Could not record minutes. Check required fields and try again.");
+      setError(message);
+      toast.error("Minutes not recorded", message);
       setSaving(false);
     }
   }

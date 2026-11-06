@@ -6,10 +6,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { mandeApi, programmeApi, type PifLinkage } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function CreateActivityReportForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const toast = useToast();
   const programmeIdParam = searchParams.get("programme_id");
   const programmeId = programmeIdParam ? Number(programmeIdParam) : NaN;
   const forcedPif = Number.isFinite(programmeId) && programmeId > 0;
@@ -67,8 +70,19 @@ function CreateActivityReportForm() {
     },
     onSuccess: (res) => {
       const report = res.data.data;
+      toast.success("Activity report created");
       router.push(`/mande/activity-reports/${report.id}`);
     },
+    onError: (err) =>
+      toast.error(
+        "Activity report not created",
+        apiErrorMessage(
+          err,
+          nonPif
+            ? "Could not create the non-PIF report. Check the title and reason."
+            : "Could not create the report. It may already exist for this PIF."
+        )
+      ),
   });
 
   const unlinked = linkages ?? [];

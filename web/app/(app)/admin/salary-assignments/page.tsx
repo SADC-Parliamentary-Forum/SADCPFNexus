@@ -14,6 +14,8 @@ import { formatDate } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { Modal } from "@/components/ui/Modal";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 type GradeBand = { id: number; code: string; label: string; salary_scales?: SalaryScale[] };
 type SalaryScale = { id: number; grade_band_id: number; status: string; notches?: { notch: number; monthly: number }[] };
@@ -24,6 +26,7 @@ function fmt2(n: number) {
 
 export default function SalaryAssignmentsPage() {
   const { confirm } = useConfirm();
+  const toast = useToast();
   const [assignments, setAssignments] = useState<EmployeeSalaryAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -115,11 +118,13 @@ export default function SalaryAssignmentsPage() {
       } else {
         await salaryAssignmentApi.create(payload);
       }
+      toast.success(editId ? "Salary assignment updated" : "Salary assignment created");
       setShowModal(false);
       load();
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Save failed.";
       setFormError(msg);
+      toast.error(editId ? "Salary assignment not updated" : "Salary assignment not created", apiErrorMessage(e, "Save failed."));
     } finally {
       setSubmitting(false);
     }
@@ -133,8 +138,13 @@ export default function SalaryAssignmentsPage() {
         variant: "danger",
       }))
     ) return;
-    await salaryAssignmentApi.remove(id);
-    load();
+    try {
+      await salaryAssignmentApi.remove(id);
+      toast.success("Salary assignment removed");
+      load();
+    } catch (err) {
+      toast.error("Could not remove salary assignment", apiErrorMessage(err, "Failed to remove salary assignment."));
+    }
   };
 
   const selectedBand = gradeBands.find((b) => String(b.id) === form.grade_band_id);

@@ -5,9 +5,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { assetsApi, type AssetInsuranceClaim, type AssetInsurancePolicy } from "@/lib/api";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function AssetInsurancePage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [tab, setTab] = useState<"policies" | "claims">("policies");
   const [policyForm, setPolicyForm] = useState({
     policy_number: "",
@@ -47,6 +50,7 @@ export default function AssetInsurancePage() {
       }),
     onSuccess: () => {
       setError(null);
+      toast.success("Insurance policy saved");
       setPolicyForm({
         policy_number: "",
         insurer_name: "",
@@ -59,7 +63,10 @@ export default function AssetInsurancePage() {
       });
       qc.invalidateQueries({ queryKey: ["assets", "insurance"] });
     },
-    onError: () => setError("Could not save policy."),
+    onError: (err) => {
+      setError("Could not save policy.");
+      toast.error("Insurance policy not saved", apiErrorMessage(err, "Could not save policy."));
+    },
   });
 
   const createClaim = useMutation({
@@ -74,6 +81,7 @@ export default function AssetInsurancePage() {
       }),
     onSuccess: () => {
       setError(null);
+      toast.success("Insurance claim saved");
       setClaimForm({
         policy_id: "",
         claim_number: "",
@@ -84,7 +92,10 @@ export default function AssetInsurancePage() {
       });
       qc.invalidateQueries({ queryKey: ["assets", "insurance"] });
     },
-    onError: () => setError("Could not save claim."),
+    onError: (err) => {
+      setError("Could not save claim.");
+      toast.error("Insurance claim not saved", apiErrorMessage(err, "Could not save claim."));
+    },
   });
 
   const policies = (policiesQuery.data ?? []) as AssetInsurancePolicy[];

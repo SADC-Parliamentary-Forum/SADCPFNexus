@@ -11,6 +11,7 @@ import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
+import { useToast } from "@/components/ui/Toast";
 
 type Counts = Record<string, number>;
 type StagingRow = {
@@ -124,6 +125,7 @@ function filterKey(filter: string): string {
 export default function AssetImportPage() {
   const { t } = useI18n();
   const { prompt } = useConfirm();
+  const toast = useToast();
   const [mode, setMode] = useState<"legacy" | "template">("template");
   const [counts, setCounts] = useState<Counts | null>(null);
   const [equation, setEquation] = useState<Equation | null>(null);
@@ -231,11 +233,14 @@ export default function AssetImportPage() {
       setCounts(payload.counts ?? null);
       setEquation(payload.equation ?? null);
       setMsg(res.data.message);
+      toast.success("Import file uploaded", res.data.message);
       setPage(1);
       setFilter("all");
       if (payload.batch?.id) await loadPreview(payload.batch.id);
     } catch (err: unknown) {
-      setError(importApiError(err, t("common.error")));
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Import file not uploaded", message);
     } finally {
       setBusy(false);
     }
@@ -247,10 +252,13 @@ export default function AssetImportPage() {
     try {
       const r = await assetImportApi.approve(batchId, { all_non_blocking: true });
       setMsg((r.data as { message?: string }).message ?? t("assets.import.approveReady"));
+      toast.success("Ready rows approved", (r.data as { message?: string }).message);
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      setError(importApiError(err, t("common.error")));
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Could not approve rows", message);
     } finally {
       setBusy(false);
     }
@@ -262,11 +270,14 @@ export default function AssetImportPage() {
     try {
       const r = await assetImportApi.approve(batchId, { staging_ids: selected });
       setMsg((r.data as { message?: string }).message ?? t("assets.import.approveSelected"));
+      toast.success("Selected rows approved", (r.data as { message?: string }).message);
       setSelected([]);
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      setError(importApiError(err, t("common.error")));
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Could not approve selected rows", message);
     } finally {
       setBusy(false);
     }
@@ -283,8 +294,11 @@ export default function AssetImportPage() {
       setMsg(payload.message ?? t("assets.import.commit"));
       setBatchStatus(payload.data?.batch?.status ?? batchStatus);
       setEquation(payload.data?.equation ?? equation);
+      toast.success("Import committed", payload.message);
     } catch (err: unknown) {
-      setError(importApiError(err, t("common.error")));
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Import not committed", message);
     } finally {
       setBusy(false);
     }
@@ -300,9 +314,16 @@ export default function AssetImportPage() {
       defaultValue: "assets.import.excludeReason",
     }))?.trim();
     if (!reason) return;
-    await assetImportApi.exclude(batchId, row.id, reason);
-    await loadPreview(batchId);
-    await loadStaging(batchId);
+    try {
+      await assetImportApi.exclude(batchId, row.id, reason);
+      toast.success("Row excluded");
+      await loadPreview(batchId);
+      await loadStaging(batchId);
+    } catch (err: unknown) {
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Could not exclude row", message);
+    }
   }
 
   async function showRaw(row: StagingRow) {
@@ -330,9 +351,12 @@ export default function AssetImportPage() {
         admin_notes: form.get("admin_notes"),
       });
       setEditing(null);
+      toast.success("Staging row saved");
       await loadStaging(batchId);
     } catch (err: unknown) {
-      setError(importApiError(err, t("common.error")));
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Staging row not saved", message);
     } finally {
       setBusy(false);
     }
@@ -340,10 +364,17 @@ export default function AssetImportPage() {
 
   async function markUnavailable(field: "serial_number" | "make" | "model" | "legacy_location") {
     if (!batchId || !editing) return;
-    await assetImportApi.markUnavailable(batchId, editing.id, field);
-    setEditing(null);
-    await loadStaging(batchId);
-    await loadPreview(batchId);
+    try {
+      await assetImportApi.markUnavailable(batchId, editing.id, field);
+      toast.success("Field marked unavailable");
+      setEditing(null);
+      await loadStaging(batchId);
+      await loadPreview(batchId);
+    } catch (err: unknown) {
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Could not mark field unavailable", message);
+    }
   }
 
   async function mergeDuplicates(row: StagingRow) {
@@ -352,10 +383,13 @@ export default function AssetImportPage() {
     try {
       await assetImportApi.mergeDuplicates(batchId, row.id);
       setMsg(t("assets.import.mergeDuplicates"));
+      toast.success("Duplicates merged");
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      setError(importApiError(err, t("common.error")));
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Duplicates not merged", message);
     } finally {
       setBusy(false);
     }
@@ -367,10 +401,13 @@ export default function AssetImportPage() {
     try {
       await assetImportApi.resolveDiscrepancy(batchId, d.id, chosen);
       setMsg(t("assets.import.resolved"));
+      toast.success("Discrepancy resolved");
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      setError(importApiError(err, t("common.error")));
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Discrepancy not resolved", message);
     } finally {
       setBusy(false);
     }
@@ -396,10 +433,13 @@ export default function AssetImportPage() {
         location_id: locationId,
       });
       setMsg(t("assets.import.mapLocation"));
+      toast.success("Location mapped");
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      setError(importApiError(err, t("common.error")));
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Location not mapped", message);
     } finally {
       setBusy(false);
     }
@@ -419,10 +459,13 @@ export default function AssetImportPage() {
         location_id: custodianType === "store" && mapLocationId !== "" ? mapLocationId : null,
       });
       setMsg(t("assets.import.mapCustodian"));
+      toast.success("Custodian mapped");
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
-      setError(importApiError(err, t("common.error")));
+      const message = importApiError(err, t("common.error"));
+      setError(message);
+      toast.error("Custodian not mapped", message);
     } finally {
       setBusy(false);
     }

@@ -7,11 +7,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetChangeRequest } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function BudgetChangeDetailPage() {
   const params = useParams();
   const id = Number(params.id);
   const qc = useQueryClient();
+  const toast = useToast();
   const user = getStoredUser();
   const canFinance =
     isSystemAdmin(user) || hasPermission(user, ["finance.create", "finance.approve", "finance.admin"]);
@@ -36,35 +39,51 @@ export default function BudgetChangeDetailPage() {
     mutationFn: () => budgetApi.submitChange(id),
     onSuccess: () => {
       setMessage("Submitted to Finance.");
+      toast.success("Budget change submitted", "Submitted to Finance.");
       invalidate();
     },
-    onError: () => setError("Submit failed."),
+    onError: (err) => {
+      setError("Submit failed.");
+      toast.error("Budget change not submitted", apiErrorMessage(err, "Submit failed."));
+    },
   });
   const financeMut = useMutation({
     mutationFn: (decision: "approve" | "return" | "reject") =>
       budgetApi.financeDecideChange(id, { decision }),
     onSuccess: () => {
       setMessage("Finance decision recorded.");
+      toast.success("Finance decision recorded");
       invalidate();
     },
-    onError: () => setError("Finance decision failed."),
+    onError: (err) => {
+      setError("Finance decision failed.");
+      toast.error("Finance decision not recorded", apiErrorMessage(err, "Finance decision failed."));
+    },
   });
   const sgMut = useMutation({
     mutationFn: (decision: "approve" | "return" | "reject") => budgetApi.sgDecideChange(id, { decision }),
     onSuccess: () => {
       setMessage("SG decision recorded.");
+      toast.success("SG decision recorded");
       invalidate();
     },
-    onError: () => setError("SG decision failed."),
+    onError: (err) => {
+      setError("SG decision failed.");
+      toast.error("SG decision not recorded", apiErrorMessage(err, "SG decision failed."));
+    },
   });
   const applyMut = useMutation({
     mutationFn: () => budgetApi.applyChange(id),
     onSuccess: () => {
       setMessage("Applied to budget lines.");
+      toast.success("Budget change applied", "Applied to budget lines.");
       invalidate();
       qc.invalidateQueries({ queryKey: ["budget", "lines"] });
     },
-    onError: () => setError("Apply failed (check availability)."),
+    onError: (err) => {
+      setError("Apply failed (check availability).");
+      toast.error("Budget change not applied", apiErrorMessage(err, "Apply failed (check availability)."));
+    },
   });
 
   const row = query.data;

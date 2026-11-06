@@ -10,6 +10,8 @@ import { readStoredUser } from "@/lib/session";
 import { formatDateShort } from "@/lib/utils";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   pending:   { label: "Pending",   cls: "text-amber-700 bg-amber-50 border-amber-200",   icon: "hourglass_empty" },
@@ -33,6 +35,7 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
   const searchParams = useSearchParams();
   const poId        = Number(searchParams.get("po") ?? 0);
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showHandoffModal, setShowHandoffModal] = useState(false);
@@ -66,6 +69,10 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
     onSuccess:  () => {
       setShowHandoffModal(false);
       queryClient.invalidateQueries({ queryKey: ["grn", poId, grnId] });
+      toast.success("Goods receipt accepted");
+    },
+    onError: (e: unknown) => {
+      toast.error("Could not accept goods receipt", apiErrorMessage(e, "Failed to accept the goods receipt."));
     },
   });
 
@@ -74,9 +81,12 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["grn", poId, grnId] });
       setShowRejectModal(false);
+      toast.success("Goods receipt rejected");
     },
     onError: (e: unknown) => {
-      setRejectError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to reject.");
+      const message = apiErrorMessage(e, "Failed to reject.");
+      setRejectError(message);
+      toast.error("Could not reject goods receipt", message);
     },
   });
 
@@ -132,10 +142,23 @@ function GoodsReceiptDetailPageInner({ params }: { params: { id: string } }) {
             uploading={uploading}
             onUpload={async (file, type) => {
               setUploading(true);
-              try { const r = await goodsReceiptAttachmentsApi.upload(grnId, file, type); setAttachments((p) => [r.data.data, ...p]); }
-              finally { setUploading(false); }
+              try {
+                const r = await goodsReceiptAttachmentsApi.upload(grnId, file, type);
+                setAttachments((p) => [r.data.data, ...p]);
+                toast.success("Document uploaded");
+              } catch (err) {
+                toast.error("Document not uploaded", apiErrorMessage(err, "Failed to upload the document."));
+              } finally { setUploading(false); }
             }}
-            onDelete={async (id) => { await goodsReceiptAttachmentsApi.delete(grnId, id); setAttachments((p) => p.filter((a) => a.id !== id)); }}
+            onDelete={async (id) => {
+              try {
+                await goodsReceiptAttachmentsApi.delete(grnId, id);
+                setAttachments((p) => p.filter((a) => a.id !== id));
+                toast.success("Document deleted");
+              } catch (err) {
+                toast.error("Document not deleted", apiErrorMessage(err, "Failed to delete the document."));
+              }
+            }}
             downloadUrl={(id) => goodsReceiptAttachmentsApi.downloadUrl(grnId, id)}
           />
         </div>

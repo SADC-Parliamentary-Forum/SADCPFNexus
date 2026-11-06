@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { hrDryRunSourceApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import { FormSection } from "@/components/ui/FormSection";
 import { AccessDenied } from "@/components/ui/AccessDenied";
 import { getStoredUser, isSystemAdmin } from "@/lib/auth";
@@ -17,6 +19,7 @@ function formatBytes(n: number): string {
 
 export default function HrDryRunSourceUploadPage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [files, setFiles] = useState<File[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,13 +46,21 @@ export default function HrDryRunSourceUploadPage() {
       setError(null);
       setFiles([]);
       qc.invalidateQueries({ queryKey: ["hr-dry-run-source"] });
+      toast.success("Files uploaded", `Staged ${stored.length} file(s).`);
     },
-    onError: () => setError("Upload failed."),
+    onError: (err: unknown) => {
+      setError("Upload failed.");
+      toast.error("Upload failed", apiErrorMessage(err, "Upload failed."));
+    },
   });
 
   const removeOne = useMutation({
     mutationFn: (name: string) => hrDryRunSourceApi.remove(name),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["hr-dry-run-source"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["hr-dry-run-source"] });
+      toast.success("File removed");
+    },
+    onError: (err: unknown) => toast.error("Could not remove file", apiErrorMessage(err, "Could not remove file.")),
   });
 
   const clearAll = useMutation({
@@ -57,7 +68,9 @@ export default function HrDryRunSourceUploadPage() {
     onSuccess: (res) => {
       setMessage(res.data.message);
       qc.invalidateQueries({ queryKey: ["hr-dry-run-source"] });
+      toast.success("Files cleared");
     },
+    onError: (err: unknown) => toast.error("Could not clear files", apiErrorMessage(err, "Could not clear files.")),
   });
 
   return (

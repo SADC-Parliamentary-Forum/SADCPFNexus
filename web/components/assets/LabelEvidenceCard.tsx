@@ -5,6 +5,7 @@ import Link from "next/link";
 import { assetLabelsApi, type AssetLabelEvidence } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 import { formatDateShort } from "@/lib/utils";
 import { createFilePreviewUrl, previewableFileType } from "@/lib/filePreview";
 
@@ -55,6 +56,7 @@ export function LabelEvidenceCard({
   onChanged?: () => void;
 }) {
   const { t } = useI18n();
+  const toast = useToast();
   const [evidence, setEvidence] = useState<AssetLabelEvidence | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ blob: Blob; url: string } | null>(null);
@@ -138,10 +140,13 @@ export function LabelEvidenceCard({
       setDraft(null);
       setNote("");
       setNotice(t("assets.labelEvidence.saved"));
+      toast.success(t("assets.labelEvidence.toast.saved"), assetTag);
       await load();
       onChanged?.();
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.labelEvidence.saveFailed")));
+      const message = apiErrorMessage(err, t("assets.labelEvidence.saveFailed"));
+      setError(message);
+      toast.error(t("assets.labelEvidence.toast.notSaved"), message);
     } finally {
       setBusy(false);
     }

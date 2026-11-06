@@ -6,10 +6,13 @@ import { auditApi } from "@/lib/api";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { FormSection } from "@/components/ui/FormSection";
 import { AuditPageShell, AuditTable } from "@/components/audit/AuditChrome";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function AuditCampaignsPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const { data, isLoading } = useQuery({
     queryKey: ["audit", "campaigns"],
     queryFn: async () => (await auditApi.listCampaigns({ per_page: 50 })).data,
@@ -25,8 +28,10 @@ export default function AuditCampaignsPage() {
       }),
     onSuccess: () => {
       setTitle("");
+      toast.success("Campaign created");
       qc.invalidateQueries({ queryKey: ["audit", "campaigns"] });
     },
+    onError: (err) => toast.error("Campaign not created", apiErrorMessage(err, "Failed to create the campaign.")),
   });
 
   return (

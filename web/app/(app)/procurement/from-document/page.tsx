@@ -13,6 +13,7 @@ import {
   type ProcurementIntake,
   type PurchaseOrder,
 } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 
 type Step = "upload" | "review" | "supplier" | "project" | "request" | "preview";
 
@@ -31,6 +32,7 @@ function confidenceLabel(score: number | null | undefined) {
 }
 
 export default function CreateFromDocumentPage() {
+  const toast = useToast();
   const [step, setStep] = useState<Step>("upload");
   const [file, setFile] = useState<File | null>(null);
   const [drag, setDrag] = useState(false);
@@ -116,9 +118,12 @@ export default function CreateFromDocumentPage() {
       setIntake(res.data.data);
       setError(null);
       setStep("review");
+      toast.success("Document uploaded");
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
-      setError(e.response?.data?.message ?? "Upload failed.");
+      const message = e.response?.data?.message ?? "Upload failed.";
+      setError(message);
+      toast.error("Document not uploaded", message);
     },
   });
 
@@ -134,10 +139,13 @@ export default function CreateFromDocumentPage() {
     onSuccess: (res) => {
       setIntake(res.data.data);
       setStep("request");
+      toast.success("Document details confirmed");
     },
     onError: (e: { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }) => {
       const errors = e.response?.data?.errors;
-      setError(errors ? Object.values(errors).flat().join(" ") : e.response?.data?.message ?? "Confirm failed.");
+      const message = errors ? Object.values(errors).flat().join(" ") : e.response?.data?.message ?? "Confirm failed.";
+      setError(message);
+      toast.error("Could not confirm document details", message);
     },
   });
 
@@ -151,9 +159,12 @@ export default function CreateFromDocumentPage() {
       const lpo = await procurementIntakeApi.generateLpo(intake!.id);
       setPo(lpo.data.data);
       setStep("preview");
+      toast.success("Procurement request created");
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
-      setError(e.response?.data?.message ?? "Could not create the procurement request.");
+      const message = e.response?.data?.message ?? "Could not create the procurement request.";
+      setError(message);
+      toast.error("Procurement request not created", message);
     },
   });
 
@@ -163,9 +174,12 @@ export default function CreateFromDocumentPage() {
       const lpo = await procurementIntakeApi.generateLpo(intake!.id);
       setPo(lpo.data.data);
       setStep("preview");
+      toast.success("Procurement request linked");
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
-      setError(e.response?.data?.message ?? "Could not link the procurement request.");
+      const message = e.response?.data?.message ?? "Could not link the procurement request.";
+      setError(message);
+      toast.error("Procurement request not linked", message);
     },
   });
 
@@ -183,10 +197,13 @@ export default function CreateFromDocumentPage() {
         setInviteNotice("Supplier saved on this document. You can invite them to the portal later from Supplier Master.");
       }
       setStep("project");
+      toast.success("Supplier saved");
     },
     onError: (e: { response?: { data?: { message?: string; errors?: Record<string, string[]> } } }) => {
       const errors = e.response?.data?.errors;
-      setError(errors ? Object.values(errors).flat().join(" ") : e.response?.data?.message ?? "Could not save the supplier.");
+      const message = errors ? Object.values(errors).flat().join(" ") : e.response?.data?.message ?? "Could not save the supplier.";
+      setError(message);
+      toast.error("Supplier not saved", message);
     },
   });
 
@@ -194,9 +211,12 @@ export default function CreateFromDocumentPage() {
     mutationFn: () => purchaseOrdersApi.submit(po!.id),
     onSuccess: (res) => {
       setPo(res.data.data);
+      toast.success("LPO sent for approval");
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
-      setError(e.response?.data?.message ?? "Could not send for approval.");
+      const message = e.response?.data?.message ?? "Could not send for approval.";
+      setError(message);
+      toast.error("LPO not sent for approval", message);
     },
   });
 

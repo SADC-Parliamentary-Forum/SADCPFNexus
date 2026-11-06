@@ -5,12 +5,15 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { correspondenceApi, adminApi, type Department } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const ACCEPTED = ".pdf,.doc,.docx";
 const MAX_MB = 25;
 
 export default function CreateCorrespondencePage() {
   const router = useRouter();
+  const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [file, setFile] = useState<File | null>(null);
@@ -85,9 +88,14 @@ export default function CreateCorrespondencePage() {
         await correspondenceApi.submit(id);
       }
 
+      toast.success(status === "submit" ? "Correspondence submitted" : "Correspondence saved as draft");
       router.push(`/correspondence/${id}`);
-    } catch {
+    } catch (err) {
       setError("Failed to save correspondence. Please try again.");
+      toast.error(
+        status === "submit" ? "Correspondence not submitted" : "Correspondence not saved",
+        apiErrorMessage(err, "Failed to save correspondence. Please try again."),
+      );
       setSaving(false);
     }
   }

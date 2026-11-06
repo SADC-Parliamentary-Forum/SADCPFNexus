@@ -9,6 +9,8 @@ import { policyApi, RISK_DOCUMENT_TYPES, type Policy, type RiskDocumentType } fr
 import { formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_OPTS = ["all", "active", "archived"] as const;
 
@@ -60,6 +62,7 @@ function formatBytes(bytes: number): string {
 export default function PolicyLibraryPage() {
   const qc = useQueryClient();
   const { confirm } = useConfirm();
+  const toast = useToast();
 
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "archived">("active");
   const [search, setSearch]             = useState("");
@@ -90,7 +93,13 @@ export default function PolicyLibraryPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => policyApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["risk-policies"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["risk-policies"] });
+      toast.success("Policy deleted");
+    },
+    onError: (err) => {
+      toast.error("Policy not deleted", apiErrorMessage(err, "Failed to delete policy."));
+    },
   });
 
   function openCreate() {
@@ -159,14 +168,22 @@ export default function PolicyLibraryPage() {
       }
 
       // Upload any staged documents
+      let failedUploads = 0;
       if (stagedDocs.length > 0) {
-        await Promise.allSettled(
+        const results = await Promise.allSettled(
           stagedDocs.map((d) => policyApi.uploadAttachment(policyId, d.file, d.docType))
         );
+        failedUploads = results.filter((r) => r.status === "rejected").length;
       }
 
+      toast.success(editing ? "Policy updated" : "Policy created", form.title);
+      if (failedUploads > 0) {
+        toast.warning("Some documents not uploaded", `${failedUploads} document(s) failed to upload. Add them from the policy page.`);
+      }
       qc.invalidateQueries({ queryKey: ["risk-policies"] });
       closeModal();
+    } catch (err) {
+      toast.error(editing ? "Policy not updated" : "Policy not created", apiErrorMessage(err, "Failed to save policy."));
     } finally {
       setSaving(false);
     }

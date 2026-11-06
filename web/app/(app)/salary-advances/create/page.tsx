@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { Stepper } from "@/components/ui/Stepper";
 import { useFormDraft } from "@/lib/useFormDraft";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 type AdvanceTypeOption = { value: string; label: string; desc?: string; icon?: string };
 
@@ -41,6 +43,7 @@ const STEPS = [
 
 export default function SalaryAdvanceCreatePage() {
   const router = useRouter();
+  const toast = useToast();
   const [step, setStep] = useState(0);
 
   // Data from API
@@ -147,9 +150,12 @@ export default function SalaryAdvanceCreatePage() {
       if (!asDraft && id) {
         await financeApi.submitAdvance(id, { deduction_authority_confirmed: true });
       }
+      toast.success(asDraft ? "Salary advance draft saved" : "Salary advance submitted");
       router.push(id ? `/salary-advances/${id}` : "/salary-advances");
-    } catch {
-      setError("Failed to submit. Please try again.");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Failed to submit. Please try again.");
+      setError(message);
+      toast.error(asDraft ? "Salary advance draft not saved" : "Salary advance not submitted", message);
     } finally {
       setSubmitting(false);
     }

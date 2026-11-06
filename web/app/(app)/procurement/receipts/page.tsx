@@ -11,6 +11,8 @@ import { ListPagination } from "@/components/ui/ListPagination";
 import { DEFAULT_PAGE_SIZE, clientPageCount, slicePage } from "@/lib/listPagination";
 import { ProcurementPageHeader } from "@/components/procurement/ProcurementPageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
   pending:   { label: "Pending",   cls: "badge-warning", icon: "hourglass_empty" },
@@ -37,6 +39,7 @@ function ReceiptsPageInner() {
   const poIdParam     = searchParams.get("po");
   const poId          = poIdParam ? Number(poIdParam) : null;
   const queryClient   = useQueryClient();
+  const toast         = useToast();
 
   const [statusFilter, setStatusFilter]   = useState("all");
   const [search, setSearch]               = useState("");
@@ -111,13 +114,13 @@ function ReceiptsPageInner() {
       queryClient.invalidateQueries({ queryKey: ["grns-all"] });
       setShowModal(false);
       setItemRows([]);
+      toast.success("Goods receipt recorded");
       router.push(`/procurement/receipts/${res.data.data.id}?po=${poId}`);
     },
     onError: (e: unknown) => {
-      setSubmitError(
-        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          "Failed to record receipt."
-      );
+      const message = apiErrorMessage(e, "Failed to record receipt.");
+      setSubmitError(message);
+      toast.error("Goods receipt not recorded", message);
     },
   });
 

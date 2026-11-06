@@ -4,8 +4,11 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { useEffect, useState } from "react";
 import { correspondenceApi, type CorrespondenceSubjectFile } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function SubjectFilesPage() {
+  const toast = useToast();
   const [files, setFiles] = useState<CorrespondenceSubjectFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ file_code: "", title: "", description: "" });
@@ -31,9 +34,11 @@ export default function SubjectFilesPage() {
     try {
       await correspondenceApi.createSubjectFile(form);
       setForm({ file_code: "", title: "", description: "" });
+      toast.success("Subject file created");
       load();
-    } catch {
+    } catch (err) {
       setError("Could not create subject file (code must be unique).");
+      toast.error("Subject file not created", apiErrorMessage(err, "Could not create subject file (code must be unique)."));
     }
   }
 

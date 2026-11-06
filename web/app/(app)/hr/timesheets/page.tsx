@@ -10,6 +10,8 @@ import { ModuleHubCards } from "@/components/ui/ModuleHubCards";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { TIMESHEET_HUB_CARDS } from "@/lib/hubs/timesheets";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import {
   firstTimesheetRowErrorMessage,
   normalizeTimesheetEntry,
@@ -190,6 +192,7 @@ function SummaryPanel({ timesheet, entries, saving, isAdmin, onSave, onSubmit, o
 // ─── Main Page ─────────────────────────────────────────────────────────────
 
 export default function TimesheetsPage() {
+  const toast = useToast();
   const [weekStartDate, setWeekStartDate] = useState<Date | null>(null);
   const [timesheet, setTimesheet] = useState<Timesheet | null>(null);
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
@@ -289,6 +292,7 @@ export default function TimesheetsPage() {
       const ts = data.data.timesheet;
       setTimesheet(ts);
       setEntries((ts.entries ?? []).map((e) => applyEntryDefaults(e, projects)));
+      toast.success("Template applied");
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data
@@ -298,6 +302,7 @@ export default function TimesheetsPage() {
         ).flat()[0] ||
         "Failed to apply template.";
       setError(msg);
+      toast.error("Template not applied", msg);
     } finally {
       setApplyingTemplate(false);
     }
@@ -359,8 +364,10 @@ export default function TimesheetsPage() {
     setError(null);
     try {
       await persistDraft();
-    } catch {
+      toast.success("Timesheet saved");
+    } catch (err) {
       setError("Failed to save timesheet.");
+      toast.error("Timesheet not saved", apiErrorMessage(err, "Failed to save timesheet."));
     } finally {
       setSaving(false);
     }
@@ -377,8 +384,10 @@ export default function TimesheetsPage() {
       const res = await hrApi.submitTimesheet(current.id);
       const updated = (res.data as any).data ?? res.data;
       setTimesheet((prev) => ({ ...prev!, ...updated }));
-    } catch {
+      toast.success("Timesheet submitted");
+    } catch (err) {
       setError("Failed to submit timesheet.");
+      toast.error("Timesheet not submitted", apiErrorMessage(err, "Failed to submit timesheet."));
     } finally {
       setSaving(false);
     }
@@ -391,8 +400,10 @@ export default function TimesheetsPage() {
       const res = await hrApi.approveTimesheet(timesheet.id);
       const updated = (res.data as any).data ?? res.data;
       setTimesheet((prev) => ({ ...prev!, ...updated }));
-    } catch {
+      toast.success("Timesheet approved");
+    } catch (err) {
       setError("Failed to approve timesheet.");
+      toast.error("Could not approve timesheet", apiErrorMessage(err, "Failed to approve timesheet."));
     } finally {
       setSaving(false);
     }
@@ -407,8 +418,10 @@ export default function TimesheetsPage() {
       setTimesheet((prev) => ({ ...prev!, ...updated }));
       setShowRejectModal(false);
       setRejectReason("");
-    } catch {
+      toast.success("Timesheet rejected");
+    } catch (err) {
       setError("Failed to reject timesheet.");
+      toast.error("Could not reject timesheet", apiErrorMessage(err, "Failed to reject timesheet."));
     } finally {
       setSaving(false);
     }

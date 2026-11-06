@@ -11,9 +11,12 @@ import { formatDate } from "@/lib/utils";
 import { SalaryAdvancePageHeader } from "@/components/salary-advance/SalaryAdvancePageHeader";
 import { EmptyState, ErrorBanner } from "@/components/ui/EmptyState";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export default function SalaryAdvanceSettingsPage() {
   const { t } = useI18n();
+  const toast = useToast();
   const [policies, setPolicies] = useState<SalaryAdvancePolicyVersion[]>([]);
   const [exceptions, setExceptions] = useState<SalaryAdvancePolicyException[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<Array<{ id: number; label: string }>>([]);
@@ -99,10 +102,13 @@ export default function SalaryAdvanceSettingsPage() {
         admin_review_required: true,
         final_approver_role: "Secretary General",
       });
+      toast.success("Policy version created", form.version || undefined);
       setForm({ version: "", effective_from: "", max_salary_percentage: 50, change_reason: "" });
       await load();
-    } catch {
-      setError("Could not create policy version. Ensure you have salary_advance.admin and provide a change reason.");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Could not create policy version. Ensure you have salary_advance.admin and provide a change reason.");
+      setError(message);
+      toast.error("Policy version not created", message);
     } finally {
       setSaving(false);
     }
@@ -121,6 +127,7 @@ export default function SalaryAdvanceSettingsPage() {
         effective_from: exceptionForm.effective_from,
         effective_to: exceptionForm.effective_to || undefined,
       });
+      toast.success("Policy exception created");
       setExceptionForm({
         employee_id: "",
         exception_type: "outstanding_balance",
@@ -130,8 +137,10 @@ export default function SalaryAdvanceSettingsPage() {
         effective_to: "",
       });
       await load();
-    } catch {
-      setError("Could not create policy exception. Admin permission required. Exceptions never silently override eligibility.");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Could not create policy exception. Admin permission required. Exceptions never silently override eligibility.");
+      setError(message);
+      toast.error("Policy exception not created", message);
     } finally {
       setSaving(false);
     }
@@ -143,9 +152,12 @@ export default function SalaryAdvanceSettingsPage() {
       await financeApi.approveSalaryAdvancePolicyException(id, {
         decision_notes: "Approved via Salary Advance Settings",
       });
+      toast.success("Policy exception approved");
       await load();
-    } catch {
-      setError("Could not approve exception.");
+    } catch (err) {
+      const message = apiErrorMessage(err, "Could not approve exception.");
+      setError(message);
+      toast.error("Could not approve exception", message);
     } finally {
       setSaving(false);
     }

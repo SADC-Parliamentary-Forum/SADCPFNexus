@@ -5,12 +5,15 @@ import Link from "next/link";
 import { useMutation } from "@tanstack/react-query";
 import { peopleAuthorityApi } from "@/lib/api";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 export default function Page() {
   const [name, setName] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const toast = useToast();
   const create = useMutation({
     mutationFn: () =>
       peopleAuthorityApi.createAccessReview({
@@ -18,11 +21,16 @@ export default function Page() {
         due_date: dueDate || undefined,
       }),
     onSuccess: () => {
+      toast.success("Access review created");
       setMsg("Access review campaign created. Items still need human decisions.");
       setErr(null);
       setName("");
     },
-    onError: () => setErr("Could not create the access review. A name is required."),
+    onError: (e) => {
+      const message = apiErrorMessage(e, "Could not create the access review. A name is required.");
+      setErr(message);
+      toast.error("Access review not created", message);
+    },
   });
 
   return (

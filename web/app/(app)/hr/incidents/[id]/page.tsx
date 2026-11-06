@@ -6,6 +6,8 @@ import { useParams, useRouter } from "next/navigation";
 import { hrIncidentsApi, type HrIncident } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const STEPS: { key: HrIncident["status"]; label: string; icon: string }[] = [
   { key: "reported",     label: "Reported",     icon: "report" },
@@ -27,6 +29,7 @@ const SEVERITY_CONFIG: Record<HrIncident["severity"], { cls: string; label: stri
 export default function IncidentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const toast = useToast();
   const [incident, setIncident] = useState<HrIncident | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +57,10 @@ export default function IncidentDetailPage() {
       const res = await hrIncidentsApi.update(incident.id, { status, description: notes || undefined });
       setIncident(res.data.data);
       setConfirmClose(false);
-    } catch {
+      toast.success("Incident status updated");
+    } catch (err) {
       setError("Failed to update incident status.");
+      toast.error("Incident status not updated", apiErrorMessage(err, "Failed to update incident status."));
     } finally {
       setUpdating(false);
     }
@@ -69,8 +74,10 @@ export default function IncidentDetailPage() {
       setIncident(res.data.data);
       setNotesSaved(true);
       setTimeout(() => setNotesSaved(false), 2500);
-    } catch {
+      toast.success("Notes saved");
+    } catch (err) {
       setError("Failed to save notes.");
+      toast.error("Notes not saved", apiErrorMessage(err, "Failed to save notes."));
     } finally {
       setUpdating(false);
     }

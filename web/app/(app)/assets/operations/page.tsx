@@ -19,6 +19,7 @@ import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { AssetPicker } from "@/components/assets/AssetPicker";
 import { AssetMultiPicker } from "@/components/assets/AssetMultiPicker";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 
 type LocationRow = { id: number; name: string; code: string };
 type RoomAsset = { id?: number; tag_number?: string; asset_code?: string; name?: string; status?: string };
@@ -44,6 +45,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
 }
 
 export default function AssetOperationsPage() {
+  const toast = useToast();
   const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("issue");
   const [error, setError] = useState("");
@@ -108,14 +110,18 @@ export default function AssetOperationsPage() {
     window.history.replaceState(null, "", `#${next}`);
   }
 
-  async function run(action: () => Promise<void>) {
+  /** Runs a user action; pass `feedback` when the action changes data so a toast reports the outcome. */
+  async function run(action: () => Promise<void>, feedback?: { success: string; error: string }) {
     setError("");
     setNotice("");
     setBusy(true);
     try {
       await action();
+      if (feedback) toast.success(feedback.success);
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.mine.actionFailed")));
+      const message = apiErrorMessage(err, t("assets.mine.actionFailed"));
+      setError(message);
+      if (feedback) toast.error(feedback.error, message);
     } finally {
       setBusy(false);
     }
@@ -192,7 +198,7 @@ export default function AssetOperationsPage() {
                   notes: plannerNotes || undefined,
                 });
                 window.location.href = `/assets/handovers/${created.data.data.handover.id}`;
-              });
+              }, { success: t("assets.operations.toast.issuePlanned"), error: t("assets.operations.toast.issueNotPlanned") });
             }}
           >
             <Step n={1} title={t("assets.ops.step.pickAsset")}>
@@ -330,7 +336,7 @@ export default function AssetOperationsPage() {
                   setCategoryDraft("");
                   await load();
                   setNotice(t("assets.ops.templateSaved"));
-                });
+                }, { success: t("assets.operations.toast.templateSaved"), error: t("assets.operations.toast.templateNotSaved") });
               }}
             >
               <label htmlFor="ops-template-name-field" className="block text-sm">
@@ -430,7 +436,7 @@ export default function AssetOperationsPage() {
                     const id = (created.data as { data?: { id?: number } }).data?.id;
                     if (id) setAttestId(id);
                     setNotice(t("assets.ops.campaignSaved"));
-                  });
+                  }, { success: t("assets.operations.toast.campaignCreated"), error: t("assets.operations.toast.campaignNotCreated") });
                 }}
               >
                 <label htmlFor="ops-campaign-name-field" className="block text-sm sm:col-span-2">
@@ -458,7 +464,7 @@ export default function AssetOperationsPage() {
                 setAttestReload((n) => n + 1);
                 await load();
                 setNotice(t("assets.ops.attested", { count }));
-              });
+              }, { success: t("assets.operations.toast.attested"), error: t("assets.operations.toast.notAttested") });
             }}
           >
             <Step n={2} title={t("assets.ops.step.attestAssets")}>
@@ -519,7 +525,7 @@ export default function AssetOperationsPage() {
                   setRoomToken(r.data.data.qr_token);
                   const list = await assetsApi.roomByToken(r.data.data.qr_token);
                   setRoomAssets((list.data.data.assets ?? []) as RoomAsset[]);
-                })}
+                }, { success: t("assets.operations.toast.roomTokenIssued"), error: t("assets.operations.toast.roomTokenNotIssued") })}
               >
                 {t("assets.ops.issueRoom")}
               </button>

@@ -6,6 +6,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supplierPortalApi } from "@/lib/api";
 import { formatDateShort } from "@/lib/utils";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 const DEFAULT_CURRENCY = process.env.NEXT_PUBLIC_DEFAULT_CURRENCY ?? "NAD";
 
@@ -13,6 +15,7 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
   const { id } = use(params);
   const requestId = Number(id);
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [quotedAmount, setQuotedAmount] = useState("");
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
   const [quoteDate, setQuoteDate] = useState("");
@@ -47,9 +50,13 @@ export default function SupplierRfqDetailPage({ params }: { params: Promise<{ id
       queryClient.invalidateQueries({ queryKey: ["supplier-rfq", requestId] });
       queryClient.invalidateQueries({ queryKey: ["supplier-rfqs"] });
       setError(null);
+      toast.success("Quote submitted");
     },
-    onError: (err: unknown) =>
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to submit quote."),
+    onError: (err: unknown) => {
+      const message = apiErrorMessage(err, "Failed to submit quote.");
+      setError(message);
+      toast.error("Quote not submitted", message);
+    },
   });
 
   if (isLoading) return <div className="card p-6">Loading RFQ...</div>;

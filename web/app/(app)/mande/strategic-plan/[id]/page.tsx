@@ -15,6 +15,8 @@ import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { formatDateShort } from "@/lib/utils";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 type NodeDraft = { title: string; code: string; description: string };
@@ -83,6 +85,7 @@ export default function StrategicPlanDetailPage() {
   const id = Number(params.id);
   const qc = useQueryClient();
   const { confirm } = useConfirm();
+  const toast = useToast();
   const user = getStoredUser();
   const canAdmin = isSystemAdmin(user) || hasPermission(user, "mande.admin");
 
@@ -115,8 +118,10 @@ export default function StrategicPlanDetailPage() {
     onSuccess: () => {
       setGoalDraft(EMPTY_DRAFT);
       setActionMsg("Goal added.");
+      toast.success("Goal added");
       invalidate();
     },
+    onError: (err) => toast.error("Goal not added", apiErrorMessage(err, "Could not add the goal.")),
   });
 
   const addObjectiveMut = useMutation({
@@ -125,8 +130,10 @@ export default function StrategicPlanDetailPage() {
       setChildDraft(EMPTY_DRAFT);
       setAddingObjectiveFor(null);
       setActionMsg("Objective added.");
+      toast.success("Objective added");
       invalidate();
     },
+    onError: (err) => toast.error("Objective not added", apiErrorMessage(err, "Could not add the objective.")),
   });
 
   const addOutcomeMut = useMutation({
@@ -135,8 +142,10 @@ export default function StrategicPlanDetailPage() {
       setChildDraft(EMPTY_DRAFT);
       setAddingOutcomeFor(null);
       setActionMsg("Outcome added.");
+      toast.success("Outcome added");
       invalidate();
     },
+    onError: (err) => toast.error("Outcome not added", apiErrorMessage(err, "Could not add the outcome.")),
   });
 
   const addOutputMut = useMutation({
@@ -145,8 +154,10 @@ export default function StrategicPlanDetailPage() {
       setChildDraft(EMPTY_DRAFT);
       setAddingOutputFor(null);
       setActionMsg("Output added.");
+      toast.success("Output added");
       invalidate();
     },
+    onError: (err) => toast.error("Output not added", apiErrorMessage(err, "Could not add the output.")),
   });
 
   const deleteMut = useMutation({
@@ -154,8 +165,10 @@ export default function StrategicPlanDetailPage() {
       mandeApi.deleteNode(type, nodeId),
     onSuccess: () => {
       setActionMsg("Node removed.");
+      toast.success("Item removed");
       invalidate();
     },
+    onError: (err) => toast.error("Item not removed", apiErrorMessage(err, "Could not remove the item.")),
   });
 
   const startChild = (kind: "objective" | "outcome" | "output", parentId: number) => {

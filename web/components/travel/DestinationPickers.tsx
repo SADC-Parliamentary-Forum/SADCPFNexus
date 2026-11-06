@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { travelApi, type TravelDestinationCountry } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 function unwrapCountries(payload: unknown): TravelDestinationCountry[] {
   if (!payload || typeof payload !== "object") return [];
@@ -94,6 +96,7 @@ function CountrySelect({
   onAdd: (name: string) => Promise<void>;
   adding: boolean;
 }) {
+  const toast = useToast();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,11 +197,14 @@ function CountrySelect({
                   e.preventDefault();
                   setError(null);
                   try {
-                    await onAdd(query.trim());
+                    const name = query.trim();
+                    await onAdd(name);
+                    toast.success("Country added", name);
                     setOpen(false);
                     setQuery("");
-                  } catch {
+                  } catch (err) {
                     setError("Could not add that country.");
+                    toast.error("Country not added", apiErrorMessage(err, "Could not add that country."));
                   }
                 }}
               >
@@ -233,6 +239,7 @@ function CitySelect({
   onAdd: (country: string, name: string) => Promise<void>;
   adding: boolean;
 }) {
+  const toast = useToast();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -319,11 +326,14 @@ function CitySelect({
                   e.preventDefault();
                   setError(null);
                   try {
-                    await onAdd(country, query.trim());
+                    const name = query.trim();
+                    await onAdd(country, name);
+                    toast.success("City added", name);
                     setOpen(false);
                     setQuery("");
-                  } catch {
+                  } catch (err) {
                     setError("Could not add that city.");
+                    toast.error("City not added", apiErrorMessage(err, "Could not add that city."));
                   }
                 }}
               >

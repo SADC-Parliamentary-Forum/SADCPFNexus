@@ -596,7 +596,6 @@ test("cited close and delete icon buttons expose accessible names", () => {
     ["app/(app)/settings/hr/personnel-file-sections/page.tsx", ["Close file section editor"]],
     ["app/(app)/settings/hr/salary-scales/SalaryScaleSlideOver.tsx", ["Close salary scale editor"]],
     ["app/(app)/procurement/vendors/[id]/page.tsx", ["Close vendor edit dialog"]],
-    ["app/(app)/hr/timesheets/team/page.tsx", ["Dismiss notification"]],
     ["app/(app)/hr/timesheets/monthly/page.tsx", ["Previous month", "Next month"]],
   ] as const;
 

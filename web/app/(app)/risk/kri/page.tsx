@@ -8,6 +8,8 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { RiskPageFrame } from "@/components/risk/RiskPageFrame";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 import { TableEmpty } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 function statusBadge(status: RiskKri["last_status"]): string {
   if (status === "breach") return "badge-danger";
@@ -30,6 +32,7 @@ function objectiveOptionLabel(objective: RiskObjectiveOption): string {
 export default function RiskKriPage() {
   const { t } = useI18n();
   const qc = useQueryClient();
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [linkDrafts, setLinkDrafts] = useState<Record<number, { risk_id: string; strategic_objective_id: string }>>({});
 
@@ -58,8 +61,13 @@ export default function RiskKriPage() {
     onSuccess: () => {
       setError(null);
       qc.invalidateQueries({ queryKey: ["risk", "kris"] });
+      toast.success("KRIs evaluated");
     },
-    onError: () => setError("Could not evaluate KRIs."),
+    onError: (err) => {
+      const message = apiErrorMessage(err, "Could not evaluate KRIs.");
+      setError(message);
+      toast.error("Could not evaluate KRIs", message);
+    },
   });
 
   const updateKri = useMutation({
@@ -67,8 +75,13 @@ export default function RiskKriPage() {
     onSuccess: () => {
       setError(null);
       qc.invalidateQueries({ queryKey: ["risk", "kris"] });
+      toast.success("KRI updated");
     },
-    onError: () => setError("Could not update KRI links/thresholds."),
+    onError: (err) => {
+      const message = apiErrorMessage(err, "Could not update KRI links/thresholds.");
+      setError(message);
+      toast.error("KRI not updated", message);
+    },
   });
 
   const kris = (krisQuery.data ?? []) as RiskKri[];

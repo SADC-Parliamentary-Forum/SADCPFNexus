@@ -16,6 +16,7 @@ import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { NexusPicker } from "@/components/ui/NexusPicker";
 import { NexusMoneyInput } from "@/components/ui/NexusMoneyInput";
 import { useFormDraft } from "@/lib/useFormDraft";
+import { useToast } from "@/components/ui/Toast";
 
 // ─── Funding items with icons ─────────────────────────────────────────────────
 const FUNDING_ITEMS: { item: string; icon: string }[] = [
@@ -243,6 +244,7 @@ function TravelCreatePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { prompt } = useConfirm();
+  const toast = useToast();
   const editParam = searchParams.get("edit");
   const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
 
@@ -553,6 +555,7 @@ function TravelCreatePageInner() {
 
       if (!createdId) {
         setSubmitError("Travel request was saved but no id was returned.");
+        toast.error("Travel request not saved", "Travel request was saved but no id was returned.");
         return;
       }
       // The server now holds the request; the local autosave is no longer needed.
@@ -579,9 +582,9 @@ function TravelCreatePageInner() {
           axiosErr?.response?.data?.message ||
           "Document upload failed.";
         setStep(4);
-        setSubmitError(
-          `${first} Request #${createdId} was saved as a draft — re-attach files on Documents, then submit.`,
-        );
+        const uploadMsg = `${first} Request #${createdId} was saved as a draft — re-attach files on Documents, then submit.`;
+        setSubmitError(uploadMsg);
+        toast.error("Documents not uploaded", uploadMsg);
         return;
       }
 
@@ -607,6 +610,7 @@ function TravelCreatePageInner() {
               });
             } else {
               setSubmitError("Saved as draft due to unresolved conflicts. Open the request to attach docs or resubmit.");
+              toast.warning("Travel request not submitted", "Saved as draft due to unresolved conflicts. Open the request to attach docs or resubmit.");
               router.push(`/travel/${createdId}`);
               return;
             }
@@ -618,23 +622,28 @@ function TravelCreatePageInner() {
                 ? attachMsg
                 : axiosErr?.response?.data?.message || "Submit failed after upload. Open the draft to finish.";
             setSubmitError(msg);
+            toast.error("Travel request not submitted", msg);
             router.push(`/travel/${createdId}`);
             return;
           }
         }
       }
+      toast.success(asDraft ? "Travel request saved as draft" : "Travel request submitted");
       router.push(asDraft ? `/travel/${createdId}` : "/travel");
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
       if (axiosErr?.response?.data?.message?.includes("Idempotency-Key was already used")) {
         // A previous attempt reached the server (its response was lost) and the form changed since.
         setSubmitError("This request may already have been saved from an earlier attempt. Check My travel requests before submitting again.");
+        toast.warning("Travel request may already be saved", "Check My travel requests before submitting again.");
         return;
       }
       const first = axiosErr?.response?.data?.errors
         ? Object.values(axiosErr.response.data.errors).flat()[0]
         : undefined;
-      setSubmitError(first || axiosErr?.response?.data?.message || "Could not save travel request. Please try again.");
+      const message = first || axiosErr?.response?.data?.message || "Could not save travel request. Please try again.";
+      setSubmitError(message);
+      toast.error("Travel request not saved", message);
     } finally {
       setSubmitting(false);
     }

@@ -14,10 +14,12 @@ import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHea
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SearchField } from "@/components/ui/SearchField";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
+import { useToast } from "@/components/ui/Toast";
 
 type Created = { id: number; reference: string; count: number; labelsPrinted: boolean };
 
 export default function AssetBatchesPage() {
+  const toast = useToast();
   const { t } = useI18n();
   const [rows, setRows] = useState<AssetAcquisitionBatch[]>([]);
   const [loadingRows, setLoadingRows] = useState(true);
@@ -125,6 +127,7 @@ export default function AssetBatchesPage() {
         }
       }
       setCreated({ id, reference: batch.data.data.reference, count: qty, labelsPrinted });
+      toast.success(t("assets.batches.toast.created"), t("assets.batches.toast.createdDetail", { reference: batch.data.data.reference, count: qty }));
       setDescription("");
       setQty(1);
       setUnitCost("");
@@ -133,7 +136,9 @@ export default function AssetBatchesPage() {
       setReceivedDate("");
       await load(search.trim());
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.assignFailed")));
+      const message = apiErrorMessage(err, t("assets.assignFailed"));
+      setError(message);
+      toast.error(t("assets.batches.toast.notCreated"), message);
     } finally {
       setBusy(false);
     }
@@ -145,9 +150,12 @@ export default function AssetBatchesPage() {
     try {
       const ok = await printLabels(id);
       if (!ok) setError(t("assets.register.needTemplate"));
+      else toast.success(t("assets.batches.toast.labelsPrinted"));
       await load(search.trim());
     } catch (err) {
-      setError(apiErrorMessage(err, t("assets.assignFailed")));
+      const message = apiErrorMessage(err, t("assets.assignFailed"));
+      setError(message);
+      toast.error(t("assets.batches.toast.labelsNotPrinted"), message);
     } finally {
       setPrinting(null);
     }

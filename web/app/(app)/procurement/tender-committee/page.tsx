@@ -5,9 +5,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { tenderCommitteesApi } from "@/lib/api";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export default function TenderCommitteePage() {
   const qc = useQueryClient();
+  const toast = useToast();
   const [name, setName] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["procurement", "tender-committees"],
@@ -19,6 +22,10 @@ export default function TenderCommitteePage() {
     onSuccess: () => {
       setName("");
       qc.invalidateQueries({ queryKey: ["procurement", "tender-committees"] });
+      toast.success("Tender committee created");
+    },
+    onError: (err: unknown) => {
+      toast.error("Tender committee not created", apiErrorMessage(err, "Failed to create the tender committee."));
     },
   });
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { assetRequestsApi } from "@/lib/api";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export const MIN_ASSET_REQUEST_JUSTIFICATION = 20;
 
@@ -16,6 +17,8 @@ export function NewAssetRequestModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  // The parent's onCreated shows the success toast; this modal reports failures.
+  const toast = useToast();
   const [justification, setJustification] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +48,9 @@ export function NewAssetRequestModal({
       reset();
       onCreated();
     } catch (err) {
-      setError(apiErrorMessage(err, "Failed to submit request. Please try again."));
+      const message = apiErrorMessage(err, "Failed to submit request. Please try again.");
+      setError(message);
+      toast.error("Asset request not submitted", message);
     } finally {
       setSubmitting(false);
     }

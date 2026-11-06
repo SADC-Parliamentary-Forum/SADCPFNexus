@@ -10,6 +10,7 @@ import { AssetAssigneePicker } from "@/components/assets/AssetAssigneePicker";
 import { assigneeDepartmentName, formatAssigneeLabel, tenantUserFromAsset } from "@/lib/asset-assignee";
 import { createFilePreviewUrl } from "@/lib/filePreview";
 import { AssetIdentifierFields, EMPTY_IDENTIFIERS, isSerialConflict, type AssetIdentifiers } from "@/components/assets/AssetIdentifierFields";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUSES = ["active", "service_due", "loan_out", "retired"] as const;
 const DEPRECIATION_METHODS = [
@@ -64,6 +65,7 @@ function formatDateForInput(value: string | null | undefined): string {
 
 export default function EditAssetPage() {
   const router = useRouter();
+  const toast = useToast();
   const params = useParams();
   const id = params?.id != null ? Number(params.id) : NaN;
 
@@ -223,6 +225,7 @@ export default function EditAssetPage() {
       if (invoiceFile) {
         await assetsApi.uploadInvoice(id, invoiceFile);
       }
+      toast.success("Asset updated", `${assetName} (${code}) has been saved.`);
       router.push("/assets");
       router.refresh();
     } catch (err: unknown) {
@@ -239,6 +242,7 @@ export default function EditAssetPage() {
         (data?.errors ? Object.values(data.errors).flat().join(" ") : null) ??
         "Failed to update asset. Please try again.";
       setError(msg);
+      toast.error("Asset not updated", msg);
     } finally {
       setSubmitting(false);
     }

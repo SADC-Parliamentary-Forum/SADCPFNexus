@@ -7,6 +7,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { budgetApi, type BudgetSubmissionPack } from "@/lib/api";
 import { getStoredUser, hasPermission, isSystemAdmin } from "@/lib/auth";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 function money(n: number): string {
   return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -16,6 +18,7 @@ export default function BudgetSubmissionDetailPage() {
   const params = useParams();
   const id = Number(params.id);
   const qc = useQueryClient();
+  const toast = useToast();
   const user = getStoredUser();
   const canFinance =
     isSystemAdmin(user) || hasPermission(user, ["finance.create", "finance.approve", "finance.admin"]);
@@ -41,29 +44,41 @@ export default function BudgetSubmissionDetailPage() {
     mutationFn: () => budgetApi.submitSubmission(id),
     onSuccess: () => {
       setMessage("Submitted to Finance / HOD.");
+      toast.success("Submission pack submitted");
       setError("");
       invalidate();
     },
-    onError: () => setError("Submit failed."),
+    onError: (err) => {
+      setError("Submit failed.");
+      toast.error("Submission pack not submitted", apiErrorMessage(err, "Submit failed."));
+    },
   });
 
   const acceptMut = useMutation({
     mutationFn: () => budgetApi.acceptSubmission(id),
     onSuccess: () => {
       setMessage("Pack accepted.");
+      toast.success("Submission pack accepted");
       invalidate();
     },
-    onError: () => setError("Accept failed."),
+    onError: (err) => {
+      setError("Accept failed.");
+      toast.error("Could not accept submission pack", apiErrorMessage(err, "Accept failed."));
+    },
   });
 
   const returnMut = useMutation({
     mutationFn: () => budgetApi.returnSubmission(id, { reason: reason.trim() }),
     onSuccess: () => {
       setMessage("Returned to preparer.");
+      toast.success("Submission pack returned");
       setReason("");
       invalidate();
     },
-    onError: () => setError("Return failed."),
+    onError: (err) => {
+      setError("Return failed.");
+      toast.error("Could not return submission pack", apiErrorMessage(err, "Return failed."));
+    },
   });
 
   const pack = query.data;

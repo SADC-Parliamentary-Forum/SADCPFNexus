@@ -8,6 +8,8 @@ import { Modal } from "@/components/ui/Modal";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { ModulePageHeader, PageBreadcrumbs } from "@/components/ui/ModulePageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useToast } from "@/components/ui/Toast";
+import { apiErrorMessage } from "@/lib/apiError";
 
 const SADC_COUNTRY_CODES: Record<string, string> = {
   NA: "Namibia (LIL uses NA only)",
@@ -33,6 +35,7 @@ const YEAR_OPTIONS = [currentYear - 1, currentYear, currentYear + 1, currentYear
 
 export default function AdminCalendarPage() {
   const { confirm } = useConfirm();
+  const toast = useToast();
   const [tab, setTab] = useState<"manage" | "single" | "bulk">("manage");
   const [type, setType] = useState<"sadc_holiday" | "un_day">("sadc_holiday");
   const [countryCode, setCountryCode] = useState<string>("NA");
@@ -96,9 +99,11 @@ export default function AdminCalendarPage() {
     try {
       await calendarApi.delete(entry.id);
       setSuccess("Entry deleted.");
+      toast.success("Calendar entry deleted");
       loadList();
-    } catch {
+    } catch (err) {
       setError("Failed to delete entry.");
+      toast.error("Could not delete calendar entry", apiErrorMessage(err, "Failed to delete entry."));
     } finally {
       setSubmitting(false);
     }
@@ -130,10 +135,12 @@ export default function AdminCalendarPage() {
         is_alert: type === "un_day",
       });
       setSuccess("Entry created.");
+      toast.success("Calendar entry created");
       setTitle("");
       setDate("");
-    } catch {
+    } catch (err) {
       setError("Failed to create entry.");
+      toast.error("Calendar entry not created", apiErrorMessage(err, "Failed to create entry."));
     } finally {
       setSubmitting(false);
     }
@@ -156,10 +163,12 @@ export default function AdminCalendarPage() {
       }
       await calendarApi.upload(entries);
       setSuccess(`${entries.length} entries created.`);
+      toast.success("Calendar entries uploaded", `${entries.length} entries created.`);
       setBulkJson("");
       if (tab === "manage") loadList();
-    } catch {
+    } catch (err) {
       setError("Invalid JSON or upload failed. Check format.");
+      toast.error("Calendar entries not uploaded", apiErrorMessage(err, "Invalid JSON or upload failed. Check format."));
     } finally {
       setSubmitting(false);
     }
@@ -180,10 +189,12 @@ export default function AdminCalendarPage() {
         is_alert: form.is_alert,
       });
       setSuccess("Entry updated.");
+      toast.success("Calendar entry updated");
       setEditEntry(null);
       loadList();
-    } catch {
+    } catch (err) {
       setError("Failed to update entry.");
+      toast.error("Calendar entry not updated", apiErrorMessage(err, "Failed to update entry."));
     } finally {
       setSubmitting(false);
     }

@@ -11,6 +11,7 @@ import Link from "next/link";
 import { riskApi, type RiskObjectiveOption } from "@/lib/api";
 import { getStoredUser } from "@/lib/auth";
 import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 import { useFormDraft } from "@/lib/useFormDraft";
 import {
   asOwnerOptions,
@@ -69,6 +70,7 @@ function objectiveLabel(o: RiskObjectiveOption): string {
 export default function CreateRiskPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const toast = useToast();
 
   const [form, setForm] = useState({
     title: "",
@@ -209,22 +211,29 @@ export default function CreateRiskPage() {
             }),
           );
           mitigationAppliedRef.current = true;
-        } catch {
+        } catch (mitigationErr) {
           /* Risk is saved; staff can attach the mitigation from the detail page. */
+          toast.warning(
+            "Mitigation not attached",
+            apiErrorMessage(mitigationErr, "The risk was saved. Attach the mitigation from the risk page."),
+          );
         }
       }
 
       if (andSubmit) {
         await riskApi.submit(created.id);
       }
+      toast.success(andSubmit ? "Risk submitted" : "Risk saved", created.title ?? undefined);
       router.push(`/risk/${created.id}`);
     } catch (err: unknown) {
+      const message = apiErrorMessage(err, t("risk.create.error"));
       if (axios.isAxiosError(err) && err.response?.status === 422) {
         setErrors(err.response.data.errors ?? {});
-        setApiError(apiErrorMessage(err, t("risk.create.error")));
+        setApiError(message);
       } else {
-        setApiError(apiErrorMessage(err, t("risk.create.error")));
+        setApiError(message);
       }
+      toast.error(andSubmit ? "Risk not submitted" : "Risk not saved", message);
     } finally {
       setSaving(false);
     }

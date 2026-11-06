@@ -3,9 +3,12 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supplierCategoriesApi, type SupplierCategory } from "@/lib/api";
+import { apiErrorMessage } from "@/lib/apiError";
+import { useToast } from "@/components/ui/Toast";
 
 export function SupplierCategoriesHierarchyCard() {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [name, setName] = useState("");
   const [parentId, setParentId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -26,9 +29,13 @@ export function SupplierCategoriesHierarchyCard() {
       setParentId("");
       setError(null);
       queryClient.invalidateQueries({ queryKey: ["supplier-categories"] });
+      toast.success("Supplier category added");
     },
-    onError: (err: unknown) =>
-      setError((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Could not create category."),
+    onError: (err: unknown) => {
+      const message = apiErrorMessage(err, "Could not create category.");
+      setError(message);
+      toast.error("Supplier category not added", message);
+    },
   });
 
   const categories = listQuery.data ?? [];
