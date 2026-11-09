@@ -1,5 +1,6 @@
 import { keyEn, keyFr, keyPt, type Dict } from "./keys.ts";
 import { phraseEn, phraseFr, phrasePt } from "./phrases.ts";
+import { catalogEn, catalogFr, catalogPt } from "./catalog/index.ts";
 
 export type Locale = "en" | "fr" | "pt";
 export type TranslateVars = Record<string, string | number>;
@@ -17,9 +18,11 @@ const BCP47: Record<Locale, string> = {
   pt: "pt-PT",
 };
 
+const dottedEn: Dict = { ...keyEn, ...catalogEn };
+
 function mergeCatalog(dottedLocalized: Dict, phrases: Dict): Dict {
   const table: Dict = { ...phrases, ...dottedLocalized };
-  for (const [key, english] of Object.entries(keyEn)) {
+  for (const [key, english] of Object.entries(dottedEn)) {
     if (!english) continue;
     if (!(english in table)) {
       table[english] = dottedLocalized[key] ?? phrases[english] ?? english;
@@ -29,9 +32,9 @@ function mergeCatalog(dottedLocalized: Dict, phrases: Dict): Dict {
 }
 
 const TABLES: Record<Locale, Dict> = {
-  en: mergeCatalog(keyEn, phraseEn),
-  fr: mergeCatalog(keyFr, phraseFr),
-  pt: mergeCatalog(keyPt, phrasePt),
+  en: mergeCatalog(dottedEn, phraseEn),
+  fr: mergeCatalog({ ...keyFr, ...catalogFr }, phraseFr),
+  pt: mergeCatalog({ ...keyPt, ...catalogPt }, phrasePt),
 };
 
 export function catalogFor(locale: Locale): Dict {

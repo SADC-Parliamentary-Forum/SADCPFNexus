@@ -11,6 +11,8 @@ import {
   localeBcp47,
   translate,
 } from "./messages.ts";
+import { catalogGroups } from "./catalog/index.ts";
+import { findHardcodedCopy, usedKeys } from "./hardcoded.ts";
 
 const webRoot = join(process.cwd());
 
@@ -547,6 +549,46 @@ test("leave hub cards and dynamic leave keys resolve in every locale", () => {
   for (const key of [...cardKeys, ...dynamic]) {
     for (const locale of LOCALES) {
       assert.ok(key in catalogFor(locale), `${key} missing from ${locale} catalog`);
+    }
+  }
+});
+
+test("module catalogs give every English key a French and Portuguese translation", () => {
+  for (const [name, group] of Object.entries(catalogGroups)) {
+    const keys = Object.keys(group.en);
+    for (const [locale, dict] of [["fr", group.fr], ["pt", group.pt]] as const) {
+      const missing = keys.filter((key) => !String(dict[key] ?? "").trim());
+      assert.deepEqual(missing, [], `${name} catalog is missing ${locale} translations`);
+      const stray = Object.keys(dict).filter((key) => !(key in group.en));
+      assert.deepEqual(stray, [], `${name} catalog has ${locale} keys with no English`);
+    }
+  }
+});
+
+test("module catalog screens carry no hardcoded English", () => {
+  for (const [name, group] of Object.entries(catalogGroups)) {
+    for (const rel of group.files) {
+      const source = readFileSync(join(webRoot, rel), "utf8");
+      assert.match(source, /useI18n/, `${rel} (${name}) should use useI18n`);
+      const hits = findHardcodedCopy(source);
+      assert.deepEqual(hits, [], `${rel} has hardcoded copy`);
+      for (const key of usedKeys(source)) {
+        for (const locale of LOCALES) {
+          assert.ok(key in catalogFor(locale), `${rel}: ${key} missing from ${locale} catalog`);
+        }
+      }
+    }
+  }
+});
+
+test("module catalogs do not redefine shared keys or each other's keys", async () => {
+  const { keyEn } = await import("./keys.ts");
+  const owner = new Map<string, string>();
+  for (const [name, group] of Object.entries(catalogGroups)) {
+    for (const [key, english] of Object.entries(group.en)) {
+      assert.ok(!(key in keyEn) || keyEn[key] === english, `${name} redefines ${key}, already "${keyEn[key]}" in keys.ts`);
+      assert.ok(!owner.has(key), `${key} is defined in both ${owner.get(key)} and ${name}`);
+      owner.set(key, name);
     }
   }
 });
