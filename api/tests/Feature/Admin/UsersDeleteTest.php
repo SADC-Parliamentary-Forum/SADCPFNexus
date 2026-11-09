@@ -112,4 +112,44 @@ class UsersDeleteTest extends TestCase
         $http->postJson("/api/v1/admin/users/{$target->id}/restore")->assertStatus(422);
         $this->assertSame(User::STATUS_REMOVED, $target->fresh()->account_status);
     }
+
+    public function test_admin_deletes_several_users_at_once_skipping_protected_accounts(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http, $admin] = $this->asAdmin($tenant);
+        $first = User::factory()->create(['tenant_id' => $tenant->id, 'email' => 'one@example.org']);
+        $second = User::factory()->create(['tenant_id' => $tenant->id, 'email' => 'two@example.org']);
+        $otherAdmin = User::factory()->create(['tenant_id' => $tenant->id]);
+        $otherAdmin->assignRole('System Admin');
+        $alreadyGone = User::factory()->create(['tenant_id' => $tenant->id]);
+        $http->postJson("/api/v1/admin/users/{$alreadyGone->id}/delete")->assertOk();
+
+        $http->postJson('/api/v1/admin/users/bulk-delete', [
+            'ids' => [$first->id, $second->id, $admin->id, $otherAdmin->id, $alreadyGone->id],
+            'reason' => 'Contract ended',
+        ])
+            ->assertOk()
+            ->assertJsonPath('removed_count', 2)
+            ->assertJsonPath('skipped_count', 3);
+
+        foreach ([$first, $second] as $user) {
+            $user->refresh();
+            $this->assertSame(User::STATUS_REMOVED, $user->account_status);
+            $this->assertSame('Contract ended', $user->status_reason);
+            $this->assertTrue(AuditLog::where('event', 'user.removed')->where('auditable_id', $user->id)->exists());
+        }
+        $this->assertSame('one@example.org', $first->former_email);
+        $this->assertTrue($admin->fresh()->accountAllowsAuthentication());
+        $this->assertNotSame(User::STATUS_REMOVED, $otherAdmin->fresh()->account_status);
+    }
+
+    public function test_staff_cannot_bulk_delete_users(): void
+    {
+        $tenant = Tenant::factory()->create();
+        [$http] = $this->asStaff($tenant);
+        $target = User::factory()->create(['tenant_id' => $tenant->id]);
+
+        $http->postJson('/api/v1/admin/users/bulk-delete', ['ids' => [$target->id]])->assertForbidden();
+        $this->assertNotSame(User::STATUS_REMOVED, $target->fresh()->account_status);
+    }
 }

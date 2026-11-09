@@ -377,6 +377,7 @@ Route::prefix('v1')->group(function () {
 
             // Users
             Route::post('users/bulk-deactivate', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'bulkDeactivate']);
+            Route::post('users/bulk-delete', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'bulkDelete']);
             Route::apiResource('users', \App\Http\Controllers\Api\V1\Admin\UsersController::class);
             Route::post('users/{user}/reactivate', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'reactivate']);
             Route::post('users/{user}/delete', [\App\Http\Controllers\Api\V1\Admin\UsersController::class, 'delete']);

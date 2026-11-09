@@ -358,6 +358,54 @@ class UserService
         ];
     }
 
+    /**
+     * Remove several users at once. Accounts that are already removed, the actor's own
+     * account and accounts the actor may not delete are skipped, not failed.
+     */
+    public function bulkRemove(array $ids, User $actor, callable $canDelete, ?string $reason = null): array
+    {
+        $removed = [];
+        $skipped = [];
+        $uniqueIds = array_values(array_unique(array_map('intval', $ids)));
+
+        $users = User::query()
+            ->whereIn('id', $uniqueIds)
+            ->get()
+            ->keyBy('id');
+
+        foreach ($uniqueIds as $id) {
+            $user = $users->get($id);
+            if (! $user) {
+                $skipped[] = ['id' => $id, 'reason' => 'not_found'];
+
+                continue;
+            }
+            if ($user->account_status === User::STATUS_REMOVED) {
+                $skipped[] = ['id' => $id, 'reason' => 'already_removed'];
+
+                continue;
+            }
+            if ($actor->id === $user->id) {
+                $skipped[] = ['id' => $id, 'reason' => 'self'];
+
+                continue;
+            }
+            if (! $canDelete($user)) {
+                $skipped[] = ['id' => $id, 'reason' => 'forbidden'];
+
+                continue;
+            }
+
+            $this->remove($user, $actor, $reason);
+            $removed[] = $id;
+        }
+
+        return [
+            'removed' => $removed,
+            'skipped' => $skipped,
+        ];
+    }
+
     public function revokeAllAccess(User $user): void
     {
         $user->tokens()->delete();

@@ -243,6 +243,38 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    const ids = selection.selectedIds.map(Number).filter((id) => Number.isFinite(id));
+    if (ids.length === 0) return;
+    if (
+      !(await confirm({
+        title: t("admin.users.bulkDeleteTitle"),
+        message: t("admin.users.bulkDeleteMessage", { count: ids.length }),
+        confirmText: t("admin.users.deleteSelected"),
+        variant: "danger",
+      }))
+    ) {
+      return;
+    }
+    setBulkLoading(true);
+    setError(null);
+    try {
+      const res = await adminApi.bulkDeleteUsers(ids);
+      const { removed_count, skipped_count } = res.data;
+      selection.clear();
+      reload();
+      if (skipped_count > 0) {
+        success(t("admin.users.bulkDeleteDoneSkipped", { done: removed_count, skipped: skipped_count }));
+      } else {
+        success(t("admin.users.bulkDeleteDone", { count: removed_count }));
+      }
+    } catch (err) {
+      showErrorToast(t("admin.users.bulkDeleteFailed"), apiErrorMessage(err, t("admin.users.bulkDeleteFailed")));
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
   const activeCount = useMemo(() => users.filter((u) => u.is_active).length, [users]);
   const lastPage = Math.ceil(total / 15) || 1;
 
@@ -347,6 +379,17 @@ export default function AdminUsersPage() {
               <span className="material-symbols-outlined text-[14px]">person_off</span>
               {bulkLoading ? t("admin.users.deactivating") : t("admin.users.deactivateSelected")}
             </button>
+            {statusFilter !== "removed" && (
+              <button
+                type="button"
+                disabled={bulkLoading || selection.selectedCount === 0}
+                onClick={() => void handleBulkDelete()}
+                className="inline-flex items-center gap-1 rounded-lg bg-red-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-[14px]">delete</span>
+                {bulkLoading ? t("admin.users.deleting") : t("admin.users.deleteSelected")}
+              </button>
+            )}
           </BulkSelectionBar>
         )}
       </div>

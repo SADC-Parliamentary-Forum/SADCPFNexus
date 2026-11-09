@@ -489,6 +489,14 @@ export const adminApi = {
       skipped: { id: number; reason: string }[];
       skipped_count: number;
     }>("/admin/users/bulk-deactivate", { ids }),
+  bulkDeleteUsers: (ids: number[], reason?: string) =>
+    api.post<{
+      message: string;
+      removed: number[];
+      removed_count: number;
+      skipped: { id: number; reason: string }[];
+      skipped_count: number;
+    }>("/admin/users/bulk-delete", { ids, reason }),
   reactivateUser: (id: number) => api.post(`/admin/users/${id}/reactivate`),
   /** Removes the user from lists and sign-in; history is kept and the email released. */
   deleteUser: (id: number, reason?: string) =>
