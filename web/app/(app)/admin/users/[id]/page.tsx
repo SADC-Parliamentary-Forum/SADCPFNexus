@@ -23,7 +23,9 @@ import {
 import { getStoredUser } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmDialog";
-import { cn } from "@/lib/utils";
+import { cn, formatDateShort } from "@/lib/utils";
+import { apiErrorMessage } from "@/lib/apiError";
+import { invitationState, type InvitationFields } from "@/lib/userInvitation";
 import DocumentsPanel from "@/components/ui/DocumentsPanel";
 
 const CLASSIFICATIONS = ["UNCLASSIFIED", "RESTRICTED", "CONFIDENTIAL", "SECRET"];
@@ -234,6 +236,8 @@ export default function UserEditPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
+  const [invitation, setInvitation] = useState<InvitationFields | null>(null);
+  const [inviting, setInviting] = useState(false);
   const [documents, setDocuments] = useState<UserDocument[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [docsUploading, setDocsUploading] = useState(false);
@@ -268,6 +272,7 @@ export default function UserEditPage() {
         }
 
         const u: User = (userResult.value.data as any).data ?? userResult.value.data;
+        setInvitation({ is_active: u.is_active, account_status: u.account_status, latest_account_invitation: u.latest_account_invitation });
 
         if (deptsResult.status === "fulfilled") {
           setDepartments((deptsResult.value.data as any)?.data ?? deptsResult.value.data ?? []);
@@ -490,6 +495,21 @@ export default function UserEditPage() {
     }
   };
 
+  const handleInvite = async () => {
+    if (!invitation) return;
+    const resend = invitationState(invitation).kind !== "not_invited";
+    setInviting(true);
+    try {
+      const res = await adminApi.resendUserInvitation(Number(id));
+      setInvitation({ ...invitation, latest_account_invitation: res.data.user.latest_account_invitation });
+      success(resend ? "Invitation resent" : "Invitation sent", `${form.email} can now complete registration.`);
+    } catch (err) {
+      toastError("Invitation not sent", apiErrorMessage(err, "Could not send the invitation."));
+    } finally {
+      setInviting(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (await confirm({
       title: "Deactivate User",
@@ -592,6 +612,33 @@ export default function UserEditPage() {
               </div>
             </div>
           </div>
+
+          {invitation && invitationState(invitation).action && (() => {
+            const inv = invitationState(invitation);
+            return (
+              <div className="bg-white rounded-2xl border border-neutral-200 p-5 shadow-sm space-y-3" data-testid="user-invitation-panel">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-neutral-900">Registration invitation</h3>
+                  <span className={`badge ${inv.badge}`}>{inv.label}</span>
+                </div>
+                <p className="text-xs text-neutral-500">
+                  {inv.kind === "not_invited" && "This account was created without an invitation. Send one so the user can set a password and complete registration."}
+                  {inv.kind === "sent" && `The user has not completed registration yet. The link expires ${formatDateShort(inv.expiresAt)}.`}
+                  {inv.kind === "expired" && "The invitation link has expired. Resend it to give the user a new link."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleInvite()}
+                  disabled={inviting}
+                  className="btn-primary w-full justify-center text-sm py-2 flex items-center gap-2 disabled:opacity-50"
+                  data-testid="user-invite-button"
+                >
+                  <span className="material-symbols-outlined text-[18px]">forward_to_inbox</span>
+                  {inviting ? "Sendingâ€¦" : inv.action}
+                </button>
+              </div>
+            );
+          })()}
 
           <div className="bg-white rounded-2xl border border-neutral-200 p-2 shadow-sm">
             {[

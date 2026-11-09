@@ -137,6 +137,7 @@ interface FormData {
   role: string;
   classification: string;
   mfa_enabled: boolean;
+  send_invitation: boolean;
   bio: string;
   date_of_birth: string;
   join_date: string;
@@ -167,7 +168,7 @@ export default function AdminUserCreatePage() {
   const [form, setForm] = useState<FormData>({
     name: "", email: "", employee_number: "", job_title: "",
     department_id: "", phone: "", role: "Staff",
-    classification: "UNCLASSIFIED", mfa_enabled: true,
+    classification: "UNCLASSIFIED", mfa_enabled: true, send_invitation: true,
     bio: "", date_of_birth: "", join_date: "",
     nationality: "", gender: "", marital_status: "",
     emergency_contact_name: "", emergency_contact_relationship: "", emergency_contact_phone: "",
@@ -284,6 +285,7 @@ export default function AdminUserCreatePage() {
         role: form.role || undefined,
         classification: form.classification || undefined,
         mfa_enabled: form.mfa_enabled,
+        send_welcome_email: form.send_invitation,
         bio: form.bio || undefined,
         date_of_birth: form.date_of_birth || undefined,
         join_date: form.join_date || undefined,
@@ -300,7 +302,12 @@ export default function AdminUserCreatePage() {
         country: form.country || undefined,
         portfolio_ids: form.portfolio_ids.length > 0 ? form.portfolio_ids : undefined,
       });
-      toast.success("User created", `${form.name} (${form.email}) has been added.`);
+      toast.success(
+        form.send_invitation ? "User created and invited" : "User created",
+        form.send_invitation
+          ? `An invitation to complete registration was emailed to ${form.email}.`
+          : `${form.name} has been added. Send the invitation from the user list when ready.`,
+      );
       router.push("/admin/users");
     } catch (err) {
       // The banner sits above the form, out of view of the Create button, so also toast and scroll up.
@@ -633,6 +640,24 @@ export default function AdminUserCreatePage() {
       {/* ── Step 3: Module Permissions ──────────────────────────────────── */}
       {step === 3 && (
         <div className="space-y-4">
+          <label htmlFor="admin-users-create-send-invitation" className="card p-4 flex items-start gap-3 cursor-pointer">
+            <input
+              id="admin-users-create-send-invitation"
+              type="checkbox"
+              className="mt-0.5 h-4 w-4 rounded border-neutral-300 text-primary focus:ring-primary"
+              checked={form.send_invitation}
+              onChange={(e) => set("send_invitation", e.target.checked)}
+              data-testid="create-user-send-invitation"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-neutral-900">Email an invitation now</span>
+              <span className="block text-xs text-neutral-500 mt-0.5">
+                {form.send_invitation
+                  ? `${form.email || "The user"} receives a link to set a password and complete registration. The link expires after 48 hours.`
+                  : "The account is created without emailing anyone. Send the invitation later from the user list or the user's page."}
+              </span>
+            </span>
+          </label>
           <div className="card p-4 flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-neutral-900">Module Access Matrix</p>

@@ -15,6 +15,9 @@ import {
 import { useRowSelection } from "@/lib/useRowSelection";
 import { useToast } from "@/components/ui/Toast";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { apiErrorMessage } from "@/lib/apiError";
+import { invitationState } from "@/lib/userInvitation";
+import { formatDateShort } from "@/lib/utils";
 
 const classColors: Record<string, string> = {
   UNCLASSIFIED: "badge-muted",
@@ -58,7 +61,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "invited" | "inactive">("all");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -134,6 +137,21 @@ export default function AdminUsersPage() {
       success("User deactivated.");
     } catch {
       setError("Failed to deactivate user.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleInvite = async (user: User) => {
+    const resend = invitationState(user).kind !== "not_invited";
+    setActionLoading(user.id);
+    try {
+      const res = await adminApi.resendUserInvitation(user.id);
+      const updated = res.data.user;
+      setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, latest_account_invitation: updated.latest_account_invitation } : u)));
+      success(resend ? "Invitation resent" : "Invitation sent", `${user.email} can now complete registration.`);
+    } catch (err) {
+      showErrorToast("Invitation not sent", apiErrorMessage(err, "Could not send the invitation."));
     } finally {
       setActionLoading(null);
     }
@@ -250,7 +268,7 @@ export default function AdminUsersPage() {
       <div className="card p-4">
         <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
           <div className="flex gap-2 flex-wrap">
-            {(["all", "active", "inactive"] as const).map((f) => (
+            {(["all", "active", "invited", "inactive"] as const).map((f) => (
               <button
                 key={f}
                 type="button"
@@ -379,9 +397,17 @@ export default function AdminUsersPage() {
                           </span>
                         </td>
                         <td>
-                          <span className={`badge ${user.is_active ? "badge-success" : "badge-muted"}`}>
-                            {user.is_active ? "Active" : "Inactive"}
-                          </span>
+                          {(() => {
+                            const inv = invitationState(user);
+                            return (
+                              <>
+                                <span className={`badge ${inv.badge}`} data-testid={`user-status-${user.id}`}>{inv.label}</span>
+                                {inv.kind === "sent" && inv.expiresAt && (
+                                  <p className="text-[11px] text-neutral-400 mt-0.5">Expires {formatDateShort(inv.expiresAt)}</p>
+                                )}
+                              </>
+                            );
+                          })()}
                         </td>
                         <td className="hidden sm:table-cell">
                           <span
@@ -404,7 +430,17 @@ export default function AdminUsersPage() {
                               >
                                 Edit
                               </Link>
-                              {user.is_active ? (
+                              {invitationState(user).action ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleInvite(user)}
+                                  disabled={actionLoading === user.id}
+                                  className="btn-secondary text-xs py-1 px-2 text-primary disabled:opacity-50"
+                                  data-testid={`user-invite-${user.id}`}
+                                >
+                                  {actionLoading === user.id ? "â€¦" : invitationState(user).action}
+                                </button>
+                              ) : user.is_active ? (
                                 <button
                                   type="button"
                                   onClick={() => void handleDeactivate(user)}

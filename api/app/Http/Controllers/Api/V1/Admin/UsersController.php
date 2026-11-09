@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Api\V1\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccessControl\AccessRoleSyncRequest;
 use App\Models\AccountAccessRequest;
+use App\Models\AuditLog;
 use App\Models\User;
+use App\Modules\AccessControl\Services\AccessCutoverService;
 use App\Modules\UserManagement\Services\UserService;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\PermissionRegistrar;
 
 class UsersController extends Controller
 {
@@ -59,7 +64,7 @@ class UsersController extends Controller
         $this->authorize('view', $user);
 
         return response()->json(
-            $user->load(['tenant', 'department', 'roles', 'permissions'])
+            $user->load(['tenant', 'department', 'roles', 'permissions', 'latestAccountInvitation'])
         );
     }
 
@@ -280,13 +285,13 @@ class UsersController extends Controller
             ]);
         }
 
-        $cutover = app(\App\Modules\AccessControl\Services\AccessCutoverService::class);
+        $cutover = app(AccessCutoverService::class);
         if ($cutover->legacyEditsFrozen((int) $user->tenant_id)) {
             abort(423, 'Legacy Spatie role edits are frozen. Assign published access_role_versions instead.');
         }
 
         $oldRoles = $user->getRoleNames()->values()->all();
-        $pending = \App\Models\AccessControl\AccessRoleSyncRequest::query()->create([
+        $pending = AccessRoleSyncRequest::query()->create([
             'tenant_id' => $user->tenant_id,
             'user_id' => $user->id,
             'roles' => array_values($roles),
@@ -294,7 +299,7 @@ class UsersController extends Controller
             'status' => 'pending_approval',
             'reason' => 'Role assignment requires dual control.',
         ]);
-        \App\Models\AuditLog::record('user.roles_pending_dual_control', [
+        AuditLog::record('user.roles_pending_dual_control', [
             'auditable_type' => User::class,
             'auditable_id' => $user->id,
             'old_values' => ['roles' => $oldRoles],
@@ -308,7 +313,7 @@ class UsersController extends Controller
         ], 202);
     }
 
-    public function approveRoleSync(Request $request, \App\Models\AccessControl\AccessRoleSyncRequest $syncRequest): JsonResponse
+    public function approveRoleSync(Request $request, AccessRoleSyncRequest $syncRequest): JsonResponse
     {
         $this->authorize('create', User::class);
         abort_unless((int) $syncRequest->tenant_id === (int) $request->user()->tenant_id, 404);
@@ -324,7 +329,7 @@ class UsersController extends Controller
         $oldRoles = $target->getRoleNames()->values()->all();
         $roles = (array) $syncRequest->roles;
         $target->syncRoles($roles);
-        app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
         $this->userService->revokeAllAccess($target);
 
         $syncRequest->update([
@@ -332,7 +337,7 @@ class UsersController extends Controller
             'approved_by' => $request->user()->id,
         ]);
 
-        \App\Models\AuditLog::record('user.roles_updated', [
+        AuditLog::record('user.roles_updated', [
             'auditable_type' => User::class,
             'auditable_id' => $target->id,
             'old_values' => ['roles' => $oldRoles],
@@ -358,7 +363,7 @@ class UsersController extends Controller
 
         $invitation = $this->userService->issueInvitation($user, $request->user(), true);
 
-        \App\Models\AuditLog::record('user.invitation_resent', [
+        AuditLog::record('user.invitation_resent', [
             'auditable_type' => User::class,
             'auditable_id' => $user->id,
             'new_values' => ['invitation_id' => $invitation->id],
@@ -389,14 +394,14 @@ class UsersController extends Controller
         ])->save();
         $this->userService->revokeAllAccess($user);
 
-        \App\Models\AuditLog::record('user.mfa_reset_by_admin', [
+        AuditLog::record('user.mfa_reset_by_admin', [
             'auditable_type' => User::class,
             'auditable_id' => $user->id,
             'new_values' => ['reason' => $data['reason']],
             'tags' => 'auth',
         ]);
 
-        app(\App\Services\NotificationService::class)->dispatch($user, 'user.mfa_reset', [
+        app(NotificationService::class)->dispatch($user, 'user.mfa_reset', [
             'name' => $user->name,
         ], ['module' => 'auth'], true, false);
 
@@ -409,13 +414,13 @@ class UsersController extends Controller
 
         $this->userService->revokeAllAccess($user);
 
-        \App\Models\AuditLog::record('user.sessions_revoked_by_admin', [
+        AuditLog::record('user.sessions_revoked_by_admin', [
             'auditable_type' => User::class,
             'auditable_id' => $user->id,
             'tags' => 'auth',
         ]);
 
-        app(\App\Services\NotificationService::class)->dispatch($user, 'user.sessions_revoked', [
+        app(NotificationService::class)->dispatch($user, 'user.sessions_revoked', [
             'name' => $user->name,
         ], ['module' => 'auth'], true, false);
 
@@ -456,7 +461,7 @@ class UsersController extends Controller
         $user->forceFill(['must_reset_password' => true])->save();
         Password::sendResetLink(['email' => $user->email]);
 
-        \App\Models\AuditLog::record('user.password_reset_link_sent_by_admin', [
+        AuditLog::record('user.password_reset_link_sent_by_admin', [
             'auditable_type' => User::class,
             'auditable_id' => $user->id,
             'actor_id' => $request->user()->id,
@@ -544,7 +549,7 @@ class UsersController extends Controller
             'review_comment' => $data['review_comment'] ?? null,
         ])->save();
 
-        \App\Models\AuditLog::record('auth.access_approved', [
+        AuditLog::record('auth.access_approved', [
             'auditable_type' => AccountAccessRequest::class,
             'auditable_id' => $accessRequest->id,
             'new_values' => ['user_id' => $user->id],
@@ -576,7 +581,7 @@ class UsersController extends Controller
             'review_comment' => $data['reason'],
         ])->save();
 
-        \App\Models\AuditLog::record('auth.access_rejected', [
+        AuditLog::record('auth.access_rejected', [
             'auditable_type' => AccountAccessRequest::class,
             'auditable_id' => $accessRequest->id,
             'new_values' => ['reason' => $data['reason']],
