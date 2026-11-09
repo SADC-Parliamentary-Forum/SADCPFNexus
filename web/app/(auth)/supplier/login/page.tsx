@@ -29,12 +29,12 @@ export default function SupplierLoginPage() {
           <div className="flex items-center gap-3 mb-12">
             <img
               src="/sadcpf-logo.jpg"
-              alt="SADC Parliamentary Forum"
+              alt="SADC Parliamentary Forum" // i18n-ignore
               className="h-10 w-auto object-contain flex-shrink-0"
             />
             <div>
               <h1 className="text-lg font-bold leading-tight">{t("auth.supplierPortalName")}</h1>
-              <p className="text-xs text-white/70">SADC-PF Nexus</p>
+              <p className="text-xs text-white/70">SADC-PF Nexus</p>{/* i18n-ignore */}
             </div>
           </div>
 
@@ -72,12 +72,12 @@ export default function SupplierLoginPage() {
           <div className="flex items-center gap-3 mb-8 lg:hidden">
             <img
               src="/sadcpf-logo.jpg"
-              alt="SADC Parliamentary Forum"
+              alt="SADC Parliamentary Forum" // i18n-ignore
               className="h-9 w-auto object-contain flex-shrink-0"
             />
             <div>
               <h1 className="text-base font-bold text-neutral-900">{t("auth.supplierPortalName")}</h1>
-              <p className="text-xs text-neutral-600">SADC-PF Nexus</p>
+              <p className="text-xs text-neutral-600">SADC-PF Nexus</p>{/* i18n-ignore */}
             </div>
           </div>
 

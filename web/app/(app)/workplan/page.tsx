@@ -25,12 +25,13 @@ import {
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
+/** Event type → i18n key; rendered through t(). */
 const TYPE_LABELS: Record<string, string> = {
-  meeting: "Meeting",
-  travel: "Travel",
-  leave: "Leave",
-  milestone: "Milestone",
-  deadline: "Deadline",
+  meeting: "workplan.page.type.meeting",
+  travel: "workplan.page.type.travel",
+  leave: "workplan.page.type.leave",
+  milestone: "workplan.page.type.milestone",
+  deadline: "workplan.page.type.deadline",
 };
 
 const TYPE_COLOR: Record<string, { bg: string; text: string; border: string; bar: string }> = {
@@ -41,9 +42,20 @@ const TYPE_COLOR: Record<string, { bg: string; text: string; border: string; bar
   deadline:  { bg: "bg-red-100 dark:bg-red-900/20",                     text: "text-red-800 dark:text-red-300",       border: "border-red-300 dark:border-red-700/50",                 bar: "#ef4444" },
 };
 
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+/** Month name i18n keys, January first. */
+const MONTH_KEYS = [
+  "admin.month.January", "admin.month.February", "admin.month.March", "admin.month.April",
+  "admin.month.May", "admin.month.June", "admin.month.July", "admin.month.August",
+  "admin.month.September", "admin.month.October", "admin.month.November", "admin.month.December",
+];
+/** Short month name i18n keys, January first. */
+const MONTH_SHORT_KEYS = [
+  "finance.monthShort.1", "finance.monthShort.2", "finance.monthShort.3", "finance.monthShort.4",
+  "finance.monthShort.5", "finance.monthShort.6", "finance.monthShort.7", "finance.monthShort.8",
+  "finance.monthShort.9", "finance.monthShort.10", "finance.monthShort.11", "finance.monthShort.12",
+];
 // Mon-first week. For grid offset math we use Mon=0 ... Sun=6
-const DAY_NAMES_MON = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const DAY_NAMES_MON = ["notifications.day.mon", "notifications.day.tue", "notifications.day.wed", "notifications.day.thu", "notifications.day.fri", "notifications.day.sat", "notifications.day.sun"];
 
 type ViewMode = "list" | "calendar" | "gantt";
 
@@ -72,8 +84,8 @@ function diffDays(a: Date, b: Date) {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
-function formatShort(d: Date) {
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+function formatShort(d: Date, localeTag: string) {
+  return d.toLocaleDateString(localeTag, { day: "numeric", month: "short" });
 }
 
 
@@ -111,6 +123,7 @@ function CalendarView({
   onDeleteEvent: (id: number) => void;
 }) {
   const { fmt: formatDate } = useFormatDate();
+  const { t, localeTag } = useI18n();
   const todayStr = ymd(new Date());
   const todayDate = new Date();
   const isCurrentMonth = year === todayDate.getFullYear() && month === todayDate.getMonth();
@@ -216,22 +229,22 @@ function CalendarView({
         <div className="flex items-center justify-between mb-4 gap-2">
           <button type="button" onClick={onPrev} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-            Previous
+            {t("common.previous")}
           </button>
           <div className="flex items-center gap-2">
-            <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">{MONTHS[month]} {year}</h2>
+            <h2 className="text-base font-bold text-neutral-900 dark:text-neutral-100">{t(MONTH_KEYS[month])} {year}</h2>
             {!isCurrentMonth && (
               <button
                 type="button"
                 onClick={onToday}
                 className="text-xs font-semibold px-2.5 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
               >
-                Today
+                {t("assignments.calendar.today")}
               </button>
             )}
           </div>
           <button type="button" onClick={onNext} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
-            Next
+            {t("common.next")}
             <span className="material-symbols-outlined text-[18px]">chevron_right</span>
           </button>
         </div>
@@ -239,14 +252,14 @@ function CalendarView({
         {events.length === 0 && (
           <div className="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 py-10 text-center mb-4">
             <span className="material-symbols-outlined text-4xl text-neutral-300 dark:text-neutral-600">event_busy</span>
-            <p className="mt-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">No events loaded for this year.</p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">Add an event or check your filters.</p>
+            <p className="mt-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">{t("workplan.page.noEventsYear")}</p>
+            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-1">{t("workplan.page.noEventsYearHint")}</p>
           </div>
         )}
         {events.length > 0 && eventsThisMonth === 0 && (
           <div className="rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 py-3 px-4 mb-4 flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300">
             <span className="material-symbols-outlined text-[20px]">info</span>
-            <span>No events in {MONTHS[month]} {year}. Use Previous/Next to switch month, or add an event.</span>
+            <span>{t("workplan.page.noEventsMonth", { month: t(MONTH_KEYS[month]), year })}</span>
           </div>
         )}
 
@@ -256,10 +269,10 @@ function CalendarView({
             <div
               key={d}
               className={`text-center text-xs font-semibold py-2 border-r border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-800/50 ${
-                d === "Sat" || d === "Sun" ? "text-neutral-400 dark:text-neutral-500" : "text-neutral-500 dark:text-neutral-400"
+                d === "notifications.day.sat" || d === "notifications.day.sun" ? "text-neutral-400 dark:text-neutral-500" : "text-neutral-500 dark:text-neutral-400"
               }`}
             >
-              {d}
+              {t(d)}
             </div>
           ))}
         </div>
@@ -305,8 +318,8 @@ function CalendarView({
                         type="button"
                         onClick={(e) => { e.stopPropagation(); e.preventDefault(); onDeleteEvent(ev.id); }}
                         className="flex-shrink-0 opacity-70 hover:opacity-100 p-0.5 rounded"
-                        title="Delete event"
-                        aria-label="Delete"
+                        title={t("workplan.page.deleteEvent")}
+                        aria-label={t("common.delete")}
                       >
                         <span className="material-symbols-outlined text-[14px]">close</span>
                       </button>
@@ -381,7 +394,7 @@ function CalendarView({
                             })}
                             {overflow > 0 && (
                               <p className="text-[10px] font-semibold text-primary/70 pl-1 hover:text-primary">
-                                +{overflow} more
+                                {t("workplan.page.more", { count: overflow })}
                               </p>
                             )}
                           </div>
@@ -402,13 +415,13 @@ function CalendarView({
             return (
               <span key={type} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${c.bg} ${c.text} ${c.border}`}>
                 <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.bar }} />
-                {label}
+                {t(label)}
               </span>
             );
           })}
           <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-2.5 py-1 text-xs font-medium text-neutral-500 bg-neutral-50">
             <span className="material-symbols-outlined text-[12px]">touch_app</span>
-            Click day to see details
+            {t("workplan.page.clickDay")}
           </span>
         </div>
       </div>
@@ -421,17 +434,17 @@ function CalendarView({
             <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-100 bg-neutral-50">
               <div>
                 <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wide">
-                  {new Date(year, month, selectedDay).toLocaleDateString("en-GB", { weekday: "long" })}
+                  {new Date(year, month, selectedDay).toLocaleDateString(localeTag, { weekday: "long" })}
                 </p>
                 <p className="text-lg font-bold text-neutral-900 leading-tight">
-                  {selectedDay} {MONTHS[month].slice(0, 3)} {year}
+                  {selectedDay} {t(MONTH_SHORT_KEYS[month])} {year}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedDay(null)}
                 className="text-neutral-400 hover:text-neutral-700 p-1 rounded-lg hover:bg-neutral-100 transition-colors"
-                aria-label="Close"
+                aria-label={t("common.close")}
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -442,7 +455,7 @@ function CalendarView({
               {selectedDayEvents.length === 0 ? (
                 <div className="py-8 text-center">
                   <span className="material-symbols-outlined text-3xl text-neutral-200">event_available</span>
-                  <p className="mt-2 text-xs text-neutral-400 font-medium">No events this day</p>
+                  <p className="mt-2 text-xs text-neutral-400 font-medium">{t("workplan.page.noEventsDay")}</p>
                 </div>
               ) : (
                 selectedDayEvents.map((ev) => {
@@ -470,7 +483,7 @@ function CalendarView({
                         <div className="flex-1 min-w-0">
                           <p className={`text-xs font-bold leading-snug truncate ${c.text}`}>{ev.title}</p>
                           <p className={`text-[10px] font-medium mt-0.5 ${c.text} opacity-70`}>
-                            {TYPE_LABELS[ev.type] ?? ev.type}
+                            {TYPE_LABELS[ev.type] ? t(TYPE_LABELS[ev.type]) : ev.type}
                             {ev.meeting_type?.name ? ` · ${ev.meeting_type.name}` : ""}
                           </p>
                           {isMultiDay && (
@@ -497,14 +510,14 @@ function CalendarView({
                           onClick={() => onOpenEvent(ev.id)}
                           className="btn-secondary text-[10px] py-0.5 px-2"
                         >
-                          Open
+                          {t("common.open")}
                         </button>
                         <button
                           type="button"
                           onClick={() => onDeleteEvent(ev.id)}
                           className="text-red-500 hover:text-red-700 p-0.5 rounded"
-                          title="Delete"
-                          aria-label="Delete"
+                          title={t("common.delete")}
+                          aria-label={t("common.delete")}
                         >
                           <span className="material-symbols-outlined text-[14px]">delete</span>
                         </button>
@@ -519,7 +532,7 @@ function CalendarView({
             {selectedDayEvents.length > 0 && (
               <div className="px-4 py-2.5 border-t border-neutral-100 bg-neutral-50/60">
                 <p className="text-[10px] text-neutral-400 text-center">
-                  {selectedDayEvents.length} event{selectedDayEvents.length !== 1 ? "s" : ""} · Hover to reveal actions
+                  {t(selectedDayEvents.length === 1 ? "workplan.page.hoverOne" : "workplan.page.hoverMany", { count: selectedDayEvents.length })}
                 </p>
               </div>
             )}
@@ -549,6 +562,7 @@ function GanttView({
   onOpenEvent: (id: number) => void;
   onDeleteEvent: (id: number) => void;
 }) {
+  const { t, localeTag } = useI18n();
   // Show 3 months: prev, current, next
   const rangeStart = new Date(year, month - 1, 1);
   const rangeEnd = new Date(year, month + 2, 0); // last day of next month
@@ -582,7 +596,7 @@ function GanttView({
       const startDay = diffDays(rangeStart, clampedStart);
       const days = diffDays(clampedStart, clampedEnd) + 1;
 
-      headers.push({ label: `${MONTHS[m].slice(0, 3)} ${y}`, startDay, days });
+      headers.push({ label: `${t(MONTH_SHORT_KEYS[m])} ${y}`, startDay, days });
       cur = new Date(y, m + 2, 1); // move to next month
     }
     return headers;
@@ -610,7 +624,7 @@ function GanttView({
     return (
       <div className="text-center py-16">
         <span className="material-symbols-outlined text-4xl text-neutral-200">bar_chart</span>
-        <p className="mt-3 text-sm text-neutral-500">No events in this period.</p>
+        <p className="mt-3 text-sm text-neutral-500">{t("workplan.page.noEventsPeriod")}</p>
       </div>
     );
   }
@@ -621,14 +635,14 @@ function GanttView({
       <div className="flex items-center justify-between mb-4">
         <button type="button" onClick={onPrev} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
           <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-          Previous
+          {t("common.previous")}
         </button>
         <h2 className="text-base font-bold text-neutral-900">
-          {MONTHS[month - 1 < 0 ? 11 : month - 1].slice(0,3)} – {MONTHS[(month + 1) % 12].slice(0,3)} {year}
-          <span className="text-sm font-normal text-neutral-500 ml-2">({visibleEvents.length} events)</span>
+          {t(MONTH_SHORT_KEYS[month - 1 < 0 ? 11 : month - 1])} – {t(MONTH_SHORT_KEYS[(month + 1) % 12])} {year}
+          <span className="text-sm font-normal text-neutral-500 ml-2">{t("workplan.page.eventCount", { count: visibleEvents.length })}</span>
         </h2>
         <button type="button" onClick={onNext} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1">
-          Next
+          {t("common.next")}
           <span className="material-symbols-outlined text-[18px]">chevron_right</span>
         </button>
       </div>
@@ -639,7 +653,7 @@ function GanttView({
           {/* Header row — month labels */}
           <div className="flex border-b border-neutral-200 bg-neutral-50">
             <div style={{ width: LABEL_W, minWidth: LABEL_W }} className="border-r border-neutral-200 px-3 py-2 text-xs font-semibold text-neutral-600 flex items-center">
-              Event
+              {t("risk.create.event")}
             </div>
             <div className="flex-1 relative">
               <div className="flex h-full">
@@ -716,7 +730,7 @@ function GanttView({
                       role="button"
                       tabIndex={0}
                       className="text-xs font-medium text-neutral-800 truncate hover:text-primary cursor-pointer flex-1 min-w-0"
-                      title="Open event"
+                      title={t("workplan.page.openEvent")}
                       onClick={() => onOpenEvent(ev.id)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
@@ -731,8 +745,8 @@ function GanttView({
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onDeleteEvent(ev.id); }}
                       className="flex-shrink-0 text-neutral-400 hover:text-red-600 p-0.5 rounded"
-                      title="Delete event"
-                      aria-label="Delete"
+                      title={t("workplan.page.deleteEvent")}
+                      aria-label={t("common.delete")}
                     >
                       <span className="material-symbols-outlined text-[14px]">close</span>
                     </button>
@@ -812,7 +826,7 @@ function GanttView({
           {showTodayLine && (
             <div className="flex border-t border-neutral-200 bg-neutral-50">
               <div style={{ width: LABEL_W, minWidth: LABEL_W }} className="border-r border-neutral-200 px-3 py-1.5">
-                <span className="text-[10px] font-semibold text-red-500">Today</span>
+                <span className="text-[10px] font-semibold text-red-500">{t("assignments.calendar.today")}</span>
               </div>
               <div className="flex-1 relative h-6">
                 <div
@@ -823,7 +837,7 @@ function GanttView({
                   className="absolute -translate-x-1/2 top-1 text-[9px] font-semibold text-red-500 whitespace-nowrap"
                   style={{ left: `${(todayOffset / totalDays) * 100}%` }}
                 >
-                  {formatShort(new Date())}
+                  {formatShort(new Date(), localeTag)}
                 </div>
               </div>
             </div>
@@ -837,13 +851,13 @@ function GanttView({
           const c = TYPE_COLOR[type];
           return (
             <span key={type} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${c.bg} ${c.text} ${c.border}`}>
-              {label}
+              {t(label)}
             </span>
           );
         })}
         <span className="inline-flex items-center gap-1.5 rounded-full border border-red-200 px-2.5 py-1 text-xs font-medium bg-red-50 text-red-600">
           <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
-          Today
+          {t("assignments.calendar.today")}
         </span>
       </div>
     </div>
@@ -897,12 +911,12 @@ export default function WorkplanListPage() {
       const events = Array.isArray(raw) ? raw : (raw && typeof raw === "object" && "data" in raw && Array.isArray((raw as { data: unknown }).data) ? (raw as { data: WorkplanEvent[] }).data : []);
       setList(events);
     } catch {
-      setError("Failed to load workplan events.");
+      setError(t("workplan.page.loadFailed"));
       setList([]);
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, yearFilter, monthFilter, viewMode, calYear, calMonth]);
+  }, [typeFilter, yearFilter, monthFilter, viewMode, calYear, calMonth, t]);
 
   const loadList = useCallback(() => {
     stableLoadList();
@@ -999,31 +1013,31 @@ export default function WorkplanListPage() {
     const { jsPDF, autoTable } = await loadPdfLibs();
     const doc = new jsPDF({ orientation: "landscape" });
     doc.setFontSize(14);
-    doc.text("Master Workplan – List View", 14, 15);
+    doc.text(t("workplan.page.pdfList"), 14, 15);
     doc.setFontSize(10);
     const body = list.map((ev) => [
       ev.title,
-      TYPE_LABELS[ev.type] ?? ev.type,
+      TYPE_LABELS[ev.type] ? t(TYPE_LABELS[ev.type]) : ev.type,
       ev.meeting_type?.name ?? "",
       formatDate(ev.date) + (ev.end_date && ev.end_date !== ev.date ? ` – ${formatDate(ev.end_date)}` : ""),
       ev.responsible_users?.length ? ev.responsible_users.map((u) => u.name).join(", ") : ev.responsible ?? "",
     ]);
     autoTable(doc, {
-      head: [["Title", "Type", "Kind of meeting", "Date", "Responsible"]],
+      head: [[t("documents.register.colTitle"), t("audit.col.type"), t("workplan.page.kindOfMeeting"), t("admin.common.date"), t("contracts.detail.responsible")]],
       body,
       startY: 22,
       margin: { left: 14 },
     });
     doc.save(`workplan-list-${yearFilter}-${Date.now()}.pdf`);
     setExportPdfOpen(false);
-  }, [list, yearFilter]);
+  }, [list, yearFilter, t]);
 
   const exportCalendarPdf = useCallback(async () => {
     const { jsPDF, autoTable } = await loadPdfLibs();
     const doc = new jsPDF({ orientation: "landscape" });
-    const monthLabel = `${MONTHS[calMonth]} ${calYear}`;
+    const monthLabel = `${t(MONTH_KEYS[calMonth])} ${calYear}`;
     doc.setFontSize(14);
-    doc.text(`Master Workplan – Calendar (${monthLabel})`, 14, 15);
+    doc.text(t("workplan.page.pdfCalendar", { month: monthLabel }), 14, 15);
     doc.setFontSize(10);
     const monthStart = new Date(calYear, calMonth, 1);
     const monthEnd = new Date(calYear, calMonth + 1, 0);
@@ -1044,37 +1058,37 @@ export default function WorkplanListPage() {
       body.push([d, titles || "—"]);
     }
     autoTable(doc, {
-      head: [["Day", "Events"]],
+      head: [[t("timesheets.quickEntry.day"), t("admin.auditTrail.stat.events")]],
       body,
       startY: 22,
       margin: { left: 14 },
     });
     doc.save(`workplan-calendar-${monthLabel.replace(/\s/g, "-")}-${Date.now()}.pdf`);
     setExportPdfOpen(false);
-  }, [list, calYear, calMonth]);
+  }, [list, calYear, calMonth, t]);
 
   const exportGanttPdf = useCallback(async () => {
     const { jsPDF, autoTable } = await loadPdfLibs();
     const doc = new jsPDF({ orientation: "landscape" });
     doc.setFontSize(14);
-    doc.text("Master Workplan – Gantt View", 14, 15);
+    doc.text(t("workplan.page.pdfGantt"), 14, 15);
     doc.setFontSize(10);
     const sorted = [...list].sort((a, b) => a.date.localeCompare(b.date));
     const body = sorted.map((ev) => [
       ev.title,
-      TYPE_LABELS[ev.type] ?? ev.type,
+      TYPE_LABELS[ev.type] ? t(TYPE_LABELS[ev.type]) : ev.type,
       formatDate(ev.date),
       ev.end_date && ev.end_date !== ev.date ? formatDate(ev.end_date) : "—",
     ]);
     autoTable(doc, {
-      head: [["Event", "Type", "Start", "End"]],
+      head: [[t("risk.create.event"), t("audit.col.type"), t("leave.col.start"), t("leave.col.end")]],
       body,
       startY: 22,
       margin: { left: 14 },
     });
     doc.save(`workplan-gantt-${calYear}-${Date.now()}.pdf`);
     setExportPdfOpen(false);
-  }, [list, calYear]);
+  }, [list, calYear, t]);
 
   const downloadImportTemplate = async () => {
     setImportBusy("template");
@@ -1124,9 +1138,9 @@ export default function WorkplanListPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <ModulePageHeader
-        title="Master Workplan"
-        subtitle="Meetings, travel, milestones and deadlines across the year."
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Master Workplan" }]} />}
+        title="workplan.page.title"
+        subtitle={t("workplan.page.subtitle")}
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "workplan.page.title" }]} />}
       />
         <div className="flex items-center gap-2 flex-wrap">
           <button
@@ -1167,7 +1181,7 @@ export default function WorkplanListPage() {
               className="btn-secondary py-2 px-3 text-sm flex items-center gap-1"
             >
               <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
-              Export PDF
+              {t("assets.register.exportPdf")}
             </button>
             {exportPdfOpen && (
               <>
@@ -1178,7 +1192,7 @@ export default function WorkplanListPage() {
                     className="w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
                   >
                     <span className="material-symbols-outlined text-[18px]">view_list</span>
-                    List view
+                    {t("workplan.page.listView")}
                   </button>
                   <button
                     type="button"
@@ -1186,7 +1200,7 @@ export default function WorkplanListPage() {
                     className="w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
                   >
                     <span className="material-symbols-outlined text-[18px]">calendar_month</span>
-                    Calendar view
+                    {t("workplan.page.calendarView")}
                   </button>
                   <button
                     type="button"
@@ -1194,7 +1208,7 @@ export default function WorkplanListPage() {
                     className="w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 flex items-center gap-2"
                   >
                     <span className="material-symbols-outlined text-[18px]">bar_chart</span>
-                    Gantt view
+                    {t("workplan.page.ganttView")}
                   </button>
                 </div>
                 <div
@@ -1207,11 +1221,11 @@ export default function WorkplanListPage() {
           </div>
           <Link href="/workplan/meeting-types" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-[18px]">category</span>
-            Meeting types
+            {t("workplan.meetingTypes.title")}
           </Link>
           <Link href="/workplan/new" className="btn-primary py-2 px-3 text-sm flex items-center gap-1">
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Add event
+            {t("workplan.new.title")}
           </Link>
         </div>
       </div>
@@ -1220,7 +1234,7 @@ export default function WorkplanListPage() {
       <div className="flex items-center gap-1 bg-neutral-100 rounded-xl p-1 w-fit">
         {(["list", "calendar", "gantt"] as ViewMode[]).map((mode) => {
           const icons: Record<ViewMode, string> = { list: "view_list", calendar: "calendar_month", gantt: "bar_chart" };
-          const labels: Record<ViewMode, string> = { list: "List", calendar: "Calendar", gantt: "Gantt" };
+          const labels: Record<ViewMode, string> = { list: t("travel.calendar.list"), calendar: t("operations.col.calendar"), gantt: t("workplan.page.gantt") };
           return (
             <button
               key={mode}
@@ -1249,20 +1263,20 @@ export default function WorkplanListPage() {
       {/* List filters — only show in list view */}
       {viewMode === "list" && (
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Event type</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{t("workplan.detail.eventType")}</span>
           <select className="form-input max-w-[160px] py-2 text-sm" value={typeFilter} onChange={(e) => { setTypeFilter(e.target.value); selection.clear(); }}>
-            <option value="">All</option>
-            {Object.entries(TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            <option value="">{t("assets.checkout.filter.all")}</option>
+            {Object.entries(TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{t(l)}</option>)}
           </select>
-          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Year</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{t("audit.col.year")}</span>
           <select className="form-input max-w-[100px] py-2 text-sm" value={yearFilter} onChange={(e) => { setYearFilter(e.target.value); selection.clear(); }}>
-            <option value="">All</option>
+            <option value="">{t("assets.checkout.filter.all")}</option>
             {years.map((y) => <option key={y} value={String(y)}>{y}</option>)}
           </select>
-          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Month</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{t("mande.calendar.month")}</span>
           <select className="form-input max-w-[140px] py-2 text-sm" value={monthFilter} onChange={(e) => { setMonthFilter(e.target.value); selection.clear(); }}>
-            <option value="">All</option>
-            {MONTHS.map((m, i) => <option key={i} value={String(i + 1)}>{m}</option>)}
+            <option value="">{t("assets.checkout.filter.all")}</option>
+            {MONTH_KEYS.map((m, i) => <option key={i} value={String(i + 1)}>{t(m)}</option>)}
           </select>
         </div>
       )}
@@ -1287,7 +1301,7 @@ export default function WorkplanListPage() {
         {loading ? (
           <div className="flex items-center justify-center py-16 text-neutral-500">
             <span className="material-symbols-outlined animate-spin text-[28px]">progress_activity</span>
-            <span className="ml-2">Loading…</span>
+            <span className="ml-2">{t("common.loading")}</span>
           </div>
         ) : viewMode === "calendar" ? (
           <CalendarView
@@ -1316,10 +1330,10 @@ export default function WorkplanListPage() {
             <div className="py-4">
               <EmptyState
                 icon="calendar_month"
-                title="No workplan events found."
+                title="workplan.page.empty"
                 action={
                   <Link href="/workplan/new" className="btn-primary text-sm">
-                    Add your first event
+                    {t("workplan.page.addFirst")}
                   </Link>
                 }
               />
@@ -1341,13 +1355,13 @@ export default function WorkplanListPage() {
                       />
                       <span data-testid="workplan-select-all" className="sr-only">{t("workplan.selectAll")}</span>
                     </th>
-                    <th>Title</th>
-                    <th>Event type</th>
-                    <th>Kind of meeting</th>
-                    <th>Date</th>
-                    <th>Responsible</th>
-                    <th>Docs</th>
-                    <th className="text-right">Action</th>
+                    <th>{t("documents.register.colTitle")}</th>
+                    <th>{t("workplan.detail.eventType")}</th>
+                    <th>{t("workplan.page.kindOfMeeting")}</th>
+                    <th>{t("admin.common.date")}</th>
+                    <th>{t("contracts.detail.responsible")}</th>
+                    <th>{t("governance.resolutions.col.docs")}</th>
+                    <th className="text-right">{t("operations.action")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1366,7 +1380,7 @@ export default function WorkplanListPage() {
                             handleOpenEvent(ev.id);
                           }
                         }}
-                        title="Open event"
+                        title={t("workplan.page.openEvent")}
                       >
                         <td
                           className={selectionColumnClass.td}
@@ -1383,7 +1397,7 @@ export default function WorkplanListPage() {
                         <td className="font-medium text-neutral-900">{ev.title}</td>
                         <td>
                           <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text} ${c.border}`}>
-                            {TYPE_LABELS[ev.type] ?? ev.type}
+                            {TYPE_LABELS[ev.type] ? t(TYPE_LABELS[ev.type]) : ev.type}
                           </span>
                         </td>
                         <td className="text-sm text-neutral-600">
@@ -1406,8 +1420,8 @@ export default function WorkplanListPage() {
                             type="button"
                             onClick={(e) => { e.stopPropagation(); handleDeleteEvent(ev.id); }}
                             className="text-neutral-400 hover:text-red-600 p-1 rounded inline-flex"
-                            title="Delete event"
-                            aria-label="Delete"
+                            title={t("workplan.page.deleteEvent")}
+                            aria-label={t("common.delete")}
                           >
                             <span className="material-symbols-outlined text-[18px]">delete</span>
                           </button>
@@ -1425,14 +1439,14 @@ export default function WorkplanListPage() {
       {/* Summary bar for calendar/gantt */}
       {(viewMode === "calendar" || viewMode === "gantt") && !loading && list.length > 0 && (
         <div className="flex flex-wrap gap-3 text-xs text-neutral-500">
-          <span className="font-semibold">{list.length} events loaded for {calYear}</span>
+          <span className="font-semibold">{t("workplan.page.loadedFor", { count: list.length, year: calYear })}</span>
           {Object.entries(TYPE_LABELS).map(([type, label]) => {
             const count = list.filter((e) => e.type === type).length;
             if (!count) return null;
             const c = TYPE_COLOR[type];
             return (
               <span key={type} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium ${c.bg} ${c.text} ${c.border}`}>
-                {label}: {count}
+                {t(label)}: {count}
               </span>
             );
           })}

@@ -151,12 +151,12 @@ function NewHandoverForm() {
       });
       const id = created.data.data.id;
       await assetsApi.sendHandover(id);
-      toast.success("Handover sent", `${selected.length} asset(s) sent for acceptance.`);
+      toast.success(t("assets.handoverNew.sent"), t("assets.handoverNew.sentBody", { count: selected.length }));
       router.push(`/assets/handovers/${id}`);
     } catch (err) {
       const message = apiErrorMessage(err, t("assets.assignFailed"));
       setError(message);
-      toast.error("Handover not sent", message);
+      toast.error(t("assets.handoverNew.notSent"), message);
     } finally {
       setBusy(false);
     }
@@ -174,19 +174,19 @@ function NewHandoverForm() {
         <label htmlFor="assets-handovers-new-field-1" className="block text-sm">
           {t("assets.handover.type")}
           <select id="assets-handovers-new-field-1" className="form-input mt-1" value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="issue">issue</option>
-            <option value="transfer">transfer</option>
-            <option value="return">return</option>
+            <option value="issue">{t("assets.handoverNew.type.issue")}</option>
+            <option value="transfer">{t("assets.handoverNew.type.transfer")}</option>
+            <option value="return">{t("assets.handoverNew.type.return")}</option>
           </select>
         </label>
         <label htmlFor="assets-handovers-new-field-2" className="block text-sm">
           {t("assets.handover.target")}
           <select id="assets-handovers-new-field-2" className="form-input mt-1" value={target} onChange={(e) => setTarget(e.target.value)}>
-            <option value="person">person</option>
-            <option value="department">department</option>
-            <option value="location">location</option>
-            <option value="pool">pool</option>
-            <option value="vehicle_facility">vehicle_facility</option>
+            <option value="person">{t("assets.handoverNew.target.person")}</option>
+            <option value="department">{t("assets.handoverNew.target.department")}</option>
+            <option value="location">{t("assets.handoverNew.target.location")}</option>
+            <option value="pool">{t("assets.handoverNew.target.pool")}</option>
+            <option value="vehicle_facility">{t("assets.handoverNew.target.vehicleFacility")}</option>
           </select>
         </label>
         {target === "person" && (

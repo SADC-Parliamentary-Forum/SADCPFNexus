@@ -57,16 +57,16 @@ const OTHER_COUNTRIES = [
 ];
 
 const PAYMENT_TERMS_OPTIONS = [
-  { value: "", label: "Select payment terms" },
-  { value: "Due on Receipt", label: "Due on Receipt" },
-  { value: "Net 7", label: "Net 7 – payment within 7 days of invoice" },
-  { value: "Net 14", label: "Net 14 – payment within 14 days of invoice" },
-  { value: "Net 30", label: "Net 30 – payment within 30 days of invoice" },
-  { value: "Net 45", label: "Net 45 – payment within 45 days of invoice" },
-  { value: "Net 60", label: "Net 60 – payment within 60 days of invoice" },
-  { value: "Net 90", label: "Net 90 – payment within 90 days of invoice" },
-  { value: "50% Upfront / 50% on Delivery", label: "50% Upfront / 50% on Delivery" },
-  { value: "COD", label: "COD – Cash on Delivery" },
+  { value: "", labelKey: "supplier.register.terms.placeholder" },
+  { value: "Due on Receipt", labelKey: "supplier.register.terms.receipt" },
+  { value: "Net 7", labelKey: "supplier.register.terms.net7" },
+  { value: "Net 14", labelKey: "supplier.register.terms.net14" },
+  { value: "Net 30", labelKey: "supplier.register.terms.net30" },
+  { value: "Net 45", labelKey: "supplier.register.terms.net45" },
+  { value: "Net 60", labelKey: "supplier.register.terms.net60" },
+  { value: "Net 90", labelKey: "supplier.register.terms.net90" },
+  { value: "50% Upfront / 50% on Delivery", labelKey: "supplier.register.terms.split" },
+  { value: "COD", labelKey: "supplier.register.terms.cod" },
 ];
 
 interface FormState {
@@ -145,7 +145,7 @@ export default function SupplierRegisterPage() {
   useEffect(() => {
     supplierCategoriesApi.publicList()
       .then((response) => setCategories(response.data.data))
-      .catch(() => setError("Failed to load supplier categories."))
+      .catch(() => setError(t("supplier.register.loadCategoriesFailed")))
       .finally(() => setLoadingCategories(false));
   }, []);
 
@@ -186,11 +186,11 @@ export default function SupplierRegisterPage() {
     setSuccess("");
 
     if (form.password !== form.password_confirmation) {
-      setError("Passwords do not match.");
+      setError(t("auth.reset.mismatch"));
       return;
     }
     if (!canAdvance(0) || !canAdvance(1) || !canAdvance(2) || !canAdvance(4) || !canAdvance(5)) {
-      setError("Complete required wizard steps, including mandatory documents, before creating the account.");
+      setError(t("supplier.register.incomplete"));
       return;
     }
 
@@ -228,7 +228,7 @@ export default function SupplierRegisterPage() {
       const message =
         (err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } })?.response?.data?.message
         ?? Object.values((err as { response?: { data?: { errors?: Record<string, string[]> } } })?.response?.data?.errors ?? {})?.[0]?.[0]
-        ?? "Supplier registration failed.";
+        ?? t("supplier.register.failed");
       setError(message);
     } finally {
       setLoading(false);
@@ -316,24 +316,24 @@ export default function SupplierRegisterPage() {
                     }`}
                   >
                     <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-                      {type === "company" ? "Company / Organisation" : "Individual / Sole Trader"}
+                      {type === "company" ? t("supplier.register.type.company") : t("supplier.register.type.individual")}
                     </p>
                     <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
                       {type === "company"
-                        ? "Registered business, NGO, or institution"
-                        : "Freelancer, translator, interpreter, or sole trader"}
+                        ? t("supplier.register.type.companyHint")
+                        : t("supplier.register.type.individualHint")}
                     </p>
                   </button>
                 ))}
               </div>
               <section className="space-y-4">
                 <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
-                  {form.supplier_type === "individual" ? "Your Details" : "Company Details"}
+                  {form.supplier_type === "individual" ? t("supplier.register.yourDetails") : t("supplier.register.companyDetails")}
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <input
                     className="form-input"
-                    placeholder={form.supplier_type === "individual" ? "Full name or trading name" : "Company name"}
+                    placeholder={form.supplier_type === "individual" ? t("supplier.register.tradingName") : t("supplier.register.companyName")}
                     value={form.company_name}
                     onChange={(e) => setField("company_name", e.target.value)}
                     required
@@ -341,37 +341,37 @@ export default function SupplierRegisterPage() {
                   <div className="space-y-1">
                     <input
                       className="form-input w-full"
-                      placeholder={form.supplier_type === "individual" ? "Business reg. no. (if any)" : "Registration number"}
+                      placeholder={form.supplier_type === "individual" ? t("supplier.register.regNoOptional") : t("procurement.fromDoc.field.registration")}
                       value={form.registration_number}
                       onChange={(e) => setField("registration_number", e.target.value)}
                       required={form.supplier_type === "company"}
                     />
                     {form.supplier_type === "individual" && (
-                      <p className="text-xs text-neutral-400">Optional for individuals.</p>
+                      <p className="text-xs text-neutral-400">{t("supplier.register.optionalIndividuals")}</p>
                     )}
                   </div>
                   <div className="space-y-1">
                     <input
                       className="form-input w-full"
-                      placeholder={form.supplier_type === "individual" ? "Tax number (if any)" : "Tax number"}
+                      placeholder={form.supplier_type === "individual" ? t("supplier.register.taxOptional") : t("supplier.register.tax")}
                       value={form.tax_number}
                       onChange={(e) => setField("tax_number", e.target.value)}
                       required={form.supplier_type === "company"}
                     />
                     {form.supplier_type === "individual" && (
-                      <p className="text-xs text-neutral-400">Optional for individuals.</p>
+                      <p className="text-xs text-neutral-400">{t("supplier.register.optionalIndividuals")}</p>
                     )}
                   </div>
-                  <input className="form-input" placeholder="Website (optional)" value={form.website} onChange={(e) => setField("website", e.target.value)} />
-                  <input className="form-input sm:col-span-2" placeholder="Physical address" value={form.address} onChange={(e) => setField("address", e.target.value)} required />
+                  <input className="form-input" placeholder={t("supplier.register.website")} value={form.website} onChange={(e) => setField("website", e.target.value)} />
+                  <input className="form-input sm:col-span-2" placeholder={t("supplier.register.address")} value={form.address} onChange={(e) => setField("address", e.target.value)} required />
                   <select className="form-input" value={form.country} onChange={(e) => setField("country", e.target.value)} required>
-                    <option value="">Select country</option>
-                    <optgroup label="SADC Member States">
+                    <option value="">{t("supplier.register.selectCountry")}</option>
+                    <optgroup label={t("travel.destinationPickers.sadcStates")}>
                       {SADC_COUNTRIES.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
                     </optgroup>
-                    <optgroup label="Other Countries">
+                    <optgroup label={t("travel.destinationPickers.otherCountries")}>
                       {OTHER_COUNTRIES.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
@@ -380,11 +380,11 @@ export default function SupplierRegisterPage() {
                   <div className="space-y-1">
                     <select className="form-input w-full" value={form.payment_terms} onChange={(e) => setField("payment_terms", e.target.value)}>
                       {PAYMENT_TERMS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
                       ))}
                     </select>
                     <p className="text-xs text-neutral-400">
-                      Your standard payment terms — how many days after invoice you expect payment (e.g. Net 30 means payment is due within 30 days).
+                      {t("supplier.register.termsHint")}
                     </p>
                   </div>
                 </div>
@@ -394,17 +394,17 @@ export default function SupplierRegisterPage() {
 
           {step === 1 && (
             <section className="space-y-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Primary Contact</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">{t("supplier.register.primaryContact")}</h2>
               <div className="grid gap-4 sm:grid-cols-2">
-                <input className="form-input" placeholder="Contact name" value={form.contact_name} onChange={(e) => setField("contact_name", e.target.value)} required />
-                <input className="form-input" type="email" placeholder="Contact email" value={form.contact_email} onChange={(e) => setField("contact_email", e.target.value)} required />
-                <input className="form-input" placeholder="Contact phone" value={form.contact_phone} onChange={(e) => setField("contact_phone", e.target.value)} required />
+                <input className="form-input" placeholder={t("supplier.register.contactName")} value={form.contact_name} onChange={(e) => setField("contact_name", e.target.value)} required />
+                <input className="form-input" type="email" placeholder={t("supplier.register.contactEmail")} value={form.contact_email} onChange={(e) => setField("contact_email", e.target.value)} required />
+                <input className="form-input" placeholder={t("supplier.register.contactPhone")} value={form.contact_phone} onChange={(e) => setField("contact_phone", e.target.value)} required />
                 <div className="grid grid-cols-2 gap-4">
-                  <input className="form-input" type="password" placeholder="Password" value={form.password} onChange={(e) => setField("password", e.target.value)} required />
+                  <input className="form-input" type="password" placeholder={t("login.password")} value={form.password} onChange={(e) => setField("password", e.target.value)} required />
                   <div className="space-y-1">
-                    <input className="form-input w-full" type="password" placeholder="Confirm password" value={form.password_confirmation} onChange={(e) => setField("password_confirmation", e.target.value)} required />
+                    <input className="form-input w-full" type="password" placeholder={t("auth.activate.confirmPassword")} value={form.password_confirmation} onChange={(e) => setField("password_confirmation", e.target.value)} required />
                     {form.password_confirmation && form.password !== form.password_confirmation && (
-                      <p className="text-xs text-red-500">Passwords do not match</p>
+                      <p className="text-xs text-red-500">{t("auth.reset.mismatchInline")}</p>
                     )}
                   </div>
                 </div>
@@ -415,13 +415,13 @@ export default function SupplierRegisterPage() {
           {step === 2 && (
             <section className="space-y-4">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Categories</h2>
-                <span className="text-xs text-neutral-400">{selectedCategories.length} selected</span>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">{t("auth.wizard.categories")}</h2>
+                <span className="text-xs text-neutral-400">{t("supplier.register.selected", { count: selectedCategories.length })}</span>
               </div>
               {loadingCategories ? (
-                <p className="text-sm text-neutral-500">Loading categories…</p>
+                <p className="text-sm text-neutral-500">{t("supplier.register.loadingCategories")}</p>
               ) : categories.length === 0 ? (
-                <p className="text-sm text-neutral-500">No categories available.</p>
+                <p className="text-sm text-neutral-500">{t("supplier.register.noCategories")}</p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2">
                   {categories.map((category) => {
@@ -436,40 +436,40 @@ export default function SupplierRegisterPage() {
                         }`}
                       >
                         <p className="text-sm font-semibold text-neutral-900">{category.name}</p>
-                        <p className="mt-1 text-xs text-neutral-500">{category.code}{category.parent_id ? " · child category" : ""}</p>
+                        <p className="mt-1 text-xs text-neutral-500">{category.code}{category.parent_id ? ` · ${t("supplier.register.childCategory")}` : ""}</p>
                       </button>
                     );
                   })}
                 </div>
               )}
-              <p className="text-xs text-neutral-500">Select every applicable category, including child categories.</p>
+              <p className="text-xs text-neutral-500">{t("supplier.register.categoriesHint")}</p>
             </section>
           )}
 
           {step === 3 && (
             <section className="space-y-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Ownership</h2>
-              <p className="text-sm text-neutral-500">Add beneficial owners. You can continue with none and complete this after login.</p>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">{t("auth.wizard.ownership")}</h2>
+              <p className="text-sm text-neutral-500">{t("supplier.register.ownershipHint")}</p>
               {owners.map((owner, index) => (
                 <div key={index} className="grid gap-3 sm:grid-cols-3">
-                  <input className="form-input" placeholder="Full name" value={owner.full_name} onChange={(e) => setOwners((current) => current.map((row, i) => i === index ? { ...row, full_name: e.target.value } : row))} />
-                  <input className="form-input" placeholder="Role" value={owner.role} onChange={(e) => setOwners((current) => current.map((row, i) => i === index ? { ...row, role: e.target.value } : row))} />
-                  <input className="form-input" placeholder="% ownership" value={owner.ownership_percent} onChange={(e) => setOwners((current) => current.map((row, i) => i === index ? { ...row, ownership_percent: e.target.value } : row))} />
+                  <input className="form-input" placeholder={t("auth.requestPassword.fullName")} value={owner.full_name} onChange={(e) => setOwners((current) => current.map((row, i) => i === index ? { ...row, full_name: e.target.value } : row))} />
+                  <input className="form-input" placeholder={t("admin.common.role")} value={owner.role} onChange={(e) => setOwners((current) => current.map((row, i) => i === index ? { ...row, role: e.target.value } : row))} />
+                  <input className="form-input" placeholder={t("supplier.register.ownershipPercent")} value={owner.ownership_percent} onChange={(e) => setOwners((current) => current.map((row, i) => i === index ? { ...row, ownership_percent: e.target.value } : row))} />
                 </div>
               ))}
               <button type="button" className="btn-secondary text-sm" onClick={() => setOwners((current) => [...current, { full_name: "", role: "", ownership_percent: "" }])}>
-                Add owner
+                {t("supplier.register.addOwner")}
               </button>
             </section>
           )}
 
           {step === 4 && (
             <section className="space-y-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Banking</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">{t("auth.wizard.banking")}</h2>
               <div className="grid gap-4 sm:grid-cols-3">
-                <input className="form-input" placeholder="Bank name" value={form.bank_name} onChange={(e) => setField("bank_name", e.target.value)} required />
-                <input className="form-input" placeholder="Bank account" value={form.bank_account} onChange={(e) => setField("bank_account", e.target.value)} required />
-                <input className="form-input" placeholder="Branch / SWIFT" value={form.bank_branch} onChange={(e) => setField("bank_branch", e.target.value)} required />
+                <input className="form-input" placeholder={t("supplier.register.bankName")} value={form.bank_name} onChange={(e) => setField("bank_name", e.target.value)} required />
+                <input className="form-input" placeholder={t("supplier.register.bankAccount")} value={form.bank_account} onChange={(e) => setField("bank_account", e.target.value)} required />
+                <input className="form-input" placeholder={t("supplier.register.bankBranch")} value={form.bank_branch} onChange={(e) => setField("bank_branch", e.target.value)} required />
               </div>
             </section>
           )}
@@ -478,19 +478,19 @@ export default function SupplierRegisterPage() {
 
           {step === 6 && (
             <section className="space-y-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Declarations</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">{t("auth.wizard.declarations")}</h2>
               <p className="text-sm text-neutral-600">{t("auth.wizard.declarationsHint")}</p>
             </section>
           )}
 
           {step === 7 && (
             <section className="space-y-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Review &amp; create account</h2>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">{t("supplier.register.reviewTitle")}</h2>
               <dl className="grid gap-2 text-sm sm:grid-cols-2">
-                <div><dt className="text-xs text-neutral-400">Company</dt><dd>{form.company_name || "—"}</dd></div>
-                <div><dt className="text-xs text-neutral-400">Contact</dt><dd>{form.contact_email || "—"}</dd></div>
-                <div><dt className="text-xs text-neutral-400">Categories</dt><dd>{selectedCategories.length}</dd></div>
-                <div><dt className="text-xs text-neutral-400">Documents</dt><dd>{documents.length}</dd></div>
+                <div><dt className="text-xs text-neutral-400">{t("supplier.register.company")}</dt><dd>{form.company_name || "—"}</dd></div>
+                <div><dt className="text-xs text-neutral-400">{t("procurement.vendors.col.contact")}</dt><dd>{form.contact_email || "—"}</dd></div>
+                <div><dt className="text-xs text-neutral-400">{t("auth.wizard.categories")}</dt><dd>{selectedCategories.length}</dd></div>
+                <div><dt className="text-xs text-neutral-400">{t("auth.wizard.documents")}</dt><dd>{documents.length}</dd></div>
               </dl>
               <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                 {t("auth.verifyEmailNext")}
@@ -501,7 +501,7 @@ export default function SupplierRegisterPage() {
 
           <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-4">
             <button type="button" className="btn-secondary text-sm" disabled={step === 0} onClick={() => setStep((current) => Math.max(0, current - 1))}>
-              Back
+              {t("common.back")}
             </button>
             {step < WIZARD_STEPS.length - 1 ? (
               <button
@@ -510,7 +510,7 @@ export default function SupplierRegisterPage() {
                 disabled={!canAdvance(step)}
                 onClick={() => setStep((current) => Math.min(WIZARD_STEPS.length - 1, current + 1))}
               >
-                Next
+                {t("common.next")}
               </button>
             ) : (
               <button

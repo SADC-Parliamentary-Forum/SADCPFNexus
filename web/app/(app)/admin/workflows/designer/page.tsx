@@ -27,15 +27,15 @@ type StageDraft = {
 };
 
 const ACTOR_SELECTORS = [
-  { value: "supervisor", label: "Direct supervisor" },
-  { value: "hod", label: "Head of department (up the chain)" },
-  { value: "director_finance", label: "Director of Finance" },
-  { value: "sg", label: "Secretary General" },
-  { value: "specific_role", label: "Specific role" },
-  { value: "specific_user", label: "Specific user" },
-  { value: "position", label: "Position holder" },
-  { value: "queue", label: "Shared queue" },
-  { value: "authority_holder", label: "Authority-action holder" },
+  { value: "supervisor", labelKey: "admin.workflowDesigner.actor.supervisor" },
+  { value: "hod", labelKey: "admin.workflowDesigner.actor.hod" },
+  { value: "director_finance", labelKey: "admin.workflowDesigner.actor.directorFinance" },
+  { value: "sg", labelKey: "travel.queueTable.label.secretaryGeneral" },
+  { value: "specific_role", labelKey: "admin.workflowDesigner.actor.specificRole" },
+  { value: "specific_user", labelKey: "admin.workflowDesigner.actor.specificUser" },
+  { value: "position", labelKey: "admin.workflowDesigner.actor.position" },
+  { value: "queue", labelKey: "admin.workflowDesigner.actor.queue" },
+  { value: "authority_holder", labelKey: "admin.workflowDesigner.actor.authority" },
 ];
 
 export default function WorkflowDesignerPage() {
@@ -54,10 +54,11 @@ export default function WorkflowDesignerPage() {
 
   useEffect(() => {
     workflowEngineApi.definitions().then((res) => setDefinitions(res.data.data || [])).catch(() => {
-      toast("error", "Load failed", "Could not load workflow definitions.");
+      toast("error", t("admin.workflowDesigner.loadFailed"), t("admin.workflowDesigner.loadFailedBody"));
     });
     adminApi.listRoles().then((res) => setRoles(res.data.roles ?? [])).catch(() => setRoles([]));
     adminApi.listUsers({ per_page: 100 }).then((res) => setUsers(res.data.data ?? [])).catch(() => setUsers([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t only formats the toast text
   }, [toast]);
 
   const loadDraft = async (workflowId: number) => {
@@ -80,7 +81,7 @@ export default function WorkflowDesignerPage() {
       );
       setLint(null);
     } catch {
-      toast("error", "Draft failed", "Could not create draft version.");
+      toast("error", t("admin.workflowDesigner.draftFailed"), t("admin.workflowDesigner.draftFailedBody"));
     } finally {
       setBusy(false);
     }
@@ -92,9 +93,9 @@ export default function WorkflowDesignerPage() {
     try {
       await workflowEngineApi.updatePolicy(selectedId, policy);
       setDefinitions((prev) => prev.map((d) => (d.id === selectedId ? { ...d, self_approval_policy: policy } : d)));
-      toast("success", "Policy updated", "Self-approval policy saved.");
+      toast("success", t("risk.policies.updated"), t("admin.workflowDesigner.policySaved"));
     } catch {
-      toast("error", "Save failed", "Could not update self-approval policy.");
+      toast("error", t("admin.auditTrail.governance.saveFailed"), t("admin.workflowDesigner.policySaveFailed"));
     }
   };
 
@@ -132,9 +133,9 @@ export default function WorkflowDesignerPage() {
       await workflowEngineApi.updateDraft(versionId, { stages });
       const res = await workflowEngineApi.lint(versionId);
       setLint(res.data.data);
-      toast(res.data.data.valid ? "success" : "error", "Lint complete", res.data.data.valid ? "No hard failures." : "Hard failures block publish.");
+      toast(res.data.data.valid ? "success" : "error", t("admin.workflowDesigner.lintDone"), res.data.data.valid ? t("admin.workflowDesigner.lintOk") : t("admin.workflowDesigner.lintBlocked"));
     } catch {
-      toast("error", "Save failed", "Could not save draft or lint.");
+      toast("error", t("admin.auditTrail.governance.saveFailed"), t("admin.workflowDesigner.saveLintFailed"));
     } finally {
       setBusy(false);
     }
@@ -147,10 +148,10 @@ export default function WorkflowDesignerPage() {
       await workflowEngineApi.updateDraft(versionId, { stages });
       await workflowEngineApi.approveVersion(versionId);
       await workflowEngineApi.publishVersion(versionId);
-      toast("success", "Published", "Definition version published after lint.");
+      toast("success", t("weeklySummaries.status.published"), t("admin.workflowDesigner.publishedBody"));
     } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.response?.data?.errors?.definition?.[0] || "Publish blocked.";
-      toast("error", "Publish blocked", String(msg));
+      const msg = e?.response?.data?.message || e?.response?.data?.errors?.definition?.[0] || t("admin.workflowDesigner.publishBlockedBody");
+      toast("error", t("admin.workflowDesigner.publishBlocked"), String(msg));
     } finally {
       setBusy(false);
     }
@@ -159,20 +160,20 @@ export default function WorkflowDesignerPage() {
   return (
     <div className="w-full min-w-0 space-y-6">
       <ModulePageHeader
-        title="Visual Workflow Designer"
-        subtitle="Edit stages, transitions, conditions, and actor selectors. Validate before publish."
+        title="admin.workflowDesigner.title"
+        subtitle="admin.workflowDesigner.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Admin", href: "/admin" },
-              { label: "Workflows", href: "/admin/workflows" },
-              { label: "Designer" },
+              { label: "admin.homeLabel", href: "/admin" },
+              { label: "admin.crumb.workflows", href: "/admin/workflows" },
+              { label: "admin.workflowDesigner.crumb" },
             ]}
           />
         }
         actions={
           <Link href="/admin/workflows" className="btn-secondary text-sm">
-            Back to Workflows
+            {t("admin.workflowDesigner.back")}
           </Link>
         }
       />
@@ -183,39 +184,39 @@ export default function WorkflowDesignerPage() {
           value={selectedId ?? ""}
           onChange={(e) => e.target.value && loadDraft(Number(e.target.value))}
         >
-          <option value="">Select definition…</option>
+          <option value="">{t("admin.workflowDesigner.selectDefinition")}</option>
           {definitions.map((d) => (
             <option key={d.id} value={d.id}>{d.name} ({d.module_type})</option>
           ))}
         </select>
-        <button disabled={!versionId || busy} onClick={saveAndLint} className="btn-secondary text-sm">Save & lint</button>
-        <button disabled={!versionId || busy || Boolean(lint && !lint.valid)} onClick={publish} className="btn-primary text-sm">Approve & publish</button>
+        <button disabled={!versionId || busy} onClick={saveAndLint} className="btn-secondary text-sm">{t("admin.workflowDesigner.saveLint")}</button>
+        <button disabled={!versionId || busy || Boolean(lint && !lint.valid)} onClick={publish} className="btn-primary text-sm">{t("admin.workflowDesigner.approvePublish")}</button>
       </div>
 
       {selectedId && (
         <div className="border rounded p-3 flex flex-wrap items-center gap-3">
-          <label htmlFor="wf-self-approval" className="text-sm font-medium">Self-approval policy</label>
+          <label htmlFor="wf-self-approval" className="text-sm font-medium">{t("admin.workflowDesigner.policy")}</label>
           <select
             id="wf-self-approval"
             className="border rounded px-2 py-1 bg-transparent"
             value={selfApprovalPolicy}
             onChange={(e) => saveSelfApprovalPolicy(e.target.value)}
           >
-            <option value="denied">Denied — always blocked</option>
-            <option value="allow_with_controls">Allow with controls — mandatory comment + audit flag</option>
-            <option value="require_external_approver">Require external approver — routes to an outside authority</option>
+            <option value="denied">{t("admin.workflowDesigner.policy.denied")}</option>
+            <option value="allow_with_controls">{t("admin.workflowDesigner.policy.allowWithControls")}</option>
+            <option value="require_external_approver">{t("admin.workflowDesigner.policy.external")}</option>
           </select>
           <span className="text-xs text-[var(--muted)]">
-            Governs what happens when the applicant is also a resolved approver on this workflow (PRD §10-11).
+            {t("admin.workflowDesigner.policyHint")}
           </span>
         </div>
       )}
 
       {lint && (
         <div className="border rounded p-3 text-sm space-y-1">
-          <div>Valid: {lint.valid ? "yes" : "no"}</div>
-          {lint.hard.map((h) => <div key={h} className="text-red-700">Hard: {h}</div>)}
-          {lint.soft.map((s) => <div key={s} className="text-amber-700">Soft: {s}</div>)}
+          <div>{t("admin.workflowDesigner.lintValid", { value: lint.valid ? t("procurement.vendors.csv.yes") : t("procurement.vendors.csv.no") })}</div>
+          {lint.hard.map((h) => <div key={h} className="text-red-700">{t("admin.workflowDesigner.lintHard", { message: h })}</div>)}
+          {lint.soft.map((s) => <div key={s} className="text-amber-700">{t("admin.workflowDesigner.lintSoft", { message: s })}</div>)}
         </div>
       )}
 
@@ -225,18 +226,18 @@ export default function WorkflowDesignerPage() {
             <div className="flex gap-2 items-center">
               <button type="button" onClick={() => move(index, -1)} className="border px-2">↑</button>
               <button type="button" onClick={() => move(index, 1)} className="border px-2">↓</button>
-              <span className="text-sm">Order {stage.step_order}</span>
+              <span className="text-sm">{t("admin.workflowDesigner.order", { order: stage.step_order })}</span>
             </div>
-            <input className="border rounded px-2 py-1 bg-transparent" placeholder="Step name" value={stage.step_name || ""} onChange={(e) => updateStage(index, { step_name: e.target.value })} />
+            <input className="border rounded px-2 py-1 bg-transparent" placeholder={t("admin.workflowDesigner.stepName")} value={stage.step_name || ""} onChange={(e) => updateStage(index, { step_name: e.target.value })} />
             <select className="border rounded px-2 py-1 bg-transparent" value={stage.stage_type} onChange={(e) => updateStage(index, { stage_type: e.target.value })}>
-              {["review", "recommend", "verify", "certify", "authorise", "approve", "sign", "release"].map((t) => <option key={t} value={t}>{t}</option>)}
+              {["review", "recommend", "verify", "certify", "authorise", "approve", "sign", "release"].map((type) => <option key={type} value={type}>{type}</option>)}
             </select>
             <select
               className="border rounded px-2 py-1 bg-transparent"
               value={ACTOR_SELECTORS.some((s) => s.value === stage.actor_selector) ? stage.actor_selector : "specific_role"}
               onChange={(e) => updateStage(index, { actor_selector: e.target.value })}
             >
-              {ACTOR_SELECTORS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              {ACTOR_SELECTORS.map((s) => <option key={s.value} value={s.value}>{t(s.labelKey)}</option>)}
             </select>
             {(stage.actor_selector === "specific_role" || stage.actor_selector === "specific_user") && (
               stage.actor_selector === "specific_role" ? (
@@ -266,26 +267,26 @@ export default function WorkflowDesignerPage() {
               )
             )}
             <select className="border rounded px-2 py-1 bg-transparent" value={stage.completion_rule || "any"} onChange={(e) => updateStage(index, { completion_rule: e.target.value })}>
-              {["any", "all", "quorum", "percentage", "lead_plus_support"].map((t) => <option key={t} value={t}>{t}</option>)}
+              {["any", "all", "quorum", "percentage", "lead_plus_support"].map((rule) => <option key={rule} value={rule}>{rule}</option>)}
             </select>
-            <input className="border rounded px-2 py-1 bg-transparent" type="number" placeholder="Quorum N" value={stage.quorum_count ?? ""} onChange={(e) => updateStage(index, { quorum_count: e.target.value ? Number(e.target.value) : null })} />
-            <input className="border rounded px-2 py-1 bg-transparent" placeholder="Parallel group" value={stage.parallel_group || ""} onChange={(e) => updateStage(index, { parallel_group: e.target.value || null })} />
+            <input className="border rounded px-2 py-1 bg-transparent" type="number" placeholder={t("admin.workflowDesigner.quorum")} value={stage.quorum_count ?? ""} onChange={(e) => updateStage(index, { quorum_count: e.target.value ? Number(e.target.value) : null })} />
+            <input className="border rounded px-2 py-1 bg-transparent" placeholder={t("admin.workflowDesigner.parallelGroup")} value={stage.parallel_group || ""} onChange={(e) => updateStage(index, { parallel_group: e.target.value || null })} />
             <select className="border rounded px-2 py-1 bg-transparent" value={stage.routing_strategy || "primary"} onChange={(e) => updateStage(index, { routing_strategy: e.target.value })}>
-              {["primary", "queue_claim", "workload", "deterministic_fallback"].map((t) => <option key={t} value={t}>{t}</option>)}
+              {["primary", "queue_claim", "workload", "deterministic_fallback"].map((strategy) => <option key={strategy} value={strategy}>{strategy}</option>)}
             </select>
-            <input className="border rounded px-2 py-1 bg-transparent" type="number" placeholder="SLA hours" value={stage.sla_hours ?? ""} onChange={(e) => updateStage(index, { sla_hours: e.target.value ? Number(e.target.value) : null })} />
-            <input className="border rounded px-2 py-1 bg-transparent" placeholder="Governance body" value={stage.governance_body_name || ""} onChange={(e) => updateStage(index, { governance_body_name: e.target.value || null })} />
+            <input className="border rounded px-2 py-1 bg-transparent" type="number" placeholder={t("admin.workflowDesigner.slaHours")} value={stage.sla_hours ?? ""} onChange={(e) => updateStage(index, { sla_hours: e.target.value ? Number(e.target.value) : null })} />
+            <input className="border rounded px-2 py-1 bg-transparent" placeholder={t("workflows.simulate.field.body_type")} value={stage.governance_body_name || ""} onChange={(e) => updateStage(index, { governance_body_name: e.target.value || null })} />
             <label htmlFor="admin-workflows-designer-updatestage-index-requires-comment" className="flex items-center gap-2 text-sm">
               <input id="admin-workflows-designer-updatestage-index-requires-comment" type="checkbox" checked={Boolean(stage.requires_comment)} onChange={(e) => updateStage(index, { requires_comment: e.target.checked })} />
-              Requires comment
+              {t("admin.workflowDesigner.requiresComment")}
             </label>
             <label htmlFor="admin-workflows-designer-updatestage-index-allow-return-for-correction" className="flex items-center gap-2 text-sm">
               <input id="admin-workflows-designer-updatestage-index-allow-return-for-correction" type="checkbox" checked={Boolean(stage.allow_return)} onChange={(e) => updateStage(index, { allow_return: e.target.checked })} />
-              Allow return for correction
+              {t("admin.workflowDesigner.allowReturn")}
             </label>
             <div className="md:col-span-2">
               <label htmlFor="admin-workflows-designer-condition-expression-json-e-g-field-amount-op-gt" className="text-xs text-[var(--muted)] block mb-1">
-                Condition expression (JSON — e.g. {"{"}"field":"amount","op":"gte","value":5000{"}"}, empty = always run)
+                {t("admin.workflowDesigner.condition", { example: '{"field":"amount","op":"gte","value":5000}' })}
               </label>
               <textarea id="admin-workflows-designer-condition-expression-json-e-g-field-amount-op-gt"
                 className="border rounded px-2 py-1 bg-transparent w-full font-mono text-xs"

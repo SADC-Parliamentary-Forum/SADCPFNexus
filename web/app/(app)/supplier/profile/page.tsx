@@ -68,20 +68,20 @@ export default function SupplierProfilePage() {
       queryClient.invalidateQueries({ queryKey: ["supplier-profile"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
       setError(null);
-      toast.success("Supplier profile saved");
+      toast.success(t("supplier.profile.saved"));
     },
     onError: (err: unknown) => {
-      const message = apiErrorMessage(err, "Failed to update supplier profile.");
+      const message = apiErrorMessage(err, t("supplier.profile.saveError"));
       setError(message);
-      toast.error("Supplier profile not saved", message);
+      toast.error(t("supplier.profile.notSaved"), message);
     },
   });
 
-  if (profileQuery.isLoading) return <div className="card p-6">Loading supplier profile...</div>;
+  if (profileQuery.isLoading) return <div className="card p-6">{t("supplier.profile.loading")}</div>;
   if (profileQuery.isError || !profileQuery.data) {
     return (
       <div className="card p-6" data-testid="supplier-profile-error">
-        {apiErrorMessage(profileQuery.error, "Failed to load supplier profile.")}
+        {apiErrorMessage(profileQuery.error, t("supplier.profile.loadError"))}
       </div>
     );
   }
@@ -89,15 +89,15 @@ export default function SupplierProfilePage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Supplier Profile"
-        breadcrumbs={<PageBreadcrumbs items={[{ label: "Supplier Profile" }]} />}
+        title="supplier.profile.title"
+        breadcrumbs={<PageBreadcrumbs items={[{ label: "supplier.profile.title" }]} />}
       />
 
       <div className="card p-5 space-y-4">
         {error && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
         {categoriesQuery.isError && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-            {apiErrorMessage(categoriesQuery.error, "Could not load supplier categories.")}
+            {apiErrorMessage(categoriesQuery.error, t("supplier.profile.categoriesError"))}
           </div>
         )}
         {profileQuery.data.last_info_request_reason && (
@@ -108,45 +108,45 @@ export default function SupplierProfilePage() {
 
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label htmlFor="supplier-contact-name" className="mb-1 block text-xs font-semibold text-neutral-600">Contact name</label>
-            <input id="supplier-contact-name" className="form-input w-full" placeholder="Contact name" value={contactName} onChange={(e) => setContactName(e.target.value)} />
+            <label htmlFor="supplier-contact-name" className="mb-1 block text-xs font-semibold text-neutral-600">{t("supplier.register.contactName")}</label>
+            <input id="supplier-contact-name" className="form-input w-full" placeholder={t("supplier.register.contactName")} value={contactName} onChange={(e) => setContactName(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="supplier-contact-phone" className="mb-1 block text-xs font-semibold text-neutral-600">Contact phone</label>
-            <input id="supplier-contact-phone" className="form-input w-full" placeholder="Contact phone" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
+            <label htmlFor="supplier-contact-phone" className="mb-1 block text-xs font-semibold text-neutral-600">{t("supplier.register.contactPhone")}</label>
+            <input id="supplier-contact-phone" className="form-input w-full" placeholder={t("supplier.register.contactPhone")} value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="supplier-website" className="mb-1 block text-xs font-semibold text-neutral-600">Website</label>
-            <input id="supplier-website" className="form-input w-full" placeholder="Website" value={website} onChange={(e) => setWebsite(e.target.value)} />
+            <label htmlFor="supplier-website" className="mb-1 block text-xs font-semibold text-neutral-600">{t("supplier.profile.website")}</label>
+            <input id="supplier-website" className="form-input w-full" placeholder={t("supplier.profile.website")} value={website} onChange={(e) => setWebsite(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="supplier-country" className="mb-1 block text-xs font-semibold text-neutral-600">Country</label>
-            <input id="supplier-country" className="form-input w-full" placeholder="Country" value={country} onChange={(e) => setCountry(e.target.value)} />
+            <label htmlFor="supplier-country" className="mb-1 block text-xs font-semibold text-neutral-600">{t("supplier.profile.country")}</label>
+            <input id="supplier-country" className="form-input w-full" placeholder={t("supplier.profile.country")} value={country} onChange={(e) => setCountry(e.target.value)} />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="supplier-address" className="mb-1 block text-xs font-semibold text-neutral-600">Address</label>
-            <input id="supplier-address" className="form-input w-full" placeholder="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <label htmlFor="supplier-address" className="mb-1 block text-xs font-semibold text-neutral-600">{t("supplier.profile.address")}</label>
+            <input id="supplier-address" className="form-input w-full" placeholder={t("supplier.profile.address")} value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="supplier-bank-name" className="mb-1 block text-xs font-semibold text-neutral-600">Bank name</label>
-            <input id="supplier-bank-name" className="form-input w-full" placeholder="Bank name" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+            <label htmlFor="supplier-bank-name" className="mb-1 block text-xs font-semibold text-neutral-600">{t("supplier.register.bankName")}</label>
+            <input id="supplier-bank-name" className="form-input w-full" placeholder={t("supplier.register.bankName")} value={bankName} onChange={(e) => setBankName(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="supplier-payment-terms" className="mb-1 block text-xs font-semibold text-neutral-600">Payment terms</label>
-            <input id="supplier-payment-terms" className="form-input w-full" placeholder="Payment terms" value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
+            <label htmlFor="supplier-payment-terms" className="mb-1 block text-xs font-semibold text-neutral-600">{t("supplier.profile.paymentTerms")}</label>
+            <input id="supplier-payment-terms" className="form-input w-full" placeholder={t("supplier.profile.paymentTerms")} value={paymentTerms} onChange={(e) => setPaymentTerms(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="supplier-bank-account" className="mb-1 block text-xs font-semibold text-neutral-600">Bank account</label>
-            <input id="supplier-bank-account" className="form-input w-full" placeholder="Bank account" value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} />
+            <label htmlFor="supplier-bank-account" className="mb-1 block text-xs font-semibold text-neutral-600">{t("supplier.register.bankAccount")}</label>
+            <input id="supplier-bank-account" className="form-input w-full" placeholder={t("supplier.register.bankAccount")} value={bankAccount} onChange={(e) => setBankAccount(e.target.value)} />
           </div>
           <div>
-            <label htmlFor="supplier-bank-branch" className="mb-1 block text-xs font-semibold text-neutral-600">Bank branch or SWIFT</label>
-            <input id="supplier-bank-branch" className="form-input w-full" placeholder="Bank branch or SWIFT" value={bankBranch} onChange={(e) => setBankBranch(e.target.value)} />
+            <label htmlFor="supplier-bank-branch" className="mb-1 block text-xs font-semibold text-neutral-600">{t("supplier.profile.bankBranch")}</label>
+            <input id="supplier-bank-branch" className="form-input w-full" placeholder={t("supplier.profile.bankBranch")} value={bankBranch} onChange={(e) => setBankBranch(e.target.value)} />
           </div>
         </div>
 
         <div className="space-y-2">
-          <p className="text-sm font-semibold text-neutral-700">Requested Categories</p>
+          <p className="text-sm font-semibold text-neutral-700">{t("supplier.profile.requestedCategories")}</p>
           <div className="grid gap-2 md:grid-cols-2">
             {(categoriesQuery.data ?? []).map((category) => (
               <label key={category.id} className={`rounded-xl border p-3 text-sm ${categoryIds.includes(category.id) ? "border-primary bg-primary/5" : "border-neutral-200"}`}>
@@ -167,7 +167,7 @@ export default function SupplierProfilePage() {
               </label>
             ))}
           </div>
-          <p className="text-xs text-neutral-500">Select every applicable category, including child categories.</p>
+          <p className="text-xs text-neutral-500">{t("supplier.register.categoriesHint")}</p>
         </div>
 
         <p className="text-sm text-neutral-600">
@@ -177,7 +177,7 @@ export default function SupplierProfilePage() {
         </p>
 
         <button className="btn-primary disabled:opacity-60" disabled={mutation.isPending || categoryIds.length === 0} onClick={() => mutation.mutate()}>
-          {mutation.isPending ? "Saving..." : "Update Profile"}
+          {mutation.isPending ? t("admin.common.savingDots") : t("supplier.profile.update")}
         </button>
       </div>
 
@@ -190,6 +190,7 @@ export default function SupplierProfilePage() {
 }
 
 function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: string; emailVerified: boolean }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const toast = useToast();
   const declarationsQuery = useQuery({
@@ -206,10 +207,10 @@ function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: st
       queryClient.invalidateQueries({ queryKey: ["supplier-declarations"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-completeness"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
-      toast.success("Declarations accepted");
+      toast.success(t("supplier.profile.declarationsAccepted"));
     },
     onError: (err: unknown) => {
-      toast.error("Declarations not accepted", apiErrorMessage(err, "Failed to accept the declarations."));
+      toast.error(t("supplier.profile.declarationsNotAccepted"), apiErrorMessage(err, t("supplier.profile.declarationsError")));
     },
   });
   const submitMutation = useMutation({
@@ -218,17 +219,17 @@ function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: st
       queryClient.invalidateQueries({ queryKey: ["supplier-profile"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-completeness"] });
       queryClient.invalidateQueries({ queryKey: ["supplier-dashboard"] });
-      toast.success("Application submitted");
+      toast.success(t("supplier.dashboard.submitted"));
     },
     onError: (err: unknown) => {
-      toast.error("Application not submitted", apiErrorMessage(err, "Failed to submit your application."));
+      toast.error(t("supplier.dashboard.notSubmitted"), apiErrorMessage(err, t("supplier.dashboard.submitError")));
     },
   });
   const resendMutation = useMutation({
     mutationFn: () => supplierPortalApi.resendVerification(),
-    onSuccess: () => toast.success("Verification email sent"),
+    onSuccess: () => toast.success(t("supplier.profile.verificationSent")),
     onError: (err: unknown) => {
-      toast.error("Verification email not sent", apiErrorMessage(err, "Failed to resend the verification email."));
+      toast.error(t("supplier.profile.verificationNotSent"), apiErrorMessage(err, t("supplier.profile.verificationError")));
     },
   });
 
@@ -237,15 +238,18 @@ function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: st
 
   return (
     <div className="card p-5 space-y-4" data-testid="supplier-wizard-review">
-      <h2 className="text-sm font-bold text-neutral-800">Declarations and submit</h2>
+      <h2 className="text-sm font-bold text-neutral-800">{t("supplier.profile.declarationsTitle")}</h2>
       <p className="text-sm text-neutral-500">
-        Completeness: {completenessQuery.data?.completeness.percent ?? 0}%. Status: {(vendorStatus ?? "draft").replace(/_/g, " ")}.
+        {t("supplier.profile.summary", {
+          percent: completenessQuery.data?.completeness.percent ?? 0,
+          status: (vendorStatus ?? "draft").replace(/_/g, " "),
+        })}
       </p>
       {emailVerified === false && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Verify your email before you can submit.
+          {t("supplier.profile.verifyEmail")}
           <button type="button" className="font-semibold ml-2 hover:opacity-80" onClick={() => resendMutation.mutate()}>
-            Resend verification
+            {t("supplier.profile.resendVerification")}
           </button>
         </div>
       )}
@@ -254,13 +258,13 @@ function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: st
           <li key={row.id} className="rounded-xl border border-neutral-200 p-3">
             <p className="text-sm font-semibold">{row.title}</p>
             <p className="mt-1 text-xs text-neutral-600">{row.body}</p>
-            <p className="mt-2 text-xs">{row.accepted ? "Accepted" : "Not yet accepted"}</p>
+            <p className="mt-2 text-xs">{row.accepted ? t("supplier.profile.accepted") : t("supplier.profile.notYetAccepted")}</p>
           </li>
         ))}
       </ul>
       {pending.length > 0 && (
         <button type="button" className="btn-secondary text-sm" onClick={() => acceptMutation.mutate(pending)} disabled={acceptMutation.isPending}>
-          Accept required declarations
+          {t("supplier.profile.acceptDeclarations")}
         </button>
       )}
       <button
@@ -270,7 +274,7 @@ function WizardDeclarations({ vendorStatus, emailVerified }: { vendorStatus?: st
         disabled={!canSubmit || submitMutation.isPending}
         onClick={() => submitMutation.mutate()}
       >
-        {canSubmit ? "Submit application" : "Submit application (complete mandatory items first)"}
+        {canSubmit ? t("supplier.profile.submitApplication") : t("supplier.profile.submitIncomplete")}
       </button>
     </div>
   );

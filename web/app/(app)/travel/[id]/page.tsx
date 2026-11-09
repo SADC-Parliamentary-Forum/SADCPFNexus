@@ -20,15 +20,16 @@ import { LabelledRecord } from "@/components/ui/LabelledRecord";
 import { TravelDestinationFields } from "@/components/travel/DestinationPickers";
 import { useI18n } from "@/lib/i18n/LocaleProvider";
 
+/** Status chrome; `label` is an i18n key rendered through t(). */
 const statusConfig: Record<string, { label: string; cls: string; icon: string }> = {
-  approved:                { label: "Approved",              cls: "text-green-700 bg-green-50 border-green-200",   icon: "check_circle" },
-  submitted:               { label: "Pending Approval",      cls: "text-amber-700 bg-amber-50 border-amber-200",   icon: "pending" },
-  rejected:                { label: "Rejected",              cls: "text-red-700 bg-red-50 border-red-200",         icon: "cancel" },
-  draft:                   { label: "Draft",                 cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note" },
-  cancelled:               { label: "Cancelled",             cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "cancel" },
-  returned_for_correction: { label: "Returned for Correction", cls: "text-amber-700 bg-amber-50 border-amber-200", icon: "undo" },
-  withdrawn:               { label: "Withdrawn",             cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block" },
-  amendment_pending:       { label: "Amendment Pending",     cls: "text-blue-700 bg-blue-50 border-blue-200",     icon: "edit_document" },
+  approved:                { label: "status.approved",       cls: "text-green-700 bg-green-50 border-green-200",   icon: "check_circle" },
+  submitted:               { label: "procurement.index.kpi.pending", cls: "text-amber-700 bg-amber-50 border-amber-200",   icon: "pending" },
+  rejected:                { label: "status.rejected",       cls: "text-red-700 bg-red-50 border-red-200",         icon: "cancel" },
+  draft:                   { label: "status.draft",          cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "edit_note" },
+  cancelled:               { label: "status.cancelled",      cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "cancel" },
+  returned_for_correction: { label: "approval.action.return", cls: "text-amber-700 bg-amber-50 border-amber-200", icon: "undo" },
+  withdrawn:               { label: "approval.action.withdraw", cls: "text-neutral-700 bg-neutral-100 border-neutral-200", icon: "block" },
+  amendment_pending:       { label: "travel.detail.status.amendmentPending", cls: "text-blue-700 bg-blue-50 border-blue-200",     icon: "edit_document" },
 };
 
 function apiErrorMessage(err: unknown, fallback: string): string {
@@ -95,7 +96,7 @@ export default function TravelDetailPage() {
   const [attachmentsLoading, setAttachmentsLoading] = useState(false);
   const [uploadDocType, setUploadDocType] = useState("invitation");
   const [uploadLoading, setUploadLoading] = useState(false);
-  const [attachToast, setAttachToast] = useState<string | null>(null);
+  const [attachToast, setAttachToast] = useState<{ text: string; error: boolean } | null>(null);
   const [showAmendmentModal, setShowAmendmentModal] = useState(false);
   const [amendDeparture, setAmendDeparture] = useState("");
   const [amendReturn, setAmendReturn] = useState("");
@@ -167,7 +168,7 @@ export default function TravelDetailPage() {
   useEffect(() => {
     if (!id || Number.isNaN(id)) {
       setLoading(false);
-      setError("Invalid request ID.");
+      setError(t("procurement.certificate.invalidId"));
       return;
     }
 
@@ -219,14 +220,14 @@ export default function TravelDetailPage() {
           .catch(() => {
             if (!active) return;
             setAttachments([]);
-            setAttachToast("Documents could not be loaded.");
+            setAttachToast({ text: t("travel.detail.docsLoadFailed"), error: true });
           })
           .finally(() => {
             if (active) setAttachmentsLoading(false);
           });
       })
       .catch(() => {
-        if (active) setError("Failed to load travel request.");
+        if (active) setError(t("travel.detail.loadFailed"));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -283,12 +284,12 @@ export default function TravelDetailPage() {
       const notified: string[] = (res.data as { notified_approvers?: string[] }).notified_approvers ?? [];
       await refreshRequest();
       if (notified.length > 0) {
-        success(`Approved. Notified: ${notified.join(", ")}`);
+        success(t("travel.detail.approvedNotified", { names: notified.join(", ") }));
       } else {
-        success("Request fully approved.");
+        success(t("procurement.detail.fullyApproved"));
       }
     } catch (err) {
-      setError(apiErrorMessage(err, "Failed to approve request."));
+      setError(apiErrorMessage(err, t("salaryAdvances.detail.err.approve")));
     } finally {
       setActionLoading(false);
     }
@@ -303,7 +304,7 @@ export default function TravelDetailPage() {
       setShowRejectModal(false);
       setRejectReason("");
     } catch (err) {
-      setError(apiErrorMessage(err, "Failed to reject request."));
+      setError(apiErrorMessage(err, t("salaryAdvances.detail.err.reject")));
     } finally {
       setActionLoading(false);
     }
@@ -316,9 +317,9 @@ export default function TravelDetailPage() {
       await travelApi.returnForCorrection(request.id, comment);
       await refreshRequest();
       setShowReturnModal(false);
-      success("Request returned to requester for correction.");
+      success(t("procurement.detail.returnedMsg"));
     } catch (err) {
-      setError(apiErrorMessage(err, "Failed to return request."));
+      setError(apiErrorMessage(err, t("salaryAdvances.detail.err.return")));
     } finally {
       setReturnLoading(false);
     }
@@ -326,14 +327,14 @@ export default function TravelDetailPage() {
 
   const handleWithdraw = async () => {
     if (!request) return;
-    if (!(await confirm({ title: "Withdraw Request", message: "Withdraw this travel request? This cannot be undone.", variant: "danger" }))) return;
+    if (!(await confirm({ title: t("procurement.detail.withdrawTitle"), message: t("travel.detail.withdrawConfirm"), variant: "danger" }))) return;
     setActionLoading(true);
     try {
       await travelApi.withdraw(request.id);
       await refreshRequest();
-      success("Request withdrawn.");
+      success(t("leave.list.withdrawn"));
     } catch (err) {
-      setError(apiErrorMessage(err, "Failed to withdraw request."));
+      setError(apiErrorMessage(err, t("leave.list.withdrawFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -341,14 +342,14 @@ export default function TravelDetailPage() {
 
   const handleResubmit = async () => {
     if (!request) return;
-    if (!(await confirm({ title: "Resubmit Request", message: "Resubmit this travel request for approval? It will restart from the first step.", variant: "primary" }))) return;
+    if (!(await confirm({ title: t("procurement.detail.resubmitTitle"), message: t("travel.detail.resubmitConfirm"), variant: "primary" }))) return;
     setActionLoading(true);
     try {
       await travelApi.resubmit(request.id);
       await refreshRequest();
-      success("Request resubmitted for approval.");
+      success(t("procurement.detail.resubmitted"));
     } catch (err) {
-      setError(apiErrorMessage(err, "Failed to resubmit request."));
+      setError(apiErrorMessage(err, t("salaryAdvances.detail.err.resubmit")));
     } finally {
       setActionLoading(false);
     }
@@ -363,14 +364,14 @@ export default function TravelDetailPage() {
       variant: "danger",
     }))?.trim();
     if (!reason) return;
-    if (!(await confirm({ title: "Cancel Request", message: "Cancel this travel request? Budget reservations will be released where applicable.", variant: "danger" }))) return;
+    if (!(await confirm({ title: t("travel.detail.cancelTitle"), message: t("travel.detail.cancelConfirm"), variant: "danger" }))) return;
     setActionLoading(true);
     try {
       await travelApi.cancel(request.id, reason.trim());
       await refreshRequest();
-      success("Request cancelled.");
+      success(t("assets.requests.detail.cancelled"));
     } catch (err) {
-      setError(apiErrorMessage(err, "Failed to cancel request."));
+      setError(apiErrorMessage(err, t("travel.detail.cancelFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -407,7 +408,7 @@ export default function TravelDetailPage() {
       changes.purpose = amendPurpose;
     }
     if (Object.keys(changes).length === 0) {
-      setAmendError("Change at least one field before submitting an amendment.");
+      setAmendError(t("travel.detail.amendNoChange"));
       return;
     }
     setActionLoading(true);
@@ -419,9 +420,9 @@ export default function TravelDetailPage() {
       });
       setShowAmendmentModal(false);
       await refreshRequest();
-      success("Amendment submitted for approval.");
+      success(t("travel.detail.amendSubmitted"));
     } catch (err) {
-      setAmendError(apiErrorMessage(err, "Failed to submit amendment. Approved requests cannot be edited silently."));
+      setAmendError(apiErrorMessage(err, t("travel.detail.amendFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -429,17 +430,17 @@ export default function TravelDetailPage() {
 
   const handleApproveAmendment = async (amendment: TravelAmendment) => {
     if (!(await confirm({
-      title: "Approve Amendment",
-      message: "Apply the proposed changes to this approved travel request?",
+      title: t("travel.detail.approveAmendTitle"),
+      message: t("travel.detail.approveAmendConfirm"),
       variant: "primary",
     }))) return;
     setActionLoading(true);
     try {
       await travelApi.approveAmendment(amendment.id);
       await refreshRequest();
-      success("Amendment approved and applied.");
+      success(t("travel.detail.amendApproved"));
     } catch (err) {
-      setError(apiErrorMessage(err, "Failed to approve amendment."));
+      setError(apiErrorMessage(err, t("travel.detail.amendApproveFailed")));
     } finally {
       setActionLoading(false);
     }
@@ -447,14 +448,14 @@ export default function TravelDetailPage() {
 
   const runPostApproval = async (label: string, fn: () => Promise<unknown>) => {
     if (!request) return;
-    if (!(await confirm({ title: label, message: `Confirm: ${label}?`, variant: "primary" }))) return;
+    if (!(await confirm({ title: label, message: t("travel.detail.postConfirm", { label }), variant: "primary" }))) return;
     setActionLoading(true);
     try {
       await fn();
       await refreshRequest();
-      success(`${label} completed.`);
+      success(t("travel.detail.postDone", { label }));
     } catch (err) {
-      setError(apiErrorMessage(err, `Failed: ${label}. Check required documents and approval status.`));
+      setError(apiErrorMessage(err, t("travel.detail.postFailed", { label })));
     } finally {
       setActionLoading(false);
     }
@@ -472,13 +473,13 @@ export default function TravelDetailPage() {
       const warning = (res.data as { warning?: { expected_official_days?: number; payable_line_count?: number } }).warning;
       if (warning) {
         setDsaWarning(
-          `Day count variance: expected ${warning.expected_official_days} official days, payable lines ${warning.payable_line_count}.`
+          t("travel.detail.dayVariance", { expected: warning.expected_official_days ?? 0, payable: warning.payable_line_count ?? 0 })
         );
       }
       await refreshRequest();
-      success("DSA calculation saved (Finance Rate Types 1/2/3).");
+      success(t("travel.detail.dsaSaved"));
     } catch (err) {
-      setError(apiErrorMessage(err, "Failed to save DSA. Only Finance may calculate DSA, and not on their own request."));
+      setError(apiErrorMessage(err, t("travel.detail.dsaFailed")));
     } finally {
       setDsaSaving(false);
     }
@@ -496,9 +497,9 @@ export default function TravelDetailPage() {
         visa_notes: visaNotes || null,
       });
       await refreshRequest();
-      success("Visa details updated.");
+      success(t("travel.detail.visaSaved"));
     } catch {
-      setError("Failed to update visa details.");
+      setError(t("travel.detail.visaFailed"));
     } finally {
       setVisaSaving(false);
     }
@@ -512,12 +513,12 @@ export default function TravelDetailPage() {
       const res = await travelApi.parseItinerary(request.id, itineraryPaste);
       const data = res.data.data;
       if (!data.parseable) {
-        setItineraryPreview(data.message ?? "Could not parse itinerary.");
+        setItineraryPreview(data.message ?? t("travel.detail.parseUnparseable"));
       } else {
-        setItineraryPreview(`Parsed ${data.legs.length} leg(s). Apply to replace current itinerary.`);
+        setItineraryPreview(t("travel.detail.parsedLegs", { count: data.legs.length }));
       }
     } catch {
-      setError("Failed to parse itinerary.");
+      setError(t("travel.detail.parseFailed"));
     } finally {
       setItineraryBusy(false);
     }
@@ -529,10 +530,10 @@ export default function TravelDetailPage() {
     try {
       await travelApi.applyItinerary(request.id, itineraryPaste);
       await refreshRequest();
-      success("Itinerary legs applied (versioned).");
+      success(t("travel.detail.itineraryApplied"));
       setItineraryPreview(null);
     } catch {
-      setError("Failed to apply itinerary. Unparseable text is rejected on apply.");
+      setError(t("travel.detail.itineraryApplyFailed"));
     } finally {
       setItineraryBusy(false);
     }
@@ -551,9 +552,9 @@ export default function TravelDetailPage() {
         health_notes: healthNotes || null,
       });
       await refreshRequest();
-      success("Health pack updated.");
+      success(t("travel.detail.healthSaved"));
     } catch {
-      setError("Failed to update health pack (restricted to HR/Admin).");
+      setError(t("travel.detail.healthFailed"));
     } finally {
       setHealthSaving(false);
     }
@@ -569,9 +570,9 @@ export default function TravelDetailPage() {
         procurement_link_required: procRequired,
       });
       await refreshRequest();
-      success("Procurement link updated.");
+      success(t("travel.detail.procSaved"));
     } catch {
-      setError("Failed to update procurement link.");
+      setError(t("travel.detail.procFailed"));
     } finally {
       setProcSaving(false);
     }
@@ -595,13 +596,13 @@ export default function TravelDetailPage() {
         <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-4 flex items-start gap-3">
           <span className="material-symbols-outlined text-red-500 text-[20px] flex-shrink-0 mt-0.5">error_outline</span>
           <div>
-            <p className="text-sm font-semibold text-red-700">Error loading request</p>
-            <p className="text-sm text-red-600 mt-0.5">{error ?? "Request not found."}</p>
+            <p className="text-sm font-semibold text-red-700">{t("procurement.detail.errorLoading")}</p>
+            <p className="text-sm text-red-600 mt-0.5">{error ?? t("procurement.detail.notFound")}</p>
           </div>
         </div>
         <Link href="/travel" className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-primary transition-colors">
           <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Back to Travel Requests
+          {t("travel.detail.back")}
         </Link>
       </div>
     );
@@ -625,9 +626,9 @@ export default function TravelDetailPage() {
     <div className="w-full min-w-0 space-y-5">
       {(request as any).prepared_on_behalf_of && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-          Prepared on behalf of {(request as any).prepared_on_behalf_of?.name ?? preparedOnBehalf?.name ?? "principal"}
+          {t("travel.detail.preparedOnBehalf", { name: (request as any).prepared_on_behalf_of?.name ?? preparedOnBehalf?.name ?? t("travel.detail.principal") })}
           {(request as any).prepared_by?.name || preparedBy?.name
-            ? ` by ${(request as any).prepared_by?.name ?? preparedBy?.name}`
+            ? ` ${t("travel.detail.preparedBy", { name: (request as any).prepared_by?.name ?? preparedBy?.name })}`
             : ""}
         </div>
       )}
@@ -643,7 +644,7 @@ export default function TravelDetailPage() {
         currentHolder={currentlyWith || "—"}
         extras={[
           {
-            label: "Next stage",
+            label: t("workflow.tracker.nextStage"),
             value: String(
               workflowMeta?.next_stage_label ??
                 workflowMeta?.next_step?.label ??
@@ -651,7 +652,7 @@ export default function TravelDetailPage() {
                 "—",
             ),
           },
-          { label: "Submitted on", value: request.submitted_at ? formatDateShort(request.submitted_at) : "—" },
+          { label: t("salaryAdvances.detail.submittedOn"), value: request.submitted_at ? formatDateShort(request.submitted_at) : "—" },
         ]}
       />
 
@@ -670,7 +671,7 @@ export default function TravelDetailPage() {
       <div className="flex items-center justify-end gap-2 flex-wrap">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.cls}`}>
               <span className="material-symbols-outlined text-[14px]">{s.icon}</span>
-              {s.label}
+              {t(s.label)}
             </span>
             {request.status === "approved" && (
               <>
@@ -679,7 +680,7 @@ export default function TravelDetailPage() {
                   className="inline-flex items-center gap-1 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-100 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
-                  Certificate
+                  {t("assets.handover.certificate")}
                 </Link>
                 <button
                   type="button"
@@ -689,7 +690,7 @@ export default function TravelDetailPage() {
                   className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[14px]">edit_document</span>
-                  Request amendment
+                  {t("travel.detail.requestAmendment")}
                 </button>
               </>
             )}
@@ -700,16 +701,16 @@ export default function TravelDetailPage() {
                   className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-50 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[14px]">edit</span>
-                  Edit in wizard
+                  {t("travel.register.editWizard")}
                 </Link>
                 <button
                   onClick={async () => {
-                    if (!(await confirm({ title: "Submit Request", message: "Submit this travel request for approval?", variant: "primary" }))) return;
+                    if (!(await confirm({ title: t("salaryAdvances.create.submitRequest"), message: t("travel.detail.submitConfirm"), variant: "primary" }))) return;
                     setActionLoading(true);
                     try {
                       await travelApi.submit(request.id);
                       await refreshRequest();
-                      success("Request submitted.");
+                      success(t("travel.detail.submitted"));
                     } catch (err: unknown) {
                       const axiosErr = err as { response?: { data?: { errors?: { conflicts?: string[] }; message?: string } } };
                       const conflicts = axiosErr?.response?.data?.errors?.conflicts;
@@ -728,15 +729,15 @@ export default function TravelDetailPage() {
                               conflict_resolution_note: note,
                             });
                             await refreshRequest();
-                            success("Submitted with conflict acknowledgement.");
+                            success(t("travel.detail.submittedAck"));
                           } catch (ackErr) {
-                            setError(apiErrorMessage(ackErr, "Failed to submit after acknowledging conflicts."));
+                            setError(apiErrorMessage(ackErr, t("travel.detail.submitAckFailed")));
                           }
                         } else {
                           setError(conflicts.join(" "));
                         }
                       } else {
-                        setError(apiErrorMessage(err, "Failed to submit."));
+                        setError(apiErrorMessage(err, t("leave.detail.error.submit")));
                       }
                     } finally { setActionLoading(false); }
                   }}
@@ -744,20 +745,20 @@ export default function TravelDetailPage() {
                   className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-600 transition-colors disabled:opacity-50"
                 >
                   <span className="material-symbols-outlined text-[14px]">send</span>
-                  Submit
+                  {t("common.submit")}
                 </button>
                 <button
                   onClick={async () => {
-                    if (!(await confirm({ title: "Delete Draft", message: "Delete this draft travel request?", variant: "danger" }))) return;
+                    if (!(await confirm({ title: t("leave.detail.confirm.deleteTitle"), message: t("travel.detail.deleteConfirm"), variant: "danger" }))) return;
                     try {
                       await travelApi.delete(request.id);
                       router.push("/travel");
-                    } catch (err) { setError(apiErrorMessage(err, "Failed to delete.")); }
+                    } catch (err) { setError(apiErrorMessage(err, t("leave.detail.error.delete"))); }
                   }}
                   className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[14px]">delete</span>
-                  Delete
+                  {t("common.delete")}
                 </button>
               </>
             )}
@@ -767,7 +768,7 @@ export default function TravelDetailPage() {
                 className="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100 transition-colors"
               >
                 <span className="material-symbols-outlined text-[14px]">edit</span>
-                Fix in wizard
+                {t("travel.detail.fixInWizard")}
               </Link>
             )}
             {/* Withdraw: visible when submitted/pending, requester can act */}
@@ -778,7 +779,7 @@ export default function TravelDetailPage() {
                 className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[14px]">block</span>
-                Withdraw
+                {t("leave.list.withdraw")}
               </button>
             )}
             {["approved", "submitted", "amendment_pending"].includes(request.status) && (
@@ -788,7 +789,7 @@ export default function TravelDetailPage() {
                 className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[14px]">cancel</span>
-                Cancel
+                {t("common.cancel")}
               </button>
             )}
             {/* Resubmit: visible when returned for correction */}
@@ -799,7 +800,7 @@ export default function TravelDetailPage() {
                 className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[14px]">refresh</span>
-                Resubmit
+                {t("procurement.detail.resubmit")}
               </button>
             )}
           </div>
@@ -809,8 +810,8 @@ export default function TravelDetailPage() {
         <div className="flex items-start gap-3 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
           <span className="material-symbols-outlined text-[18px] text-amber-600 flex-shrink-0 mt-0.5">undo</span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-800">Returned for Correction</p>
-            <p className="text-xs text-amber-700 mt-0.5">This request was returned. Make the required corrections and resubmit.</p>
+            <p className="text-sm font-semibold text-amber-800">{t("approval.action.return")}</p>
+            <p className="text-xs text-amber-700 mt-0.5">{t("travel.detail.returnedHint")}</p>
           </div>
         </div>
       )}
@@ -819,9 +820,9 @@ export default function TravelDetailPage() {
         <div className="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 px-4 py-3" data-testid="travel-amendment-pending-banner">
           <span className="material-symbols-outlined text-[18px] text-blue-600 flex-shrink-0 mt-0.5">edit_document</span>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-blue-800">Amendment pending approval</p>
+            <p className="text-sm font-semibold text-blue-800">{t("travel.detail.amendPendingTitle")}</p>
             <p className="text-xs text-blue-700 mt-0.5">
-              Controlled post-approval changes are awaiting review. Silent edits remain blocked.
+              {t("travel.detail.amendPendingHint")}
             </p>
           </div>
         </div>
@@ -832,15 +833,15 @@ export default function TravelDetailPage() {
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2">
             <SectionIcon icon="timeline" color="text-primary" bg="bg-primary/10" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Request Progress</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("imprest.detail.progress")}</h3>
           </div>
           <PrintButton className="text-xs" />
         </div>
         <StatusTimeline
           steps={[
-            { key: "draft",     label: "Draft",     icon: "edit_note",    completedAt: request.submitted_at ? request.submitted_at : undefined },
-            { key: "submitted", label: "Submitted",  icon: "send",         completedAt: request.submitted_at },
-            { key: "approved",  label: "Approved",   icon: "check_circle", completedAt: request.approved_at },
+            { key: "draft",     label: t("status.draft"),     icon: "edit_note",    completedAt: request.submitted_at ? request.submitted_at : undefined },
+            { key: "submitted", label: t("status.submitted"),  icon: "send",         completedAt: request.submitted_at },
+            { key: "approved",  label: t("status.approved"),   icon: "check_circle", completedAt: request.approved_at },
           ]}
           currentStatus={request.status}
           rejectedAt={request.status === "rejected" ? (request.approved_at ?? request.submitted_at) : null}
@@ -854,7 +855,7 @@ export default function TravelDetailPage() {
       <AuditTimeline
         subjectType="TravelRequest"
         subjectId={request.id}
-        title="Platform Audit Trail"
+        title={t("admin.auditTrail.title")}
       />
 
       {/* Requester */}
@@ -862,7 +863,7 @@ export default function TravelDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="person" color="text-primary" bg="bg-primary/10" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Requester</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("leave.col.requester")}</h3>
           </div>
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -871,7 +872,7 @@ export default function TravelDetailPage() {
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-neutral-900">{request.requester.name?.trim() || "Unknown requester"}</p>
+              <p className="text-sm font-semibold text-neutral-900">{request.requester.name?.trim() || t("travel.detail.unknownRequester")}</p>
               <p className="text-xs text-neutral-400">{[request.requester.job_title, request.requester.employee_number].filter(Boolean).join(" · ")}</p>
             </div>
           </div>
@@ -882,34 +883,34 @@ export default function TravelDetailPage() {
       <div className="card p-5">
         <div className="flex items-center gap-3 mb-4">
           <SectionIcon icon="flight_takeoff" color="text-primary" bg="bg-primary/10" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Trip Details</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.create.step.trip")}</h3>
         </div>
         <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
           <div>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[14px] text-neutral-300">location_on</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Destination</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("notifications.alerts.destination")}</p>
             </div>
             <p className="font-semibold text-neutral-900">{[request.destination_city, request.destination_country].filter(Boolean).join(", ") || request.destination_country || "—"}</p>
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[14px] text-neutral-300">date_range</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Travel Period</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("travel.certificate.period")}</p>
             </div>
             <p className="font-semibold text-neutral-900">{formatDateShort(request.departure_date)} → {formatDateShort(request.return_date)}</p>
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[14px] text-neutral-300">currency_exchange</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Currency</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("workflows.simulate.field.currency")}</p>
             </div>
             <p className="font-semibold text-neutral-900">{request.currency || "—"}</p>
           </div>
           <div>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="material-symbols-outlined text-[14px] text-neutral-300">payments</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Estimated DSA</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("travel.certificate.estimatedDsa")}</p>
             </div>
             <p className="text-lg font-bold text-primary">{formatMoney(request.estimated_dsa, request.currency)}</p>
           </div>
@@ -918,7 +919,7 @@ export default function TravelDetailPage() {
           <div className="mt-4 pt-4 border-t border-neutral-50">
             <div className="flex items-center gap-1.5 mb-2">
               <span className="material-symbols-outlined text-[14px] text-neutral-300">description</span>
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Justification</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">{t("procurement.create.justification")}</p>
             </div>
             <p className="text-sm text-neutral-600 leading-relaxed">{request.justification}</p>
           </div>
@@ -930,8 +931,8 @@ export default function TravelDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="route" color="text-teal-600" bg="bg-teal-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Itinerary</h3>
-            <span className="ml-auto text-xs font-semibold text-neutral-400">{itineraries.length} leg{itineraries.length !== 1 ? "s" : ""}</span>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.create.step.itinerary")}</h3>
+            <span className="ml-auto text-xs font-semibold text-neutral-400">{t(itineraries.length === 1 ? "travel.detail.legOne" : "travel.detail.legMany", { count: itineraries.length })}</span>
           </div>
           <div className="space-y-2.5">
             {itineraries.map((leg, i) => (
@@ -944,14 +945,14 @@ export default function TravelDetailPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-neutral-900">{leg.from_location} → {leg.to_location}</p>
                   <p className="text-xs text-neutral-400 mt-0.5">
-                    {formatDateShort(leg.travel_date)} · {leg.days_count} day{leg.days_count !== 1 ? "s" : ""}
+                    {formatDateShort(leg.travel_date)} · {t(leg.days_count === 1 ? "travel.detail.dayOne" : "travel.detail.dayMany", { count: leg.days_count ?? 0 })}
                     {(leg.flight_name || leg.flight_number) ? (
                       <> · {[leg.flight_name, leg.flight_number].filter(Boolean).join(" ")}</>
                     ) : null}
                   </p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-[10px] text-neutral-400 uppercase tracking-wide">DSA</p>
+                  <p className="text-[10px] text-neutral-400 uppercase tracking-wide">{t("travel.mission.flag.dsa")}</p>
                   <p className="text-sm font-bold text-neutral-900">
                     {formatMoney(
                       (leg as { calculated_dsa?: number | null }).calculated_dsa ??
@@ -974,9 +975,9 @@ export default function TravelDetailPage() {
         <div className="card p-5">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="gavel" color="text-amber-600" bg="bg-amber-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Approval Decision</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("procurement.detail.approvalDecision")}</h3>
           </div>
-          <p className="text-sm text-neutral-500 mb-4">Review the travel request details above and take an action.</p>
+          <p className="text-sm text-neutral-500 mb-4">{t("travel.detail.decisionHint")}</p>
           <div className="flex gap-3 flex-wrap">
             <button
               onClick={handleApprove}
@@ -984,7 +985,7 @@ export default function TravelDetailPage() {
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50 shadow-sm"
             >
               <span className="material-symbols-outlined text-[18px]">check_circle</span>
-              {actionLoading ? "Processing…" : "Approve Request"}
+              {actionLoading ? t("procurement.detail.processing") : t("procurement.detail.approveRequest")}
             </button>
             {canReturn && (
               <button
@@ -993,7 +994,7 @@ export default function TravelDetailPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[18px]">undo</span>
-                Return
+                {t("common.return")}
               </button>
             )}
             <button
@@ -1002,7 +1003,7 @@ export default function TravelDetailPage() {
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border-2 border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">cancel</span>
-              Reject
+              {t("common.reject")}
             </button>
           </div>
         </div>
@@ -1013,7 +1014,7 @@ export default function TravelDetailPage() {
         <div className="card p-5" data-testid="travel-amendments-panel">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="edit_document" color="text-blue-600" bg="bg-blue-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Amendments</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.reports.slice.amendments.label")}</h3>
           </div>
           <div className="space-y-3">
             {(request.amendments ?? []).slice().reverse().map((a) => (
@@ -1022,15 +1023,15 @@ export default function TravelDetailPage() {
                   <div className="min-w-0">
                     <p className="font-semibold text-neutral-900 capitalize">{a.status.replace(/_/g, " ")}</p>
                     <p className="text-xs text-neutral-500 mt-0.5">
-                      {a.reason || "No reason provided"}
-                      {a.creator?.name ? ` · by ${a.creator.name}` : ""}
+                      {a.reason || t("travel.detail.noReason")}
+                      {a.creator?.name ? ` · ${t("travel.detail.byName", { name: a.creator.name })}` : ""}
                     </p>
                     <div className="mt-2 text-left">
                       <LabelledRecord value={a.proposed_changes} />
                     </div>
                     {a.original_snapshot && (
                       <p className="text-[11px] text-neutral-400 mt-1">
-                        Original snapshot preserved
+                        {t("travel.detail.snapshotPreserved")}
                       </p>
                     )}
                   </div>
@@ -1042,7 +1043,7 @@ export default function TravelDetailPage() {
                       data-testid={`travel-approve-amendment-${a.id}`}
                       className="inline-flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700 disabled:opacity-50"
                     >
-                      Approve
+                      {t("common.approve")}
                     </button>
                   )}
                 </div>
@@ -1058,15 +1059,15 @@ export default function TravelDetailPage() {
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="calculate" color="text-emerald-700" bg="bg-emerald-50" />
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Finance DSA calculation</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.detail.financeDsaTitle")}</h3>
               <p className="text-xs text-neutral-400 mt-0.5">
-                Authoritative Rate Types 1/2/3. Traveller estimate {formatMoney(request.estimated_dsa, request.currency)} is not binding.
+                {t("travel.detail.financeDsaHint", { amount: formatMoney(request.estimated_dsa, request.currency) })}
               </p>
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
             <label htmlFor="travel-dsa-rate-type" className="text-xs text-neutral-600">
-              Rate type
+              {t("travel.settings.rateType")}
               <select
                 id="travel-dsa-rate-type"
                 className="form-input mt-1 w-full text-sm"
@@ -1074,13 +1075,13 @@ export default function TravelDetailPage() {
                 onChange={(e) => setDsaRateType(Number(e.target.value))}
                 data-testid="travel-dsa-rate-type"
               >
-                <option value={1}>Type 1 — Acc + meals + incidentals</option>
-                <option value={2}>Type 2 — Meals + incidentals</option>
-                <option value={3}>Type 3 — Incidentals only</option>
+                <option value={1}>{t("travel.settings.rateType1")}</option>
+                <option value={2}>{t("travel.settings.rateType2")}</option>
+                <option value={3}>{t("travel.settings.rateType3")}</option>
               </select>
             </label>
             <label htmlFor="travel-dsa-terminal" className="text-xs text-neutral-600">
-              Terminal / comms total
+              {t("travel.detail.terminalTotal")}
               <input
                 id="travel-dsa-terminal"
                 className="form-input mt-1 w-full text-sm"
@@ -1093,11 +1094,11 @@ export default function TravelDetailPage() {
               />
             </label>
             <div className="text-xs text-neutral-600">
-              <p>Finance DSA total</p>
+              <p>{t("travel.reports.financeTotal")}</p>
               <p className="mt-2 text-lg font-semibold text-neutral-900" data-testid="travel-finance-dsa-total">
                 {request.finance_dsa_total != null ? `${request.finance_dsa_total} ${request.currency}` : "—"}
               </p>
-              <p className="text-neutral-400 mt-1 capitalize">{request.finance_status ?? "awaiting calculation"}</p>
+              <p className="text-neutral-400 mt-1 capitalize">{request.finance_status ?? t("travel.detail.awaitingCalc")}</p>
             </div>
           </div>
           {(request.dsa_lines?.length ?? 0) > 0 && (
@@ -1105,12 +1106,12 @@ export default function TravelDetailPage() {
               <table className="data-table w-full text-xs">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Rate</th>
-                    <th>Meal ded.</th>
-                    <th>Payable</th>
-                    <th>Personal</th>
+                    <th>{t("admin.common.date")}</th>
+                    <th>{t("audit.col.type")}</th>
+                    <th>{t("travel.settings.fx.rate")}</th>
+                    <th>{t("travel.detail.mealDed")}</th>
+                    <th>{t("travel.detail.payable")}</th>
+                    <th>{t("travel.detail.personal")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1121,7 +1122,7 @@ export default function TravelDetailPage() {
                       <td>{line.daily_rate}</td>
                       <td>{line.meal_deduction}</td>
                       <td>{line.daily_payable ?? "—"}</td>
-                      <td>{line.is_personal ? "Yes" : "No"}</td>
+                      <td>{line.is_personal ? t("audit.yes") : t("audit.no")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1138,7 +1139,7 @@ export default function TravelDetailPage() {
             data-testid="travel-save-dsa"
             className="btn-primary py-2 px-4 text-xs"
           >
-            {dsaSaving ? "Saving…" : "Calculate & save DSA"}
+            {dsaSaving ? t("leave.settings.saving") : t("travel.detail.saveDsa")}
           </button>
         </div>
       )}
@@ -1147,40 +1148,40 @@ export default function TravelDetailPage() {
       <div className="card p-5" data-testid="travel-visa-panel">
         <div className="flex items-center gap-3 mb-4">
           <SectionIcon icon="badge" color="text-violet-700" bg="bg-violet-50" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Visa status &amp; reminders</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.detail.visaTitle")}</h3>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
           <label htmlFor="travel-visa-required" className="flex items-center gap-2 text-sm text-neutral-700">
             <input id="travel-visa-required" type="checkbox" checked={visaRequired} onChange={(e) => setVisaRequired(e.target.checked)} />
-            Visa required
+            {t("travel.detail.visaRequired")}
           </label>
           <label htmlFor="travel-visa-status" className="text-xs text-neutral-600">
-            Status
+            {t("leave.col.status")}
             <select id="travel-visa-status" className="form-input mt-1 w-full text-sm" value={visaStatus} onChange={(e) => setVisaStatus(e.target.value)} disabled={!visaRequired}>
-              <option value="pending">Pending</option>
-              <option value="appointment_scheduled">Appointment scheduled</option>
-              <option value="submitted">Submitted</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="expired">Expired</option>
-              <option value="not_required">Not required</option>
+              <option value="pending">{t("status.pending")}</option>
+              <option value="appointment_scheduled">{t("travel.detail.visa.appointmentScheduled")}</option>
+              <option value="submitted">{t("status.submitted")}</option>
+              <option value="approved">{t("status.approved")}</option>
+              <option value="rejected">{t("status.rejected")}</option>
+              <option value="expired">{t("supplier.status.expired")}</option>
+              <option value="not_required">{t("leave.create.cert.not_required")}</option>
             </select>
           </label>
           <label htmlFor="travel-visa-appointment" className="text-xs text-neutral-600">
-            Appointment date
+            {t("travel.detail.visa.appointmentDate")}
             <input id="travel-visa-appointment" className="form-input mt-1 w-full text-sm" type="date" value={visaAppointment} onChange={(e) => setVisaAppointment(e.target.value)} />
           </label>
           <label htmlFor="travel-visa-expiry" className="text-xs text-neutral-600">
-            Expiry date
+            {t("supplier.documents.expiryDate")}
             <input id="travel-visa-expiry" className="form-input mt-1 w-full text-sm" type="date" value={visaExpiry} onChange={(e) => setVisaExpiry(e.target.value)} />
           </label>
           <label htmlFor="travel-visa-notes" className="text-xs text-neutral-600 sm:col-span-2">
-            Notes
+            {t("workflows.simulate.field.notes")}
             <textarea id="travel-visa-notes" className="form-input mt-1 w-full text-sm" rows={2} value={visaNotes} onChange={(e) => setVisaNotes(e.target.value)} />
           </label>
         </div>
         <button type="button" disabled={visaSaving} onClick={handleSaveVisa} className="btn-secondary py-2 px-4 text-xs" data-testid="travel-save-visa">
-          {visaSaving ? "Saving…" : "Save visa details"}
+          {visaSaving ? t("leave.settings.saving") : t("travel.detail.saveVisa")}
         </button>
       </div>
 
@@ -1189,27 +1190,27 @@ export default function TravelDetailPage() {
         <div className="flex items-center gap-3 mb-4">
           <SectionIcon icon="flight_takeoff" color="text-sky-700" bg="bg-sky-50" />
           <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">
-            Paste airline itinerary (v{request.itinerary_version ?? 0})
+            {t("travel.detail.pasteTitle", { version: request.itinerary_version ?? 0 })}
           </h3>
         </div>
         <p className="text-xs text-neutral-500 mb-2">
-          Paste confirmation text, ICS, or lines like <code>Flight BA123 WDH-JNB 2026-08-10</code>. No GDS — fail soft if unparseable.
+          {t("travel.detail.pasteHintBefore")} <code>Flight BA123 WDH-JNB 2026-08-10</code>{/* i18n-ignore */}. {t("travel.detail.pasteHintAfter")}
         </p>
         <textarea
           className="form-input w-full text-sm mb-2 font-mono"
           rows={4}
           value={itineraryPaste}
           onChange={(e) => setItineraryPaste(e.target.value)}
-          placeholder="Flight BA123 WDH-JNB 2026-08-10"
+          placeholder="Flight BA123 WDH-JNB 2026-08-10" // i18n-ignore
           data-testid="travel-itinerary-paste"
         />
         {itineraryPreview && <p className="text-xs text-neutral-600 mb-2">{itineraryPreview}</p>}
         <div className="flex flex-wrap gap-2">
           <button type="button" disabled={itineraryBusy} onClick={handlePreviewItinerary} className="btn-secondary py-2 px-4 text-xs">
-            Preview parse
+            {t("travel.detail.previewParse")}
           </button>
           <button type="button" disabled={itineraryBusy} onClick={handleApplyItinerary} className="btn-primary py-2 px-4 text-xs" data-testid="travel-apply-itinerary">
-            {itineraryBusy ? "Working…" : "Apply & replace legs"}
+            {itineraryBusy ? t("profile.settings.working") : t("travel.detail.applyLegs")}
           </button>
         </div>
       </div>
@@ -1218,36 +1219,36 @@ export default function TravelDetailPage() {
       <div className="card p-5" data-testid="travel-health-panel">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="medical_services" color="text-rose-700" bg="bg-rose-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Travel health pack</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.detail.healthTitle")}</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
             <label htmlFor="travel-health-vacc-req" className="flex items-center gap-2 text-sm">
               <input id="travel-health-vacc-req" type="checkbox" checked={healthVaccReq} onChange={(e) => setHealthVaccReq(e.target.checked)} />
-              Vaccination required
+              {t("travel.detail.vaccRequired")}
             </label>
             <label htmlFor="travel-health-vacc-status" className="text-xs text-neutral-600">
-              Vaccination status
+              {t("travel.detail.vaccStatus")}
               <input id="travel-health-vacc-status" className="form-input mt-1 w-full text-sm" value={healthVaccStatus} onChange={(e) => setHealthVaccStatus(e.target.value)} />
             </label>
             <label htmlFor="travel-health-proph-req" className="flex items-center gap-2 text-sm">
               <input id="travel-health-proph-req" type="checkbox" checked={healthProphReq} onChange={(e) => setHealthProphReq(e.target.checked)} />
-              Prophylaxis required
+              {t("travel.detail.prophRequired")}
             </label>
             <label htmlFor="travel-health-proph-status" className="text-xs text-neutral-600">
-              Prophylaxis status
+              {t("travel.detail.prophStatus")}
               <input id="travel-health-proph-status" className="form-input mt-1 w-full text-sm" value={healthProphStatus} onChange={(e) => setHealthProphStatus(e.target.value)} />
             </label>
             <label htmlFor="travel-health-cost" className="text-xs text-neutral-600">
-              Estimated cost
+              {t("travel.detail.estimatedCost")}
               <input id="travel-health-cost" className="form-input mt-1 w-full text-sm" type="number" value={healthCost} onChange={(e) => setHealthCost(e.target.value)} />
             </label>
             <label htmlFor="travel-health-notes" className="text-xs text-neutral-600 sm:col-span-2">
-              Notes
+              {t("workflows.simulate.field.notes")}
               <textarea id="travel-health-notes" className="form-input mt-1 w-full text-sm" rows={2} value={healthNotes} onChange={(e) => setHealthNotes(e.target.value)} />
             </label>
           </div>
           <button type="button" disabled={healthSaving} onClick={handleSaveHealth} className="btn-secondary py-2 px-4 text-xs" data-testid="travel-save-health">
-            {healthSaving ? "Saving…" : "Save health pack"}
+            {healthSaving ? t("leave.settings.saving") : t("travel.detail.saveHealth")}
           </button>
         </div>
 
@@ -1255,7 +1256,7 @@ export default function TravelDetailPage() {
       <div className="card p-5" data-testid="travel-accommodation-panel">
         <div className="flex items-center gap-3 mb-4">
           <SectionIcon icon="hotel" color="text-indigo-700" bg="bg-indigo-50" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Accommodation records</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.detail.accommodationTitle")}</h3>
         </div>
         {(request as any).accommodations?.length > 0 && (
           <ul className="mb-3 space-y-2 text-sm">
@@ -1265,34 +1266,34 @@ export default function TravelDetailPage() {
                 {a.city ? ` · ${a.city}` : ""}
                 {a.confirmation_number ? ` · #${a.confirmation_number}` : ""}
                 <span className="block text-xs text-neutral-500">
-                  {a.check_in || "?"} → {a.check_out || "?"} · paid by {a.paid_by || "n/a"}
+                  {a.check_in || "?"} → {a.check_out || "?"} · {t("travel.detail.paidByValue", { value: a.paid_by || t("travel.detail.notApplicable") })}
                 </span>
               </li>
             ))}
           </ul>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <label htmlFor="travel-hotel-name" className="text-xs text-neutral-600">Hotel
+          <label htmlFor="travel-hotel-name" className="text-xs text-neutral-600">{t("travel.mission.flag.hotel")}
             <input id="travel-hotel-name" className="form-input mt-1 w-full text-sm" value={hotelName} onChange={(e) => setHotelName(e.target.value)} />
           </label>
-          <label htmlFor="travel-hotel-city" className="text-xs text-neutral-600">City
+          <label htmlFor="travel-hotel-city" className="text-xs text-neutral-600">{t("travel.settings.city")}
             <input id="travel-hotel-city" className="form-input mt-1 w-full text-sm" value={hotelCity} onChange={(e) => setHotelCity(e.target.value)} />
           </label>
-          <label htmlFor="travel-hotel-check-in" className="text-xs text-neutral-600">Check-in
+          <label htmlFor="travel-hotel-check-in" className="text-xs text-neutral-600">{t("travel.detail.checkIn")}
             <input id="travel-hotel-check-in" type="date" className="form-input mt-1 w-full text-sm" value={hotelCheckIn} onChange={(e) => setHotelCheckIn(e.target.value)} />
           </label>
-          <label htmlFor="travel-hotel-check-out" className="text-xs text-neutral-600">Check-out
+          <label htmlFor="travel-hotel-check-out" className="text-xs text-neutral-600">{t("travel.detail.checkOut")}
             <input id="travel-hotel-check-out" type="date" className="form-input mt-1 w-full text-sm" value={hotelCheckOut} onChange={(e) => setHotelCheckOut(e.target.value)} />
           </label>
-          <label htmlFor="travel-hotel-paid-by" className="text-xs text-neutral-600">Paid by
+          <label htmlFor="travel-hotel-paid-by" className="text-xs text-neutral-600">{t("travel.detail.paidBy")}
             <select id="travel-hotel-paid-by" className="form-input mt-1 w-full text-sm" value={hotelPaidBy} onChange={(e) => setHotelPaidBy(e.target.value)}>
-              <option value="sadc_pf">SADC PF</option>
-              <option value="host">Host</option>
-              <option value="donor">Donor</option>
-              <option value="self">Self</option>
+              <option value="sadc_pf">SADC PF</option>{/* i18n-ignore */}
+              <option value="host">{t("travel.create.host")}</option>
+              <option value="donor">{t("travel.create.payor.donor")}</option>
+              <option value="self">{t("travel.create.payor.self")}</option>
             </select>
           </label>
-          <label htmlFor="travel-hotel-confirm" className="text-xs text-neutral-600">Confirmation #
+          <label htmlFor="travel-hotel-confirm" className="text-xs text-neutral-600">{t("travel.detail.confirmationNo")}
             <input id="travel-hotel-confirm" className="form-input mt-1 w-full text-sm" value={hotelConfirm} onChange={(e) => setHotelConfirm(e.target.value)} />
           </label>
         </div>
@@ -1315,43 +1316,43 @@ export default function TravelDetailPage() {
               });
               setHotelName(""); setHotelCity(""); setHotelCheckIn(""); setHotelCheckOut(""); setHotelConfirm("");
               await refreshRequest();
-              success("Accommodation recorded.");
+              success(t("travel.detail.accommodationSaved"));
             } catch {
-              setError("Failed to save accommodation.");
+              setError(t("travel.detail.accommodationFailed"));
             } finally {
               setHotelSaving(false);
             }
           }}
         >
-          {hotelSaving ? "Saving…" : "Add accommodation"}
+          {hotelSaving ? t("leave.settings.saving") : t("travel.detail.addAccommodation")}
         </button>
       </div>
 
       <div className="card p-5" data-testid="travel-mileage-panel">
         <div className="flex items-center gap-3 mb-4">
           <SectionIcon icon="directions_car" color="text-slate-700" bg="bg-slate-50" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Private vehicle mileage comparison</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.detail.mileageTitle")}</h3>
         </div>
         {(request as any).mileage_reimbursement_estimate != null && (
           <p className="text-xs text-neutral-600 mb-3">
-            Estimate {(request as any).mileage_reimbursement_estimate} · capped {(request as any).reimbursement_capped_amount}
-            {(request as any).mileage_exceeds_airfare ? " · exceeds equivalent airfare" : ""}
+            {t("travel.detail.mileageEstimate", { estimate: (request as any).mileage_reimbursement_estimate, capped: (request as any).reimbursement_capped_amount ?? "—" })}
+            {(request as any).mileage_exceeds_airfare ? ` · ${t("travel.detail.exceedsAirfare")}` : ""}
           </p>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-          <label htmlFor="travel-mile-km" className="text-xs text-neutral-600">Estimated km
+          <label htmlFor="travel-mile-km" className="text-xs text-neutral-600">{t("travel.detail.estimatedKm")}
             <input id="travel-mile-km" type="number" className="form-input mt-1 w-full text-sm" value={mileKm} onChange={(e) => setMileKm(e.target.value)} />
           </label>
-          <label htmlFor="travel-mile-rate" className="text-xs text-neutral-600">Rate / km
+          <label htmlFor="travel-mile-rate" className="text-xs text-neutral-600">{t("travel.detail.ratePerKm")}
             <input id="travel-mile-rate" type="number" className="form-input mt-1 w-full text-sm" value={mileRate} onChange={(e) => setMileRate(e.target.value)} />
           </label>
-          <label htmlFor="travel-mile-airfare" className="text-xs text-neutral-600">Equivalent airfare
+          <label htmlFor="travel-mile-airfare" className="text-xs text-neutral-600">{t("travel.detail.equivalentAirfare")}
             <input id="travel-mile-airfare" type="number" className="form-input mt-1 w-full text-sm" value={mileAirfare} onChange={(e) => setMileAirfare(e.target.value)} />
           </label>
-          <label htmlFor="travel-mile-route" className="text-xs text-neutral-600">Route
+          <label htmlFor="travel-mile-route" className="text-xs text-neutral-600">{t("travel.create.route")}
             <input id="travel-mile-route" className="form-input mt-1 w-full text-sm" value={mileRoute} onChange={(e) => setMileRoute(e.target.value)} />
           </label>
-          <label htmlFor="travel-mile-reason" className="text-xs text-neutral-600 sm:col-span-2">Reason PF vehicle not used
+          <label htmlFor="travel-mile-reason" className="text-xs text-neutral-600 sm:col-span-2">{t("travel.create.privateReason")}
             <textarea id="travel-mile-reason" className="form-input mt-1 w-full text-sm" rows={2} value={mileReason} onChange={(e) => setMileReason(e.target.value)} />
           </label>
         </div>
@@ -1372,15 +1373,15 @@ export default function TravelDetailPage() {
                 private_vehicle_route: mileRoute || undefined,
               });
               await refreshRequest();
-              success("Mileage comparison saved.");
+              success(t("travel.detail.mileageSaved"));
             } catch {
-              setError("Failed to save mileage comparison.");
+              setError(t("travel.detail.mileageFailed"));
             } finally {
               setMileSaving(false);
             }
           }}
         >
-          {mileSaving ? "Saving…" : "Save mileage comparison"}
+          {mileSaving ? t("leave.settings.saving") : t("travel.detail.saveMileage")}
         </button>
       </div>
 
@@ -1388,15 +1389,15 @@ export default function TravelDetailPage() {
         <div className="card p-5" data-testid="travel-pack-panel">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Traveller travel pack</h3>
-              <p className="text-xs text-neutral-500 mt-1">ZIP with requisition PDF, itinerary summary, accommodations, and attachments.</p>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.detail.packTitle")}</h3>
+              <p className="text-xs text-neutral-500 mt-1">{t("travel.detail.packHint")}</p>
             </div>
             <a
               href={travelApi.travelPackUrl(request.id)}
               className="btn-primary py-2 px-4 text-xs"
               data-testid="travel-download-pack"
             >
-              Download pack
+              {t("travel.detail.downloadPack")}
             </a>
           </div>
         </div>
@@ -1406,16 +1407,16 @@ export default function TravelDetailPage() {
       <div className="card p-5" data-testid="travel-procurement-link-panel">
         <div className="flex items-center gap-3 mb-4">
           <SectionIcon icon="shopping_cart" color="text-amber-700" bg="bg-amber-50" />
-          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Procurement / travel-agent link</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.detail.procTitle")}</h3>
         </div>
         {request.procurement_link_suggested && (
           <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-3">
-            Estimated costs suggest linking a procurement request for booking (soft link — not a marketplace).
+            {t("travel.detail.procSuggested")}
           </p>
         )}
         {request.procurement_request && (
           <p className="text-xs text-neutral-600 mb-2">
-            Linked: <strong>{request.procurement_request.reference_number}</strong>
+            {t("travel.detail.linked")} <strong>{request.procurement_request.reference_number}</strong>
             {request.procurement_request.title ? ` — ${request.procurement_request.title}` : ""}
           </p>
         )}
@@ -1439,15 +1440,15 @@ export default function TravelDetailPage() {
           </label>
           <label htmlFor="travel-proc-required" className="flex items-center gap-2 text-sm mt-5">
             <input id="travel-proc-required" type="checkbox" checked={procRequired} onChange={(e) => setProcRequired(e.target.checked)} />
-            Link required by threshold
+            {t("travel.detail.procRequired")}
           </label>
           <label htmlFor="travel-proc-reason" className="text-xs text-neutral-600 sm:col-span-2">
-            Reason
+            {t("common.reason")}
             <textarea id="travel-proc-reason" className="form-input mt-1 w-full text-sm" rows={2} value={procReason} onChange={(e) => setProcReason(e.target.value)} />
           </label>
         </div>
         <button type="button" disabled={procSaving} onClick={handleSaveProcurementLink} className="btn-secondary py-2 px-4 text-xs" data-testid="travel-save-procurement-link">
-          {procSaving ? "Saving…" : "Save procurement link"}
+          {procSaving ? t("leave.settings.saving") : t("travel.detail.saveProc")}
         </button>
       </div>
 
@@ -1455,9 +1456,9 @@ export default function TravelDetailPage() {
         <div className="card p-5" data-testid="travel-personal-days-editor">
           <div className="flex items-center gap-3 mb-3">
             <SectionIcon icon="event_available" color="text-indigo-600" bg="bg-indigo-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Official vs personal days</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.detail.daysTitle")}</h3>
           </div>
-          <p className="text-xs text-neutral-500 mb-3">Mark days that are personal (no DSA). Official days remain payable.</p>
+          <p className="text-xs text-neutral-500 mb-3">{t("travel.detail.daysHint")}</p>
           <div className="space-y-2 max-h-56 overflow-y-auto">
             {personalDays.map((day, idx) => (
               <label key={day.date} htmlFor={`travel-personal-day-${day.date}`} className="flex items-center justify-between gap-3 text-sm border-b border-neutral-50 py-1.5">
@@ -1472,8 +1473,8 @@ export default function TravelDetailPage() {
                     setPersonalDays(next);
                   }}
                 >
-                  <option value="official">Official</option>
-                  <option value="personal">Personal</option>
+                  <option value="official">{t("travel.detail.official")}</option>
+                  <option value="personal">{t("travel.detail.personal")}</option>
                 </select>
               </label>
             ))}
@@ -1487,15 +1488,15 @@ export default function TravelDetailPage() {
               try {
                 await travelApi.updatePersonalDays(request.id, personalDays);
                 await refreshRequest();
-                success("Personal / official days saved");
+                success(t("travel.detail.daysSaved"));
               } catch {
-                showErrorToast("Failed to save personal days");
+                showErrorToast(t("travel.detail.daysFailed"));
               } finally {
                 setPersonalSaving(false);
               }
             }}
           >
-            {personalSaving ? "Saving…" : "Save day marking"}
+            {personalSaving ? t("leave.settings.saving") : t("travel.detail.saveDays")}
           </button>
         </div>
       )}
@@ -1504,12 +1505,12 @@ export default function TravelDetailPage() {
         <div className="card p-5" data-testid="travel-vehicle-assign">
           <div className="flex items-center gap-3 mb-3">
             <SectionIcon icon="directions_car" color="text-slate-700" bg="bg-slate-100" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Fleet vehicle assignment</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.detail.fleetTitle")}</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label htmlFor="travel-vehicle-id" className="text-xs text-neutral-600">Vehicle
+            <label htmlFor="travel-vehicle-id" className="text-xs text-neutral-600">{t("travel.create.review.vehicle")}
               <select id="travel-vehicle-id" className="form-input mt-1 w-full text-sm" value={vehicleId} onChange={(e) => setVehicleId(e.target.value)}>
-                <option value="">Select fleet asset…</option>
+                <option value="">{t("travel.detail.selectFleet")}</option>
                 {fleet.map((v) => (
                   <option key={v.id} value={v.id}>{v.asset_code} — {v.name} ({v.status})</option>
                 ))}
@@ -1517,7 +1518,7 @@ export default function TravelDetailPage() {
             </label>
             <label htmlFor="travel-vehicle-ack" className="flex items-end gap-2 text-xs text-neutral-600 pb-2">
               <input id="travel-vehicle-ack" type="checkbox" checked={vehicleAck} onChange={(e) => setVehicleAck(e.target.checked)} />
-              Acknowledge overlapping assignment conflicts
+              {t("travel.detail.ackConflicts")}
             </label>
           </div>
           <button
@@ -1533,16 +1534,16 @@ export default function TravelDetailPage() {
                   conflict_resolution_note: vehicleAck ? "Admin acknowledged vehicle conflict" : undefined,
                 });
                 await refreshRequest();
-                success("Vehicle assigned");
+                success(t("travel.detail.vehicleAssigned"));
               } catch (e: any) {
                 const conflicts = e?.response?.data?.errors?.vehicle_conflicts;
-                success(Array.isArray(conflicts) ? conflicts.join(" ") : "Vehicle assign failed (check conflicts)");
+                success(Array.isArray(conflicts) ? conflicts.join(" ") : t("travel.detail.vehicleAssignFailed"));
               } finally {
                 setVehicleSaving(false);
               }
             }}
           >
-            {vehicleSaving ? "Assigning…" : "Assign vehicle"}
+            {vehicleSaving ? t("admin.users.detail.assigning") : t("travel.detail.assignVehicle")}
           </button>
         </div>
       )}
@@ -1552,30 +1553,30 @@ export default function TravelDetailPage() {
         <div className="card p-5" data-testid="travel-post-approval-actions">
           <div className="flex items-center gap-3 mb-4">
             <SectionIcon icon="flight_land" color="text-teal-600" bg="bg-teal-50" />
-            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Post-approval actions</h3>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("travel.detail.postTitle")}</h3>
           </div>
           <p className="text-xs text-neutral-500 mb-3">
-            Booking requires SG approval (or audited emergency). Retirement needs a mission report attachment.
+            {t("travel.detail.postHint")}
           </p>
           <div className="flex flex-wrap gap-2">
             {!request.director_finance_confirmed_at && request.status === "approved" && (
               <button
                 type="button"
                 disabled={actionLoading}
-                onClick={() => runPostApproval("Confirm funds", () => travelApi.confirmFunds(request.id))}
+                onClick={() => runPostApproval(t("travel.detail.confirmFunds"), () => travelApi.confirmFunds(request.id))}
                 className="btn-secondary py-2 px-3 text-xs"
               >
-                Confirm funds
+                {t("travel.detail.confirmFunds")}
               </button>
             )}
             {!request.booking_committed_at && (
               <button
                 type="button"
                 disabled={actionLoading}
-                onClick={() => runPostApproval("Mark booked", () => travelApi.markBooked(request.id))}
+                onClick={() => runPostApproval(t("travel.detail.markBooked"), () => travelApi.markBooked(request.id))}
                 className="btn-secondary py-2 px-3 text-xs"
               >
-                Mark booked
+                {t("travel.detail.markBooked")}
               </button>
             )}
             {request.status === "approved" && !request.returned_at && (
@@ -1584,14 +1585,14 @@ export default function TravelDetailPage() {
                 disabled={actionLoading}
                 onClick={async () => {
                   const actualReturn = await prompt({
-                    title: "Mark returned",
-                    message: `Planned return was ${request.return_date}. If the actual return date differed (e.g. flight delay/early return), enter it here — this is used to detect Leave in Lieu days accurately. Leave blank to use the planned date.`,
-                    label: "Actual return date",
+                    title: t("travel.detail.markReturned"),
+                    message: t("travel.detail.markReturnedHint", { date: request.return_date }),
+                    label: t("travel.detail.actualReturnDate"),
                     inputType: "date",
                   });
                   if (actualReturn === undefined || actualReturn === null) return;
                   const trimmed = actualReturn.trim();
-                  await runPostApproval("Mark returned", () =>
+                  await runPostApproval(t("travel.detail.markReturned"), () =>
                     travelApi.markReturned(
                       request.id,
                       trimmed ? { actual_return_date: trimmed } : undefined,
@@ -1600,17 +1601,17 @@ export default function TravelDetailPage() {
                 }}
                 className="btn-secondary py-2 px-3 text-xs"
               >
-                Mark returned
+                {t("travel.detail.markReturned")}
               </button>
             )}
             {request.returned_at && request.retirement_status !== "completed" && (
               <button
                 type="button"
                 disabled={actionLoading}
-                onClick={() => runPostApproval("Complete retirement", () => travelApi.completeRetirement(request.id))}
+                onClick={() => runPostApproval(t("travel.detail.completeRetirement"), () => travelApi.completeRetirement(request.id))}
                 className="btn-primary py-2 px-3 text-xs"
               >
-                Complete retirement
+                {t("travel.detail.completeRetirement")}
               </button>
             )}
             {request.returned_at && (
@@ -1618,7 +1619,7 @@ export default function TravelDetailPage() {
                 type="button"
                 disabled={actionLoading}
                 onClick={() =>
-                  runPostApproval("Create linked imprest", async () => {
+                  runPostApproval(t("travel.detail.createImprest"), async () => {
                     const res = await travelApi.linkImprest(request.id, {
                       amount_requested: request.finance_dsa_total ?? request.estimated_dsa ?? undefined,
                       purpose: `Travel retirement — ${request.reference_number}`,
@@ -1633,12 +1634,12 @@ export default function TravelDetailPage() {
                 className="btn-secondary py-2 px-3 text-xs"
                 data-testid="travel-link-imprest"
               >
-                Create / link imprest
+                {t("travel.detail.linkImprest")}
               </button>
             )}
             {(request.imprest_requests?.length ?? 0) > 0 && (
               <div className="w-full text-xs text-neutral-600 mt-1">
-                Linked imprests:{" "}
+                {t("travel.detail.linkedImprests")}{" "}
                 {(request.imprest_requests ?? []).map((imp) => (
                   <a key={imp.id} href={`/imprest/${imp.id}`} className="btn-secondary text-xs py-0.5 px-2 inline-flex mr-2">
                     {imp.reference_number ?? `#${imp.id}`}
@@ -1651,25 +1652,25 @@ export default function TravelDetailPage() {
             <dl className="mt-4 grid grid-cols-2 gap-3 text-xs text-neutral-600">
               {request.booking_committed_at && (
                 <div>
-                  <dt className="text-neutral-400">Booked</dt>
+                  <dt className="text-neutral-400">{t("travel.detail.booked")}</dt>
                   <dd className="font-medium">{formatDateShort(request.booking_committed_at)}</dd>
                 </div>
               )}
               {request.returned_at && (
                 <div>
-                  <dt className="text-neutral-400">Returned</dt>
+                  <dt className="text-neutral-400">{t("travel.detail.returned")}</dt>
                   <dd className="font-medium">{formatDateShort(request.returned_at)}</dd>
                 </div>
               )}
               {request.retirement_due_at && (
                 <div>
-                  <dt className="text-neutral-400">Retirement due</dt>
+                  <dt className="text-neutral-400">{t("travel.hub.stat.retirementDue")}</dt>
                   <dd className="font-medium">{formatDateShort(request.retirement_due_at)}</dd>
                 </div>
               )}
               {request.retirement_status && (
                 <div>
-                  <dt className="text-neutral-400">Retirement status</dt>
+                  <dt className="text-neutral-400">{t("travel.queueTable.col.retirementStatus")}</dt>
                   <dd className="font-medium capitalize">{request.retirement_status}</dd>
                 </div>
               )}
@@ -1692,10 +1693,10 @@ export default function TravelDetailPage() {
             const res = await travelApi.uploadAttachment(request.id, file, type);
             const uploaded = res.data.data;
             if (uploaded) setAttachments((prev) => [uploaded, ...prev]);
-            setAttachToast("File uploaded successfully.");
+            setAttachToast({ text: t("travel.detail.fileUploaded"), error: false });
             setTimeout(() => setAttachToast(null), 3000);
           } catch (err) {
-            setAttachToast(apiErrorMessage(err, "Upload failed. Please try again."));
+            setAttachToast({ text: apiErrorMessage(err, t("setup.uploadRetry")), error: true });
             setTimeout(() => setAttachToast(null), 5000);
             throw err;
           } finally {
@@ -1713,12 +1714,12 @@ export default function TravelDetailPage() {
       {attachToast && (
         <div
           className={`rounded-lg px-3 py-2 text-xs ${
-            /fail|could not|error/i.test(attachToast)
+            attachToast.error
               ? "bg-red-50 border border-red-200 text-red-700"
               : "bg-green-50 border border-green-200 text-green-700"
           }`}
         >
-          {attachToast}
+          {attachToast.text}
         </div>
       )}
 
@@ -1726,7 +1727,7 @@ export default function TravelDetailPage() {
       {/* Back link */}
       <Link href="/travel" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-primary transition-colors">
         <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-        Back to Travel Requests
+        {t("travel.detail.back")}
       </Link>
 
       {/* Return for Correction Modal */}
@@ -1746,14 +1747,14 @@ export default function TravelDetailPage() {
                 <span className="material-symbols-outlined text-red-600 text-[20px]">cancel</span>
               </div>
               <div>
-                <h3 className="text-base font-bold text-neutral-900">Reject Travel Request</h3>
-                <p className="text-xs text-neutral-400">A reason is required</p>
+                <h3 className="text-base font-bold text-neutral-900">{t("travel.detail.rejectTitle")}</h3>
+                <p className="text-xs text-neutral-400">{t("procurement.detail.reasonRequired")}</p>
               </div>
             </div>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Enter your reason for rejection…"
+              placeholder={t("procurement.detail.rejectPlaceholder")}
               rows={3}
               className="form-input resize-none"
             />
@@ -1762,14 +1763,14 @@ export default function TravelDetailPage() {
                 onClick={() => { setShowRejectModal(false); setRejectReason(""); }}
                 className="btn-secondary flex-1 justify-center"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleReject}
                 disabled={actionLoading || !rejectReason.trim()}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50 transition-colors"
               >
-                {actionLoading ? "Rejecting…" : "Confirm Rejection"}
+                {actionLoading ? t("procurement.rejecting") : t("procurement.detail.confirmRejection")}
               </button>
             </div>
           </div>
@@ -1785,8 +1786,8 @@ export default function TravelDetailPage() {
                 <span className="material-symbols-outlined text-blue-600 text-[20px]">edit_document</span>
               </div>
               <div>
-                <h3 className="text-base font-bold text-neutral-900">Request amendment</h3>
-                <p className="text-xs text-neutral-400">Controlled post-approval change — original values are snapshotted</p>
+                <h3 className="text-base font-bold text-neutral-900">{t("travel.detail.requestAmendment")}</h3>
+                <p className="text-xs text-neutral-400">{t("travel.detail.amendModalHint")}</p>
               </div>
             </div>
             {amendError && (
@@ -1794,11 +1795,11 @@ export default function TravelDetailPage() {
             )}
             <div className="grid grid-cols-2 gap-3">
               <label htmlFor="travel-amend-departure" className="text-xs text-neutral-500 space-y-1">
-                <span>Departure date</span>
+                <span>{t("pif.arrivals.departureDate")}</span>
                 <input id="travel-amend-departure" type="date" className="form-input" value={amendDeparture} onChange={(e) => setAmendDeparture(e.target.value)} />
               </label>
               <label htmlFor="travel-amend-return" className="text-xs text-neutral-500 space-y-1">
-                <span>Return date</span>
+                <span>{t("travel.detail.returnDate")}</span>
                 <input id="travel-amend-return" type="date" className="form-input" value={amendReturn} onChange={(e) => setAmendReturn(e.target.value)} />
               </label>
             </div>
@@ -1835,18 +1836,18 @@ export default function TravelDetailPage() {
               }}
             />
             <label htmlFor="travel-amend-purpose" className="block text-xs text-neutral-500 space-y-1">
-              <span>Purpose</span>
+              <span>{t("travel.create.review.purpose")}</span>
               <input id="travel-amend-purpose" className="form-input" value={amendPurpose} onChange={(e) => setAmendPurpose(e.target.value)} />
             </label>
             <label htmlFor="travel-amend-reason" className="block text-xs text-neutral-500 space-y-1">
-              <span>Reason for amendment</span>
+              <span>{t("travel.detail.amendReason")}</span>
               <textarea
                 id="travel-amend-reason"
                 className="form-input resize-none"
                 rows={2}
                 value={amendReason}
                 onChange={(e) => setAmendReason(e.target.value)}
-                placeholder="Why is this change needed?"
+                placeholder={t("travel.detail.amendReasonPlaceholder")}
               />
             </label>
             <div className="flex gap-3">
@@ -1855,7 +1856,7 @@ export default function TravelDetailPage() {
                 onClick={() => setShowAmendmentModal(false)}
                 className="btn-secondary flex-1 justify-center"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -1863,7 +1864,7 @@ export default function TravelDetailPage() {
                 disabled={actionLoading}
                 className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-600 disabled:opacity-50"
               >
-                {actionLoading ? "Submitting…" : "Submit amendment"}
+                {actionLoading ? t("leave.create.submitting") : t("travel.detail.submitAmendment")}
               </button>
             </div>
           </div>

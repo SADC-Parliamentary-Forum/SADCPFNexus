@@ -233,14 +233,14 @@ export default function AssetImportPage() {
       setCounts(payload.counts ?? null);
       setEquation(payload.equation ?? null);
       setMsg(res.data.message);
-      toast.success("Import file uploaded", res.data.message);
+      toast.success(t("assets.importPage.uploaded"), res.data.message);
       setPage(1);
       setFilter("all");
       if (payload.batch?.id) await loadPreview(payload.batch.id);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Import file not uploaded", message);
+      toast.error(t("assets.importPage.notUploaded"), message);
     } finally {
       setBusy(false);
     }
@@ -252,13 +252,13 @@ export default function AssetImportPage() {
     try {
       const r = await assetImportApi.approve(batchId, { all_non_blocking: true });
       setMsg((r.data as { message?: string }).message ?? t("assets.import.approveReady"));
-      toast.success("Ready rows approved", (r.data as { message?: string }).message);
+      toast.success(t("assets.importPage.readyApproved"), (r.data as { message?: string }).message);
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Could not approve rows", message);
+      toast.error(t("assets.importPage.approveFailed"), message);
     } finally {
       setBusy(false);
     }
@@ -270,14 +270,14 @@ export default function AssetImportPage() {
     try {
       const r = await assetImportApi.approve(batchId, { staging_ids: selected });
       setMsg((r.data as { message?: string }).message ?? t("assets.import.approveSelected"));
-      toast.success("Selected rows approved", (r.data as { message?: string }).message);
+      toast.success(t("assets.importPage.selectedApproved"), (r.data as { message?: string }).message);
       setSelected([]);
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Could not approve selected rows", message);
+      toast.error(t("assets.importPage.approveSelectedFailed"), message);
     } finally {
       setBusy(false);
     }
@@ -294,11 +294,11 @@ export default function AssetImportPage() {
       setMsg(payload.message ?? t("assets.import.commit"));
       setBatchStatus(payload.data?.batch?.status ?? batchStatus);
       setEquation(payload.data?.equation ?? equation);
-      toast.success("Import committed", payload.message);
+      toast.success(t("assets.importPage.committed"), payload.message);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Import not committed", message);
+      toast.error(t("assets.importPage.notCommitted"), message);
     } finally {
       setBusy(false);
     }
@@ -316,13 +316,13 @@ export default function AssetImportPage() {
     if (!reason) return;
     try {
       await assetImportApi.exclude(batchId, row.id, reason);
-      toast.success("Row excluded");
+      toast.success(t("assets.importPage.rowExcluded"));
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Could not exclude row", message);
+      toast.error(t("assets.importPage.excludeFailed"), message);
     }
   }
 
@@ -351,12 +351,12 @@ export default function AssetImportPage() {
         admin_notes: form.get("admin_notes"),
       });
       setEditing(null);
-      toast.success("Staging row saved");
+      toast.success(t("assets.importPage.rowSaved"));
       await loadStaging(batchId);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Staging row not saved", message);
+      toast.error(t("assets.importPage.rowNotSaved"), message);
     } finally {
       setBusy(false);
     }
@@ -366,14 +366,14 @@ export default function AssetImportPage() {
     if (!batchId || !editing) return;
     try {
       await assetImportApi.markUnavailable(batchId, editing.id, field);
-      toast.success("Field marked unavailable");
+      toast.success(t("assets.importPage.fieldUnavailable"));
       setEditing(null);
       await loadStaging(batchId);
       await loadPreview(batchId);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Could not mark field unavailable", message);
+      toast.error(t("assets.importPage.fieldUnavailableFailed"), message);
     }
   }
 
@@ -383,13 +383,13 @@ export default function AssetImportPage() {
     try {
       await assetImportApi.mergeDuplicates(batchId, row.id);
       setMsg(t("assets.import.mergeDuplicates"));
-      toast.success("Duplicates merged");
+      toast.success(t("assets.importPage.merged"));
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Duplicates not merged", message);
+      toast.error(t("assets.importPage.notMerged"), message);
     } finally {
       setBusy(false);
     }
@@ -401,13 +401,13 @@ export default function AssetImportPage() {
     try {
       await assetImportApi.resolveDiscrepancy(batchId, d.id, chosen);
       setMsg(t("assets.import.resolved"));
-      toast.success("Discrepancy resolved");
+      toast.success(t("assets.importPage.resolved"));
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Discrepancy not resolved", message);
+      toast.error(t("assets.importPage.notResolved"), message);
     } finally {
       setBusy(false);
     }
@@ -433,13 +433,13 @@ export default function AssetImportPage() {
         location_id: locationId,
       });
       setMsg(t("assets.import.mapLocation"));
-      toast.success("Location mapped");
+      toast.success(t("assets.importPage.locationMapped"));
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Location not mapped", message);
+      toast.error(t("assets.importPage.locationNotMapped"), message);
     } finally {
       setBusy(false);
     }
@@ -459,13 +459,13 @@ export default function AssetImportPage() {
         location_id: custodianType === "store" && mapLocationId !== "" ? mapLocationId : null,
       });
       setMsg(t("assets.import.mapCustodian"));
-      toast.success("Custodian mapped");
+      toast.success(t("assets.importPage.custodianMapped"));
       await loadPreview(batchId);
       await loadStaging(batchId);
     } catch (err: unknown) {
       const message = importApiError(err, t("common.error"));
       setError(message);
-      toast.error("Custodian not mapped", message);
+      toast.error(t("assets.importPage.custodianNotMapped"), message);
     } finally {
       setBusy(false);
     }

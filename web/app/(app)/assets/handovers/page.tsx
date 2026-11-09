@@ -36,7 +36,7 @@ export default function AssetHandoversPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Ref</th>
+              <th>{t("assets.handoversList.colRef")}</th>
               <th>{t("assets.handover.type")}</th>
               <th>{t("assets.view.fieldStatus")}</th>
               <th>{t("assets.handover.target")}</th>

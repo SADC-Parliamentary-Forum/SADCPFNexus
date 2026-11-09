@@ -23,10 +23,10 @@ export default function AuditPlansPage() {
     mutationFn: (planTitle: string) => auditApi.createPlan({ title: planTitle, fiscal_year: new Date().getFullYear() }),
     onSuccess: () => {
       setTitle("");
-      toast.success("Audit plan created");
+      toast.success(t("audit.toast.planCreated"));
       qc.invalidateQueries({ queryKey: ["audit", "plans"] });
     },
-    onError: (err) => toast.error("Audit plan not created", apiErrorMessage(err, "Failed to create the audit plan.")),
+    onError: (err) => toast.error(t("audit.toast.planNotCreated"), apiErrorMessage(err, t("audit.toast.planFailed"))),
   });
 
   const runAction = (call: () => Promise<unknown>, successTitle: string, errorTitle: string) =>
@@ -35,7 +35,7 @@ export default function AuditPlansPage() {
         toast.success(successTitle);
         return qc.invalidateQueries({ queryKey: ["audit", "plans"] });
       })
-      .catch((err) => toast.error(errorTitle, apiErrorMessage(err, "Action failed. Please try again.")));
+      .catch((err) => toast.error(errorTitle, apiErrorMessage(err, t("correspondence.detail.actionFailed"))));
 
   return (
     <AuditPageShell
@@ -83,17 +83,17 @@ export default function AuditPlansPage() {
             <td className="px-3 py-2.5">
               <AuditRowActions>
                 {r.status === "draft" || r.status === "amended" ? (
-                  <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.submitPlan(Number(r.id)), "Audit plan submitted", "Could not submit audit plan")}>
+                  <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.submitPlan(Number(r.id)), t("audit.toast.planSubmitted"), t("audit.toast.planNotSubmitted"))}>
                     {t("audit.plans.submit")}
                   </button>
                 ) : null}
                 {r.status === "pending_approval" ? (
-                  <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.approvePlan(Number(r.id)), "Audit plan approved", "Could not approve audit plan")}>
+                  <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.approvePlan(Number(r.id)), t("audit.toast.planApproved"), t("audit.toast.planNotApproved"))}>
                     {t("audit.plans.approve")}
                   </button>
                 ) : null}
                 {r.status === "approved" ? (
-                  <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.amendPlan(Number(r.id), { amendment_reason: "Scope change" }), "Audit plan amended", "Could not amend audit plan")}>
+                  <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.amendPlan(Number(r.id), { amendment_reason: "Scope change" }), t("audit.toast.planAmended"), t("audit.toast.planNotAmended"))}>
                     {t("audit.plans.amend")}
                   </button>
                 ) : null}

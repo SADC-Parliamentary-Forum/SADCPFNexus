@@ -31,10 +31,10 @@ function deptGrade(row: RiskDepartmentExposure): { grade: string; cls: string } 
 }
 
 const LEVEL_CONFIG: Record<string, { label: string; cls: string }> = {
-  low:      { label: "Low",      cls: "text-green-700 bg-green-100 border-green-300"    },
-  medium:   { label: "Medium",   cls: "text-yellow-700 bg-yellow-100 border-yellow-300" },
-  high:     { label: "High",     cls: "text-orange-700 bg-orange-100 border-orange-300" },
-  critical: { label: "Critical", cls: "text-red-700 bg-red-100 border-red-300"          },
+  low:      { label: "risk.create.level.low",      cls: "text-green-700 bg-green-100 border-green-300"    },
+  medium:   { label: "risk.create.level.medium",   cls: "text-yellow-700 bg-yellow-100 border-yellow-300" },
+  high:     { label: "risk.create.level.high",     cls: "text-orange-700 bg-orange-100 border-orange-300" },
+  critical: { label: "risk.create.level.critical", cls: "text-red-700 bg-red-100 border-red-300"          },
 };
 
 const ESCALATION_CONFIG: Record<string, string> = {
@@ -58,6 +58,22 @@ const CHANGE_TYPE_ICONS: Record<string, { icon: string; color: string }> = {
   action_added:     { icon: "add_task",     color: "text-primary"     },
   action_completed: { icon: "task_alt",     color: "text-green-600"   },
 };
+
+/** Translated label for a risk history change type, falling back to the raw value. */
+function changeTypeLabel(t: (key: string) => string, type: string): string {
+  const key = ["created", "updated", "reopened", "action_added", "action_completed"].includes(type)
+    ? `risk.auditTrail.event.${type.replace(/_(\w)/g, (_, c: string) => c.toUpperCase())}`
+    : `risk.analytics.status.${type}`;
+  const label = t(key);
+  return label === key ? type.replace(/_/g, " ") : label;
+}
+
+/** Translated escalation level, falling back to the raw value. */
+function escalationLabel(t: (key: string) => string, level: string): string {
+  const key = `risk.common.escalation.${level}`;
+  const label = t(key);
+  return label === key ? level.replace("_", " ") : label;
+}
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
 
@@ -123,12 +139,12 @@ export default function RiskDashboardPage() {
 
       {/* Row 1: 6 KPI Cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-        <KpiCard label="Open Risks"       value={dashLoading ? "—" : kpis?.open ?? 0}            icon="shield_moon"       color="text-amber-600"  bg="bg-amber-50"   href="/risk" />
-        <KpiCard label="Critical"         value={dashLoading ? "—" : kpis?.critical ?? 0}        icon="crisis_alert"      color="text-red-600"    bg="bg-red-50"     href="/risk?risk_level=critical" />
-        <KpiCard label="High"             value={dashLoading ? "—" : kpis?.high ?? 0}            icon="warning_amber"     color="text-orange-600" bg="bg-orange-50"  href="/risk?risk_level=high" />
-        <KpiCard label="Overdue Actions"  value={dashLoading ? "—" : kpis?.overdue_actions ?? 0} icon="assignment_late"   color="text-red-600"    bg="bg-red-50"     />
-        <KpiCard label="Escalated"        value={dashLoading ? "—" : kpis?.escalated ?? 0}       icon="escalator_warning" color="text-orange-600" bg="bg-orange-50"  href="/risk?status=escalated" />
-        <KpiCard label="Reviews Due"      value={dashLoading ? "—" : kpis?.reviews_due ?? 0}     icon="event_upcoming"    color="text-blue-600"   bg="bg-blue-50"    />
+        <KpiCard label={t("risk.analytics.openRisks")} value={dashLoading ? "—" : kpis?.open ?? 0}            icon="shield_moon"       color="text-amber-600"  bg="bg-amber-50"   href="/risk" />
+        <KpiCard label={t("risk.create.level.critical")} value={dashLoading ? "—" : kpis?.critical ?? 0}        icon="crisis_alert"      color="text-red-600"    bg="bg-red-50"     href="/risk?risk_level=critical" />
+        <KpiCard label={t("risk.create.level.high")} value={dashLoading ? "—" : kpis?.high ?? 0}            icon="warning_amber"     color="text-orange-600" bg="bg-orange-50"  href="/risk?risk_level=high" />
+        <KpiCard label={t("risk.analytics.overdueActions")} value={dashLoading ? "—" : kpis?.overdue_actions ?? 0} icon="assignment_late"   color="text-red-600"    bg="bg-red-50"     />
+        <KpiCard label={t("risk.analytics.status.escalated")} value={dashLoading ? "—" : kpis?.escalated ?? 0}       icon="escalator_warning" color="text-orange-600" bg="bg-orange-50"  href="/risk?status=escalated" />
+        <KpiCard label={t("risk.dashboard.reviewsDue")} value={dashLoading ? "—" : kpis?.reviews_due ?? 0}     icon="event_upcoming"    color="text-blue-600"   bg="bg-blue-50"    />
       </div>
 
       {/* Row 2: Heatmap + Dept Exposure */}
@@ -136,12 +152,12 @@ export default function RiskDashboardPage() {
         {/* 5×5 Heatmap */}
         <div className="card p-5">
           <div className="mb-3">
-            <h2 className="text-sm font-semibold text-neutral-800">Risk Heatmap</h2>
-            <p className="text-xs text-neutral-500">Likelihood × Impact — active risks only</p>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("risk.analytics.heatmap")}</h2>
+            <p className="text-xs text-neutral-500">{t("risk.dashboard.heatmapActive")}</p>
           </div>
           <div className="flex gap-2">
             <div className="flex items-center justify-center w-5">
-              <span className="text-[10px] text-neutral-400 -rotate-90 whitespace-nowrap">Likelihood →</span>
+              <span className="text-[10px] text-neutral-400 -rotate-90 whitespace-nowrap">{t("risk.analytics.likelihoodAxis")}</span>
             </div>
             <div className="flex-1">
               <div className="grid gap-1" style={{ gridTemplateColumns: "20px repeat(5, 1fr)" }}>
@@ -161,7 +177,7 @@ export default function RiskDashboardPage() {
                           key={`${l}-${im}`}
                           href={`/risk`}
                           className={`relative aspect-square rounded flex items-center justify-center text-xs font-bold transition-all hover:scale-105 ${cellBg(score)}`}
-                          title={`L${l} × I${im} = ${score} (${count} risk${count !== 1 ? "s" : ""})`}
+                          title={t(count === 1 ? "risk.dashboard.cellOne" : "risk.dashboard.cellMany", { l, i: im, score, count })}
                         >
                           {count > 0 && <span className="text-[11px] font-bold">{count}</span>}
                         </Link>
@@ -170,19 +186,19 @@ export default function RiskDashboardPage() {
                   </>
                 ))}
               </div>
-              <div className="text-center text-[10px] text-neutral-400 mt-1.5">Impact →</div>
+              <div className="text-center text-[10px] text-neutral-400 mt-1.5">{t("risk.analytics.impactAxis")}</div>
             </div>
           </div>
           <div className="flex gap-3 mt-3 flex-wrap">
             {[
-              { label: "Low",      bg: "bg-green-200"  },
-              { label: "Medium",   bg: "bg-yellow-300" },
-              { label: "High",     bg: "bg-orange-400" },
-              { label: "Critical", bg: "bg-red-500"    },
+              { label: "risk.create.level.low",      bg: "bg-green-200"  },
+              { label: "risk.create.level.medium",   bg: "bg-yellow-300" },
+              { label: "risk.create.level.high",     bg: "bg-orange-400" },
+              { label: "risk.create.level.critical", bg: "bg-red-500"    },
             ].map((z) => (
               <div key={z.label} className="flex items-center gap-1">
                 <div className={`h-2.5 w-2.5 rounded ${z.bg}`} />
-                <span className="text-[10px] text-neutral-500">{z.label}</span>
+                <span className="text-[10px] text-neutral-500">{t(z.label)}</span>
               </div>
             ))}
           </div>
@@ -191,19 +207,19 @@ export default function RiskDashboardPage() {
         {/* Departmental Exposure */}
         <div className="card overflow-hidden">
           <div className="px-5 py-4 border-b border-neutral-100">
-            <h2 className="text-sm font-semibold text-neutral-800">Exposure by Department</h2>
+            <h2 className="text-sm font-semibold text-neutral-800">{t("risk.dashboard.exposureByDept")}</h2>
           </div>
           {!dashboard?.by_department?.length ? (
-            <EmptyState icon="apartment" title="No department data available." className="py-6 min-h-0" />
+            <EmptyState icon="apartment" title="risk.dashboard.noDeptData" className="py-6 min-h-0" />
           ) : (
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Department</th>
-                  <th className="text-center">Total</th>
-                  <th className="text-center">Critical</th>
-                  <th className="text-center">Overdue</th>
-                  <th className="text-center">Grade</th>
+                  <th>{t("risk.analytics.department")}</th>
+                  <th className="text-center">{t("risk.dashboard.colTotal")}</th>
+                  <th className="text-center">{t("risk.create.level.critical")}</th>
+                  <th className="text-center">{t("risk.common.overdue")}</th>
+                  <th className="text-center">{t("risk.analytics.grade")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -242,12 +258,12 @@ export default function RiskDashboardPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-neutral-800 flex items-center gap-2">
               <span className="material-symbols-outlined text-[16px] text-red-500">warning</span>
-              Escalated Risks
+              {t("risk.dashboard.escalatedRisks")}
             </h2>
             <Link href="/risk?status=escalated" className="btn-secondary text-xs py-1 px-2">{t("risk.dashboard.viewAll")}</Link>
           </div>
           {!dashboard?.escalated_risks?.length ? (
-            <EmptyState icon="check_circle" title="No escalated risks — good standing." className="py-6 min-h-0" />
+            <EmptyState icon="check_circle" title="risk.dashboard.noEscalated" className="py-6 min-h-0" />
           ) : (
             <div className="space-y-2">
               {dashboard.escalated_risks.slice(0, 5).map((r) => {
@@ -260,9 +276,9 @@ export default function RiskDashboardPage() {
                       <p className="text-sm font-medium text-neutral-800 line-clamp-1">{r.title}</p>
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${lvl.cls}`}>{lvl.label}</span>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${lvl.cls}`}>{t(lvl.label)}</span>
                       <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${escCls}`}>
-                        {r.escalation_level.replace("_", " ")}
+                        {escalationLabel(t, r.escalation_level)}
                       </span>
                     </div>
                   </Link>
@@ -276,25 +292,25 @@ export default function RiskDashboardPage() {
         <div className="card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-neutral-800 flex items-center gap-2">
             <span className="material-symbols-outlined text-[16px] text-orange-500">assignment_late</span>
-            Action Summary
+            {t("risk.dashboard.actionSummary")}
           </h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-center">
               <p className="text-3xl font-bold text-red-700">{kpis?.overdue_actions ?? "—"}</p>
-              <p className="text-xs text-red-600 mt-1">Overdue Actions</p>
-              <Link href="/risk" className="text-[10px] font-medium text-red-500 mt-1 block">View risks →</Link>
+              <p className="text-xs text-red-600 mt-1">{t("risk.analytics.overdueActions")}</p>
+              <Link href="/risk" className="text-[10px] font-medium text-red-500 mt-1 block">{t("risk.common.viewRisks")}</Link>
             </div>
             <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-4 text-center">
               <p className="text-3xl font-bold text-blue-700">{kpis?.reviews_due ?? "—"}</p>
-              <p className="text-xs text-blue-600 mt-1">Reviews Due (14d)</p>
-              <Link href="/risk" className="text-[10px] font-medium text-blue-500 mt-1 block">View risks →</Link>
+              <p className="text-xs text-blue-600 mt-1">{t("risk.dashboard.reviewsDue14")}</p>
+              <Link href="/risk" className="text-[10px] font-medium text-blue-500 mt-1 block">{t("risk.common.viewRisks")}</Link>
             </div>
           </div>
           <div className="pt-2 border-t border-neutral-100">
             <p className="text-xs text-neutral-500">
               {kpis && kpis.overdue_actions === 0 && kpis.reviews_due === 0
-                ? "All actions are on track and no reviews are immediately due."
-                : "Immediate attention required on overdue actions and upcoming review cycles."}
+                ? t("risk.dashboard.allOnTrack")
+                : t("risk.dashboard.attention")}
             </p>
           </div>
         </div>
@@ -305,13 +321,13 @@ export default function RiskDashboardPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-neutral-800 flex items-center gap-2">
             <span className="material-symbols-outlined text-[16px] text-primary">history</span>
-            Recent Activity
+            {t("analytics.recentActivity")}
           </h2>
-          <Link href="/risk/audit-trail" className="btn-secondary text-xs py-1 px-2">Full audit trail</Link>
+          <Link href="/risk/audit-trail" className="btn-secondary text-xs py-1 px-2">{t("correspondence.detail.fullAudit")}</Link>
         </div>
 
         {!dashboard?.recent_activity?.length ? (
-          <EmptyState icon="history" title="No recent activity." className="py-6 min-h-0" />
+          <EmptyState icon="history" title="risk.dashboard.noActivity" className="py-6 min-h-0" />
         ) : (
           <div className="relative">
             <div className="absolute left-3 top-0 bottom-0 w-px bg-neutral-200" />
@@ -326,8 +342,8 @@ export default function RiskDashboardPage() {
                     <div className="flex-1 min-w-0 pt-0.5">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Link href={`/risk/${event.risk_id}`} className="font-mono text-xs font-medium text-primary">{event.risk_code}</Link>
-                        <span className="text-xs text-neutral-600 capitalize">{event.change_type.replace(/_/g, " ")}</span>
-                        <span className="text-[10px] text-neutral-400">by {event.actor_name}</span>
+                        <span className="text-xs text-neutral-600 capitalize">{changeTypeLabel(t, event.change_type)}</span>
+                        <span className="text-[10px] text-neutral-400">{t("risk.dashboard.byActor", { name: event.actor_name })}</span>
                       </div>
                       <p className="text-[10px] text-neutral-400 mt-0.5">{formatDateShort(event.created_at)}</p>
                     </div>

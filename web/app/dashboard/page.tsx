@@ -39,6 +39,7 @@ const quickActions = [
 interface ActivityItem {
   id: number;
   module: string;
+  moduleLabel: string;
   ref: string;
   status: string;
   date: string;
@@ -170,13 +171,13 @@ export default function DashboardPage() {
       ]);
       const items: ActivityItem[] = [];
       (((travRes?.data as { data?: TravelRequest[] })?.data) ?? []).forEach((r) =>
-        items.push({ id: r.id, module: "Travel", ref: r.reference_number, status: r.status, date: r.created_at, href: `/travel/${r.id}`, icon: "flight_takeoff", color: "text-primary bg-primary/10" })
+        items.push({ id: r.id, module: "Travel", moduleLabel: "nav.travel", ref: r.reference_number, status: r.status, date: r.created_at, href: `/travel/${r.id}`, icon: "flight_takeoff", color: "text-primary bg-primary/10" })
       );
       (((lvRes?.data as { data?: LeaveRequest[] })?.data) ?? []).forEach((r) =>
-        items.push({ id: r.id, module: "Leave", ref: r.reference_number, status: r.status, date: r.created_at, href: `/leave/${r.id}`, icon: "event_available", color: "text-green-600 bg-green-50" })
+        items.push({ id: r.id, module: "Leave", moduleLabel: "nav.leave", ref: r.reference_number, status: r.status, date: r.created_at, href: `/leave/${r.id}`, icon: "event_available", color: "text-green-600 bg-green-50" })
       );
       (((impRes?.data as { data?: ImprestRequest[] })?.data) ?? []).forEach((r) =>
-        items.push({ id: r.id, module: "Imprest", ref: r.reference_number, status: r.status, date: r.created_at, href: `/imprest/${r.id}`, icon: "account_balance_wallet", color: "text-amber-600 bg-amber-50" })
+        items.push({ id: r.id, module: "Imprest", moduleLabel: "nav.imprest", ref: r.reference_number, status: r.status, date: r.created_at, href: `/imprest/${r.id}`, icon: "account_balance_wallet", color: "text-amber-600 bg-amber-50" })
       );
       items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       return items.slice(0, 8);
@@ -367,16 +368,16 @@ export default function DashboardPage() {
           ) : activity.length === 0 ? (
             <div className="px-5 py-10 text-center">
               <span className="material-symbols-outlined text-4xl text-neutral-200">inbox</span>
-              <p className="mt-2 text-sm text-neutral-600">No recent activity</p>
+              <p className="mt-2 text-sm text-neutral-600">{t("analytics.noRecentActivity")}</p>
               <div className="flex justify-center gap-3 mt-4">
                 {canTravelCreate ? (
                   <Link href="/travel/create" className="btn-primary text-xs py-2 px-3 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]">add</span>New Travel
+                    <span className="material-symbols-outlined text-[14px]">add</span>{t("dashboard.page.newTravel")}
                   </Link>
                 ) : null}
                 {canAccessRoute(user ?? null, "/leave/create") ? (
                   <Link href="/leave/create" className="btn-secondary text-xs py-2 px-3 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]">add</span>Apply Leave
+                    <span className="material-symbols-outlined text-[14px]">add</span>{t("dashboard.page.applyLeave")}
                   </Link>
                 ) : null}
               </div>
@@ -393,7 +394,7 @@ export default function DashboardPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">{a.ref}</span>
-                        <span className="text-[10px] text-neutral-600 uppercase font-medium">{a.module}</span>
+                        <span className="text-[10px] text-neutral-600 uppercase font-medium">{t(a.moduleLabel)}</span>
                       </div>
                       <p className="text-[11px] text-neutral-600">{formatDateShort(a.date)}</p>
                     </div>
@@ -419,9 +420,9 @@ export default function DashboardPage() {
           {upcomingEvents.length === 0 ? (
             <div className="px-4 py-8 text-center">
               <span className="material-symbols-outlined text-3xl text-neutral-200">calendar_today</span>
-              <p className="text-xs text-neutral-600 mt-2">No upcoming events</p>
+              <p className="text-xs text-neutral-600 mt-2">{t("dashboard.page.noUpcoming")}</p>
               {canAccessRoute(user ?? null, "/workplan/new") || canAccessRoute(user ?? null, "/workplan") ? (
-                <Link href="/workplan/new" className="mt-3 inline-block text-xs font-semibold text-primary hover:underline">Add event</Link>
+                <Link href="/workplan/new" className="mt-3 inline-block text-xs font-semibold text-primary hover:underline">{t("hr.files.detail.addEventButton")}</Link>
               ) : null}
             </div>
           ) : (
@@ -461,7 +462,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-neutral-600 text-[18px]">task_alt</span>
             <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-              {showFullAssignments ? t("Assignments Overview") : t("My Assignments")}
+              {showFullAssignments ? t("dashboard.page.assignmentsOverview") : t("My Assignments")}
             </h3>
           </div>
           <Link href="/assignments" className="text-xs text-neutral-600 hover:text-primary transition-colors">
@@ -474,21 +475,21 @@ export default function DashboardPage() {
           <div className={`grid divide-x divide-neutral-50 dark:divide-neutral-800 border-b border-neutral-50 dark:border-neutral-800 ${showFullAssignments ? "grid-cols-4 sm:grid-cols-8" : "grid-cols-2 sm:grid-cols-4"}`}>
             {showFullAssignments ? (
               <>
-                <StatPill label="Total" value={assignStats.total} href={hrefIfAllowed("/assignments/all")} />
-                <StatPill label="Active" value={assignStats.active} href={hrefIfAllowed("/assignments/all?status=active")} color="text-green-600" />
-                <StatPill label="Awaiting" value={assignStats.awaiting} href={hrefIfAllowed("/assignments/pending")} color="text-primary" />
-                <StatPill label="Blocked" value={assignStats.blocked} href={hrefIfAllowed("/assignments/blocked")} color="text-red-500" />
-                <StatPill label="Overdue" value={assignStats.overdue} href={hrefIfAllowed("/assignments/overdue")} color="text-red-600" />
-                <StatPill label="Due Soon" value={assignStats.due_soon} color="text-amber-600" />
-                <StatPill label="Completed" value={assignStats.completed} color="text-neutral-600" />
-                <StatPill label="My Pending" value={assignStats.my_pending} color="text-blue-600" />
+                <StatPill label="po.designer.palette.total" value={assignStats.total} href={hrefIfAllowed("/assignments/all")} />
+                <StatPill label="assignments.status.active" value={assignStats.active} href={hrefIfAllowed("/assignments/all?status=active")} color="text-green-600" />
+                <StatPill label="approvals.tab.awaiting" value={assignStats.awaiting} href={hrefIfAllowed("/assignments/pending")} color="text-primary" />
+                <StatPill label="assignments.status.blocked" value={assignStats.blocked} href={hrefIfAllowed("/assignments/blocked")} color="text-red-500" />
+                <StatPill label="notifications.alerts.overdue" value={assignStats.overdue} href={hrefIfAllowed("/assignments/overdue")} color="text-red-600" />
+                <StatPill label="dashboard.page.dueSoon" value={assignStats.due_soon} color="text-amber-600" />
+                <StatPill label="assignments.status.completed" value={assignStats.completed} color="text-neutral-600" />
+                <StatPill label="dashboard.page.myPending" value={assignStats.my_pending} color="text-blue-600" />
               </>
             ) : (
               <>
-                <StatPill label="My Active" value={assignStats.active} color="text-green-600" href={hrefIfAllowed("/assignments/all?status=active")} />
-                <StatPill label="My Pending" value={assignStats.my_pending} color="text-blue-600" />
-                <StatPill label="Overdue" value={assignStats.overdue} href={hrefIfAllowed("/assignments/overdue")} color="text-red-600" />
-                <StatPill label="Due Soon" value={assignStats.due_soon} color="text-amber-600" />
+                <StatPill label="dashboard.page.myActive" value={assignStats.active} color="text-green-600" href={hrefIfAllowed("/assignments/all?status=active")} />
+                <StatPill label="dashboard.page.myPending" value={assignStats.my_pending} color="text-blue-600" />
+                <StatPill label="notifications.alerts.overdue" value={assignStats.overdue} href={hrefIfAllowed("/assignments/overdue")} color="text-red-600" />
+                <StatPill label="dashboard.page.dueSoon" value={assignStats.due_soon} color="text-amber-600" />
               </>
             )}
           </div>
@@ -500,7 +501,7 @@ export default function DashboardPage() {
             {urgentAssignments.map((a) => {
               const isOverdue = !["closed", "cancelled"].includes(a.status) && new Date(a.due_date) < new Date();
               const statusCls = a.status === "blocked" ? "badge-danger" : a.status === "at_risk" ? "badge-warning" : a.status === "delayed" ? "badge-warning" : isOverdue ? "badge-danger" : "badge-muted";
-              const statusLabel = a.status === "at_risk" ? "At Risk" : a.status === "blocked" ? "Blocked" : a.status === "delayed" ? "Delayed" : isOverdue ? "Overdue" : a.status;
+              const statusLabel = a.status === "at_risk" ? t("assignments.status.at_risk") : a.status === "blocked" ? t("assignments.status.blocked") : a.status === "delayed" ? t("assignments.status.delayed") : isOverdue ? t("notifications.alerts.overdue") : a.status;
               return (
                 <Link key={a.id} href={`/assignments/${a.id}`} className="flex items-start gap-3 px-5 py-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors group">
                   <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/20 mt-0.5">
@@ -533,7 +534,7 @@ export default function DashboardPage() {
         ) : (
           <div className="px-5 py-7 text-center">
             <span className="material-symbols-outlined text-3xl text-neutral-200">check_circle</span>
-            <p className="text-xs text-neutral-600 mt-1.5">No urgent assignments</p>
+            <p className="text-xs text-neutral-600 mt-1.5">{t("dashboard.page.noUrgent")}</p>
           </div>
         )}
       </div>
@@ -561,7 +562,7 @@ export default function DashboardPage() {
 
       {/* Modules grid */}
       {modulesToShow.length > 0 && <div>
-        <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">All Modules</h3>
+        <h3 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-3">{t("settings.hr.matrix.allModules")}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           {modulesToShow.map((m) => (
             <Link key={m.href} href={m.href} className="card p-4 flex flex-col items-center gap-2 text-center hover:border-primary/30 hover:shadow-elevated transition-all group">

@@ -28,10 +28,10 @@ export default function AuditCampaignsPage() {
       }),
     onSuccess: () => {
       setTitle("");
-      toast.success("Campaign created");
+      toast.success(t("audit.toast.campaignCreated"));
       qc.invalidateQueries({ queryKey: ["audit", "campaigns"] });
     },
-    onError: (err) => toast.error("Campaign not created", apiErrorMessage(err, "Failed to create the campaign.")),
+    onError: (err) => toast.error(t("audit.toast.campaignNotCreated"), apiErrorMessage(err, t("audit.toast.campaignFailed"))),
   });
 
   return (

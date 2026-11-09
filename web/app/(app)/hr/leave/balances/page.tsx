@@ -29,6 +29,7 @@ function InitializeModal({
   onClose: () => void;
   onSuccess: (created: number, skipped: number) => void;
 }) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +41,7 @@ function InitializeModal({
       onSuccess(res.data.created, res.data.skipped);
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message
-        ?? "Initialization failed. Please try again.";
+        ?? t("hr.leaveBalances.init.failed");
       setError(msg);
     } finally {
       setLoading(false);
@@ -55,11 +56,9 @@ function InitializeModal({
             <span className="material-symbols-outlined text-primary">event_available</span>
           </div>
           <div>
-            <h2 className="text-base font-semibold text-neutral-900">Initialize {year} Leave Balances</h2>
+            <h2 className="text-base font-semibold text-neutral-900">{t("hr.leaveBalances.init.title", { year })}</h2>
             <p className="text-sm text-neutral-500 mt-1">
-              This will create opening leave balance records for all employees who do not yet have one for {year},
-              using their grade band&apos;s leave profile defaults (21 days if no profile is configured).
-              Employees who already have records will be skipped.
+              {t("hr.leaveBalances.init.body", { year })}
             </p>
           </div>
         </div>
@@ -67,13 +66,13 @@ function InitializeModal({
           <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 px-3 py-2 text-sm">{error}</div>
         )}
         <div className="flex justify-end gap-3 pt-2">
-          <button onClick={onClose} disabled={loading} className="btn-secondary text-sm">Cancel</button>
+          <button onClick={onClose} disabled={loading} className="btn-secondary text-sm">{t("common.cancel")}</button>
           <button onClick={handleConfirm} disabled={loading}
             className="btn-primary text-sm flex items-center gap-2 disabled:opacity-50">
             {loading ? (
-              <><span className="material-symbols-outlined text-base animate-spin">progress_activity</span>Initializing…</>
+              <><span className="material-symbols-outlined text-base animate-spin">progress_activity</span>{t("hr.leaveBalances.init.running")}</>
             ) : (
-              <><span className="material-symbols-outlined text-base">bolt</span>Initialize {year}</>
+              <><span className="material-symbols-outlined text-base">bolt</span>{t("hr.leaveBalances.init.cta", { year })}</>
             )}
           </button>
         </div>
@@ -126,13 +125,14 @@ function initials(name: string): string {
 }
 
 function UtilBar({ used, total, colorClass }: { used: number; total: number; colorClass: string }) {
+  const { t } = useI18n();
   const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
   return (
     <div className="space-y-1 w-full min-w-[100px]">
       <div className="h-1.5 w-full rounded-full bg-neutral-100 overflow-hidden">
         <div className={cn("h-full rounded-full transition-all", colorClass)} style={{ width: `${pct}%` }} />
       </div>
-      <p className="text-[10px] text-neutral-400">{used}d used of {total}d</p>
+      <p className="text-[10px] text-neutral-400">{t("hr.leaveBalances.usedOf", { used, total })}</p>
     </div>
   );
 }
@@ -175,6 +175,12 @@ function SkeletonRow() {
       ))}
     </tr>
   );
+}
+
+/** Renders a translated sentence with its {count} placeholder in bold. */
+function WithCount({ template, count }: { template: string; count: number }) {
+  const [before, after = ""] = template.split("{count}");
+  return <>{before}<strong>{count}</strong>{after}</>;
 }
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -234,12 +240,13 @@ export default function LeaveBalancesPage() {
         setEditDraft({});
         setSaveErrors({});
       } catch {
-        setError("Failed to load leave data. You may need HR administrator permissions.");
+        setError(t("hr.leaveBalances.loadError"));
       } finally {
         setLoading(false);
       }
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- t only formats the error text
   }, [selectedYear]);
 
   // Build lookup map for admin balances
@@ -351,7 +358,7 @@ export default function LeaveBalancesPage() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        "Save failed. Please try again.";
+        t("hr.leaveBalances.saveFailed");
       setSaveErrors((e) => ({ ...e, [userId]: msg }));
     } finally {
       setSaving((s) => ({ ...s, [userId]: false }));
@@ -391,21 +398,21 @@ export default function LeaveBalancesPage() {
       )}
 
       <ModulePageHeader
-        title="Leave Balance Administration"
-        subtitle="Consolidated view of annual, sick, LIL, maternity & paternity leave across all staff. Opening balances are editable per employee."
+        title="hr.leaveBalances.title"
+        subtitle="hr.leaveBalances.subtitle"
         breadcrumbs={
           <PageBreadcrumbs
             items={[
               { label: "nav.hr", href: "/hr" },
-              { label: "Leave", href: "/hr/leave" },
-              { label: "Balances" },
+              { label: "nav.leave", href: "/hr/leave" },
+              { label: "hr.leaveBalances.crumb" },
             ]}
           />
         }
         actions={
           <>
           <div>
-            <label htmlFor="leave-balance-year" className="sr-only">Year</label>
+            <label htmlFor="leave-balance-year" className="sr-only">{t("leave.import.colYear")}</label>
             <select
               id="leave-balance-year"
               value={selectedYear}
@@ -421,10 +428,10 @@ export default function LeaveBalancesPage() {
             type="button"
             onClick={() => { setInitResult(null); setShowInitModal(true); }}
             className="btn-primary py-2 px-3 text-sm flex items-center gap-1.5"
-            title={`Initialize ${selectedYear} leave balances from profile defaults`}
+            title={t("hr.leaveBalances.init.tooltip", { year: selectedYear })}
           >
             <span className="material-symbols-outlined text-[16px]">bolt</span>
-            Initialize {selectedYear}
+            {t("hr.leaveBalances.init.cta", { year: selectedYear })}
           </button>
           {canImport && (
             <Link href="/hr/leave/import" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1.5">
@@ -434,7 +441,7 @@ export default function LeaveBalancesPage() {
           )}
           <Link href="/hr/leave" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1.5">
             <span className="material-symbols-outlined text-[16px]">event_note</span>
-            Leave Requests
+            {t("hr.leaveBalances.leaveRequests")}
           </Link>
           </>
         }
@@ -444,33 +451,33 @@ export default function LeaveBalancesPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon="groups"
-          label="Total Staff"
+          label={t("hr.departments.totalStaff")}
           value={totalStaff}
-          sub="in the system"
+          sub={t("hr.leaveBalances.stat.totalSub")}
           iconBg="bg-primary/10"
           iconColor="text-primary"
         />
         <StatCard
           icon="event_available"
-          label="Avg Annual Leave Left"
-          value={`${avgAnnualRemaining}d`}
-          sub="across all staff"
+          label={t("hr.leaveBalances.stat.avgLeft")}
+          value={t("hr.leaveBalances.days", { days: avgAnnualRemaining })}
+          sub={t("hr.leaveBalances.stat.avgLeftSub")}
           iconBg="bg-green-50"
           iconColor="text-green-600"
         />
         <StatCard
           icon="airline_seat_flat"
-          label="On Leave Today"
+          label={t("hr.leaveBalances.stat.onLeave")}
           value={staffOnLeaveToday}
-          sub={staffOnLeaveToday === 1 ? "staff member" : "staff members"}
+          sub={staffOnLeaveToday === 1 ? t("hr.leaveBalances.staffMember") : t("hr.leaveBalances.staffMembers")}
           iconBg="bg-amber-50"
           iconColor="text-amber-600"
         />
         <StatCard
           icon="upcoming"
-          label="Upcoming Leave"
+          label={t("hr.leaveBalances.stat.upcoming")}
           value={upcomingCount}
-          sub="in the next 7 days"
+          sub={t("hr.leaveBalances.stat.upcomingSub")}
           iconBg="bg-violet-50"
           iconColor="text-violet-600"
         />
@@ -481,11 +488,14 @@ export default function LeaveBalancesPage() {
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-[18px]">check_circle</span>
             <span>
-              Initialized <strong>{initResult.created}</strong> balance record{initResult.created !== 1 ? "s" : ""} for {selectedYear}.
-              {initResult.skipped > 0 && <> <strong>{initResult.skipped}</strong> already had records and were skipped.</>}
+              <WithCount
+                template={t(initResult.created !== 1 ? "hr.leaveBalances.init.doneOther" : "hr.leaveBalances.init.doneOne", { year: selectedYear })}
+                count={initResult.created}
+              />
+              {initResult.skipped > 0 && <> <WithCount template={t("hr.leaveBalances.init.skipped")} count={initResult.skipped} /></>}
             </span>
           </div>
-          <button onClick={() => setInitResult(null)} aria-label="Dismiss balance initialization result" className="text-green-500 hover:text-green-700">
+          <button onClick={() => setInitResult(null)} aria-label={t("hr.leaveBalances.init.dismiss")} className="text-green-500 hover:text-green-700">
             <span className="material-symbols-outlined text-[16px]">close</span>
           </button>
         </div>
@@ -506,7 +516,7 @@ export default function LeaveBalancesPage() {
           </span>
           <input
             type="search"
-            placeholder="Search by name, email or job title…"
+            placeholder={t("hr.leaveBalances.search")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="form-input pl-10 w-full"
@@ -519,10 +529,10 @@ export default function LeaveBalancesPage() {
             className={cn("filter-tab", filterOnLeave && "active")}
           >
             <span className="material-symbols-outlined text-[14px]">airline_seat_flat</span>
-            On Leave Today
+            {t("hr.leaveBalances.stat.onLeave")}
           </button>
           <span className="text-xs text-neutral-400 ml-2">
-            {filtered.length} staff member{filtered.length !== 1 ? "s" : ""}
+            {filtered.length} {filtered.length !== 1 ? t("hr.leaveBalances.staffMembers") : t("hr.leaveBalances.staffMember")}
           </span>
         </div>
       </div>
@@ -530,21 +540,21 @@ export default function LeaveBalancesPage() {
       {/* Table */}
       <div className="card overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
-          <h2 className="text-sm font-semibold text-neutral-900">Staff Leave Balances — {selectedYear}</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">{t("hr.leaveBalances.tableTitle", { year: selectedYear })}</h2>
           <p className="text-xs text-neutral-400">
-            Opening balance is editable · Used days derived from approved leave requests
+            {t("hr.leaveBalances.tableHint")}
           </p>
         </div>
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
               <tr>
-                <th className="min-w-[160px]">Employee</th>
-                <th className="min-w-[200px]">Annual Leave (Opening / Used)</th>
-                <th className="min-w-[140px]">Sick Leave</th>
-                <th className="min-w-[100px]">Leave in Lieu Used / Avail</th>
-                <th className="min-w-[100px]">Mat / Pat</th>
-                <th className="min-w-[100px]">Status</th>
+                <th className="min-w-[160px]">{t("admin.salary.employee")}</th>
+                <th className="min-w-[200px]">{t("hr.leaveBalances.col.annual")}</th>
+                <th className="min-w-[140px]">{t("leave.typeFull.sick")}</th>
+                <th className="min-w-[100px]">{t("hr.leaveBalances.col.lil")}</th>
+                <th className="min-w-[100px]">{t("hr.leaveBalances.col.matPat")}</th>
+                <th className="min-w-[100px]">{t("leave.col.status")}</th>
               </tr>
             </thead>
             <tbody>
@@ -554,7 +564,7 @@ export default function LeaveBalancesPage() {
                   ? (
                     <TableEmpty
                       colSpan={6}
-                      title={search || filterOnLeave ? "No staff members match the current filters." : "No staff data found."}
+                      title={search || filterOnLeave ? "hr.leaveBalances.empty.filtered" : "hr.leaveBalances.empty.none"}
                     />
                   )
                   : filtered.map((row) => {
@@ -600,23 +610,23 @@ export default function LeaveBalancesPage() {
                                       }))
                                     }
                                     className="form-input w-16 py-0.5 text-sm"
-                                    aria-label="Opening annual balance days"
+                                    aria-label={t("hr.leaveBalances.openingAria")}
                                   />
-                                  <span className="text-xs text-neutral-400">d opening</span>
+                                  <span className="text-xs text-neutral-400">{t("hr.leaveBalances.dOpening")}</span>
                                   <button
                                     type="button"
                                     onClick={() => handleSave(row.user.id)}
                                     disabled={isSaving}
                                     className="btn-primary py-0.5 px-2 text-xs"
                                   >
-                                    {isSaving ? "…" : "Save"}
+                                    {isSaving ? "…" : t("common.save")}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => cancelEdit(row.user.id)}
                                     disabled={isSaving}
                                     className="text-neutral-400 hover:text-neutral-700 transition-colors"
-                                    aria-label="Cancel edit"
+                                    aria-label={t("people.directory.cancelEdit")}
                                   >
                                     <span className="material-symbols-outlined text-[16px]">close</span>
                                   </button>
@@ -627,19 +637,19 @@ export default function LeaveBalancesPage() {
                                     "text-xs font-bold",
                                     remaining > 10 ? "text-green-700" : remaining > 5 ? "text-amber-600" : "text-red-600"
                                   )}>
-                                    {remaining}d left
+                                    {t("hr.leaveBalances.daysLeft", { days: remaining })}
                                   </span>
                                   {!row.hasBalanceRecord && (
                                     <span className="text-[10px] text-neutral-400 bg-neutral-100 rounded px-1 py-0.5">
-                                      profile default
+                                      {t("hr.leaveBalances.profileDefault")}
                                     </span>
                                   )}
                                   <button
                                     type="button"
                                     onClick={() => startEdit(row)}
                                     className="text-neutral-300 hover:text-primary transition-colors ml-auto"
-                                    title="Edit opening balance"
-                                    aria-label="Edit opening balance"
+                                    title={t("hr.leaveBalances.editOpening")}
+                                    aria-label={t("hr.leaveBalances.editOpening")}
                                   >
                                     <span className="material-symbols-outlined text-[15px]">edit</span>
                                   </button>
@@ -669,7 +679,7 @@ export default function LeaveBalancesPage() {
                               "text-sm font-semibold",
                               row.lilHours > 0 ? "text-blue-700" : "text-neutral-400"
                             )}>
-                              {row.lilHours > 0 ? `${row.lilHours.toFixed(1)}h used` : "—"}
+                              {row.lilHours > 0 ? t("hr.leaveBalances.hoursUsed", { hours: row.lilHours.toFixed(1) }) : "—"}
                             </span>
                             {isEditing ? (
                               <div className="flex items-center gap-1">
@@ -685,14 +695,14 @@ export default function LeaveBalancesPage() {
                                     }))
                                   }
                                   className="form-input w-20 py-0.5 text-xs"
-                                  placeholder="avail hrs"
-                                  aria-label="LIL hours available"
+                                  placeholder={t("hr.leaveBalances.availHrs")}
+                                  aria-label={t("hr.stat.lil")}
                                 />
-                                <span className="text-[10px] text-neutral-400">avail</span>
+                                <span className="text-[10px] text-neutral-400">{t("hr.leaveBalances.avail")}</span>
                               </div>
                             ) : (
                               row.lilHoursAvailable > 0 && (
-                                <p className="text-[10px] text-blue-600">{row.lilHoursAvailable.toFixed(1)}h avail</p>
+                                <p className="text-[10px] text-blue-600">{t("hr.leaveBalances.hoursAvail", { hours: row.lilHoursAvailable.toFixed(1) })}</p>
                               )
                             )}
                           </div>
@@ -702,10 +712,10 @@ export default function LeaveBalancesPage() {
                         <td>
                           <div className="text-xs text-neutral-600 space-y-0.5">
                             {row.maternityDays > 0 && (
-                              <p><span className="font-semibold text-violet-700">{row.maternityDays}d</span> mat</p>
+                              <p><span className="font-semibold text-violet-700">{t("hr.leaveBalances.days", { days: row.maternityDays })}</span> {t("hr.leaveBalances.mat")}</p>
                             )}
                             {row.paternityDays > 0 && (
-                              <p><span className="font-semibold text-indigo-600">{row.paternityDays}d</span> pat</p>
+                              <p><span className="font-semibold text-indigo-600">{t("hr.leaveBalances.days", { days: row.paternityDays })}</span> {t("hr.leaveBalances.pat")}</p>
                             )}
                             {row.maternityDays === 0 && row.paternityDays === 0 && (
                               <span className="text-neutral-400">—</span>
@@ -719,19 +729,19 @@ export default function LeaveBalancesPage() {
                             {row.onLeaveToday && (
                               <span className="badge badge-warning inline-flex items-center gap-1 text-[10px]">
                                 <span className="material-symbols-outlined text-[10px]">airline_seat_flat</span>
-                                On Leave
+                                {t("notifications.alerts.onLeave")}
                               </span>
                             )}
                             {row.upcomingLeave && !row.onLeaveToday && (
                               <span className="badge badge-primary inline-flex items-center gap-1 text-[10px]">
                                 <span className="material-symbols-outlined text-[10px]">upcoming</span>
-                                Upcoming
+                                {t("travel.hub.stat.upcoming")}
                               </span>
                             )}
                             {!row.onLeaveToday && !row.upcomingLeave && (
                               <span className="badge badge-success inline-flex items-center gap-1 text-[10px]">
                                 <span className="material-symbols-outlined text-[10px]">check_circle</span>
-                                Active
+                                {t("audit.access.active")}
                               </span>
                             )}
                           </div>
@@ -748,26 +758,25 @@ export default function LeaveBalancesPage() {
       {/* Legend */}
       {!loading && (
         <div className="card p-4">
-          <p className="text-xs font-semibold text-neutral-500 mb-3 uppercase tracking-wider">Utilisation Legend</p>
+          <p className="text-xs font-semibold text-neutral-500 mb-3 uppercase tracking-wider">{t("hr.leaveBalances.legend")}</p>
           <div className="flex flex-wrap gap-5 text-xs text-neutral-600">
             <div className="flex items-center gap-2">
               <div className="h-2.5 w-8 rounded-full bg-green-500" />
-              <span>More than 50% remaining</span>
+              <span>{t("hr.leaveBalances.legend.high")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="h-2.5 w-8 rounded-full bg-amber-400" />
-              <span>25–50% remaining</span>
+              <span>{t("hr.leaveBalances.legend.mid")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="h-2.5 w-8 rounded-full bg-red-500" />
-              <span>Less than 25% remaining</span>
+              <span>{t("hr.leaveBalances.legend.low")}</span>
             </div>
             <div className="flex items-center gap-2 ml-auto text-neutral-400">
               <span className="material-symbols-outlined text-[14px]">info</span>
               <span>
                 {activeProfile ? `${activeProfile.profile_name} — ` : ""}
-                Opening balance is HR-editable per employee · Remaining = Opening − Used ·
-                Sick {sickEntitlement}d · Mat {maternityEntitlement}d · Pat {paternityEntitlement}d
+                {t("hr.leaveBalances.legend.note", { sick: sickEntitlement, mat: maternityEntitlement, pat: paternityEntitlement })}
               </span>
             </div>
           </div>

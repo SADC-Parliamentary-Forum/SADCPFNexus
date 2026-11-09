@@ -66,10 +66,10 @@ export default function CorrespondenceRetentionPage() {
         legal_hold: form.legal_hold,
         legal_hold_reason: form.legal_hold_reason || null,
       });
-      setMsg("Retention / legal hold updated.");
+      setMsg(t("correspondence.retention.updated"));
       await loadHolds();
     } catch (error: unknown) {
-      setErr(error instanceof Error ? error.message : "Failed to update retention.");
+      setErr(error instanceof Error ? error.message : t("correspondence.retention.updateFailed"));
     } finally {
       setSaving(false);
     }
@@ -78,9 +78,9 @@ export default function CorrespondenceRetentionPage() {
   async function release(id: number) {
     if (releasingId) return;
     const ok = await confirm({
-      title: "Release legal hold",
-      message: "This will lift the legal hold and allow the item to be purged per its retention policy. This action cannot be undone.",
-      confirmText: "Release hold",
+      title: t("correspondence.retention.releaseTitle"),
+      message: t("correspondence.retention.releaseMessage"),
+      confirmText: t("documents.register.releaseHold"),
       variant: "danger",
     });
     if (!ok) return;
@@ -89,10 +89,10 @@ export default function CorrespondenceRetentionPage() {
     setReleasingId(id);
     try {
       await api.post(`/correspondence/letters/${id}/release-hold`);
-      setMsg("Legal hold released.");
+      setMsg(t("correspondence.retention.released"));
       await loadHolds();
     } catch (error: unknown) {
-      setErr(error instanceof Error ? error.message : "Failed to release hold.");
+      setErr(error instanceof Error ? error.message : t("correspondence.retention.releaseFailed"));
     } finally {
       setReleasingId(null);
     }
@@ -101,13 +101,13 @@ export default function CorrespondenceRetentionPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Retention & Legal Holds"
-        subtitle="Set retention schedules and legal holds. Purge is blocked while a hold is active."
+        title={t("correspondence.retention.title")}
+        subtitle={t("correspondence.retention.subtitle")}
         breadcrumbs={
           <PageBreadcrumbs
             items={[
-              { label: "Correspondence", href: "/correspondence" },
-              { label: "Retention" },
+              { label: t("correspondence.retention.crumbCorrespondence"), href: "/correspondence" },
+              { label: t("correspondence.retention.crumbRetention") },
             ]}
           />
         }
@@ -127,20 +127,20 @@ export default function CorrespondenceRetentionPage() {
                     reason: h.legal_hold_reason ?? "",
                   })),
                   [
-                    { key: "ref", header: "Ref" },
-                    { key: "title", header: "Title" },
-                    { key: "policy", header: "Policy" },
-                    { key: "retain_until", header: "Retain until" },
-                    { key: "reason", header: "Reason" },
+                    { key: "ref", header: t("correspondence.retention.colRef") },
+                    { key: "title", header: t("correspondence.retention.colTitle") },
+                    { key: "policy", header: t("correspondence.retention.colPolicy") },
+                    { key: "retain_until", header: t("documents.register.retainUntil") },
+                    { key: "reason", header: t("correspondence.retention.colReason") },
                   ],
                 )
               }
               disabled={holds.length === 0}
             >
-              Export CSV
+              {t("correspondence.retention.exportCsv")}
             </button>
             <Link href="/correspondence/master-register" className="btn-secondary btn-sm">
-              Master register
+              {t("correspondence.retention.masterRegister")}
             </Link>
           </>
         }
@@ -149,7 +149,7 @@ export default function CorrespondenceRetentionPage() {
       {err && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>}
 
       <form onSubmit={saveRetention} className="card space-y-3 p-4">
-        <h2 className="text-sm font-semibold text-neutral-900">Set retention / hold</h2>
+        <h2 className="text-sm font-semibold text-neutral-900">{t("correspondence.retention.formTitle")}</h2>
         <label htmlFor="retention-letter-select" className="block text-sm">
           {t("correspondence.retention.letter")}
           <select
@@ -171,22 +171,22 @@ export default function CorrespondenceRetentionPage() {
         </label>
         <div className="grid gap-3 md:grid-cols-2">
           <label htmlFor="correspondence-retention-retention-policy-setform-disabled-general-3-year" className="block text-sm">
-            Retention policy
+            {t("documents.register.policy")}
             <select id="correspondence-retention-retention-policy-setform-disabled-general-3-year"
               className="form-input mt-1 w-full disabled:opacity-60"
               value={form.retention_policy}
               onChange={(e) => setForm({ ...form, retention_policy: e.target.value })}
               disabled={saving}
             >
-              <option value="general_3y">General 3 years</option>
-              <option value="financial_7y">Financial 7 years</option>
-              <option value="hr_permanent">HR permanent</option>
-              <option value="legal_hold_only">Legal hold only</option>
-              <option value="custom">Custom</option>
+              <option value="general_3y">{t("correspondence.retention.policyGeneral3y")}</option>
+              <option value="financial_7y">{t("correspondence.retention.policyFinancial7y")}</option>
+              <option value="hr_permanent">{t("correspondence.retention.policyHrPermanent")}</option>
+              <option value="legal_hold_only">{t("documents.register.holdOnly")}</option>
+              <option value="custom">{t("correspondence.retention.policyCustom")}</option>
             </select>
           </label>
           <label htmlFor="correspondence-retention-retain-until-setform-disabled" className="block text-sm">
-            Retain until
+            {t("documents.register.retainUntil")}
             <input id="correspondence-retention-retain-until-setform-disabled"
               type="date"
               className="form-input mt-1 w-full disabled:opacity-60"
@@ -203,10 +203,10 @@ export default function CorrespondenceRetentionPage() {
             onChange={(e) => setForm({ ...form, legal_hold: e.target.checked })}
             disabled={saving}
           />
-          Place legal hold
+          {t("correspondence.retention.placeHold")}
         </label>
         <label htmlFor="correspondence-retention-hold-reason-setform-disabled" className="block text-sm">
-          Hold reason
+          {t("correspondence.retention.holdReason")}
           <textarea id="correspondence-retention-hold-reason-setform-disabled"
             className="form-input mt-1 w-full disabled:opacity-60"
             rows={2}
@@ -216,7 +216,7 @@ export default function CorrespondenceRetentionPage() {
           />
         </label>
         <button type="submit" className="btn-primary btn-sm disabled:opacity-60 disabled:cursor-not-allowed" disabled={saving || !letterId.trim()}>
-          {saving ? "Saving…" : "Save"}
+          {saving ? t("correspondence.retention.saving") : t("common.save")}
         </button>
       </form>
 
@@ -224,11 +224,11 @@ export default function CorrespondenceRetentionPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Ref</th>
-              <th>Title</th>
-              <th>Policy</th>
-              <th>Retain until</th>
-              <th>Reason</th>
+              <th>{t("correspondence.retention.colRef")}</th>
+              <th>{t("correspondence.retention.colTitle")}</th>
+              <th>{t("correspondence.retention.colPolicy")}</th>
+              <th>{t("documents.register.retainUntil")}</th>
+              <th>{t("correspondence.retention.colReason")}</th>
               <th></th>
             </tr>
           </thead>
@@ -251,13 +251,13 @@ export default function CorrespondenceRetentionPage() {
                     onClick={() => void release(h.id)}
                     disabled={releasingId === h.id}
                   >
-                    {releasingId === h.id ? "Releasing…" : "Release hold"}
+                    {releasingId === h.id ? t("correspondence.retention.releasing") : t("documents.register.releaseHold")}
                   </button>
                 </td>
               </tr>
             ))}
             {holds.length === 0 && (
-              <TableEmpty colSpan={6} title="No active legal holds." />
+              <TableEmpty colSpan={6} title={t("correspondence.retention.empty")} />
             )}
           </tbody>
         </table>

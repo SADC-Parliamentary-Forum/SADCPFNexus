@@ -27,10 +27,10 @@ export default function AuditExternalPage() {
     }),
     onSuccess: () => {
       setTitle("");
-      toast.success("External audit created");
+      toast.success(t("audit.toast.externalCreated"));
       qc.invalidateQueries({ queryKey: ["audit", "external"] });
     },
-    onError: (err) => toast.error("External audit not created", apiErrorMessage(err, "Failed to create the external audit.")),
+    onError: (err) => toast.error(t("audit.toast.externalNotCreated"), apiErrorMessage(err, t("audit.toast.externalFailed"))),
   });
 
   const runAction = (call: () => Promise<unknown>, successTitle: string, errorTitle: string) =>
@@ -39,7 +39,7 @@ export default function AuditExternalPage() {
         toast.success(successTitle);
         return qc.invalidateQueries({ queryKey: ["audit", "external"] });
       })
-      .catch((err) => toast.error(errorTitle, apiErrorMessage(err, "Action failed. Please try again.")));
+      .catch((err) => toast.error(errorTitle, apiErrorMessage(err, t("correspondence.detail.actionFailed"))));
 
   return (
     <AuditPageShell
@@ -85,10 +85,10 @@ export default function AuditExternalPage() {
             <td className="px-3 py-2.5">{r.access_active ? t("audit.access.active") : t("audit.access.closed")}</td>
             <td className="px-3 py-2.5">
               <AuditRowActions>
-                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.activateExternal(Number(r.id)), "Auditor access activated", "Could not activate auditor access")}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.activateExternal(Number(r.id)), t("audit.toast.accessActivated"), t("audit.toast.accessNotActivated"))}>
                   {t("audit.external.activate")}
                 </button>
-                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.revokeExternal(Number(r.id)), "Auditor access revoked", "Could not revoke auditor access")}>
+                <button type="button" className="btn-secondary text-xs" onClick={() => runAction(() => auditApi.revokeExternal(Number(r.id)), t("audit.toast.accessRevoked"), t("audit.toast.accessNotRevoked"))}>
                   {t("audit.external.revoke")}
                 </button>
               </AuditRowActions>

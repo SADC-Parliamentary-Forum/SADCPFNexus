@@ -113,7 +113,7 @@ test("audit universe create locks duplicate submits while pending", () => {
 });
 
 test("risk control create locks duplicate submits while pending", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/risk/controls/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/risk/controls/page.tsx"));
 
   assert.match(source, /const \[creating,\s*setCreating\]/);
   assert.match(source, /if \(!controlTitle \|\| creating\) return/);
@@ -124,7 +124,7 @@ test("risk control create locks duplicate submits while pending", () => {
 });
 
 test("correspondence retention save locks duplicate submits while pending", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/correspondence/retention/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/correspondence/retention/page.tsx"));
 
   assert.match(source, /const \[saving,\s*setSaving\]/);
   assert.match(source, /if \(!targetLetterId \|\| saving\) return/);
@@ -548,7 +548,7 @@ test("monthly timesheet chevrons and global search clear control have accessible
 });
 
 test("risk detail tabs expose tablist and selected tab semantics", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/risk/[id]/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/risk/[id]/page.tsx"));
 
   assert.match(source, /role="tablist"/);
   assert.match(source, /aria-label="Risk detail sections"/);
@@ -633,7 +633,7 @@ test("UX-196 asset transfers CTA uses Next Link", () => {
 });
 
 test("UX-208 stock register title does not use slash style", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/stock/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/stock/page.tsx"));
   assert.doesNotMatch(source, /Consumables \/ Stock/);
   assert.match(source, /title="Stock"/);
 });
@@ -784,7 +784,7 @@ test("UX-262 fleet utilisation exports CSV", () => {
 });
 
 test("UX-353 correspondence retention exports CSV", () => {
-  const source = readFileSync(join(webRoot, "app/(app)/correspondence/retention/page.tsx"), "utf8");
+  const source = readEnglishSource(join(webRoot, "app/(app)/correspondence/retention/page.tsx"));
   assert.match(source, /exportToCsv/);
   assert.match(source, /Saving…/);
   assert.doesNotMatch(source, /Saving\.\.\./);

@@ -53,9 +53,9 @@ export default function AuditGovernancePacksPage() {
       })).data.data as GovernancePack,
     onSuccess: (row) => {
       setPack(row);
-      toast.success("Governance pack generated");
+      toast.success(t("audit.toast.packGenerated"));
     },
-    onError: (err) => toast.error("Governance pack not generated", apiErrorMessage(err, "Failed to generate the governance pack.")),
+    onError: (err) => toast.error(t("audit.toast.packNotGenerated"), apiErrorMessage(err, t("audit.toast.packFailed"))),
   });
 
   const progress = pack?.payload?.plan_progress ?? [];
@@ -89,7 +89,7 @@ export default function AuditGovernancePacksPage() {
       {pack && (
         <div className="space-y-4">
           <p className="text-sm text-neutral-600">
-            {pack.title} · FY {pack.payload?.fiscal_year ?? pack.fiscal_year}
+            {pack.title} · {t("audit.packsPage.fiscalYear", { year: String(pack.payload?.fiscal_year ?? pack.fiscal_year ?? "") })}
             {pack.payload?.generated_at ? ` · ${pack.payload.generated_at}` : ""}
           </p>
           <div className="space-y-2">

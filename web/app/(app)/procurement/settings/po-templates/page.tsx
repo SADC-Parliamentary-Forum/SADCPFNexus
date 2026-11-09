@@ -32,10 +32,10 @@ export default function PoTemplatesPage() {
       qc.invalidateQueries({ queryKey: ["po-templates"] });
       setName("");
       setMessage(t("po.templates.created"));
-      toast.success("PO template created");
+      toast.success(t("po.templatesPage.created"));
     },
     onError: (err: unknown) => {
-      toast.error("PO template not created", apiErrorMessage(err, "Failed to create the PO template."));
+      toast.error(t("po.templatesPage.notCreated"), apiErrorMessage(err, t("po.templatesPage.createFailed")));
     },
   });
 
@@ -43,10 +43,10 @@ export default function PoTemplatesPage() {
     mutationFn: (id: number) => poTemplatesApi.setDefault(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["po-templates"] });
-      toast.success("Default PO template set");
+      toast.success(t("po.templatesPage.defaultSet"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not set default template", apiErrorMessage(err, "Failed to set the default PO template."));
+      toast.error(t("po.templatesPage.defaultNotSet"), apiErrorMessage(err, t("po.templatesPage.defaultFailed")));
     },
   });
 
@@ -54,10 +54,10 @@ export default function PoTemplatesPage() {
     mutationFn: (id: number) => poTemplatesApi.retire(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["po-templates"] });
-      toast.success("PO template retired");
+      toast.success(t("po.templatesPage.retired"));
     },
     onError: (err: unknown) => {
-      toast.error("Could not retire template", apiErrorMessage(err, "Failed to retire the PO template."));
+      toast.error(t("po.templatesPage.notRetired"), apiErrorMessage(err, t("po.templatesPage.retireFailed")));
     },
   });
 

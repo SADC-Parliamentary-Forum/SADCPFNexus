@@ -61,12 +61,12 @@ export default function RiskKriPage() {
     onSuccess: () => {
       setError(null);
       qc.invalidateQueries({ queryKey: ["risk", "kris"] });
-      toast.success("KRIs evaluated");
+      toast.success(t("risk.kri.evaluated"));
     },
     onError: (err) => {
-      const message = apiErrorMessage(err, "Could not evaluate KRIs.");
+      const message = apiErrorMessage(err, t("risk.kri.evaluateFailed"));
       setError(message);
-      toast.error("Could not evaluate KRIs", message);
+      toast.error(t("risk.kri.notEvaluatedToast"), message);
     },
   });
 
@@ -75,12 +75,12 @@ export default function RiskKriPage() {
     onSuccess: () => {
       setError(null);
       qc.invalidateQueries({ queryKey: ["risk", "kris"] });
-      toast.success("KRI updated");
+      toast.success(t("risk.kri.updated"));
     },
     onError: (err) => {
-      const message = apiErrorMessage(err, "Could not update KRI links/thresholds.");
+      const message = apiErrorMessage(err, t("risk.kri.updateFailed"));
       setError(message);
-      toast.error("KRI not updated", message);
+      toast.error(t("risk.kri.notUpdated"), message);
     },
   });
 
@@ -101,7 +101,7 @@ export default function RiskKriPage() {
         actions={
           <>
             <Link href="/risk/dashboard" className="btn-secondary">
-              Risk dashboard
+              {t("risk.kri.riskDashboard")}
             </Link>
             <button
               type="button"
@@ -109,7 +109,7 @@ export default function RiskKriPage() {
               disabled={evaluate.isPending}
               onClick={() => evaluate.mutate()}
             >
-              {evaluate.isPending ? "Evaluating…" : "Evaluate now"}
+              {evaluate.isPending ? t("risk.kri.evaluating") : t("risk.kri.evaluateNow")}
             </button>
           </>
         }
@@ -121,12 +121,12 @@ export default function RiskKriPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>KRI</th>
-              <th>Source</th>
-              <th>Value</th>
-              <th>Thresholds</th>
-              <th>Status</th>
-              <th>Linked risk / objective</th>
+              <th>{t("risk.kri.colKri")}</th>
+              <th>{t("risk.kri.colSource")}</th>
+              <th>{t("risk.kri.colValue")}</th>
+              <th>{t("risk.kri.colThresholds")}</th>
+              <th>{t("risk.common.status")}</th>
+              <th>{t("risk.kri.colLinked")}</th>
             </tr>
           </thead>
           <tbody>
@@ -153,27 +153,27 @@ export default function RiskKriPage() {
                       {kri.unit === "percent" ? "%" : ""}
                     </div>
                     <div className="text-xs text-neutral-500">
-                      {kri.last_evaluated_at ? new Date(kri.last_evaluated_at).toLocaleString() : "Not evaluated"}
+                      {kri.last_evaluated_at ? new Date(kri.last_evaluated_at).toLocaleString() : t("risk.kri.notEvaluated")}
                     </div>
                   </td>
                   <td className="px-3 py-3 text-xs text-neutral-700">
-                    <div>Warn ≥ {kri.warning_threshold ?? "—"}</div>
-                    <div>Breach ≥ {kri.breach_threshold ?? "—"}</div>
+                    <div>{t("risk.kri.warn", { value: kri.warning_threshold ?? "—" })}</div>
+                    <div>{t("risk.kri.breach", { value: kri.breach_threshold ?? "—" })}</div>
                   </td>
                   <td className="px-3 py-3">
-                    <span className={statusBadge(kri.last_status)}>{kri.last_status ?? "n/a"}</span>
+                    <span className={statusBadge(kri.last_status)}>{t(kri.last_status ? `risk.kri.status.${kri.last_status}` : "risk.kri.status.na")}</span>
                   </td>
                   <td className="px-3 py-3">
                     <div className="mb-2 space-y-1 text-xs text-neutral-600">
                       {kri.risk && (
                         <div>
-                          Risk:{" "}
+                          {t("risk.kri.riskPrefix")}{" "}
                           <Link className="font-medium text-primary" href={`/risk/${kri.risk.id}`}>
                             {kri.risk.risk_code}
                           </Link>
                         </div>
                       )}
-                      {kri.strategic_objective && <div>Objective: {kri.strategic_objective.code}</div>}
+                      {kri.strategic_objective && <div>{t("risk.kri.objective", { code: kri.strategic_objective.code })}</div>}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <label htmlFor={`kri-link-risk-${kri.id}`} className="space-y-1">
@@ -236,7 +236,7 @@ export default function RiskKriPage() {
                           })
                         }
                       >
-                        Link
+                        {t("risk.common.link")}
                       </button>
                     </div>
                   </td>
@@ -246,20 +246,20 @@ export default function RiskKriPage() {
             {krisQuery.isLoading ? (
               <tr>
                 <td colSpan={6} className="px-3 py-8 text-center text-neutral-500">
-                  Loading KRIs…
+                  {t("risk.kri.loading")}
                 </td>
               </tr>
             ) : kris.length === 0 ? (
-              <TableEmpty colSpan={6} title="No KRIs configured." />
+              <TableEmpty colSpan={6} title="risk.kri.empty" />
             ) : null}
           </tbody>
         </table>
       </div>
 
       <div className="rounded-lg border border-neutral-200 bg-white p-4">
-        <h2 className="text-base font-semibold text-neutral-900">Data sources (documented)</h2>
+        <h2 className="text-base font-semibold text-neutral-900">{t("risk.kri.dataSources")}</h2>
         <p className="mt-1 text-sm text-neutral-600">
-          Each KRI maps to an explicit Nexus table/query — no invented metrics.
+          {t("risk.kri.dataSourcesHint")}
         </p>
         <ul className="mt-3 space-y-2 text-sm">
           {catalog.map((entry) => (

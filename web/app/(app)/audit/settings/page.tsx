@@ -29,10 +29,10 @@ export default function AuditSettingsPage() {
         plan_approval_mode: mode || String((data as { plan_approval_mode?: string })?.plan_approval_mode ?? "sg"),
       }),
     onSuccess: () => {
-      toast.success("Audit settings saved");
+      toast.success(t("audit.toast.settingsSaved"));
       qc.invalidateQueries({ queryKey: ["audit", "settings"] });
     },
-    onError: (err) => toast.error("Audit settings not saved", apiErrorMessage(err, "Failed to save audit settings.")),
+    onError: (err) => toast.error(t("audit.toast.settingsNotSaved"), apiErrorMessage(err, t("audit.toast.settingsFailed"))),
   });
 
   const currentMode = String((data as { plan_approval_mode?: string })?.plan_approval_mode ?? "sg");

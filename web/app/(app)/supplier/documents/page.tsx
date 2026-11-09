@@ -74,14 +74,14 @@ export default function SupplierDocumentsPage() {
       setExpiryDate("");
       setError(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      toast.success("Document uploaded");
+      toast.success(t("procurement.doc.uploaded"));
     },
     onError: (err: unknown) => {
       const message = err instanceof Error && !("response" in err)
         ? err.message
         : apiErrorMessage(err, t("supplier.documents.uploadError"));
       setError(message);
-      toast.error("Document not uploaded", message);
+      toast.error(t("procurement.doc.notUploaded"), message);
     },
   });
 

@@ -55,7 +55,7 @@ export default function AssetsDashboardPage() {
   }, [t]);
 
   const cards: { label: string; key: keyof Dash; href: string }[] = [
-    { label: "Total assets", key: "total", href: "/assets" },
+    { label: t("assets.dashboard.totalAssets"), key: "total", href: "/assets" },
     { label: t("assets.dash.inService"), key: "in_service", href: "/assets?status=live" },
     { label: t("assets.dash.available"), key: "available", href: "/assets?status=available" },
     { label: t("assets.dash.storage"), key: "storage", href: "/assets" },
@@ -73,10 +73,10 @@ export default function AssetsDashboardPage() {
     { label: t("assets.dash.noLocation"), key: "no_location", href: "/assets" },
     { label: t("assets.dash.noLabel"), key: "no_label", href: "/assets/labels" },
     { label: t("assets.dash.replacementDue"), key: "replacement_due", href: "/assets/reports" },
-    { label: "Pending intake", key: "pending", href: "/assets/intake" },
-    { label: "Capital", key: "capital", href: "/assets?asset_class=capital" },
-    { label: "Controlled", key: "controlled", href: "/assets?asset_class=controlled" },
-    { label: "Warranty ≤30d", key: "warranty_expiring_30d", href: "/assets/maintenance" },
+    { label: t("assets.dashboard.pendingIntake"), key: "pending", href: "/assets/intake" },
+    { label: t("assets.dashboard.capital"), key: "capital", href: "/assets?asset_class=capital" },
+    { label: t("assets.dashboard.controlled"), key: "controlled", href: "/assets?asset_class=controlled" },
+    { label: t("assets.dashboard.warranty30"), key: "warranty_expiring_30d", href: "/assets/maintenance" },
   ];
   if (data && data.total_acquisition_cost != null) {
     cards.push({ label: t("assets.dash.acquisitionCost"), key: "total_acquisition_cost", href: "/assets/reports" });
@@ -86,12 +86,12 @@ export default function AssetsDashboardPage() {
   return (
     <div className="w-full min-w-0 space-y-5">
       <ModulePageHeader
-        title="Fixed Assets Dashboard"
-        subtitle="Register health, custody, verification and disposal signals"
+        title="assets.dashboard.title"
+        subtitle="assets.dashboard.subtitle"
         breadcrumbs={
-          <PageBreadcrumbs items={[{ label: "Assets", href: "/assets" }, { label: "Dashboard" }]} />
+          <PageBreadcrumbs items={[{ label: "assets.requests.breadcrumbAssets", href: "/assets" }, { label: "nav.dashboard" }]} />
         }
-        actions={<Link href="/assets/intake" className="btn-primary">Pending intake</Link>}
+        actions={<Link href="/assets/intake" className="btn-primary">{t("assets.dashboard.pendingIntake")}</Link>}
       />
       <ModuleHubCards cards={ASSETS_HUB_CARDS} />
       {error ? (

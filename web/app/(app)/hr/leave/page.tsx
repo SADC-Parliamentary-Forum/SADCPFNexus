@@ -22,12 +22,28 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 const LEAVE_TYPE_LABELS: Record<string, string> = {
-  annual:    "Annual",
-  sick:      "Sick",
-  lil:       "Leave in Lieu",
-  special:   "Special",
-  maternity: "Maternity",
-  paternity: "Paternity",
+  annual:    "leave.type.annual",
+  sick:      "leave.type.sick",
+  lil:       "leave.type.lil",
+  special:   "leave.type.special",
+  maternity: "leave.type.maternity",
+  paternity: "leave.type.paternity",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  approved:  "leave.status.approved",
+  submitted: "leave.status.submitted",
+  rejected:  "leave.status.rejected",
+  draft:     "leave.status.draft",
+  cancelled: "leave.status.cancelled",
+};
+
+const STATUS_FILTER_LABELS: Record<string, string> = {
+  All:       "leave.filter.all",
+  Submitted: "leave.status.submitted",
+  Approved:  "leave.status.approved",
+  Rejected:  "leave.status.rejected",
+  Draft:     "leave.status.draft",
 };
 
 function UserAutocomplete({
@@ -39,6 +55,7 @@ function UserAutocomplete({
   value: TenantUserOption | null;
   onSelect: (u: TenantUserOption | null) => void;
 }) {
+  const { t } = useI18n();
   const [query, setQuery] = useState(value?.name ?? "");
   const [options, setOptions] = useState<TenantUserOption[]>([]);
   const [open, setOpen] = useState(false);
@@ -47,7 +64,7 @@ function UserAutocomplete({
 
   useEffect(() => {
     if (!query.trim() || (value && query === value.name)) { setOptions([]); return; }
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setLoading(true);
       try {
         const r = await tenantUsersApi.list({ search: query });
@@ -55,7 +72,7 @@ function UserAutocomplete({
       } catch { setOptions([]); }
       finally { setLoading(false); }
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [query, value]);
 
   useEffect(() => {
@@ -71,7 +88,7 @@ function UserAutocomplete({
         id="hr-leave-employee"
         type="text"
         className="form-input w-full"
-        placeholder="Search by full name or email"
+        placeholder={t("hr.leaveRegister.searchUser")}
         value={query}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); onSelect(null); }}
         onFocus={() => setOpen(true)}
@@ -80,9 +97,9 @@ function UserAutocomplete({
       {open && (query.trim().length > 0) && (
         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-neutral-200 rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto">
           {loading ? (
-            <div className="px-3 py-2 text-xs text-neutral-400">Searching…</div>
+            <div className="px-3 py-2 text-xs text-neutral-400">{t("hr.conduct.searching")}</div>
           ) : options.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-neutral-400">No users found</div>
+            <div className="px-3 py-2 text-xs text-neutral-400">{t("hr.conduct.noUsers")}</div>
           ) : options.map((u) => (
             <button
               key={u.id}
@@ -148,7 +165,7 @@ export default function HRLeavePage() {
     setLoading(true);
     leaveApi.list({ all: 1 })
       .then((r) => { setRequests(r.data.data); setError(null); })
-      .catch(() => setError("Failed to load leave requests."))
+      .catch(() => setError(t("leave.list.loadError")))
       .finally(() => setLoading(false));
   };
 
@@ -183,14 +200,14 @@ export default function HRLeavePage() {
         reason: r.reason ?? "",
       })),
       [
-        { key: "reference", header: "Reference" },
-        { key: "employee", header: "Employee" },
-        { key: "type", header: "Type" },
-        { key: "status", header: "Status" },
-        { key: "start_date", header: "Start" },
-        { key: "end_date", header: "End" },
-        { key: "days", header: "Days" },
-        { key: "reason", header: "Reason" },
+        { key: "reference", header: t("leave.col.reference") },
+        { key: "employee", header: t("admin.salary.employee") },
+        { key: "type", header: t("leave.import.colType") },
+        { key: "status", header: t("leave.col.status") },
+        { key: "start_date", header: t("leave.col.start") },
+        { key: "end_date", header: t("leave.col.end") },
+        { key: "days", header: t("leave.col.days") },
+        { key: "reason", header: t("common.reason") },
       ],
     );
   };
@@ -198,7 +215,7 @@ export default function HRLeavePage() {
   const handleApprove = (id: number, override?: string) => {
     setSubmitting(true);
     leaveApi.approve(id, override)
-      .then(() => { success("Leave approved."); load(); setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); })
+      .then(() => { success(t("hr.leaveRegister.approved")); load(); setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); })
       .catch((e: unknown) => {
         const err = e as { response?: { data?: { errors?: { balance?: string[] } } } };
         const balMsg = err?.response?.data?.errors?.balance?.[0];
@@ -206,7 +223,7 @@ export default function HRLeavePage() {
           setOverrideId(id);
           setOverrideBalanceMsg(balMsg);
         } else {
-          showErrorToast("Failed to approve.");
+          showErrorToast(t("procurement.detail.approveFailed"));
         }
       })
       .finally(() => setSubmitting(false));
@@ -216,14 +233,14 @@ export default function HRLeavePage() {
     if (!rejectId || !rejectReason.trim()) return;
     setSubmitting(true);
     leaveApi.reject(rejectId, rejectReason)
-      .then(() => { success("Leave rejected."); setRejectId(null); setRejectReason(""); load(); })
-      .catch(() => showErrorToast("Failed to reject."))
+      .then(() => { success(t("hr.leaveRegister.rejected")); setRejectId(null); setRejectReason(""); load(); })
+      .catch(() => showErrorToast(t("procurement.detail.rejectFailed")))
       .finally(() => setSubmitting(false));
   };
 
   const handleCreateLeave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newEmployee) { setCreateError("Please select an employee."); return; }
+    if (!newEmployee) { setCreateError(t("hr.conduct.selectEmployee")); return; }
     setCreating(true);
     setCreateError(null);
     try {
@@ -237,10 +254,10 @@ export default function HRLeavePage() {
       });
       setShowNew(false);
       setNewEmployee(null); setNewLeaveType("annual"); setNewStartDate(""); setNewEndDate(""); setNewReason("");
-      success("Leave request created.");
+      success(t("hr.leaveRegister.created"));
       load();
     } catch (err: unknown) {
-      setCreateError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : "Failed to create leave request.");
+      setCreateError(err && typeof err === "object" && "message" in err ? String((err as { message: string }).message) : t("hr.leaveRegister.createFailed"));
     } finally { setCreating(false); }
   };
 
@@ -254,13 +271,13 @@ export default function HRLeavePage() {
       const created = res.data.data.created_count;
       const errors = res.data.data.error_count;
       if (errors > 0) {
-        info("Bulk upload finished", `${created} created, ${errors} row error(s).`);
+        info(t("hr.leaveRegister.bulkDone"), t("hr.leaveRegister.bulkDoneBody", { created, errors }));
       } else {
-        success("Leave CSV uploaded.", `${created} leave request(s) created.`);
+        success(t("hr.leaveRegister.bulkUploaded"), t("hr.leaveRegister.bulkUploadedBody", { created }));
       }
       load();
     } catch {
-      showErrorToast("Failed to upload leave CSV.");
+      showErrorToast(t("hr.leaveRegister.bulkFailed"));
     } finally {
       setBulkBusy(false);
     }
@@ -272,13 +289,13 @@ export default function HRLeavePage() {
   return (
     <>
     <RegisterShell
-      title="Staff Leave Requests"
-      subtitle="Review and action leave applications from staff members."
+      title="hr.leaveRegister.title"
+      subtitle="hr.leaveRegister.subtitle"
       breadcrumbs={
         <PageBreadcrumbs
           items={[
-            { label: "HR", href: "/hr" },
-            { label: "Staff Leave Register" },
+            { label: "nav.hr", href: "/hr" },
+            { label: "hr.leaveRegister.crumb" },
           ]}
         />
       }
@@ -294,11 +311,11 @@ export default function HRLeavePage() {
           {pending > 0 && (
             <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5">
               <span className="material-symbols-outlined text-[18px] text-amber-600">pending_actions</span>
-              <span className="text-sm font-semibold text-amber-800">{pending} pending</span>
+              <span className="text-sm font-semibold text-amber-800">{t("hr.leaveRegister.pending", { count: pending })}</span>
             </div>
           )}
           <Link href="/leave" className="btn-secondary text-sm">
-            My Leave
+            {t("hr.leaveRegister.myLeave")}
           </Link>
           {canImport && (
             <Link href="/hr/leave/import" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1">
@@ -310,7 +327,7 @@ export default function HRLeavePage() {
             <div className="flex flex-wrap items-center gap-2">
               <label htmlFor="hr-leave-bulk-file" className="btn-secondary py-2 px-3 text-sm flex items-center gap-1 cursor-pointer">
                 <span className="material-symbols-outlined text-[18px]" aria-hidden="true">upload</span>
-                Upload CSV
+                {t("hr.leaveRegister.uploadCsv")}
               </label>
               <input
                 id="hr-leave-bulk-file"
@@ -328,7 +345,7 @@ export default function HRLeavePage() {
                 href="/api/v1/leave/requests/bulk-import/template"
                 className="text-sm text-neutral-600 hover:text-neutral-900"
               >
-                CSV template (employee_email)
+                {t("hr.leaveRegister.csvTemplate")}
               </a>
             </div>
           )}
@@ -339,7 +356,7 @@ export default function HRLeavePage() {
             onClick={handleExport}
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
-            Export CSV
+            {t("leave.common.exportCsv")}
           </button>
           <button
             type="button"
@@ -347,7 +364,7 @@ export default function HRLeavePage() {
             className="btn-primary py-2 px-3 text-sm flex items-center gap-1"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
-            New leave request
+            {t("leave.create.titleNew")}
           </button>
         </div>
       }
@@ -357,14 +374,14 @@ export default function HRLeavePage() {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none text-[20px]">search</span>
             <input
               type="search"
-              placeholder="Search by name or reference…"
+              placeholder={t("hr.leaveRegister.search")}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
                 setPage(1);
               }}
               className="form-input pl-10"
-              aria-label="Search staff leave requests"
+              aria-label={t("hr.leaveRegister.searchAria")}
             />
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -378,7 +395,7 @@ export default function HRLeavePage() {
                 }}
                 className={`filter-tab ${filterStatus === s ? "active" : ""}`}
               >
-                {s}
+                {t(STATUS_FILTER_LABELS[s] ?? s)}
               </button>
             ))}
           </div>
@@ -395,7 +412,7 @@ export default function HRLeavePage() {
       empty={
         !loading && filtered.length === 0 ? (
           <div className="card">
-            <EmptyState icon="event_available" title="No leave requests found." />
+            <EmptyState icon="event_available" title="hr.leaveRegister.empty" />
           </div>
         ) : undefined
       }
@@ -403,24 +420,24 @@ export default function HRLeavePage() {
       {/* Table */}
       <div className="card overflow-hidden">
         <div className="card-header">
-          <h2 className="text-sm font-semibold text-neutral-900">All Leave Requests ({filtered.length})</h2>
+          <h2 className="text-sm font-semibold text-neutral-900">{t("hr.leaveRegister.tableTitle", { count: filtered.length })}</h2>
           <button type="button" onClick={load} className="btn-secondary py-1.5 px-3 text-xs flex items-center gap-1">
             <span className="material-symbols-outlined text-[14px]">refresh</span>
-            Refresh
+            {t("admin.common.refresh")}
           </button>
         </div>
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
               <tr>
-                <th>Reference</th>
-                <th>Staff Member</th>
-                <th>Leave Type</th>
-                <th>From</th>
-                <th>To</th>
-                <th>Days</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>{t("leave.col.reference")}</th>
+                <th>{t("header.staffMember")}</th>
+                <th>{t("leave.certificate.leaveType")}</th>
+                <th>{t("leave.create.from")}</th>
+                <th>{t("leave.create.to")}</th>
+                <th>{t("leave.col.days")}</th>
+                <th>{t("leave.col.status")}</th>
+                <th>{t("audit.col.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -431,13 +448,13 @@ export default function HRLeavePage() {
                       <td className="font-mono text-xs text-neutral-600">{r.reference_number}</td>
                       <td className="font-medium text-neutral-900">{r.requester?.name ?? "—"}</td>
                       <td>
-                        <span className="badge badge-muted">{LEAVE_TYPE_LABELS[r.leave_type] ?? r.leave_type}</span>
+                        <span className="badge badge-muted">{LEAVE_TYPE_LABELS[r.leave_type] ? t(LEAVE_TYPE_LABELS[r.leave_type]) : r.leave_type}</span>
                       </td>
                       <td className="text-neutral-600 text-xs whitespace-nowrap">{fmt(r.start_date)}</td>
                       <td className="text-neutral-600 text-xs whitespace-nowrap">{fmt(r.end_date)}</td>
-                      <td className="text-neutral-700">{r.days_requested}d</td>
+                      <td className="text-neutral-700">{t("hr.leaveBalances.days", { days: r.days_requested })}</td>
                       <td>
-                        <span className={`badge ${STATUS_BADGE[r.status] ?? "badge-muted"} capitalize`}>{r.status}</span>
+                        <span className={`badge ${STATUS_BADGE[r.status] ?? "badge-muted"} capitalize`}>{STATUS_LABELS[r.status] ? t(STATUS_LABELS[r.status]) : r.status}</span>
                       </td>
                       <td>
                         {r.status === "submitted" ? (
@@ -448,7 +465,7 @@ export default function HRLeavePage() {
                               disabled={submitting}
                               className="text-xs font-semibold text-green-700 hover:text-green-900 disabled:opacity-50"
                             >
-                              Approve
+                              {t("common.approve")}
                             </button>
                             <span className="text-neutral-300">|</span>
                             <button
@@ -457,7 +474,7 @@ export default function HRLeavePage() {
                               disabled={submitting}
                               className="text-xs font-semibold text-red-600 hover:text-red-800 disabled:opacity-50"
                             >
-                              Reject
+                              {t("common.reject")}
                             </button>
                           </div>
                         ) : (
@@ -478,8 +495,8 @@ export default function HRLeavePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-md rounded-2xl bg-white shadow-xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-              <h2 className="text-base font-semibold text-neutral-900">New Leave Request</h2>
-              <button type="button" onClick={() => setShowNew(false)} aria-label="Close new leave request" className="text-neutral-400 hover:text-neutral-600">
+              <h2 className="text-base font-semibold text-neutral-900">{t("hr.leaveRegister.newTitle")}</h2>
+              <button type="button" onClick={() => setShowNew(false)} aria-label={t("hr.leaveRegister.closeNew")} className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>
@@ -487,31 +504,31 @@ export default function HRLeavePage() {
               {createError && (
                 <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">{createError}</div>
               )}
-              <UserAutocomplete label="Employee *" value={newEmployee} onSelect={setNewEmployee} />
+              <UserAutocomplete label={t("hr.leaveRegister.employeeRequired")} value={newEmployee} onSelect={setNewEmployee} />
               <div>
-                <label htmlFor="hr-leave-type" className="block text-xs font-semibold text-neutral-700 mb-1">Leave type *</label>
+                <label htmlFor="hr-leave-type" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.leaveRegister.typeRequired")}</label>
                 <select id="hr-leave-type" className="form-input w-full" value={newLeaveType} onChange={(e) => setNewLeaveType(e.target.value)} required>
-                  {Object.entries(LEAVE_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  {Object.entries(LEAVE_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{t(l)}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label htmlFor="hr-leave-from" className="block text-xs font-semibold text-neutral-700 mb-1">From *</label>
+                  <label htmlFor="hr-leave-from" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.leaveRegister.fromRequired")}</label>
                   <input id="hr-leave-from" type="date" className="form-input w-full" value={newStartDate} onChange={(e) => setNewStartDate(e.target.value)} required />
                 </div>
                 <div>
-                  <label htmlFor="hr-leave-to" className="block text-xs font-semibold text-neutral-700 mb-1">To *</label>
+                  <label htmlFor="hr-leave-to" className="block text-xs font-semibold text-neutral-700 mb-1">{t("hr.leaveRegister.toRequired")}</label>
                   <input id="hr-leave-to" type="date" className="form-input w-full" value={newEndDate} onChange={(e) => setNewEndDate(e.target.value)} required />
                 </div>
               </div>
               <div>
-                <label htmlFor="hr-leave-reason" className="block text-xs font-semibold text-neutral-700 mb-1">Reason</label>
-                <textarea id="hr-leave-reason" rows={2} className="form-input resize-none" placeholder="Optional reason…" value={newReason} onChange={(e) => setNewReason(e.target.value)} />
+                <label htmlFor="hr-leave-reason" className="block text-xs font-semibold text-neutral-700 mb-1">{t("common.reason")}</label>
+                <textarea id="hr-leave-reason" rows={2} className="form-input resize-none" placeholder={t("hr.leaveRegister.reasonPlaceholder")} value={newReason} onChange={(e) => setNewReason(e.target.value)} />
               </div>
               <div className="flex justify-end gap-3 pt-1">
-                <button type="button" onClick={() => setShowNew(false)} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={() => setShowNew(false)} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
                 <button type="submit" disabled={creating || !newEmployee} className="btn-primary px-5 py-2 text-sm disabled:opacity-50">
-                  {creating ? "Creating…" : "Create request"}
+                  {creating ? t("audit.engagements.creating") : t("hr.leaveRegister.createRequest")}
                 </button>
               </div>
             </form>
@@ -526,34 +543,34 @@ export default function HRLeavePage() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-600">warning</span>
-                <h2 className="text-base font-semibold text-neutral-900">Insufficient Leave Balance</h2>
+                <h2 className="text-base font-semibold text-neutral-900">{t("leave.detail.insufficientBalance")}</h2>
               </div>
-              <button type="button" onClick={() => { setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); }} aria-label="Close leave balance override" className="text-neutral-400 hover:text-neutral-600">
+              <button type="button" onClick={() => { setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); }} aria-label={t("hr.leaveRegister.closeOverride")} className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>
             <div className="p-6 space-y-4">
               <p className="text-sm text-neutral-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">{overrideBalanceMsg}</p>
               <div>
-                <label htmlFor="hr-leave-override-reason" className="block text-xs font-semibold text-neutral-700 mb-1.5">Override justification <span className="text-red-500">*</span></label>
+                <label htmlFor="hr-leave-override-reason" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("hr.leaveRegister.overrideLabel")} <span className="text-red-500">*</span></label>
                 <textarea
                   id="hr-leave-override-reason"
                   rows={3}
                   className="form-input resize-none"
-                  placeholder="Provide a written justification for approving despite insufficient balance…"
+                  placeholder={t("hr.leaveRegister.overridePlaceholder")}
                   value={overrideReason}
                   onChange={(e) => setOverrideReason(e.target.value)}
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => { setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); }} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={() => { setOverrideId(null); setOverrideReason(""); setOverrideBalanceMsg(null); }} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
                 <button
                   type="button"
                   onClick={() => handleApprove(overrideId!, overrideReason.trim())}
                   disabled={!overrideReason.trim() || submitting}
                   className="px-5 py-2 text-sm rounded-lg bg-amber-600 text-white font-semibold hover:bg-amber-700 disabled:opacity-50"
                 >
-                  {submitting ? "Processing…" : "Approve Anyway"}
+                  {submitting ? t("leave.detail.processing") : t("leave.detail.approveAnyway")}
                 </button>
               </div>
             </div>
@@ -566,32 +583,32 @@ export default function HRLeavePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-              <h2 className="text-base font-semibold text-neutral-900">Reject Leave Request</h2>
-              <button type="button" onClick={() => setRejectId(null)} aria-label="Close leave rejection dialog" className="text-neutral-400 hover:text-neutral-600">
+              <h2 className="text-base font-semibold text-neutral-900">{t("leave.detail.rejectTitle")}</h2>
+              <button type="button" onClick={() => setRejectId(null)} aria-label={t("hr.leaveRegister.closeReject")} className="text-neutral-400 hover:text-neutral-600">
                 <span className="material-symbols-outlined text-[22px]">close</span>
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label htmlFor="hr-leave-reject-reason" className="block text-xs font-semibold text-neutral-700 mb-1.5">Reason for rejection <span className="text-red-500">*</span></label>
+                <label htmlFor="hr-leave-reject-reason" className="block text-xs font-semibold text-neutral-700 mb-1.5">{t("approvals.reject.reasonLabel")} <span className="text-red-500">*</span></label>
                 <textarea
                   id="hr-leave-reject-reason"
                   rows={3}
                   className="form-input resize-none"
-                  placeholder="Provide a clear reason for the staff member…"
+                  placeholder={t("hr.leaveRegister.rejectPlaceholder")}
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <button type="button" onClick={() => setRejectId(null)} className="btn-secondary px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={() => setRejectId(null)} className="btn-secondary px-4 py-2 text-sm">{t("common.cancel")}</button>
                 <button
                   type="button"
                   onClick={handleReject}
                   disabled={!rejectReason.trim() || submitting}
                   className="btn-primary px-5 py-2 text-sm bg-red-600 hover:bg-red-700 disabled:opacity-50"
                 >
-                  Reject Leave
+                  {t("hr.leaveRegister.rejectLeave")}
                 </button>
               </div>
             </div>

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync } from "node:fs";
+import { readEnglishSource } from "./i18nSourceForTests.mts";
 import { join } from "node:path";
 
-const source = readFileSync(join(process.cwd(), "app/(app)/hr/leave/page.tsx"), "utf8");
+const source = readEnglishSource(join(process.cwd(), "app/(app)/hr/leave/page.tsx"));
 
 test("HR leave New Leave Request searches employees by name and email in a dropdown", () => {
   assert.match(source, /htmlFor="hr-leave-employee"/);

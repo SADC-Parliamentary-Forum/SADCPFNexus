@@ -22,19 +22,20 @@ type ToilRow = {
   user?: { id: number; name: string };
 };
 
+/** Status → i18n key; rendered through t(). */
 const STATUS_LABEL: Record<string, string> = {
-  awaiting_employee_confirmation: "Awaiting employee confirmation",
-  pending_supervisor: "Pending supervisor",
-  pending_hr: "Pending HR",
-  credited: "Credited",
-  rejected: "Rejected",
-  expired: "Expired",
-  extended: "Extended (SG)",
-  amendment_review: "Amended — HR review required",
-  candidate: "Pending supervisor",
-  ot_authorised: "Pending supervisor",
-  duty_confirmed: "Pending HR",
-  lapsed: "Expired",
+  awaiting_employee_confirmation: "travel.toilQueue.status.awaitingEmployee",
+  pending_supervisor: "travel.toilQueue.status.pendingSupervisor",
+  pending_hr: "travel.toilQueue.status.pendingHr",
+  credited: "travel.toilQueue.status.credited",
+  rejected: "status.rejected",
+  expired: "leave.toil.status.expired",
+  extended: "travel.toilQueue.status.extended",
+  amendment_review: "travel.toilQueue.status.amendmentReview",
+  candidate: "travel.toilQueue.status.pendingSupervisor",
+  ot_authorised: "travel.toilQueue.status.pendingSupervisor",
+  duty_confirmed: "travel.toilQueue.status.pendingHr",
+  lapsed: "leave.toil.status.expired",
 };
 
 export default function TravelToilPage() {
@@ -127,13 +128,13 @@ export default function TravelToilPage() {
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Traveller</th>
-                <th>Travel</th>
-                <th>Hours</th>
-                <th>Status</th>
-                <th>Expires</th>
-                <th>Actions</th>
+                <th>{t("admin.common.date")}</th>
+                <th>{t("travel.register.col.traveller")}</th>
+                <th>{t("programmes.timeline.type.travel")}</th>
+                <th>{t("travel.reports.col.hours")}</th>
+                <th>{t("assets.register.status")}</th>
+                <th>{t("travel.reports.col.expires")}</th>
+                <th>{t("documents.register.colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -143,7 +144,7 @@ export default function TravelToilPage() {
                   <td>{r.user?.name ?? "—"}</td>
                   <td className="font-mono text-sm">{r.travel_request?.reference_number ?? "—"}</td>
                   <td>{r.hours}</td>
-                  <td>{STATUS_LABEL[r.status] ?? r.status}</td>
+                  <td>{STATUS_LABEL[r.status] ? t(STATUS_LABEL[r.status]) : r.status}</td>
                   <td>{r.expires_at ?? "—"}</td>
                   <td className="space-x-2 text-xs">
                     {awaitsSupervisor(r.status) && (

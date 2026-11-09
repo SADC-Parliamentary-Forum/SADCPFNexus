@@ -47,11 +47,11 @@ export function ApprovalTimeline({ request }: Props) {
         if (step.step_name) return step.step_name;
 
         switch (step.approver_type) {
-            case "supervisor":    return "Direct Supervisor";
-            case "up_the_chain":  return "Department Head";
-            case "specific_role": return step.role?.name || "Required Role";
-            case "specific_user": return step.user?.name || "Specific User";
-            default:              return "Pending Approver";
+            case "supervisor":    return t("admin.workflows.approver.supervisor");
+            case "up_the_chain":  return t("workflow.timeline.departmentHead");
+            case "specific_role": return step.role?.name || t("workflow.timeline.requiredRole");
+            case "specific_user": return step.user?.name || t("workflow.timeline.specificUser");
+            default:              return t("workflow.timeline.pendingApprover");
         }
     };
 
@@ -60,7 +60,7 @@ export function ApprovalTimeline({ request }: Props) {
         const meaning = stageType
             ? stageType.charAt(0).toUpperCase() + stageType.slice(1)
             : null;
-        const base = step.step_name ?? `Stage ${index + 1}: ${step.approver_type.replace(/_/g, " ")}`;
+        const base = step.step_name ?? t("workflow.timeline.stage", { n: index + 1, type: step.approver_type.replace(/_/g, " ") });
         return meaning ? `${base} (${meaning})` : base;
     };
 
@@ -70,14 +70,14 @@ export function ApprovalTimeline({ request }: Props) {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 flex-shrink-0">
                     <span className="material-symbols-outlined text-[18px] text-indigo-600">account_tree</span>
                 </div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">Approval Timeline</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500">{t("hr.timesheets.detail.timeline")}</h3>
             </div>
 
             {/* Withdrawn banner */}
             {isWithdrawn && (
                 <div className="mb-4 flex items-center gap-2 rounded-lg bg-neutral-100 border border-neutral-200 px-4 py-3 text-sm text-neutral-600">
                     <span className="material-symbols-outlined text-[16px] text-neutral-500">block</span>
-                    This request was withdrawn and is no longer in the approval queue.
+                    {t("workflow.timeline.withdrawnBanner")}
                 </div>
             )}
 
@@ -85,10 +85,10 @@ export function ApprovalTimeline({ request }: Props) {
             {request.status === "returned" && (
                 <div className="mb-4 flex items-center gap-2 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
                     <span className="material-symbols-outlined text-[16px] text-amber-600">undo</span>
-                    This request was returned for correction. The requester must resubmit after making changes.
+                    {t("workflow.timeline.returnedBanner")}
                     {(request.returned_count ?? 0) > 0 && (
                         <span className="ml-auto text-xs text-amber-600">
-                            Returned {request.returned_count} time{request.returned_count !== 1 ? "s" : ""}
+                            {t(request.returned_count === 1 ? "workflow.timeline.returnedOnce" : "workflow.timeline.returnedMany", { count: request.returned_count ?? 0 })}
                         </span>
                     )}
                 </div>

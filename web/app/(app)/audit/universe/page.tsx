@@ -23,10 +23,10 @@ export default function AuditUniversePage() {
     mutationFn: (entityName: string) => auditApi.createUniverse({ name: entityName, entity_type: "process" }),
     onSuccess: () => {
       setName("");
-      toast.success("Auditable entity added");
+      toast.success(t("audit.toast.entityAdded"));
       qc.invalidateQueries({ queryKey: ["audit", "universe"] });
     },
-    onError: (err) => toast.error("Auditable entity not added", apiErrorMessage(err, "Failed to add the auditable entity.")),
+    onError: (err) => toast.error(t("audit.toast.entityNotAdded"), apiErrorMessage(err, t("audit.toast.entityFailed"))),
   });
 
   return (

@@ -40,10 +40,10 @@ export default function AssetIncidentsPage() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>Asset</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Police case</th>
+              <th>{t("assets.picker.asset")}</th>
+              <th>{t("assets.handover.type")}</th>
+              <th>{t("assets.view.fieldStatus")}</th>
+              <th>{t("assets.incidents.colPoliceCase")}</th>
               <th />
             </tr>
           </thead>
