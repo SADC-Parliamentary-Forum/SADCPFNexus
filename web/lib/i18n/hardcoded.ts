@@ -14,7 +14,8 @@ const PATTERNS: RegExp[] = [
   // JSX text alone on its line, e.g. `            Save draft`
   /^\s+[A-Z][A-Za-z’']*(?: [A-Za-z’'…]+)*[.…]?\s*$/,
   // JSX text alone on its line with punctuation, e.g. `  No records found. Try again.`
-  /^\s+[A-Z][\w’'-]*(?:[ ,:;.!?–—/&’'-]+[\w’'-]+)+[.…!?:]?\s*$/,
+  // Separators and word characters are disjoint so the match cannot backtrack exponentially.
+  /^\s+[A-Z][\w’'-]*(?:[ ,:;.!?–—/&]+[\w’'-]+)+[.…!?:]?\s*$/,
   // JSX text between tags on one line, e.g. `<p>No records</p>` or `<span>Status: {x}`
   /<(?:[A-Za-z][\w.]*(?:\s[^<>|]*?[^=|])?|\/[\w.]+)>\s*[^<>{}\s(),;:=|&\][][^<>{}]*[A-Za-z]{2}[^<>{}]*?(?=<|\{|$)/,
   // copy-bearing props given a string literal
