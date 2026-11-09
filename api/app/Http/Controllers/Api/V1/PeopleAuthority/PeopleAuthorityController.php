@@ -167,6 +167,7 @@ class PeopleAuthorityController extends Controller
         User::query()
             ->where('tenant_id', $actor->tenant_id)
             ->whereNotIn('id', $existingByUserId)
+            ->where('account_status', '!=', User::STATUS_REMOVED)
             ->whereDoesntHave('roles', fn ($q) => $q->whereIn('name', ['Supplier', 'Supplier Finance User']))
             ->orderBy('name')
             ->chunkById(100, function ($users) use ($actor, &$created, &$linked, &$skipped) {

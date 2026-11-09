@@ -238,6 +238,43 @@ class UsersController extends Controller
         return response()->json(['message' => 'User reactivated.', 'user' => $user]);
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/v1/admin/users/{id}/delete",
+     *     summary="Remove a user: hidden from lists and sign-in, history kept, email released",
+     *     tags={"Admin - Users"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Response(response=200, description="User removed")
+     * )
+     */
+    public function delete(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('delete', $user);
+        $data = $request->validate(['reason' => ['nullable', 'string', 'max:500']]);
+        $user = $this->userService->remove($user, $request->user(), $data['reason'] ?? null);
+
+        return response()->json(['message' => 'User deleted.', 'user' => $user]);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/admin/users/{id}/restore",
+     *     summary="Restore a removed user (returns disabled)",
+     *     tags={"Admin - Users"},
+     *     security={{"sanctum":{}}},
+     *
+     *     @OA\Response(response=200, description="User restored")
+     * )
+     */
+    public function restore(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('delete', $user);
+        $user = $this->userService->restore($user, $request->user());
+
+        return response()->json(['message' => 'User restored. Reactivate the account to let them sign in.', 'user' => $user]);
+    }
+
     public function updateStatus(Request $request, User $user): JsonResponse
     {
         $this->authorize('update', $user);

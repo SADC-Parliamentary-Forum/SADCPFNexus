@@ -29,6 +29,9 @@ class User extends Authenticatable
 
     public const STATUS_OFFBOARDED = 'offboarded';
 
+    /** Removed by an administrator: hidden from lists and sign-in, row kept so history still resolves. */
+    public const STATUS_REMOVED = 'removed';
+
     protected $guard_name = 'sanctum';
 
     protected $fillable = [
@@ -48,6 +51,8 @@ class User extends Authenticatable
         'suspended_at',
         'disabled_at',
         'offboarded_at',
+        'removed_at',
+        'former_email',
         'invited_at',
         'activated_at',
         'status_reason',
@@ -95,6 +100,7 @@ class User extends Authenticatable
             'suspended_at' => 'datetime',
             'disabled_at' => 'datetime',
             'offboarded_at' => 'datetime',
+            'removed_at' => 'datetime',
             'invited_at' => 'datetime',
             'activated_at' => 'datetime',
             'mfa_enabled' => 'boolean',
@@ -208,6 +214,7 @@ class User extends Authenticatable
             self::STATUS_LOCKED => 'locked',
             self::STATUS_SUSPENDED => 'suspended',
             self::STATUS_OFFBOARDED => 'offboarded',
+            self::STATUS_REMOVED => 'removed',
             default => 'disabled',
         };
     }

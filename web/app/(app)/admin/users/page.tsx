@@ -73,6 +73,7 @@ function invitationText(
     case "active":
       return { label: t("admin.common.active"), action };
     default:
+      if (inv.label === "Removed") return { label: t("admin.users.statusDeleted"), action };
       return { label: inv.label === "Inactive" ? t("admin.common.inactive") : inv.label, action };
   }
 }
@@ -85,7 +86,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "invited" | "inactive">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "invited" | "inactive" | "removed">("all");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
@@ -196,6 +197,20 @@ export default function AdminUsersPage() {
     }
   };
 
+  const handleRestore = async (user: User) => {
+    setActionLoading(user.id);
+    setError(null);
+    try {
+      await adminApi.restoreUser(user.id);
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      success(t("admin.users.restored"), t("admin.users.restoredDesc"));
+    } catch (err) {
+      showErrorToast(t("admin.users.restoreFailed"), apiErrorMessage(err, t("admin.users.restoreFailed")));
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleBulkDeactivate = async () => {
     const ids = selection.selectedIds.map(Number).filter((id) => Number.isFinite(id));
     if (ids.length === 0) return;
@@ -292,7 +307,7 @@ export default function AdminUsersPage() {
       <div className="card p-4">
         <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
           <div className="flex gap-2 flex-wrap">
-            {(["all", "active", "invited", "inactive"] as const).map((f) => (
+            {(["all", "active", "invited", "inactive", "removed"] as const).map((f) => (
               <button
                 key={f}
                 type="button"
@@ -456,7 +471,17 @@ export default function AdminUsersPage() {
                               >
                                 {t("common.edit")}
                               </Link>
-                              {invitationState(user).action ? (
+                              {user.account_status === "removed" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => void handleRestore(user)}
+                                  disabled={actionLoading === user.id}
+                                  className="btn-secondary text-xs py-1 px-2 text-green-700 disabled:opacity-50"
+                                  data-testid={`user-restore-${user.id}`}
+                                >
+                                  {actionLoading === user.id ? "…" : t("admin.users.restore")}
+                                </button>
+                              ) : invitationState(user).action ? (
                                 <button
                                   type="button"
                                   onClick={() => void handleInvite(user)}
