@@ -19,6 +19,13 @@ class RolesCleanupCommand extends Command
 
     private const GUARD = 'sanctum';
 
+    /**
+     * Old names left as they are. Supplier and Supplier Finance User both map to External
+     * Supplier, whose aliases include both, so moving a plain Supplier would quietly grant
+     * the supplier finance access too.
+     */
+    private const KEPT_ROLES = ['Supplier', 'Supplier Finance User'];
+
     public function handle(CanonicalRoleManager $roles): int
     {
         $changes = [];
@@ -102,6 +109,8 @@ class RolesCleanupCommand extends Command
                 foreach (CanonicalRoleManager::SPLIT_ROLES[$name] as $target) {
                     $new = array_merge($new, $roles->assignmentRoleNames($target));
                 }
+            } elseif (in_array($name, self::KEPT_ROLES, true)) {
+                $new[] = $name;
             } elseif ($roles->canonicalize($name) !== $name) {
                 $new = array_merge($new, $roles->assignmentRoleNames($name));
             } else {

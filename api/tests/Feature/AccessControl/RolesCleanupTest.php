@@ -39,6 +39,20 @@ class RolesCleanupTest extends TestCase
         $this->assertSame(['Staff'], $user->fresh()->getRoleNames()->all());
     }
 
+    public function test_supplier_accounts_keep_their_roles_so_they_gain_no_finance_access(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $supplier = $this->makeUser('Supplier', $tenant);
+        $staff = $this->makeUser('Staff', $tenant);
+
+        $this->artisan('roles:cleanup', ['--apply' => true])
+            ->doesntExpectOutputToContain("user {$supplier->id}:")
+            ->assertSuccessful();
+
+        $this->assertSame(['Supplier'], $supplier->fresh()->getRoleNames()->all());
+        $this->assertEqualsCanonicalizing(['General Employee', 'staff', 'Staff'], $staff->fresh()->getRoleNames()->all());
+    }
+
     public function test_apply_moves_old_role_names_to_the_catalogue_and_keeps_their_aliases(): void
     {
         $tenant = Tenant::factory()->create();
